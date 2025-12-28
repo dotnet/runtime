@@ -90,9 +90,16 @@ namespace System.Buffers
         /// For a two-string search with different length values, we constrain the offset to be within maxOffset.
         /// This allows the inner loop to use the same offset bounds for both values.
         /// </summary>
+        /// <param name="value">The string to search for anchor characters.</param>
+        /// <param name="ignoreCase">Whether the search is case-insensitive.</param>
+        /// <param name="maxOffset">
+        /// The exclusive upper bound for the search range (must be at least 2).
+        /// When maxOffset is 2, only position 1 is considered for the second anchor since position 0 is always the first anchor.
+        /// </param>
         public static int GetSecondCharacterOffset(string value, bool ignoreCase, int maxOffset)
         {
             Debug.Assert(value.Length > 1);
+            // maxOffset must be at least 2 so there's at least one position (index 1) to consider for the second anchor.
             Debug.Assert(maxOffset >= 2 && maxOffset <= value.Length);
             Debug.Assert(!ignoreCase || char.IsAscii(value[0]));
 

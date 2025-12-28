@@ -12,14 +12,17 @@ using static System.Buffers.StringSearchValuesHelper;
 namespace System.Buffers
 {
     /// <summary>
-    /// Specialized SearchValues implementation for exactly two strings.
-    /// Uses the same approach as <see cref="SingleStringSearchValuesThreeChars{TValueLength, TCaseSensitivity}"/>
+    /// Specialized <see cref="StringSearchValuesBase"/> implementation for exactly two strings.
+    /// Uses the same general approach as <see cref="SingleStringSearchValuesThreeChars{TValueLength, TCaseSensitivity}"/>,
     /// but searches for both strings simultaneously by comparing anchor characters from both strings.
     /// </summary>
     /// <remarks>
-    /// For each of the two strings, we pick 2 anchor characters (just like the single-string implementation picks 3).
-    /// The inner loop compares vectors for each of these characters at their respective offsets.
-    /// When we find a potential match, we verify which of the two strings actually matched.
+    /// For each of the two strings, this implementation picks 2 anchor characters (4 total: v0Ch1, v0Ch2, v1Ch1, v1Ch2),
+    /// whereas the single-string implementation picks 3 anchors for a single value.
+    /// The inner loop compares vectors for each of these characters at their respective offsets and, when a potential match
+    /// is found, verifies which of the two strings actually matched.
+    /// The <c>ThreeChars</c> suffix in the type name is retained for consistency with the single-string variant and to reflect
+    /// the algorithm family it belongs to; it does not mean that this type uses three anchor characters per string.
     /// </remarks>
     internal sealed class TwoStringSearchValuesThreeChars<TCaseSensitivity> : StringSearchValuesBase
         where TCaseSensitivity : struct, ICaseSensitivity
