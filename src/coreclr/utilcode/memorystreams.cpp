@@ -458,7 +458,7 @@ CGrowableStream::Seek(
         return E_UNEXPECTED;
 
     // we ignore the high part of the large integer
-    _ASSERTE(dlibMove.u.HighPart == 0);
+    SIMPLIFYING_ASSUMPTION(dlibMove.u.HighPart == 0);
     m_dwBufferIndex = dlibMove.u.LowPart;
 
 Error:
