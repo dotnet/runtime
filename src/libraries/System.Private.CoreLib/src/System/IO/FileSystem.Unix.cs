@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Enumeration;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
