@@ -89,8 +89,8 @@ static void DetectCiphersuiteConfiguration(void)
     SSL_CTX* ctx = SSL_CTX_new(TLS_method());
     if (ctx == NULL)
     {
-        // Sometimes when OpnenSSL is misconfigured the call above fails on first try.
-        // This gibves it one more chance amnd we bail out if it still fails.
+        // Sometimes when OpenSSL is misconfigured the call above fails on first try.
+        // This gives it one more chance and we bail out if it still fails.
         ctx = SSL_CTX_new(TLS_method());
         if (ctx == NULL)
         {
@@ -149,7 +149,12 @@ static void DetectCiphersuiteConfiguration(void)
             return;
         }
         ssl = SSL_new(ctx);
-        assert(ssl != NULL);
+        if (ssl == NULL)
+        {
+            ERR_clear_error();
+            SSL_CTX_free(ctx);
+            return;
+        }
         allCount = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
         SSL_free(ssl);
         // If the implicit default, "ALL", and "RSA" all have the same cardinality,
