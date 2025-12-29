@@ -424,6 +424,12 @@ namespace System.Buffers
         {
             Debug.Assert(values.Length == 2);
 
+            // Packed implementation requires SSE2 or ARM64 SIMD
+            if (!Sse2.IsSupported && !AdvSimd.Arm64.IsSupported)
+            {
+                return null;
+            }
+
             string value0 = values[0];
             string value1 = values[1];
 
@@ -459,9 +465,16 @@ namespace System.Buffers
             int v0Ch2Offset = CharacterFrequencyHelper.GetSecondCharacterOffset(value0, ignoreCase, minLength);
             int v1Ch2Offset = CharacterFrequencyHelper.GetSecondCharacterOffset(value1, ignoreCase, minLength);
 
+            // Packed implementation requires all anchor characters to be packable (fit in a byte with certain constraints)
+            if (!CanUsePackedImpl(value0[0]) || !CanUsePackedImpl(value0[v0Ch2Offset]) ||
+                !CanUsePackedImpl(value1[0]) || !CanUsePackedImpl(value1[v1Ch2Offset]))
+            {
+                return null;
+            }
+
             if (!ignoreCase)
             {
-                return new TwoStringSearchValuesThreeChars<CaseSensitive>(uniqueValues, value0, value1, v0Ch2Offset, v1Ch2Offset);
+                return new TwoStringSearchValuesPackedThreeChars<CaseSensitive>(uniqueValues, value0, value1, v0Ch2Offset, v1Ch2Offset);
             }
 
             // For case-insensitive search, ensure anchor characters are ASCII
@@ -473,21 +486,27 @@ namespace System.Buffers
 
             if (asciiLettersOnly)
             {
-                return new TwoStringSearchValuesThreeChars<CaseInsensitiveAsciiLetters>(uniqueValues, value0, value1, v0Ch2Offset, v1Ch2Offset);
+                return new TwoStringSearchValuesPackedThreeChars<CaseInsensitiveAsciiLetters>(uniqueValues, value0, value1, v0Ch2Offset, v1Ch2Offset);
             }
 
             if (allAscii)
             {
-                return new TwoStringSearchValuesThreeChars<CaseInsensitiveAscii>(uniqueValues, value0, value1, v0Ch2Offset, v1Ch2Offset);
+                return new TwoStringSearchValuesPackedThreeChars<CaseInsensitiveAscii>(uniqueValues, value0, value1, v0Ch2Offset, v1Ch2Offset);
             }
 
             if (nonAsciiAffectedByCaseConversion)
             {
-                return new TwoStringSearchValuesThreeChars<CaseInsensitiveUnicode>(uniqueValues, value0, value1, v0Ch2Offset, v1Ch2Offset);
+                return new TwoStringSearchValuesPackedThreeChars<CaseInsensitiveUnicode>(uniqueValues, value0, value1, v0Ch2Offset, v1Ch2Offset);
             }
 
-            return new TwoStringSearchValuesThreeChars<CaseInsensitiveAscii>(uniqueValues, value0, value1, v0Ch2Offset, v1Ch2Offset);
+            return new TwoStringSearchValuesPackedThreeChars<CaseInsensitiveAscii>(uniqueValues, value0, value1, v0Ch2Offset, v1Ch2Offset);
         }
+
+        // Unlike with PackedSpanHelpers (Sse2 only), we are also using this approach on ARM64.
+        // We use PackUnsignedSaturate on X86 and UnzipEven on ARM, so the set of allowed characters differs slightly (we can't use it for \0 and \xFF on X86).
+        private static bool CanUsePackedImpl(char c) =>
+            PackedSpanHelpers.PackedIndexOfIsSupported ? PackedSpanHelpers.CanUsePackedIndexOf(c) :
+            (AdvSimd.Arm64.IsSupported && c <= byte.MaxValue);
 
         private static SearchValues<string>? TryCreateSingleValuesThreeChars<TValueLength>(
             string value,
@@ -536,12 +555,6 @@ namespace System.Buffers
             }
 
             return new SingleStringSearchValuesThreeChars<TValueLength, TCaseSensitivity>(uniqueValues, value, ch2Offset, ch3Offset);
-
-            // Unlike with PackedSpanHelpers (Sse2 only), we are also using this approach on ARM64.
-            // We use PackUnsignedSaturate on X86 and UnzipEven on ARM, so the set of allowed characters differs slightly (we can't use it for \0 and \xFF on X86).
-            static bool CanUsePackedImpl(char c) =>
-                PackedSpanHelpers.PackedIndexOfIsSupported ? PackedSpanHelpers.CanUsePackedIndexOf(c) :
-                (AdvSimd.Arm64.IsSupported && c <= byte.MaxValue);
         }
 
         private static void AnalyzeValues(
