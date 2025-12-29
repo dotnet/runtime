@@ -1622,12 +1622,11 @@ GenTree* Compiler::impFoldEnumEquals(GenTreeCall* call)
         return nullptr;
     }
 
-    GenTree*      boxPayloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
-    GenTree*      addr0            = gtNewOperNode(GT_ADD, TYP_BYREF, arg0, boxPayloadOffset);
-    GenTree*      addr1            = gtNewOperNode(GT_ADD, TYP_BYREF, arg1, gtCloneExpr(boxPayloadOffset));
-    GenTreeIndir* unboxArg0        = gtNewIndir(typ, addr0);
-    GenTreeIndir* unboxArg1        = gtNewIndir(typ, addr1);
-    GenTree*      cmpNode          = gtNewOperNode(GT_EQ, TYP_INT, unboxArg0, unboxArg1);
+    // Unbox both integral arguments and compare their underlying values
+    GenTree* offset  = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
+    GenTree* addr0   = gtNewOperNode(GT_ADD, TYP_BYREF, arg0, offset);
+    GenTree* addr1   = gtNewOperNode(GT_ADD, TYP_BYREF, arg1, gtCloneExpr(offset));
+    GenTree* cmpNode = gtNewOperNode(GT_EQ, TYP_INT, gtNewIndir(typ, addr0), gtNewIndir(typ, addr1));
 
     JITDUMP("Optimized Enum.Equals call to comparison of underlying values:\n");
     DISPTREE(cmpNode);
@@ -1637,7 +1636,7 @@ GenTree* Compiler::impFoldEnumEquals(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------
-// impThrowIfNull: Remove redundandant boxing from ArgumentNullException_ThrowIfNull
+// impThrowIfNull: Remove redundant boxing from ArgumentNullException_ThrowIfNull
 //    it is done for Tier0 where we can't remove it without inlining otherwise.
 //
 // Arguments:
