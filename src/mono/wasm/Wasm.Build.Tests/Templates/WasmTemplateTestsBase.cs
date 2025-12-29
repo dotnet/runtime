@@ -310,7 +310,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         }
     }
 
-    protected void UpdateBrowserMainJs(string? targetFramework = null, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
+    protected void UpdateBrowserMainJs(string? targetFramework = null, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath, bool forwardConsole = false)
     {
         targetFramework ??= DefaultTargetFramework;
         string mainJsPath = Path.Combine(_projectDir, "wwwroot", "main.js");
@@ -321,7 +321,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             mainJsContent,
             ".create()",
             (targetFrameworkVersion.Major >= 8)
-                    ? ".withConfig({ appendElementOnExit: true, logExitCode: true, exitOnUnhandledError: true }).create()"
+                    ? $".withConfig({{ forwardConsole: {forwardConsole.ToString().ToLowerInvariant()}, appendElementOnExit: true, logExitCode: true, exitOnUnhandledError: true }}).create()"
                     : ".withConfig({ appendElementOnExit: true, logExitCode: true }).create()"
             );
 
