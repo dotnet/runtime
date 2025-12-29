@@ -83,6 +83,8 @@ function logExitCode(exitCode: number): void {
         : undefined;
     if (config.forwardConsole) {
         teardownProxyConsole(message);
+    } else if (message) {
+        dotnetLogger.info(message);
     }
 }
 
