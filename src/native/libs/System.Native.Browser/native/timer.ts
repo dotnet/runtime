@@ -13,7 +13,6 @@ export function SystemJS_ScheduleTimer(shortestDueTimeMs: number): void {
 
     function SystemJS_ScheduleTimerTick(): void {
         DOTNET.lastScheduledTimerId = undefined;
-        maybeExit();
         _SystemJS_ExecuteTimerCallback();
     }
 }
@@ -29,7 +28,6 @@ export function SystemJS_ScheduleBackgroundJob(): void {
 
     function SystemJS_ScheduleBackgroundJobTick(): void {
         DOTNET.lastScheduledThreadPoolId = undefined;
-        maybeExit();
         _SystemJS_ExecuteBackgroundJobCallback();
     }
 }
