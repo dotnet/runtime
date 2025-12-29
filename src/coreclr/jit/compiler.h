@@ -4496,6 +4496,7 @@ public:
                              IL_OFFSET               ilOffset = BAD_IL_OFFSET);
 
     bool impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset);
+    GenTree* impFoldEnumEquals(GenTreeCall* call);
 
     enum class GDVProbeType
     {
