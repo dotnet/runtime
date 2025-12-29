@@ -120,16 +120,22 @@ namespace System.Buffers
                 while (true)
                 {
                     ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector512<byte>.Count);
-                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector512<byte>.Count + (int)(v0Ch2ByteOffset / sizeof(char)));
-                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector512<byte>.Count + (int)(v1Ch2ByteOffset / sizeof(char)));
 
-                    Vector512<byte> result = GetComparisonResult(
-                        ref searchSpace, v0Ch2ByteOffset, v1Ch2ByteOffset,
-                        v0Ch1Vec, v0Ch2Vec, v1Ch1Vec, v1Ch2Vec);
+                    // Early exit: first check if either first character matches
+                    Vector512<byte> result = GetFirstCharComparisonResult(ref searchSpace, v0Ch1Vec, v1Ch1Vec);
 
                     if (result != Vector512<byte>.Zero)
                     {
-                        goto CandidateFound512;
+                        // At least one first char matched - now check the second characters
+                        ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector512<byte>.Count + (int)(v0Ch2ByteOffset / sizeof(char)));
+                        ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector512<byte>.Count + (int)(v1Ch2ByteOffset / sizeof(char)));
+
+                        result = GetComparisonResult(ref searchSpace, v0Ch2ByteOffset, v1Ch2ByteOffset, v0Ch1Vec, v0Ch2Vec, v1Ch1Vec, v1Ch2Vec);
+
+                        if (result != Vector512<byte>.Zero)
+                        {
+                            goto CandidateFound512;
+                        }
                     }
 
                 LoopFooter512:
@@ -167,16 +173,22 @@ namespace System.Buffers
                 while (true)
                 {
                     ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector256<byte>.Count);
-                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector256<byte>.Count + (int)(v0Ch2ByteOffset / sizeof(char)));
-                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector256<byte>.Count + (int)(v1Ch2ByteOffset / sizeof(char)));
 
-                    Vector256<byte> result = GetComparisonResult(
-                        ref searchSpace, v0Ch2ByteOffset, v1Ch2ByteOffset,
-                        v0Ch1Vec, v0Ch2Vec, v1Ch1Vec, v1Ch2Vec);
+                    // Early exit: first check if either first character matches
+                    Vector256<byte> result = GetFirstCharComparisonResult(ref searchSpace, v0Ch1Vec, v1Ch1Vec);
 
                     if (result != Vector256<byte>.Zero)
                     {
-                        goto CandidateFound256;
+                        // At least one first char matched - now check the second characters
+                        ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector256<byte>.Count + (int)(v0Ch2ByteOffset / sizeof(char)));
+                        ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector256<byte>.Count + (int)(v1Ch2ByteOffset / sizeof(char)));
+
+                        result = GetComparisonResult(ref searchSpace, v0Ch2ByteOffset, v1Ch2ByteOffset, v0Ch1Vec, v0Ch2Vec, v1Ch1Vec, v1Ch2Vec);
+
+                        if (result != Vector256<byte>.Zero)
+                        {
+                            goto CandidateFound256;
+                        }
                     }
 
                 LoopFooter256:
@@ -214,16 +226,22 @@ namespace System.Buffers
                 while (true)
                 {
                     ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector128<byte>.Count);
-                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector128<byte>.Count + (int)(v0Ch2ByteOffset / sizeof(char)));
-                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector128<byte>.Count + (int)(v1Ch2ByteOffset / sizeof(char)));
 
-                    Vector128<byte> result = GetComparisonResult(
-                        ref searchSpace, v0Ch2ByteOffset, v1Ch2ByteOffset,
-                        v0Ch1Vec, v0Ch2Vec, v1Ch1Vec, v1Ch2Vec);
+                    // Early exit: first check if either first character matches
+                    Vector128<byte> result = GetFirstCharComparisonResult(ref searchSpace, v0Ch1Vec, v1Ch1Vec);
 
                     if (result != Vector128<byte>.Zero)
                     {
-                        goto CandidateFound128;
+                        // At least one first char matched - now check the second characters
+                        ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector128<byte>.Count + (int)(v0Ch2ByteOffset / sizeof(char)));
+                        ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector128<byte>.Count + (int)(v1Ch2ByteOffset / sizeof(char)));
+
+                        result = GetComparisonResult(ref searchSpace, v0Ch2ByteOffset, v1Ch2ByteOffset, v0Ch1Vec, v0Ch2Vec, v1Ch1Vec, v1Ch2Vec);
+
+                        if (result != Vector128<byte>.Zero)
+                        {
+                            goto CandidateFound128;
+                        }
                     }
 
                 LoopFooter128:
@@ -264,6 +282,58 @@ namespace System.Buffers
             }
 
             return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        private static Vector128<byte> GetFirstCharComparisonResult(
+            ref char searchSpace,
+            Vector128<byte> v0Ch1, Vector128<byte> v1Ch1)
+        {
+            Vector128<byte> input0 = LoadPacked128(ref searchSpace, 0);
+
+            if (typeof(TCaseSensitivity) != typeof(CaseSensitive))
+            {
+                input0 &= Vector128.Create(CaseConversionMask);
+            }
+
+            // Return true if either first character matches
+            return Vector128.Equals(v0Ch1, input0) | Vector128.Equals(v1Ch1, input0);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
+        private static Vector256<byte> GetFirstCharComparisonResult(
+            ref char searchSpace,
+            Vector256<byte> v0Ch1, Vector256<byte> v1Ch1)
+        {
+            Vector256<byte> input0 = LoadPacked256(ref searchSpace, 0);
+
+            if (typeof(TCaseSensitivity) != typeof(CaseSensitive))
+            {
+                input0 &= Vector256.Create(CaseConversionMask);
+            }
+
+            // Return true if either first character matches
+            return Vector256.Equals(v0Ch1, input0) | Vector256.Equals(v1Ch1, input0);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx512BW))]
+        private static Vector512<byte> GetFirstCharComparisonResult(
+            ref char searchSpace,
+            Vector512<byte> v0Ch1, Vector512<byte> v1Ch1)
+        {
+            Vector512<byte> input0 = LoadPacked512(ref searchSpace, 0);
+
+            if (typeof(TCaseSensitivity) != typeof(CaseSensitive))
+            {
+                input0 &= Vector512.Create(CaseConversionMask);
+            }
+
+            // Return true if either first character matches
+            return Vector512.Equals(v0Ch1, input0) | Vector512.Equals(v1Ch1, input0);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
