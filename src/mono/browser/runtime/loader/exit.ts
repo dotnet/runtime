@@ -243,6 +243,7 @@ function abort_promises (reason: any) {
     }
 }
 
+// https://github.com/dotnet/xharness/blob/799df8d4c86ff50c83b7a57df9e3691eeab813ec/src/Microsoft.DotNet.XHarness.CLI/Commands/WASM/Browser/WasmBrowserTestRunner.cs#L122-L141
 function appendElementOnExit (exit_code: number) {
     if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER && loaderHelpers.config && loaderHelpers.config.appendElementOnExit && document) {
         //Tell xharness WasmBrowserTestRunner what was the exit code

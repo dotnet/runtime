@@ -86,6 +86,7 @@ function logExitCode(exitCode: number): void {
     }
 }
 
+// https://github.com/dotnet/xharness/blob/799df8d4c86ff50c83b7a57df9e3691eeab813ec/src/Microsoft.DotNet.XHarness.CLI/Commands/WASM/Browser/WasmBrowserTestRunner.cs#L122-L141
 function appendElementOnExit(exitCode: number): void {
     //Tell xharness WasmBrowserTestRunner what was the exit code
     const tests_done_elem = document.createElement("label");

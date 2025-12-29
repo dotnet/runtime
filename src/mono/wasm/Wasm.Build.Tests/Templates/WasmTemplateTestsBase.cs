@@ -321,8 +321,8 @@ public class WasmTemplateTestsBase : BuildTestBase
             mainJsContent,
             ".create()",
             (targetFrameworkVersion.Major >= 8)
-                    ? ".withConfig({ forwardConsole: true, appendElementOnExit: true, logExitCode: true, exitOnUnhandledError: true }).create()"
-                    : ".withConfig({ forwardConsole: true, appendElementOnExit: true, logExitCode: true }).create()"
+                    ? ".withConfig({ appendElementOnExit: true, logExitCode: true, exitOnUnhandledError: true }).create()"
+                    : ".withConfig({ appendElementOnExit: true, logExitCode: true }).create()"
             );
 
         if (targetFrameworkVersion.Major >= 11)
