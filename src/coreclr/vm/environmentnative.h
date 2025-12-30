@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
-// File: System.h
+// File: EnvironmentNative.h
 //
 
 //
-// Purpose: Native methods on System.System
+// Purpose: Native methods on System.Environment
 //
 
-#ifndef _SYSTEM_H_
-#define _SYSTEM_H_
+#ifndef _ENVIRONMENT_NATIVE_H_
+#define _ENVIRONMENT_NATIVE_H_
 
 #include "fcall.h"
 #include "qcall.h"
@@ -60,5 +60,5 @@ extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHa
 
 extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString);
 
-#endif // _SYSTEM_H_
+#endif // _ENVIRONMENT_NATIVE_H_
 

@@ -320,6 +320,7 @@ set(VM_SOURCES_WKS
     eecontract.cpp
     eepolicy.cpp
     eetoprofinterfaceimpl.cpp
+    environmentnative.cpp
     eventpipeinternal.cpp
     fcall.cpp
     fieldmarshaler.cpp
@@ -374,7 +375,6 @@ set(VM_SOURCES_WKS
     stubhelpers.cpp
     syncclean.cpp
     synch.cpp
-    system.cpp
     tailcallhelp.cpp
     threadsuspend.cpp
     typeparse.cpp
@@ -438,6 +438,7 @@ set(VM_HEADERS_WKS
     eeprofinterfaces.inl
     eetoprofinterfaceimpl.h
     eetoprofinterfaceimpl.inl
+    environmentnative.h
     eventpipeadapter.h
     eventpipeadaptertypes.h
     eventpipeinternal.h
@@ -486,7 +487,6 @@ set(VM_HEADERS_WKS
     stubhelpers.h
     syncclean.hpp
     synch.h
-    system.h
     tailcallhelp.h
     tieredcompilation.h
     threadsuspend.h

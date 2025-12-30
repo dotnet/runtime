@@ -19,7 +19,7 @@
 #include "commodule.h"
 #include "marshalnative.h"
 #include "nativelibrarynative.h"
-#include "system.h"
+#include "environmentnative.h"
 #include "comutilnative.h"
 #include "comsynchronizable.h"
 #include "floatdouble.h"

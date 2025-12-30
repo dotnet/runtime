@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
-// File: System.cpp
+// File: EnvironmentNative.cpp
 //
 
 //
-// Purpose: Native methods on System.Environment & Array
+// Purpose: Native methods on System.Environment
 //
 
 //
@@ -20,7 +20,7 @@
 #include "frames.h"
 #include "vars.hpp"
 #include "classnames.h"
-#include "system.h"
+#include "environmentnative.h"
 #include "string.h"
 #include "sstring.h"
 #include "eeconfig.h"
