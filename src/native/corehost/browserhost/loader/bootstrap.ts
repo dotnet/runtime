@@ -61,7 +61,8 @@ function isPathAbsolute(path: string): boolean {
 export function makeURLAbsoluteWithApplicationBase(url: string) {
     dotnetAssert.check(typeof url === "string", "url must be a string");
     if (!isPathAbsolute(url) && url.indexOf("./") !== 0 && url.indexOf("../") !== 0 && globalThis.URL && globalThis.document && globalThis.document.baseURI) {
-        url = (new URL(url, globalThis.document.baseURI)).toString();
+        const absoluteUrl = new URL(url, globalThis.document.baseURI);
+        return absoluteUrl.href;
     }
     return url;
 }
@@ -81,6 +82,7 @@ export function isNodeHosted(): boolean {
     return argScript === importScript;
 }
 
+// Finds resources when running in NodeJS environment without explicit configuration
 export async function findResources(dotnet: DotnetHostBuilder): Promise<void> {
     if (!ENVIRONMENT_IS_NODE) {
         return;

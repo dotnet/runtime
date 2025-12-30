@@ -118,9 +118,7 @@ export async function runMain(mainAssemblyName?: string, args?: string[]): Promi
         }
         const mainAssemblyNamePtr = dotnetBrowserUtilsExports.stringToUTF8Ptr(mainAssemblyName) as any;
 
-        if (!args) {
-            args = [];
-        }
+        args ??= [];
 
         const sp = Module.stackSave();
         const argsvPtr: number = Module.stackAlloc((args.length + 1) * 4) as any;
