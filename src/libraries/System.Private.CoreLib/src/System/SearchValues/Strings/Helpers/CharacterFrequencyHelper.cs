@@ -178,7 +178,9 @@ namespace System.Buffers
             Debug.Assert(maxOffset >= 2 && maxOffset <= Math.Min(value0.Length, value1.Length));
 
             float minCombinedFrequency = float.MaxValue;
-            int bestOffset = 1; // Default to offset 1
+            // Default to the last valid offset within range (same as single-string case when no ASCII chars found).
+            // This provides better filtering by using a character further from position 0.
+            int bestOffset = maxOffset - 1;
 
             // Search for the offset with lowest combined frequency across both values
             for (int i = 1; i < maxOffset; i++)
