@@ -1305,6 +1305,10 @@ int LinearScan::BuildCall(GenTreeCall* call)
             // Fast tail call - make sure that call target is always computed in volatile registers
             // that will not be restored in the epilog sequence.
             ctrlExprCandidates = RBM_INT_CALLEE_TRASH.GetIntRegSet();
+            if (compiler->getNeedsGSSecurityCookie())
+            {
+                ctrlExprCandidates &= ~compiler->codeGen->genGetGSCookieTempRegs(/* tailCall */ true).GetIntRegSet();
+            }
         }
 #ifdef TARGET_X86
         else if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT) &&
@@ -2838,6 +2842,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 // get a tmp register for overflow check
                 buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
+
+                if (!compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                {
+                    // If AVX is not supported, we need to specifically allocate XMM0 because we will eventually
+                    // generate a pblendvpd, which requires XMM0 specifically for the mask register.
+                    buildInternalFloatRegisterDefForNode(intrinsicTree,
+                                                         compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
+                                                             ? lowSIMDRegs()
+                                                             : SRBM_XMM0);
+                }
                 setInternalRegsDelayFree = true;
 
                 buildUses = false;

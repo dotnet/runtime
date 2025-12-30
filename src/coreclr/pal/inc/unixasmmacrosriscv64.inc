@@ -376,3 +376,11 @@ C_FUNC(\Name):
 0:
 #endif
 .endm
+
+#include <riscv64/InlineTls.inc>
+
+// Inlined version of RhpGetThread
+.macro INLINE_GETTHREAD target
+    INLINE_GET_TLS_VAR \target, C_FUNC(t_CurrentThreadInfo)
+    ld \target, OFFSETOF__ThreadLocalInfo__m_pThread(\target)
+.endm

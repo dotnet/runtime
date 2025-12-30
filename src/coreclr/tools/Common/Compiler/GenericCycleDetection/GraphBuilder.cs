@@ -174,7 +174,7 @@ namespace ILCompiler
                     {
                         try
                         {
-                            var ecmaType = (EcmaType)assembly.GetObject(typeHandle);
+                            var ecmaType = assembly.GetType(typeHandle);
                             WalkAncestorTypes(ecmaType);
                         }
                         catch (TypeSystemException)
@@ -198,7 +198,7 @@ namespace ILCompiler
                         {
                             try
                             {
-                                var ecmaMethod = (EcmaMethod)assembly.GetObject(methodHandle);
+                                var ecmaMethod = assembly.GetMethod(methodHandle);
                                 WalkMethod(ecmaMethod);
 
                                 if (ecmaMethod.IsVirtual)
@@ -218,7 +218,7 @@ namespace ILCompiler
                         {
                             try
                             {
-                                var ecmaField = (EcmaField)assembly.GetObject(fieldHandle);
+                                var ecmaField = assembly.GetField(fieldHandle);
 
                                 if (typeContext.IsNull)
                                 {

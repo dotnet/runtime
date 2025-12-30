@@ -51,7 +51,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 {
                     // If the address is in the cold part, the relative offset is the size of the
                     // hot part plus the offset from the address to the start of the cold part
-                    uint hotSize = _runtimeFunctions.GetFunctionLength(function);
+                    uint hotSize = _runtimeFunctions.GetFunctionLength(imageBase, function);
                     relativeOffset = new TargetNUInt(hotSize + addr - coldStart);
                 }
             }

@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using Xunit;
 
@@ -305,6 +306,56 @@ namespace System.DirectoryServices.Protocols.Tests
             var connection = new LdapConnection("server");
             connection.Dispose();
             connection.Dispose();
+        }
+
+        [Fact]
+        public void NetworkTimeout_Initialization_DoesNotThrow()
+        {
+            var connection = new LdapConnection("server")
+            {
+                Timeout = TimeSpan.FromSeconds(10)
+            };
+
+            Assert.Equal(TimeSpan.FromSeconds(10), connection.Timeout);
+            connection.Dispose();
+        }
+
+        [Fact]
+        public void NetworkTimeout_ZeroTimeout_DoesNotThrow()
+        {
+            var connection = new LdapConnection("server")
+            {
+                Timeout = TimeSpan.Zero
+            };
+
+            Assert.Equal(TimeSpan.Zero, connection.Timeout);
+            connection.Dispose();
+        }
+
+        [Fact]
+        public void NetworkTimeout_UnreachableServer_ThrowsTimeoutException()
+        {
+            // Use TEST-NET-1 address (192.0.2.x) which is reserved for documentation and testing
+            // and guaranteed to be unreachable, causing the connection to timeout
+            const string unreachableServer = "192.0.2.1";
+            var connection = new LdapConnection(unreachableServer)
+            {
+                Timeout = TimeSpan.FromSeconds(2) // Short timeout to make test faster
+            };
+
+            try
+            {
+                // Attempt to bind should timeout due to unreachable server
+                var ex = Assert.ThrowsAny<Exception>(() => connection.Bind());
+                
+                // The exact exception type may vary by platform but should indicate a timeout/connection failure
+                Assert.True(ex is LdapException or TimeoutException or SocketException,
+                    $"Expected LdapException, TimeoutException, or SocketException but got {ex.GetType().Name}");
+            }
+            finally
+            {
+                connection.Dispose();
+            }
         }
 
         public class CustomAsyncResult : IAsyncResult

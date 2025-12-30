@@ -177,15 +177,12 @@ namespace System.Linq
 
             public override bool Contains(TResult value)
             {
-                // Avoid checking for IList when size-optimized because it keeps IList
-                // implementations which may otherwise be trimmed. Since List<T> implements
-                // IList and List<T> is popular, this could potentially be a lot of code.
-                if (!IsSizeOptimized &&
-                    !typeof(TResult).IsValueType && // don't box TResult
-                    _source is IList list)
-                {
-                    return list.Contains(value);
-                }
+                // It is tempting to delegate here to IList.Contains if _source is IList (especially
+                // if TResult is not a value type, as it would be boxed as an argument to Contains).
+                // And while that will be correct in most cases, if any of the items in the source
+                // compares equally with value but is not actually of type TResult, doing so would
+                // skip the type check implied by OfType<TResult>(). Further, if IList is a multidim
+                // array, its IList.Contains will fail for non-1 ranks. We thus just iterate directly.
 
                 foreach (object? item in _source)
                 {

@@ -705,6 +705,7 @@ public class ComVisibleServer
     /// </summary>
     /// <returns></returns>
     [Fact]
+    [Xunit.SkipOnCoreClrAttribute("Depends on marshalled calli", RuntimeTestModes.InterpreterActive)]
     public static void RunComVisibleTests()
     {
         int fooSuccessVal = 0;
@@ -1003,6 +1004,7 @@ public class ComVisibleServer
     }
 
     [Fact]
+    [Xunit.SkipOnCoreClrAttribute("Depends on marshalled calli", RuntimeTestModes.InterpreterActive)]
     public static void RunTestsInALC()
     {
         TestLibrary.Utilities.ExecuteAndUnload(typeof(ComVisibleServer).Assembly.Location, nameof(ComVisibleServer), nameof(RunComVisibleTests));

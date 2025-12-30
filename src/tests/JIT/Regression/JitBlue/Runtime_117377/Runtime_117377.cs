@@ -11,6 +11,9 @@
 //     File: D:\a\_work\1\s\src\coreclr\jit\simd.h Line: 1142
 //
 
+
+namespace Runtime_117377;
+
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using Xunit;

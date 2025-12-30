@@ -331,23 +331,17 @@ bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTes
 }
 
 //----------------------------------------------------------------------------------
-// optExtractInitTestIncr:
-//      Extract the "init", "test" and "incr" nodes of the loop.
+// optExtractTestIncr:
+//      Extract the "test" and "incr" nodes of the loop.
 //
 // Arguments:
-//      pInitBlock - [IN/OUT] *pInitBlock is the loop head block on entry, and is set to the initBlock on exit,
-//                   if `**ppInit` is non-null.
 //      cond       - A BBJ_COND block that exits the loop
-//      header     - Loop header block
-//      ppInit     - [out] The init stmt of the loop if found.
 //      ppTest     - [out] The test stmt of the loop if found.
 //      ppIncr     - [out] The incr stmt of the loop if found.
 //
 //  Return Value:
-//      The results are put in "ppInit", "ppTest" and "ppIncr" if the method
+//      The results are put in "ppTest" and "ppIncr" if the method
 //      returns true. Returns false if the information can't be extracted.
-//      Extracting the `init` is optional; if one is not found, *ppInit is set
-//      to nullptr. Return value will never be false if `init` is not found.
 //
 //  Operation:
 //      Check if the "test" stmt is last stmt in an exiting BBJ_COND block of the loop. Try to find the "incr" stmt.
@@ -357,11 +351,8 @@ bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTes
 //      This method just retrieves what it thinks is the "test" node,
 //      the callers are expected to verify that "iterVar" is used in the test.
 //
-bool Compiler::optExtractInitTestIncr(
-    BasicBlock** pInitBlock, BasicBlock* cond, BasicBlock* header, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr)
+bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** ppIncr)
 {
-    assert(pInitBlock != nullptr);
-    assert(ppInit != nullptr);
     assert(ppTest != nullptr);
     assert(ppIncr != nullptr);
 
@@ -395,57 +386,6 @@ bool Compiler::optExtractInitTestIncr(
     }
 
     assert(testStmt != incrStmt);
-
-    // Find the last statement in the loop pre-header which we expect to be the initialization of
-    // the loop iterator.
-    BasicBlock* initBlock = *pInitBlock;
-    Statement*  phdrStmt  = initBlock->firstStmt();
-    if (phdrStmt == nullptr)
-    {
-        // When we build the loops, we canonicalize by introducing loop pre-headers for all loops.
-        // If we are rebuilding the loops, we would already have the pre-header block introduced
-        // the first time, which might be empty if no hoisting has yet occurred. In this case, look a
-        // little harder for the possible loop initialization statement.
-        if (initBlock->KindIs(BBJ_ALWAYS) && initBlock->TargetIs(header))
-        {
-            BasicBlock* uniquePred = initBlock->GetUniquePred(this);
-            if (uniquePred != nullptr)
-            {
-                initBlock = uniquePred;
-                phdrStmt  = initBlock->firstStmt();
-            }
-        }
-    }
-
-    if (phdrStmt != nullptr)
-    {
-        Statement* initStmt = phdrStmt->GetPrevStmt();
-        noway_assert(initStmt != nullptr && (initStmt->GetNextStmt() == nullptr));
-
-        // If it is a duplicated loop condition, skip it.
-        if (initStmt->GetRootNode()->OperIs(GT_JTRUE))
-        {
-            bool doGetPrev = true;
-            if (opts.optRepeat)
-            {
-                // Previous optimization passes may have inserted compiler-generated
-                // statements other than duplicated loop conditions.
-                doGetPrev = (initStmt->GetPrevStmt() != nullptr);
-            }
-            if (doGetPrev)
-            {
-                initStmt = initStmt->GetPrevStmt();
-            }
-            noway_assert(initStmt != nullptr);
-        }
-
-        *ppInit     = initStmt->GetRootNode();
-        *pInitBlock = initBlock;
-    }
-    else
-    {
-        *ppInit = nullptr;
-    }
 
     *ppTest = testStmt->GetRootNode();
     *ppIncr = incrStmt->GetRootNode();
@@ -1895,6 +1835,18 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         JITDUMP("No loop-inversion for " FMT_LP " since the preheader " FMT_BB " and exit " FMT_BB
                 " are in different EH regions\n",
                 loop->GetIndex(), preheader->bbNum, exit->bbNum);
+        return false;
+    }
+
+    // There may be multiple exits, and one of the other exits may also be a
+    // latch. That latch could be preferable to leave (for example because it
+    // is an IV test).
+    NaturalLoopIterInfo iterInfo;
+    if (loop->AnalyzeIteration(&iterInfo) &&
+        (iterInfo.TestBlock->TrueTargetIs(loop->GetHeader()) != iterInfo.TestBlock->FalseTargetIs(loop->GetHeader())))
+    {
+        // Test block is both a latch and exit, so the loop is already inverted in a preferable way.
+        JITDUMP("No loop-inversion for " FMT_LP " since it is already inverted (with an IV test)\n", loop->GetIndex());
         return false;
     }
 

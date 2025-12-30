@@ -9074,73 +9074,73 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svst1_scatter_[s64]offset[_f64](svbool_t pg, float64_t *base, svint64_t offsets, svfloat64_t data)
         ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
         /// </summary>
-        public static unsafe void ScatterWithByteOffsets(Vector<double> mask, double* address, Vector<long> offsets, Vector<double> data) => Scatter(mask, address, offsets, data);
+        public static unsafe void ScatterWithByteOffsets(Vector<double> mask, double* address, Vector<long> offsets, Vector<double> data) => ScatterWithByteOffsets(mask, address, offsets, data);
 
         /// <summary>
         /// void svst1_scatter_[u64]offset[_f64](svbool_t pg, float64_t *base, svuint64_t offsets, svfloat64_t data)
         ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
         /// </summary>
-        public static unsafe void ScatterWithByteOffsets(Vector<double> mask, double* address, Vector<ulong> offsets, Vector<double> data) => Scatter(mask, address, offsets, data);
+        public static unsafe void ScatterWithByteOffsets(Vector<double> mask, double* address, Vector<ulong> offsets, Vector<double> data) => ScatterWithByteOffsets(mask, address, offsets, data);
 
         /// <summary>
         /// void svst1_scatter_[s32]offset[_s32](svbool_t pg, int32_t *base, svint32_t offsets, svint32_t data)
         ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
         /// </summary>
-        public static unsafe void ScatterWithByteOffsets(Vector<int> mask, int* address, Vector<int> offsets, Vector<int> data) => Scatter(mask, address, offsets, data);
+        public static unsafe void ScatterWithByteOffsets(Vector<int> mask, int* address, Vector<int> offsets, Vector<int> data) => ScatterWithByteOffsets(mask, address, offsets, data);
 
         /// <summary>
         /// void svst1_scatter_[u32]offset[_s32](svbool_t pg, int32_t *base, svuint32_t offsets, svint32_t data)
         ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
         /// </summary>
-        public static unsafe void ScatterWithByteOffsets(Vector<int> mask, int* address, Vector<uint> offsets, Vector<int> data) => Scatter(mask, address, offsets, data);
+        public static unsafe void ScatterWithByteOffsets(Vector<int> mask, int* address, Vector<uint> offsets, Vector<int> data) => ScatterWithByteOffsets(mask, address, offsets, data);
 
         /// <summary>
         /// void svst1_scatter_[s64]offset[_s64](svbool_t pg, int64_t *base, svint64_t offsets, svint64_t data)
         ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
         /// </summary>
-        public static unsafe void ScatterWithByteOffsets(Vector<long> mask, long* address, Vector<long> offsets, Vector<long> data) => Scatter(mask, address, offsets, data);
+        public static unsafe void ScatterWithByteOffsets(Vector<long> mask, long* address, Vector<long> offsets, Vector<long> data) => ScatterWithByteOffsets(mask, address, offsets, data);
 
         /// <summary>
         /// void svst1_scatter_[u64]offset[_s64](svbool_t pg, int64_t *base, svuint64_t offsets, svint64_t data)
         ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
         /// </summary>
-        public static unsafe void ScatterWithByteOffsets(Vector<long> mask, long* address, Vector<ulong> offsets, Vector<long> data) => Scatter(mask, address, offsets, data);
+        public static unsafe void ScatterWithByteOffsets(Vector<long> mask, long* address, Vector<ulong> offsets, Vector<long> data) => ScatterWithByteOffsets(mask, address, offsets, data);
 
         /// <summary>
         /// void svst1_scatter_[s32]offset[_f32](svbool_t pg, float32_t *base, svint32_t offsets, svfloat32_t data)
         ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
         /// </summary>
-        public static unsafe void ScatterWithByteOffsets(Vector<float> mask, float* address, Vector<int> offsets, Vector<float> data) => Scatter(mask, address, offsets, data);
+        public static unsafe void ScatterWithByteOffsets(Vector<float> mask, float* address, Vector<int> offsets, Vector<float> data) => ScatterWithByteOffsets(mask, address, offsets, data);
 
         /// <summary>
         /// void svst1_scatter_[u32]offset[_f32](svbool_t pg, float32_t *base, svuint32_t offsets, svfloat32_t data)
         ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
         /// </summary>
-        public static unsafe void ScatterWithByteOffsets(Vector<float> mask, float* address, Vector<uint> offsets, Vector<float> data) => Scatter(mask, address, offsets, data);
+        public static unsafe void ScatterWithByteOffsets(Vector<float> mask, float* address, Vector<uint> offsets, Vector<float> data) => ScatterWithByteOffsets(mask, address, offsets, data);
 
         /// <summary>
         /// void svst1_scatter_[s32]offset[_u32](svbool_t pg, uint32_t *base, svint32_t offsets, svuint32_t data)
         ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
         /// </summary>
-        public static unsafe void ScatterWithByteOffsets(Vector<uint> mask, uint* address, Vector<int> offsets, Vector<uint> data) => Scatter(mask, address, offsets, data);
+        public static unsafe void ScatterWithByteOffsets(Vector<uint> mask, uint* address, Vector<int> offsets, Vector<uint> data) => ScatterWithByteOffsets(mask, address, offsets, data);
 
         /// <summary>
         /// void svst1_scatter_[u32]offset[_u32](svbool_t pg, uint32_t *base, svuint32_t offsets, svuint32_t data)
         ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
         /// </summary>
-        public static unsafe void ScatterWithByteOffsets(Vector<uint> mask, uint* address, Vector<uint> offsets, Vector<uint> data) => Scatter(mask, address, offsets, data);
+        public static unsafe void ScatterWithByteOffsets(Vector<uint> mask, uint* address, Vector<uint> offsets, Vector<uint> data) => ScatterWithByteOffsets(mask, address, offsets, data);
 
         /// <summary>
         /// void svst1_scatter_[s64]offset[_u64](svbool_t pg, uint64_t *base, svint64_t offsets, svuint64_t data)
         ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
         /// </summary>
-        public static unsafe void ScatterWithByteOffsets(Vector<ulong> mask, ulong* address, Vector<long> offsets, Vector<ulong> data) => Scatter(mask, address, offsets, data);
+        public static unsafe void ScatterWithByteOffsets(Vector<ulong> mask, ulong* address, Vector<long> offsets, Vector<ulong> data) => ScatterWithByteOffsets(mask, address, offsets, data);
 
         /// <summary>
         /// void svst1_scatter_[u64]offset[_u64](svbool_t pg, uint64_t *base, svuint64_t offsets, svuint64_t data)
         ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
         /// </summary>
-        public static unsafe void ScatterWithByteOffsets(Vector<ulong> mask, ulong* address, Vector<ulong> offsets, Vector<ulong> data) => Scatter(mask, address, offsets, data);
+        public static unsafe void ScatterWithByteOffsets(Vector<ulong> mask, ulong* address, Vector<ulong> offsets, Vector<ulong> data) => ScatterWithByteOffsets(mask, address, offsets, data);
 
 
         // Write to the first-fault register

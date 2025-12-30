@@ -591,9 +591,9 @@ protected:
 #endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-#if !defined(TARGET_X86) || defined(TARGET_UNIX)
+#if (!defined(TARGET_X86) || defined(TARGET_UNIX)) && !defined(TARGET_WASM)
     static void UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP);
-#endif // !TARGET_X86 || TARGET_UNIX
+#endif // (!TARGET_X86 || TARGET_UNIX) && !TARGET_WASM
 #endif // DACCESS_COMPILE
 
 #if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
@@ -1917,12 +1917,33 @@ public:
         return m_Next;
     }
 
+    PTR_VOID GetOSStackLocation()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+#ifdef FEATURE_INTERPRETER
+        return m_osStackLocation;
+#else
+        return dac_cast<PTR_VOID>(this);
+#endif
+    }
+
+#ifdef FEATURE_INTERPRETER
+    void SetOSStackLocation(PTR_VOID osStackLocation)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        m_osStackLocation = osStackLocation;
+    }
+#endif
+
 private:
     PTR_GCFrame   m_Next;
     PTR_Thread    m_pCurThread;
     PTR_OBJECTREF m_pObjRefs;
     UINT          m_numObjRefs;
     BOOL          m_MaybeInterior;
+#ifdef FEATURE_INTERPRETER
+    PTR_VOID      m_osStackLocation;
+#endif
 };
 
 //-----------------------------------------------------------------------------
@@ -2211,9 +2232,9 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-#if !defined(TARGET_X86) || defined(TARGET_UNIX)
+#if (!defined(TARGET_X86) || defined(TARGET_UNIX)) && !defined(TARGET_WASM)
     void UpdateFloatingPointRegisters(const PREGDISPLAY pRD);
-#endif // !TARGET_X86 || TARGET_UNIX
+#endif // (!TARGET_X86 || TARGET_UNIX) && !TARGET_WASM
 #endif // DACCESS_COMPILE
 
 #ifdef FEATURE_INTERPRETER
@@ -2457,6 +2478,7 @@ public:
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
         , m_SSP(0)
 #endif
+        , m_continuation(NULL)
     {
         WRAPPER_NO_CONTRACT;
         Push();
@@ -2507,6 +2529,7 @@ public:
     }
 #endif // HOST_AMD64 && HOST_WINDOWS
 
+#ifndef TARGET_WASM
     void SetInterpExecMethodSP(TADDR sp)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2518,6 +2541,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_SP;
     }
+#endif // TARGET_WASM
 
     void SetIsFaulting(bool isFaulting)
     {
@@ -2525,6 +2549,28 @@ public:
         m_isFaulting = isFaulting;
     }
 
+    void GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
+    {
+        fn(dac_cast<PTR_PTR_Object>(dac_cast<TADDR>(&m_continuation)), sc, 0);
+    }
+
+    void SetContinuation(OBJECTREF continuation)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_continuation = OBJECTREFToObject(continuation);
+    }
+
+    OBJECTREF GetContinuation()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return ObjectToOBJECTREF(m_continuation);
+    }
+
+    PTR_PTR_Object GetContinuationPtr()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return dac_cast<PTR_PTR_Object>(dac_cast<TADDR>(&m_continuation));
+    }
 private:
     // The last known topmost interpreter frame in the InterpExecMethod belonging to
     // this InterpreterFrame.
@@ -2535,7 +2581,10 @@ private:
     // Saved SSP of the InterpExecMethod for resuming after catch into interpreter frames.
     TADDR m_SSP;
 #endif // HOST_AMD64 && HOST_WINDOWS
+#ifndef TARGET_WASM
     TADDR m_SP;
+#endif // TARGET_WASM
+    PTR_Object m_continuation;
 };
 
 #endif // FEATURE_INTERPRETER

@@ -28,7 +28,7 @@ namespace ILLink.Shared.TrimAnalysis
         private readonly ReflectionMarker _reflectionMarker;
         private ILOpcode _operation;
         private readonly MethodDesc _callingMethod;
-        private readonly string _reason;
+        private readonly MethodDesc _reason;
 
         public HandleCallAction(
             FlowAnnotations annotations,
@@ -36,7 +36,7 @@ namespace ILLink.Shared.TrimAnalysis
             ReflectionMarker reflectionMarker,
             in DiagnosticContext diagnosticContext,
             MethodDesc callingMethod,
-            string reason)
+            MethodDesc reason)
         {
             _reflectionMarker = reflectionMarker;
             _operation = operation;
@@ -657,13 +657,13 @@ namespace ILLink.Shared.TrimAnalysis
 
         private partial IEnumerable<SystemReflectionMethodBaseValue> GetMethodsOnTypeHierarchy(TypeProxy type, string name, BindingFlags? bindingFlags)
         {
-            foreach (var method in type.Type.GetMethodsOnTypeHierarchy(m => m.Name == name, bindingFlags))
+            foreach (var method in type.Type.GetMethodsOnTypeHierarchy(m => m.Name.StringEquals(name), bindingFlags))
                 yield return new SystemReflectionMethodBaseValue(new MethodProxy(method));
         }
 
         private partial IEnumerable<SystemTypeValue> GetNestedTypesOnType(TypeProxy type, string name, BindingFlags? bindingFlags)
         {
-            foreach (var nestedType in type.Type.GetNestedTypesOnType(t => t.Name == name, bindingFlags))
+            foreach (var nestedType in type.Type.GetNestedTypesOnType(t => t.Name.StringEquals(name), bindingFlags))
                 yield return new SystemTypeValue(new TypeProxy(nestedType));
         }
 
@@ -712,7 +712,7 @@ namespace ILLink.Shared.TrimAnalysis
             => _reflectionMarker.MarkEventsOnTypeHierarchy(_diagnosticContext.Origin, type.Type, e => e.Name == name, _reason, bindingFlags);
 
         private partial void MarkFieldsOnTypeHierarchy(TypeProxy type, string name, BindingFlags? bindingFlags)
-            => _reflectionMarker.MarkFieldsOnTypeHierarchy(_diagnosticContext.Origin, type.Type, f => f.Name == name, _reason, bindingFlags);
+            => _reflectionMarker.MarkFieldsOnTypeHierarchy(_diagnosticContext.Origin, type.Type, f => f.Name.StringEquals(name), _reason, bindingFlags);
 
         private partial void MarkPropertiesOnTypeHierarchy(TypeProxy type, string name, BindingFlags? bindingFlags)
             => _reflectionMarker.MarkPropertiesOnTypeHierarchy(_diagnosticContext.Origin, type.Type, p => p.Name == name, _reason, bindingFlags);

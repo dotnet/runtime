@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace Runtime_81356;
+
 using Xunit;
 public class Runtime_81356
 {

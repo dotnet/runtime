@@ -255,13 +255,17 @@ namespace Mono.Linker.Steps
             InitializeCorelibAttributeXml();
             Context.Pipeline.InitializeMarkHandlers(Context, MarkContext);
 
-            if (Annotations.GetEntryPointAssembly() is AssemblyDefinition entryPoint)
+            // Check for TypeMappingEntryAssembly override
+            AssemblyDefinition? startingAssembly = null;
+            if (Context.TypeMapEntryAssembly is not null)
             {
-                _typeMapHandler = new TypeMapHandler(entryPoint);
+                var assemblyName = AssemblyNameReference.Parse(Context.TypeMapEntryAssembly);
+                startingAssembly = Context.TryResolve(assemblyName);
             }
+            // If resolution fails, fall back to entry point assembly
+            startingAssembly ??= Annotations.GetEntryPointAssembly();
 
-            _typeMapHandler.Initialize(Context, this);
-
+            _typeMapHandler.Initialize(Context, this, startingAssembly);
             ProcessMarkedPending();
         }
 
@@ -1458,7 +1462,7 @@ namespace Mono.Linker.Steps
             return !Annotations.SetProcessed(provider);
         }
 
-        protected virtual void MarkAssembly(AssemblyDefinition assembly, DependencyInfo reason, MessageOrigin origin)
+        public void MarkAssembly(AssemblyDefinition assembly, DependencyInfo reason, MessageOrigin origin)
         {
             Annotations.Mark(assembly, reason, origin);
             if (CheckProcessed(assembly))

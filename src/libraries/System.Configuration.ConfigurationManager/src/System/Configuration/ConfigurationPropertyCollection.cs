@@ -58,7 +58,7 @@ namespace System.Configuration
 
         public void Add(ConfigurationProperty property)
         {
-            if (Contains(property.Name) != true) _items.Add(property);
+            if (!Contains(property.Name)) _items.Add(property);
         }
 
         public bool Remove(string name)

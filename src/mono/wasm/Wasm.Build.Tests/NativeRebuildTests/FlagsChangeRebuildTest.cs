@@ -52,10 +52,9 @@ namespace Wasm.Build.NativeRebuild.Tests
             // cflags: pinvoke get's compiled, but doesn't overwrite pinvoke.o
             // and thus doesn't cause relinking
             TestUtils.AssertSubstring("pinvoke.c -> pinvoke.o", output, contains: extraCFlags.Length > 0);
-            
+
             // ldflags: link step args change, so it should trigger relink
-            TestUtils.AssertSubstring("Linking with emcc", output, contains: extraLDFlags.Length > 0);
-            
+            TestUtils.AssertSubstring("Linking with emcc", output, contains: !dotnetNativeFilesUnchanged);
             if (aot)
             {
                 // ExtraEmccLDFlags does not affect .bc files

@@ -232,7 +232,7 @@ EXTERN_C CODE_LOCATION RhpCheckedXchgAVLocation2;
 
 static bool InWriteBarrierHelper(uintptr_t faultingIP)
 {
-#ifndef USE_PORTABLE_HELPERS
+#ifndef FEATURE_PORTABLE_HELPERS
     static uintptr_t writeBarrierAVLocations[] =
     {
         (uintptr_t)&RhpAssignRefAVLocation,
@@ -271,7 +271,7 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
         if (writeBarrierAVLocations[i] == faultingIP)
             return true;
     }
-#endif // USE_PORTABLE_HELPERS
+#endif // FEATURE_PORTABLE_HELPERS
 
     return false;
 }
@@ -287,7 +287,7 @@ EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation64;
 
 static bool InInterfaceDispatchHelper(uintptr_t faultingIP)
 {
-#ifndef USE_PORTABLE_HELPERS
+#ifndef FEATURE_PORTABLE_HELPERS
     static uintptr_t interfaceDispatchAVLocations[] =
     {
         (uintptr_t)&RhpInitialInterfaceDispatch,
@@ -312,7 +312,7 @@ static bool InInterfaceDispatchHelper(uintptr_t faultingIP)
         if (interfaceDispatchAVLocations[i] == faultingIP)
             return true;
     }
-#endif // USE_PORTABLE_HELPERS
+#endif // FEATURE_PORTABLE_HELPERS
 
     return false;
 }

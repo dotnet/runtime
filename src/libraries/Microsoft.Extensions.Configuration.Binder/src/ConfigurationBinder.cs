@@ -503,20 +503,19 @@ namespace Microsoft.Extensions.Configuration
                         throw new InvalidOperationException(SR.Format(SR.Error_FailedBinding, configValue, section.Path, type));
                     }
                 }
-                else
+                else if (!bindingPoint.IsReadOnly && bindingPoint.Value is null)
                 {
-                    if (isParentCollection && bindingPoint.Value is null)
+                    if (isParentCollection)
                     {
                         // Try to create the default instance of the type
                         bindingPoint.TrySetValue(CreateInstance(type, config, options, out _));
                     }
-                    else if (isConfigurationExist && bindingPoint.Value is null)
+                    else if (isConfigurationExist)
                     {
-                        // Don't override the existing array in bindingPoint.Value if it is already set.
-                        if (type.IsArray || IsImmutableArrayCompatibleInterface(type))
+                        if (type.IsArray || IsIEnumerableInterface(type))
                         {
                             // When having configuration value set to empty string, we create an empty array
-                            bindingPoint.TrySetValue(configValue is null ? null : Array.CreateInstance(type.GetElementType()!, 0));
+                            bindingPoint.TrySetValue(configValue is null ? null : Array.CreateInstance(type.IsArray ? type.GetElementType()! : type.GetGenericArguments()[0], 0));
                         }
                         else
                         {
@@ -1055,6 +1054,9 @@ namespace Microsoft.Extensions.Configuration
                 || genericTypeDefinition == typeof(IReadOnlyCollection<>)
                 || genericTypeDefinition == typeof(IReadOnlyList<>);
         }
+
+        private static bool IsIEnumerableInterface(Type type)
+            => type.IsInterface && type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>);
 
         private static bool TypeIsASetInterface(Type type)
         {

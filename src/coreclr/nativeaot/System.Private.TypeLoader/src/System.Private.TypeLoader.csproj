@@ -23,6 +23,9 @@
     <Compile Include="$(AotCommonPath)\Internal\Runtime\MethodTable.cs">
       <Link>MethodTable.cs</Link>
     </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\Internal\VersionResilientHashCode.cs">
+      <Link>TypeSystem\Common\VersionResilientHashCode.cs</Link>
+    </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\MethodTable.Constants.cs">
       <Link>MethodTable.Constants.cs</Link>
     </Compile>
@@ -200,6 +203,9 @@
     </Compile>
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Utilities\TypeNameFormatter.cs">
       <Link>TypeNameFormatter.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\VersionResilientHashCode.TypeSystem.cs">
+      <Link>TypeSystem\Common\VersionResilientHashCode.TypeSystem.cs</Link>
     </Compile>
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\VirtualMethodAlgorithm.cs">
       <Link>Internal\TypeSystem\VirtualMethodAlgorithm.cs</Link>

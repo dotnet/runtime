@@ -173,10 +173,10 @@ namespace System.Diagnostics.Eventing.Reader
                 do
                 {
                     string s = NativeWrapper.EvtNextPublisherId(ProviderEnum, ref finish);
-                    if (finish == false)
+                    if (!finish)
                         namesList.Add(s);
                 }
-                while (finish == false);
+                while (!finish);
 
                 return namesList;
             }
@@ -193,10 +193,10 @@ namespace System.Diagnostics.Eventing.Reader
                 do
                 {
                     string s = NativeWrapper.EvtNextChannelPath(channelEnum, ref finish);
-                    if (finish == false)
+                    if (!finish)
                         namesList.Add(s);
                 }
-                while (finish == false);
+                while (!finish);
 
                 return namesList;
             }
@@ -225,7 +225,7 @@ namespace System.Diagnostics.Eventing.Reader
                 PathType.FilePath => UnsafeNativeMethods.EvtExportLogFlags.EvtExportLogFilePath,
                 _ => throw new ArgumentOutOfRangeException(nameof(pathType)),
             };
-            if (tolerateQueryErrors == false)
+            if (!tolerateQueryErrors)
                 NativeWrapper.EvtExportLog(this.Handle, path, query, targetFilePath, (int)flag);
             else
                 NativeWrapper.EvtExportLog(this.Handle, path, query, targetFilePath, (int)flag | (int)UnsafeNativeMethods.EvtExportLogFlags.EvtExportLogTolerateQueryErrors);

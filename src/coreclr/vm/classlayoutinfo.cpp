@@ -607,6 +607,35 @@ ULONG EEClassLayoutInfo::InitializeExplicitFieldLayout(
     return SetInstanceBytesSize(managedSize);
 }
 
+ULONG EEClassLayoutInfo::InitializeCStructFieldLayout(
+    FieldDesc* pFields,
+    MethodTable** pByValueClassCache,
+    ULONG cFields
+)
+{
+    STANDARD_VM_CONTRACT;
+
+    SetLayoutType(LayoutType::CStruct);
+
+    NewArrayHolder<LayoutRawFieldInfo> pInfoArray = new LayoutRawFieldInfo[cFields + 1];
+    UINT32 numInstanceFields;
+    BYTE fieldsAlignmentRequirement;
+    InitializeLayoutFieldInfoArray(pFields, cFields, pByValueClassCache, DEFAULT_PACKING_SIZE, pInfoArray, &numInstanceFields, &fieldsAlignmentRequirement);
+
+    BYTE alignmentRequirement = max<BYTE>(1, fieldsAlignmentRequirement);
+
+    SetAlignmentRequirement(alignmentRequirement);
+    SetPackingSize(DEFAULT_PACKING_SIZE);
+
+    UINT32 lastFieldEnd = CalculateOffsetsForSequentialLayout(pInfoArray, numInstanceFields, 0, DEFAULT_PACKING_SIZE);
+
+    SetFieldOffsets(pFields, cFields, pInfoArray, numInstanceFields);
+
+    UINT32 managedSize = AlignSize(lastFieldEnd, alignmentRequirement);
+
+    return SetInstanceBytesSize(managedSize);
+}
+
 namespace
 {
     #ifdef UNIX_AMD64_ABI

@@ -43,9 +43,6 @@ public class GenerateWasmBootJson : Task
     public string DebugLevel { get; set; }
 
     [Required]
-    public bool LinkerEnabled { get; set; }
-
-    [Required]
     public bool CacheBootResources { get; set; }
 
     public bool LoadFullICUData { get; set; }
@@ -134,14 +131,10 @@ public class GenerateWasmBootJson : Task
                 if (CacheBootResources)
                     result.cacheBootResources = CacheBootResources;
             }
-
-            if (LinkerEnabled)
-                result.linkerEnabled = LinkerEnabled;
         }
         else
         {
             result.cacheBootResources = CacheBootResources;
-            result.linkerEnabled = LinkerEnabled;
             result.config = new();
             result.debugBuild = DebugBuild;
             result.entryAssembly = entryAssemblyName;
@@ -214,7 +207,8 @@ public class GenerateWasmBootJson : Task
                 var assetTraitName = resource.GetMetadata("AssetTraitName");
                 var assetTraitValue = resource.GetMetadata("AssetTraitValue");
                 var resourceName = Path.GetFileName(resource.GetMetadata("OriginalItemSpec"));
-                var resourceRoute = Path.GetFileName(endpointByAsset[resource.ItemSpec].ItemSpec);
+                var resourceEndpoint = endpointByAsset[resource.ItemSpec].ItemSpec;
+                var resourceRoute = Path.GetFileName(resourceEndpoint);
 
                 if (TryGetLazyLoadedAssembly(lazyLoadAssembliesWithoutExtension, resourceName, out var lazyLoad))
                 {
@@ -354,6 +348,16 @@ public class GenerateWasmBootJson : Task
                     AddResourceToList(resource, resourceList, targetPath);
                     continue;
                 }
+                else if (string.Equals("WasmResource", assetTraitName, StringComparison.OrdinalIgnoreCase) && assetTraitValue.StartsWith("vfs:", StringComparison.OrdinalIgnoreCase))
+                {
+                    Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as VFS resource '{1}'.", resource.ItemSpec, assetTraitValue);
+
+                    var targetPath = assetTraitValue.Substring("vfs:".Length).Replace("\\", "/");
+
+                    resourceData.vfs ??= [];
+                    resourceData.vfs[targetPath] = [];
+                    AddResourceToList(resource, resourceData.vfs[targetPath], resourceEndpoint.Replace("\\", "/"));
+                }
                 else
                 {
                     Log.LogMessage(MessageImportance.Low, "Skipping resource '{0}' since it doesn't belong to a defined category.", resource.ItemSpec);
@@ -418,7 +422,6 @@ public class GenerateWasmBootJson : Task
             }
         }
 
-
         if (EnvVariables != null && EnvVariables.Length > 0)
         {
             result.environmentVariables = new Dictionary<string, string>();
@@ -428,6 +431,7 @@ public class GenerateWasmBootJson : Task
                 result.environmentVariables[name] = env.GetMetadata("Value");
             }
         }
+
         if (Extensions != null && Extensions.Length > 0)
         {
             result.extensions = new Dictionary<string, Dictionary<string, object>>();

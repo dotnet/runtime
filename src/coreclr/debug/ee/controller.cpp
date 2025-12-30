@@ -1153,8 +1153,10 @@ void DebuggerController::DeleteAllControllers()
     while (pDebuggerController != NULL)
     {
         pNextDebuggerController = pDebuggerController->m_next;
-        pDebuggerController->DebuggerDetachClean();
-        pDebuggerController->Delete();
+        if (pDebuggerController->DebuggerDetachClean())
+        {
+            pDebuggerController->Delete();
+        }
         pDebuggerController = pNextDebuggerController;
     }
 }
@@ -1216,9 +1218,10 @@ void DebuggerController::Delete()
     }
 }
 
-void DebuggerController::DebuggerDetachClean()
+bool DebuggerController::DebuggerDetachClean()
 {
     //do nothing here
+    return true;
 }
 
 //static
@@ -1499,6 +1502,20 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
             return true;
         }
 
+#ifdef FEATURE_INTERPRETER
+        EECodeInfo codeInfo((PCODE)patch->address);
+        if (codeInfo.IsValid())
+        {
+            IJitManager* pJitManager = codeInfo.GetJitManager();
+            if (pJitManager != NULL && pJitManager == ExecutionManager::GetInterpreterJitManager())
+            {
+                IExecutionControl* pExecControl = pJitManager->GetExecutionControl();
+                _ASSERTE(pExecControl != NULL);
+                return pExecControl->ApplyPatch(patch);
+            }
+        }
+#endif // FEATURE_INTERPRETER
+
 #if _DEBUG
         VerifyExecutableAddress((BYTE*)patch->address);
 #endif
@@ -1611,6 +1628,20 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
             _ASSERTE( !patch->IsActivated() );
             return true;
         }
+
+#ifdef FEATURE_INTERPRETER
+        EECodeInfo codeInfo((PCODE)patch->address);
+        if (codeInfo.IsValid())
+        {
+            IJitManager* pJitManager = codeInfo.GetJitManager();
+            if (pJitManager != NULL && pJitManager == ExecutionManager::GetInterpreterJitManager())
+            {
+                IExecutionControl* pExecControl = pJitManager->GetExecutionControl();
+                _ASSERTE(pExecControl != NULL);
+                return pExecControl->UnapplyPatch(patch);
+            }
+        }
+#endif // FEATURE_INTERPRETER
 
         LPVOID baseAddress = (LPVOID)(patch->address);
 
@@ -2008,8 +2039,8 @@ BOOL DebuggerController::AddBindAndActivateILReplicaPatch(DebuggerControllerPatc
         // causing the patch table to grow and move.
         SIZE_T primaryILOffset = primary->offset;
 
-        // Loop through all the native offsets mapped to the given IL offset.  On x86 the mapping
-        // should be 1:1.  On WIN64, because there are funclets, we have a 1:N mapping.
+        // Loop through all the native offsets mapped to the given IL offset.
+        // It is 1:N mapping due to optimizations like funclet inlining or loop cloning.
         DebuggerJitInfo::ILToNativeOffsetIterator it;
         for (dji->InitILToNativeOffsetIterator(it, primaryILOffset); !it.IsAtEnd(); it.Next())
         {
@@ -4466,9 +4497,9 @@ bool DebuggerController::DispatchNativeException(EXCEPTION_RECORD *pException,
     // so remember the attach state now.
 #ifdef _DEBUG
     bool fWasAttached = false;
-#ifdef DEBUGGING_SUPPORTED
+#if defined(DEBUGGING_SUPPORTED) && !defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
     fWasAttached = (CORDebuggerAttached() != 0);
-#endif //DEBUGGING_SUPPORTED
+#endif //DEBUGGING_SUPPORTED && !OUT_OF_PROCESS_SETTHREADCONTEXT
 #endif //_DEBUG
 
     {
@@ -4574,12 +4605,14 @@ bool DebuggerController::DispatchNativeException(EXCEPTION_RECORD *pException,
                                                        );
             LOG((LF_CORDB, LL_EVERYTHING, "DC::DNE DispatchPatch call returned\n"));
 
+#ifndef OUT_OF_PROCESS_SETTHREADCONTEXT
             // If we detached, we should remove all our breakpoints. So if we try
             // to handle this breakpoint, make sure that we're attached.
             if (IsInUsedAction(result) == true)
             {
                 _ASSERTE(fWasAttached);
             }
+#endif
             break;
 
         case EXCEPTION_SINGLE_STEP:
@@ -4773,7 +4806,7 @@ DebuggerPatchSkip::~DebuggerPatchSkip()
 #endif // !FEATURE_EMULATE_SINGLESTEP
 }
 
-void DebuggerPatchSkip::DebuggerDetachClean()
+bool DebuggerPatchSkip::DebuggerDetachClean()
 {
 // Since for ARM/ARM64 SharedPatchBypassBuffer isn't existed, we don't have to anything here.
 #ifndef FEATURE_EMULATE_SINGLESTEP
@@ -4792,6 +4825,15 @@ void DebuggerPatchSkip::DebuggerDetachClean()
    // 2. Create a "stack walking" implementation for native code and use it to get the current IP and
    // set the IP to the right place.
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    // during detach we need to ensure the context is only being updated out of process
+    bool bUsingOutOfProcEvents = g_pDebugInterface->IsOutOfProcessSetContextEnabled();
+    if (bUsingOutOfProcEvents)
+    {
+        return false;
+    }
+#endif
+
     Thread *thread = GetThreadNULLOk();
     if (thread != NULL)
     {
@@ -4806,6 +4848,8 @@ void DebuggerPatchSkip::DebuggerDetachClean()
         }
     }
 #endif // !FEATURE_EMULATE_SINGLESTEP
+
+    return true;
 }
 
 TP_RESULT DebuggerPatchSkip::TriggerPatch(DebuggerControllerPatch *patch,
@@ -5250,7 +5294,7 @@ bool DebuggerStepper::IsRangeAppropriate(ControllerStackInfo *info)
     }
 
 #if defined(FEATURE_EH_FUNCLETS)
-    // There are three scenarios which make this function more complicated on WIN64.
+    // There are three scenarios which make this function more complicated with funclets.
     // 1)  We initiate a step in the parent method or a funclet but end up stepping into another funclet closer to the leaf.
     //      a)  start in the parent method
     //      b)  start in a funclet
@@ -6304,7 +6348,7 @@ bool DebuggerStepper::IsAddrWithinFrame(DebuggerJitInfo *dji,
     }
 
 #if defined(FEATURE_EH_FUNCLETS)
-    // On WIN64, we also check whether the targetAddr and the currentAddr is in the same funclet.
+    // Also check whether the targetAddr and the currentAddr is in the same funclet.
     _ASSERTE(currentAddr != NULL);
     if (result)
     {
@@ -6851,7 +6895,7 @@ bool DebuggerStepper::SetRangesFromIL(DebuggerJitInfo *dji, COR_DEBUG_STEP_RANGE
         rToEnd  = rTo + realRangeCount;
 
         // <NOTE>
-        // rTo may also be incremented in the middle of the loop on WIN64 platforms.
+        // rTo may also be incremented in the middle of the loop
         // </NOTE>
         for (/**/; r < rEnd; r++, rTo++)
         {

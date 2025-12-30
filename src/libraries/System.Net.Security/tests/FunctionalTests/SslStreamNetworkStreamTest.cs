@@ -1135,6 +1135,11 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task DisableUnusedRsaPadding_Connects(bool clientDisable, bool serverDisable)
         {
+            if (PlatformDetection.IsOpenSslSupported && !PlatformDetection.IsOpenSsl3)
+            {
+                throw new SkipTestException("OpenSSL 3.0 or later is required.");
+            }
+
             (Stream client, Stream server) = TestHelper.GetConnectedTcpStreams();
 
             using SslStream clientSslStream = new SslStream(client);
@@ -1171,6 +1176,11 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task DisableUsedRsaPadding_Throws(bool clientDisable, bool serverDisable)
         {
+            if (PlatformDetection.IsOpenSslSupported && !PlatformDetection.IsOpenSsl3)
+            {
+                throw new SkipTestException("OpenSSL 3.0 or later is required.");
+            }
+
             (Stream client, Stream server) = TestHelper.GetConnectedTcpStreams();
 
             using SslStream clientSslStream = new SslStream(client);

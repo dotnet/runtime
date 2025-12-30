@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/ILAssembler/ILAssembler.csproj" />
+  <Project Path="tests/ILAssembler.Tests/ILAssembler.Tests.csproj" />
+</Solution>

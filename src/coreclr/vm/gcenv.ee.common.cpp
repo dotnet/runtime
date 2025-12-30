@@ -200,13 +200,24 @@ void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags)
     //
     assert((flags & ~(GC_CALL_INTERIOR|GC_CALL_PINNED)) == 0);
 
-    // for interior pointers, we optimize the case in which
-    //  it points into the current threads stack area
-    //
-    if (flags & GC_CALL_INTERIOR)
+    if ((flags & GC_CALL_PINNED) && !pCtx->sc->promotion)
+    {
+        // Do nothing. This is the relocate phase, for something that was pinned. It does not need
+        // to be relocated, and on interpreter builds, where we use conservative reporting in some situations,
+        // we MUST NOT attempt to do promotion here, as the GC is not expecting conservative reporting to report
+        // conservative roots during the relocate phase.
+    }
+    else if (flags & GC_CALL_INTERIOR)
+    {
+        // for interior pointers, we optimize the case in which
+        //  it points into the current threads stack area
+        //
         PromoteCarefully(pCtx->f, ppObj, pCtx->sc, flags);
+    }
     else
+    {
         (pCtx->f)(ppObj, pCtx->sc, flags);
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -259,54 +270,8 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
     // We may have unwound this crawlFrame and thus, shouldn't report the invalid
     // references it may contain.
     fReportGCReferences = pCF->ShouldCrawlframeReportGCReferences();
-
-    Thread *pThread = pCF->GetThread();
-    ExInfo *pExInfo = (ExInfo *)pThread->GetExceptionState()->GetCurrentExceptionTracker();
-
-    if (pCF->ShouldSaveFuncletInfo())
-    {
-        STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "Saving info on funclet at SP: %p, PC: %p, FP: %p\n",
-            GetRegdisplaySP(pCF->GetRegisterSet()), GetControlPC(pCF->GetRegisterSet()), GetFP(pCF->GetRegisterSet()->pCurrentContext));
-
-        _ASSERTE(pExInfo);
-        REGDISPLAY *pRD = pCF->GetRegisterSet();
-        pExInfo->m_lastReportedFunclet.IP = GetControlPC(pRD);
-        pExInfo->m_lastReportedFunclet.FP = GetFP(pRD->pCurrentContext);
-        pExInfo->m_lastReportedFunclet.Flags = pCF->GetCodeManagerFlags();
-    }
-
-    if (pCF->ShouldParentToFuncletReportSavedFuncletSlots())
-    {
-        STRESS_LOG4(LF_GCROOTS, LL_INFO1000, "Reporting slots in funclet parent frame method at SP: %p, PC: %p using original FP: %p, PC: %p\n",
-            GetRegdisplaySP(pCF->GetRegisterSet()), GetControlPC(pCF->GetRegisterSet()), pExInfo->m_lastReportedFunclet.FP, pExInfo->m_lastReportedFunclet.IP);
-
-        _ASSERTE(!pCF->ShouldParentToFuncletUseUnwindTargetLocationForGCReporting());
-        _ASSERTE(pExInfo);
-
-        ICodeManager * pCM = pCF->GetCodeManager();
-        _ASSERTE(pCM != NULL);
-
-        CONTEXT context = {};
-        REGDISPLAY partialRD;
-        SetIP(&context, pExInfo->m_lastReportedFunclet.IP);
-        SetFP(&context, pExInfo->m_lastReportedFunclet.FP);
-        SetSP(&context, 0);
-
-        context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
-        FillRegDisplay(&partialRD, &context);
-
-        EECodeInfo codeInfo(pExInfo->m_lastReportedFunclet.IP);
-        _ASSERTE(codeInfo.IsValid());
-
-        pCM->EnumGcRefs(&partialRD,
-                        &codeInfo,
-                        pExInfo->m_lastReportedFunclet.Flags | ReportFPBasedSlotsOnly,
-                        GcEnumObject,
-                        pData,
-                        NO_OVERRIDE_OFFSET);
-    }
-    else
 #endif // defined(FEATURE_EH_FUNCLETS)
+
     if (fReportGCReferences)
     {
         if (pCF->IsFrameless())

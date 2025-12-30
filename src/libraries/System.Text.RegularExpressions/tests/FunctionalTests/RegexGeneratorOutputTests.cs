@@ -80,7 +80,7 @@ namespace System.Text.RegularExpressions.Tests
                 {
                     /// <remarks>
                     /// Pattern:<br/>
-                    /// <code>^(?&lt;proto&gt;\\w+)://[^/]+?(?&lt;port&gt;:\\d+)?/</code><br/>
+                    /// <code>^(?&lt;proto&gt;\w+)://[^/]+?(?&lt;port&gt;:\d+)?/</code><br/>
                     /// Explanation:<br/>
                     /// <code>
                     /// ○ Match if at the beginning of the string.<br/>
@@ -482,7 +482,7 @@ namespace System.Text.RegularExpressions.Tests
                 {
                     /// <remarks>
                     /// Pattern:<br/>
-                    /// <code>href\\s*=\\s*(?:["'](?&lt;1&gt;[^"']*)["']|(?&lt;1&gt;[^&gt;\\s]+))</code><br/>
+                    /// <code>href\s*=\s*(?:["'](?&lt;1&gt;[^"']*)["']|(?&lt;1&gt;[^&gt;\s]+))</code><br/>
                     /// Explanation:<br/>
                     /// <code>
                     /// ○ Match the string "href".<br/>
@@ -1131,6 +1131,67 @@ namespace System.Text.RegularExpressions.Tests
                 }
                 """
             };
+        }
+
+        [Fact]
+        public async Task Pattern_Should_Not_Be_Double_Escaped_In_Documentation()
+        {
+            string program = """
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [GeneratedRegex(@"\.")]
+                    public static partial Regex DotPattern();
+                }
+                """;
+
+            string actual = await RegexGeneratorHelper.GenerateSourceText(program, allowUnsafe: true, checkOverflow: false);
+            
+            // The pattern should show \. (single backslash) not \\. (double backslash) in the documentation
+            Assert.Contains("/// <code>\\.</code><br/>", actual);
+            Assert.DoesNotContain("/// <code>\\\\.</code><br/>", actual);
+        }
+
+        [Fact]
+        public async Task Pattern_With_Control_Characters_Should_Be_Escaped_For_XML()
+        {
+            string program = """
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [GeneratedRegex("a\0b")]
+                    public static partial Regex NullCharPattern();
+                }
+                """;
+
+            string actual = await RegexGeneratorHelper.GenerateSourceText(program, allowUnsafe: true, checkOverflow: false);
+            
+            // The pattern should escape null characters as Unicode escape sequences for XML safety in the documentation
+            Assert.Contains("/// <code>a\\u0000b</code><br/>", actual);
+            
+            // The actual pattern string (base.pattern assignment) should properly escape the null character for C#
+            Assert.Contains("base.pattern = \"a\\0b\";", actual);
+        }
+
+        [Fact]
+        public async Task Pattern_With_Newline_Should_Be_Escaped_For_XML()
+        {
+            string program = """
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [GeneratedRegex("\n")]
+                    public static partial Regex NewlinePattern();
+                }
+                """;
+
+            string actual = await RegexGeneratorHelper.GenerateSourceText(program, allowUnsafe: true, checkOverflow: false);
+            
+            // The pattern should escape newline as Unicode escape sequence to avoid breaking XML comments
+            Assert.Contains("/// <code>\\u000A</code><br/>", actual);
+            
+            // The actual pattern string should properly escape the newline for C#
+            Assert.Contains("base.pattern = \"\\n\";", actual);
         }
     }
 }
