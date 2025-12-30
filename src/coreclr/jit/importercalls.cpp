@@ -1609,7 +1609,13 @@ GenTree* Compiler::impFoldEnumEquals(GenTreeCall* call)
 
     assert(info.compCompHnd->isEnum(cls1, nullptr) == TypeCompareState::Must);
 
-    var_types typ = JITtype2varType(info.compCompHnd->getTypeForPrimitiveNumericClass(cls1));
+    CorInfoType corTyp = info.compCompHnd->getTypeForPrimitiveNumericClass(cls1);
+    if (corTyp == CORINFO_TYPE_UNDEF)
+    {
+        return nullptr;
+    }
+
+    var_types typ = JITtype2varType(corTyp);
     if (!varTypeIsIntegral(typ))
     {
         // Ignore non-integral enums e.g. enums based on float/double
