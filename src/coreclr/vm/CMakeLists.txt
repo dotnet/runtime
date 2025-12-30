@@ -381,7 +381,6 @@ set(VM_SOURCES_WKS
     unsafeaccessors.cpp
     asyncthunks.cpp
     varargsnative.cpp
-    variant.cpp
     weakreferencenative.cpp
     yieldprocessornormalized.cpp
     ${VM_SOURCES_GDBJIT}
@@ -492,7 +491,6 @@ set(VM_HEADERS_WKS
     threadsuspend.h
     typeparse.h
     varargsnative.h
-    variant.h
     weakreferencenative.h
     ${VM_HEADERS_GDBJIT}
 )

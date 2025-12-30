@@ -180,6 +180,7 @@ public:
     static FCDECL1(UINT64,  GetGenerationSize, int gen);
 
     static FCDECL0(int,     GetMaxGeneration);
+    static FCDECL0(FC_BOOL_RET, IsServerGC);
     static FCDECL1(void,    KeepAlive, Object *obj);
     static FCDECL1(void,    SuppressFinalize, Object *obj);
     static FCDECL2(int,     CollectionCount, INT32 generation, INT32 getSpecialGCCount);

@@ -911,6 +911,20 @@ FCIMPL0(int, GCInterface::GetMaxGeneration)
 }
 FCIMPLEND
 
+/*===============================IsServerGC===============================
+**Action: Returns true if the garbage collector is a server GC
+**Returns: True if server GC, false otherwise
+**Arguments: None
+**Exceptions: None
+==============================================================================*/
+FCIMPL0(FC_BOOL_RET, GCInterface::IsServerGC)
+{
+    FCALL_CONTRACT;
+
+    FC_RETURN_BOOL(GCHeapUtilities::IsServerHeap());
+}
+FCIMPLEND
+
 /*===============================GetAllocatedBytesForCurrentThread===============================
 **Action: Computes the allocated bytes so far on the current thread
 **Returns: The allocated bytes so far on the current thread

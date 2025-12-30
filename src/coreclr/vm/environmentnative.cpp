@@ -191,14 +191,6 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
     END_QCALL;
 }
 
-FCIMPL0(FC_BOOL_RET, SystemNative::IsServerGC)
-{
-    FCALL_CONTRACT;
-
-    FC_RETURN_BOOL(GCHeapUtilities::IsServerHeap());
-}
-FCIMPLEND
-
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
 extern "C" void QCALLTYPE X86BaseCpuId(int cpuInfo[4], int functionId, int subFunctionId)

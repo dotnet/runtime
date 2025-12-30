@@ -300,7 +300,7 @@ FCFuncStart(gGCInterfaceFuncs)
 FCFuncEnd()
 
 FCFuncStart(gGCSettingsFuncs)
-    FCFuncElement("get_IsServerGC", SystemNative::IsServerGC)
+    FCFuncElement("get_IsServerGC", GCInterface::IsServerGC)
     FCFuncElement("GetGCLatencyMode", GCInterface::GetGcLatencyMode)
     FCFuncElement("GetLOHCompactionMode", GCInterface::GetLOHCompactionMode)
     FCFuncElement("SetGCLatencyMode", GCInterface::SetGcLatencyMode)

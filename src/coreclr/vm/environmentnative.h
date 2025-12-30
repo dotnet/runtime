@@ -16,31 +16,10 @@
 
 class SystemNative
 {
-    friend class DebugStackTrace;
-
-private:
-    struct CaptureStackTraceData
-    {
-        // Used for the integer-skip version
-        INT32   skip;
-
-        INT32   cElementsAllocated;
-        INT32   cElements;
-        StackTraceElement* pElements;
-        void*   pStopStack;   // use to limit the crawl
-
-        CaptureStackTraceData() : skip(0), cElementsAllocated(0), cElements(0), pElements(NULL), pStopStack((void*)-1)
-        {
-            LIMITED_METHOD_CONTRACT;
-        }
-    };
-
 public:
     // Functions on the System.Environment class
     static FCDECL1(VOID,SetExitCode,INT32 exitcode);
     static FCDECL0(INT32, GetExitCode);
-
-    static FCDECL0(FC_BOOL_RET, IsServerGC);
 };
 
 extern "C" void QCALLTYPE Environment_Exit(INT32 exitcode);

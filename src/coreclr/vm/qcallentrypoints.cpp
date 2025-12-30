@@ -41,7 +41,7 @@
 #include "mlinfo.h"
 
 #ifdef FEATURE_COMINTEROP
-#include "variant.h"
+#include "olevariant.h"
 #endif // FEATURE_COMINTEROP
 
 #include "interoplibinterface.h"
