@@ -1593,17 +1593,15 @@ GenTree* Compiler::impFoldEnumEquals(GenTreeCall* call)
 {
     assert(call->IsSpecialIntrinsic(this, NI_System_Enum_Equals));
     assert(call->AsCall()->gtArgs.CountUserArgs() == 2);
-
     GenTree* arg0 = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
     GenTree* arg1 = call->AsCall()->gtArgs.GetArgByIndex(1)->GetNode();
 
     bool isArg0Exact;
     bool isArg1Exact;
-    bool isNonNull; // we don't care about this property for both args here
+    bool isNonNull; // Unused here.
 
     CORINFO_CLASS_HANDLE cls0 = gtGetClassHandle(arg0, &isArg0Exact, &isNonNull);
     CORINFO_CLASS_HANDLE cls1 = gtGetClassHandle(arg1, &isArg1Exact, &isNonNull);
-
     if ((cls0 != cls1) || (cls0 == NO_CLASS_HANDLE) || !isArg0Exact || !isArg1Exact)
     {
         return nullptr;
@@ -1623,7 +1621,6 @@ GenTree* Compiler::impFoldEnumEquals(GenTreeCall* call)
     GenTree* addr0   = gtNewOperNode(GT_ADD, TYP_BYREF, arg0, offset);
     GenTree* addr1   = gtNewOperNode(GT_ADD, TYP_BYREF, arg1, gtCloneExpr(offset));
     GenTree* cmpNode = gtNewOperNode(GT_EQ, TYP_INT, gtNewIndir(typ, addr0), gtNewIndir(typ, addr1));
-
     JITDUMP("Optimized Enum.Equals call to comparison of underlying values:\n");
     DISPTREE(cmpNode);
     JITDUMP("\n");
