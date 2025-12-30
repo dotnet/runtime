@@ -331,7 +331,6 @@ set(VM_SOURCES_WKS
     gcenv.ee.cpp
     gcenv.ee.common.cpp
     gchelpers.cpp
-    gchelpersnative.cpp
     genanalysis.cpp
     genmeth.cpp
     hosting.cpp
