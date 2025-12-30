@@ -3110,7 +3110,6 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoJitInfo *jinfo,
 	if (!async) {
 		g_free (ei);
 		g_free (type_info);
-		g_free (unw_info);
 	}
 }
 
