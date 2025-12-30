@@ -320,7 +320,6 @@ set(VM_SOURCES_WKS
     eecontract.cpp
     eepolicy.cpp
     eetoprofinterfaceimpl.cpp
-    environmentnative.cpp
     eventpipeinternal.cpp
     fcall.cpp
     fieldmarshaler.cpp
@@ -436,7 +435,6 @@ set(VM_HEADERS_WKS
     eeprofinterfaces.inl
     eetoprofinterfaceimpl.h
     eetoprofinterfaceimpl.inl
-    environmentnative.h
     eventpipeadapter.h
     eventpipeadaptertypes.h
     eventpipeinternal.h
