@@ -21,9 +21,9 @@ namespace System.Buffers
     /// <remarks>
     /// This implementation packs two consecutive Vector&lt;ushort&gt; inputs into one Vector&lt;byte&gt;,
     /// allowing it to compare 16/32/64 character positions per iteration.
-    /// For each of the two strings, this implementation picks 2 anchor characters (4 total: v0Ch1, v0Ch2, v1Ch1, v1Ch2).
-    /// The inner loop compares vectors for each of these characters at their respective offsets and, when a potential match
-    /// is found, verifies which of the two strings actually matched.
+    /// It uses a shared second character offset for both values (4 comparisons total: v0Ch1, v0Ch2, v1Ch1, v1Ch2),
+    /// but only requires 2 vector loads per iteration (input at offset 0 and input at the shared offset).
+    /// This reduces memory bandwidth compared to using separate offsets per value.
     /// The <c>ThreeChars</c> suffix in the type name is retained for consistency with the single-string variant and to reflect
     /// the algorithm family it belongs to; it does not mean that this type uses three anchor characters per string.
     /// </remarks>
@@ -37,60 +37,52 @@ namespace System.Buffers
         private readonly nint _minusValueTailLength;
         private readonly int _minValueLength;
 
-        // Anchor characters and their offsets for value0 (first character is at offset 0)
-        private readonly nuint _v0Ch2ByteOffset;
+        // First character anchors (at offset 0) for each value
         private readonly byte _v0Ch1;
-        private readonly byte _v0Ch2;
-
-        // Anchor characters and their offsets for value1 (first character is at offset 0)
-        private readonly nuint _v1Ch2ByteOffset;
         private readonly byte _v1Ch1;
+
+        // Second character anchors at shared offset
+        private readonly nuint _ch2ByteOffset;
+        private readonly byte _v0Ch2;
         private readonly byte _v1Ch2;
 
         private static bool IgnoreCase => typeof(TCaseSensitivity) != typeof(CaseSensitive);
 
-        public TwoStringSearchValuesPackedThreeChars(HashSet<string> uniqueValues, string value0, string value1, int v0Ch2Offset, int v1Ch2Offset)
+        public TwoStringSearchValuesPackedThreeChars(HashSet<string> uniqueValues, string value0, string value1, int ch2Offset)
             : base(uniqueValues)
         {
             Debug.Assert(Sse2.IsSupported || AdvSimd.Arm64.IsSupported);
             Debug.Assert(value0.Length > 1);
             Debug.Assert(value1.Length > 1);
-            Debug.Assert(v0Ch2Offset > 0);
-            Debug.Assert(v1Ch2Offset > 0);
-            Debug.Assert(value0[0] <= byte.MaxValue && value0[v0Ch2Offset] <= byte.MaxValue);
-            Debug.Assert(value1[0] <= byte.MaxValue && value1[v1Ch2Offset] <= byte.MaxValue);
+            Debug.Assert(ch2Offset > 0);
+            Debug.Assert(ch2Offset < Math.Min(value0.Length, value1.Length));
+            Debug.Assert(value0[0] <= byte.MaxValue && value0[ch2Offset] <= byte.MaxValue);
+            Debug.Assert(value1[0] <= byte.MaxValue && value1[ch2Offset] <= byte.MaxValue);
 
             _value0 = value0;
             _value1 = value1;
 
-            // Use the shorter value's length for bounds - both ch2 offsets are already
-            // constrained to be within this length, so we can safely read at those offsets.
             int minLength = Math.Min(value0.Length, value1.Length);
             _minValueLength = minLength;
-            int maxCh2Offset = Math.Max(v0Ch2Offset, v1Ch2Offset);
 
-            Debug.Assert(v0Ch2Offset < minLength);
-            Debug.Assert(v1Ch2Offset < minLength);
-
-            // We need to reserve space for reading at offset maxCh2Offset from the starting position,
+            // We need to reserve space for reading at ch2Offset from the starting position,
             // and for verifying the full value (minLength - 1 chars after the starting position for the shorter value)
-            _minusValueTailLength = -Math.Max(minLength - 1, maxCh2Offset);
+            _minusValueTailLength = -Math.Max(minLength - 1, ch2Offset);
 
             _v0Ch1 = (byte)value0[0];
-            _v0Ch2 = (byte)value0[v0Ch2Offset];
             _v1Ch1 = (byte)value1[0];
-            _v1Ch2 = (byte)value1[v1Ch2Offset];
+            _v0Ch2 = (byte)value0[ch2Offset];
+            _v1Ch2 = (byte)value1[ch2Offset];
 
             if (IgnoreCase)
             {
                 _v0Ch1 &= CaseConversionMask;
-                _v0Ch2 &= CaseConversionMask;
                 _v1Ch1 &= CaseConversionMask;
+                _v0Ch2 &= CaseConversionMask;
                 _v1Ch2 &= CaseConversionMask;
             }
 
-            _v0Ch2ByteOffset = (nuint)v0Ch2Offset * sizeof(char);
-            _v1Ch2ByteOffset = (nuint)v1Ch2Offset * sizeof(char);
+            _ch2ByteOffset = (nuint)ch2Offset * sizeof(char);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -104,8 +96,7 @@ namespace System.Buffers
             // Calculate how many positions we can safely search (accounting for max offset needed)
             nint searchSpaceMinusValueTailLength = searchSpaceLength + _minusValueTailLength;
 
-            nuint v0Ch2ByteOffset = _v0Ch2ByteOffset;
-            nuint v1Ch2ByteOffset = _v1Ch2ByteOffset;
+            nuint ch2ByteOffset = _ch2ByteOffset;
 
             // Packed variant processes Vector<byte>.Count characters at a time
             if (Vector512.IsHardwareAccelerated && Avx512BW.IsSupported && searchSpaceMinusValueTailLength - Vector512<byte>.Count >= 0)
@@ -120,22 +111,13 @@ namespace System.Buffers
                 while (true)
                 {
                     ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector512<byte>.Count);
+                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector512<byte>.Count + (int)(ch2ByteOffset / sizeof(char)));
 
-                    // Early exit: first check if either first character matches
-                    Vector512<byte> result = GetFirstCharComparisonResult(ref searchSpace, v0Ch1Vec, v1Ch1Vec);
+                    Vector512<byte> result = GetComparisonResult(ref searchSpace, ch2ByteOffset, v0Ch1Vec, v0Ch2Vec, v1Ch1Vec, v1Ch2Vec);
 
                     if (result != Vector512<byte>.Zero)
                     {
-                        // At least one first char matched - now check the second characters
-                        ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector512<byte>.Count + (int)(v0Ch2ByteOffset / sizeof(char)));
-                        ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector512<byte>.Count + (int)(v1Ch2ByteOffset / sizeof(char)));
-
-                        result = GetComparisonResult(ref searchSpace, v0Ch2ByteOffset, v1Ch2ByteOffset, v0Ch1Vec, v0Ch2Vec, v1Ch1Vec, v1Ch2Vec);
-
-                        if (result != Vector512<byte>.Zero)
-                        {
-                            goto CandidateFound512;
-                        }
+                        goto CandidateFound512;
                     }
 
                 LoopFooter512:
@@ -173,22 +155,13 @@ namespace System.Buffers
                 while (true)
                 {
                     ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector256<byte>.Count);
+                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector256<byte>.Count + (int)(ch2ByteOffset / sizeof(char)));
 
-                    // Early exit: first check if either first character matches
-                    Vector256<byte> result = GetFirstCharComparisonResult(ref searchSpace, v0Ch1Vec, v1Ch1Vec);
+                    Vector256<byte> result = GetComparisonResult(ref searchSpace, ch2ByteOffset, v0Ch1Vec, v0Ch2Vec, v1Ch1Vec, v1Ch2Vec);
 
                     if (result != Vector256<byte>.Zero)
                     {
-                        // At least one first char matched - now check the second characters
-                        ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector256<byte>.Count + (int)(v0Ch2ByteOffset / sizeof(char)));
-                        ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector256<byte>.Count + (int)(v1Ch2ByteOffset / sizeof(char)));
-
-                        result = GetComparisonResult(ref searchSpace, v0Ch2ByteOffset, v1Ch2ByteOffset, v0Ch1Vec, v0Ch2Vec, v1Ch1Vec, v1Ch2Vec);
-
-                        if (result != Vector256<byte>.Zero)
-                        {
-                            goto CandidateFound256;
-                        }
+                        goto CandidateFound256;
                     }
 
                 LoopFooter256:
@@ -226,22 +199,13 @@ namespace System.Buffers
                 while (true)
                 {
                     ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector128<byte>.Count);
+                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector128<byte>.Count + (int)(ch2ByteOffset / sizeof(char)));
 
-                    // Early exit: first check if either first character matches
-                    Vector128<byte> result = GetFirstCharComparisonResult(ref searchSpace, v0Ch1Vec, v1Ch1Vec);
+                    Vector128<byte> result = GetComparisonResult(ref searchSpace, ch2ByteOffset, v0Ch1Vec, v0Ch2Vec, v1Ch1Vec, v1Ch2Vec);
 
                     if (result != Vector128<byte>.Zero)
                     {
-                        // At least one first char matched - now check the second characters
-                        ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector128<byte>.Count + (int)(v0Ch2ByteOffset / sizeof(char)));
-                        ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector128<byte>.Count + (int)(v1Ch2ByteOffset / sizeof(char)));
-
-                        result = GetComparisonResult(ref searchSpace, v0Ch2ByteOffset, v1Ch2ByteOffset, v0Ch1Vec, v0Ch2Vec, v1Ch1Vec, v1Ch2Vec);
-
-                        if (result != Vector128<byte>.Zero)
-                        {
-                            goto CandidateFound128;
-                        }
+                        goto CandidateFound128;
                     }
 
                 LoopFooter128:
@@ -287,78 +251,25 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-        private static Vector128<byte> GetFirstCharComparisonResult(
-            ref char searchSpace,
-            Vector128<byte> v0Ch1, Vector128<byte> v1Ch1)
-        {
-            Vector128<byte> input0 = LoadPacked128(ref searchSpace, 0);
-
-            if (typeof(TCaseSensitivity) != typeof(CaseSensitive))
-            {
-                input0 &= Vector128.Create(CaseConversionMask);
-            }
-
-            // Return true if either first character matches
-            return Vector128.Equals(v0Ch1, input0) | Vector128.Equals(v1Ch1, input0);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Avx2))]
-        private static Vector256<byte> GetFirstCharComparisonResult(
-            ref char searchSpace,
-            Vector256<byte> v0Ch1, Vector256<byte> v1Ch1)
-        {
-            Vector256<byte> input0 = LoadPacked256(ref searchSpace, 0);
-
-            if (typeof(TCaseSensitivity) != typeof(CaseSensitive))
-            {
-                input0 &= Vector256.Create(CaseConversionMask);
-            }
-
-            // Return true if either first character matches
-            return Vector256.Equals(v0Ch1, input0) | Vector256.Equals(v1Ch1, input0);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Avx512BW))]
-        private static Vector512<byte> GetFirstCharComparisonResult(
-            ref char searchSpace,
-            Vector512<byte> v0Ch1, Vector512<byte> v1Ch1)
-        {
-            Vector512<byte> input0 = LoadPacked512(ref searchSpace, 0);
-
-            if (typeof(TCaseSensitivity) != typeof(CaseSensitive))
-            {
-                input0 &= Vector512.Create(CaseConversionMask);
-            }
-
-            // Return true if either first character matches
-            return Vector512.Equals(v0Ch1, input0) | Vector512.Equals(v1Ch1, input0);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Sse2))]
-        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static Vector128<byte> GetComparisonResult(
             ref char searchSpace,
-            nuint v0Ch2ByteOffset, nuint v1Ch2ByteOffset,
+            nuint ch2ByteOffset,
             Vector128<byte> v0Ch1, Vector128<byte> v0Ch2,
             Vector128<byte> v1Ch1, Vector128<byte> v1Ch2)
         {
             if (typeof(TCaseSensitivity) == typeof(CaseSensitive))
             {
-                // Load packed input at position 0 and at anchor offsets
+                // Load packed input at position 0 and at the shared second character offset
                 Vector128<byte> input0 = LoadPacked128(ref searchSpace, 0);
-                Vector128<byte> inputV0Ch2 = LoadPacked128(ref searchSpace, v0Ch2ByteOffset);
-                Vector128<byte> inputV1Ch2 = LoadPacked128(ref searchSpace, v1Ch2ByteOffset);
+                Vector128<byte> inputCh2 = LoadPacked128(ref searchSpace, ch2ByteOffset);
 
                 // Compare first characters of both values
                 Vector128<byte> cmpV0Ch1 = Vector128.Equals(v0Ch1, input0);
                 Vector128<byte> cmpV1Ch1 = Vector128.Equals(v1Ch1, input0);
 
-                // Compare second characters at their respective offsets
-                Vector128<byte> cmpV0Ch2 = Vector128.Equals(v0Ch2, inputV0Ch2);
-                Vector128<byte> cmpV1Ch2 = Vector128.Equals(v1Ch2, inputV1Ch2);
+                // Compare second characters at the shared offset
+                Vector128<byte> cmpV0Ch2 = Vector128.Equals(v0Ch2, inputCh2);
+                Vector128<byte> cmpV1Ch2 = Vector128.Equals(v1Ch2, inputCh2);
 
                 // A position matches if (value0's ch1 AND ch2 match) OR (value1's ch1 AND ch2 match)
                 Vector128<byte> matchV0 = cmpV0Ch1 & cmpV0Ch2;
@@ -370,18 +281,17 @@ namespace System.Buffers
             {
                 Vector128<byte> caseConversion = Vector128.Create(CaseConversionMask);
 
-                // Load packed input at position 0 and at anchor offsets, applying case conversion
+                // Load packed input at position 0 and at the shared second character offset, applying case conversion
                 Vector128<byte> input0 = LoadPacked128(ref searchSpace, 0) & caseConversion;
-                Vector128<byte> inputV0Ch2 = LoadPacked128(ref searchSpace, v0Ch2ByteOffset) & caseConversion;
-                Vector128<byte> inputV1Ch2 = LoadPacked128(ref searchSpace, v1Ch2ByteOffset) & caseConversion;
+                Vector128<byte> inputCh2 = LoadPacked128(ref searchSpace, ch2ByteOffset) & caseConversion;
 
                 // Compare first characters of both values
                 Vector128<byte> cmpV0Ch1 = Vector128.Equals(v0Ch1, input0);
                 Vector128<byte> cmpV1Ch1 = Vector128.Equals(v1Ch1, input0);
 
-                // Compare second characters at their respective offsets
-                Vector128<byte> cmpV0Ch2 = Vector128.Equals(v0Ch2, inputV0Ch2);
-                Vector128<byte> cmpV1Ch2 = Vector128.Equals(v1Ch2, inputV1Ch2);
+                // Compare second characters at the shared offset
+                Vector128<byte> cmpV0Ch2 = Vector128.Equals(v0Ch2, inputCh2);
+                Vector128<byte> cmpV1Ch2 = Vector128.Equals(v1Ch2, inputCh2);
 
                 // A position matches if (value0's ch1 AND ch2 match) OR (value1's ch1 AND ch2 match)
                 Vector128<byte> matchV0 = cmpV0Ch1 & cmpV0Ch2;
@@ -395,20 +305,19 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> GetComparisonResult(
             ref char searchSpace,
-            nuint v0Ch2ByteOffset, nuint v1Ch2ByteOffset,
+            nuint ch2ByteOffset,
             Vector256<byte> v0Ch1, Vector256<byte> v0Ch2,
             Vector256<byte> v1Ch1, Vector256<byte> v1Ch2)
         {
             if (typeof(TCaseSensitivity) == typeof(CaseSensitive))
             {
                 Vector256<byte> input0 = LoadPacked256(ref searchSpace, 0);
-                Vector256<byte> inputV0Ch2 = LoadPacked256(ref searchSpace, v0Ch2ByteOffset);
-                Vector256<byte> inputV1Ch2 = LoadPacked256(ref searchSpace, v1Ch2ByteOffset);
+                Vector256<byte> inputCh2 = LoadPacked256(ref searchSpace, ch2ByteOffset);
 
                 Vector256<byte> cmpV0Ch1 = Vector256.Equals(v0Ch1, input0);
                 Vector256<byte> cmpV1Ch1 = Vector256.Equals(v1Ch1, input0);
-                Vector256<byte> cmpV0Ch2 = Vector256.Equals(v0Ch2, inputV0Ch2);
-                Vector256<byte> cmpV1Ch2 = Vector256.Equals(v1Ch2, inputV1Ch2);
+                Vector256<byte> cmpV0Ch2 = Vector256.Equals(v0Ch2, inputCh2);
+                Vector256<byte> cmpV1Ch2 = Vector256.Equals(v1Ch2, inputCh2);
 
                 Vector256<byte> matchV0 = cmpV0Ch1 & cmpV0Ch2;
                 Vector256<byte> matchV1 = cmpV1Ch1 & cmpV1Ch2;
@@ -420,13 +329,12 @@ namespace System.Buffers
                 Vector256<byte> caseConversion = Vector256.Create(CaseConversionMask);
 
                 Vector256<byte> input0 = LoadPacked256(ref searchSpace, 0) & caseConversion;
-                Vector256<byte> inputV0Ch2 = LoadPacked256(ref searchSpace, v0Ch2ByteOffset) & caseConversion;
-                Vector256<byte> inputV1Ch2 = LoadPacked256(ref searchSpace, v1Ch2ByteOffset) & caseConversion;
+                Vector256<byte> inputCh2 = LoadPacked256(ref searchSpace, ch2ByteOffset) & caseConversion;
 
                 Vector256<byte> cmpV0Ch1 = Vector256.Equals(v0Ch1, input0);
                 Vector256<byte> cmpV1Ch1 = Vector256.Equals(v1Ch1, input0);
-                Vector256<byte> cmpV0Ch2 = Vector256.Equals(v0Ch2, inputV0Ch2);
-                Vector256<byte> cmpV1Ch2 = Vector256.Equals(v1Ch2, inputV1Ch2);
+                Vector256<byte> cmpV0Ch2 = Vector256.Equals(v0Ch2, inputCh2);
+                Vector256<byte> cmpV1Ch2 = Vector256.Equals(v1Ch2, inputCh2);
 
                 Vector256<byte> matchV0 = cmpV0Ch1 & cmpV0Ch2;
                 Vector256<byte> matchV1 = cmpV1Ch1 & cmpV1Ch2;
@@ -439,20 +347,19 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(Avx512BW))]
         private static Vector512<byte> GetComparisonResult(
             ref char searchSpace,
-            nuint v0Ch2ByteOffset, nuint v1Ch2ByteOffset,
+            nuint ch2ByteOffset,
             Vector512<byte> v0Ch1, Vector512<byte> v0Ch2,
             Vector512<byte> v1Ch1, Vector512<byte> v1Ch2)
         {
             if (typeof(TCaseSensitivity) == typeof(CaseSensitive))
             {
                 Vector512<byte> input0 = LoadPacked512(ref searchSpace, 0);
-                Vector512<byte> inputV0Ch2 = LoadPacked512(ref searchSpace, v0Ch2ByteOffset);
-                Vector512<byte> inputV1Ch2 = LoadPacked512(ref searchSpace, v1Ch2ByteOffset);
+                Vector512<byte> inputCh2 = LoadPacked512(ref searchSpace, ch2ByteOffset);
 
                 Vector512<byte> cmpV0Ch1 = Vector512.Equals(v0Ch1, input0);
                 Vector512<byte> cmpV1Ch1 = Vector512.Equals(v1Ch1, input0);
-                Vector512<byte> cmpV0Ch2 = Vector512.Equals(v0Ch2, inputV0Ch2);
-                Vector512<byte> cmpV1Ch2 = Vector512.Equals(v1Ch2, inputV1Ch2);
+                Vector512<byte> cmpV0Ch2 = Vector512.Equals(v0Ch2, inputCh2);
+                Vector512<byte> cmpV1Ch2 = Vector512.Equals(v1Ch2, inputCh2);
 
                 Vector512<byte> matchV0 = cmpV0Ch1 & cmpV0Ch2;
                 Vector512<byte> matchV1 = cmpV1Ch1 & cmpV1Ch2;
@@ -464,13 +371,12 @@ namespace System.Buffers
                 Vector512<byte> caseConversion = Vector512.Create(CaseConversionMask);
 
                 Vector512<byte> input0 = LoadPacked512(ref searchSpace, 0) & caseConversion;
-                Vector512<byte> inputV0Ch2 = LoadPacked512(ref searchSpace, v0Ch2ByteOffset) & caseConversion;
-                Vector512<byte> inputV1Ch2 = LoadPacked512(ref searchSpace, v1Ch2ByteOffset) & caseConversion;
+                Vector512<byte> inputCh2 = LoadPacked512(ref searchSpace, ch2ByteOffset) & caseConversion;
 
                 Vector512<byte> cmpV0Ch1 = Vector512.Equals(v0Ch1, input0);
                 Vector512<byte> cmpV1Ch1 = Vector512.Equals(v1Ch1, input0);
-                Vector512<byte> cmpV0Ch2 = Vector512.Equals(v0Ch2, inputV0Ch2);
-                Vector512<byte> cmpV1Ch2 = Vector512.Equals(v1Ch2, inputV1Ch2);
+                Vector512<byte> cmpV0Ch2 = Vector512.Equals(v0Ch2, inputCh2);
+                Vector512<byte> cmpV1Ch2 = Vector512.Equals(v1Ch2, inputCh2);
 
                 Vector512<byte> matchV0 = cmpV0Ch1 & cmpV0Ch2;
                 Vector512<byte> matchV1 = cmpV1Ch1 & cmpV1Ch2;

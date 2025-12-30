@@ -160,5 +160,64 @@ namespace System.Buffers
 
             return minIndex;
         }
+
+        /// <summary>
+        /// For a two-string search, finds the best shared second character offset that minimizes
+        /// the combined character frequency across both values at that offset.
+        /// This reduces the number of vector loads in the inner loop from 3 to 2.
+        /// </summary>
+        /// <param name="value0">First search string.</param>
+        /// <param name="value1">Second search string.</param>
+        /// <param name="ignoreCase">Whether the search is case-insensitive.</param>
+        /// <param name="maxOffset">The exclusive upper bound for the offset (typically min(value0.Length, value1.Length)).</param>
+        /// <returns>The offset (1 to maxOffset-1) with the lowest combined frequency.</returns>
+        public static int GetSharedSecondCharacterOffset(string value0, string value1, bool ignoreCase, int maxOffset)
+        {
+            Debug.Assert(value0.Length > 1);
+            Debug.Assert(value1.Length > 1);
+            Debug.Assert(maxOffset >= 2 && maxOffset <= Math.Min(value0.Length, value1.Length));
+
+            float minCombinedFrequency = float.MaxValue;
+            int bestOffset = 1; // Default to offset 1
+
+            // Search for the offset with lowest combined frequency across both values
+            for (int i = 1; i < maxOffset; i++)
+            {
+                char c0 = value0[i];
+                char c1 = value1[i];
+
+                // We need both characters at this offset to be ASCII for frequency comparison
+                if (!char.IsAscii(c0) || !char.IsAscii(c1))
+                {
+                    continue;
+                }
+
+                float freq0 = AsciiFrequency[c0];
+                float freq1 = AsciiFrequency[c1];
+
+                if (ignoreCase)
+                {
+                    freq0 += AsciiFrequency[c0 ^ 0x20];
+                    freq1 += AsciiFrequency[c1 ^ 0x20];
+                }
+
+                // Penalize early positions (same as single-value logic)
+                if (i <= 2)
+                {
+                    freq0 *= 1.5f;
+                    freq1 *= 1.5f;
+                }
+
+                float combinedFrequency = freq0 + freq1;
+
+                if (combinedFrequency < minCombinedFrequency)
+                {
+                    minCombinedFrequency = combinedFrequency;
+                    bestOffset = i;
+                }
+            }
+
+            return bestOffset;
+        }
     }
 }

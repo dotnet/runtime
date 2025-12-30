@@ -461,45 +461,45 @@ namespace System.Buffers
                 }
             }
 
-            // Get the optimal second character offset for each value.
-            int v0Ch2Offset = CharacterFrequencyHelper.GetSecondCharacterOffset(value0, ignoreCase, minLength);
-            int v1Ch2Offset = CharacterFrequencyHelper.GetSecondCharacterOffset(value1, ignoreCase, minLength);
+            // Get the shared second character offset with lowest combined frequency across both values.
+            // Using a shared offset reduces vector loads in the inner loop from 3 to 2.
+            int ch2Offset = CharacterFrequencyHelper.GetSharedSecondCharacterOffset(value0, value1, ignoreCase, minLength);
 
             // Packed implementation requires all anchor characters to be packable (fit in a byte with certain constraints)
-            if (!CanUsePackedImpl(value0[0]) || !CanUsePackedImpl(value0[v0Ch2Offset]) ||
-                !CanUsePackedImpl(value1[0]) || !CanUsePackedImpl(value1[v1Ch2Offset]))
+            if (!CanUsePackedImpl(value0[0]) || !CanUsePackedImpl(value0[ch2Offset]) ||
+                !CanUsePackedImpl(value1[0]) || !CanUsePackedImpl(value1[ch2Offset]))
             {
                 return null;
             }
 
             if (!ignoreCase)
             {
-                return new TwoStringSearchValuesPackedThreeChars<CaseSensitive>(uniqueValues, value0, value1, v0Ch2Offset, v1Ch2Offset);
+                return new TwoStringSearchValuesPackedThreeChars<CaseSensitive>(uniqueValues, value0, value1, ch2Offset);
             }
 
             // For case-insensitive search, ensure anchor characters are ASCII
-            if (!char.IsAscii(value0[0]) || !char.IsAscii(value0[v0Ch2Offset]) ||
-                !char.IsAscii(value1[0]) || !char.IsAscii(value1[v1Ch2Offset]))
+            if (!char.IsAscii(value0[0]) || !char.IsAscii(value0[ch2Offset]) ||
+                !char.IsAscii(value1[0]) || !char.IsAscii(value1[ch2Offset]))
             {
                 return null;
             }
 
             if (asciiLettersOnly)
             {
-                return new TwoStringSearchValuesPackedThreeChars<CaseInsensitiveAsciiLetters>(uniqueValues, value0, value1, v0Ch2Offset, v1Ch2Offset);
+                return new TwoStringSearchValuesPackedThreeChars<CaseInsensitiveAsciiLetters>(uniqueValues, value0, value1, ch2Offset);
             }
 
             if (allAscii)
             {
-                return new TwoStringSearchValuesPackedThreeChars<CaseInsensitiveAscii>(uniqueValues, value0, value1, v0Ch2Offset, v1Ch2Offset);
+                return new TwoStringSearchValuesPackedThreeChars<CaseInsensitiveAscii>(uniqueValues, value0, value1, ch2Offset);
             }
 
             if (nonAsciiAffectedByCaseConversion)
             {
-                return new TwoStringSearchValuesPackedThreeChars<CaseInsensitiveUnicode>(uniqueValues, value0, value1, v0Ch2Offset, v1Ch2Offset);
+                return new TwoStringSearchValuesPackedThreeChars<CaseInsensitiveUnicode>(uniqueValues, value0, value1, ch2Offset);
             }
 
-            return new TwoStringSearchValuesPackedThreeChars<CaseInsensitiveAscii>(uniqueValues, value0, value1, v0Ch2Offset, v1Ch2Offset);
+            return new TwoStringSearchValuesPackedThreeChars<CaseInsensitiveAscii>(uniqueValues, value0, value1, ch2Offset);
         }
 
         // Unlike with PackedSpanHelpers (Sse2 only), we are also using this approach on ARM64.
