@@ -12,6 +12,8 @@ typedef struct _EventFilterDescriptor EventFilterDescriptor;
 typedef struct _EventPipeBuffer EventPipeBuffer;
 typedef struct _EventPipeBufferList EventPipeBufferList;
 typedef struct _EventPipeBufferManager EventPipeBufferManager;
+typedef struct _EventPipeBufferManagerEventHeap EventPipeBufferManagerEventHeap;
+typedef struct _EventPipeBufferManagerEventHeapNode EventPipeBufferManagerEventHeapNode;
 typedef struct _EventPipeBlock EventPipeBlock;
 typedef struct _EventPipeBlockVtable EventPipeBlockVtable;
 typedef struct _EventPipeConfiguration EventPipeConfiguration;
