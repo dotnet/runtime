@@ -371,7 +371,7 @@ try {
             break;
     }
 } catch (e) {
-    if (error.name != "ExitStatus") {
+    if (e.name != "ExitStatus") {
         exit(1, e);
     }
 }
