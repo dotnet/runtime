@@ -25,7 +25,6 @@ set(MDRUNTIME_HEADERS
   ../../inc/pedecoder.h
   ../../inc/posterror.h
   ../compiler/regmeta.h
-  ../inc/assemblymdinternaldisp.h
   ../inc/liteweightstgdb.h
   ../inc/mdcolumndescriptors.h
   ../inc/metamodel.h
