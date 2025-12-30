@@ -49,7 +49,7 @@ extern "C" VOID QCALLTYPE Environment_Exit(INT32 exitcode)
     END_QCALL;
 }
 
-FCIMPL1(VOID,SystemNative::SetExitCode,INT32 exitcode)
+FCIMPL1(VOID,EnvironmentNative::SetExitCode,INT32 exitcode)
 {
     FCALL_CONTRACT;
 
@@ -61,7 +61,7 @@ FCIMPL1(VOID,SystemNative::SetExitCode,INT32 exitcode)
 }
 FCIMPLEND
 
-FCIMPL0(INT32, SystemNative::GetExitCode)
+FCIMPL0(INT32, EnvironmentNative::GetExitCode)
 {
     FCALL_CONTRACT;
 

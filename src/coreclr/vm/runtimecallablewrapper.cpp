@@ -37,7 +37,6 @@ class Object;
 #include "typestring.h"
 #include "caparser.h"
 #include "classnames.h"
-#include "objectnative.h"
 #include "finalizerthread.h"
 #include "dynamicinterfacecastable.h"
 

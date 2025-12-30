@@ -69,8 +69,8 @@ FCFuncEnd()
 
 FCFuncStart(gEnvironmentFuncs)
     FCFuncElement("get_CurrentManagedThreadId", JIT_GetCurrentManagedThreadId)
-    FCFuncElement("set_ExitCode", SystemNative::SetExitCode)
-    FCFuncElement("get_ExitCode", SystemNative::GetExitCode)
+    FCFuncElement("set_ExitCode", EnvironmentNative::SetExitCode)
+    FCFuncElement("get_ExitCode", EnvironmentNative::GetExitCode)
 FCFuncEnd()
 
 FCFuncStart(gExceptionFuncs)

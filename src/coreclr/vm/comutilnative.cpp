@@ -565,6 +565,89 @@ FCIMPL3(VOID, Buffer::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byt
 FCIMPLEND
 
 //
+// ObjectNative
+//
+extern "C" INT32 QCALLTYPE ObjectNative_GetHashCodeSlow(QCall::ObjectHandleOnStack objHandle)
+{
+    QCALL_CONTRACT;
+
+    INT32 idx = 0;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    _ASSERTE(objHandle.Get() != NULL);
+    idx = objHandle.Get()->GetHashCodeEx();
+
+    END_QCALL;
+
+    return idx;
+}
+
+FCIMPL1(INT32, ObjectNative::TryGetHashCode, Object* obj)
+{
+    FCALL_CONTRACT;
+
+    if (obj == NULL)
+        return 0;
+
+    OBJECTREF objRef = ObjectToOBJECTREF(obj);
+    return objRef->TryGetHashCode();
+}
+FCIMPLEND
+
+FCIMPL2(FC_BOOL_RET, ObjectNative::ContentEquals, Object *pThisRef, Object *pCompareRef)
+{
+    FCALL_CONTRACT;
+
+    // Should be ensured by caller
+    _ASSERTE(pThisRef != NULL);
+    _ASSERTE(pCompareRef != NULL);
+    _ASSERTE(pThisRef->GetMethodTable() == pCompareRef->GetMethodTable());
+
+    MethodTable *pThisMT = pThisRef->GetMethodTable();
+
+    // Compare the contents
+    BOOL ret = memcmp(
+        pThisRef->GetData(),
+        pCompareRef->GetData(),
+        pThisMT->GetNumInstanceFieldBytes()) == 0;
+
+    FC_RETURN_BOOL(ret);
+}
+FCIMPLEND
+
+extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectHandleOnStack objHandle)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    OBJECTREF refClone = objHandle.Get();
+    _ASSERTE(refClone != NULL); // Should be handled at managed side
+    MethodTable* pMT = refClone->GetMethodTable();
+
+    // assert that String has overloaded the Clone() method
+    _ASSERTE(pMT != g_pStringClass);
+
+    if (pMT->IsArray())
+    {
+        objHandle.Set(DupArrayForCloning((BASEARRAYREF)refClone));
+    }
+    else
+    {
+        // We don't need to call the <cinit> because we know
+        //  that it has been called....(It was called before this was created)
+        objHandle.Set(AllocateObject(pMT));
+    }
+
+    END_QCALL;
+}
+
+//
 // GCInterface
 //
 INT32    GCInterface::m_gc_counts[3] = {0,0,0};

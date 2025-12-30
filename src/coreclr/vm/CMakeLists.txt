@@ -354,7 +354,6 @@ set(VM_SOURCES_WKS
     nativeeventsource.cpp
     nativelibrary.cpp
     nativelibrarynative.cpp
-    objectnative.cpp
     olevariant.cpp
     pendingload.cpp
     pinvokeoverride.cpp
@@ -466,7 +465,6 @@ set(VM_HEADERS_WKS
     multicorejit.h
     multicorejitimpl.h
     nativeeventsource.h
-    objectnative.h
     olevariant.h
     pendingload.h
     profdetach.h

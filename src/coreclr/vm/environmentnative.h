@@ -14,7 +14,7 @@
 #include "fcall.h"
 #include "qcall.h"
 
-class SystemNative
+class EnvironmentNative
 {
 public:
     // Functions on the System.Environment class
