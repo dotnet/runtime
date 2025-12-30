@@ -340,8 +340,10 @@ handle_enum:
 	case MONO_TYPE_I1:
 	case MONO_TYPE_BOOLEAN: {
 		MonoBoolean *bval = (MonoBoolean *)g_malloc (sizeof (MonoBoolean));
-		if (!bcheck_blob (p, 0, boundp, error))
+		if (!bcheck_blob (p, 0, boundp, error)) {
+			g_free (bval);
 			return NULL;
+		}
 		*bval = *p;
 		*end = p + 1;
 		return bval;
@@ -350,8 +352,10 @@ handle_enum:
 	case MONO_TYPE_U2:
 	case MONO_TYPE_I2: {
 		guint16 *val = (guint16 *)g_malloc (sizeof (guint16));
-		if (!bcheck_blob (p, 1, boundp, error))
+		if (!bcheck_blob (p, 1, boundp, error)) {
+			g_free (val);
 			return NULL;
+		}
 		*val = read16 (p);
 		*end = p + 2;
 		return val;
@@ -364,8 +368,10 @@ handle_enum:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_I4: {
 		guint32 *val = (guint32 *)g_malloc (sizeof (guint32));
-		if (!bcheck_blob (p, 3, boundp, error))
+		if (!bcheck_blob (p, 3, boundp, error)) {
+			g_free (val);
 			return NULL;
+		}
 		*val = read32 (p);
 		*end = p + 4;
 		return val;
@@ -377,16 +383,20 @@ handle_enum:
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I8: {
 		guint64 *val = (guint64 *)g_malloc (sizeof (guint64));
-		if (!bcheck_blob (p, 7, boundp, error))
+		if (!bcheck_blob (p, 7, boundp, error)) {
+			g_free (val);
 			return NULL;
+		}
 		*val = read64 (p);
 		*end = p + 8;
 		return val;
 	}
 	case MONO_TYPE_R8: {
 		double *val = (double *)g_malloc (sizeof (double));
-		if (!bcheck_blob (p, 7, boundp, error))
+		if (!bcheck_blob (p, 7, boundp, error)){
+			g_free (val);
 			return NULL;
+		}
 		readr8 (p, val);
 		*end = p + 8;
 		return val;
@@ -668,8 +678,10 @@ handle_enum:
 	case MONO_TYPE_I1:
 	case MONO_TYPE_BOOLEAN: {
 		MonoBoolean *bval = (MonoBoolean *)g_malloc (sizeof (MonoBoolean));
-		if (!bcheck_blob (p, 0, boundp, error))
+		if (!bcheck_blob (p, 0, boundp, error)) {
+			g_free (bval);
 			return NULL;
+		}
 		*bval = *p;
 		*end = p + 1;
 		result->value.primitive = bval;
@@ -679,8 +691,10 @@ handle_enum:
 	case MONO_TYPE_U2:
 	case MONO_TYPE_I2: {
 		guint16 *val = (guint16 *)g_malloc (sizeof (guint16));
-		if (!bcheck_blob (p, 1, boundp, error))
+		if (!bcheck_blob (p, 1, boundp, error)) {
+			g_free (val);
 			return NULL;
+		}
 		*val = read16 (p);
 		*end = p + 2;
 		result->value.primitive = val;
@@ -694,8 +708,10 @@ handle_enum:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_I4: {
 		guint32 *val = (guint32 *)g_malloc (sizeof (guint32));
-		if (!bcheck_blob (p, 3, boundp, error))
+		if (!bcheck_blob (p, 3, boundp, error)) {
+			g_free (val);
 			return NULL;
+		}
 		*val = read32 (p);
 		*end = p + 4;
 		result->value.primitive = val;
@@ -708,8 +724,10 @@ handle_enum:
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I8: {
 		guint64 *val = (guint64 *)g_malloc (sizeof (guint64));
-		if (!bcheck_blob (p, 7, boundp, error))
+		if (!bcheck_blob (p, 7, boundp, error)) {
+			g_free (val);
 			return NULL;
+		}
 		*val = read64 (p);
 		*end = p + 8;
 		result->value.primitive = val;
@@ -717,8 +735,10 @@ handle_enum:
 	}
 	case MONO_TYPE_R8: {
 		double *val = (double *)g_malloc (sizeof (double));
-		if (!bcheck_blob (p, 7, boundp, error))
+		if (!bcheck_blob (p, 7, boundp, error)) {
+			g_free (val);
 			return NULL;
+		}
 		readr8 (p, val);
 		*end = p + 8;
 		result->value.primitive = val;
@@ -1553,7 +1573,8 @@ mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMeth
 	decoded_args->typed_args = g_malloc0 (sig->param_count * sizeof (MonoCustomAttrValue*));
 	for (i = 0; i < sig->param_count; ++i) {
 		decoded_args->typed_args [i] = load_cattr_value_noalloc (image, sig->params [i], p, data_end, &p, error);
-		return_val_if_nok (error, NULL);
+		if (!is_ok (error))
+			goto fail;
 	}
 
 	named = p;
@@ -1566,7 +1587,8 @@ mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMeth
 	decoded_args->named_args_num = num_named;
 	decoded_args->named_args = g_malloc0 (num_named * sizeof (MonoCustomAttrValue*));
 
-	return_val_if_nok (error, NULL);
+	if (!is_ok (error))
+		goto fail;
 	named += 2;
 	attrklass = method->klass;
 
