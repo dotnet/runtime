@@ -1907,6 +1907,7 @@ switch_gc (char* argv[], const char* target_gc)
 #else
 	fprintf (stderr, "Error: --gc=<NAME> option not supported on this platform.\n");
 #endif
+	g_string_free (path, TRUE);
 }
 
 static void
