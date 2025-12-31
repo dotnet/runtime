@@ -481,7 +481,7 @@ static uint32_t g_RhPageSize;
 
 void InitializeOsPageSize()
 {
-    g_RhPageSize = (uint32_t)sysconf(_SC_PAGE_SIZE);
+    g_RhPageSize = (uint32_t)GCToOSInterface::GetPageSize();
 
 #if defined(HOST_AMD64)
     ASSERT(g_RhPageSize == 0x1000);
