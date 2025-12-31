@@ -467,7 +467,7 @@ HANDLES(NATIVEL_4, "LoadFromPath", ves_icall_System_Runtime_InteropServices_Nati
 
 #if defined(TARGET_AMD64)
 ICALL_TYPE(X86BASE, "System.Runtime.Intrinsics.X86.X86Base", X86BASE_1)
-NOHANDLES(ICALL(X86BASE_1, "__cpuidex", ves_icall_System_Runtime_Intrinsics_X86_X86Base___cpuidex))
+NOHANDLES(ICALL(X86BASE_1, "CpuId", ves_icall_System_Runtime_Intrinsics_X86_X86Base_CpuId))
 #endif
 
 ICALL_TYPE(ALC, "System.Runtime.Loader.AssemblyLoadContext", ALC_5)
