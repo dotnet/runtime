@@ -63,7 +63,7 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 #ifndef DACCESS_COMPILE
 
 #ifndef ZeroMemory
-#define ZeroMemory(_dst, _size) memset((_dst), 0, (_size))
+#define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
 #endif
 
 #endif // !DACCESS_COMPILE

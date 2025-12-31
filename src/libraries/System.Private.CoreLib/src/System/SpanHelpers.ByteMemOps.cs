@@ -249,13 +249,13 @@ namespace System
         {
             fixed (byte* pDest = &dest)
             fixed (byte* pSrc = &src)
-                MemmoveInternal(pDest, pSrc, len);
+            {
+                _ = memmove(pDest, pSrc, len);
+            }
         }
 
-#if !MONO
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_MemMove")]
-        private static unsafe partial void MemmoveInternal(byte* dest, byte* src, nuint len);
-#endif
+        [LibraryImport("*", EntryPoint = "memmove")]
+        private static unsafe partial void* memmove(byte* dest, byte* src, nuint len);
 
         [Intrinsic] // Unrolled for small sizes
         public static void ClearWithoutReferences(ref byte dest, nuint len)
@@ -448,16 +448,38 @@ namespace System
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe void ZeroMemoryInternal(ref byte b, nuint byteLength)
         {
-            fixed (byte* bytePointer = &b)
+            fixed (byte* ptr = &b)
             {
-                ZeroMemoryInternal(bytePointer, byteLength);
+                byte* bytePointer = ptr;
+#if TARGET_X86 || TARGET_AMD64
+                if (byteLength > 0x100)
+                {
+                    // memset ends up calling rep stosb if the hardware claims to support it efficiently. rep stosb is up to 2x slower
+                    // on misaligned blocks. Workaround this issue by aligning the blocks passed to memset upfront.
+
+                    *(ulong*)bytePointer = 0;
+                    *((ulong*)bytePointer + 1) = 0;
+                    *((ulong*)bytePointer + 2) = 0;
+                    *((ulong*)bytePointer + 3) = 0;
+
+                    byte* end = bytePointer + byteLength;
+                    *((ulong*)end - 1) = 0;
+                    *((ulong*)end - 2) = 0;
+                    *((ulong*)end - 3) = 0;
+                    *((ulong*)end - 4) = 0;
+
+                    byte* alignedStart = (byte*)(((nuint)bytePointer + 32) & ~(nuint)31);
+                    byte* alignedEnd = (byte*)((nuint)(end - 1) & ~(nuint)31);
+                    byteLength = (nuint)(alignedEnd - alignedStart);
+                    bytePointer = alignedStart;
+                }
+#endif
+                _ = memset(bytePointer, 0, byteLength);
             }
         }
 
-#if !MONO
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_Clear")]
-        private static unsafe partial void ZeroMemoryInternal(void* b, nuint byteLength);
-#endif
+        [LibraryImport("*", EntryPoint = "memset")]
+        private static unsafe partial void* memset(byte* dest, int value, nuint len);
 
         internal static void Fill(ref byte dest, byte value, nuint len)
         {
