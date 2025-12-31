@@ -6,6 +6,7 @@
 
 // Include the GC common header
 #include "../../gc/env/common.h"
+#include <minipal/utils.h>
 #include "../../gc/gcenv.inl"
 
 #include "CommonMacros.h"
