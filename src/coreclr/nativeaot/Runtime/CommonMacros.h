@@ -83,10 +83,6 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 
 #endif // HOST_64BIT
 
-#ifndef OS_PAGE_SIZE
-#define OS_PAGE_SIZE    PalOsPageSize()
-#endif // OS_PAGE_SIZE
-
 #if defined(TARGET_ARM)
 #define THUMB_CODE 1
 #endif
