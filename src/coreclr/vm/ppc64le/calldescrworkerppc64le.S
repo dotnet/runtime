@@ -49,10 +49,10 @@ LOCAL_LABEL(StackAllocationLoop):
     ld %r4, CallDescrData__pSrc(%r11)  // Source address
     li %r5, 0                          // Source offset
     li %r6, 96                        // Destination offset on stack
-    
+    lwa %r0, CallDescrData__numStackSlots(%r11)   
+ 
 LOCAL_LABEL(StackCopyLoop):
     
-    lwa %r0, CallDescrData__numStackSlots(%r11)
     add %r7, %r4, %r5
     ld %r8, 0(%r7)
     add %r9, %r1, %r6

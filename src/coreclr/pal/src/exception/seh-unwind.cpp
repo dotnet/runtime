@@ -167,6 +167,7 @@ enum
 #elif (defined(HOST_UNIX) && defined(HOST_POWERPC64))
 #define ASSIGN_UNWIND_REGS \
     ASSIGN_REG(Nip)        \
+    ASSIGN_REG(R1)	   \
     ASSIGN_REG(R14)        \
     ASSIGN_REG(R15)        \
     ASSIGN_REG(R16)        \

@@ -1859,6 +1859,8 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 	//TODO POWERPC64
 	// Save incoming arguments to the register save area.
 	sl.EmitSaveArguments(argState.numRegArgs, argState.numFPRegArgSlots);
+	//sl.EmitSaveLR();
+	//sl.EmitCallLabel(sl.NewExternalCodeLabel((LPVOID)InterpreterStubThunkProlog),FALSE,FALSE);
 
 #if INTERP_ILSTUBS
         if (pMD->IsILStub())
@@ -1880,15 +1882,16 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         // First arg is the pointer to the interpMethInfo structure
         sl.EmitLoadImmediate(IntReg(3), reinterpret_cast<UINT64>(interpMethInfo));
 
-        // Place target method func into %r12
-	sl.EmitCallLabel(sl.NewExternalCodeLabel((LPVOID)interpretMethodFunc),FALSE,FALSE);
+        // Place target method func into %r9
+	sl.EmitLoadImmediate(IntReg(9), reinterpret_cast<UINT64>(interpretMethodFunc));
+	//sl.EmitCallLabel(sl.NewExternalCodeLabel((LPVOID)interpretMethodFunc),FALSE,FALSE);
 
         // Use an intermediate thunk to actually call the interpreter method.
         // This is needed since we cannot generate unwind info with the stublinker.
-        //sl.EmitCallLabel(sl.NewExternalCodeLabel((LPVOID)InterpreterStubThunk));
-        
+        sl.EmitCallLabel(sl.NewExternalCodeLabel((LPVOID)InterpreterStubThunk),TRUE,FALSE);
+
 	//Epilog
-	sl.EmitRestoreArguments(IntReg(0), IntReg(1));
+	//sl.EmitRestoreArguments(IntReg(0), IntReg(1));
 
 	//assert(!"unimplemented on PPC64LE yet");
 #else

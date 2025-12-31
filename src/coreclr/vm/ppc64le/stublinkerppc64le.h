@@ -74,7 +74,8 @@ private:
  
      //void EmitCallLabel(CodeLabel *target);
      void EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndirect);
- 
+
+     void EmitSaveLR();
      void EmitSaveArguments(unsigned int cIntRegArgs, unsigned int cFloatRegArgs);
  
      void EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
