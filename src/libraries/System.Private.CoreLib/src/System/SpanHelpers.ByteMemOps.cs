@@ -254,8 +254,11 @@ namespace System
             }
         }
 
+        // Suppress CS3016: Arrays as attribute arguments is not CLS-compliant
+#pragma warning disable CS3016
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memmove")]
         private static unsafe partial void* memmove(byte* dest, byte* src, nuint len);
+#pragma warning restore CS3016
 
         [Intrinsic] // Unrolled for small sizes
         public static void ClearWithoutReferences(ref byte dest, nuint len)
@@ -509,8 +512,11 @@ namespace System
 #endif
         }
 
+        // Suppress CS3016: Arrays as attribute arguments is not CLS-compliant
+#pragma warning disable CS3016
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memset")]
         private static unsafe partial void* memset(byte* dest, int value, nuint len);
+#pragma warning restore CS3016
 
         internal static void Fill(ref byte dest, byte value, nuint len)
         {
