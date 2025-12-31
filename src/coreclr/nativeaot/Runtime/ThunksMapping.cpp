@@ -33,7 +33,7 @@
 static_assert((THUNK_SIZE % 4) == 0, "Thunk stubs size not aligned correctly. This will cause runtime failures.");
 
 // 32 K or OS page
-#define THUNKS_MAP_SIZE (max(0x8000, OS_PAGE_SIZE))
+#define THUNKS_MAP_SIZE (max(0x8000, (int)OS_PAGE_SIZE))
 
 #ifdef TARGET_ARM
 //*****************************************************************************
