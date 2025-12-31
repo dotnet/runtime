@@ -7,42 +7,40 @@ import type { AssertType, EmscriptenModuleInternal, LoggerType, LoaderExports, I
 // which are installed there by libSystem.Native.Browser.Utils.footer.js
 // see also `reserved` in `rollup.config.defines.js`
 declare global {
-    export const dotnetApi: RuntimeAPI;
-    export const dotnetAssert: AssertType;
-    export const dotnetLogger: LoggerType;
-    export const dotnetLoaderExports: LoaderExports;
-    export const dotnetRuntimeExports: RuntimeExports;
-    export const dotnetBrowserUtilsExports: BrowserUtilsExports;
-    export const dotnetUpdateInternals: (internals?: Partial<InternalExchange>, subscriber?: InternalExchangeSubscriber) => void;
-    export const dotnetUpdateInternalsSubscriber: (internals: InternalExchange) => void;
+    const dotnetApi: RuntimeAPI;
+    const dotnetAssert: AssertType;
+    const dotnetLogger: LoggerType;
+    const dotnetLoaderExports: LoaderExports;
+    const dotnetRuntimeExports: RuntimeExports;
+    const dotnetBrowserUtilsExports: BrowserUtilsExports;
+    const dotnetUpdateInternals: (internals?: Partial<InternalExchange>, subscriber?: InternalExchangeSubscriber) => void;
+    const dotnetUpdateInternalsSubscriber: (internals: InternalExchange) => void;
 
-    export function _GetDotNetRuntimeContractDescriptor(): void;
-    export function _SystemJS_ExecuteTimerCallback(): void;
-    export function _SystemJS_ExecuteBackgroundJobCallback(): void;
-    export function _BrowserHost_InitializeCoreCLR(): number;
-    export function _BrowserHost_ExecuteAssembly(mainAssemblyNamePtr: number, argsLength: number, argsPtr: number): number;
-    export function _wasm_load_icu_data(dataPtr: VoidPtr): number;
+    function _GetDotNetRuntimeContractDescriptor(): void;
+    function _SystemJS_ExecuteTimerCallback(): void;
+    function _SystemJS_ExecuteBackgroundJobCallback(): void;
+    function _BrowserHost_InitializeCoreCLR(): number;
+    function _BrowserHost_ExecuteAssembly(mainAssemblyNamePtr: number, argsLength: number, argsPtr: number): number;
+    function _wasm_load_icu_data(dataPtr: VoidPtr): number;
 
-    export const DOTNET: any;
-    export const BROWSER_HOST: any;
+    const DOTNET: any;
+    const BROWSER_HOST: any;
 
     // ambient in the emscripten closure
-    export const Module: EmscriptenModuleInternal;
-    export const ENVIRONMENT_IS_NODE: boolean;
-    export const ENVIRONMENT_IS_SHELL: boolean;
-    export const ENVIRONMENT_IS_WEB: boolean;
-    export const ENVIRONMENT_IS_WORKER: boolean;
-    export const ENVIRONMENT_IS_SIDECAR: boolean;
+    const Module: EmscriptenModuleInternal;
+    const ENVIRONMENT_IS_NODE: boolean;
+    const ENVIRONMENT_IS_SHELL: boolean;
+    const ENVIRONMENT_IS_WEB: boolean;
+    const ENVIRONMENT_IS_WORKER: boolean;
+    const ENVIRONMENT_IS_SIDECAR: boolean;
 
-    export let ABORT: boolean;
-    export let EXITSTATUS: number;
-    export function ExitStatus(exitCode: number): number;
+    let ABORT: boolean;
+    let EXITSTATUS: number;
+    function ExitStatus(exitCode: number): number;
 
-    export function _emscripten_force_exit(exitCode: number): void;
-    export function _exit(exitCode: number, implicit?: boolean): void;
-    export function safeSetTimeout(func: Function, timeout: number): number;
-    export function maybeExit(): void;
-    export function exitJS(status: number, implicit?: boolean | number): void;
+    function _emscripten_force_exit(exitCode: number): void;
+    function _exit(exitCode: number, implicit?: boolean): void;
+    function safeSetTimeout(func: Function, timeout: number): number;
+    function maybeExit(): void;
+    function exitJS(status: number, implicit?: boolean | number): void;
 }
-
-export const __dummy = 0;
