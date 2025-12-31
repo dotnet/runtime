@@ -1,15 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, InstantiateWasmSuccessCallback, WebAssemblyBootResourceType, AssetEntryInternal } from "./types";
+import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, InstantiateWasmSuccessCallback, WebAssemblyBootResourceType, AssetEntryInternal, LoadBootResourceCallback } from "./types";
 
-import { dotnetAssert, dotnetGetInternals, dotnetBrowserHostExports, dotnetUpdateInternals } from "./cross-module";
+import { dotnetAssert, dotnetGetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, dotnetLogger } from "./cross-module";
 import { ENVIRONMENT_IS_WEB } from "./per-module";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { locateFile, makeURLAbsoluteWithApplicationBase } from "./bootstrap";
 import { fetchLike } from "./polyfills";
-import { loadBootResourceCallback } from "./host-builder";
 import { loaderConfig } from "./config";
+
+let loadBootResourceCallback: LoadBootResourceCallback | undefined = undefined;
+
+export function setLoadBootResourceCallback(callback: LoadBootResourceCallback | undefined): void {
+    loadBootResourceCallback = callback;
+}
 
 export let wasmBinaryPromise: Promise<Response> | undefined = undefined;
 export const nativeModulePromiseController = createPromiseCompletionSource<EmscriptenModuleInternal>(() => {

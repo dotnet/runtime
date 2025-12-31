@@ -27,11 +27,15 @@ export const banner_dts = banner + "//! This is not considered public API with b
 export const keep_classnames = /(ManagedObject|ManagedError|Span|ArraySegment)/;
 export const keep_fnames = /(dotnetUpdateInternals|dotnetUpdateInternalsSubscriber)/;
 export const reserved = [
-    "Module", "dotnetApi",
-    "dotnetInternals", "dotnetLogger", "dotnetAssert", "dotnetJSEngine",
-    "dotnetUpdateInternals", "dotnetUpdateInternalsSubscriber", "dotnetInitializeModule",
+    "Module", "exitJS", "ExitStatus", "_exit", "_emscripten_force_exit", "safeSetTimeout",
+    "DOTNET", "DOTNET_INTEROP",
+    "dotnetInternals", "dotnetUpdateInternals", "dotnetUpdateInternalsSubscriber", "dotnetInitializeModule",
+    "dotnetLogger", "dotnetAssert", "dotnetApi",
     "dotnetLoaderExports", "dotnetRuntimeExports", "dotnetBrowserHostExports", "dotnetInteropJSExports",
     "dotnetNativeBrowserExports", "dotnetBrowserUtilsExports", "dotnetDiagnosticsExports",
+    "VoidPtrNull",
+    "_SystemJS_ExecuteTimerCallback", "_SystemJS_ExecuteBackgroundJobCallback", "_GetDotNetRuntimeContractDescriptor",
+    "_BrowserHost_InitializeCoreCLR", "_BrowserHost_ExecuteAssembly", "_wasm_load_icu_data",
 ];
 
 export const externalDependencies = ["module", "process", "perf_hooks", "node:crypto"];

@@ -48,8 +48,7 @@ export function iife2fe() {
             //throw new Error("iife2fe " + code);
             asset.code = code
                 .replace(/}\({}\);/, "};") // }({}); ->};
-                .replace(/}\)\({}\);/, "});") // })({}); ->});
-            ;
+                .replace(/}\)\({}\);/, "});"); // })({}); ->});
         }
     };
 }
@@ -103,18 +102,6 @@ function checkFileExists(file) {
 }
 
 export function onwarn(warning) {
-    if (warning.code === "CIRCULAR_DEPENDENCY") {
-        return;
-    }
-
-    if (warning.code === "UNRESOLVED_IMPORT" && warning.exporter === "process") {
-        return;
-    }
-
-    if (warning.code === "PLUGIN_WARNING" && warning.message.indexOf("sourcemap") !== -1) {
-        return;
-    }
-
     // eslint-disable-next-line no-console
     console.warn(`(!) ${warning.toString()} ${warning.code}`);
 }
