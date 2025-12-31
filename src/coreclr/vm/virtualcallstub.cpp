@@ -1297,43 +1297,6 @@ size_t VirtualCallStubManager::GetTokenFromStub(PCODE stub, T_CONTEXT *pContext)
 #endif
 }
 
-size_t VirtualCallStubManager::GetTokenFromStubAndIndirectionCell(PCODE stub, TADDR indcell)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-    if (isCachedInterfaceDispatchStub(stub))
-    {
-        VirtualCallStubManagerIterator it =
-            VirtualCallStubManagerManager::GlobalManager()->IterateVirtualCallStubManagers();
-        while (it.Next())
-        {
-            if (it.Current()->indcell_rangeList.IsInRange(indcell))
-            {
-                InterfaceDispatchCell * pCell = (InterfaceDispatchCell *)indcell;
-                return pCell->GetDispatchCellInfo().Token.To_SIZE_T();
-            }
-        }
-    }
-#endif // FEATURE_CACHED_INTERFACE_DISPATCH
-
-#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
-    _ASSERTE(stub != (PCODE)NULL);
-    StubCodeBlockKind         stubKind = STUB_CODE_BLOCK_UNKNOWN;
-    VirtualCallStubManager *  pMgr     = FindStubManager(stub, &stubKind);
-
-    return GetTokenFromStubQuick(pMgr, stub, stubKind);
-#else
-    return 0;
-#endif
-}
-
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 size_t VirtualCallStubManager::GetTokenFromStubQuick(VirtualCallStubManager * pMgr, PCODE stub, StubCodeBlockKind kind)
 {
@@ -1774,7 +1737,7 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
         _ASSERTE(!"Throw returned");
     }
 
-    DispatchToken representativeToken = DispatchToken(VirtualCallStubManager::GetTokenFromStubAndIndirectionCell(callSite.GetSiteTarget(), (TADDR)callSite.GetIndirectCell()));
+    DispatchToken representativeToken = DispatchToken(VirtualCallStubManager::GetTokenFromStub(callSite.GetSiteTarget(), NULL));
 
     MethodTable * pRepresentativeMT = pObj->GetMethodTable();
     if (representativeToken.IsTypedToken())

@@ -456,9 +456,6 @@ public:
     //This is used to get the token out of a stub
     static size_t GetTokenFromStub(PCODE stub, T_CONTEXT *pContext);
 
-    //This is used to get the token out of a stub and indirection cell
-    static size_t GetTokenFromStubAndIndirectionCell(PCODE stub, TADDR indcell);
-
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     //This is used to get the token out of a stub and we know the stub manager and stub kind
     static size_t GetTokenFromStubQuick(VirtualCallStubManager * pMgr, PCODE stub, StubCodeBlockKind kind);
