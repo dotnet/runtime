@@ -250,7 +250,7 @@ namespace System
             fixed (byte* pDest = &dest)
             fixed (byte* pSrc = &src)
             {
-                _ = memmove(pDest, pSrc, len);
+                memmove(pDest, pSrc, len);
             }
         }
 
@@ -475,7 +475,7 @@ namespace System
                     bytePointer = alignedStart;
                 }
 #endif
-                _ = memset(bytePointer, 0, byteLength);
+                memset(bytePointer, 0, byteLength);
             }
         }
 
