@@ -239,13 +239,13 @@ namespace System
             Debug.Assert(len > 0);
             _ = Unsafe.ReadUnaligned<byte>(ref dest);
             _ = Unsafe.ReadUnaligned<byte>(ref src);
-            MemmoveInternal(ref dest, ref src, len);
+            MemmoveNative(ref dest, ref src, len);
         }
 
         // Non-inlinable wrapper around the QCall that avoids polluting the fast path
         // with P/Invoke prolog/epilog.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe void MemmoveInternal(ref byte dest, ref byte src, nuint len)
+        private static unsafe void MemmoveNative(ref byte dest, ref byte src, nuint len)
         {
             fixed (byte* pDest = &dest)
             fixed (byte* pSrc = &src)
@@ -441,13 +441,13 @@ namespace System
         PInvoke:
             // Implicit nullchecks
             _ = Unsafe.ReadUnaligned<byte>(ref dest);
-            ZeroMemoryInternal(ref dest, len);
+            ZeroMemoryNative(ref dest, len);
         }
 
         // Non-inlinable wrapper around the QCall that avoids polluting the fast path
         // with P/Invoke prolog/epilog.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe void ZeroMemoryInternal(ref byte b, nuint byteLength)
+        private static unsafe void ZeroMemoryNative(ref byte b, nuint byteLength)
         {
             fixed (byte* ptr = &b)
             {
