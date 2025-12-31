@@ -63,13 +63,13 @@ FCIMPL0(int, RhpGetNumThunkBlocksPerMapping)
 {
     ASSERT_MSG((THUNKS_MAP_SIZE % OS_PAGE_SIZE) == 0, "Thunks map size should be in multiples of pages");
 
-    return THUNKS_MAP_SIZE / OS_PAGE_SIZE;
+    return (int)(THUNKS_MAP_SIZE / OS_PAGE_SIZE);
 }
 FCIMPLEND
 
 FCIMPL0(int, RhpGetNumThunksPerBlock)
 {
-    return min(
+    return (int)min(
         OS_PAGE_SIZE / THUNK_SIZE,                              // Number of thunks that can fit in a page
         (OS_PAGE_SIZE - POINTER_SIZE) / (POINTER_SIZE * 2)      // Number of pointer pairs, minus the jump stub cell, that can fit in a page
     );
