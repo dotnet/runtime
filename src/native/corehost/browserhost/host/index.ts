@@ -17,12 +17,12 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     };
     const runtimeApi = internals[InternalExchangeIndex.RuntimeAPI];
     if (typeof runtimeApi !== "object") throw new Error("Expected internals to have RuntimeAPI");
-    Object.assign(runtimeApi, runtimeApiLocal);
     if (runtimeApi.runtimeBuildInfo.gitHash && runtimeApi.runtimeBuildInfo.gitHash !== GitHash) {
         throw new Error(`Mismatched git hashes between loader and runtime. Loader: ${runtimeApi.runtimeBuildInfo.gitHash}, BrowserHost: ${GitHash}`);
     }
+    Object.assign(runtimeApi, runtimeApiLocal);
 
-    internals[InternalExchangeIndex.BrowserHostExportsTable] = browserHostExportsToTable({
+    internals[InternalExchangeIndex.BrowserHostExportsTable] = browserHostExportsTable = browserHostExportsToTable({
         registerDllBytes,
         installVfsFile,
         loadIcuData,
