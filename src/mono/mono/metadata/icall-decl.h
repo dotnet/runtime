@@ -135,9 +135,9 @@ ICALL_EXPORT void ves_icall_System_GC_RemovePressure (guint64);
 ICALL_EXPORT void ves_icall_System_GC_WaitForPendingFinalizers (void);
 ICALL_EXPORT void ves_icall_System_GC_GetGCMemoryInfo (gint64*, gint64*, gint64*, gint64*, gint64*, gint64*);
 
-ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_Memmove (guint8*, guint8*, size_t);
+ICALL_EXPORT void ves_icall_System_SpanHelpers_memmove (guint8*, guint8*, size_t);
 ICALL_EXPORT void ves_icall_System_Buffer_BulkMoveWithWriteBarrier (guint8 *, guint8 *, size_t, MonoType *);
-ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_ZeroMemory (guint8*, size_t);
+ICALL_EXPORT void ves_icall_System_SpanHelpers_memset (guint8*, gint32, size_t);
 
 ICALL_EXPORT void ves_icall_System_Array_InternalCreate (MonoArray *volatile* result, MonoType* type, gint32 rank, gint32* pLengths, gint32* pLowerBounds);
 ICALL_EXPORT MonoBoolean ves_icall_System_Array_CanChangePrimitive (MonoObjectHandleOnStack ref_src_type_handle, MonoObjectHandleOnStack ref_dst_type_handle, MonoBoolean reliable);

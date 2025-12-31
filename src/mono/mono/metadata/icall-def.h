@@ -142,8 +142,8 @@ ICALL_TYPE(BUFFER, "System.Buffer", BUFFER_0)
 NOHANDLES(ICALL(BUFFER_0, "BulkMoveWithWriteBarrier", ves_icall_System_Buffer_BulkMoveWithWriteBarrier))
 
 ICALL_TYPE(SPANHELPERS, "System.SpanHelpers", SPANHELPERS_0)
-NOHANDLES(ICALL(SPANHELPERS_0, "memmove", ves_icall_System_Runtime_RuntimeImports_Memmove))
-NOHANDLES(ICALL(SPANHELPERS_1, "memset", ves_icall_System_Runtime_RuntimeImports_ZeroMemory))
+NOHANDLES(ICALL(SPANHELPERS_0, "memmove", ves_icall_System_SpanHelpers_memmove))
+NOHANDLES(ICALL(SPANHELPERS_1, "memset", ves_icall_System_SpanHelpers_memset))
 
 ICALL_TYPE(DELEGATE, "System.Delegate", DELEGATE_1)
 HANDLES(DELEGATE_1, "AllocDelegateLike_internal", ves_icall_System_Delegate_AllocDelegateLike_internal, MonoMulticastDelegate, 1, (MonoDelegate))
