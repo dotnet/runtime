@@ -155,7 +155,7 @@ namespace System.Security.Cryptography
             Span<byte> transformBuffer = stackalloc byte[StackAllocSize];
             if (bytesToTransform > StackAllocSize)
             {
-                transformBuffer = transformBufferArray = CryptoPool.Rent(inputCount);
+                transformBuffer = transformBufferArray = CryptoPool.Rent(bytesToTransform);
             }
 
             transformBuffer = AppendInputBuffers(inputBufferSpan, transformBuffer);
@@ -201,7 +201,7 @@ namespace System.Security.Cryptography
 
             if (bytesToTransform > StackAllocSize)
             {
-                transformBuffer = transformBufferArray = CryptoPool.Rent(inputCount);
+                transformBuffer = transformBufferArray = CryptoPool.Rent(bytesToTransform);
             }
 
             transformBuffer = AppendInputBuffers(inputBufferSpan, transformBuffer);

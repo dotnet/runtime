@@ -389,5 +389,50 @@ namespace System.Security.Cryptography.Tests
             string outputString = Text.Encoding.ASCII.GetString(outputBytes, 0, written);
             Assert.Equal(expected, outputString);
         }
+
+        [Fact]
+        public void TransformBlock_PartialBlockFollowedByPowerOfTwoInput_DoesNotThrow()
+        {
+            using FromBase64Transform transform = new();
+            byte[] dest = new byte[2048];
+
+            byte[] buf1 = "AAA"u8.ToArray();
+            int written = transform.TransformBlock(buf1, 0, 3, dest, 0);
+
+            // Nothing should be written because it is a partial block the transform will hold on to.
+            Assert.Equal(0, written);
+
+            // Transform a buffer that is exactly a power of two, meaning the ArrayPool (CryptoPool) will not be oversized.
+            byte[] buf2 = new byte[1024];
+            buf2.AsSpan().Fill((byte)'A');
+
+            written = transform.TransformBlock(buf2, 0, buf2.Length, dest, written);
+
+            // The transform should have processed data without throwing
+            Assert.True(written > 0);
+        }
+
+        [Fact]
+        public void TransformFinalBlock_PartialBlockFollowedByPowerOfTwoInput_DoesNotThrow()
+        {
+            using FromBase64Transform transform = new();
+            byte[] dest = new byte[2048];
+
+            byte[] buf1 = "AAA"u8.ToArray();
+            int written = transform.TransformBlock(buf1, 0, 3, dest, 0);
+
+            // Nothing should be written because it is a partial block the transform will hold on to.
+            Assert.Equal(0, written);
+
+            // Transform a buffer that is exactly a power of two via TransformFinalBlock
+            byte[] buf2 = new byte[1024];
+            buf2.AsSpan().Fill((byte)'A');
+
+            // This should not throw
+            byte[] result = transform.TransformFinalBlock(buf2, 0, buf2.Length);
+
+            // The transform should have processed data without throwing
+            Assert.True(result.Length > 0);
+        }
     }
 }
