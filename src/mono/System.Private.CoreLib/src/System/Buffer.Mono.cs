@@ -8,12 +8,6 @@ namespace System
     public partial class Buffer
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void ZeroMemoryNative(void* b, nuint byteLength);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void MemmoveNative(byte* dest, byte* src, nuint len);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void BulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint len, IntPtr type_handle);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
