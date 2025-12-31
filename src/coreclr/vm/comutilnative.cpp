@@ -1618,8 +1618,6 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
     END_QCALL;
 }
 
-
-
 //
 // ObjectNative
 //

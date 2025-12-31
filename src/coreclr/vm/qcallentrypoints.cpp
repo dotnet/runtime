@@ -315,6 +315,8 @@ static const Entry s_QCall[] =
 #endif // FEATURE_COMINTEROP
     DllImportEntry(Monitor_GetOrCreateLockObject)
     DllImportEntry(ClrConfig_GetConfigBoolValue)
+    DllImportEntry(memset)
+    DllImportEntry(memmove)
     DllImportEntry(DependentHandle_InternalAllocWithGCTransition)
     DllImportEntry(DependentHandle_InternalFreeWithGCTransition)
     DllImportEntry(GCInterface_GetTotalAllocatedBytesPrecise)

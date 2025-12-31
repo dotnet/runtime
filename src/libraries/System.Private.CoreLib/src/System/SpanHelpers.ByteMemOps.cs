@@ -254,7 +254,8 @@ namespace System
             }
         }
 
-        [LibraryImport("*", EntryPoint = "memmove")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memmove")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static unsafe partial void* memmove(byte* dest, byte* src, nuint len);
 
         [Intrinsic] // Unrolled for small sizes
@@ -478,7 +479,8 @@ namespace System
             }
         }
 
-        [LibraryImport("*", EntryPoint = "memset")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memset")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static unsafe partial void* memset(byte* dest, int value, nuint len);
 
         internal static void Fill(ref byte dest, byte value, nuint len)
