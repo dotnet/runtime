@@ -2,6 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
+
+#ifndef NATIVEAOT
+// VM-specific includes
+// (none needed for this file)
+#else
+// NativeAOT-specific includes
+#include "CommonMacros.h"
+#endif
+
 #include "MiscNativeHelpers.h"
 #include <minipal/cpuid.h>
 
