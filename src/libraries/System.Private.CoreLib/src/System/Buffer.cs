@@ -124,35 +124,6 @@ namespace System
             Memmove(ref *(byte*)destination, ref *(byte*)source, checked((nuint)sourceBytesToCopy));
         }
 
-        // Non-inlinable wrapper around the QCall that avoids polluting the fast path
-        // with P/Invoke prolog/epilog.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static unsafe void MemmoveInternal(ref byte dest, ref byte src, nuint len)
-        {
-            fixed (byte* pDest = &dest)
-            fixed (byte* pSrc = &src)
-                MemmoveInternal(pDest, pSrc, len);
-        }
-
-        // Non-inlinable wrapper around the QCall that avoids polluting the fast path
-        // with P/Invoke prolog/epilog.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static unsafe void ZeroMemoryInternal(ref byte b, nuint byteLength)
-        {
-            fixed (byte* bytePointer = &b)
-            {
-                ZeroMemoryInternal(bytePointer, byteLength);
-            }
-        }
-
-#if !MONO
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_Clear")]
-        private static unsafe partial void ZeroMemoryInternal(void* b, nuint byteLength);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_MemMove")]
-        private static unsafe partial void MemmoveInternal(byte* dest, byte* src, nuint len);
-#endif
-
 #if !MONO // Mono BulkMoveWithWriteBarrier is in terms of elements (not bytes) and takes a type handle.
 
         [Intrinsic]

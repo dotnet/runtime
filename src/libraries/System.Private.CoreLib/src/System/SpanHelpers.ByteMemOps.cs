@@ -239,8 +239,23 @@ namespace System
             Debug.Assert(len > 0);
             _ = Unsafe.ReadUnaligned<byte>(ref dest);
             _ = Unsafe.ReadUnaligned<byte>(ref src);
-            Buffer.MemmoveInternal(ref dest, ref src, len);
+            MemmoveInternal(ref dest, ref src, len);
         }
+
+        // Non-inlinable wrapper around the QCall that avoids polluting the fast path
+        // with P/Invoke prolog/epilog.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe void MemmoveInternal(ref byte dest, ref byte src, nuint len)
+        {
+            fixed (byte* pDest = &dest)
+            fixed (byte* pSrc = &src)
+                MemmoveInternal(pDest, pSrc, len);
+        }
+
+#if !MONO
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_MemMove")]
+        private static unsafe partial void MemmoveInternal(byte* dest, byte* src, nuint len);
+#endif
 
         [Intrinsic] // Unrolled for small sizes
         public static void ClearWithoutReferences(ref byte dest, nuint len)
@@ -425,8 +440,24 @@ namespace System
         PInvoke:
             // Implicit nullchecks
             _ = Unsafe.ReadUnaligned<byte>(ref dest);
-            Buffer.ZeroMemoryInternal(ref dest, len);
+            ZeroMemoryInternal(ref dest, len);
         }
+
+        // Non-inlinable wrapper around the QCall that avoids polluting the fast path
+        // with P/Invoke prolog/epilog.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe void ZeroMemoryInternal(ref byte b, nuint byteLength)
+        {
+            fixed (byte* bytePointer = &b)
+            {
+                ZeroMemoryInternal(bytePointer, byteLength);
+            }
+        }
+
+#if !MONO
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_Clear")]
+        private static unsafe partial void ZeroMemoryInternal(void* b, nuint byteLength);
+#endif
 
         internal static void Fill(ref byte dest, byte value, nuint len)
         {
