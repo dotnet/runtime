@@ -256,7 +256,7 @@ namespace System
 
 #if MONO
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static unsafe extern void* memmove(byte* dest, byte* src, nuint len);
+        private static unsafe extern void memmove(byte* dest, byte* src, nuint len);
 #else
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memmove")]
