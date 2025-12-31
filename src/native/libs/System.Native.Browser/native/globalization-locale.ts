@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { Int32Ptr, VoidPtr } from "../types";
-import { } from "./cross-linked"; // ensure ambient symbols are declared
+import { } from "../../Common/JavaScript/cross-linked"; // ensure ambient symbols are declared
 
 // char16_t* SystemJS_GetLocaleInfo (const uint16_t* locale, int32_t localeLength, const uint16_t* culture, int32_t cultureLength, const uint16_t* result, int32_t resultMaxLength, int *resultLength);
 export function SystemJS_GetLocaleInfo(culture: number, cultureLength: number, locale: number, localeLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {

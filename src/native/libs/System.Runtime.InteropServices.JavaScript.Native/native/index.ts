@@ -3,7 +3,7 @@
 
 import type { InternalExchange, InteropJavaScriptExports, InteropJavaScriptExportsTable, JSFnHandle, JSMarshalerArguments } from "../interop/types";
 import { InternalExchangeIndex } from "../types";
-import { } from "./cross-linked"; // ensure ambient symbols are declared
+import { } from "../../Common/JavaScript/cross-linked"; // ensure ambient symbols are declared
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function SystemInteropJS_InvokeJSImportST(function_handle: JSFnHandle, args: JSMarshalerArguments) {

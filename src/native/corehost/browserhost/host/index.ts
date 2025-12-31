@@ -3,7 +3,7 @@
 
 import type { InternalExchange, BrowserHostExports, RuntimeAPI, BrowserHostExportsTable } from "./types";
 import { InternalExchangeIndex } from "./types";
-import { } from "./cross-linked"; // ensure ambient symbols are declared
+import { } from "../../../libs/Common/JavaScript/cross-linked"; // ensure ambient symbols are declared
 
 import { runMain, runMainAndExit, registerDllBytes, installVfsFile, loadIcuData, initializeCoreCLR } from "./host";
 

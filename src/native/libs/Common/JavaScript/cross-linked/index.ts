@@ -16,6 +16,20 @@ declare global {
     export const dotnetUpdateInternals: (internals?: Partial<InternalExchange>, subscriber?: InternalExchangeSubscriber) => void;
     export const dotnetUpdateInternalsSubscriber: (internals: InternalExchange) => void;
 
+    export function _GetDotNetRuntimeContractDescriptor(): void;
+    export function _SystemJS_ExecuteTimerCallback(): void;
+    export function _SystemJS_ExecuteBackgroundJobCallback(): void;
+    export function _BrowserHost_InitializeCoreCLR(): number;
+    export function _BrowserHost_ExecuteAssembly(mainAssemblyNamePtr: number, argsLength: number, argsPtr: number): number;
+    export function _wasm_load_icu_data(dataPtr: VoidPtr): number;
+
+    export const VoidPtrNull: VoidPtr;
+    export const CharPtrNull: CharPtr;
+    export const NativePointerNull: NativePointer;
+
+    export const DOTNET: any;
+    export const BROWSER_HOST: any;
+
     // ambient in the emscripten closure
     export const Module: EmscriptenModuleInternal;
     export const ENVIRONMENT_IS_NODE: boolean;
@@ -24,12 +38,15 @@ declare global {
     export const ENVIRONMENT_IS_WORKER: boolean;
     export const ENVIRONMENT_IS_SIDECAR: boolean;
 
-    export const VoidPtrNull: VoidPtr;
-    export const CharPtrNull: CharPtr;
-    export const NativePointerNull: NativePointer;
+    export let ABORT: boolean;
+    export let EXITSTATUS: number;
+    export function ExitStatus(exitCode: number): number;
 
+    export function _emscripten_force_exit(exitCode: number): void;
+    export function _exit(exitCode: number, implicit?: boolean): void;
     export function safeSetTimeout(func: Function, timeout: number): number;
     export function maybeExit(): void;
     export function exitJS(status: number, implicit?: boolean | number): void;
-
 }
+
+export const __dummy = 0;
