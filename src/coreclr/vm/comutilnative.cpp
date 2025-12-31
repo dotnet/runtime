@@ -524,7 +524,6 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* 
     END_QCALL;
 }
 
-
 FCIMPL3(VOID, Buffer::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount)
 {
     FCALL_CONTRACT;
