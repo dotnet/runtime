@@ -80,6 +80,8 @@
 #include "interpexec.h"
 #endif // FEATURE_INTERPRETER
 
+#include "MiscNativeHelpers.h"
+
 static const Entry s_QCall[] =
 {
     DllImportEntry(ArgIterator_Init)
@@ -485,7 +487,7 @@ static const Entry s_QCall[] =
     DllImportEntry(SetEnvironmentVariableW)
 #endif
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-    DllImportEntry(X86BaseCpuId)
+    DllImportEntry(X86Base_CpuId)
 #endif
     DllImportEntry(StubHelpers_CreateCustomMarshaler)
     DllImportEntry(StubHelpers_ThrowInteropParamException)

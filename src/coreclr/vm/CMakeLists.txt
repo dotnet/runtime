@@ -293,6 +293,7 @@ set(VM_SOURCES_WKS
     bundle.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
     CachedInterfaceDispatch_Coreclr.cpp
+    ${RUNTIME_DIR}/MiscNativeHelpers.cpp
     cachelinealloc.cpp
     callconvbuilder.cpp
     callhelpers.cpp

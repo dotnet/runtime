@@ -101,6 +101,11 @@ namespace System.Runtime.Intrinsics.X86
             return (cpuInfo[0], cpuInfo[1], cpuInfo[2], cpuInfo[3]);
         }
 
+#if !MONO
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "X86Base_CpuId")]
+        private static unsafe partial void __cpuidex(int* cpuInfo, int functionId, int subFunctionId);
+#endif
+
         /// <summary>
         ///   <para>unsigned _udiv64(unsigned __int64 dividend, unsigned divisor, unsigned* remainder)</para>
         ///   <para>  DIV reg/m32</para>

@@ -887,11 +887,6 @@ namespace System.Runtime
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial void* memset(byte* mem, int value, nuint size);
 
-#if TARGET_X86 || TARGET_AMD64
-        [LibraryImport(RuntimeLibrary)]
-        internal static unsafe partial void RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId);
-#endif
-
 #if TARGET_UNIX
         [LibraryImport(RuntimeLibrary, StringMarshalling = StringMarshalling.Utf8)]
         internal static partial void RhSetCurrentThreadName(string name);

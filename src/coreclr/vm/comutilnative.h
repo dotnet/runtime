@@ -256,10 +256,6 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
 // Returns the number of logical processors that can be used by managed code
 extern "C" INT32 QCALLTYPE Environment_GetProcessorCount();
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-extern "C" void QCALLTYPE X86BaseCpuId(int cpuInfo[4], int functionId, int subFunctionId);
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
-
 extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString);
 
 extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString);
