@@ -458,7 +458,7 @@ namespace System
         {
             fixed (byte* ptr = &b)
             {
-                byte* adjustedPtr = ptr;   
+                byte* adjustedPtr = ptr;
 #if TARGET_X86 || TARGET_AMD64
                 if (byteLength > 0x100)
                 {
