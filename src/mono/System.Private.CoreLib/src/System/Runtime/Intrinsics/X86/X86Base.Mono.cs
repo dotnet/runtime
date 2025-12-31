@@ -8,6 +8,6 @@ namespace System.Runtime.Intrinsics.X86
     public abstract partial class X86Base
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern unsafe void __cpuidex(int* cpuInfo, int functionId, int subFunctionId);
+        private static extern unsafe void CpuId(int* cpuInfo, int functionId, int subFunctionId);
     }
 }
