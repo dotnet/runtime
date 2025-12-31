@@ -255,7 +255,6 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memmove")]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static unsafe partial void* memmove(byte* dest, byte* src, nuint len);
 
         [Intrinsic] // Unrolled for small sizes
@@ -449,38 +448,68 @@ namespace System
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe void ZeroMemoryNative(ref byte b, nuint byteLength)
         {
+#if TARGET_X86 || TARGET_AMD64
+            if (byteLength > 0x100)
+            {
+                // memset ends up calling rep stosb if the hardware claims to support it efficiently. rep stosb is up to 2x slower
+                // on misaligned blocks. Workaround this issue by aligning the blocks passed to memset upfront.
+
+#if HAS_CUSTOM_BLOCKS
+                Unsafe.WriteUnaligned<Block16>(ref b, default);
+                Unsafe.WriteUnaligned<Block16>(ref Unsafe.Add(ref b, 16), default);
+
+                ref byte end = ref Unsafe.Add(ref b, byteLength);
+                Unsafe.WriteUnaligned<Block16>(ref Unsafe.Add(ref end, -32), default);
+                Unsafe.WriteUnaligned<Block16>(ref Unsafe.Add(ref end, -16), default);
+#elif TARGET_64BIT
+                Unsafe.WriteUnaligned<long>(ref b, 0);
+                Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref b, 8), 0);
+                Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref b, 16), 0);
+                Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref b, 24), 0);
+
+                ref byte end = ref Unsafe.Add(ref b, byteLength);
+                Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref end, -32), 0);
+                Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref end, -24), 0);
+                Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref end, -16), 0);
+                Unsafe.WriteUnaligned<long>(ref Unsafe.Add(ref end, -8), 0);
+#else
+                Unsafe.WriteUnaligned<int>(ref b, 0);
+                Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 4), 0);
+                Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 8), 0);
+                Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 12), 0);
+                Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 16), 0);
+                Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 20), 0);
+                Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 24), 0);
+                Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref b, 28), 0);
+
+                ref byte end = ref Unsafe.Add(ref b, byteLength);
+                Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref end, -32), 0);
+                Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref end, -28), 0);
+                Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref end, -24), 0);
+                Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref end, -20), 0);
+                Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref end, -16), 0);
+                Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref end, -12), 0);
+                Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref end, -8), 0);
+                Unsafe.WriteUnaligned<int>(ref Unsafe.Add(ref end, -4), 0);
+#endif
+
+                b = ref Unsafe.Add(ref b, (((nuint)Unsafe.AsPointer(ref b) + 32) & ~(nuint)31) - (nuint)Unsafe.AsPointer(ref b));
+                byteLength = (((nuint)Unsafe.AsPointer(ref end) - 1) & ~(nuint)31) - (nuint)Unsafe.AsPointer(ref b);
+            }
+
             fixed (byte* ptr = &b)
             {
-                byte* bytePointer = ptr;
-#if TARGET_X86 || TARGET_AMD64
-                if (byteLength > 0x100)
-                {
-                    // memset ends up calling rep stosb if the hardware claims to support it efficiently. rep stosb is up to 2x slower
-                    // on misaligned blocks. Workaround this issue by aligning the blocks passed to memset upfront.
-
-                    *(ulong*)bytePointer = 0;
-                    *((ulong*)bytePointer + 1) = 0;
-                    *((ulong*)bytePointer + 2) = 0;
-                    *((ulong*)bytePointer + 3) = 0;
-
-                    byte* end = bytePointer + byteLength;
-                    *((ulong*)end - 1) = 0;
-                    *((ulong*)end - 2) = 0;
-                    *((ulong*)end - 3) = 0;
-                    *((ulong*)end - 4) = 0;
-
-                    byte* alignedStart = (byte*)(((nuint)bytePointer + 32) & ~(nuint)31);
-                    byte* alignedEnd = (byte*)((nuint)(end - 1) & ~(nuint)31);
-                    byteLength = (nuint)(alignedEnd - alignedStart);
-                    bytePointer = alignedStart;
-                }
-#endif
-                memset(bytePointer, 0, byteLength);
+                memset(ptr, 0, byteLength);
             }
+#else
+            fixed (byte* ptr = &b)
+            {
+                memset(ptr, 0, byteLength);
+            }
+#endif
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memset")]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static unsafe partial void* memset(byte* dest, int value, nuint len);
 
         internal static void Fill(ref byte dest, byte value, nuint len)
