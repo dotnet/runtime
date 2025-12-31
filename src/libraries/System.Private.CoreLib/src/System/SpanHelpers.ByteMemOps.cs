@@ -479,7 +479,7 @@ namespace System
 
 #if MONO
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static unsafe extern void* memset(byte* dest, int value, nuint len);
+        private static unsafe extern void memset(byte* dest, int value, nuint len);
 #else
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memset")]
