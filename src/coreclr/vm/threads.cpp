@@ -34,7 +34,7 @@
 #include "exceptmacros.h"
 #include "minipal/time.h"
 #include "minipal/thread.h"
-#include "asyncsafethreadmap.h"
+#include "SignalSafeThreadMap.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -68,7 +68,7 @@
 Thread* GetThreadAsyncSafe()
 {
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
-    return (Thread*)FindThreadInAsyncSafeMap(minipal_get_current_thread_id_no_cache());
+    return (Thread*)FindThreadInSignalSafeMap(minipal_get_current_thread_id_no_cache());
 #else
     return GetThreadNULLOk();
 #endif
@@ -387,9 +387,9 @@ void SetThread(Thread* t)
     {
         t_CurrentThreadInfo.m_pAppDomain = AppDomain::GetCurrentDomain();
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
-        if (!InsertThreadIntoAsyncSafeMap(t->GetOSThreadId64(), t))
+        if (!InsertThreadIntoSignalSafeMap(t->GetOSThreadId64(), t))
         {
-            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to insert thread into async-safe map due to out of memory."));
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to insert thread into signal-safe map due to out of memory."));
         }
 #endif // TARGET_UNIX && !TARGET_WASM
     }
@@ -399,7 +399,7 @@ void SetThread(Thread* t)
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
         if (origThread != NULL)
         {
-            RemoveThreadFromAsyncSafeMap(origThread->GetOSThreadId64(), origThread);
+            RemoveThreadFromSignalSafeMap(origThread->GetOSThreadId64(), origThread);
         }
 #endif // TARGET_UNIX && !TARGET_WASM
     }
