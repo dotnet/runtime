@@ -36,4 +36,3 @@
 #endif
 
 using namespace std;
-
