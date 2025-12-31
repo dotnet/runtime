@@ -50,7 +50,7 @@ class AllocHeap
 
         uint8_t *   m_pbMem;
         uintptr_t   m_cbMem;
-        PTR(BlockListElem) m_pNext;
+        BlockListElem* m_pNext;
     };
 
     typedef SList<BlockListElem>    BlockList;
