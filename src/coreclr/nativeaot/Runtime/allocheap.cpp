@@ -11,13 +11,10 @@
 #include "slist.h"
 #include "holder.h"
 #include "Crst.h"
-#include "Range.h"
 #include "allocheap.h"
 
 #include "CommonMacros.inl"
 #include "slist.inl"
-
-using namespace rh::util;
 
 //-------------------------------------------------------------------------------------------------
 AllocHeap::AllocHeap()
@@ -125,23 +122,8 @@ uint8_t * AllocHeap::AllocAligned(
 }
 
 //-------------------------------------------------------------------------------------------------
-bool AllocHeap::Contains(void* pvMem, uintptr_t cbMem)
-{
-    MemRange range(pvMem, cbMem);
-    for (BlockList::Iterator it = m_blockList.Begin(); it != m_blockList.End(); ++it)
-    {
-        if (it->Contains(range))
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-//-------------------------------------------------------------------------------------------------
 bool AllocHeap::_UpdateMemPtrs(uint8_t* pNextFree, uint8_t* pFreeCommitEnd, uint8_t* pFreeReserveEnd)
 {
-    ASSERT(MemRange(pNextFree, pFreeReserveEnd).Contains(MemRange(pNextFree, pFreeCommitEnd)));
     ASSERT(ALIGN_DOWN(pFreeCommitEnd, OS_PAGE_SIZE) == pFreeCommitEnd);
     ASSERT(ALIGN_DOWN(pFreeReserveEnd, OS_PAGE_SIZE) == pFreeReserveEnd);
 
