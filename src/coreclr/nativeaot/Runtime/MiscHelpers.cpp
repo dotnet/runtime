@@ -486,8 +486,6 @@ FCIMPL2(uint32_t, RhGetKnobValues, char *** pResultKeys, char *** pResultValues)
 }
 FCIMPLEND
 
-
-
 FCIMPL3(int32_t, RhpLockCmpXchg32, int32_t * location, int32_t value, int32_t comparand)
 {
     return PalInterlockedCompareExchange(location, value, comparand);

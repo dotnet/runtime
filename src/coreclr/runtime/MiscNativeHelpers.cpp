@@ -3,6 +3,10 @@
 
 #include "common.h"
 
+#ifdef NATIVEAOT
+#include "CommonMacros.h"
+#endif
+
 #include "MiscNativeHelpers.h"
 #include <minipal/cpuid.h>
 
