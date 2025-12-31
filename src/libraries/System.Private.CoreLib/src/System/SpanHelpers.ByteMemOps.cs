@@ -479,9 +479,6 @@ namespace System
 
 #if MONO
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static unsafe extern void* memmove(byte* dest, byte* src, nuint len);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         private static unsafe extern void* memset(byte* dest, int value, nuint len);
 #else
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
