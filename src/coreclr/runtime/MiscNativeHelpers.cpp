@@ -3,14 +3,6 @@
 
 #include "common.h"
 
-#ifndef NATIVEAOT
-// VM-specific includes
-// (none needed for this file)
-#else
-// NativeAOT-specific includes
-#include "CommonMacros.h"
-#endif
-
 #include "MiscNativeHelpers.h"
 #include <minipal/cpuid.h>
 
