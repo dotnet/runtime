@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssertType, EmscriptenModuleInternal, LoggerType, LoaderExports, InternalExchange, InternalExchangeSubscriber, RuntimeAPI, BrowserUtilsExports, NativePointer, CharPtr, VoidPtr, RuntimeExports } from "../types";
+import type { AssertType, EmscriptenModuleInternal, LoggerType, LoaderExports, InternalExchange, InternalExchangeSubscriber, RuntimeAPI, BrowserUtilsExports, VoidPtr, RuntimeExports } from "../types";
 
 // we want to use the cross-module symbols defined in closure of dotnet.native.js
 // which are installed there by libSystem.Native.Browser.Utils.footer.js
@@ -22,10 +22,6 @@ declare global {
     export function _BrowserHost_InitializeCoreCLR(): number;
     export function _BrowserHost_ExecuteAssembly(mainAssemblyNamePtr: number, argsLength: number, argsPtr: number): number;
     export function _wasm_load_icu_data(dataPtr: VoidPtr): number;
-
-    export const VoidPtrNull: VoidPtr;
-    export const CharPtrNull: CharPtr;
-    export const NativePointerNull: NativePointer;
 
     export const DOTNET: any;
     export const BROWSER_HOST: any;

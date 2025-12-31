@@ -14,7 +14,7 @@ export function SystemJS_GetLocaleInfo(culture: number, cultureLength: number, l
             // handle non-standard or malformed locales by forwarding the locale code
             dotnetBrowserUtilsExports.stringToUTF16(dst, dst + 2 * localeNameOriginal.length, localeNameOriginal);
             dotnetApi.setHeapI32(dstLength, localeNameOriginal.length);
-            return VoidPtrNull;
+            return 0 as any;
         }
         const cultureNameOriginal = dotnetBrowserUtilsExports.utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const cultureName = normalizeLocale(cultureNameOriginal);
@@ -45,7 +45,7 @@ export function SystemJS_GetLocaleInfo(culture: number, cultureLength: number, l
                         // handle non-standard or malformed locales by forwarding the locale code, e.g. "xx-u-xx"
                         dotnetBrowserUtilsExports.stringToUTF16(dst, dst + 2 * localeNameOriginal.length, localeNameOriginal);
                         dotnetApi.setHeapI32(dstLength, localeNameOriginal.length);
-                        return VoidPtrNull;
+                        return 0 as any;
                     }
                     throw error;
                 }
@@ -67,7 +67,7 @@ export function SystemJS_GetLocaleInfo(culture: number, cultureLength: number, l
 
         dotnetBrowserUtilsExports.stringToUTF16(dst, dst + 2 * result.length, result);
         dotnetApi.setHeapI32(dstLength, result.length);
-        return VoidPtrNull;
+        return 0 as any;
     } catch (ex: any) {
         dotnetApi.setHeapI32(dstLength, -1);
         return dotnetBrowserUtilsExports.stringToUTF16Ptr(ex.toString());
