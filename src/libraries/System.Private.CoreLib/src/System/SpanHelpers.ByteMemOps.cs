@@ -254,8 +254,7 @@ namespace System
             }
         }
 
-        // Suppress CS3016: Arrays as attribute arguments is not CLS-compliant
-#pragma warning disable CS3016
+#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memmove")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static unsafe partial void* memmove(byte* dest, byte* src, nuint len);
@@ -475,8 +474,7 @@ namespace System
             }
         }
 
-        // Suppress CS3016: Arrays as attribute arguments is not CLS-compliant
-#pragma warning disable CS3016
+#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memset")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static unsafe partial void* memset(byte* dest, int value, nuint len);
