@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
@@ -196,14 +195,6 @@ namespace System.Threading
         {
             return CompareExchange(ref location, 0, 0);
         }
-        #endregion
-
-        #region MemoryBarrierProcessWide
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Interlocked_MemoryBarrierProcessWide")]
-        private static partial void _MemoryBarrierProcessWide();
-
-        /// <summary>Provides a process-wide memory barrier that ensures that reads and writes from any CPU cannot move across the barrier.</summary>
-        public static void MemoryBarrierProcessWide() => _MemoryBarrierProcessWide();
         #endregion
     }
 }

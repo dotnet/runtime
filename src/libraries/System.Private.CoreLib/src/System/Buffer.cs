@@ -145,6 +145,14 @@ namespace System
             }
         }
 
+#if !MONO
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_Clear")]
+        private static unsafe partial void ZeroMemoryInternal(void* b, nuint byteLength);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_MemMove")]
+        private static unsafe partial void MemmoveInternal(byte* dest, byte* src, nuint len);
+#endif
+
 #if !MONO // Mono BulkMoveWithWriteBarrier is in terms of elements (not bytes) and takes a type handle.
 
         [Intrinsic]
