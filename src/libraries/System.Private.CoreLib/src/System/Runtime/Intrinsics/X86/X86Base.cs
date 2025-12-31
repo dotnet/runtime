@@ -97,13 +97,13 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe (int Eax, int Ebx, int Ecx, int Edx) CpuId(int functionId, int subFunctionId)
         {
             int* cpuInfo = stackalloc int[4];
-            __cpuidex(cpuInfo, functionId, subFunctionId);
+            CpuId(cpuInfo, functionId, subFunctionId);
             return (cpuInfo[0], cpuInfo[1], cpuInfo[2], cpuInfo[3]);
         }
 
 #if !MONO
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "X86Base_CpuId")]
-        private static unsafe partial void __cpuidex(int* cpuInfo, int functionId, int subFunctionId);
+        private static unsafe partial void CpuId(int* cpuInfo, int functionId, int subFunctionId);
 #endif
 
         /// <summary>
