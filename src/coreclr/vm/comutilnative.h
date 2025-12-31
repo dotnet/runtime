@@ -82,9 +82,6 @@ public:
     static FCDECL3(VOID, BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount);
 };
 
-extern "C" void QCALLTYPE Buffer_Clear(void *dst, size_t length);
-extern "C" void QCALLTYPE Buffer_MemMove(void *dst, void *src, size_t length);
-
 const UINT MEM_PRESSURE_COUNT = 4;
 
 struct GCGenerationInfo
@@ -284,8 +281,6 @@ public:
         static FCDECL2(INT32, ExchangeAdd32, INT32 *location, INT32 value);
         static FCDECL2_IV(INT64, ExchangeAdd64, INT64 *location, INT64 value);
 };
-
-extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide();
 
 class MethodTableNative {
 public:

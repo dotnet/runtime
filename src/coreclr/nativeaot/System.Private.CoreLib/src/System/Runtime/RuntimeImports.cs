@@ -426,9 +426,6 @@ namespace System.Runtime
         private static partial int _RhYield();
         internal static bool RhYield() => _RhYield() != 0;
 
-        [LibraryImport(RuntimeLibrary, EntryPoint = "RhFlushProcessWriteBuffers")]
-        internal static partial void RhFlushProcessWriteBuffers();
-
 #if !TARGET_UNIX
         // Wait for any object to be signalled, in a way that's compatible with the CLR's behavior in an STA.
         [LibraryImport(RuntimeLibrary)]

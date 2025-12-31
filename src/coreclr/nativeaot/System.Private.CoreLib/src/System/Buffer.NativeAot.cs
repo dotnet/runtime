@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using Internal.Runtime.CompilerServices;
 
@@ -11,13 +12,11 @@ namespace System
 {
     public static partial class Buffer
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void ZeroMemoryInternal(void* b, nuint byteLength) =>
-            RuntimeImports.memset((byte*)b, 0, byteLength);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_Clear")]
+        private static unsafe partial void ZeroMemoryInternal(void* b, nuint byteLength);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void MemmoveInternal(byte* dest, byte* src, nuint len) =>
-            RuntimeImports.memmove(dest, src, len);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_MemMove")]
+        private static unsafe partial void MemmoveInternal(byte* dest, byte* src, nuint len);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void BulkMoveWithWriteBarrierInternal(ref byte destination, ref byte source, nuint byteCount) =>
