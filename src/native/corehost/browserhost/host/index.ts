@@ -22,7 +22,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     }
     Object.assign(runtimeApi, runtimeApiLocal);
 
-    internals[InternalExchangeIndex.BrowserHostExportsTable] = browserHostExportsTable = browserHostExportsToTable({
+    internals[InternalExchangeIndex.BrowserHostExportsTable] = browserHostExportsToTable({
         registerDllBytes,
         installVfsFile,
         loadIcuData,
