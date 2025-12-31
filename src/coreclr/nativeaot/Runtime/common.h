@@ -7,9 +7,6 @@
 // Include the GC common header
 #include "../../gc/env/common.h"
 
-// Define QCALLTYPE for NativeAOT (empty macro)
-#ifndef QCALLTYPE
-#define QCALLTYPE
-#endif
+#include "CommonMacros.h"
 
 #endif // __NATIVEAOT_RUNTIME_COMMON_H__
