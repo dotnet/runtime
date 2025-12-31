@@ -254,11 +254,16 @@ namespace System
             }
         }
 
+#if MONO
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static unsafe extern void* memmove(byte* dest, byte* src, nuint len);
+#else
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memmove")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static unsafe partial void* memmove(byte* dest, byte* src, nuint len);
 #pragma warning restore CS3016
+#endif
 
         [Intrinsic] // Unrolled for small sizes
         public static void ClearWithoutReferences(ref byte dest, nuint len)
@@ -472,11 +477,19 @@ namespace System
             }
         }
 
+#if MONO
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static unsafe extern void* memmove(byte* dest, byte* src, nuint len);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static unsafe extern void* memset(byte* dest, int value, nuint len);
+#else
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memset")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static unsafe partial void* memset(byte* dest, int value, nuint len);
 #pragma warning restore CS3016
+#endif
 
         internal static void Fill(ref byte dest, byte value, nuint len)
         {
