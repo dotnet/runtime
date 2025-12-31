@@ -948,7 +948,7 @@ ves_icall_System_Array_SetGenericValue_icall (MonoObjectHandleOnStack *arr_handl
 }
 
 void
-ves_icall_System_SpanHelpers_memmove (guint8 *destination, guint8 *source, size_t byte_count)
+ves_icall_System_SpanHelpers_memmove (void *destination, void *source, size_t byte_count)
 {
 	mono_gc_memmove_atomic (destination, source, byte_count);
 }
@@ -966,7 +966,7 @@ ves_icall_System_Buffer_BulkMoveWithWriteBarrier (guint8 *destination, guint8 *s
 }
 
 void
-ves_icall_System_SpanHelpers_memset (guint8 *p, gint32 value, size_t byte_length)
+ves_icall_System_SpanHelpers_memset (void *p, gint32 value, size_t byte_length)
 {
 	memset (p, value, byte_length);
 }
