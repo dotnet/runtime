@@ -37,10 +37,8 @@ extern "C" void QCALLTYPE Buffer_Clear(void *dst, size_t length)
         *((uint64_t*)end - 3) = 0;
         *((uint64_t*)end - 4) = 0;
 
-        // Align dst up to 32-byte boundary
-        dst = (void*)(((size_t)dst + 32) & ~(size_t)31);
-        // Align end down to 32-byte boundary
-        length = (((size_t)end) & ~(size_t)31) - (size_t)dst;
+        dst = ALIGN_UP((uint8_t*)dst + 1, 32);
+        length = ALIGN_DOWN((uint8_t*)end - 1, 32) - (uint8_t*)dst;
     }
 #endif
 
