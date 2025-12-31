@@ -453,8 +453,8 @@ namespace System
         {
             fixed (byte* ptr = &b)
             {
-#if TARGET_X86 || TARGET_AMD64
                 byte* adjustedPtr = ptr;   
+#if TARGET_X86 || TARGET_AMD64
                 if (byteLength > 0x100)
                 {
                     // memset ends up calling rep stosb if the hardware claims to support it efficiently. rep stosb is up to 2x slower
@@ -467,10 +467,8 @@ namespace System
                     adjustedPtr = (byte*)(((nuint)ptr + 16) & ~(nuint)16);
                     byteLength = (nuint)(alignedEnd - adjustedPtr);
                 }
+#endif
                 memset(adjustedPtr, 0, byteLength);
-#else
-                memset(ptr, 0, byteLength);
-#endif                
             }
         }
 
