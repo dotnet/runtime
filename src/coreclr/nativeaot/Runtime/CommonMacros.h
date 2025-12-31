@@ -264,8 +264,6 @@ typedef int32_t FC_BOOL_ARG;
 #define NOT_IN_DAC(x)
 #endif
 
-#define INLINE inline
-
 enum STARTUP_TIMELINE_EVENT_ID
 {
     PROCESS_ATTACH_BEGIN = 0,
