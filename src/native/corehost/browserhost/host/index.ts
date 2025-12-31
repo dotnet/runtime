@@ -5,7 +5,7 @@ import type { InternalExchange, BrowserHostExports, RuntimeAPI, BrowserHostExpor
 import { InternalExchangeIndex } from "./types";
 import { } from "./cross-linked"; // ensure ambient symbols are declared
 
-import { runMain, runMainAndExit, registerDllBytes } from "./host";
+import { runMain, runMainAndExit, registerDllBytes, installVfsFile, loadIcuData, initializeCoreCLR } from "./host";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
     if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
@@ -19,14 +19,20 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
 
     internals[InternalExchangeIndex.BrowserHostExportsTable] = browserHostExportsToTable({
         registerDllBytes,
+        installVfsFile,
+        loadIcuData,
+        initializeCoreCLR,
     });
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
-    function browserHostExportsToTable(map:BrowserHostExports):BrowserHostExportsTable {
+    function browserHostExportsToTable(map: BrowserHostExports): BrowserHostExportsTable {
         // keep in sync with browserHostExportsFromTable()
         return [
             map.registerDllBytes,
+            map.installVfsFile,
+            map.loadIcuData,
+            map.initializeCoreCLR,
         ];
     }
 }
 
-export { BrowserHost_ExternalAssemblyProbe, BrowserHost_ResolveMain, BrowserHost_RejectMain } from "./host";
+export { BrowserHost_ExternalAssemblyProbe } from "./host";

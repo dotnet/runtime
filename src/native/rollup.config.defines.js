@@ -18,7 +18,7 @@ if (process.env.ProductVersion === undefined) {
 export const configuration = process.env.Configuration !== "Release" && process.env.Configuration !== "RELEASE" ? "Debug" : "Release";
 export const productVersion = process.env.ProductVersion;
 export const isContinuousIntegrationBuild = process.env.ContinuousIntegrationBuild === "true" ? true : false;
-export const staticLibDestination = process.env.StaticLibDestination;
+export const staticLibDestination = process.env.StaticLibDestination || "../../artifacts/bin/browser-wasm.Debug/corehost";
 
 console.log(`Rollup configuration: Configuration=${configuration}, ProductVersion=${productVersion}, ContinuousIntegrationBuild=${isContinuousIntegrationBuild}`);
 
@@ -30,7 +30,8 @@ export const reserved = [
     "Module", "dotnetApi",
     "dotnetInternals", "dotnetLogger", "dotnetAssert", "dotnetJSEngine",
     "dotnetUpdateInternals", "dotnetUpdateInternalsSubscriber", "dotnetInitializeModule",
-    "dotnetLoaderExports", "dotnetRuntimeExports", "dotnetBrowserHostExports", "dotnetInteropJSExports", "dotnetNativeBrowserExports", "dotnetBrowserUtilsExports",
+    "dotnetLoaderExports", "dotnetRuntimeExports", "dotnetBrowserHostExports", "dotnetInteropJSExports",
+    "dotnetNativeBrowserExports", "dotnetBrowserUtilsExports", "dotnetDiagnosticsExports",
 ];
 
 export const externalDependencies = ["module", "process", "perf_hooks", "node:crypto"];

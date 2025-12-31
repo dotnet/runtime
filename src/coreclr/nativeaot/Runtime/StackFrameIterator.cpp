@@ -32,11 +32,7 @@
 #pragma warning(disable:4061)
 
 #if !defined(FEATURE_PORTABLE_HELPERS) // @TODO: these are (currently) only implemented in assembly helpers
-
-#if defined(FEATURE_DYNAMIC_CODE)
-EXTERN_C CODE_LOCATION ReturnFromUniversalTransition;
-EXTERN_C CODE_LOCATION ReturnFromUniversalTransition_DebugStepTailCall;
-#endif
+EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionTailCall;
 
 EXTERN_C CODE_LOCATION RhpCallCatchFunclet2;
 EXTERN_C CODE_LOCATION RhpCallFinallyFunclet2;
@@ -2231,13 +2227,10 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
 
 #else // defined(FEATURE_PORTABLE_HELPERS)
 
-#if defined(FEATURE_DYNAMIC_CODE)
-    if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransition) ||
-             EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransition_DebugStepTailCall))
+    if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransitionTailCall))
     {
         return InUniversalTransitionThunk;
     }
-#endif
 
     if (EQUALS_RETURN_ADDRESS(returnAddress, RhpThrowEx2) ||
         EQUALS_RETURN_ADDRESS(returnAddress, RhpThrowHwEx2) ||

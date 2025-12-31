@@ -21,13 +21,18 @@ public: // static
     static void* GetInterpreterData(PCODE addr);
     static void SetInterpreterData(PCODE addr, PCODE interpreterData);
 
-private: // static
-    static PortableEntryPoint* ToPortableEntryPoint(PCODE addr);
-
 private:
     Volatile<void*> _pActualCode;
     MethodDesc* _pMD;
     void* _pInterpreterData;
+
+    enum PortableEntryPointFlag
+    {
+        kNone = 0,
+        kUnmanagedCallersOnly_Has = 0x1,
+        kUnmanagedCallersOnly_Checked = 0x2,
+    };
+    Volatile<int32_t> _flags;
 
     // We keep the canary value last to ensure a stable ABI across build flavors
     INDEBUG(size_t _canary);
@@ -36,9 +41,15 @@ private:
     bool IsValid() const;
 #endif // _DEBUG
 
+public: // static
+    static PortableEntryPoint* ToPortableEntryPoint(PCODE addr);
+
 public:
     void Init(MethodDesc* pMD);
     void Init(void* nativeEntryPoint);
+
+    // Check if the entry point represents a method with the UnmanagedCallersOnly attribute
+    bool HasUnmanagedCallersOnlyAttribute();
 
     // Query methods for entry point state.
     bool HasInterpreterCode() const

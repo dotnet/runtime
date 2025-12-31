@@ -4,11 +4,12 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 public class AA
 {
 	bool[] m_null = null;
-	
+
 	static double[] Alloc()
 	{
 		return new double[2];
@@ -23,20 +24,20 @@ public class AA
 	{
 		return DoThings3(__arglist(new double[2], Alloc()[1], new AA().m_null));
 	}
-	
+
 	static uint[] DoThings3(__arglist)
 	{
 		GC.Collect();
 		return null;
 	}
-	
+
 	void CheckHeap()
 	{
 		GC.Collect();
 	}
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsVarArgSupported))]
-    public static void TestEntryPoint()
+	[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsVarArgSupported))]
+	public static void TestEntryPoint()
 	{
 		DoThings();
 		new AA().CheckHeap();

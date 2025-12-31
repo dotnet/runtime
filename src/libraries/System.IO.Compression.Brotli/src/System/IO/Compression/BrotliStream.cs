@@ -118,6 +118,32 @@ namespace System.IO.Compression
             }
         }
 
+        /// <summary>
+        /// Rewinds the underlying stream to the exact end of the compressed data if there are unconsumed bytes.
+        /// This is called when decompression finishes to reset the stream position.
+        /// </summary>
+        private void TryRewindStream(Stream stream)
+        {
+            Debug.Assert(stream != null);
+            Debug.Assert(_mode == CompressionMode.Decompress);
+            Debug.Assert(stream.CanSeek);
+
+            // Check if there are unconsumed bytes in the buffer
+            int unconsumedBytes = _bufferCount;
+            if (unconsumedBytes > 0)
+            {
+                try
+                {
+                    // Rewind the stream to the exact end of the compressed data
+                    stream.Seek(-unconsumedBytes, SeekOrigin.Current);
+                }
+                catch
+                {
+                    // If seeking fails, we don't want to throw during disposal
+                }
+            }
+        }
+
         private void ReleaseStateForDispose()
         {
             _stream = null!;

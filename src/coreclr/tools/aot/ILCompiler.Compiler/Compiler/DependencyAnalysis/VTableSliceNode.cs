@@ -33,8 +33,7 @@ namespace ILCompiler.DependencyAnalysis
             bool isObjectType = type.IsObject;
             DefType defType = type.GetClosestDefType();
 
-            IEnumerable<MethodDesc> allSlots = type.IsInterface ?
-                type.GetAllVirtualMethods() : defType.EnumAllVirtualSlots();
+            IEnumerable<MethodDesc> allSlots = defType.EnumAllVirtualSlots();
 
             foreach (var method in allSlots)
             {
@@ -224,8 +223,7 @@ namespace ILCompiler.DependencyAnalysis
             // of Foo<__Canon>.Method. This in turn should bring in Foo<OtherType>.Method.
             DefType defType = _type.GetClosestDefType();
 
-            IEnumerable<MethodDesc> allSlots = _type.IsInterface ?
-                _type.GetAllVirtualMethods() : defType.EnumAllVirtualSlots();
+            IEnumerable<MethodDesc> allSlots = defType.EnumAllVirtualSlots();
 
             foreach (var method in allSlots)
             {

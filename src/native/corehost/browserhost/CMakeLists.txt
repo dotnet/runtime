@@ -57,7 +57,6 @@ set(SHARED_CLR_DESTINATION
 # these dependencies assume that you built `libs.native+clr.runtime` subsets first
 LIST(APPEND NATIVE_LIBS
     ${SHARED_CLR_DESTINATION}/libcoreclr_static.a
-    ${SHARED_CLR_DESTINATION}/libclrinterpreter.a
     ${SHARED_CLR_DESTINATION}/libnativeresourcestring.a
     ${SHARED_CLR_DESTINATION}/libgcinfo_unix_wasm.a
     ${SHARED_CLR_DESTINATION}/libcoreclrminipal.a
@@ -80,7 +79,7 @@ LIST(APPEND NATIVE_LIBS
 set(JS_SYSTEM_NATIVE_BROWSER
     "${SHARED_LIB_DESTINATION}/libSystem.Native.Browser.js")
 set(JS_SYSTEM_BROWSER_UTILS
-    "${SHARED_LIB_DESTINATION}/libSystem.Browser.Utils.js")
+    "${SHARED_LIB_DESTINATION}/libSystem.Native.Browser.Utils.js")
 set(JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE
     "${SHARED_LIB_DESTINATION}/libSystem.Runtime.InteropServices.JavaScript.Native.js")
 set(JS_BROWSER_HOST
@@ -113,11 +112,13 @@ target_link_options(browserhost PRIVATE
     -sWASM_BIGINT=1
     -sMODULARIZE=1
     -sEXPORT_ES6=1
-    -sEXIT_RUNTIME=0
-    -sEXPORTED_RUNTIME_METHODS=UTF8ToString,cwrap,ccall,HEAPU8,HEAPU32,HEAPU64,BROWSER_HOST
-    -sEXPORTED_FUNCTIONS=_posix_memalign,_free,stackAlloc,stackRestore,stackSave,_BrowserHost_InitializeCoreCLR,_BrowserHost_ExecuteAssembly,___cpp_exception
+    -sEXIT_RUNTIME=1
+    -sEXPORTED_RUNTIME_METHODS=BROWSER_HOST,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
+    -sEXPORTED_FUNCTIONS=${CMAKE_EMCC_EXPORTED_FUNCTIONS}
     -sEXPORT_NAME=createDotnetRuntime
-    -lnodefs.js)
+    -sENVIRONMENT=web,webview,worker,node,shell
+    -lnodefs.js
+    -Wl,-error-limit=0)
 
 target_link_libraries(browserhost PUBLIC
     BrowserHost-Static

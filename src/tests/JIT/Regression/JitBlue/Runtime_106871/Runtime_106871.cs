@@ -1,5 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
+namespace Runtime_106871;
+
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -16,26 +19,23 @@ using System.Runtime.Intrinsics.Arm;
 
 public class Runtime_106871
 {
-    [Fact]
+    [ConditionalFact(typeof(Sve), nameof(Sve.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Sve.IsSupported)
+        var vr11 = (byte)1;
+        var vr12 = Vector128.CreateScalar(vr11).AsVector();
+        var vr13 = Vector.Create<double>(1);
+        var vr14 = Vector.Create<double>(1);
+        var vr15 = (byte)Sve.ConditionalExtractAfterLastActiveElement(vr13, 0, vr14);
+        var vr16 = Vector128.CreateScalar(vr15).AsVector();
+        var vr17 = Vector.Create<byte>(0);
+        var vr18 = (byte)1;
+        var vr19 = Vector128.CreateScalar(vr18).AsVector();
+        var vr20 = Sve.MinAcross(vr19);
+        var vr21 = Sve.ConditionalSelect(vr16, vr20, vr17);
+        if (Sve.TestFirstTrue(vr12, vr21))
         {
-            var vr11 = (byte)1;
-            var vr12 = Vector128.CreateScalar(vr11).AsVector();
-            var vr13 = Vector.Create<double>(1);
-            var vr14 = Vector.Create<double>(1);
-            var vr15 = (byte)Sve.ConditionalExtractAfterLastActiveElement(vr13, 0, vr14);
-            var vr16 = Vector128.CreateScalar(vr15).AsVector();
-            var vr17 = Vector.Create<byte>(0);
-            var vr18 = (byte)1;
-            var vr19 = Vector128.CreateScalar(vr18).AsVector();
-            var vr20 = Sve.MinAcross(vr19);
-            var vr21 = Sve.ConditionalSelect(vr16, vr20, vr17);
-            if (Sve.TestFirstTrue(vr12, vr21))
-            {
-                System.Console.WriteLine(0);
-            }
+            System.Console.WriteLine(0);
         }
     }
 }

@@ -21,6 +21,21 @@ dotnet_diagnostic.BCL0015.severity = none
 # BCL0020: Invalid SR.Format call
 dotnet_diagnostic.BCL0020.severity = warning
 
+# SYSLIB1040: Invalid GeneratedRegexAttribute usage
+dotnet_diagnostic.SYSLIB1040.severity = error
+
+# SYSLIB1041: Invalid GeneratedRegexAttribute usage
+dotnet_diagnostic.SYSLIB1041.severity = error
+
+# SYSLIB1042: Invalid GeneratedRegexAttribute usage
+dotnet_diagnostic.SYSLIB1042.severity = error
+
+# SYSLIB1043: Invalid GeneratedRegexAttribute usage
+dotnet_diagnostic.SYSLIB1043.severity = error
+
+# SYSLIB1044: Regex generator limitation reached.
+dotnet_diagnostic.SYSLIB1044.severity = warning
+
 # SYSLIB1045: Convert to 'GeneratedRegexAttribute'.
 dotnet_diagnostic.SYSLIB1045.severity = warning
 

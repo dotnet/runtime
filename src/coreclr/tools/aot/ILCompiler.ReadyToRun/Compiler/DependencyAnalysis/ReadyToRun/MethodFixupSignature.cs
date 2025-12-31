@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly MethodWithToken _method;
 
         public MethodFixupSignature(
-            ReadyToRunFixupKind fixupKind, 
+            ReadyToRunFixupKind fixupKind,
             MethodWithToken method,
             bool isInstantiatingStub)
         {
@@ -111,7 +111,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             MethodWithToken method = _method;
-            
+
             if (factory.CompilationModuleGroup.VersionsWithMethodBody(method.Method))
             {
                 if (method.Token.TokenType == CorTokenType.mdtMethodSpec)
@@ -153,6 +153,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (IsInstantiatingStub)
             {
                 sb.Append(" [INST]"u8);
+            }
+            if (_method.Method.IsAsyncVariant())
+            {
+                sb.Append(" [ASYNC]"u8);
             }
             sb.Append(": "u8);
             _method.AppendMangledName(nameMangler, sb);

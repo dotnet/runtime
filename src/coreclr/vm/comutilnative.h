@@ -23,17 +23,12 @@
 #include "fcall.h"
 #include "qcall.h"
 #include "windows.h"
-#undef GetCurrentTime
 
 //
 //
 // EXCEPTION NATIVE
 //
 //
-
-#ifdef FEATURE_COMINTEROP
-void FreeExceptionData(ExceptionData *pedata);
-#endif
 
 class ExceptionNative
 {
@@ -180,7 +175,7 @@ public:
     static FCDECL1(UINT64,  GetGenerationSize, int gen);
 
     static FCDECL0(int,     GetMaxGeneration);
-    static FCDECL1(void,    KeepAlive, Object *obj);
+    static FCDECL0(FC_BOOL_RET, IsServerGC);
     static FCDECL1(void,    SuppressFinalize, Object *obj);
     static FCDECL2(int,     CollectionCount, INT32 generation, INT32 getSpecialGCCount);
 
@@ -242,6 +237,44 @@ extern "C" int  QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo hea
 extern "C" enable_no_gc_region_callback_status QCALLTYPE GCInterface_EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize);
 
 extern "C" uint64_t QCALLTYPE GCInterface_GetGenerationBudget(int generation);
+
+//
+// EnvironmentNative
+//
+class EnvironmentNative
+{
+public:
+    // Functions on the System.Environment class
+    static FCDECL1(VOID,SetExitCode,INT32 exitcode);
+    static FCDECL0(INT32, GetExitCode);
+};
+
+extern "C" void QCALLTYPE Environment_Exit(INT32 exitcode);
+
+extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark, PCWSTR message, QCall::ObjectHandleOnStack exception, PCWSTR errorSource);
+
+// Returns the number of logical processors that can be used by managed code
+extern "C" INT32 QCALLTYPE Environment_GetProcessorCount();
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+extern "C" void QCALLTYPE X86BaseCpuId(int cpuInfo[4], int functionId, int subFunctionId);
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+
+extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString);
+
+extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString);
+
+extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString);
+
+class ObjectNative
+{
+public:
+    static FCDECL1(INT32, TryGetHashCode, Object* vThisRef);
+    static FCDECL2(FC_BOOL_RET, ContentEquals, Object *pThisRef, Object *pCompareRef);
+};
+
+extern "C" INT32 QCALLTYPE ObjectNative_GetHashCodeSlow(QCall::ObjectHandleOnStack objHandle);
+extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectHandleOnStack objHandle);
 
 class COMInterlocked
 {

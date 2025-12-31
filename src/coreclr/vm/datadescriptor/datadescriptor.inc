@@ -670,11 +670,6 @@ CDAC_TYPE_FIELD(RealCodeHeader, /* T_RUNTIME_FUNCTION */, UnwindInfos, offsetof(
 #endif // FEATURE_EH_FUNCLETS
 CDAC_TYPE_END(RealCodeHeader)
 
-CDAC_TYPE_BEGIN(PatchpointInfo)
-CDAC_TYPE_SIZE(sizeof(PatchpointInfo))
-CDAC_TYPE_FIELD(PatchpointInfo, /*uint32*/, LocalCount, cdac_data<PatchpointInfo>::LocalCount)
-CDAC_TYPE_END(PatchpointInfo)
-
 CDAC_TYPE_BEGIN(CodeHeapListNode)
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, Next, offsetof(HeapList, hpNext))
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, StartAddress, offsetof(HeapList, startAddress))
@@ -865,6 +860,22 @@ CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Tp, offsetof(HijackArgs, Tp))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, A0, offsetof(HijackArgs, A0))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, A1, offsetof(HijackArgs, A1))
 
+#elif defined(TARGET_LOONGARCH64)
+
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Fp, offsetof(HijackArgs, Fp))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Ra, offsetof(HijackArgs, Ra))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S0, offsetof(HijackArgs, S0))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S1, offsetof(HijackArgs, S1))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S2, offsetof(HijackArgs, S2))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S3, offsetof(HijackArgs, S3))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S4, offsetof(HijackArgs, S4))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S5, offsetof(HijackArgs, S5))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S6, offsetof(HijackArgs, S6))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S7, offsetof(HijackArgs, S7))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S8, offsetof(HijackArgs, S8))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, A0, offsetof(HijackArgs, A0))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, A1, offsetof(HijackArgs, A1))
+
 #endif // Platform switch
 CDAC_TYPE_END(HijackArgs)
 #endif // FEATURE_HIJACK
@@ -951,6 +962,20 @@ CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S10, offsetof(CalleeSavedRegist
 CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S11, offsetof(CalleeSavedRegisters, s11))
 CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Tp, offsetof(CalleeSavedRegisters, tp))
 CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Gp, offsetof(CalleeSavedRegisters, gp))
+
+#elif defined(TARGET_LOONGARCH64)
+
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Fp, offsetof(CalleeSavedRegisters, fp))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Ra, offsetof(CalleeSavedRegisters, ra))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S0, offsetof(CalleeSavedRegisters, s0))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S1, offsetof(CalleeSavedRegisters, s1))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S2, offsetof(CalleeSavedRegisters, s2))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S3, offsetof(CalleeSavedRegisters, s3))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S4, offsetof(CalleeSavedRegisters, s4))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S5, offsetof(CalleeSavedRegisters, s5))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S6, offsetof(CalleeSavedRegisters, s6))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S7, offsetof(CalleeSavedRegisters, s7))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S8, offsetof(CalleeSavedRegisters, s8))
 
 #endif // Platform switch
 CDAC_TYPE_END(CalleeSavedRegisters)
@@ -1114,6 +1139,12 @@ CDAC_GLOBAL_POINTER(MethodDescSizeTable, &MethodDesc::s_ClassificationSizeTable)
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
 
+
+// It is important for the subdescriptor pointers to be the last pointers in the global structure.
+// EnumMemDataDescriptors in enummem.cpp hardcodes the number of subdescriptors and utilizes
+// this order to find and enumerate the subdescriptors.
+//
+// When adding a new subdescriptor, EnumMemDescriptors must be updated appropriately.
 CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
 
 CDAC_GLOBAL_CONTRACT(CodeVersions, 1)
@@ -1121,7 +1152,7 @@ CDAC_GLOBAL_CONTRACT(CodeVersions, 1)
 CDAC_GLOBAL_CONTRACT(ComWrappers, 1)
 #endif // FEATURE_COMWRAPPERS
 CDAC_GLOBAL_CONTRACT(DacStreams, 1)
-CDAC_GLOBAL_CONTRACT(DebugInfo, 1)
+CDAC_GLOBAL_CONTRACT(DebugInfo, 2)
 CDAC_GLOBAL_CONTRACT(EcmaMetadata, 1)
 CDAC_GLOBAL_CONTRACT(Exception, 1)
 CDAC_GLOBAL_CONTRACT(ExecutionManager, 2)

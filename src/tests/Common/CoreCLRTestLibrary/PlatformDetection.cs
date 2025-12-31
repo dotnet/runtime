@@ -23,6 +23,9 @@ namespace TestLibrary
                                                 ? isEnabled
                                                 : true);
 
+        public static bool IsICorProfilerEnabled => !Utilities.IsNativeAot && !IsMonoRuntime;
+        public static bool IsICorProfilerEnterLeaveHooksEnabled => IsICorProfilerEnabled && !Utilities.IsCoreClrInterpreter;
+
         public static bool IsRareEnumsSupported => !Utilities.IsNativeAot;
 
         public static bool IsCollectibleAssembliesSupported => !Utilities.IsNativeAot;
@@ -51,6 +54,7 @@ namespace TestLibrary
 
         public static bool IsNonZeroLowerBoundArrayNotSupported => !IsNonZeroLowerBoundArraySupported;
 
+        public static bool IsTypeEquivalenceSupported => IsWindows && !Utilities.IsNativeAot && !Utilities.IsMonoRuntime;
         public static bool IsVarArgSupported => IsWindows && !Utilities.IsNativeAot && !Utilities.IsMonoRuntime && !Utilities.IsCoreClrInterpreter;
 
         public static bool IsExceptionInteropSupported => IsWindows && !Utilities.IsNativeAot && !Utilities.IsMonoRuntime && !Utilities.IsCoreClrInterpreter;

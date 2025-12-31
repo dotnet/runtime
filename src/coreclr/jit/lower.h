@@ -16,21 +16,21 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "compiler.h"
 #include "phase.h"
-#include "lsra.h"
 #include "sideeffects.h"
+#include "regallocimpl.h"
 
 class Lowering final : public Phase
 {
 public:
-    inline Lowering(Compiler* compiler, LinearScanInterface* lsra)
+    inline Lowering(Compiler* compiler, RegAllocInterface* regAlloc)
         : Phase(compiler, PHASE_LOWERING)
         , vtableCallTemp(BAD_VAR_NUM)
 #ifdef TARGET_ARM64
         , m_blockIndirs(compiler->getAllocator(CMK_ArrayStack))
 #endif
     {
-        m_lsra = (LinearScan*)lsra;
-        assert(m_lsra);
+        m_regAlloc = static_cast<RegAllocImpl*>(regAlloc);
+        assert(m_regAlloc != nullptr);
     }
     virtual PhaseStatus DoPhase() override;
 
@@ -38,7 +38,7 @@ public:
     // so it creates its own instance of Lowering to do so.
     void LowerRange(BasicBlock* block, LIR::ReadOnlyRange& range)
     {
-        Lowering lowerer(comp, m_lsra);
+        Lowering lowerer(comp, m_regAlloc);
         lowerer.m_block = block;
 
         lowerer.LowerRange(range);
@@ -189,11 +189,13 @@ private:
     GenTreeLclVar* SpillStructCallResult(GenTreeCall* call) const;
 #endif // WINDOWS_AMD64_ABI
     GenTree* LowerDelegateInvoke(GenTreeCall* call);
+    void     OptimizeCallIndirectTargetEvaluation(GenTreeCall* call);
     GenTree* LowerIndirectNonvirtCall(GenTreeCall* call);
     GenTree* LowerDirectCall(GenTreeCall* call);
     GenTree* LowerNonvirtPinvokeCall(GenTreeCall* call);
     GenTree* LowerTailCallViaJitHelper(GenTreeCall* callNode, GenTree* callTarget);
     void     LowerFastTailCall(GenTreeCall* callNode);
+    GenTree* FirstOperand(GenTree* node);
     void     RehomeArgForFastTailCall(unsigned int lclNum,
                                       GenTree*     insertTempBefore,
                                       GenTree*     lookForUsesStart,
@@ -408,6 +410,10 @@ private:
     GenTree* TryLowerMulWithConstant(GenTreeOp* node);
 #endif // TARGET_XARCH
 
+#ifdef TARGET_WASM
+    GenTree* LowerNeg(GenTreeOp* node);
+#endif
+
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
 
     bool TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode);
@@ -463,10 +469,10 @@ private:
     bool     TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next);
     void     StoreFFRValue(GenTreeHWIntrinsic* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
-    GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types   type,
-                                                 GenTree*    op1,
-                                                 CorInfoType simdBaseJitType,
-                                                 unsigned    simdSize);
+    GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types type,
+                                                 GenTree*  op1,
+                                                 var_types simdBaseType,
+                                                 unsigned  simdSize);
     GenTree* NormalizeIndexToNativeSized(GenTree* index);
 #endif // FEATURE_HW_INTRINSICS
 
@@ -482,7 +488,7 @@ public:
     // Return true if 'node' is a containable memory op.
     bool IsContainableMemoryOp(GenTree* node) const
     {
-        return m_lsra->isContainableMemoryOp(node);
+        return m_regAlloc->isContainableMemoryOp(node);
     }
 
     // Return true if 'childNode' is a containable memory op by its size relative to the 'parentNode'.
@@ -587,14 +593,14 @@ private:
         // do an expensive check here. For non-candidates it is not harmful to set lvDoNotEnregister.
         if (varDsc->lvTracked && !varDsc->lvDoNotEnregister)
         {
-            assert(!m_lsra->isRegCandidate(varDsc));
+            assert(!m_regAlloc->isRegCandidate(varDsc));
             comp->lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(DoNotEnregisterReason::LocalField));
         }
     }
 
     void RequireOutgoingArgSpace(GenTree* node, unsigned numBytes);
 
-    LinearScan*           m_lsra;
+    RegAllocImpl*         m_regAlloc;
     unsigned              vtableCallTemp;       // local variable we use as a temp for vtable calls
     mutable SideEffectSet m_scratchSideEffects; // SideEffectSet used for IsSafeToContainMem and isRMWIndirCandidate
     BasicBlock*           m_block;
