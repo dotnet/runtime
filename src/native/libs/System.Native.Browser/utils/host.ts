@@ -3,6 +3,7 @@
 
 import BuildConfiguration from "consts:configuration";
 import { Module, dotnetApi } from "./cross-module";
+import { ExitStatus, DOTNET, _exit, _emscripten_force_exit } from "../../Common/JavaScript/cross-linked"; // ensure ambient symbols are declared
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function setEnvironmentVariable(name: string, value: string): void {
@@ -26,6 +27,9 @@ export function abortTimers(): void {
     }
 }
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
+declare let ABORT: boolean;
+declare let EXITSTATUS: number;
 export function abortPosix(exitCode: number): void {
     ABORT = true;
     EXITSTATUS = exitCode;

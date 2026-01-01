@@ -4,6 +4,8 @@
 import type { InternalExchange, NativeBrowserExports, NativeBrowserExportsTable } from "../types";
 import { InternalExchangeIndex } from "../types";
 
+import { dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "../../Common/JavaScript/cross-linked"; // ensure ambient symbols are declared
+
 export { SystemJS_RandomBytes } from "./crypto";
 export { SystemJS_GetLocaleInfo } from "./globalization-locale";
 export { SystemJS_RejectMainPromise, SystemJS_ResolveMainPromise, SystemJS_ConsoleClear } from "./main";

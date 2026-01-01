@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { } from "../../Common/JavaScript/cross-linked"; // ensure ambient symbols are declared
+import { dotnetLogger, dotnetApi, dotnetBrowserUtilsExports } from "../../Common/JavaScript/cross-linked"; // ensure ambient symbols are declared
 
 export function SystemJS_RandomBytes(bufferPtr: number, bufferLength: number): number {
     // batchedQuotaMax is the max number of bytes as specified by the api spec.

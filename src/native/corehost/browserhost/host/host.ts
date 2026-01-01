@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { CharPtr, VfsAsset, VoidPtr, VoidPtrPtr } from "./types";
-//import { } from "../../../libs/Common/JavaScript/cross-linked"; // ensure ambient symbols are declared
+import { Module, _wasm_load_icu_data, dotnetLogger, _BrowserHost_ExecuteAssembly, _BrowserHost_InitializeCoreCLR, dotnetApi, dotnetBrowserUtilsExports, dotnetLoaderExports } from "../../../libs/Common/JavaScript/cross-linked"; // ensure ambient symbols are declared
 
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
 

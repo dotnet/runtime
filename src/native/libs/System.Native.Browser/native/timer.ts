@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { } from "../../Common/JavaScript/cross-linked"; // ensure ambient symbols are declared
+import { DOTNET, Module, safeSetTimeout, _SystemJS_ExecuteTimerCallback, _SystemJS_ExecuteBackgroundJobCallback } from "../../Common/JavaScript/cross-linked"; // ensure ambient symbols are declared
 
 export function SystemJS_ScheduleTimer(shortestDueTimeMs: number): void {
     if (DOTNET.lastScheduledTimerId) {

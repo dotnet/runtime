@@ -3,6 +3,7 @@
 
 import type { RuntimeAPI } from "./types";
 import { Module } from "./cross-module";
+import { _GetDotNetRuntimeContractDescriptor } from "../../Common/JavaScript/cross-linked"; // ensure ambient symbols are declared
 
 export function registerCDAC(runtimeApi: RuntimeAPI): void {
     runtimeApi.INTERNAL.GetDotNetRuntimeContractDescriptor = () => _GetDotNetRuntimeContractDescriptor();
