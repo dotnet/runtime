@@ -229,7 +229,7 @@ static const Entry s_QCall[] =
     DllImportEntry(TypeBuilder_DefineCustomAttribute)
     DllImportEntry(MdUtf8String_EqualsCaseInsensitive)
     DllImportEntry(Array_CreateInstance)
-    DllImportEntry(Array_CtorAny)
+    DllImportEntry(Array_Ctor)
     DllImportEntry(Array_GetElementConstructorEntrypoint)
     DllImportEntry(AssemblyName_InitializeAssemblySpec)
     DllImportEntry(AssemblyNative_GetFullName)
