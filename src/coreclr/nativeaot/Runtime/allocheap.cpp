@@ -88,7 +88,7 @@ uint8_t * AllocHeap::_Alloc(
     )
 {
     ASSERT((alignment & (alignment - 1)) == 0); // Power of 2 only.
-    ASSERT((int32_t)alignment <= OS_PAGE_SIZE);          // Can't handle this right now.
+    ASSERT(alignment <= OS_PAGE_SIZE);          // Can't handle this right now.
 
     CrstHolder lock(&m_lock);
 
