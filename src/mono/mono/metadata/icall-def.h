@@ -141,10 +141,6 @@ HANDLES(ARRAY_14, "SetValueRelaxedImpl",  ves_icall_System_Array_SetValueRelaxed
 ICALL_TYPE(BUFFER, "System.Buffer", BUFFER_0)
 NOHANDLES(ICALL(BUFFER_0, "BulkMoveWithWriteBarrier", ves_icall_System_Buffer_BulkMoveWithWriteBarrier))
 
-ICALL_TYPE(SPANHELPERS, "System.SpanHelpers", SPANHELPERS_0)
-NOHANDLES(ICALL(SPANHELPERS_0, "memmove", ves_icall_System_SpanHelpers_memmove))
-NOHANDLES(ICALL(SPANHELPERS_1, "memset", ves_icall_System_SpanHelpers_memset))
-
 ICALL_TYPE(DELEGATE, "System.Delegate", DELEGATE_1)
 HANDLES(DELEGATE_1, "AllocDelegateLike_internal", ves_icall_System_Delegate_AllocDelegateLike_internal, MonoMulticastDelegate, 1, (MonoDelegate))
 HANDLES(DELEGATE_2, "CreateDelegate_internal", ves_icall_System_Delegate_CreateDelegate_internal, MonoObject, 4, (MonoQCallTypeHandle, MonoObject, MonoReflectionMethod, MonoBoolean))
@@ -539,6 +535,10 @@ HANDLES(RTH_15, "IsInstanceOfType", ves_icall_RuntimeTypeHandle_IsInstanceOfType
 HANDLES(RTH_17a, "internal_from_name", ves_icall_System_RuntimeTypeHandle_internal_from_name, void, 5, (char_ptr, MonoStackCrawlMark_ptr, MonoObjectHandleOnStack, MonoBoolean, MonoBoolean))
 HANDLES(RTH_17b, "is_subclass_of", ves_icall_RuntimeTypeHandle_is_subclass_of, MonoBoolean, 2, (MonoQCallTypeHandle, MonoQCallTypeHandle))
 HANDLES(RTH_18, "type_is_assignable_from", ves_icall_RuntimeTypeHandle_type_is_assignable_from, MonoBoolean, 2, (MonoQCallTypeHandle, MonoQCallTypeHandle))
+
+ICALL_TYPE(SPANHELPERS, "System.SpanHelpers", SPANHELPERS_0)
+NOHANDLES(ICALL(SPANHELPERS_0, "memmove", ves_icall_System_SpanHelpers_memmove))
+NOHANDLES(ICALL(SPANHELPERS_1, "memset", ves_icall_System_SpanHelpers_memset))
 
 ICALL_TYPE(STRING, "System.String", STRING_1)
 NOHANDLES(ICALL(STRING_1, ".ctor(System.ReadOnlySpan`1<char>)", ves_icall_System_String_ctor_RedirectToCreateString))
