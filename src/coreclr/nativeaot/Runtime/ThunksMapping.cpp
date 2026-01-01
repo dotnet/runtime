@@ -96,7 +96,7 @@ FCIMPLEND
 
 FCIMPL0(int, RhpGetThunkBlockSize)
 {
-    return OS_PAGE_SIZE;
+    return (int)OS_PAGE_SIZE;
 }
 FCIMPLEND
 
@@ -174,7 +174,7 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 
             *((uint32_t*)pCurrentThunkAddress) = 0x00a2ff41;
             pCurrentThunkAddress += 3;
-            *((uint32_t*)pCurrentThunkAddress) = OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2);
+            *((uint32_t*)pCurrentThunkAddress) = (uint32_t)(OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2));
             pCurrentThunkAddress += 4;
 
             // nops for alignment
