@@ -26,6 +26,11 @@ namespace System
             return new Type(rh);
         }
 
+        internal static unsafe Type GetTypeFromMethodTable(MethodTable* pMT)
+        {
+            return new Type(new RuntimeTypeHandle(pMT));
+        }
+
         [Intrinsic]
         public static bool operator ==(Type left, Type right)
         {
