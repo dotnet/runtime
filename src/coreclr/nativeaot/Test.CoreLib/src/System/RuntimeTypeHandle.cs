@@ -30,7 +30,7 @@ namespace System
             return handle._value;
         }
 
-        // Implementation of CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL
+        // Implementation of CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE
         internal static unsafe RuntimeTypeHandle GetRuntimeTypeHandleFromMethodTable(MethodTable* pMT)
         {
             return new RuntimeTypeHandle(pMT);
