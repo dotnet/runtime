@@ -469,7 +469,7 @@ namespace System
 
                     byte* alignedEnd = (byte*)((nuint)(ptr + byteLength - 1) & ~(nuint)16);
 
-                    adjustedPtr = (byte*)(((nuint)ptr + 16) & ~(nuint)16);
+                    adjustedPtr = (byte*)(((nuint)ptr + 16) & ~(nuint)(16 - 1));
                     byteLength = (nuint)(alignedEnd - adjustedPtr);
                 }
 #endif
