@@ -1700,7 +1700,7 @@ namespace System.Diagnostics.Tracing
     #if TARGET_WINDOWS
                     // API available on OS >= Win 8 and patched Win 7.
                     // Disable only for FrameworkEventSource to avoid recursion inside exception handling.
-                    if (this.Name != "System.Diagnostics.Eventing.FrameworkEventSource" || Environment.IsWindows8OrAbove)
+                    if (this.Name != "System.Diagnostics.Eventing.FrameworkEventSource")
                     {
                         var providerMetadata = ProviderMetadata;
                         fixed (byte* pMetadata = providerMetadata)
