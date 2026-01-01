@@ -53,6 +53,23 @@ export function iife2fe() {
     };
 }
 
+// Drop _ems_ symbol from emscripten libraries
+export function emsAmbient() {
+    return {
+        name: "emsAmbient",
+        generateBundle: (options, bundle) => {
+            const name = Object.keys(bundle)[0];
+            if (name.endsWith(".map")) return;
+            const asset = bundle[name];
+            const code = asset.code;
+            //throw new Error("iife2fe " + code);
+            asset.code = code
+                .replace(/_ems_\./g, "");
+        }
+    };
+}
+
+
 // force always unix line ending
 export const alwaysLF = () => ({
     name: "writeOnChange",

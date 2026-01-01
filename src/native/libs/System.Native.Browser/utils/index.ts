@@ -3,7 +3,6 @@
 
 import type { InternalExchange, BrowserUtilsExports, RuntimeAPI, BrowserUtilsExportsTable } from "./types";
 import { InternalExchangeIndex } from "../types";
-import { } from "./cross-module"; // ensure ambient symbols are declared
 
 import {
     setHeapB32, setHeapB8, setHeapU8, setHeapU16, setHeapU32, setHeapI8, setHeapI16, setHeapI32, setHeapI52, setHeapU52, setHeapI64Big, setHeapF32, setHeapF64,
@@ -64,4 +63,4 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
 }
 
 // see also `reserved` in `rollup.config.defines.js`
-export * as cross from "./cross-module";
+export * as _ems_ambient_ from "./cross-module";

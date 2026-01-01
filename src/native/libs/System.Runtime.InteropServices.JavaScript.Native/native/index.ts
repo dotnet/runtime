@@ -3,12 +3,12 @@
 
 import type { InternalExchange, InteropJavaScriptExports, InteropJavaScriptExportsTable, JSFnHandle, JSMarshalerArguments } from "../interop/types";
 import { InternalExchangeIndex } from "../types";
-import { dotnetLogger, dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "../../Common/JavaScript/cross-linked"; // ensure ambient symbols are declared
+import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function SystemInteropJS_InvokeJSImportST(function_handle: JSFnHandle, args: JSMarshalerArguments) {
     // WASM-TODO implementation
-    dotnetLogger.error("SystemInteropJS_InvokeJSImportST called");
+    _ems_.dotnetLogger.error("SystemInteropJS_InvokeJSImportST called");
     return - 1;
 }
 
@@ -21,5 +21,5 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         return [
         ];
     }
-    dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
+    _ems_.dotnetUpdateInternals(internals, _ems_.dotnetUpdateInternalsSubscriber);
 }

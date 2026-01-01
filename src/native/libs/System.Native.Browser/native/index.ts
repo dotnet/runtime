@@ -4,7 +4,7 @@
 import type { InternalExchange, NativeBrowserExports, NativeBrowserExportsTable } from "../types";
 import { InternalExchangeIndex } from "../types";
 
-import { dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "../../Common/JavaScript/cross-linked"; // ensure ambient symbols are declared
+import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 
 export { SystemJS_RandomBytes } from "./crypto";
 export { SystemJS_GetLocaleInfo } from "./globalization-locale";
@@ -14,7 +14,7 @@ export { SystemJS_ScheduleTimer, SystemJS_ScheduleBackgroundJob } from "./timer"
 export function dotnetInitializeModule(internals: InternalExchange): void {
     internals[InternalExchangeIndex.NativeBrowserExportsTable] = nativeBrowserExportsToTable({
     });
-    dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
+    _ems_.dotnetUpdateInternals(internals, _ems_.dotnetUpdateInternalsSubscriber);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     function nativeBrowserExportsToTable(map: NativeBrowserExports): NativeBrowserExportsTable {
