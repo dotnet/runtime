@@ -102,16 +102,18 @@ FCIMPLEND
 
 EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 {
+    size_t thunksMapSize = THUNKS_MAP_SIZE;
+
 #ifdef WIN32
 
-    void * pNewMapping = PalVirtualAlloc(THUNKS_MAP_SIZE * 2, PAGE_READWRITE);
+    void * pNewMapping = PalVirtualAlloc(thunksMapSize * 2, PAGE_READWRITE);
     if (pNewMapping == NULL)
     {
         return E_OUTOFMEMORY;
     }
 
     void * pThunksSection = pNewMapping;
-    void * pDataSection = (uint8_t*)pNewMapping + THUNKS_MAP_SIZE;
+    void * pDataSection = (uint8_t*)pNewMapping + thunksMapSize;
 
 #else
 
@@ -120,17 +122,17 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
     // reduce it to RW for the data section. For the stubs section we need to increase to RWX to generate the stubs
     // instructions. After this we go back to RX for the stubs section before the stubs are used and should not be
     // changed anymore.
-    void * pNewMapping = PalVirtualAlloc(THUNKS_MAP_SIZE * 2, PAGE_EXECUTE_READ);
+    void * pNewMapping = PalVirtualAlloc(thunksMapSize * 2, PAGE_EXECUTE_READ);
     if (pNewMapping == NULL)
     {
         return E_OUTOFMEMORY;
     }
 
     void * pThunksSection = pNewMapping;
-    void * pDataSection = (uint8_t*)pNewMapping + THUNKS_MAP_SIZE;
+    void * pDataSection = (uint8_t*)pNewMapping + thunksMapSize;
 
-    if (!PalVirtualProtect(pDataSection, THUNKS_MAP_SIZE, PAGE_READWRITE) ||
-        !PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READWRITE))
+    if (!PalVirtualProtect(pDataSection, thunksMapSize, PAGE_READWRITE) ||
+        !PalVirtualProtect(pThunksSection, thunksMapSize, PAGE_EXECUTE_READWRITE))
     {
         PalVirtualFree(pNewMapping, THUNKS_MAP_SIZE * 2);
         return E_FAIL;
@@ -307,14 +309,14 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
     #error "Unknown OS"
 #endif
 #else
-    if (!PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READ))
+    if (!PalVirtualProtect(pThunksSection, thunksMapSize, PAGE_EXECUTE_READ))
     {
-        PalVirtualFree(pNewMapping, THUNKS_MAP_SIZE * 2);
+        PalVirtualFree(pNewMapping, thunksMapSize * 2);
         return E_FAIL;
     }
 #endif
 
-    PalFlushInstructionCache(pThunksSection, THUNKS_MAP_SIZE);
+    PalFlushInstructionCache(pThunksSection, thunksMapSize);
 
     *ppThunksSection = pThunksSection;
     return S_OK;
