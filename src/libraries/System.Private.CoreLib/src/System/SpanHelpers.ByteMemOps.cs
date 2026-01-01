@@ -467,7 +467,7 @@ namespace System
                     Unsafe.WriteUnaligned<Block16>(ptr, default);
                     Unsafe.WriteUnaligned<Block16>(ptr + byteLength - 16, default);
 
-                    byte* alignedEnd = (byte*)((nuint)(ptr + byteLength - 1) & ~(nuint)16);
+                    byte* alignedEnd = (byte*)((nuint)(ptr + byteLength - 1) & ~(nuint)(16 - 1));
 
                     adjustedPtr = (byte*)(((nuint)ptr + 16) & ~(nuint)(16 - 1));
                     byteLength = (nuint)(alignedEnd - adjustedPtr);
