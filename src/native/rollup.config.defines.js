@@ -22,25 +22,21 @@ export const staticLibDestination = process.env.StaticLibDestination || "../../a
 
 console.log(`Rollup configuration: Configuration=${configuration}, ProductVersion=${productVersion}, ContinuousIntegrationBuild=${isContinuousIntegrationBuild}`);
 
-export const banner = "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n//! This is generated file, see src/native/libs/Browser/rollup.config.defines.js\n\n";
+export const banner = "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n//! This is generated file, see src/native/rollup.config.js\n\n";
 export const banner_dts = banner + "//! This is not considered public API with backward compatibility guarantees. \n";
 export const keep_classnames = /(ManagedObject|ManagedError|Span|ArraySegment)/;
 export const keep_fnames = /(dotnetUpdateInternals|dotnetUpdateInternalsSubscriber)/;
 export const reserved = [
-    "Module", "exitJS", "ExitStatus", "_exit", "_emscripten_force_exit", "safeSetTimeout",
-    "DOTNET", "DOTNET_INTEROP",
+    "_ems_", "Module",
     "dotnetInternals", "dotnetUpdateInternals", "dotnetUpdateInternalsSubscriber", "dotnetInitializeModule",
     "dotnetLogger", "dotnetAssert", "dotnetApi",
     "dotnetLoaderExports", "dotnetRuntimeExports", "dotnetBrowserHostExports", "dotnetInteropJSExports",
     "dotnetNativeBrowserExports", "dotnetBrowserUtilsExports", "dotnetDiagnosticsExports",
-    "VoidPtrNull",
-    "_SystemJS_ExecuteTimerCallback", "_SystemJS_ExecuteBackgroundJobCallback", "_GetDotNetRuntimeContractDescriptor",
-    "_BrowserHost_InitializeCoreCLR", "_BrowserHost_ExecuteAssembly", "_wasm_load_icu_data",
 ];
 
 export const externalDependencies = ["module", "process", "perf_hooks", "node:crypto"];
 export const artifactsObjDir = "../../artifacts/obj";
-export const isDebug = process.env.Configuration !== "Release";
+export const isDebug = process.env.Configuration !== "Release" && !isContinuousIntegrationBuild;
 
 export let gitHash;
 try {

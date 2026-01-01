@@ -22,7 +22,7 @@
 import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, LoggerType, AssertType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable, InternalExchangeSubscriber, BrowserUtilsExports, BrowserUtilsExportsTable, DiagnosticsExports, DiagnosticsExportsTable } from "../types";
 import { InternalExchangeIndex } from "../types";
 
-let dotnetInternals: InternalExchange;
+export let dotnetInternals: InternalExchange;
 export let Module: DotnetModuleInternal;
 export let dotnetApi: RuntimeAPI;
 export const dotnetLogger: LoggerType = {} as LoggerType;
