@@ -307,6 +307,10 @@ namespace System.Security.Cryptography
             {
                 Debug.Assert(consumed == bytesToTransform);
             }
+            else if (status == OperationStatus.DestinationTooSmall)
+            {
+                ThrowHelper.ThrowArgumentOutOfRange(ThrowHelper.ExceptionArgument.outputBuffer);
+            }
             else
             {
                 Debug.Assert(status == OperationStatus.InvalidData);

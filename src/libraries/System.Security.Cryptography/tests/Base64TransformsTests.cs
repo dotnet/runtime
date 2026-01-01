@@ -434,5 +434,15 @@ namespace System.Security.Cryptography.Tests
             // The transform should have processed data without throwing
             Assert.True(result.Length > 0);
         }
+
+        [Fact]
+        public void TransformBlock_OutputBufferTooSmall_ThrowsArgumentOutOfRangeException()
+        {
+            using FromBase64Transform transform = new();
+            byte[] destination = new byte[0];
+            byte[] block = "AAAA"u8.ToArray();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("outputBuffer",
+                () => transform.TransformBlock(block, 0, block.Length, destination, 0));
+        }
     }
 }
