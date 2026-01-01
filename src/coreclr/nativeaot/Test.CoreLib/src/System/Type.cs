@@ -26,6 +26,7 @@ namespace System
             return new Type(rh);
         }
 
+        // Implementation of CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE
         internal static unsafe Type GetTypeFromMethodTable(MethodTable* pMT)
         {
             return new Type(new RuntimeTypeHandle(pMT));
