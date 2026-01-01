@@ -42,7 +42,7 @@ namespace System
         [StackTraceHidden]
         [DebuggerStepThrough]
         [DebuggerHidden]
-        internal static unsafe object Ctor(MethodTable* pArrayMT, uint dwNumArgs, int* pArgList)
+        internal static unsafe Array Ctor(MethodTable* pArrayMT, uint dwNumArgs, int* pArgList)
         {
             Array? arr = null;
             Ctor(pArrayMT, dwNumArgs, pArgList, ObjectHandleOnStack.Create(ref arr));
