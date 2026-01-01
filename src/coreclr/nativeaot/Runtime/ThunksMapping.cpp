@@ -233,7 +233,7 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
             *((uint32_t*)pCurrentThunkAddress) = 0x10000010 | (((delta & 0x03) << 29) | (((delta & 0x1FFFFC) >> 2) << 5));
             pCurrentThunkAddress += 4;
 
-            *((uint32_t*)pCurrentThunkAddress) = 0xF9400211 | (((OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2)) / 8) << 10);
+            *((uint32_t*)pCurrentThunkAddress) = 0xF9400211 | (((uint32_t)((OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2)) / 8) << 10));
             pCurrentThunkAddress += 4;
 
             *((uint32_t*)pCurrentThunkAddress) = 0xD61F0220;
