@@ -170,7 +170,7 @@ export default defineConfig([
     libBrowserHost,
 ]);
 
-function configure({ input, output, terser }) {
+function configure({ input, output, terser, external }) {
     return {
         treeshake: !isDebug,
         input,
@@ -186,7 +186,7 @@ function configure({ input, output, terser }) {
                 ...o
             };
         }),
-        external: externalDependencies,
+        external: external ? [...external, ...externalDependencies] : externalDependencies,
         plugins: [
             nodeResolve(),
             consts(envConstants),
