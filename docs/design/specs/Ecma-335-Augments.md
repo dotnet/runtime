@@ -1036,7 +1036,7 @@ Byrefs derived from method parameters can escape from a function only in the fol
 - By explicit return of a byref or byref-like type
 - By writing through a byref to a byref-like type or byref-like type containing multiple levels of byref fields. For example: `Span<T> p` parameter cannot expose anything, while `ref Span<T> p` can.
 The behavior is undefined if any other form of escape is attempted.
- 
+
 ## <a name="byreflike-generics"></a> ByRefLike types in generics
 
 ByRefLike types, defined in C# with the `ref struct` syntax, represent types that cannot escape to the managed heap and must remain on the stack. It is possible for these types to be used as generic parameters, but in order to improve utility certain affordances are required.
