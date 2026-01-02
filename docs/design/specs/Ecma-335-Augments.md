@@ -1034,7 +1034,7 @@ Changes to signatures:
 Add a new paragraph "III.1.7.7 Managed pointers exposing parameters outside of the method scope" under section "III.1.7 Restrictions on CIL code sequences"
 Byrefs derived from method parameters can escape from a function only in the following ways:
 - By explicit return of a byref or byref-like type
-- By writing through a byref to a byref-like type or byref-like type containing multiple levels of byref fields. For an example: `Span<T> p` parameter cannot expose anything, while `ref Span<T> p` can.
+- By writing through a byref to a byref-like type or byref-like type containing multiple levels of byref fields. For example: `Span<T> p` parameter cannot expose anything, while `ref Span<T> p` can.
 The behavior is undefined if a any other form of escape is attempted.
  
 ## <a name="byreflike-generics"></a> ByRefLike types in generics
