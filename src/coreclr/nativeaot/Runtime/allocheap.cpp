@@ -22,8 +22,6 @@ AllocHeap::AllocHeap()
       m_pNextFree(NULL),
       m_pFreeCommitEnd(NULL),
       m_pFreeReserveEnd(NULL),
-      m_pbInitialMem(NULL),
-      m_fShouldFreeInitialMem(false),
       m_lock(CrstAllocHeap)
       COMMA_INDEBUG(m_fIsInit(false))
 {
@@ -39,45 +37,12 @@ bool AllocHeap::Init()
 }
 
 //-------------------------------------------------------------------------------------------------
-// This is for using pre-allocated memory on heap construction.
-// Should never use this more than once, and should always follow construction of heap.
-
-bool AllocHeap::Init(
-    uint8_t *    pbInitialMem,
-    uintptr_t cbInitialMemCommit,
-    uintptr_t cbInitialMemReserve,
-    bool       fShouldFreeInitialMem)
-{
-    ASSERT(!m_fIsInit);
-
-    BlockListElem *pBlock = reinterpret_cast<BlockListElem*>(pbInitialMem);
-    pBlock->m_pNext = NULL;
-    pBlock->m_cbMem = cbInitialMemReserve;
-    m_blockList.PushHead(pBlock);
-
-    uint8_t* dataStart = pBlock->GetDataStart();
-    if (!_UpdateMemPtrs(dataStart,
-                        pbInitialMem + cbInitialMemCommit,
-                        pbInitialMem + cbInitialMemReserve))
-    {
-        return false;
-    }
-
-    m_pbInitialMem = pbInitialMem;
-    m_fShouldFreeInitialMem = fShouldFreeInitialMem;
-
-    INDEBUG(m_fIsInit = true;)
-    return true;
-}
-
-//-------------------------------------------------------------------------------------------------
 AllocHeap::~AllocHeap()
 {
     while (!m_blockList.IsEmpty())
     {
         BlockListElem *pCur = m_blockList.PopHead();
-        if (pCur->GetStart() != m_pbInitialMem || m_fShouldFreeInitialMem)
-            delete[] pCur->GetStart();
+        delete[] pCur->GetStart();
     }
 }
 

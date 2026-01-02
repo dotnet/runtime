@@ -9,11 +9,6 @@ class AllocHeap
 
     bool Init();
 
-    bool Init(uint8_t *    pbInitialMem,
-              uintptr_t cbInitialMemCommit,
-              uintptr_t cbInitialMemReserve,
-              bool       fShouldFreeInitialMem);
-
     ~AllocHeap();
 
     // If AllocHeap was created with a MemAccessMgr, pRWAccessHolder must be non-NULL.
@@ -57,9 +52,6 @@ class AllocHeap
     uint8_t *                         m_pNextFree;
     uint8_t *                         m_pFreeCommitEnd;
     uint8_t *                         m_pFreeReserveEnd;
-
-    uint8_t *                         m_pbInitialMem;
-    bool                            m_fShouldFreeInitialMem;
 
     Crst                            m_lock;
 
