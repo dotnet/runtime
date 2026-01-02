@@ -13268,7 +13268,20 @@ static TADDR UnsafeJitFunctionWorker(
         //
         // Notify the debugger that we have successfully jitted the function
         //
-        if (g_pDebugInterface)
+        bool isInterpreterCode = false;
+#ifdef FEATURE_INTERPRETER
+        EECodeInfo codeInfo((TADDR)nativeEntry);
+        if (codeInfo.IsValid())
+        {
+            IJitManager* pJitManager = codeInfo.GetJitManager();
+            if (pJitManager != NULL && pJitManager == ExecutionManager::GetInterpreterJitManager())
+            {
+                isInterpreterCode = true;
+            }
+        }
+#endif // FEATURE_INTERPRETER
+        // TODO: Revisit this for interpreter code
+        if (g_pDebugInterface && !isInterpreterCode)
         {
             g_pDebugInterface->JITComplete(nativeCodeVersion, (TADDR)nativeEntry);
 

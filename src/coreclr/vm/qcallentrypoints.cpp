@@ -8,7 +8,6 @@
 // Headers for all ECall entrypoints
 //
 #include "arraynative.h"
-#include "objectnative.h"
 #include "dllimport.h"
 #include "comdelegate.h"
 #include "customattribute.h"
@@ -19,7 +18,6 @@
 #include "commodule.h"
 #include "marshalnative.h"
 #include "nativelibrarynative.h"
-#include "system.h"
 #include "comutilnative.h"
 #include "comsynchronizable.h"
 #include "floatdouble.h"
@@ -27,7 +25,6 @@
 #include "comdatetime.h"
 #include "debugdebugger.h"
 #include "assemblynative.hpp"
-#include "comwaithandle.h"
 
 #include "proftoeeinterfaceimpl.h"
 
@@ -42,7 +39,7 @@
 #include "mlinfo.h"
 
 #ifdef FEATURE_COMINTEROP
-#include "variant.h"
+#include "olevariant.h"
 #endif // FEATURE_COMINTEROP
 
 #include "interoplibinterface.h"
@@ -295,27 +292,26 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_GetCurrentOSThreadId)
     DllImportEntry(ThreadNative_Initialize)
     DllImportEntry(ThreadNative_GetThreadState)
+    DllImportEntry(ThreadNative_SetWaitSleepJoinState)
+    DllImportEntry(ThreadNative_ClearWaitSleepJoinState)
+    DllImportEntry(ThreadNative_ReentrantWaitAny)
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     DllImportEntry(ThreadNative_GetApartmentState)
     DllImportEntry(ThreadNative_SetApartmentState)
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    DllImportEntry(ThreadNative_Join)
     DllImportEntry(ThreadNative_Abort)
     DllImportEntry(ThreadNative_ResetAbort)
     DllImportEntry(ThreadNative_SpinWait)
+#ifdef TARGET_WINDOWS
+    DllImportEntry(ThreadNative_CheckForPendingInterrupt)
     DllImportEntry(ThreadNative_Interrupt)
-    DllImportEntry(ThreadNative_Sleep)
+    DllImportEntry(ThreadNative_GetOSHandle)
+#endif // TARGET_WINDOWS
     DllImportEntry(ThreadNative_PollGC)
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(ThreadNative_DisableComObjectEagerCleanup)
 #endif // FEATURE_COMINTEROP
     DllImportEntry(Monitor_GetOrCreateLockObject)
-    DllImportEntry(WaitHandle_WaitOneCore)
-    DllImportEntry(WaitHandle_WaitMultipleIgnoringSyncContext)
-    DllImportEntry(WaitHandle_SignalAndWait)
-#ifdef TARGET_UNIX
-    DllImportEntry(WaitHandle_WaitOnePrioritized)
-#endif // TARGET_UNIX
     DllImportEntry(ClrConfig_GetConfigBoolValue)
     DllImportEntry(Buffer_Clear)
     DllImportEntry(Buffer_MemMove)
@@ -482,25 +478,11 @@ static const Entry s_QCall[] =
     DllImportEntry(EventPipeInternal_WaitForSessionSignal)
 #endif // FEATURE_PERFTRACING
 #if defined(TARGET_UNIX)
-    DllImportEntry(CloseHandle)
-    DllImportEntry(CreateEventExW)
-    DllImportEntry(CreateMutexExW)
-    DllImportEntry(CreateSemaphoreExW)
-    DllImportEntry(FormatMessageW)
     DllImportEntry(FreeEnvironmentStringsW)
     DllImportEntry(GetEnvironmentStringsW)
     DllImportEntry(GetEnvironmentVariableW)
-    DllImportEntry(OpenEventW)
-    DllImportEntry(OpenMutexW)
-    DllImportEntry(OpenSemaphoreW)
     DllImportEntry(OutputDebugStringW)
-    DllImportEntry(PAL_CreateMutexW)
-    DllImportEntry(PAL_OpenMutexW)
-    DllImportEntry(ReleaseMutex)
-    DllImportEntry(ReleaseSemaphore)
-    DllImportEntry(ResetEvent)
     DllImportEntry(SetEnvironmentVariableW)
-    DllImportEntry(SetEvent)
 #endif
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     DllImportEntry(X86BaseCpuId)

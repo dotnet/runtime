@@ -124,7 +124,7 @@ def install_dotnet_sdk(channel: str, install_dir: Path) -> None:
         di = str(install_dir).replace("'", "''")
         ps_script = (
             "[System.Net.ServicePointManager]::SecurityProtocol=[System.Net.SecurityProtocolType]::Tls12;"
-            "Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1';"
+            "Invoke-WebRequest -UseBasicParsing -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1';"
             f"$DotnetVersion='{ch}';$InstallDir='{di}';"
             "& './dotnet-install.ps1' -Channel $DotnetVersion -InstallDir $InstallDir -NoPath"
         )

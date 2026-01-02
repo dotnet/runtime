@@ -178,6 +178,7 @@ namespace System.Net.NetworkInformation
         public abstract System.Net.NetworkInformation.IcmpV6Statistics GetIcmpV6Statistics();
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("haiku")]
         public static System.Net.NetworkInformation.IPGlobalProperties GetIPGlobalProperties() { throw null; }
         public abstract System.Net.NetworkInformation.IPGlobalStatistics GetIPv4GlobalStatistics();
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
@@ -401,9 +402,11 @@ namespace System.Net.NetworkInformation
         public NetworkChange() { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("haiku")]
         public static event System.Net.NetworkInformation.NetworkAddressChangedEventHandler? NetworkAddressChanged { add { } remove { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("haiku")]
         public static event System.Net.NetworkInformation.NetworkAvailabilityChangedEventHandler? NetworkAvailabilityChanged { add { } remove { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
@@ -425,10 +428,12 @@ namespace System.Net.NetworkInformation
         public virtual string Id { get { throw null; } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("haiku")]
         public static int IPv6LoopbackInterfaceIndex { get { throw null; } }
         public virtual bool IsReceiveOnly { get { throw null; } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("haiku")]
         public static int LoopbackInterfaceIndex { get { throw null; } }
         public virtual string Name { get { throw null; } }
         public virtual System.Net.NetworkInformation.NetworkInterfaceType NetworkInterfaceType { get { throw null; } }
@@ -437,6 +442,7 @@ namespace System.Net.NetworkInformation
         public virtual bool SupportsMulticast { get { throw null; } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("haiku")]
         public static System.Net.NetworkInformation.NetworkInterface[] GetAllNetworkInterfaces() { throw null; }
         public virtual System.Net.NetworkInformation.IPInterfaceProperties GetIPProperties() { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
@@ -445,6 +451,7 @@ namespace System.Net.NetworkInformation
         public virtual System.Net.NetworkInformation.IPv4InterfaceStatistics GetIPv4Statistics() { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("haiku")]
         public static bool GetIsNetworkAvailable() { throw null; }
         public virtual System.Net.NetworkInformation.PhysicalAddress GetPhysicalAddress() { throw null; }
         public virtual bool Supports(System.Net.NetworkInformation.NetworkInterfaceComponent networkInterfaceComponent) { throw null; }

@@ -2677,14 +2677,17 @@ MethodTableBuilder::EnumerateClassMethods()
     if ((DWORD)MAX_SLOT_INDEX <= cMethAndGaps)
         BuildMethodTableThrowException(IDS_CLASSLOAD_TOO_MANY_METHODS);
 
-    bmtMethod->m_cMaxDeclaredMethods = (SLOT_INDEX)cMethAndGaps;
-
-    if (g_pConfig->RuntimeAsync())
+    // In a worst case the number of declared methods can double
+    // as each async method may have two variants.
+    // The method count is typically a modest number though.
+    // We will reserve twice the size for the builder, up to the max, just in case.
+    DWORD cMethUpperBound = cMethAndGaps * 2;
+    if ((DWORD)MAX_SLOT_INDEX <= cMethUpperBound)
     {
-        // TODO: (async) the index is uint16 and can potentially overflow. This needs to be more robust.
-        bmtMethod->m_cMaxDeclaredMethods *= 2;
+        cMethUpperBound = MAX_SLOT_INDEX - 1;
     }
 
+    bmtMethod->m_cMaxDeclaredMethods = (SLOT_INDEX)cMethUpperBound;
     bmtMethod->m_cDeclaredMethods = 0;
     bmtMethod->m_rgDeclaredMethods = new (GetStackingAllocator())
         bmtMDMethod *[bmtMethod->m_cMaxDeclaredMethods];
@@ -3183,6 +3186,11 @@ MethodTableBuilder::EnumerateClassMethods()
                 CONSISTENCY_CHECK(hr == S_OK);
                 type = mcPInvoke;
             }
+
+            if (IsMiAsync(dwImplFlags))
+            {
+                BuildMethodTableThrowException(BFA_BAD_ASYNC_METHOD);
+            }
         }
         else if (IsMiRuntime(dwImplFlags))
         {
@@ -3227,6 +3235,11 @@ MethodTableBuilder::EnumerateClassMethods()
             }
 
             delegateMethodsSeen |= newDelegateMethodSeen;
+
+            if (IsMiAsync(dwImplFlags))
+            {
+                BuildMethodTableThrowException(BFA_BAD_ASYNC_METHOD);
+            }
         }
         else if (hasGenericMethodArgs)
         {
@@ -3254,6 +3267,12 @@ MethodTableBuilder::EnumerateClassMethods()
                 // pointer-sized field pointing to COM interop data which are
                 // allocated lazily when/if the MD actually gets used for interop.
                 type = mcComInterop;
+
+                // The interface method itself should never be marked as a runtime-async method.
+                if (IsMiAsync(dwImplFlags))
+                {
+                    BuildMethodTableThrowException(BFA_BAD_ASYNC_METHOD);
+                }
             }
             else
 #endif // !FEATURE_COMINTEROP
@@ -3305,6 +3324,11 @@ MethodTableBuilder::EnumerateClassMethods()
         bmtMDMethod *pDeclaredMethod = NULL;
         for (int insertCount = 0; insertCount < 2; insertCount++)
         {
+            if (bmtMethod->m_cDeclaredMethods >= bmtMethod->m_cMaxDeclaredMethods)
+            {
+                BuildMethodTableThrowException(IDS_CLASSLOAD_TOO_MANY_METHODS);
+            }
+
             bmtMDMethod * pNewMethod;
             if (insertCount == 0)
             {
@@ -3432,15 +3456,13 @@ MethodTableBuilder::EnumerateClassMethods()
                 }
 
                 MethodClassification asyncVariantType = type;
-#ifdef FEATURE_COMINTEROP
-                if (type == mcComInterop)
+                if (type != mcIL && type != mcInstantiated)
                 {
-                    // For COM interop methods,
-                    // we don't want to treat the async variant as a COM Interop method
-                    // (as it isn't, it's a transient IL method).
+                    // Don't treat the async variant of special method kinds as
+                    // the special method kind.
+                    // The async variant methods are always IL methods with a transient implementation.
                     asyncVariantType = mcIL;
                 }
-#endif // FEATURE_COMINTEROP
 
                 Signature newMemberSig(pNewMemberSignature, cAsyncThunkMemberSignature);
                 pNewMethod = new (GetStackingAllocator()) bmtMDMethod(

@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <OutputType>Library</OutputType>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>$(NoWarn);CA1050;CA1852;CA1861;CA2249;IDE0059;IDE0060;IDE0074</NoWarn>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
+
   <ItemGroup>
     <!--
       This repository generally does not use global usings, but the SDK does.
@@ -18,29 +18,21 @@
     <Using Include="System.Runtime.InteropServices" />
     <Using Include="System.Text" />
   </ItemGroup>
+
   <ItemGroup>
     <!-- Bring in references for these assemblies which are provided by the SDK.
          We do this to avoid bringing the package closure for assemblies we don't use here. -->
     <PackageDownloadAndReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" Folder="lib/netstandard2.0" />
-
-    <!-- Revert this after the next VMR re-bootstrap: https://github.com/dotnet/dotnet/issues/1985 -->
-
-    <!-- <PackageDownloadAndReference Include="NuGet.Frameworks" Version="$(NugetFrameworksVersion)" Folder="lib/net8.0" />
+    <PackageDownloadAndReference Include="NuGet.Frameworks" Version="$(NugetFrameworksVersion)" Folder="lib/net8.0" />
     <PackageDownloadAndReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" Folder="lib/net8.0" />
     <PackageDownloadAndReference Include="NuGet.ProjectModel" Version="$(NugetProjectModelVersion)" Folder="lib/net8.0" />
-    <PackageDownloadAndReference Include="NuGet.Versioning" Version="$(NugetVersioningVersion)" Folder="lib/net8.0" /> -->
-    <PackageReference Include="NuGet.Frameworks" Version="$(NugetFrameworksVersion)" />
-    <PackageReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" />
-    <PackageReference Include="NuGet.ProjectModel" Version="$(NugetProjectModelVersion)" />
-    <PackageReference Include="NuGet.Versioning" Version="$(NugetVersioningVersion)" />
+    <PackageDownloadAndReference Include="NuGet.Versioning" Version="$(NugetVersioningVersion)" Folder="lib/net8.0" />
   </ItemGroup>
+
   <ItemGroup>
-    <Content Include="Microsoft.NET.CrossGen.targets">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ShimFilesSimulatingLogicInSdkRepo/Microsoft.NET.CrossGen.props">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>Microsoft.NET.CrossGen.props</Link>
-    </Content>
+    <Content Include="Microsoft.NET.CrossGen.targets" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="ShimFilesSimulatingLogicInSdkRepo/Microsoft.NET.CrossGen.props"
+      Link="Microsoft.NET.CrossGen.props"
+      CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
