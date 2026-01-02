@@ -5,6 +5,7 @@ set(COMMON_RUNTIME_SOURCES
     rhassert.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
     CachedInterfaceDispatch_Aot.cpp
+    ${RUNTIME_DIR}/MiscNativeHelpers.cpp
     Crst.cpp
     DebugHeader.cpp
     MethodTable.cpp

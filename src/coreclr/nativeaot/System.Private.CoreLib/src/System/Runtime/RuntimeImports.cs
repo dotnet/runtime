@@ -426,9 +426,6 @@ namespace System.Runtime
         private static partial int _RhYield();
         internal static bool RhYield() => _RhYield() != 0;
 
-        [LibraryImport(RuntimeLibrary, EntryPoint = "RhFlushProcessWriteBuffers")]
-        internal static partial void RhFlushProcessWriteBuffers();
-
 #if !TARGET_UNIX
         // Wait for any object to be signalled, in a way that's compatible with the CLR's behavior in an STA.
         [LibraryImport(RuntimeLibrary)]
@@ -878,19 +875,6 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "modff")]
         internal static extern unsafe float modff(float x, float* intptr);
-
-        [LibraryImport(RuntimeImports.RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        internal static unsafe partial void* memmove(byte* dmem, byte* smem, nuint size);
-
-        [LibraryImport(RuntimeImports.RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        internal static unsafe partial void* memset(byte* mem, int value, nuint size);
-
-#if TARGET_X86 || TARGET_AMD64
-        [LibraryImport(RuntimeLibrary)]
-        internal static unsafe partial void RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId);
-#endif
 
 #if TARGET_UNIX
         [LibraryImport(RuntimeLibrary, StringMarshalling = StringMarshalling.Utf8)]

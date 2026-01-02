@@ -80,6 +80,8 @@
 #include "interpexec.h"
 #endif // FEATURE_INTERPRETER
 
+#include "MiscNativeHelpers.h"
+
 static const Entry s_QCall[] =
 {
     DllImportEntry(ArgIterator_Init)
@@ -313,8 +315,8 @@ static const Entry s_QCall[] =
 #endif // FEATURE_COMINTEROP
     DllImportEntry(Monitor_GetOrCreateLockObject)
     DllImportEntry(ClrConfig_GetConfigBoolValue)
-    DllImportEntry(Buffer_Clear)
-    DllImportEntry(Buffer_MemMove)
+    DllImportEntry(memset)
+    DllImportEntry(memmove)
     DllImportEntry(DependentHandle_InternalAllocWithGCTransition)
     DllImportEntry(DependentHandle_InternalFreeWithGCTransition)
     DllImportEntry(GCInterface_GetTotalAllocatedBytesPrecise)
@@ -485,7 +487,7 @@ static const Entry s_QCall[] =
     DllImportEntry(SetEnvironmentVariableW)
 #endif
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-    DllImportEntry(X86BaseCpuId)
+    DllImportEntry(X86Base_CpuId)
 #endif
     DllImportEntry(StubHelpers_CreateCustomMarshaler)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
