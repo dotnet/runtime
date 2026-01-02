@@ -773,13 +773,13 @@ buffer_manager_convert_buffer_to_read_only (
 		uint32_t index = ep_session_get_index(buffer_manager->session);
 		EP_YIELD_WHILE (ep_thread_get_session_write_in_progress (thread) == index &&
 						ep_thread_session_state_get_volatile_write_buffer (thread_session_state) == NULL);
-
-		// Now that the writer thread has released its cached pointer to this buffer, we can safely
-		// mark it as read-only.
-		EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section2)
-			ep_buffer_convert_to_read_only (new_read_buffer);
-		EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section2)
 	}
+
+	// Now that the writer thread has released its cached pointer to this buffer, we can safely
+	// mark it as read-only.
+	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section2)
+		ep_buffer_convert_to_read_only (new_read_buffer);
+	EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section2)
 
 ep_on_exit:
 	ep_buffer_manager_requires_lock_not_held (buffer_manager);
