@@ -95,7 +95,6 @@ bool AllocHeap::_AllocNewBlock(uintptr_t cbMem)
         return false;
 
     BlockListElem *pBlockListElem = reinterpret_cast<BlockListElem*>(pbMem);
-    pBlockListElem->m_pNext = NULL;
     pBlockListElem->m_cbMem = cbBlockSize;
 
     m_blockList.PushHead(pBlockListElem);
