@@ -3795,6 +3795,7 @@ private:
 public:
     InterpThreadContext *m_pInterpThreadContext;
     InterpThreadContext* GetInterpThreadContext();
+    InterpThreadContext* GetOrCreateInterpThreadContext();
 #endif // FEATURE_INTERPRETER
 };
 

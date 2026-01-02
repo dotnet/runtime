@@ -320,6 +320,9 @@ DWORD GetExceptionXCode(OBJECTREF throwable);
 
 void ExceptionPreserveStackTrace(OBJECTREF throwable);
 
+#ifdef FEATURE_COMINTEROP
+void FreeExceptionData(ExceptionData *pedata);
+#endif
 
 //==========================================================================
 // Create an exception object for an HRESULT

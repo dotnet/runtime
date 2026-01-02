@@ -112,9 +112,9 @@ target_link_options(browserhost PRIVATE
     -sWASM_BIGINT=1
     -sMODULARIZE=1
     -sEXPORT_ES6=1
-    -sEXIT_RUNTIME=0
+    -sEXIT_RUNTIME=1
     -sEXPORTED_RUNTIME_METHODS=BROWSER_HOST,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
-    -sEXPORTED_FUNCTIONS=_BrowserHost_InitializeCoreCLR,_BrowserHost_ExecuteAssembly,${CMAKE_EMCC_EXPORTED_FUNCTIONS}
+    -sEXPORTED_FUNCTIONS=${CMAKE_EMCC_EXPORTED_FUNCTIONS}
     -sEXPORT_NAME=createDotnetRuntime
     -sENVIRONMENT=web,webview,worker,node,shell
     -lnodefs.js
