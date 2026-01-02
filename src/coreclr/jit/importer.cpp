@@ -805,14 +805,14 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             WellKnownArg wellKnownArgType =
                 srcCall->ShouldHaveRetBufArg() ? WellKnownArg::RetBuffer : WellKnownArg::None;
 
-            // Return buffers cannot have volatile, unaligned, or initclass flags
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, &indirFlags);
 
+            // Return buffers cannot have volatile, unaligned, or initclass flags
             if (((indirFlags & GTF_IND_MUST_PRESERVE_FLAGS) != GTF_EMPTY) || !impIsLegalRetBuf(destAddr, srcCall))
             {
-                unsigned tmp = lvaGrabTemp(false DEBUGARG(
-                    printfAlloc("stack copy for value returned via return buffer")));
+                unsigned tmp =
+                    lvaGrabTemp(false DEBUGARG(printfAlloc("stack copy for value returned via return buffer")));
                 lvaSetStruct(tmp, srcCall->gtRetClsHnd, false);
 
                 GenTree* spilledCall = gtNewStoreLclVarNode(tmp, srcCall);
@@ -930,14 +930,14 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
         if (call->ShouldHaveRetBufArg())
         {
             // insert the return value buffer into the argument list as first byref parameter after 'this'
-            // Return buffers cannot have volatile, unaligned, or initclass flags
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, &indirFlags);
 
+            // Return buffers cannot have volatile, unaligned, or initclass flags
             if (((indirFlags & GTF_IND_MUST_PRESERVE_FLAGS) != GTF_EMPTY) || !impIsLegalRetBuf(destAddr, call))
             {
-                unsigned tmp = lvaGrabTemp(false DEBUGARG(
-                    printfAlloc("stack copy for value returned via return buffer")));
+                unsigned tmp =
+                    lvaGrabTemp(false DEBUGARG(printfAlloc("stack copy for value returned via return buffer")));
                 lvaSetStruct(tmp, call->gtRetClsHnd, false);
                 destAddr = gtNewLclVarAddrNode(tmp, TYP_I_IMPL);
 
