@@ -56,8 +56,8 @@ struct _EventPipeThread_Internal {
 	// immutable afterwards.
 	uint64_t os_thread_id;
 	// The EventPipeThreadHolder maintains one count while the thread is alive
-	// and each session's EventPipeBufferList maintains one count while it
-	// exists.
+	// Each EventPipeThreadSessionState maintains one count throughout its lifetime
+	// Every SequencePoint tracking this thread also maintains one count
 	int32_t ref_count;
 	// If this is set to a valid id before the corresponding entry of sessions is set to null,
 	// that pointer will be protected from deletion. See ep_disable () and
@@ -270,10 +270,6 @@ struct _EventPipeThreadSessionState_Internal {
 	// The list of buffers that were written to by this thread.
 	// immutable
 	EventPipeBufferList *buffer_list;
-#ifdef EP_CHECKED_BUILD
-	// protected by the buffer manager lock.
-	EventPipeBufferManager *buffer_manager;
-#endif
 	// The number of events that were attempted to be written by this
 	// thread. Each event was either successfully recorded in a buffer
 	// or it was dropped.

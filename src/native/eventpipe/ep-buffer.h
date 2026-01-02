@@ -74,7 +74,6 @@ struct _EventPipeBuffer {
 EP_DEFINE_GETTER(EventPipeBuffer *, buffer, ep_timestamp_t, creation_timestamp)
 EP_DEFINE_GETTER(EventPipeBuffer *, buffer, uint8_t *, buffer)
 EP_DEFINE_GETTER(EventPipeBuffer *, buffer, uint8_t *, limit)
-EP_DEFINE_GETTER_REF(EventPipeBuffer *, buffer, volatile uint32_t *, state)
 EP_DEFINE_GETTER(EventPipeBuffer *, buffer, EventPipeBuffer *, prev_buffer)
 EP_DEFINE_SETTER(EventPipeBuffer *, buffer, EventPipeBuffer *, prev_buffer)
 EP_DEFINE_GETTER(EventPipeBuffer *, buffer, EventPipeBuffer *, next_buffer)

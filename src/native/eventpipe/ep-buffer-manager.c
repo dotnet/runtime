@@ -134,17 +134,14 @@ void
 buffer_list_fini (EventPipeBufferList *buffer_list)
 {
 	EP_ASSERT (buffer_list != NULL);
-	ep_thread_holder_fini (&buffer_list->thread_holder);
 }
 
 EventPipeBufferList *
-ep_buffer_list_alloc (
-	EventPipeBufferManager *manager,
-	EventPipeThread *thread)
+ep_buffer_list_alloc (EventPipeBufferManager *manager)
 {
 	EventPipeBufferList *instance = ep_rt_object_alloc (EventPipeBufferList);
 	ep_raise_error_if_nok (instance != NULL);
-	ep_raise_error_if_nok (ep_buffer_list_init (instance, manager, thread) != NULL);
+	ep_raise_error_if_nok (ep_buffer_list_init (instance, manager) != NULL);
 
 ep_on_exit:
 	return instance;
@@ -158,14 +155,10 @@ ep_on_error:
 EventPipeBufferList *
 ep_buffer_list_init (
 	EventPipeBufferList *buffer_list,
-	EventPipeBufferManager *manager,
-	EventPipeThread *thread)
+	EventPipeBufferManager *manager)
 {
 	EP_ASSERT (buffer_list != NULL);
 	EP_ASSERT (manager != NULL);
-	EP_ASSERT (thread != NULL);
-
-	ep_thread_holder_init (&buffer_list->thread_holder, thread);
 
 	buffer_list->manager = manager;
 	buffer_list->head_buffer = NULL;

@@ -21,8 +21,6 @@ struct _EventPipeBufferList {
 #else
 struct _EventPipeBufferList_Internal {
 #endif
-	// The thread which writes to the buffers in this list.
-	EventPipeThreadHolder thread_holder;
 	// The buffer manager that owns this list.
 	EventPipeBufferManager *manager;
 	// Buffers are stored in an intrusive linked-list from oldest to newest.
@@ -42,26 +40,13 @@ struct _EventPipeBufferList {
 };
 #endif
 
-EP_DEFINE_GETTER_REF(EventPipeBufferList *, buffer_list, EventPipeThreadHolder *, thread_holder);
-
-static
-inline
-EventPipeThread *
-ep_buffer_list_get_thread (EventPipeBufferList *buffer_list)
-{
-	return ep_thread_holder_get_thread (ep_buffer_list_get_thread_holder_cref (buffer_list));
-}
-
 EventPipeBufferList *
-ep_buffer_list_alloc (
-	EventPipeBufferManager *manager,
-	EventPipeThread *thread);
+ep_buffer_list_alloc (EventPipeBufferManager *manager);
 
 EventPipeBufferList *
 ep_buffer_list_init (
 	EventPipeBufferList *buffer_list,
-	EventPipeBufferManager *manager,
-	EventPipeThread *thread);
+	EventPipeBufferManager *manager);
 
 void
 ep_buffer_list_fini (EventPipeBufferList *buffer_list);
