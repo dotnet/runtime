@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System
@@ -27,7 +28,7 @@ namespace System
         public static GCNotificationStatus WaitForFullGCComplete(TimeSpan timeout)
             => WaitForFullGCComplete(WaitHandle.ToTimeoutMilliseconds(timeout));
 
-#if !MONO && !NATIVEAOT
+#if !MONO
         // Support for AddMemoryPressure and RemoveMemoryPressure below.
         private const uint PressureCount = 4;
 #if TARGET_64BIT
@@ -156,7 +157,7 @@ namespace System
                         // last check - if we would exceed 20% of GC "duty cycle", do not trigger GC at this time
                         if ((GetNow() - GetLastGCStartTime(2)) > (GetLastGCDuration(2) * 5))
                         {
-                            _Collect(2, (int)InternalGCCollectionMode.NonBlocking, lowMemoryPressure: false);
+                            TriggerCollection(2, InternalGCCollectionMode.NonBlocking);
                             CheckCollectionCount();
                         }
                     }
@@ -177,6 +178,42 @@ namespace System
             InterlockedAddMemoryPressure(ref s_removePressure[p], bytesAllocated);
         }
 
+#if NATIVEAOT
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [System.Runtime.RuntimeImport("*", "RhGetCurrentObjSize")]
+        private static extern long RhGetCurrentObjSize();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [System.Runtime.RuntimeImport("*", "RhGetGCNow")]
+        private static extern long RhGetGCNow();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [System.Runtime.RuntimeImport("*", "RhGetLastGCStartTime")]
+        private static extern long RhGetLastGCStartTime(int generation);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [System.Runtime.RuntimeImport("*", "RhGetLastGCDuration")]
+        private static extern long RhGetLastGCDuration(int generation);
+
+        [LibraryImport("*")]
+        private static partial void RhCollect(int generation, InternalGCCollectionMode mode);
+
+        private static long GetCurrentObjSize() => RhGetCurrentObjSize();
+        private static long GetNow() => RhGetGCNow();
+        private static long GetLastGCStartTime(int generation) => RhGetLastGCStartTime(generation);
+        private static long GetLastGCDuration(int generation) => RhGetLastGCDuration(generation);
+        private static void TriggerCollection(int generation, InternalGCCollectionMode mode) => RhCollect(generation, mode);
+        private static void SendEtwAddMemoryPressureEvent(ulong bytesAllocated)
+        {
+            // ETW events not currently sent for NativeAOT
+            _ = bytesAllocated;
+        }
+        private static void SendEtwRemoveMemoryPressureEvent(ulong bytesAllocated)
+        {
+            // ETW events not currently sent for NativeAOT
+            _ = bytesAllocated;
+        }
+#else
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern long GetCurrentObjSize();
 
@@ -189,11 +226,14 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern long GetLastGCDuration(int generation);
 
+        private static void TriggerCollection(int generation, InternalGCCollectionMode mode) => _Collect(generation, (int)mode, lowMemoryPressure: false);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void SendEtwAddMemoryPressureEvent(ulong bytesAllocated);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void SendEtwRemoveMemoryPressureEvent(ulong bytesAllocated);
-#endif // !MONO && !NATIVEAOT
+#endif
+#endif // !MONO
     }
 }
