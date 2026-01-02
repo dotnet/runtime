@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents a concrete method (fully instantiated) for the purpose of
-    /// tracking dependencies.
+    /// tracking dependencies of inlinees.
     /// </summary>
     public class ShadowConcreteMethodNode : ShadowMethodNode, IMethodNode, ISymbolNodeWithLinkage
     {

@@ -10,7 +10,6 @@ using Internal.Text;
 using Internal.TypeSystem;
 
 using ILCompiler.DependencyAnalysisFramework;
-using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -125,16 +124,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             TypeDesc type = (TypeDesc)_target;
             return factory.PreinitializationManager.HasLazyStaticConstructor(type.ConvertToCanonForm(CanonicalFormKind.Specific));
-        }
-
-        private static bool ContainsCanonicalTypes(Instantiation instantiation)
-        {
-            foreach (TypeDesc arg in instantiation)
-            {
-                if (arg.IsCanonicalSubtype(CanonicalFormKind.Any))
-                    return true;
-            }
-            return false;
         }
 
         public IEnumerable<DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, bool isConcreteInstantiation)
