@@ -282,7 +282,11 @@ namespace System.Security.Cryptography.X509Certificates
                         out currentCrlNumber,
                         out int bytesConsumed);
 
-                    Debug.Assert(bytesConsumed == bytesWritten);
+                    if (bytesConsumed != bytesWritten)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    }
+
                     ArrayPool<byte>.Shared.Return(rented);
                     return ret;
                 }
