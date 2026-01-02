@@ -179,14 +179,6 @@ public:
     static FCDECL0(INT64,    GetAllocatedBytesForCurrentThread);
     static FCDECL0(INT64,    GetTotalAllocatedBytesApproximate);
 
-    // Helper FCalls for managed AddMemoryPressure/RemoveMemoryPressure implementation
-    static FCDECL0(INT64,   GetCurrentObjSize);
-    static FCDECL0(INT64,   GetNow);
-    static FCDECL1(INT64,   GetLastGCStartTime, INT32 generation);
-    static FCDECL1(INT64,   GetLastGCDuration, INT32 generation);
-    static FCDECL1(VOID,    SendEtwAddMemoryPressureEvent, UINT64 bytesAllocated);
-    static FCDECL1(VOID,    SendEtwRemoveMemoryPressureEvent, UINT64 bytesAllocated);
-
     // Wrapper methods that call managed implementation
     static void AddMemoryPressure(UINT64 bytesAllocated);
     static void RemoveMemoryPressure(UINT64 bytesAllocated);

@@ -1138,55 +1138,6 @@ FORCEINLINE UINT64 GCInterface::InterlockedSub(UINT64 *pMinuend, UINT64 subtrahe
     return newMemValue;
 }
 
-// New helper FCalls for managed AddMemoryPressure/RemoveMemoryPressure implementation
-FCIMPL0(INT64, GCInterface::GetCurrentObjSize)
-{
-    FCALL_CONTRACT;
-
-    return (INT64)GCHeapUtilities::GetGCHeap()->GetCurrentObjSize();
-}
-FCIMPLEND
-
-FCIMPL0(INT64, GCInterface::GetNow)
-{
-    FCALL_CONTRACT;
-
-    return (INT64)GCHeapUtilities::GetGCHeap()->GetNow();
-}
-FCIMPLEND
-
-FCIMPL1(INT64, GCInterface::GetLastGCStartTime, INT32 generation)
-{
-    FCALL_CONTRACT;
-
-    return (INT64)GCHeapUtilities::GetGCHeap()->GetLastGCStartTime(generation);
-}
-FCIMPLEND
-
-FCIMPL1(INT64, GCInterface::GetLastGCDuration, INT32 generation)
-{
-    FCALL_CONTRACT;
-
-    return (INT64)GCHeapUtilities::GetGCHeap()->GetLastGCDuration(generation);
-}
-FCIMPLEND
-
-FCIMPL1(VOID, GCInterface::SendEtwAddMemoryPressureEvent, UINT64 bytesAllocated)
-{
-    FCALL_CONTRACT;
-
-    FireEtwIncreaseMemoryPressure(bytesAllocated, GetClrInstanceId());
-}
-FCIMPLEND
-
-FCIMPL1(VOID, GCInterface::SendEtwRemoveMemoryPressureEvent, UINT64 bytesAllocated)
-{
-    FCALL_CONTRACT;
-
-    FireEtwDecreaseMemoryPressure(bytesAllocated, GetClrInstanceId());
-}
-FCIMPLEND
-
 extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback)
 {
     QCALL_CONTRACT;

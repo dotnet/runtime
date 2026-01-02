@@ -297,13 +297,6 @@ FCFuncStart(gGCInterfaceFuncs)
 
     FCFuncElement("GetAllocatedBytesForCurrentThread", GCInterface::GetAllocatedBytesForCurrentThread)
     FCFuncElement("GetTotalAllocatedBytesApproximate", GCInterface::GetTotalAllocatedBytesApproximate)
-
-    FCFuncElement("GetCurrentObjSize", GCInterface::GetCurrentObjSize)
-    FCFuncElement("GetNow", GCInterface::GetNow)
-    FCFuncElement("GetLastGCStartTime", GCInterface::GetLastGCStartTime)
-    FCFuncElement("GetLastGCDuration", GCInterface::GetLastGCDuration)
-    FCFuncElement("SendEtwAddMemoryPressureEvent", GCInterface::SendEtwAddMemoryPressureEvent)
-    FCFuncElement("SendEtwRemoveMemoryPressureEvent", GCInterface::SendEtwRemoveMemoryPressureEvent)
 FCFuncEnd()
 
 FCFuncStart(gGCSettingsFuncs)

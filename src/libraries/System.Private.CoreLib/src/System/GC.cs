@@ -209,25 +209,25 @@ namespace System
             _ = bytesAllocated;
         }
 #else
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern long GetCurrentObjSize();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GC_GetCurrentObjSize")]
+        private static partial long GetCurrentObjSize();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern long GetNow();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GC_GetNow")]
+        private static partial long GetNow();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern long GetLastGCStartTime(int generation);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GC_GetLastGCStartTime")]
+        private static partial long GetLastGCStartTime(int generation);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern long GetLastGCDuration(int generation);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GC_GetLastGCDuration")]
+        private static partial long GetLastGCDuration(int generation);
 
         private static void TriggerCollection(int generation, InternalGCCollectionMode mode) => _Collect(generation, (int)mode, lowMemoryPressure: false);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void SendEtwAddMemoryPressureEvent(ulong bytesAllocated);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GC_SendEtwAddMemoryPressureEvent")]
+        private static partial void SendEtwAddMemoryPressureEvent(ulong bytesAllocated);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void SendEtwRemoveMemoryPressureEvent(ulong bytesAllocated);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GC_SendEtwRemoveMemoryPressureEvent")]
+        private static partial void SendEtwRemoveMemoryPressureEvent(ulong bytesAllocated);
 #endif
 #endif // !MONO
     }
