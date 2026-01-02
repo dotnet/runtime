@@ -3661,7 +3661,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
 
         // The VSD cell is not needed for the original call when going through the resolver.
         // It can be removed without further fixups because it has fixed ABI assignment.
-        call->gtArgs.RemoveLate(vsdCellArg);
+        call->gtArgs.RemoveUnsafe(vsdCellArg);
         assert(vsdCellArg->GetNode()->OperIs(GT_PUTARG_REG));
         // Also PUTARG_REG can be removed.
         BlockRange().Remove(vsdCellArg->GetNode());
