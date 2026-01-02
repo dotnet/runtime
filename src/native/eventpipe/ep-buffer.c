@@ -56,9 +56,6 @@ ep_buffer_free (EventPipeBuffer *buffer)
 {
 	ep_return_void_if_nok (buffer != NULL);
 
-	// We should never be deleting a buffer that a writer thread might still try to write to
-	EP_ASSERT (ep_rt_volatile_load_uint32_t (&buffer->state) == (uint32_t)EP_BUFFER_STATE_READ_ONLY);
-
 	ep_rt_vfree (buffer->buffer, buffer->limit - buffer->buffer);
 	ep_rt_object_free (buffer);
 }

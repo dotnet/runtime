@@ -204,7 +204,6 @@ ep_thread_set_session_state (
 	EP_ASSERT (thread != NULL);
 	EP_ASSERT (session != NULL);
 	EP_ASSERT (ep_session_get_index (session) < EP_MAX_NUMBER_OF_SESSIONS);
-	EP_ASSERT (thread_session_state != NULL);
 
 	ep_buffer_manager_requires_lock_held(ep_session_get_buffer_manager (session));
 
@@ -377,7 +376,6 @@ EventPipeBuffer *
 ep_thread_session_state_get_volatile_write_buffer (const EventPipeThreadSessionState *thread_session_state)
 {
 	EP_ASSERT (thread_session_state != NULL);
-	EP_ASSERT (ep_thread_get() == ep_thread_session_state_get_thread (thread_session_state));
 
 	return (EventPipeBuffer*) ep_rt_volatile_load_ptr ((volatile void **)&thread_session_state->write_buffer);
 }
