@@ -1030,6 +1030,13 @@ Changes to signatures:
   - Managed pointers which point at the address just past the end of an object, or the address where an element just past the end of an array would be stored, are permitted but not dereferenceable.
   - Null managed pointers are permitted to be dereferenced resulting in a `NullReferenceException`.
 
+### III.1.7.7
+Add a new paragraph "III.1.7.7 Managed pointers exposing parameters outside of the method scope" under section "III.1.7 Restrictions on CIL code sequences"
+Byrefs derived from method parameters can escape from a function only in the following ways:
+- By explicit return of a byref or byref-like type
+- By writing through a byref to a byref-like type or byref-like type containing multiple levels of byref fields. For an example: `Span<T> p` parameter cannot expose anything, while `ref Span<T> p` can.
+The behavior is undefined if a any other form of escape is attempted.
+ 
 ## <a name="byreflike-generics"></a> ByRefLike types in generics
 
 ByRefLike types, defined in C# with the `ref struct` syntax, represent types that cannot escape to the managed heap and must remain on the stack. It is possible for these types to be used as generic parameters, but in order to improve utility certain affordances are required.
