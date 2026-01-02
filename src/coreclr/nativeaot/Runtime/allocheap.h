@@ -39,18 +39,16 @@ class AllocHeap
     bool _UpdateMemPtrs(uint8_t* pNextFree, uint8_t* pFreeCommitEnd);
     bool _UpdateMemPtrs(uint8_t* pNextFree);
 
+    static const uintptr_t BLOCK_SIZE = 4096;
+
     struct BlockListElem
     {
-        BlockListElem(uint8_t * pbMem, uintptr_t  cbMem)
-            : m_pbMem(pbMem), m_cbMem(cbMem), m_pNext(NULL)
-            {}
-
-        uint8_t* GetStart() const { return m_pbMem; }
-        uintptr_t GetLength() const { return m_cbMem; }
-
-        uint8_t *   m_pbMem;
-        uintptr_t   m_cbMem;
         BlockListElem* m_pNext;
+        uintptr_t m_cbMem;
+
+        uint8_t* GetStart() const { return (uint8_t*)this; }
+        uintptr_t GetLength() const { return m_cbMem; }
+        uint8_t* GetDataStart() const { return (uint8_t*)this + sizeof(BlockListElem); }
     };
 
     typedef SList<BlockListElem>    BlockList;

@@ -50,12 +50,13 @@ bool AllocHeap::Init(
 {
     ASSERT(!m_fIsInit);
 
-    BlockListElem *pBlock = new (nothrow) BlockListElem(pbInitialMem, cbInitialMemReserve);
-    if (pBlock == NULL)
-        return false;
+    BlockListElem *pBlock = reinterpret_cast<BlockListElem*>(pbInitialMem);
+    pBlock->m_pNext = NULL;
+    pBlock->m_cbMem = cbInitialMemReserve;
     m_blockList.PushHead(pBlock);
 
-    if (!_UpdateMemPtrs(pbInitialMem,
+    uint8_t* dataStart = pBlock->GetDataStart();
+    if (!_UpdateMemPtrs(dataStart,
                         pbInitialMem + cbInitialMemCommit,
                         pbInitialMem + cbInitialMemReserve))
     {
@@ -76,8 +77,7 @@ AllocHeap::~AllocHeap()
     {
         BlockListElem *pCur = m_blockList.PopHead();
         if (pCur->GetStart() != m_pbInitialMem || m_fShouldFreeInitialMem)
-            PalVirtualFree(pCur->GetStart(), pCur->GetLength());
-        delete pCur;
+            delete[] pCur->GetStart();
     }
 }
 
@@ -88,7 +88,7 @@ uint8_t * AllocHeap::_Alloc(
     )
 {
     ASSERT((alignment & (alignment - 1)) == 0); // Power of 2 only.
-    ASSERT(alignment <= OS_PAGE_SIZE);          // Can't handle this right now.
+    ASSERT(alignment <= BLOCK_SIZE);            // Can't handle this right now.
 
     CrstHolder lock(&m_lock);
 
@@ -124,8 +124,8 @@ uint8_t * AllocHeap::AllocAligned(
 //-------------------------------------------------------------------------------------------------
 bool AllocHeap::_UpdateMemPtrs(uint8_t* pNextFree, uint8_t* pFreeCommitEnd, uint8_t* pFreeReserveEnd)
 {
-    ASSERT(ALIGN_DOWN(pFreeCommitEnd, OS_PAGE_SIZE) == pFreeCommitEnd);
-    ASSERT(ALIGN_DOWN(pFreeReserveEnd, OS_PAGE_SIZE) == pFreeReserveEnd);
+    ASSERT(ALIGN_DOWN(pFreeCommitEnd, BLOCK_SIZE) == pFreeCommitEnd);
+    ASSERT(ALIGN_DOWN(pFreeReserveEnd, BLOCK_SIZE) == pFreeReserveEnd);
 
     m_pNextFree = pNextFree;
     m_pFreeCommitEnd = pFreeCommitEnd;
@@ -148,27 +148,28 @@ bool AllocHeap::_UpdateMemPtrs(uint8_t* pNextFree)
 //-------------------------------------------------------------------------------------------------
 bool AllocHeap::_AllocNewBlock(uintptr_t cbMem)
 {
-    cbMem = ALIGN_UP(cbMem, OS_PAGE_SIZE);
+    // Calculate block size: ensure it's at least BLOCK_SIZE and aligned to BLOCK_SIZE
+    // Also need room for BlockListElem header
+    uintptr_t cbBlockSize = ALIGN_UP(cbMem + sizeof(BlockListElem), BLOCK_SIZE);
+    if (cbBlockSize < BLOCK_SIZE)
+        cbBlockSize = BLOCK_SIZE;
 
-    uint8_t * pbMem = reinterpret_cast<uint8_t*>
-        (PalVirtualAlloc(cbMem, PAGE_READWRITE));
+    uint8_t * pbMem = new (nothrow) uint8_t[cbBlockSize];
 
     if (pbMem == NULL)
         return false;
 
-    BlockListElem *pBlockListElem = new (nothrow) BlockListElem(pbMem, cbMem);
-    if (pBlockListElem == NULL)
-    {
-        PalVirtualFree(pbMem, cbMem);
-        return false;
-    }
+    BlockListElem *pBlockListElem = reinterpret_cast<BlockListElem*>(pbMem);
+    pBlockListElem->m_pNext = NULL;
+    pBlockListElem->m_cbMem = cbBlockSize;
 
     // Add to the list. While there is no race for writers (we hold the lock) we have the
     // possibility of simultaneous readers, and using the interlocked version creates a
     // memory barrier to make sure any reader sees a consistent list.
     m_blockList.PushHeadInterlocked(pBlockListElem);
 
-    return _UpdateMemPtrs(pbMem, pbMem + cbMem, pbMem + cbMem);
+    uint8_t* dataStart = pBlockListElem->GetDataStart();
+    return _UpdateMemPtrs(dataStart, pbMem + cbBlockSize, pbMem + cbBlockSize);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -201,7 +202,7 @@ bool AllocHeap::_CommitFromCurBlock(uintptr_t cbMem)
 
     if (m_pNextFree + cbMem <= m_pFreeReserveEnd)
     {
-        uintptr_t cbMemToCommit = ALIGN_UP(cbMem, OS_PAGE_SIZE);
+        uintptr_t cbMemToCommit = ALIGN_UP(cbMem, BLOCK_SIZE);
         return _UpdateMemPtrs(m_pNextFree, m_pFreeCommitEnd + cbMemToCommit);
     }
 
