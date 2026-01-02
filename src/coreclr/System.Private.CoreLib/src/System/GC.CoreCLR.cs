@@ -124,8 +124,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern ulong GetGenerationSize(int gen);
 
-
-
         // Returns the generation that obj is currently in.
         //
         public static int GetGeneration(object obj)

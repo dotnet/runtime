@@ -222,10 +222,6 @@ extern "C" int QCALLTYPE GCInterface_StartNoGCRegion(INT64 totalSize, BOOL lohSi
 
 extern "C" int QCALLTYPE GCInterface_EndNoGCRegion();
 
-extern "C" void QCALLTYPE GCInterface_AddMemoryPressureForExternal(UINT64 bytesAllocated);
-
-extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressureForExternal(UINT64 bytesAllocated);
-
 extern "C" void QCALLTYPE GCInterface_ReRegisterForFinalize(QCall::ObjectHandleOnStack pObj);
 
 extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback);

@@ -1045,6 +1045,8 @@ DEFINE_METHOD(VALUE_TYPE,           EQUALS,                 Equals,             
 DEFINE_CLASS(GC,                    System,                 GC)
 DEFINE_METHOD(GC,                   KEEP_ALIVE,             KeepAlive,                  SM_Obj_RetVoid)
 DEFINE_METHOD(GC,                   RUN_FINALIZERS,         RunFinalizers,              SM_RetUInt)
+DEFINE_METHOD(GC,                   ADD_MEMORY_PRESSURE,    AddMemoryPressure,          SM_Long_RetVoid)
+DEFINE_METHOD(GC,                   REMOVE_MEMORY_PRESSURE, RemoveMemoryPressure,       SM_Long_RetVoid)
 
 DEFINE_CLASS_U(System,              WeakReference,          WeakReferenceObject)
 DEFINE_FIELD_U(_taggedHandle,       WeakReferenceObject,    m_taggedHandle)

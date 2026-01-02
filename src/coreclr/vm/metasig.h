@@ -374,6 +374,7 @@ DEFINE_METASIG(SM(Int_Str_IntPtr_RetIntPtr, i s I, I))
 DEFINE_METASIG(SM(Int_Str_IntPtr_Int_RetVoid, i s I i, v))
 DEFINE_METASIG(SM(Str_IntPtr_RetIntPtr, s I, I))
 DEFINE_METASIG(SM(Str_Bool_Int_RetV, s F i, v))
+DEFINE_METASIG(SM(Long_RetVoid, l, v))
 
 DEFINE_METASIG_T(SM(Type_RetObj, C(TYPE), j))
 DEFINE_METASIG_T(SM(Type_RetInt, C(TYPE), i))

@@ -27,7 +27,7 @@ namespace System
         public static GCNotificationStatus WaitForFullGCComplete(TimeSpan timeout)
             => WaitForFullGCComplete(WaitHandle.ToTimeoutMilliseconds(timeout));
 
-#if !MONO
+#if !MONO && !NATIVEAOT
         // Support for AddMemoryPressure and RemoveMemoryPressure below.
         private const uint PressureCount = 4;
 #if TARGET_64BIT
@@ -144,7 +144,7 @@ namespace System
                 // If still over budget, check current managed heap size
                 if (newMemValue >= budget)
                 {
-                    long heapOver3 = _GetCurrentObjSize() / 3;
+                    long heapOver3 = GetCurrentObjSize() / 3;
 
                     if (budget < heapOver3)  //Max
                     {
@@ -154,7 +154,7 @@ namespace System
                     if (newMemValue >= budget)
                     {
                         // last check - if we would exceed 20% of GC "duty cycle", do not trigger GC at this time
-                        if ((_GetNow() - _GetLastGCStartTime(2)) > (_GetLastGCDuration(2) * 5))
+                        if ((GetNow() - GetLastGCStartTime(2)) > (GetLastGCDuration(2) * 5))
                         {
                             _Collect(2, (int)InternalGCCollectionMode.NonBlocking, lowMemoryPressure: false);
                             CheckCollectionCount();
@@ -178,22 +178,22 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern long _GetCurrentObjSize();
+        private static extern long GetCurrentObjSize();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern long _GetNow();
+        private static extern long GetNow();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern long _GetLastGCStartTime(int generation);
+        private static extern long GetLastGCStartTime(int generation);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern long _GetLastGCDuration(int generation);
+        private static extern long GetLastGCDuration(int generation);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void SendEtwAddMemoryPressureEvent(ulong bytesAllocated);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void SendEtwRemoveMemoryPressureEvent(ulong bytesAllocated);
-#endif // !MONO
+#endif // !MONO && !NATIVEAOT
     }
 }

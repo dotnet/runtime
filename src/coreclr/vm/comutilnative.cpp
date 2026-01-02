@@ -1175,9 +1175,7 @@ FCIMPL1(VOID, GCInterface::SendEtwAddMemoryPressureEvent, UINT64 bytesAllocated)
 {
     FCALL_CONTRACT;
 
-    FC_INNER_PROLOG(GCInterface::SendEtwAddMemoryPressureEvent);
     FireEtwIncreaseMemoryPressure(bytesAllocated, GetClrInstanceId());
-    FC_INNER_EPILOG();
 }
 FCIMPLEND
 
@@ -1185,17 +1183,7 @@ FCIMPL1(VOID, GCInterface::SendEtwRemoveMemoryPressureEvent, UINT64 bytesAllocat
 {
     FCALL_CONTRACT;
 
-    FC_INNER_PROLOG(GCInterface::SendEtwRemoveMemoryPressureEvent);
-    EX_TRY
-    {
-        FireEtwDecreaseMemoryPressure(bytesAllocated, GetClrInstanceId());
-    }
-    EX_CATCH
-    {
-        // Ignore failures
-    }
-    EX_END_CATCH
-    FC_INNER_EPILOG();
+    FireEtwDecreaseMemoryPressure(bytesAllocated, GetClrInstanceId());
 }
 FCIMPLEND
 
@@ -1315,8 +1303,12 @@ void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
     }
     CONTRACTL_END;
 
-    // Call the managed implementation through QCall wrapper
-    GCInterface_AddMemoryPressureForExternal(bytesAllocated);
+    GCX_COOP();
+
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__GC__ADD_MEMORY_PRESSURE);
+    DECLARE_ARGHOLDER_ARRAY(args, 1);
+    args[ARGNUM_0] = PTR_TO_ARGHOLDER((INT64)bytesAllocated);
+    CALL_MANAGED_METHOD_NORET(args);
 }
 
 void GCInterface::RemoveMemoryPressure(UINT64 bytesAllocated)
@@ -1329,54 +1321,12 @@ void GCInterface::RemoveMemoryPressure(UINT64 bytesAllocated)
     }
     CONTRACTL_END;
 
-    // Call the managed implementation through QCall wrapper
-    GCInterface_RemoveMemoryPressureForExternal(bytesAllocated);
-}
-
-// QCall wrappers for managed AddMemoryPressure/RemoveMemoryPressure implementation
-extern "C" void QCALLTYPE GCInterface_AddMemoryPressureForExternal(UINT64 bytesAllocated)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
     GCX_COOP();
 
-    // Directly invoke the managed GC.AddMemoryPressure method
-    MethodTable* pMT = CoreLibBinder::GetClass(CLASS__GC);
-    MethodDesc* pMD = CoreLibBinder::GetMethod(METHOD__GC__ADD_MEMORY_PRESSURE);
-    
-    MethodDescCallSite addMemoryPressure(pMD);
-    
-    ARG_SLOT args[] = {
-        (ARG_SLOT)bytesAllocated
-    };
-    
-    addMemoryPressure.Call(args);
-
-    END_QCALL;
-}
-
-extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressureForExternal(UINT64 bytesAllocated)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    // Directly invoke the managed GC.RemoveMemoryPressure method
-    MethodDesc* pMD = CoreLibBinder::GetMethod(METHOD__GC__REMOVE_MEMORY_PRESSURE);
-    
-    MethodDescCallSite removeMemoryPressure(pMD);
-    
-    ARG_SLOT args[] = {
-        (ARG_SLOT)bytesAllocated
-    };
-    
-    removeMemoryPressure.Call(args);
-
-    END_QCALL;
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__GC__REMOVE_MEMORY_PRESSURE);
+    DECLARE_ARGHOLDER_ARRAY(args, 1);
+    args[ARGNUM_0] = PTR_TO_ARGHOLDER((INT64)bytesAllocated);
+    CALL_MANAGED_METHOD_NORET(args);
 }
 
 //

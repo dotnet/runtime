@@ -330,8 +330,6 @@ static const Entry s_QCall[] =
     DllImportEntry(GCInterface_ReRegisterForFinalize)
     DllImportEntry(GCInterface_GetNextFinalizableObject)
     DllImportEntry(GCInterface_WaitForPendingFinalizers)
-    DllImportEntry(GCInterface_AddMemoryPressureForExternal)
-    DllImportEntry(GCInterface_RemoveMemoryPressureForExternal)
 #ifdef FEATURE_BASICFREEZE
     DllImportEntry(GCInterface_RegisterFrozenSegment)
     DllImportEntry(GCInterface_UnregisterFrozenSegment)
