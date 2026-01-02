@@ -27,12 +27,6 @@ class AllocHeap
     uint8_t* _Alloc(uintptr_t cbMem, uintptr_t alignment);
     bool _AllocNewBlock(uintptr_t cbMem);
     uint8_t* _AllocFromCurBlock(uintptr_t cbMem, uintptr_t alignment);
-    bool _CommitFromCurBlock(uintptr_t cbMem);
-
-    // Access protection helpers
-    bool _UpdateMemPtrs(uint8_t* pNextFree, uint8_t* pFreeCommitEnd, uint8_t* pFreeReserveEnd);
-    bool _UpdateMemPtrs(uint8_t* pNextFree, uint8_t* pFreeCommitEnd);
-    bool _UpdateMemPtrs(uint8_t* pNextFree);
 
     static const uintptr_t BLOCK_SIZE = 4096;
 
@@ -41,7 +35,6 @@ class AllocHeap
         BlockListElem* m_pNext;
         uintptr_t m_cbMem;
 
-        uint8_t* GetStart() const { return (uint8_t*)this; }
         uintptr_t GetLength() const { return m_cbMem; }
         uint8_t* GetDataStart() const { return (uint8_t*)this + sizeof(BlockListElem); }
     };
@@ -49,9 +42,8 @@ class AllocHeap
     typedef SList<BlockListElem>    BlockList;
     BlockList                       m_blockList;
 
-    uint8_t *                         m_pNextFree;
-    uint8_t *                         m_pFreeCommitEnd;
-    uint8_t *                         m_pFreeReserveEnd;
+    BlockListElem *                 m_pCurBlock;
+    uintptr_t                       m_cbCurBlockUsed;
 
     Crst                            m_lock;
 

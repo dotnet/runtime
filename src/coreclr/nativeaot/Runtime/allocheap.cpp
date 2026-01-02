@@ -19,9 +19,8 @@
 //-------------------------------------------------------------------------------------------------
 AllocHeap::AllocHeap()
     : m_blockList(),
-      m_pNextFree(NULL),
-      m_pFreeCommitEnd(NULL),
-      m_pFreeReserveEnd(NULL),
+      m_pCurBlock(NULL),
+      m_cbCurBlockUsed(0),
       m_lock(CrstAllocHeap)
       COMMA_INDEBUG(m_fIsInit(false))
 {
@@ -42,7 +41,7 @@ AllocHeap::~AllocHeap()
     while (!m_blockList.IsEmpty())
     {
         BlockListElem *pCur = m_blockList.PopHead();
-        delete[] pCur->GetStart();
+        delete[] (uint8_t*)pCur;
     }
 }
 
@@ -87,38 +86,11 @@ uint8_t * AllocHeap::AllocAligned(
 }
 
 //-------------------------------------------------------------------------------------------------
-bool AllocHeap::_UpdateMemPtrs(uint8_t* pNextFree, uint8_t* pFreeCommitEnd, uint8_t* pFreeReserveEnd)
-{
-    ASSERT(ALIGN_DOWN(pFreeCommitEnd, BLOCK_SIZE) == pFreeCommitEnd);
-    ASSERT(ALIGN_DOWN(pFreeReserveEnd, BLOCK_SIZE) == pFreeReserveEnd);
-
-    m_pNextFree = pNextFree;
-    m_pFreeCommitEnd = pFreeCommitEnd;
-    m_pFreeReserveEnd = pFreeReserveEnd;
-    return true;
-}
-
-//-------------------------------------------------------------------------------------------------
-bool AllocHeap::_UpdateMemPtrs(uint8_t* pNextFree, uint8_t* pFreeCommitEnd)
-{
-    return _UpdateMemPtrs(pNextFree, pFreeCommitEnd, m_pFreeReserveEnd);
-}
-
-//-------------------------------------------------------------------------------------------------
-bool AllocHeap::_UpdateMemPtrs(uint8_t* pNextFree)
-{
-    return _UpdateMemPtrs(pNextFree, m_pFreeCommitEnd);
-}
-
-//-------------------------------------------------------------------------------------------------
 bool AllocHeap::_AllocNewBlock(uintptr_t cbMem)
 {
-    // Calculate block size: ensure it's at least BLOCK_SIZE and aligned to BLOCK_SIZE
-    // Also need room for BlockListElem header
     uintptr_t cbBlockSize = ALIGN_UP(cbMem + sizeof(BlockListElem), BLOCK_SIZE);
 
     uint8_t * pbMem = new (nothrow) uint8_t[cbBlockSize];
-
     if (pbMem == NULL)
         return false;
 
@@ -126,13 +98,12 @@ bool AllocHeap::_AllocNewBlock(uintptr_t cbMem)
     pBlockListElem->m_pNext = NULL;
     pBlockListElem->m_cbMem = cbBlockSize;
 
-    // Add to the list. While there is no race for writers (we hold the lock) we have the
-    // possibility of simultaneous readers, and using the interlocked version creates a
-    // memory barrier to make sure any reader sees a consistent list.
-    m_blockList.PushHeadInterlocked(pBlockListElem);
+    m_blockList.PushHead(pBlockListElem);
 
-    uint8_t* dataStart = pBlockListElem->GetDataStart();
-    return _UpdateMemPtrs(dataStart, pbMem + cbBlockSize, pbMem + cbBlockSize);
+    m_pCurBlock = pBlockListElem;
+    m_cbCurBlockUsed = sizeof(BlockListElem);
+
+    return true;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -140,36 +111,18 @@ uint8_t * AllocHeap::_AllocFromCurBlock(
     uintptr_t cbMem,
     uintptr_t alignment)
 {
-    uint8_t * pbMem = NULL;
+    if (m_pCurBlock == NULL)
+        return NULL;
 
-    cbMem += (uint8_t *)ALIGN_UP(m_pNextFree, alignment) - m_pNextFree;
+    uint8_t* pBlockStart = (uint8_t*)m_pCurBlock;
+    uint8_t* pAlloc = (uint8_t*)ALIGN_UP(pBlockStart + m_cbCurBlockUsed, alignment);
+    uintptr_t cbAllocEnd = pAlloc + cbMem - pBlockStart;
 
-    if (m_pNextFree + cbMem <= m_pFreeCommitEnd ||
-        _CommitFromCurBlock(cbMem))
-    {
-        ASSERT(cbMem + m_pNextFree <= m_pFreeCommitEnd);
+    if (cbAllocEnd > m_pCurBlock->m_cbMem)
+        return NULL;
 
-        pbMem = ALIGN_UP(m_pNextFree, alignment);
-
-        if (!_UpdateMemPtrs(m_pNextFree + cbMem))
-            return NULL;
-    }
-
-    return pbMem;
-}
-
-//-------------------------------------------------------------------------------------------------
-bool AllocHeap::_CommitFromCurBlock(uintptr_t cbMem)
-{
-    ASSERT(m_pFreeCommitEnd < m_pNextFree + cbMem);
-
-    if (m_pNextFree + cbMem <= m_pFreeReserveEnd)
-    {
-        uintptr_t cbMemToCommit = ALIGN_UP(cbMem, BLOCK_SIZE);
-        return _UpdateMemPtrs(m_pNextFree, m_pFreeCommitEnd + cbMemToCommit);
-    }
-
-    return false;
+    m_cbCurBlockUsed = cbAllocEnd;
+    return pAlloc;
 }
 
 //-------------------------------------------------------------------------------------------------
