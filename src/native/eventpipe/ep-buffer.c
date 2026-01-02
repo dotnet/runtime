@@ -6,6 +6,7 @@
 #define EP_IMPL_BUFFER_GETTER_SETTER
 #include "ep.h"
 #include "ep-buffer.h"
+#include "ep-buffer-manager.h"
 #include "ep-event.h"
 #include "ep-event-instance.h"
 #include "ep-event-payload.h"
@@ -183,12 +184,12 @@ ep_buffer_get_volatile_state (const EventPipeBuffer *buffer)
 }
 
 void
-ep_buffer_convert_to_read_only (EventPipeBuffer *buffer)
+ep_buffer_convert_to_read_only (EventPipeBuffer *buffer, EventPipeBufferManager *buffer_manager)
 {
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer->current_read_event == NULL);
 
-	// this should occur under the buffer_manager lock but we don't have the pointer to assert it
+	ep_buffer_manager_requires_lock_held (buffer_manager);
 
 	ep_rt_volatile_store_uint32_t (&buffer->state, (uint32_t)EP_BUFFER_STATE_READ_ONLY);
 

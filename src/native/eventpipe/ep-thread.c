@@ -395,16 +395,6 @@ ep_thread_session_state_set_write_buffer (
 	thread_session_state->write_buffer = new_buffer;
 }
 
-EventPipeBufferList *
-ep_thread_session_state_get_buffer_list (const EventPipeThreadSessionState *thread_session_state)
-{
-	EP_ASSERT (thread_session_state != NULL);
-
-	ep_buffer_manager_requires_lock_held (thread_session_state->buffer_manager);
-
-	return thread_session_state->buffer_list;
-}
-
 uint32_t
 ep_thread_session_state_get_volatile_sequence_number (const EventPipeThreadSessionState *thread_session_state)
 {

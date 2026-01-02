@@ -778,7 +778,7 @@ buffer_manager_convert_buffer_to_read_only (
 	// Now that the writer thread has released its cached pointer to this buffer, we can safely
 	// mark it as read-only.
 	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section2)
-		ep_buffer_convert_to_read_only (new_read_buffer);
+		ep_buffer_convert_to_read_only (new_read_buffer, buffer_manager);
 	EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section2)
 
 ep_on_exit:
@@ -1318,7 +1318,7 @@ ep_buffer_manager_deallocate_buffers (EventPipeBufferManager *buffer_manager)
 			// Iterate over all nodes in the buffer list and deallocate them.
 			EventPipeBuffer *buffer = ep_buffer_list_get_and_remove_head (buffer_list);
 			while (buffer) {
-				buffer_manager_deallocate_buffer (buffer_manager, buffer);
+				buffer_manager_deallocate_buffer(buffer_manager, buffer);
 				buffer = ep_buffer_list_get_and_remove_head (buffer_list);
 			}
 

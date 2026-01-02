@@ -148,7 +148,7 @@ ep_buffer_get_volatile_state (const EventPipeBuffer *buffer);
 // Convert the buffer writable to readable.
 // _Requires_lock_held (thread)
 void
-ep_buffer_convert_to_read_only (EventPipeBuffer *buffer);
+ep_buffer_convert_to_read_only (EventPipeBuffer *buffer, EventPipeBufferManager *buffer_manager);
 
 #ifdef EP_CHECKED_BUILD
 bool

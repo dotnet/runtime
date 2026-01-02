@@ -303,6 +303,7 @@ struct _EventPipeThreadSessionState {
 #endif
 
 EP_DEFINE_GETTER_REF(EventPipeThreadSessionState *, thread_session_state, EventPipeThreadHolder *, thread_holder)
+EP_DEFINE_GETTER(EventPipeThreadSessionState *, thread_session_state, EventPipeBufferList *, buffer_list)
 EP_DEFINE_GETTER(EventPipeThreadSessionState *, thread_session_state, EventPipeSession *, session)
 
 EventPipeThreadSessionState *
@@ -332,10 +333,6 @@ void
 ep_thread_session_state_set_write_buffer (
 	EventPipeThreadSessionState *thread_session_state,
 	EventPipeBuffer *new_buffer);
-
-// _Requires_lock_held (buffer_manager)
-EventPipeBufferList *
-ep_thread_session_state_get_buffer_list (const EventPipeThreadSessionState *thread_session_state);
 
 uint32_t
 ep_thread_session_state_get_volatile_sequence_number (const EventPipeThreadSessionState *thread_session_state);
