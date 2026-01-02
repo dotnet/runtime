@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
@@ -14,6 +15,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
     [SkipKeptItemsValidation]
     [SetupCompileArgument("/features:runtime-async=on")]
     [SetupCompileArgument("/nowarn:SYSLIB5007")]
+    [ExpectedNoWarnings]
     public class RuntimeAsyncMethods
     {
         public static async Task Main()
@@ -26,6 +28,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             await RuntimeAsyncReturningAnnotatedType();
             await RuntimeAsyncWithCorrectParameter(null);
             await RuntimeAsyncWithLocalAll();
+            await RuntimeAsyncWithLambda();
+            await RuntimeAsyncWithAwaitedLocalMethod();
         }
 
         static async Task BasicRuntimeAsyncMethod()
@@ -102,6 +106,28 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             Type t = GetWithAllMembers();
             await Task.Delay(1);
             t.RequiresAll();
+        }
+
+        class TypeWithRucMethod
+        {
+            [RequiresUnreferencedCode("RUC")]
+            public static void RucMethod() { }
+        }
+
+        static async Task RuntimeAsyncWithLambda()
+        {
+            await Task.Run([ExpectedWarning("IL2026", nameof(TypeWithRucMethod.RucMethod))] () => typeof(TypeWithRucMethod).GetMethods());
+        }
+
+        static async Task RuntimeAsyncWithAwaitedLocalMethod()
+        {
+            await GetTheMethods();
+
+            [ExpectedWarning("IL2026", nameof(TypeWithRucMethod.RucMethod))]
+            static async Task<MethodInfo[]> GetTheMethods()
+            {
+                return typeof(TypeWithRucMethod).GetMethods();
+            }
         }
     }
 }

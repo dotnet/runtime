@@ -10,6 +10,8 @@ namespace NativeExports.ComInterfaceGenerator
     public static unsafe class UniqueMarshalling
     {
         private static void* s_cachedPtr = null;
+        // To handle the final release of the cached pointer
+        private static ComObject s_cachedObject = null;
 
         // Call from another assembly to get a ptr to make an RCW
         [UnmanagedCallersOnly(EntryPoint = "new_unique_marshalling")]
@@ -20,9 +22,12 @@ namespace NativeExports.ComInterfaceGenerator
                 StrategyBasedComWrappers wrappers = new();
                 var myObject = new SharedTypes.ComInterfaces.UniqueMarshalling();
                 nint ptr = wrappers.GetOrCreateComInterfaceForObject(myObject, CreateComInterfaceFlags.None);
+                s_cachedObject = (ComObject)wrappers.GetOrCreateObjectForComInstance(ptr, CreateObjectFlags.None);
                 s_cachedPtr = (void*)ptr;
             }
 
+            // AddRef before returning - caller will Release
+            Marshal.AddRef((nint)s_cachedPtr);
             return s_cachedPtr;
         }
     }

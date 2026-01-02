@@ -17,8 +17,10 @@ export function registerDllBytes(bytes: Uint8Array, asset: { name: string, virtu
 
         const ptr = Module.HEAPU32[ptrPtr as any >>> 2];
         Module.HEAPU8.set(bytes, ptr >>> 0);
-        loadedAssemblies.set(asset.name, { ptr, length: bytes.length });
         loadedAssemblies.set(asset.virtualPath, { ptr, length: bytes.length });
+        if (!asset.virtualPath.startsWith("/")) {
+            loadedAssemblies.set("/" + asset.virtualPath, { ptr, length: bytes.length });
+        }
     } finally {
         Module.stackRestore(sp);
     }
@@ -83,6 +85,10 @@ export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
     );
 }
 
+export function initializeCoreCLR(): number {
+    return _BrowserHost_InitializeCoreCLR();
+}
+
 // bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);
 export function BrowserHost_ExternalAssemblyProbe(pathPtr: CharPtr, outDataStartPtr: VoidPtrPtr, outSize: VoidPtr) {
     const path = Module.UTF8ToString(pathPtr);
@@ -94,6 +100,7 @@ export function BrowserHost_ExternalAssemblyProbe(pathPtr: CharPtr, outDataStart
         Module.HEAPU32[((outSize as any) + 4) >>> 2] = 0;
         return true;
     }
+    dotnetLogger.debug(`Assembly not found: '${path}'`);
     Module.HEAPU32[outDataStartPtr as any >>> 2] = 0;
     Module.HEAPU32[outSize as any >>> 2] = 0;
     Module.HEAPU32[((outSize as any) + 4) >>> 2] = 0;
@@ -101,51 +108,64 @@ export function BrowserHost_ExternalAssemblyProbe(pathPtr: CharPtr, outDataStart
 }
 
 export async function runMain(mainAssemblyName?: string, args?: string[]): Promise<number> {
-    const config = dotnetApi.getConfig();
-    if (!mainAssemblyName) {
-        mainAssemblyName = config.mainAssemblyName!;
-    }
-    const mainAssemblyNamePtr = dotnetBrowserUtilsExports.stringToUTF8Ptr(mainAssemblyName) as any;
-
-    if (!args) {
-        args = [];
-    }
-
-    const sp = Module.stackSave();
-    const argsvPtr: number = Module.stackAlloc((args.length + 1) * 4) as any;
-    const ptrs: VoidPtr[] = [];
     try {
-
-        for (let i = 0; i < args.length; i++) {
-            const ptr = dotnetBrowserUtilsExports.stringToUTF8Ptr(args[i]) as any;
-            ptrs.push(ptr);
-            Module.HEAPU32[(argsvPtr >>> 2) + i] = ptr;
+        const config = dotnetApi.getConfig();
+        if (!mainAssemblyName) {
+            mainAssemblyName = config.mainAssemblyName!;
         }
-        const res = _BrowserHost_ExecuteAssembly(mainAssemblyNamePtr, args.length, argsvPtr);
-        for (const ptr of ptrs) {
-            Module._free(ptr);
+        if (!mainAssemblyName.endsWith(".dll")) {
+            mainAssemblyName += ".dll";
         }
+        const mainAssemblyNamePtr = dotnetBrowserUtilsExports.stringToUTF8Ptr(mainAssemblyName) as any;
 
-        if (res != 0) {
-            const reason = new Error("Failed to execute assembly");
-            dotnetApi.exit(res, reason);
-            throw reason;
+        args ??= [];
+
+        const sp = Module.stackSave();
+        const argsvPtr: number = Module.stackAlloc((args.length + 1) * 4) as any;
+        const ptrs: VoidPtr[] = [];
+        try {
+
+            for (let i = 0; i < args.length; i++) {
+                const ptr = dotnetBrowserUtilsExports.stringToUTF8Ptr(args[i]) as any;
+                ptrs.push(ptr);
+                Module.HEAPU32[(argsvPtr >>> 2) + i] = ptr;
+            }
+            const res = _BrowserHost_ExecuteAssembly(mainAssemblyNamePtr, args.length, argsvPtr);
+            for (const ptr of ptrs) {
+                Module._free(ptr);
+            }
+
+            if (res != 0) {
+                const reason = new Error("Failed to execute assembly");
+                dotnetApi.exit(res, reason);
+                throw reason;
+            }
+
+            return dotnetLoaderExports.getRunMainPromise();
+        } finally {
+            Module.stackRestore(sp);
         }
-
-        return dotnetLoaderExports.getRunMainPromise();
-    } finally {
-        Module.stackRestore(sp);
+    } catch (error: any) {
+        // if the error is an ExitStatus, use its status code
+        if (error && typeof error.status === "number") {
+            return error.status;
+        }
+        dotnetApi.exit(1, error);
+        throw error;
     }
 }
 
 export async function runMainAndExit(mainAssemblyName?: string, args?: string[]): Promise<number> {
+    const res = await runMain(mainAssemblyName, args);
     try {
-        await runMain(mainAssemblyName, args);
-    } catch (error) {
-        dotnetApi.exit(1, error);
-        throw error;
+        dotnetApi.exit(0, null);
+    } catch (error: any) {
+        // do not propagate ExitStatus exception
+        if (error.status === undefined) {
+            dotnetApi.exit(1, error);
+            throw error;
+        }
     }
-    dotnetApi.exit(0, null);
-    return 0;
+    return res;
 }
 

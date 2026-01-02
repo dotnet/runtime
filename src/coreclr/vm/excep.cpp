@@ -2583,18 +2583,11 @@ void FreeExceptionData(ExceptionData *pedata)
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
     _ASSERTE(pedata != NULL);
-
-    // <TODO>@NICE: At one point, we had the comment:
-    //     (DM) Remove this when shutdown works better.</TODO>
-    // This test may no longer be necessary.  Remove at own peril.
-    Thread *pThread = GetThreadNULLOk();
-    if (!pThread)
-        return;
 
     if (pedata->bstrSource)
         SysFreeString(pedata->bstrSource);
@@ -7652,9 +7645,6 @@ bool DebugIsEECxxExceptionPointer(void* pv)
         EEResourceException     boilerplate8;
 
 #ifdef FEATURE_COMINTEROP
-        // EECOMException::~EECOMException calls FreeExceptionData, which is GC_TRIGGERS,
-        // but it won't trigger in this case because EECOMException's members remain NULL.
-        CONTRACT_VIOLATION(GCViolation);
         EECOMException          boilerplate9;
 #endif // FEATURE_COMINTEROP
 
