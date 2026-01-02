@@ -147,7 +147,7 @@
         EPILOG_NOP br x12
         ELSE
         ;; Return target address
-        EPILOG_NOP mov x0, x12
+        EPILOG_NOP mov x15, x12
         ret
         ENDIF
 

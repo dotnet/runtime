@@ -767,6 +767,9 @@ Fail
 ;;    x0                     contains object 'this' pointer
 ;;    x11                    contains the address of the indirection cell (with the flags in the low bits)
 ;;
+;; On Output:
+;;    x15                    contains the target address
+;;
 ;; Preserves all argument registers
         NESTED_ENTRY JIT_InterfaceLookupForSlot
 
@@ -779,11 +782,9 @@ Fail
 
         ;; Move the result (the target address) to x12 so it doesn't get overridden when we restore the
         ;; argument registers.
-        mov x12, x0
+        mov x15, x0
 
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-
-        EPILOG_NOP mov x0, x12
 
         EPILOG_RETURN
 

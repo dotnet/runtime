@@ -3169,6 +3169,13 @@ void CodeGen::genCall(GenTreeCall* call)
             }
             else
 #endif // TARGET_ARM
+#ifdef TARGET_ARM64
+                if (call->IsHelperCall(compiler, CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
+                {
+                    returnReg = genFirstRegNumFromMask(RBM_INTERFACELOOKUP_FOR_SLOT_RETURN);
+                }
+                else
+#endif
                 if (varTypeUsesFloatArgReg(returnType))
                 {
                     returnReg = REG_FLOATRET;

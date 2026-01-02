@@ -231,6 +231,13 @@ int LinearScan::BuildCall(GenTreeCall* call)
     }
     else
 #endif // TARGET_ARM
+#ifdef TARGET_ARM64
+    if (call->IsHelperCall(compiler, CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
+    {
+        singleDstCandidates = RBM_INTERFACELOOKUP_FOR_SLOT_RETURN.GetIntRegSet();
+    }
+    else
+#endif
         if (!hasMultiRegRetVal)
         {
             if (varTypeUsesFloatArgReg(registerType))

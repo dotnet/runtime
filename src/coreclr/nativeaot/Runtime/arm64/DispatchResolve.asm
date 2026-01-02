@@ -29,7 +29,7 @@
         ldr     x15, [x14]
         cmp     x15, x12
         bne     RhpResolveInterfaceMethodFast_Polymorphic
-        ldur    x0, [x14, #8]
+        ldur    x15, [x14, #8]
         ret
 
 RhpResolveInterfaceMethodFast_Polymorphic
@@ -45,7 +45,7 @@ RhpResolveInterfaceMethodFast_NextEntry
         cmp     x15, x12
         bne     RhpResolveInterfaceMethodFast_NextEntry
 
-        ldur    x0, [x14, #8]
+        ldur    x15, [x14, #8]
         ret
 
 RhpResolveInterfaceMethodFast_SlowPath
