@@ -1304,6 +1304,81 @@ uint64_t GCInterface::GetGenerationBudget(int generation)
     return GCHeapUtilities::GetGCHeap()->GetGenerationBudget(generation);
 }
 
+// Static wrapper methods to call managed AddMemoryPressure/RemoveMemoryPressure
+void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // Call the managed implementation through QCall wrapper
+    GCInterface_AddMemoryPressureForExternal(bytesAllocated);
+}
+
+void GCInterface::RemoveMemoryPressure(UINT64 bytesAllocated)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // Call the managed implementation through QCall wrapper
+    GCInterface_RemoveMemoryPressureForExternal(bytesAllocated);
+}
+
+// QCall wrappers for managed AddMemoryPressure/RemoveMemoryPressure implementation
+extern "C" void QCALLTYPE GCInterface_AddMemoryPressureForExternal(UINT64 bytesAllocated)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    // Directly invoke the managed GC.AddMemoryPressure method
+    MethodTable* pMT = CoreLibBinder::GetClass(CLASS__GC);
+    MethodDesc* pMD = CoreLibBinder::GetMethod(METHOD__GC__ADD_MEMORY_PRESSURE);
+    
+    MethodDescCallSite addMemoryPressure(pMD);
+    
+    ARG_SLOT args[] = {
+        (ARG_SLOT)bytesAllocated
+    };
+    
+    addMemoryPressure.Call(args);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressureForExternal(UINT64 bytesAllocated)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    // Directly invoke the managed GC.RemoveMemoryPressure method
+    MethodDesc* pMD = CoreLibBinder::GetMethod(METHOD__GC__REMOVE_MEMORY_PRESSURE);
+    
+    MethodDescCallSite removeMemoryPressure(pMD);
+    
+    ARG_SLOT args[] = {
+        (ARG_SLOT)bytesAllocated
+    };
+    
+    removeMemoryPressure.Call(args);
+
+    END_QCALL;
+}
+
 //
 // EnvironmentNative
 //
