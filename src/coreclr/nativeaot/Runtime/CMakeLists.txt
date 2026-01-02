@@ -57,7 +57,7 @@ set(COMMON_RUNTIME_SOURCES
 
 if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     list(APPEND COMMON_RUNTIME_SOURCES
-        ${RUNTIME_DIR}/asyncsafethreadmap.cpp
+        ${RUNTIME_DIR}/SignalSafeThreadMap.cpp
     )
 endif()
 
