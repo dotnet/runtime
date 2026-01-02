@@ -263,9 +263,9 @@ struct _EventPipeThreadSessionState_Internal {
 	// The buffer this thread is allowed to write to. If non-null, it must
 	// match the tail of buffer_list.
 	// Modifications always occur under the buffer manager lock.
-	// Non-null writes only occur on the thread this state belong to.
+	// Non-null writes only occur on the thread this state belongs to.
 	// Null writes may occur on the buffer manager event flushing thread.
-	// Lock-free reads may occur only on the thread this state belong to.
+	// Lock-free reads may occur only on the thread this state belongs to.
 	EventPipeBuffer *write_buffer;
 	// The list of buffers that were written to by this thread.
 	// immutable

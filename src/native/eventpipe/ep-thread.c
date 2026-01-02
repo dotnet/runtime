@@ -205,7 +205,7 @@ ep_thread_set_session_state (
 	EP_ASSERT (session != NULL);
 	EP_ASSERT (ep_session_get_index (session) < EP_MAX_NUMBER_OF_SESSIONS);
 
-	ep_buffer_manager_requires_lock_held(ep_session_get_buffer_manager (session));
+	ep_buffer_manager_requires_lock_held (ep_session_get_buffer_manager (session));
 
 	uint32_t index = ep_session_get_index (session);
 	ep_rt_volatile_store_ptr ((volatile void **)(&thread->session_state [index]), thread_session_state);
@@ -220,7 +220,7 @@ ep_thread_get_session_state (
 	EP_ASSERT (session != NULL);
 	EP_ASSERT (ep_session_get_index (session) < EP_MAX_NUMBER_OF_SESSIONS);
 
-	ep_buffer_manager_requires_lock_held(ep_session_get_buffer_manager (session));
+	ep_buffer_manager_requires_lock_held (ep_session_get_buffer_manager (session));
 
 	uint32_t index = ep_session_get_index (session);
 	return (EventPipeThreadSessionState *)ep_rt_volatile_load_ptr_without_barrier ((volatile void **)(&thread->session_state [index]));
@@ -348,7 +348,7 @@ ep_thread_session_state_free (EventPipeThreadSessionState *thread_session_state)
 {
 	ep_return_void_if_nok (thread_session_state != NULL);
 	ep_thread_holder_fini (&thread_session_state->thread_holder);
-	ep_buffer_list_free(thread_session_state->buffer_list);
+	ep_buffer_list_free (thread_session_state->buffer_list);
 	ep_rt_object_free (thread_session_state);
 }
 
