@@ -154,7 +154,6 @@ private:
     static UINT     m_iteration;
 
 public:
-    static FORCEINLINE UINT64 InterlockedAdd(UINT64 *pAugend, UINT64 addend);
     static FORCEINLINE UINT64 InterlockedSub(UINT64 *pMinuend, UINT64 subtrahend);
 
     static FCDECL0(INT64,   GetTotalPauseDuration);

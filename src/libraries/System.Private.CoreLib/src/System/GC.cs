@@ -203,6 +203,7 @@ namespace System
             // ETW events not currently sent for NativeAOT
             _ = bytesAllocated;
         }
+
         private static void SendEtwRemoveMemoryPressureEvent(ulong bytesAllocated)
         {
             // ETW events not currently sent for NativeAOT
