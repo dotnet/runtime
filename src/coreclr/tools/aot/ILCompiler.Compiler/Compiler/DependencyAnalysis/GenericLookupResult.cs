@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -951,7 +952,7 @@ namespace ILCompiler.DependencyAnalysis
                 return null;
             }
             Debug.Assert(!instantiatedType.IsCanonicalSubtype(CanonicalFormKind.Any));
-            return factory.ExternFunctionSymbol(JitHelper.GetNewObjectHelperForType(instantiatedType));
+            return factory.ExternFunctionSymbol(new Utf8String(JitHelper.GetNewObjectHelperForType(instantiatedType)));
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

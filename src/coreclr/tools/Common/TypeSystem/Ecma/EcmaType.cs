@@ -419,7 +419,7 @@ namespace Internal.TypeSystem.Ecma
                 if (impl == null)
                 {
                     // TODO: invalid input: the type doesn't derive from our System.Object
-                    throw new TypeLoadException(this.GetFullName());
+                    throw new TypeLoadException(System.Text.Encoding.UTF8.GetString(this.GetFullName()));
                 }
 
                 if (impl.OwningType != objectType)
@@ -485,10 +485,9 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override EcmaType GetNestedType(string name)
+        public override EcmaType GetNestedType(ReadOnlySpan<byte> name)
         {
             var metadataReader = this.MetadataReader;
-            var stringComparer = metadataReader.StringComparer;
 
             foreach (var handle in _typeDefinition.GetNestedTypes())
             {
@@ -496,13 +495,13 @@ namespace Internal.TypeSystem.Ecma
                 TypeDefinition type = metadataReader.GetTypeDefinition(handle);
                 if (type.Namespace.IsNil)
                 {
-                    nameMatched = stringComparer.Equals(type.Name, name);
+                    nameMatched = metadataReader.StringEquals(type.Name, name);
                 }
                 else
                 {
-                    string typeName = metadataReader.GetString(type.Name);
-                    typeName = metadataReader.GetString(type.Namespace) + "." + typeName;
-                    nameMatched = typeName == name;
+                    ReadOnlySpan<byte> typeName = metadataReader.GetStringBytes(type.Name);
+                    typeName = metadataReader.GetStringBytes(type.Namespace).Append("."u8, typeName);
+                    nameMatched = typeName.SequenceEqual(name);
                 }
 
                 if (nameMatched)
