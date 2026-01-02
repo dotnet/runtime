@@ -1737,15 +1737,6 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
         _ASSERTE(!"Throw returned");
     }
 
-    DispatchToken representativeToken = DispatchToken(VirtualCallStubManager::GetTokenFromStub(callSite.GetSiteTarget(), NULL));
-
-    MethodTable * pRepresentativeMT = pObj->GetMethodTable();
-    if (representativeToken.IsTypedToken())
-    {
-        pRepresentativeMT = AppDomain::GetCurrentDomain()->LookupType(representativeToken.GetTypeID());
-        CONSISTENCY_CHECK(CheckPointer(pRepresentativeMT));
-    }
-
     pSDFrame->Push(CURRENT_THREAD);
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
@@ -1760,14 +1751,26 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
 
     GCStress<vsd_on_resolve>::MaybeTrigger();
 
-    PCODE callSiteTarget = callSite.GetSiteTarget();
-    CONSISTENCY_CHECK(callSiteTarget != (PCODE)NULL);
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    if (UseCachedInterfaceDispatch())
+    {
+        DispatchToken representativeToken(((InterfaceDispatchCell*)siteAddrForRegisterIndirect)->GetDispatchCellInfo().Token);
+        target = CachedInterfaceDispatchResolveWorker(&callSite, protectedObj, representativeToken);
+    }
+    else
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
+    {
+        DispatchToken representativeToken = DispatchToken(VirtualCallStubManager::GetTokenFromStub(callSite.GetSiteTarget(), NULL));
 
-    StubCodeBlockKind   stubKind = STUB_CODE_BLOCK_UNKNOWN;
-    VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(callSiteTarget, &stubKind);
-    _ASSERTE(pMgr != NULL);
+        PCODE callSiteTarget = callSite.GetSiteTarget();
+        CONSISTENCY_CHECK(callSiteTarget != (PCODE)NULL);
 
-    target = pMgr->ResolveWorker(&callSite, &pObj, representativeToken, stubKind);
+        StubCodeBlockKind   stubKind = STUB_CODE_BLOCK_UNKNOWN;
+        VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(callSiteTarget, &stubKind);
+        _ASSERTE(pMgr != NULL);
+
+        target = pMgr->ResolveWorker(&callSite, &pObj, representativeToken, stubKind);
+    }
 
     GCPROTECT_END();
     GCPROTECT_END();
