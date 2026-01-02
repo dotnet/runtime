@@ -445,6 +445,21 @@ namespace ILCompiler.ObjectWriter
             foreach (SectionDefinition s in _sections)
             {
                 CoffSectionHeader h = s.Header;
+
+                // Skip calculating the layout for empty sections.
+                // Empty sections remain in _sections for index stability but are assigned zero VA/size
+                // to avoid wasting virtual address space and inflating the final PE file size.
+                if (s.Stream.Length == 0 && !h.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData))
+                {
+                    if (recordFinalLayout)
+                    {
+                        // Ensure that we match the section indexes in _sections, even though we omit them in EmitObjectFile.
+                        _outputSectionLayout.Add(new OutputSection(h.Name, 0, 0, 0));
+                    }
+
+                    continue;
+                }
+
                 h.SizeOfRawData = (uint)s.Stream.Length;
                 uint requestedAlignment = GetSectionAlignment(h);
                 uint rawAligned = h.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData)
