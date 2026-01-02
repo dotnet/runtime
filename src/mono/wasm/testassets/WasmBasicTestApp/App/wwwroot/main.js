@@ -371,5 +371,7 @@ try {
             break;
     }
 } catch (e) {
-    exit(1, e);
+    if (e.name != "ExitStatus") {
+        exit(1, e);
+    }
 }

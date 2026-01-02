@@ -34,6 +34,11 @@
 #include "finalizerthread.h"
 #include "threadsuspend.h"
 #include <minipal/memorybarrierprocesswide.h>
+#include "string.h"
+#include "sstring.h"
+#include "array.h"
+#include "eepolicy.h"
+#include <minipal/cpuid.h>
 
 #ifdef FEATURE_COMINTEROP
     #include "comcallablewrapper.h"
@@ -911,6 +916,20 @@ FCIMPL0(int, GCInterface::GetMaxGeneration)
 }
 FCIMPLEND
 
+/*===============================IsServerGC===============================
+**Action: Returns true if the garbage collector is a server GC
+**Returns: True if server GC, false otherwise
+**Arguments: None
+**Exceptions: None
+==============================================================================*/
+FCIMPL0(FC_BOOL_RET, GCInterface::IsServerGC)
+{
+    FCALL_CONTRACT;
+
+    FC_RETURN_BOOL(GCHeapUtilities::IsServerHeap());
+}
+FCIMPLEND
+
 /*===============================GetAllocatedBytesForCurrentThread===============================
 **Action: Computes the allocated bytes so far on the current thread
 **Returns: The allocated bytes so far on the current thread
@@ -1473,6 +1492,267 @@ NOINLINE void GCInterface::GarbageCollectModeAny(int generation)
     GCHeapUtilities::GetGCHeap()->GarbageCollect(generation, false, collection_non_blocking);
 }
 
+//
+// EnvironmentNative
+//
+extern "C" VOID QCALLTYPE Environment_Exit(INT32 exitcode)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    // The exit code for the process is communicated in one of two ways.  If the
+    // entrypoint returns an 'int' we take that.  Otherwise we take a latched
+    // process exit code.  This can be modified by the app via setting
+    // Environment's ExitCode property.
+    SetLatchedExitCode(exitcode);
+
+    ForceEEShutdown();
+
+    END_QCALL;
+}
+
+FCIMPL1(VOID,EnvironmentNative::SetExitCode,INT32 exitcode)
+{
+    FCALL_CONTRACT;
+
+    // The exit code for the process is communicated in one of two ways.  If the
+    // entrypoint returns an 'int' we take that.  Otherwise we take a latched
+    // process exit code.  This can be modified by the app via setting
+    // Environment's ExitCode property.
+    SetLatchedExitCode(exitcode);
+}
+FCIMPLEND
+
+FCIMPL0(INT32, EnvironmentNative::GetExitCode)
+{
+    FCALL_CONTRACT;
+
+    // Return whatever has been latched so far.  This is uninitialized to 0.
+    return GetLatchedExitCode();
+}
+FCIMPLEND
+
+extern "C" INT32 QCALLTYPE Environment_GetProcessorCount()
+{
+    QCALL_CONTRACT;
+
+    INT32 processorCount = 0;
+
+    BEGIN_QCALL;
+
+    processorCount = GetCurrentProcessCpuCount();
+
+    END_QCALL;
+
+    return processorCount;
+}
+
+struct FindFailFastCallerStruct {
+    StackCrawlMark* pStackMark;
+    UINT_PTR        retAddress;
+};
+
+// This method is called by the GetMethod function and will crawl backward
+//  up the stack for integer methods.
+static StackWalkAction FindFailFastCallerCallback(CrawlFrame* frame, VOID* data) {
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    FindFailFastCallerStruct* pFindCaller = (FindFailFastCallerStruct*) data;
+
+    // The check here is between the address of a local variable
+    // (the stack mark) and a pointer to the EIP for a frame
+    // (which is actually the pointer to the return address to the
+    // function from the previous frame). So we'll actually notice
+    // which frame the stack mark was in one frame later. This is
+    // fine since we only implement LookForMyCaller.
+    _ASSERTE(*pFindCaller->pStackMark == LookForMyCaller);
+    if (!frame->IsInCalleesFrames(pFindCaller->pStackMark))
+        return SWA_CONTINUE;
+
+    pFindCaller->retAddress = GetControlPC(frame->GetRegisterSet());
+    return SWA_ABORT;
+}
+
+static thread_local int8_t alreadyFailing = 0;
+
+extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark, PCWSTR message, QCall::ObjectHandleOnStack exception, PCWSTR errorSource)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    FindFailFastCallerStruct findCallerData;
+    findCallerData.pStackMark = mark;
+    findCallerData.retAddress = 0;
+    GetThread()->StackWalkFrames(FindFailFastCallerCallback, &findCallerData, FUNCTIONSONLY | QUICKUNWIND);
+
+    if (message == NULL || message[0] == W('\0'))
+    {
+        OutputDebugString(W("CLR: Managed code called FailFast without specifying a reason.\r\n"));
+    }
+    else
+    {
+        OutputDebugString(W("CLR: Managed code called FailFast.\r\n"));
+        OutputDebugString(message);
+        OutputDebugString(W("\r\n"));
+    }
+
+    LPCWSTR argExceptionString = NULL;
+    StackSString msg;
+    // Because Environment_FailFast should kill the process, any subsequent calls are likely nested call from managed while formatting the exception message or the stack trace.
+    // Only collect exception string if this is the first attempt to fail fast on this thread.
+    alreadyFailing++;
+    if (alreadyFailing != 1)
+    {
+        argExceptionString = W("Environment.FailFast called recursively.");
+    }
+    else if (exception.Get() != NULL)
+    {
+        GetExceptionMessage(exception.Get(), msg);
+        argExceptionString = msg.GetUnicode();
+    }
+
+    Thread *pThread = GetThread();
+
+#ifndef TARGET_UNIX
+    // If we have the exception object, then try to setup
+    // the watson bucket if it has any details.
+    // On CoreCLR, Watson may not be enabled. Thus, we should
+    // skip this, if required.
+    if (IsWatsonEnabled())
+    {
+        if ((exception.Get() == NULL) || !SetupWatsonBucketsForFailFast((EXCEPTIONREF)exception.Get()))
+        {
+            PTR_EHWatsonBucketTracker pUEWatsonBucketTracker = pThread->GetExceptionState()->GetUEWatsonBucketTracker();
+            _ASSERTE(pUEWatsonBucketTracker != NULL);
+            pUEWatsonBucketTracker->SaveIpForWatsonBucket(findCallerData.retAddress);
+            pUEWatsonBucketTracker->CaptureUnhandledInfoForWatson(TypeOfReportedError::FatalError, pThread, NULL);
+            if (pUEWatsonBucketTracker->RetrieveWatsonBuckets() == NULL)
+            {
+                pUEWatsonBucketTracker->ClearWatsonBucketDetails();
+            }
+        }
+    }
+#endif // !TARGET_UNIX
+
+    // stash the user-provided exception object. this will be used as
+    // the inner exception object to the FatalExecutionEngineException.
+    if (exception.Get() != NULL)
+        pThread->SetLastThrownObject(exception.Get());
+
+    EEPolicy::HandleFatalError(COR_E_FAILFAST, findCallerData.retAddress, message, NULL, errorSource, argExceptionString);
+
+    END_QCALL;
+}
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+
+extern "C" void QCALLTYPE X86BaseCpuId(int cpuInfo[4], int functionId, int subFunctionId)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    __cpuidex(cpuInfo, functionId, subFunctionId);
+
+    END_QCALL;
+}
+
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+
+//
+// ObjectNative
+//
+extern "C" INT32 QCALLTYPE ObjectNative_GetHashCodeSlow(QCall::ObjectHandleOnStack objHandle)
+{
+    QCALL_CONTRACT;
+
+    INT32 idx = 0;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    _ASSERTE(objHandle.Get() != NULL);
+    idx = objHandle.Get()->GetHashCodeEx();
+
+    END_QCALL;
+
+    return idx;
+}
+
+FCIMPL1(INT32, ObjectNative::TryGetHashCode, Object* obj)
+{
+    FCALL_CONTRACT;
+
+    if (obj == NULL)
+        return 0;
+
+    OBJECTREF objRef = ObjectToOBJECTREF(obj);
+    return objRef->TryGetHashCode();
+}
+FCIMPLEND
+
+FCIMPL2(FC_BOOL_RET, ObjectNative::ContentEquals, Object *pThisRef, Object *pCompareRef)
+{
+    FCALL_CONTRACT;
+
+    // Should be ensured by caller
+    _ASSERTE(pThisRef != NULL);
+    _ASSERTE(pCompareRef != NULL);
+    _ASSERTE(pThisRef->GetMethodTable() == pCompareRef->GetMethodTable());
+
+    MethodTable *pThisMT = pThisRef->GetMethodTable();
+
+    // Compare the contents
+    BOOL ret = memcmp(
+        pThisRef->GetData(),
+        pCompareRef->GetData(),
+        pThisMT->GetNumInstanceFieldBytes()) == 0;
+
+    FC_RETURN_BOOL(ret);
+}
+FCIMPLEND
+
+extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectHandleOnStack objHandle)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    OBJECTREF refClone = objHandle.Get();
+    _ASSERTE(refClone != NULL); // Should be handled at managed side
+    MethodTable* pMT = refClone->GetMethodTable();
+
+    // assert that String has overloaded the Clone() method
+    _ASSERTE(pMT != g_pStringClass);
+
+    if (pMT->IsArray())
+    {
+        objHandle.Set(DupArrayForCloning((BASEARRAYREF)refClone));
+    }
+    else
+    {
+        // We don't need to call the <cinit> because we know
+        //  that it has been called....(It was called before this was created)
+        objHandle.Set(AllocateObject(pMT));
+    }
+
+    END_QCALL;
+}
+
+//
 //
 // COMInterlocked
 //
