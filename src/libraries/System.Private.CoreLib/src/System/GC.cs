@@ -181,28 +181,23 @@ namespace System
 #if NATIVEAOT
         [MethodImpl(MethodImplOptions.InternalCall)]
         [System.Runtime.RuntimeImport("*", "RhGetCurrentObjSize")]
-        private static extern long RhGetCurrentObjSize();
+        private static extern long GetCurrentObjSize();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [System.Runtime.RuntimeImport("*", "RhGetGCNow")]
-        private static extern long RhGetGCNow();
+        private static extern long GetNow();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [System.Runtime.RuntimeImport("*", "RhGetLastGCStartTime")]
-        private static extern long RhGetLastGCStartTime(int generation);
+        private static extern long GetLastGCStartTime(int generation);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [System.Runtime.RuntimeImport("*", "RhGetLastGCDuration")]
-        private static extern long RhGetLastGCDuration(int generation);
+        private static extern long GetLastGCDuration(int generation);
 
-        [LibraryImport("*")]
-        private static partial void RhCollect(int generation, InternalGCCollectionMode mode);
+        [LibraryImport("*", EntryPoint = "RhCollect")]
+        private static partial void TriggerCollection(int generation, InternalGCCollectionMode mode);
 
-        private static long GetCurrentObjSize() => RhGetCurrentObjSize();
-        private static long GetNow() => RhGetGCNow();
-        private static long GetLastGCStartTime(int generation) => RhGetLastGCStartTime(generation);
-        private static long GetLastGCDuration(int generation) => RhGetLastGCDuration(generation);
-        private static void TriggerCollection(int generation, InternalGCCollectionMode mode) => RhCollect(generation, mode);
         private static void SendEtwAddMemoryPressureEvent(ulong bytesAllocated)
         {
             // ETW events not currently sent for NativeAOT
