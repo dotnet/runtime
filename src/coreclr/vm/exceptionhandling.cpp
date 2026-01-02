@@ -951,7 +951,7 @@ static VOID UpdateContextForPropagationCallback(
 
 extern void* g_hostingApiReturnAddress;
 
-VOID DispatchManagedException(PAL_SEHException& ex, bool isHardwareException)
+DECLSPEC_NORETURN VOID DispatchManagedException(PAL_SEHException& ex, bool isHardwareException)
 {
     if (!isHardwareException)
     {
@@ -1563,7 +1563,7 @@ void NormalizeThrownObject(OBJECTREF *ppThrowable)
     }
 }
 
-VOID DispatchManagedException(OBJECTREF throwable, CONTEXT* pExceptionContext, EXCEPTION_RECORD* pExceptionRecord)
+DECLSPEC_NORETURN VOID DispatchManagedException(OBJECTREF throwable, CONTEXT* pExceptionContext, EXCEPTION_RECORD* pExceptionRecord)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -1639,9 +1639,11 @@ VOID DispatchManagedException(OBJECTREF throwable, CONTEXT* pExceptionContext, E
 
     GCPROTECT_END();
     GCPROTECT_END();
+
+    UNREACHABLE();
 }
 
-VOID DispatchManagedException(OBJECTREF throwable)
+DECLSPEC_NORETURN VOID DispatchManagedException(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -1651,9 +1653,10 @@ VOID DispatchManagedException(OBJECTREF throwable)
     ClrCaptureContext(&exceptionContext);
 
     DispatchManagedException(throwable, &exceptionContext);
+    UNREACHABLE();
 }
 
-VOID DispatchManagedException(RuntimeExceptionKind reKind)
+DECLSPEC_NORETURN VOID DispatchManagedException(RuntimeExceptionKind reKind)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -1665,7 +1668,7 @@ VOID DispatchManagedException(RuntimeExceptionKind reKind)
     DispatchManagedException(throwable);
 }
 
-VOID DispatchRethrownManagedException(CONTEXT* pExceptionContext)
+DECLSPEC_NORETURN VOID DispatchRethrownManagedException(CONTEXT* pExceptionContext)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -1691,9 +1694,11 @@ VOID DispatchRethrownManagedException(CONTEXT* pExceptionContext)
     DispatchExSecondPass(&exInfo);
 
     GCPROTECT_END();
+
+    UNREACHABLE();
 }
 
-VOID DispatchRethrownManagedException()
+DECLSPEC_NORETURN VOID DispatchRethrownManagedException()
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -1703,6 +1708,7 @@ VOID DispatchRethrownManagedException()
     ClrCaptureContext(&exceptionContext);
 
     DispatchRethrownManagedException(&exceptionContext);
+    UNREACHABLE();
 }
 
 #ifndef TARGET_UNIX
@@ -4330,7 +4336,7 @@ static void InvokeSecondPass(ExInfo *pExInfo, uint idxStart)
     InvokeSecondPass(pExInfo, idxStart, MaxTryRegionIdx);
 }
 
-void DispatchExSecondPass(ExInfo *pExInfo)
+DECLSPEC_NORETURN void DispatchExSecondPass(ExInfo *pExInfo)
 {
     CONTRACTL
     {
@@ -4394,7 +4400,7 @@ void DispatchExSecondPass(ExInfo *pExInfo)
 
     CallCatchFunclet(pExInfo->m_exception, (BYTE *)pCatchHandler, pFrameIter->m_crawl.GetRegisterSet(), pExInfo);
     // CallCatchFunclet will resume after the catch and never return here.
-    //UNREACHABLE();
+    UNREACHABLE();
 }
 
 //
