@@ -116,8 +116,6 @@ bool AllocHeap::_AllocNewBlock(uintptr_t cbMem)
     // Calculate block size: ensure it's at least BLOCK_SIZE and aligned to BLOCK_SIZE
     // Also need room for BlockListElem header
     uintptr_t cbBlockSize = ALIGN_UP(cbMem + sizeof(BlockListElem), BLOCK_SIZE);
-    if (cbBlockSize < BLOCK_SIZE)
-        cbBlockSize = BLOCK_SIZE;
 
     uint8_t * pbMem = new (nothrow) uint8_t[cbBlockSize];
 
