@@ -19,7 +19,6 @@
 //-------------------------------------------------------------------------------------------------
 AllocHeap::AllocHeap()
     : m_blockList(),
-      m_pCurBlock(NULL),
       m_cbCurBlockUsed(0),
       m_lock(CrstAllocHeap)
       COMMA_INDEBUG(m_fIsInit(false))
@@ -98,8 +97,6 @@ bool AllocHeap::_AllocNewBlock(uintptr_t cbMem)
     pBlockListElem->m_cbMem = cbBlockSize;
 
     m_blockList.PushHead(pBlockListElem);
-
-    m_pCurBlock = pBlockListElem;
     m_cbCurBlockUsed = sizeof(BlockListElem);
 
     return true;
@@ -110,14 +107,15 @@ uint8_t * AllocHeap::_AllocFromCurBlock(
     uintptr_t cbMem,
     uintptr_t alignment)
 {
-    if (m_pCurBlock == NULL)
+    BlockListElem *pCurBlock = m_blockList.GetHead();
+    if (pCurBlock == NULL)
         return NULL;
 
-    uint8_t* pBlockStart = (uint8_t*)m_pCurBlock;
+    uint8_t* pBlockStart = (uint8_t*)pCurBlock;
     uint8_t* pAlloc = (uint8_t*)ALIGN_UP(pBlockStart + m_cbCurBlockUsed, alignment);
     uintptr_t cbAllocEnd = pAlloc + cbMem - pBlockStart;
 
-    if (cbAllocEnd > m_pCurBlock->m_cbMem)
+    if (cbAllocEnd > pCurBlock->m_cbMem)
         return NULL;
 
     m_cbCurBlockUsed = cbAllocEnd;

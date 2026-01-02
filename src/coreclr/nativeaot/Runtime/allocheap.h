@@ -42,7 +42,6 @@ class AllocHeap
     typedef SList<BlockListElem>    BlockList;
     BlockList                       m_blockList;
 
-    BlockListElem *                 m_pCurBlock;
     uintptr_t                       m_cbCurBlockUsed;
 
     Crst                            m_lock;
