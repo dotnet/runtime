@@ -179,21 +179,18 @@ public:
     static FCDECL0(INT64,    GetAllocatedBytesForCurrentThread);
     static FCDECL0(INT64,    GetTotalAllocatedBytesApproximate);
 
-    NOINLINE static void SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocated);
-    static void SendEtwAddMemoryPressureEvent(UINT64 bytesAllocated);
-
-    static void CheckCollectionCount();
-    static void RemoveMemoryPressure(UINT64 bytesAllocated);
-    static void AddMemoryPressure(UINT64 bytesAllocated);
+    // Helper FCalls for managed AddMemoryPressure/RemoveMemoryPressure implementation
+    static FCDECL0(INT64,   GetCurrentObjSize);
+    static FCDECL0(INT64,   GetNow);
+    static FCDECL1(INT64,   GetLastGCStartTime, INT32 generation);
+    static FCDECL1(INT64,   GetLastGCDuration, INT32 generation);
+    static FCDECL1(VOID,    SendEtwAddMemoryPressureEvent, UINT64 bytesAllocated);
+    static FCDECL1(VOID,    SendEtwRemoveMemoryPressureEvent, UINT64 bytesAllocated);
 
     static void EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback);
     static int  RefreshMemoryLimit();
     static enable_no_gc_region_callback_status EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize);
     static uint64_t GetGenerationBudget(int generation);
-
-private:
-    // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
-    NOINLINE static void GarbageCollectModeAny(int generation);
 };
 
 extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise();
@@ -220,10 +217,6 @@ extern "C" int QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeo
 extern "C" int QCALLTYPE GCInterface_StartNoGCRegion(INT64 totalSize, BOOL lohSizeKnown, INT64 lohSize, BOOL disallowFullBlockingGC);
 
 extern "C" int QCALLTYPE GCInterface_EndNoGCRegion();
-
-extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated);
-
-extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated);
 
 extern "C" void QCALLTYPE GCInterface_ReRegisterForFinalize(QCall::ObjectHandleOnStack pObj);
 
