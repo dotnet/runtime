@@ -195,12 +195,12 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             return hash.ToHashCode();
         }
 
-        public override MetadataType GetNestedType(string name)
+        public override MetadataType GetNestedType(ReadOnlySpan<byte> name)
         {
             TypeRefTypeSystemType type = null;
             if (_nestedType != null)
             {
-                _nestedType.TryGetValue(name, out type);
+                _nestedType.TryGetValue(Encoding.UTF8.GetString(name), out type);
             }
             return type;
         }

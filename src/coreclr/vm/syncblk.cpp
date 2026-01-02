@@ -1737,6 +1737,25 @@ OBJECTHANDLE SyncBlock::GetOrCreateLock(OBJECTREF lockObj)
     // Create the handle here.
     OBJECTHANDLEHolder lockHandle = GetAppDomain()->CreateHandle(lockObj);
 
+    if (TryUpgradeThinLockToFullLock(lockHandle.GetValue()))
+    {
+        // Our lock instance is the one in the sync block now.
+        return lockHandle.Extract();
+    }
+
+    return VolatileLoad(&m_Lock);
+}
+
+bool SyncBlock::TryUpgradeThinLockToFullLock(OBJECTHANDLE lockHandle)
+{
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        THROWS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
     // Switch to preemptive so we can grab the spin-lock.
     // Use the NO_DTOR version so we don't do a coop->preemptive->coop transition on return.
     GCX_PREEMP_NO_DTOR();
@@ -1747,10 +1766,9 @@ OBJECTHANDLE SyncBlock::GetOrCreateLock(OBJECTREF lockObj)
     GCX_PREEMP_NO_DTOR_END();
 
     // Check again now that we hold the spin-lock
-    existingLock = m_Lock;
-    if (existingLock != (OBJECTHANDLE)NULL)
+    if (m_Lock != (OBJECTHANDLE)NULL)
     {
-        return existingLock;
+        return false;
     }
 
     // We need to create a new lock
@@ -1761,32 +1779,31 @@ OBJECTHANDLE SyncBlock::GetOrCreateLock(OBJECTREF lockObj)
 
     if (thinLock != 0)
     {
-
-        // We have thin-lock info that needs to be transferred to the lock object.
         DWORD lockThreadId = thinLock & SBLK_MASK_LOCK_THREADID;
         DWORD recursionLevel = (thinLock & SBLK_MASK_LOCK_RECLEVEL) >> SBLK_RECLEVEL_SHIFT;
         _ASSERTE(lockThreadId != 0);
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__LOCK__INITIALIZE_FOR_MONITOR);
+
+        // We have thin-lock info that needs to be transferred to the lock object.
+        OBJECTREF lockObj = ObjectFromHandle(lockHandle);
+
         DECLARE_ARGHOLDER_ARRAY(args, 3);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(ObjectFromHandle(lockHandle));
+        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(lockObj);
         args[ARGNUM_1] = DWORD_TO_ARGHOLDER(lockThreadId);
         args[ARGNUM_2] = DWORD_TO_ARGHOLDER(recursionLevel);
         CALL_MANAGED_METHOD_NORET(args);
     }
 
-    VolatileStore(&m_Lock, lockHandle.GetValue());
-
-    // Our lock instance is in the sync block now.
-    // Don't release it.
-    lockHandle.SuppressRelease();
-
-    // Also, clear the thin lock info.
+    VolatileStore(&m_Lock, lockHandle);
+    // Clear the thin lock info.
     // It won't be used any more, but it will look out of date.
     // Only clear the relevant bits, as the spin-lock bit is used to lock this method.
     // That bit will be reset upon return.
     m_thinLock.StoreWithoutBarrier(m_thinLock.LoadWithoutBarrier() & ~((SBLK_MASK_LOCK_THREADID) | (SBLK_MASK_LOCK_RECLEVEL)));
 
-    return lockHandle;
+    // Our lock instance is in the sync block now.
+    // Don't release it.
+    return true;
 }
 #endif // !DACCESS_COMPILE
 

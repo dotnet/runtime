@@ -398,6 +398,11 @@ if ($bootstrap -eq $True) {
   $bootstrapArguments += " /p:Subset=bootstrap /bl:$PSScriptRoot/../artifacts/log/$config/bootstrap.binlog"
   Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $bootstrapArguments"
 
+  if ($lastExitCode -ne 0) {
+    Write-Error "Bootstrap build failed. Stopping build."
+    exit 1
+  }
+
   # Remove artifacts from the bootstrap build so the product build is a "clean" build.
   Write-Host "Cleaning up artifacts from bootstrap build..."
   Remove-Item -Recurse "$PSScriptRoot/../artifacts/bin"

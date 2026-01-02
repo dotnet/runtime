@@ -3107,6 +3107,9 @@
   <data name="NotSupported_NonReflectedType" xml:space="preserve">
     <value>Not supported in a non-reflected type.</value>
   </data>
+  <data name="InvalidProgram_AsyncMethod" xml:space="preserve">
+    <value>Async methods with UnmanagedCallersOnlyAttribute are invalid.</value>
+  </data>
   <data name="InvalidProgram_NonStaticMethod" xml:space="preserve">
     <value>Non-static methods with UnmanagedCallersOnlyAttribute are invalid.</value>
   </data>

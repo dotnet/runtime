@@ -117,6 +117,36 @@ public class BootJsonData
     /// Gets or sets pthread pool unused size.
     /// </summary>
     public int? pthreadPoolUnusedSize { get; set; }
+
+    /// <summary>
+    /// internal flags for test instrumentation
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public bool? exitOnUnhandledError { get; set; }
+
+    /// <summary>
+    /// internal flags for test instrumentation
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public bool? appendElementOnExit { get; set; }
+
+    /// <summary>
+    /// internal flags for test instrumentation
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public bool? logExitCode { get; set; }
+
+    /// <summary>
+    /// internal flags for test instrumentation
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public bool? asyncFlushOnExit { get; set; }
+
+    /// <summary>
+    /// internal flags for test instrumentation
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public bool? forwardConsole { get; set; }
 }
 
 /// <summary>

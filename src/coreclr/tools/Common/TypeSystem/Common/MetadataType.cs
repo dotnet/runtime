@@ -98,7 +98,7 @@ namespace Internal.TypeSystem
         /// Get a specific type nested in this type. Returns null if the type
         /// doesn't exist.
         /// </summary>
-        public abstract MetadataType GetNestedType(string name);
+        public abstract MetadataType GetNestedType(ReadOnlySpan<byte> name);
 
         /// <summary>
         /// Gets a value indicating whether this is an inline array type

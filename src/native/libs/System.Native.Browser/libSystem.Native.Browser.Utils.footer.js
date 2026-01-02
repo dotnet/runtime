@@ -19,7 +19,7 @@
         const exports = {};
         libBrowserUtils(exports);
 
-        let commonDeps = ["$libBrowserUtilsFn", "$DOTNET"];
+        let commonDeps = ["$libBrowserUtilsFn", "$DOTNET", "emscripten_force_exit", "_exit"];
         const lib = {
             $BROWSER_UTILS: {
                 selfInitialize: () => {

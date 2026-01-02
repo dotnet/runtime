@@ -42,7 +42,7 @@ namespace System.Threading
     {
         #region Shared TimerQueue instances
         /// <summary>Mapping from a tick count to a time to use when debugging to translate tick count values.</summary>
-        internal static readonly (long TickCount, DateTime Time) s_tickCountToTimeMap = (TickCount64, DateTime.UtcNow);
+        internal static readonly (long TickCount, DateTime Time) s_tickCountToTimeMap = (Environment.TickCount64, DateTime.UtcNow);
 
         public static TimerQueue[] Instances { get; } = CreateTimerQueues();
 
@@ -126,7 +126,7 @@ namespace System.Threading
 
             if (_isTimerScheduled)
             {
-                long elapsed = TickCount64 - _currentTimerStartTicks;
+                long elapsed = Environment.TickCount64 - _currentTimerStartTicks;
                 if (elapsed >= _currentTimerDuration)
                     return true; // the timer's about to fire
 
@@ -138,7 +138,7 @@ namespace System.Threading
             if (SetTimer(actualDuration))
             {
                 _isTimerScheduled = true;
-                _currentTimerStartTicks = TickCount64;
+                _currentTimerStartTicks = Environment.TickCount64;
                 _currentTimerDuration = actualDuration;
                 return true;
             }
@@ -161,7 +161,7 @@ namespace System.Threading
 
         // The current threshold, an absolute time where any timers scheduled to go off at or
         // before this time must be queued to the short list.
-        private long _currentAbsoluteThreshold = TickCount64 + ShortTimersThresholdMilliseconds;
+        private long _currentAbsoluteThreshold = Environment.TickCount64 + ShortTimersThresholdMilliseconds;
 
         // Default threshold that separates which timers target _shortTimers vs _longTimers. The threshold
         // is chosen to balance the number of timers in the small list against the frequency with which
@@ -191,7 +191,7 @@ namespace System.Threading
                 bool haveTimerToSchedule = false;
                 uint nextTimerDuration = uint.MaxValue;
 
-                long nowTicks = TickCount64;
+                long nowTicks = Environment.TickCount64;
 
                 // Sweep through the "short" timers.  If the current tick count is greater than
                 // the current threshold, also sweep through the "long" timers.  Finally, as part
@@ -342,7 +342,7 @@ namespace System.Threading
 
         public bool UpdateTimer(TimerQueueTimer timer, uint dueTime, uint period)
         {
-            long nowTicks = TickCount64;
+            long nowTicks = Environment.TickCount64;
 
             // The timer can be put onto the short list if it's next absolute firing time
             // is <= the current absolute threshold.

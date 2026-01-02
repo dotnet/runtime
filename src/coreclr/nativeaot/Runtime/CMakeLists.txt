@@ -5,6 +5,7 @@ set(COMMON_RUNTIME_SOURCES
     rhassert.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
     CachedInterfaceDispatch_Aot.cpp
+    ${RUNTIME_DIR}/MiscNativeHelpers.cpp
     Crst.cpp
     DebugHeader.cpp
     MethodTable.cpp
@@ -57,7 +58,7 @@ set(COMMON_RUNTIME_SOURCES
 
 if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     list(APPEND COMMON_RUNTIME_SOURCES
-        ${RUNTIME_DIR}/asyncsafethreadmap.cpp
+        ${RUNTIME_DIR}/SignalSafeThreadMap.cpp
     )
 endif()
 
@@ -272,8 +273,6 @@ if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_WASM)
   add_definitions(-DFEATURE_64BIT_ALIGNMENT)
 endif()
 
-add_definitions(-DFEATURE_CUSTOM_IMPORTS)
-add_definitions(-DFEATURE_DYNAMIC_CODE)
 add_compile_definitions($<$<CONFIG:Debug,Checked>:FEATURE_GC_STRESS>)
 add_definitions(-DFEATURE_NATIVEAOT)
 add_definitions(-DVERIFY_HEAP)

@@ -49,7 +49,7 @@ namespace ILCompiler
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => false;
         public override IEnumerable<MetadataType> GetNestedTypes() => [];
-        public override MetadataType GetNestedType(string name) => null;
+        public override MetadataType GetNestedType(ReadOnlySpan<byte> name) => null;
         protected override MethodImplRecord[] ComputeVirtualMethodImplsForType() => [];
         public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name) => [];
 

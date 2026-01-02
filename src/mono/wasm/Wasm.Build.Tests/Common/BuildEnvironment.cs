@@ -139,6 +139,16 @@ namespace Wasm.Build.Tests
                 EnvVars["WasmFingerprintAssets"] = "false";
             }
 
+            if (EnvironmentVariables.RuntimeFlavor == "CoreCLR")
+            {
+                EnvVars["WasmTestSupport"] = "true";
+                EnvVars["WasmTestExitOnUnhandledError"] = "true";
+                EnvVars["WasmTestLogExitCode"] = "true";
+                // EnvVars["WasmTestForwardConsole"] = "true"; // only necessary for firefox, because chromedriver supports it natively
+                // EnvVars["WasmTestAsyncFlushOnExit"] = "true"; // only necessary for old nodejs versions
+                // EnvVars["WasmTestAppendElementOnExit"] = "true"; // only used by xharness // https://github.com/dotnet/xharness/blob/799df8d4c86ff50c83b7a57df9e3691eeab813ec/src/Microsoft.DotNet.XHarness.CLI/Commands/WASM/Browser/WasmBrowserTestRunner.cs#L122-L141
+            }
+
             DotNet = Path.Combine(sdkForWorkloadPath!, "dotnet");
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 DotNet += ".exe";

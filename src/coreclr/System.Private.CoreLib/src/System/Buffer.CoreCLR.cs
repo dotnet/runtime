@@ -9,12 +9,6 @@ namespace System
 {
     public partial class Buffer
     {
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_Clear")]
-        private static unsafe partial void ZeroMemoryInternal(void* b, nuint byteLength);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_MemMove")]
-        private static unsafe partial void MemmoveInternal(byte* dest, byte* src, nuint len);
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void BulkMoveWithWriteBarrierInternal(ref byte destination, ref byte source, nuint byteCount);
 

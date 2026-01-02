@@ -205,7 +205,7 @@ namespace ILCompiler
             {
                 if (_asyncStateMachineBox == null)
                 {
-                    _asyncStateMachineBox = SystemModule.GetType("System.Runtime.CompilerServices"u8, "AsyncTaskMethodBuilder`1"u8).GetNestedType("AsyncStateMachineBox`1");
+                    _asyncStateMachineBox = SystemModule.GetType("System.Runtime.CompilerServices"u8, "AsyncTaskMethodBuilder`1"u8).GetNestedType("AsyncStateMachineBox`1"u8);
                     if (_asyncStateMachineBox == null)
                         throw new Exception();
                 }
