@@ -19,8 +19,7 @@
 //-------------------------------------------------------------------------------------------------
 AllocHeap::AllocHeap()
     : m_blockList(),
-      m_cbCurBlockUsed(0),
-      m_lock(CrstAllocHeap)
+      m_cbCurBlockUsed(0)
       COMMA_INDEBUG(m_fIsInit(false))
 {
 }
@@ -29,26 +28,34 @@ AllocHeap::AllocHeap()
 bool AllocHeap::Init()
 {
     ASSERT(!m_fIsInit);
+    m_lock.Init(CrstAllocHeap);
     INDEBUG(m_fIsInit = true;)
 
     return true;
 }
 
 //-------------------------------------------------------------------------------------------------
-AllocHeap::~AllocHeap()
+void AllocHeap::Destroy()
 {
     while (!m_blockList.IsEmpty())
     {
         BlockListElem *pCur = m_blockList.PopHead();
         delete[] (uint8_t*)pCur;
     }
+    m_lock.Destroy();
 }
 
 //-------------------------------------------------------------------------------------------------
-uint8_t * AllocHeap::_Alloc(
+uint8_t * AllocHeap::Alloc(
+    uintptr_t cbMem)
+{
+    return AllocAligned(cbMem, 1);
+}
+
+//-------------------------------------------------------------------------------------------------
+uint8_t * AllocHeap::AllocAligned(
     uintptr_t cbMem,
-    uintptr_t alignment
-    )
+    uintptr_t alignment)
 {
     ASSERT((alignment & (alignment - 1)) == 0); // Power of 2 only.
     ASSERT(alignment <= BLOCK_SIZE);            // Can't handle this right now.
@@ -60,7 +67,7 @@ uint8_t * AllocHeap::_Alloc(
         return pbMem;
 
     // Must allocate new block
-    if (!_AllocNewBlock(cbMem))
+    if (!_AllocNewBlock(cbMem, alignment))
         return NULL;
 
     pbMem = _AllocFromCurBlock(cbMem, alignment);
@@ -70,24 +77,9 @@ uint8_t * AllocHeap::_Alloc(
 }
 
 //-------------------------------------------------------------------------------------------------
-uint8_t * AllocHeap::Alloc(
-    uintptr_t cbMem)
+bool AllocHeap::_AllocNewBlock(uintptr_t cbMem, uintptr_t alignment)
 {
-    return _Alloc(cbMem, 1);
-}
-
-//-------------------------------------------------------------------------------------------------
-uint8_t * AllocHeap::AllocAligned(
-    uintptr_t cbMem,
-    uintptr_t alignment)
-{
-    return _Alloc(cbMem, alignment);
-}
-
-//-------------------------------------------------------------------------------------------------
-bool AllocHeap::_AllocNewBlock(uintptr_t cbMem)
-{
-    uintptr_t cbBlockSize = ALIGN_UP(cbMem + sizeof(BlockListElem), BLOCK_SIZE);
+    uintptr_t cbBlockSize = ALIGN_UP(cbMem + sizeof(BlockListElem) + alignment, BLOCK_SIZE);
 
     uint8_t * pbMem = new (nothrow) uint8_t[cbBlockSize];
     if (pbMem == NULL)

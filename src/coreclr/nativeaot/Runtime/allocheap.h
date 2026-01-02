@@ -9,7 +9,7 @@ class AllocHeap
 
     bool Init();
 
-    ~AllocHeap();
+    void Destroy();
 
     // If AllocHeap was created with a MemAccessMgr, pRWAccessHolder must be non-NULL.
     // On return, the holder will permit R/W access to the allocated memory until it
@@ -24,8 +24,7 @@ class AllocHeap
 
   private:
     // Allocation Helpers
-    uint8_t* _Alloc(uintptr_t cbMem, uintptr_t alignment);
-    bool _AllocNewBlock(uintptr_t cbMem);
+    bool _AllocNewBlock(uintptr_t cbMem, uintptr_t alignment);
     uint8_t* _AllocFromCurBlock(uintptr_t cbMem, uintptr_t alignment);
 
     static const uintptr_t BLOCK_SIZE = 4096;
@@ -44,7 +43,7 @@ class AllocHeap
 
     uintptr_t                       m_cbCurBlockUsed;
 
-    Crst                            m_lock;
+    CrstStatic                      m_lock;
 
     INDEBUG(bool                    m_fIsInit;)
 };
