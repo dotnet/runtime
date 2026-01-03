@@ -19,7 +19,6 @@ struct Struct
     private void SetType<T>()
     {
         Value = typeof(T);
-        Console.WriteLine(typeof(T));
     }
 }
 
