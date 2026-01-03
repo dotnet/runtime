@@ -1246,13 +1246,11 @@ void GCInterface::RemoveMemoryPressure(UINT64 bytesAllocated)
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
-
-    GCX_COOP();
 
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__GC__REMOVE_MEMORY_PRESSURE);
     DECLARE_ARGHOLDER_ARRAY(args, 1);

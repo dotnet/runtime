@@ -40,11 +40,11 @@ public:
     };
 
     static FCDECL0(INT32,       GetOptimalMaxSpinWaitsPerSpinIteration);
-    static FCDECL1(void,        Finalize, ThreadBaseObject* pThis);
     static FCDECL0(FC_BOOL_RET, CatchAtSafePoint);
     static FCDECL0(FC_BOOL_RET, CurrentThreadIsFinalizerThread);
 };
 
+extern "C" void QCALLTYPE ThreadNative_Finalize(QCall::ObjectHandleOnStack thread);
 extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, BOOL isThreadPool, PCWSTR pThreadName);
 extern "C" void QCALLTYPE ThreadNative_SetPriority(QCall::ObjectHandleOnStack thread, INT32 iPriority);
 extern "C" void QCALLTYPE ThreadNative_GetCurrentThread(QCall::ObjectHandleOnStack thread);

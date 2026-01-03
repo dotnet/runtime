@@ -177,10 +177,19 @@ namespace System.Threading
         private static partial void Initialize(ObjectHandleOnStack thread);
 
         /// <summary>Clean up the thread when it goes away.</summary>
-        ~Thread() => InternalFinalize(); // Delegate to the unmanaged portion.
+        ~Thread()
+        {
+            InternalFinalize(this);
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void InternalFinalize();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Finalize")]
+        private static partial void InternalFinalize(ObjectHandleOnStack thread);
+
+        private static void InternalFinalize(Thread thread)
+        {
+            InternalFinalize(ObjectHandleOnStack.Create(ref thread));
+        }
+
 
         private void ThreadNameChanged(string? value)
         {
