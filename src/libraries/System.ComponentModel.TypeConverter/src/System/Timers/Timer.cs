@@ -89,7 +89,7 @@ namespace System.Timers
                 else if (_autoReset != value)
                 {
                     _autoReset = value;
-                    if (_timer != null)
+                    if (_timer != null && _enabled)
                     {
                         UpdateTimer();
                     }
@@ -172,7 +172,7 @@ namespace System.Timers
                 }
 
                 _interval = value;
-                if (_timer != null)
+                if (_timer != null && _enabled)
                 {
                     UpdateTimer();
                 }

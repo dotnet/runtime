@@ -62,6 +62,7 @@ namespace System.Timers.Tests
                 target = 10;
                 mres.Reset();
                 timer.AutoReset = true;
+                timer.Start();
                 mres.Wait();
 
                 timer.Stop();
@@ -112,6 +113,70 @@ namespace System.Timers.Tests
                 Assert.Equal(Math.Ceiling(interval), timer.Interval);
                 timer.Interval = interval;
                 Assert.Equal(interval, timer.Interval);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void SettingAutoResetOrIntervalOnDisabledOneShotTimerDoesNotRestartIt()
+        {
+            using (var timer = new TestTimer(1))
+            {
+                var mres = new ManualResetEventSlim();
+                int count = 0;
+
+                timer.AutoReset = false;
+                timer.Elapsed += (sender, e) =>
+                {
+                    Interlocked.Increment(ref count);
+                    mres.Set();
+                };
+                timer.Start();
+
+                mres.Wait();
+                Assert.False(timer.Enabled);
+                Assert.Equal(1, count);
+
+                count = 0;
+                timer.AutoReset = true;
+                Thread.Sleep(100);
+                Assert.Equal(0, count);
+                Assert.False(timer.Enabled);
+
+                timer.Interval = 1;
+                Thread.Sleep(100);
+                Assert.Equal(0, count);
+                Assert.False(timer.Enabled);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void StopWorksAfterSettingAutoResetOrIntervalOnRunningTimer()
+        {
+            using (var timer = new TestTimer(1))
+            {
+                var mres = new ManualResetEventSlim();
+                int count = 0;
+
+                timer.AutoReset = true;
+                timer.Elapsed += (sender, e) =>
+                {
+                    if (Interlocked.Increment(ref count) >= 5)
+                    {
+                        mres.Set();
+                    }
+                };
+                timer.Start();
+
+                mres.Wait();
+                Assert.True(timer.Enabled);
+
+                timer.AutoReset = false;
+                timer.Stop();
+                Assert.False(timer.Enabled);
+
+                int countAfterStop = count;
+                Thread.Sleep(100);
+                Assert.Equal(countAfterStop, count);
             }
         }
     }
