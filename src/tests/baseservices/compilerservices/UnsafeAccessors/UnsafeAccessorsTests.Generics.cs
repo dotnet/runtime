@@ -15,7 +15,6 @@ struct Struct
     private void SetType(Type type)
     {
         Value = type;
-        Console.WriteLine(type);
     }
     private void SetType<T>()
     {
