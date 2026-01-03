@@ -28,8 +28,6 @@ struct GenericStruct<T>
     private void SetType(Type type)
     {
         Value = type;
-        Console.WriteLine(type);
-        Console.WriteLine(typeof(T));
     }
     private void SetType<U>()
     {
