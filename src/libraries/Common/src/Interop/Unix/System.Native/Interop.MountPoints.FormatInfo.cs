@@ -277,6 +277,7 @@ internal static partial class Interop
                 case "aptfs":
                 case "avfs":
                 case "bdev":
+                case "binderfs":
                 case "bpf":
                 case "binfmt_misc":
                 case "cgroup":
@@ -311,12 +312,14 @@ internal static partial class Interop
                 case "objfs":
                 case "openprom":
                 case "openpromfs":
+                case "pidfs":
                 case "pipefs":
                 case "plptools":
                 case "proc":
                 case "pstore":
                 case "pytagsfs":
                 case "ramfs":
+                case "rdtgroup":
                 case "rofs":
                 case "romfs":
                 case "rootfs":
