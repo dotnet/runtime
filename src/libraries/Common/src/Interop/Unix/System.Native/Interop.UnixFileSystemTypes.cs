@@ -52,6 +52,7 @@ internal static partial class Interop
             devpts = 0x1CD1,
             ecryptfs = 0xF15F,
             efs = 0x00414A53,
+            exfat = 0x2011BAB0,
             exofs = 0x5DF5,
             ext = 0x137D,
             ext2_old = 0xEF51,
