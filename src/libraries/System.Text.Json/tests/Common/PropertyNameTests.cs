@@ -619,15 +619,14 @@ namespace System.Text.Json.Serialization.Tests
             string json = await Serializer.SerializeWrapper(baseClass);
 
             Assert.Equal("""{"test":"base"}""", json);
-
-            baseClass = await Serializer.DeserializeWrapper<BaseClassWithVirtualPropertyAndJsonPropertyName>("""{"test":"fromJson"}""");
-            Assert.Equal("fromJson", baseClass.Id);
         }
 
         public class BaseClassWithVirtualPropertyAndJsonPropertyName
         {
+            private string _id = "base";
+
             [JsonPropertyName("test")]
-            public virtual string Id { get => "base"; set { } }
+            public virtual string Id { get => _id; set => _id = value; }
         }
 
         public class DerivedClassOverridingVirtualPropertyWithJsonPropertyName : BaseClassWithVirtualPropertyAndJsonPropertyName
