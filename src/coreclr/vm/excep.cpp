@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*  EXCEP.CPP:
- *
- */
-
 #include "common.h"
 
 #include "frames.h"
@@ -2194,8 +2190,6 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     UNREACHABLE();
 }
 
-
-// INSTALL_COMPLUS_EXCEPTION_HANDLER has a filter, so must put the call in a separate fcn
 static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable, BOOL rethrow)
 {
     STATIC_CONTRACT_THROWS;
@@ -2208,15 +2202,13 @@ static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable, BOOL r
 
     _ASSERTE(throwable != CLRException::GetPreallocatedStackOverflowException());
 
-    // TODO: Do we need to install COMPlusFrameHandler here?
-    INSTALL_COMPLUS_EXCEPTION_HANDLER();
     if (throwable == NULL)
     {
         _ASSERTE(!"RealCOMPlusThrow(OBJECTREF) called with NULL argument. Somebody forgot to post an exception!");
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
+
     RaiseTheExceptionInternalOnly(throwable, rethrow);
-    UNINSTALL_COMPLUS_EXCEPTION_HANDLER();
 }
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow)
@@ -3022,10 +3014,6 @@ LONG NotifyDebuggerLastChance(Thread *pThread,
 
     LONG retval = EXCEPTION_CONTINUE_SEARCH;
 
-    // Debugger does func-evals inside this call, which may take nested exceptions. We need a nested exception
-    // handler to allow this.
-    INSTALL_NESTED_EXCEPTION_HANDLER(pThread->GetFrame());
-
     EXCEPTION_POINTERS dummy;
     dummy.ExceptionRecord = NULL;
     dummy.ContextRecord = NULL;
@@ -3048,8 +3036,6 @@ LONG NotifyDebuggerLastChance(Thread *pThread,
     {
         retval = EXCEPTION_CONTINUE_EXECUTION;
     }
-
-    UNINSTALL_NESTED_EXCEPTION_HANDLER();
 
 #ifdef DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
     EX_TRY
@@ -4459,9 +4445,7 @@ static SString GetExceptionMessageWrapper(Thread* pThread, OBJECTREF throwable)
 
     StackSString result;
 
-    INSTALL_NESTED_EXCEPTION_HANDLER(pThread->GetFrame());
     GetExceptionMessage(throwable, result);
-    UNINSTALL_NESTED_EXCEPTION_HANDLER();
 
     return SString{ result };
 }
@@ -4793,13 +4777,9 @@ void NotifyAppDomainsOfUnhandledException(
     // Send up the unhandled exception appdomain event.
     if (pThread->DetermineIfGuardPagePresent())
     {
-        INSTALL_NESTED_EXCEPTION_HANDLER(pThread->GetFrame());
-
         // This guy will never throw, but it will need a spot to store
         // any nested exceptions it might find.
         AppDomain::OnUnhandledException(&throwable);
-
-        UNINSTALL_NESTED_EXCEPTION_HANDLER();
     }
 
     GCPROTECT_END();
@@ -7450,76 +7430,6 @@ void StripFileInfoFromStackTrace(SString &ssStackTrace)
     }
     ssStackTrace.Truncate(end);
 }
-
-#ifdef _DEBUG
-//==============================================================================
-// This function will set a thread state indicating if an exception is escaping
-// the last CLR personality routine on the stack in a reverse pinvoke scenario.
-//
-// If the exception continues to go unhandled, it will eventually reach the OS
-// that will start invoking the UEFs. Since CLR registers its UEF only to handle
-// unhandled exceptions on such reverse pinvoke threads, we will assert this
-// state in our UEF to ensure it does not get called for any other reason.
-//
-// This function should be called only if the personality routine returned
-// EXCEPTION_CONTINUE_SEARCH.
-//==============================================================================
-void SetReversePInvokeEscapingUnhandledExceptionStatus(BOOL fIsUnwinding,
-#if defined(TARGET_X86)
-                                                       EXCEPTION_REGISTRATION_RECORD * pEstablisherFrame
-#else
-                                                       PVOID pEstablisherFrame
-#endif
-                                                       )
-{
-#ifndef DACCESS_COMPILE
-
-    LIMITED_METHOD_CONTRACT;
-
-    Thread *pCurThread = GetThread();
-    if (pCurThread->GetExceptionState()->IsExceptionInProgress())
-    {
-        if (!fIsUnwinding)
-        {
-            // Get the top-most Frame of this thread.
-            Frame* pCurFrame = pCurThread->GetFrame();
-            Frame* pTopMostFrame = pCurFrame;
-            while (pCurFrame && (pCurFrame != FRAME_TOP))
-            {
-                pTopMostFrame = pCurFrame;
-                pCurFrame = pCurFrame->PtrNextFrame();
-            }
-
-            // Is the exception escaping the last CLR personality routine on the stack of a
-            // reverse pinvoke thread?
-            if (((pTopMostFrame == NULL) || (pTopMostFrame == FRAME_TOP)) ||
-                ((void *)(pEstablisherFrame) > (void *)(pTopMostFrame)))
-            {
-                LOG((LF_EH, LL_INFO100, "SetReversePInvokeEscapingUnhandledExceptionStatus: setting Ex_RPInvokeEscapingException\n"));
-                // Set the flag on the thread indicating the exception is escaping the
-                // top most reverse pinvoke exception handler.
-                pCurThread->GetExceptionState()->GetFlags()->SetReversePInvokeEscapingException();
-            }
-        }
-        else
-        {
-            // Since we are unwinding, simply unset the flag indicating escaping unhandled exception
-            // if it was set.
-            if (pCurThread->GetExceptionState()->GetFlags()->ReversePInvokeEscapingException())
-            {
-                LOG((LF_EH, LL_INFO100, "SetReversePInvokeEscapingUnhandledExceptionStatus: unsetting Ex_RPInvokeEscapingException\n"));
-                pCurThread->GetExceptionState()->GetFlags()->ResetReversePInvokeEscapingException();
-            }
-        }
-    }
-    else
-    {
-        LOG((LF_EH, LL_INFO100, "SetReversePInvokeEscapingUnhandledExceptionStatus: not setting Ex_RPInvokeEscapingException since no exception is in progress.\n"));
-    }
-#endif // !DACCESS_COMPILE
-}
-
-#endif // _DEBUG
 
 #ifndef TARGET_UNIX
 

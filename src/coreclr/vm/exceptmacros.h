@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
 
 //
 // EXCEPTMACROS.H -
@@ -106,8 +105,6 @@
 //       around the call to simulate a CLR "try-finally" but EX_TRY
 //       is relatively expensive compared to the real thing.)
 //
-//
-
 
 #ifndef __exceptmacros_h__
 #define __exceptmacros_h__
@@ -179,50 +176,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
         }                                                               \
         PAL_ENDTRY                                                      \
     }
-
-
-
-
-//==========================================================================
-// Helpful macros to declare exception handlers, their implementation,
-// and to call them.
-//==========================================================================
-
-#define _EXCEPTION_HANDLER_DECL(funcname)                                                               \
-    EXCEPTION_DISPOSITION __cdecl funcname(EXCEPTION_RECORD *pExceptionRecord,                          \
-                                           struct _EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame,    \
-                                           CONTEXT *pContext,                                           \
-                                           DISPATCHER_CONTEXT *pDispatcherContext)
-
-#define EXCEPTION_HANDLER_DECL(funcname) \
-    extern "C"  _EXCEPTION_HANDLER_DECL(funcname)
-
-#define EXCEPTION_HANDLER_IMPL(funcname) \
-    _EXCEPTION_HANDLER_DECL(funcname)
-
-#define EXCEPTION_HANDLER_FWD(funcname) \
-    funcname(pExceptionRecord, pEstablisherFrame, pContext, pDispatcherContext)
-
-//==========================================================================
-// Declares a CLR frame handler that can be used to make sure that
-// exceptions that should be handled from within managed code
-// are handled within and don't leak out to give other handlers a
-// chance at them.
-//==========================================================================
-#define INSTALL_COMPLUS_EXCEPTION_HANDLER()                                     \
-    INSTALL_COMPLUS_EXCEPTION_HANDLER_NO_DECLARE()
-
-#define INSTALL_COMPLUS_EXCEPTION_HANDLER_NO_DECLARE()                          \
-{                                                                               \
-    /* work around unreachable code warning */                                  \
-    if (true) {
-
-#define UNINSTALL_COMPLUS_EXCEPTION_HANDLER()                                   \
-    }                                                                           \
-}
-
-#define INSTALL_NESTED_EXCEPTION_HANDLER(frame)
-#define UNINSTALL_NESTED_EXCEPTION_HANDLER()
 
 enum VEH_ACTION
 {

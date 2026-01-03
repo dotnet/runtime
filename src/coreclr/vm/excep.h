@@ -1,10 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// EXCEP.H
-//
-
-//
-
 
 #ifndef __excep_h__
 #define __excep_h__
@@ -651,12 +646,6 @@ inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 }
 
 void SaveCurrentExceptionInfo(PEXCEPTION_RECORD pRecord, PT_CONTEXT pContext);
-
-#ifdef _DEBUG
-void SetReversePInvokeEscapingUnhandledExceptionStatus(BOOL fIsUnwinding,
-                                                       PVOID pEstablisherFrame
-                                                       );
-#endif // _DEBUG
 
 // See implementation for detailed comments in excep.cpp
 LONG AppDomainTransitionExceptionFilter(

@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Allow multiple inclusion.
 
@@ -16,7 +17,6 @@
 // NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 #ifndef DYNAMICJITHELPER
 //I should never try to generate an alignment stub for a dynamic helper
@@ -156,9 +156,6 @@
 
     JITHELPER(CORINFO_HELP_ENDCATCH,            NULL,               METHOD__NIL)
 
-//
-// The legacy x86 monitor helpers do not need a state argument
-//
     DYNAMICJITHELPER(CORINFO_HELP_MON_ENTER,               NULL, METHOD__MONITOR__SYNCHRONIZED_METHOD_ENTER)
     DYNAMICJITHELPER(CORINFO_HELP_MON_EXIT,                NULL, METHOD__MONITOR__SYNCHRONIZED_METHOD_EXIT)
 

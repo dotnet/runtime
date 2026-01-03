@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // CGENX86.H -
 //
 // Various helper routines for generating x86 assembly code.
 //
 // DO NOT INCLUDE THIS FILE DIRECTLY - ALWAYS USE CGENSYS.H INSTEAD
-//
-
 
 
 #ifndef TARGET_X86

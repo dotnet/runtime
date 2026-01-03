@@ -328,7 +328,6 @@ inline BOOL IsInCalleesFrames(REGDISPLAY *display, LPVOID stackPointer) {
 #error "RegDisplay functions are not implemented on this platform."
 #endif
 
-// This needs to be implemented for platforms that have funclets.
 inline LPVOID GetRegdisplayReturnValue(REGDISPLAY *display)
 {
     LIMITED_METHOD_CONTRACT;

@@ -1,20 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 /*============================================================
-**
 ** File:    callhelpers.h
 ** Purpose: Provides helpers for making managed calls
-**
-
 ===========================================================*/
+
 #ifndef __CALLHELPERS_H__
 #define __CALLHELPERS_H__
 
 struct CallDescrData
 {
-    //
     // Input arguments
-    //
     LPVOID                      pSrc;
     UINT32                      numStackSlots;
 #ifdef CALLDESCR_ARGREGS
@@ -493,11 +490,9 @@ enum EEToManagedCallFlags
         if (CURRENT_THREAD->IsAbortRequested()) {                               \
             CURRENT_THREAD->HandleThreadAbort();                                \
         }                                                                       \
-    }                                                                           \
-    INSTALL_COMPLUS_EXCEPTION_HANDLER_NO_DECLARE();
+    }
 
 #define END_CALL_TO_MANAGED()                                                   \
-    UNINSTALL_COMPLUS_EXCEPTION_HANDLER();                                      \
 }
 
 /***********************************************************************/

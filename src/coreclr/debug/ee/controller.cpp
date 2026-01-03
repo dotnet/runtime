@@ -4,11 +4,9 @@
 // ****************************************************************************
 // File: controller.cpp
 //
-
-//
 // controller.cpp: Debugger execution control routines
-//
 // ****************************************************************************
+
 // Putting code & #includes, #defines, etc, before the stdafx.h will
 // cause the code,etc, to be silently ignored
 //

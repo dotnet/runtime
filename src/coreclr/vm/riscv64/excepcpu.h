@@ -1,16 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-//
-
 
 #ifndef __excepcpu_h__
 #define __excepcpu_h__
 
-
 #define THROW_CONTROL_FOR_THREAD_FUNCTION  RedirectForThreadAbort
 EXTERN_C void RedirectForThreadAbort();
-
 
 #define STATUS_CLR_GCCOVER_CODE         STATUS_ILLEGAL_INSTRUCTION
 

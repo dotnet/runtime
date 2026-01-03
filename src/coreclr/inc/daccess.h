@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: daccess.h
-//
-
 //
 // Support for external access of runtime data structures.  These
 // macros and templates hide the details of pointer and data handling
@@ -553,7 +552,6 @@
 // without DACCESS_COMPILE.
 //
 //*****************************************************************************
-
 
 #ifndef __daccess_h__
 #define __daccess_h__

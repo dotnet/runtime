@@ -57,7 +57,11 @@ CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
 CDAC_GLOBAL_POINTER(ManagedThreadStore, &g_managedThreadStore)
-CDAC_GLOBAL(FeatureEHFunclets, uint8, 1)
+#if FEATURE_COMINTEROP
+CDAC_GLOBAL(FeatureCOMInterop, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureCOMInterop, uint8, 0)
+#endif
 CDAC_GLOBAL(SomeMagicNumber, uint32, 42)
 CDAC_GLOBAL_STRING(RuntimeIdentifier, "windows-x64")
 CDAC_GLOBALS_END()

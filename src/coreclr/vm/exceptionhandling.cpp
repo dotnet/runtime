@@ -2967,7 +2967,7 @@ static TADDR GetSpForDiagnosticReporting(REGDISPLAY *pRD)
 #ifdef ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
     TADDR sp = CallerStackFrame::FromRegDisplay(pRD).SP;
 #if defined(TARGET_X86)
-    sp -= sizeof(TADDR); // For X86 with funclets we want the address 1 pointer into the callee.
+    sp -= sizeof(TADDR); // For X86 we want the address 1 pointer into the callee.
 #endif // defined(TARGET_X86)
     return sp;
 #else

@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//*****************************************************************************
-// rspriv.
-//
 
+//*****************************************************************************
+// rspriv.h
 //
 // Common include file for right-side of debugger.
 //*****************************************************************************

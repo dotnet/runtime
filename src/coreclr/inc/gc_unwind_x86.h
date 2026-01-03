@@ -8,9 +8,8 @@
 // with the FEATURE_NATIVEAOT define. There are three main methods that are used by both
 // runtimes - DecodeGCHdrInfo, UnwindStackFrameX86, and EnumGcRefsX86.
 //
-// The IN_EH_FUNCLETS and IN_EH_FUNCLETS_COMMA macros are used to specify some parameters
-// for the above methods that are specific for a certain runtime or configuration.
-#define IN_EH_FUNCLETS(a) a
+// The IN_EH_FUNCLETS_COMMA macro is used to specify some parameters for the above methods
+// that are specific for a certain runtime or configuration.
 #define IN_EH_FUNCLETS_COMMA(a) a,
 
 enum regNum
