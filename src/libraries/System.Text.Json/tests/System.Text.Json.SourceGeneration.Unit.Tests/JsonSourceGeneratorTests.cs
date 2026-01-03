@@ -861,22 +861,20 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
         }
 
-#if ROSLYN4_4_OR_GREATER && NET
         [Fact]
         public void InitOnlyPropertyWithReservedKeywordName_CompilesSuccessfully()
         {
             // Verbatim identifiers like @else should be correctly handled in property initializers.
 
             string source = """
-                #nullable enable
                 using System.Text.Json.Serialization;
 
-                public record A
+                public class MyClass
                 {
-                    public A? @else { get; init; }
+                    public string @else { get; init; }
                 }
 
-                [JsonSerializable(typeof(A))]
+                [JsonSerializable(typeof(MyClass))]
                 public partial class MyContext : JsonSerializerContext
                 {
                 }
@@ -885,7 +883,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Compilation compilation = CompilationHelper.CreateCompilation(source);
             CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
         }
-#endif
 
         [Fact]
         public void RefStructPropertyWithJsonIgnore_CompilesSuccessfully()
