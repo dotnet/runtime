@@ -1034,6 +1034,12 @@ namespace System.Text.Json.SourceGeneration
                 public readonly List<int> Properties = new();
                 public Dictionary<string, (PropertyGenerationSpec, ISymbol, int index)> AddedProperties = new(options?.PropertyNameCaseInsensitive == true ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
                 public Dictionary<string, ISymbol>? IgnoredMembers;
+                /// <summary>
+                /// Tracks all virtual properties that have been added.
+                /// Used to determine whether a base type virtual property is being overridden
+                /// by a derived type property, regardless of the JSON property name they use.
+                /// </summary>
+                public Dictionary<string, ISymbol>? OverriddenVirtualMembers;
                 public bool IsPropertyOrderSpecified;
                 public bool HasInvalidConfigurationForFastPath;
             }
@@ -1052,6 +1058,19 @@ namespace System.Text.Json.SourceGeneration
             {
                 // Algorithm should be kept in sync with the runtime equivalent in JsonTypeInfo.cs
                 string memberName = propertySpec.MemberName;
+
+                // Check if the current virtual property has been overridden by a previously added property,
+                // regardless of the JSON property name they use. This handles the case where a derived class
+                // overrides a virtual property but uses a different JSON property name (e.g., due to the base
+                // class having [JsonPropertyName] that the derived class doesn't inherit).
+                if (propertySpec.IsVirtual &&
+                    state.OverriddenVirtualMembers?.TryGetValue(memberName, out ISymbol? overridingMember) == true &&
+                    memberInfo.IsOverriddenOrShadowedBy(overridingMember))
+                {
+                    // This virtual property is being overridden by a previously added property from a derived type.
+                    // Skip adding it to avoid duplicate serialization.
+                    return;
+                }
 
                 if (state.AddedProperties.TryAdd(propertySpec.EffectiveJsonPropertyName, (propertySpec, memberInfo, state.Properties.Count)))
                 {
@@ -1094,6 +1113,14 @@ namespace System.Text.Json.SourceGeneration
                 if (propertySpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
                 {
                     (state.IgnoredMembers ??= new())[memberName] = memberInfo;
+                }
+
+                // Track virtual properties by their CLR member name for override detection.
+                // This allows us to detect when a base type virtual property is being overridden
+                // by a derived type property with a different JSON name.
+                if (propertySpec.IsVirtual)
+                {
+                    (state.OverriddenVirtualMembers ??= new())[memberName] = memberInfo;
                 }
             }
 

@@ -578,5 +578,67 @@ namespace System.Text.Json.Serialization.Tests
             Exception ex = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<SimpleTestClass>(json, options));
             Assert.Contains("Duplicate", ex.Message);
         }
+
+        [Fact]
+        public async Task VirtualPropertyWithJsonPropertyNameOnBaseClass_SerializedOnce()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/96998
+            // When a virtual property with [JsonPropertyName] on the base class is overridden
+            // in a derived class without the attribute, it should only be serialized once
+            // using the JSON property name from the derived class's property (not the base class).
+
+            var derived = new DerivedClassOverridingVirtualPropertyWithJsonPropertyName();
+            string json = await Serializer.SerializeWrapper(derived);
+
+            // Should serialize only the property "Id" from the derived class, not both "Id" and "test"
+            Assert.Equal("""{"Id":"derived"}""", json);
+
+            // Verify deserialization works correctly using the property name
+            derived = await Serializer.DeserializeWrapper<DerivedClassOverridingVirtualPropertyWithJsonPropertyName>("""{"Id":"fromJson"}""");
+            Assert.Equal("fromJson", derived.Id);
+        }
+
+        [Fact]
+        public async Task VirtualPropertyWithJsonPropertyNameOnBaseAndDerived_SerializedOnce()
+        {
+            // When both base and derived class have [JsonPropertyName], the derived class's attribute should be used
+            var derived = new DerivedClassOverridingVirtualPropertyWithJsonPropertyNameOnBoth();
+            string json = await Serializer.SerializeWrapper(derived);
+
+            Assert.Equal("""{"derivedName":"derived"}""", json);
+
+            derived = await Serializer.DeserializeWrapper<DerivedClassOverridingVirtualPropertyWithJsonPropertyNameOnBoth>("""{"derivedName":"fromJson"}""");
+            Assert.Equal("fromJson", derived.Id);
+        }
+
+        [Fact]
+        public async Task VirtualPropertyWithJsonPropertyName_SerializedWithAttributeName()
+        {
+            // When the base class with [JsonPropertyName] is serialized directly, use the attribute name
+            var baseClass = new BaseClassWithVirtualPropertyAndJsonPropertyName();
+            string json = await Serializer.SerializeWrapper(baseClass);
+
+            Assert.Equal("""{"test":"base"}""", json);
+
+            baseClass = await Serializer.DeserializeWrapper<BaseClassWithVirtualPropertyAndJsonPropertyName>("""{"test":"fromJson"}""");
+            Assert.Equal("fromJson", baseClass.Id);
+        }
+
+        public class BaseClassWithVirtualPropertyAndJsonPropertyName
+        {
+            [JsonPropertyName("test")]
+            public virtual string Id { get => "base"; set { } }
+        }
+
+        public class DerivedClassOverridingVirtualPropertyWithJsonPropertyName : BaseClassWithVirtualPropertyAndJsonPropertyName
+        {
+            public override string Id { get; set; } = "derived";
+        }
+
+        public class DerivedClassOverridingVirtualPropertyWithJsonPropertyNameOnBoth : BaseClassWithVirtualPropertyAndJsonPropertyName
+        {
+            [JsonPropertyName("derivedName")]
+            public override string Id { get; set; } = "derived";
+        }
     }
 }

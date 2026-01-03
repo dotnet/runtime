@@ -179,6 +179,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             propertyInfo.MemberName = propertyInfoValues.PropertyName;
             propertyInfo.MemberType = propertyInfoValues.IsProperty ? MemberTypes.Property : MemberTypes.Field;
+            propertyInfo.IsVirtual = propertyInfoValues.IsVirtual;
             propertyInfo.SrcGen_IsPublic = propertyInfoValues.IsPublic;
             propertyInfo.SrcGen_HasJsonInclude = propertyInfoValues.HasJsonInclude;
             propertyInfo.IsExtensionData = propertyInfoValues.IsExtensionData;
