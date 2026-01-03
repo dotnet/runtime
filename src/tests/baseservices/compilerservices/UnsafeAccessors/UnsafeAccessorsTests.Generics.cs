@@ -34,8 +34,6 @@ struct GenericStruct<T>
     private void SetType<U>()
     {
         Value = typeof(U);
-        Console.WriteLine(typeof(U));
-        Console.WriteLine(typeof(T));
     }
 }
 
