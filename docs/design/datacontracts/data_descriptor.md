@@ -386,6 +386,6 @@ And the globals will be:
 | RuntimeID           | string  |"windows-x64"|
 
 The `FEATURE_COMINTEROP` comes from the in-memory data descriptor - with the
-value embedded directly in the json since it is known at build time and does not vary.  Finally the
+value embedded directly in the json since it is known at build time and does not vary.  The
 value of the pointer `s_pThreadStore` comes from the auxiliary vector's offset 0 since it is an
 execution-time value that is only known to the running process.
