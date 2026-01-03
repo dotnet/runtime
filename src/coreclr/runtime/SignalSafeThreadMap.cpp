@@ -3,9 +3,9 @@
 
 #include "common.h"
 
-#include "asyncsafethreadmap.h"
+#include "SignalSafeThreadMap.h"
 
-// Async safe lock free thread map for use in signal handlers
+// Signal safe lock free thread map for use in signal handlers
 
 struct ThreadEntry
 {
@@ -21,14 +21,14 @@ struct ThreadSegment
     ThreadSegment* pNext;
 };
 
-static ThreadSegment *s_pAsyncSafeThreadMapHead = NULL;
+static ThreadSegment *s_pSignalSafeThreadMapHead = NULL;
 
-bool InsertThreadIntoAsyncSafeMap(size_t osThread, void* pThread)
+bool InsertThreadIntoSignalSafeMap(size_t osThread, void* pThread)
 {
     size_t startIndex = osThread % MAX_THREADS_IN_SEGMENT;
 
-    ThreadSegment* pSegment = s_pAsyncSafeThreadMapHead;
-    ThreadSegment** ppSegment = &s_pAsyncSafeThreadMapHead;
+    ThreadSegment* pSegment = s_pSignalSafeThreadMapHead;
+    ThreadSegment** ppSegment = &s_pSignalSafeThreadMapHead;
     while (true)
     {
         if (pSegment == NULL)
@@ -83,11 +83,11 @@ bool InsertThreadIntoAsyncSafeMap(size_t osThread, void* pThread)
     }
 }
 
-void RemoveThreadFromAsyncSafeMap(size_t osThread, void* pThread)
+void RemoveThreadFromSignalSafeMap(size_t osThread, void* pThread)
 {
     size_t startIndex = osThread % MAX_THREADS_IN_SEGMENT;
 
-    ThreadSegment* pSegment = s_pAsyncSafeThreadMapHead;
+    ThreadSegment* pSegment = s_pSignalSafeThreadMapHead;
     while (pSegment)
     {
         for (size_t i = 0; i < MAX_THREADS_IN_SEGMENT; i++)
@@ -105,16 +105,16 @@ void RemoveThreadFromAsyncSafeMap(size_t osThread, void* pThread)
     }
 }
 
-void *FindThreadInAsyncSafeMap(size_t osThread)
+void *FindThreadInSignalSafeMap(size_t osThread)
 {
     size_t startIndex = osThread % MAX_THREADS_IN_SEGMENT;
-    ThreadSegment* pSegment = s_pAsyncSafeThreadMapHead;
+    ThreadSegment* pSegment = s_pSignalSafeThreadMapHead;
     while (pSegment)
     {
         for (size_t i = 0; i < MAX_THREADS_IN_SEGMENT; i++)
         {
             size_t index = (startIndex + i) % MAX_THREADS_IN_SEGMENT;
-            // Use acquire to synchronize with release in InsertThreadIntoAsyncSafeMap
+            // Use acquire to synchronize with release in InsertThreadIntoSignalSafeMap
             if (__atomic_load_n(&pSegment->entries[index].osThread, __ATOMIC_ACQUIRE) == osThread)
             {
                 return pSegment->entries[index].pThread;
