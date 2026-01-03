@@ -21,6 +21,7 @@ internal static partial class Interop
         /// </remarks>
         internal enum UnixFileSystemTypes : uint
         {
+            aafs = 0x5A3C69F0,
             adfs = 0xADF5,
             affs = 0xADFF,
             afs = 0x5346414F,
@@ -29,6 +30,7 @@ internal static partial class Interop
             aufs = 0x61756673,
             autofs = 0x0187,
             autofs4 = 0x6D4A556D,
+            bcachefs = 0xCA451A4E,
             befs = 0x42465331,
             bdev = 0x62646576,
             bfs = 0x1BADFACE,
@@ -47,11 +49,14 @@ internal static partial class Interop
             cramfs = 0x28CD3D45,
             // ctfs = 0x01021994, // same as tmpfs
             debugfs = 0x64626720,
+            daxfs = 0x64646178,
             dev = 0x1373,
             // devfs = 0x1373, // same as dev
             devpts = 0x1CD1,
             ecryptfs = 0xF15F,
+            efivarfs = 0xDE5E81E4,
             efs = 0x00414A53,
+            erofs = 0xE0F5E1E2,
             exfat = 0x2011BAB0,
             exofs = 0x5DF5,
             ext = 0x137D,
@@ -72,8 +77,10 @@ internal static partial class Interop
             gpfs = 0x47504653,
             hfs = 0x4244,
             hfsplus = 0x482B,
+            hostfs = 0x00C0FFEE,
             hpfs = 0xF995E849,
             hugetlbfs = 0x958458F6,
+            ibrix = 0x013111A8,
             inodefs = 0x11307854,
             inotifyfs = 0x2BAD1DEA,
             isofs = 0x9660,
@@ -98,6 +105,7 @@ internal static partial class Interop
             nfsd = 0x6E667364,
             nilfs = 0x3434,
             novell = 0x564C,
+            nsfs = 0x6E736673,
             ntfs = 0x5346544E,
             // objfs = 0x01021994, // same as tmpfs
             ocfs2 = 0x7461636F,
@@ -107,6 +115,7 @@ internal static partial class Interop
             overlayfs = 0x794C764F,
             panfs = 0xAAD7AAEA,
             pipefs = 0x50495045,
+            prl_fs = 0x7C7C6673,
             proc = 0x9FA0,
             pstore = 0x6165676C,
             qnx4 = 0x002F,
@@ -124,6 +133,7 @@ internal static partial class Interop
             // sharefs = 0x01021994, // same as tmpfs
             smb = 0x517B,
             smb2 = 0xFE534D42,
+            snfs = 0xBEEFDEAD,
             sockfs = 0x534F434B,
             squashfs = 0x73717368,
             sysfs = 0x62656572,
@@ -149,6 +159,7 @@ internal static partial class Interop
             xia = 0x012FD16D,
             // udev = 0x01021994, // same as tmpfs
             zfs = 0x2FC12FC1,
+            zonefs = 0x5A4F4653,
         }
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetFileSystemType")]

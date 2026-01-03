@@ -114,6 +114,7 @@ internal static partial class Interop
                 case "anon-inode FS":
                 case "apfs":
                 case "balloon-kvm-fs":
+                case "bcachefs":
                 case "bdevfs":
                 case "befs":
                 case "bfs":
@@ -126,6 +127,7 @@ internal static partial class Interop
                 case "drvfs":
                 case "efivarfs":
                 case "efs":
+                case "erofs":
                 case "exfat":
                 case "exofs":
                 case "ext":
@@ -207,6 +209,7 @@ internal static partial class Interop
                 case "xmount":
                 case "zfs":
                 case "zfs-fuse":
+                case "zonefs":
                 case "zsmallocfs":
                     return DriveType.Fixed;
 
