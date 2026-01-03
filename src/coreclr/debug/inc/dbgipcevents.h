@@ -1356,11 +1356,9 @@ struct MSLAYOUT DebuggerIPCE_JITFuncData
     LSPTR_DJI   nativeCodeJITInfoToken;
     VMPTR_MethodDesc vmNativeCodeMethodDescToken;
 
-#ifdef FEATURE_EH_FUNCLETS
     BOOL         fIsFilterFrame;
     SIZE_T       parentNativeOffset;
     FramePointer fpParentOrSelf;
-#endif // FEATURE_EH_FUNCLETS
 
     // indicates if the MethodDesc is a generic function or a method inside a generic class (or
     // both!).

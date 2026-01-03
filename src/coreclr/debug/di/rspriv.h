@@ -6993,11 +6993,9 @@ public:
     // new-style constructor
     CordbMiscFrame(DebuggerIPCE_JITFuncData * pJITFuncData);
 
-#ifdef FEATURE_EH_FUNCLETS
     SIZE_T             parentIP;
     FramePointer       fpParentOrSelf;
     bool               fIsFilterFunclet;
-#endif // FEATURE_EH_FUNCLETS
 };
 
 
@@ -7177,10 +7175,8 @@ public:
     bool      IsFunclet();
     bool      IsFilterFunclet();
 
-#ifdef FEATURE_EH_FUNCLETS
     // return the offset of the parent method frame at which an exception occurs
     SIZE_T    GetParentIP();
-#endif // FEATURE_EH_FUNCLETS
 
     TADDR GetAmbientESP() { return m_taAmbientESP; }
     TADDR GetReturnRegisterValue();

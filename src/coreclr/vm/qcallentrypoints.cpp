@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Describes all of the P/Invokes to the special QCall module that resolves to internal runtime methods.
+
 #include "common.h"
 
 //
@@ -511,14 +513,12 @@ static const Entry s_QCall[] =
     DllImportEntry(ComWeakRefToObject)
     DllImportEntry(ObjectToComWeakRef)
 #endif
-#ifdef FEATURE_EH_FUNCLETS
     DllImportEntry(SfiInit)
     DllImportEntry(SfiNext)
     DllImportEntry(CallFilterFunclet)
     DllImportEntry(EHEnumInitFromStackFrameIterator)
     DllImportEntry(EHEnumNext)
     DllImportEntry(AppendExceptionStackFrame)
-#endif // FEATURE_EH_FUNCLETS
     DllImportEntry(InitClassHelper)
     DllImportEntry(ResolveVirtualFunctionPointer)
     DllImportEntry(GetThreadStaticsByMethodTable)

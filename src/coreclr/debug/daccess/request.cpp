@@ -889,16 +889,11 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
         TO_CDADDR(thread->m_LastThrownObjectHandle);
     threadData->nextThread =
         HOST_CDADDR(ThreadStore::s_pThreadStore->m_ThreadList.GetNext(thread));
-#ifdef FEATURE_EH_FUNCLETS
     if (thread->m_ExceptionState.m_pCurrentTracker)
     {
         threadData->firstNestedException = HOST_CDADDR(
             thread->m_ExceptionState.m_pCurrentTracker->m_pPrevNestedInfo);
     }
-#else
-    threadData->firstNestedException = HOST_CDADDR(
-        thread->m_ExceptionState.m_currentExInfo.m_pPrevNestedInfo);
-#endif // FEATURE_EH_FUNCLETS
 
     SOSDacLeave();
     return hr;

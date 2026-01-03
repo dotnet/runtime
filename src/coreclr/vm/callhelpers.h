@@ -480,7 +480,6 @@ enum EEToManagedCallFlags
 #define BEGIN_CALL_TO_MANAGEDEX(flags)                                          \
 {                                                                               \
     MAKE_CURRENT_THREAD_AVAILABLE();                                            \
-    DECLARE_CPFH_EH_RECORD(CURRENT_THREAD);                                     \
     _ASSERTE(CURRENT_THREAD);                                                   \
     _ASSERTE((CURRENT_THREAD->m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);     \
     /* This bit should never be set when we call into managed code.  The */     \

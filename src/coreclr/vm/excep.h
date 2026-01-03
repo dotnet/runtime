@@ -109,15 +109,6 @@ void TerminateExceptionHandling();
 
 // Prototypes
 EXTERN_C VOID STDCALL ResetCurrentContext();
-#if !defined(FEATURE_EH_FUNCLETS)
-#ifdef _DEBUG
-void CheckStackBarrier(EXCEPTION_REGISTRATION_RECORD *exRecord);
-#endif
-EXCEPTION_REGISTRATION_RECORD *FindNestedEstablisherFrame(EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame);
-LFH LookForHandler(const EXCEPTION_POINTERS *pExceptionPointers, Thread *pThread, ThrowCallbackType *tct);
-StackWalkAction COMPlusThrowCallback (CrawlFrame *pCf, ThrowCallbackType *pData);
-void UnwindFrames(Thread *pThread, ThrowCallbackType *tct);
-#endif // !defined(FEATURE_EH_FUNCLETS)
 
 void UnwindFrameChain(Thread *pThread, LPVOID pvLimitSP);
 DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord);
@@ -366,47 +357,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowInvalidCastException(TypeHandle thCastFro
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrowInvalidCastException(OBJECTREF *pObj, TypeHandle thCastTo);
 
-#ifndef FEATURE_EH_FUNCLETS
-
-#include "eexcp.h"
-#include "exinfo.h"
-
-struct FrameHandlerExRecord
-{
-    EXCEPTION_REGISTRATION_RECORD   m_ExReg;
-
-    Frame *m_pEntryFrame;
-
-    Frame *GetCurrFrame()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pEntryFrame;
-    }
-};
-
-struct NestedHandlerExRecord : public FrameHandlerExRecord
-{
-    ExInfo m_handlerInfo;
-    BOOL   m_ActiveForUnwind;
-    ExInfo *m_pCurrentExInfo;
-    EXCEPTION_REGISTRATION_RECORD *m_pCurrentHandler;
-    NestedHandlerExRecord() : m_handlerInfo() {LIMITED_METHOD_CONTRACT;}
-    void Init(PEXCEPTION_ROUTINE pFrameHandler, Frame *pEntryFrame)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        m_ExReg.Next=NULL;
-        m_ExReg.Handler=pFrameHandler;
-        m_pEntryFrame=pEntryFrame;
-        m_pCurrentExInfo = NULL;
-        m_pCurrentHandler = NULL;
-        m_handlerInfo.Init();
-        m_ActiveForUnwind = FALSE;
-    }
-};
-
-#endif // !FEATURE_EH_FUNCLETS
-
 #if defined(ENABLE_CONTRACTS_IMPL)
 
 // Never call this class directly: Call it through CANNOTTHROWCOMPLUSEXCEPTION.
@@ -484,35 +434,6 @@ VOID PopSEHRecords(LPVOID pTargetSP);
 PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord();
 VOID SetCurrentSEHRecord(EXCEPTION_REGISTRATION_RECORD *pSEH);
 #endif
-
-#if !defined(FEATURE_EH_FUNCLETS)
-EXCEPTION_HANDLER_DECL(COMPlusFrameHandler);
-EXCEPTION_HANDLER_DECL(COMPlusNestedExceptionHandler);
-#ifdef FEATURE_COMINTEROP
-EXCEPTION_HANDLER_DECL(COMPlusFrameHandlerRevCom);
-#endif // FEATURE_COMINTEROP
-
-#ifdef DEBUGGING_SUPPORTED
-VOID UnwindExceptionTrackerAndResumeInInterceptionFrame(ExInfo* pExInfo, EHContext* context);
-#endif // DEBUGGING_SUPPORTED
-
-BOOL PopNestedExceptionRecords(LPVOID pTargetSP, BOOL bCheckForUnknownHandlers = FALSE);
-VOID PopNestedExceptionRecords(LPVOID pTargetSP, T_CONTEXT *pCtx, void *pSEH);
-
-#define STACK_OVERWRITE_BARRIER_SIZE 20
-#define STACK_OVERWRITE_BARRIER_VALUE 0xabcdefab
-
-#ifdef _DEBUG
-#if defined(TARGET_X86)
-struct FrameHandlerExRecordWithBarrier {
-    DWORD m_StackOverwriteBarrier[STACK_OVERWRITE_BARRIER_SIZE];
-    FrameHandlerExRecord m_ExRecord;
-};
-
-void VerifyValidTransitionFromManagedCode(Thread *pThread, CrawlFrame *pCF);
-#endif // defined(TARGET_X86)
-#endif // _DEBUG
-#endif // !defined(FEATURE_EH_FUNCLETS)
 
 //==========================================================================
 // This is a workaround designed to allow the use of the StubLinker object at bootup
@@ -733,13 +654,7 @@ void SaveCurrentExceptionInfo(PEXCEPTION_RECORD pRecord, PT_CONTEXT pContext);
 
 #ifdef _DEBUG
 void SetReversePInvokeEscapingUnhandledExceptionStatus(BOOL fIsUnwinding,
-#ifdef TARGET_X86
-                                                       EXCEPTION_REGISTRATION_RECORD * pEstablisherFrame
-#elif defined(FEATURE_EH_FUNCLETS)
                                                        PVOID pEstablisherFrame
-#else
-#error Unsupported platform
-#endif
                                                        );
 #endif // _DEBUG
 
@@ -791,15 +706,9 @@ public:
 
 #ifndef DACCESS_COMPILE
 
-#ifndef FEATURE_EH_FUNCLETS
-void ResetThreadAbortState(PTR_Thread pThread, void *pEstablisherFrame);
-#endif
-
 X86_ONLY(EXCEPTION_REGISTRATION_RECORD* GetNextCOMPlusSEHRecord(EXCEPTION_REGISTRATION_RECORD* pRec);)
 
-#ifdef FEATURE_EH_FUNCLETS
 VOID DECLSPEC_NORETURN ContinueExceptionInterceptionUnwind();
-#endif // FEATURE_EH_FUNCLETS
 
 #ifdef FEATURE_INTERPRETER
 void ThrowResumeAfterCatchException(TADDR resumeSP, TADDR resumeIP);

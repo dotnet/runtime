@@ -56,9 +56,7 @@
 #include "perfmap.h"
 #endif
 
-#ifdef FEATURE_EH_FUNCLETS
 #include "exinfo.h"
-#endif
 
 #ifdef FEATURE_INTERPRETER
 #include "interpexec.h"
@@ -1344,10 +1342,8 @@ Thread::Thread()
 
     m_pCreatingThrowableForException = NULL;
 
-#ifdef FEATURE_EH_FUNCLETS
     m_dwIndexClauseForCatch = 0;
     m_sfEstablisherOfActualHandlerFrame.Clear();
-#endif // FEATURE_EH_FUNCLETS
 
     // Do not expose thread until it is fully constructed
     g_pThinLockThreadIdDispenser->NewId(this, this->m_ThreadId);
@@ -2641,15 +2637,7 @@ void Thread::CooperativeCleanup()
     GCX_COOP();
 
     // Clear any outstanding stale EH state that maybe still active on the thread.
-#ifdef FEATURE_EH_FUNCLETS
     ExInfo::PopTrackers((void*)-1);
-#else // !FEATURE_EH_FUNCLETS
-    PTR_ThreadExceptionState pExState = GetExceptionState();
-    if (pExState->IsExceptionInProgress())
-    {
-        pExState->GetCurrentExceptionTracker()->UnwindExInfo((void *)-1);
-    }
-#endif // FEATURE_EH_FUNCLETS
 
     if (m_ThreadLocalDataPtr != NULL)
     {
@@ -6112,9 +6100,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     _ASSERTE(GetThreadNULLOk() != NULL);
 
     Thread *pThread = GetThread();
-#ifdef FEATURE_EH_FUNCLETS
     Frame  *pFrame = pThread->m_pFrame;
-#endif // FEATURE_EH_FUNCLETS
 
     // The sole purpose of having this frame is to tell the debugger that we have a catch handler here
     // which may swallow managed exceptions.  The debugger needs this in order to send a
@@ -6131,9 +6117,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
 
         BOOL *pfHadException;
 
-#ifdef FEATURE_EH_FUNCLETS
         Frame *pFrame;
-#endif // FEATURE_EH_FUNCLETS
     }args;
 
     args.pTryParam = &param;
@@ -6142,9 +6126,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     BOOL fHadException = TRUE;
     args.pfHadException = &fHadException;
 
-#ifdef FEATURE_EH_FUNCLETS
     args.pFrame = pFrame;
-#endif // FEATURE_EH_FUNCLETS
 
     PAL_TRY(TryArgs *, pArgs, &args)
     {
@@ -6159,12 +6141,10 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
             //
             // If eCLRDeterminedPolicy, we only swallow for TA, RTA, and ADU exception.
             // For eHostDeterminedPolicy, we will swallow all the managed exception.
-    #ifdef FEATURE_EH_FUNCLETS
             // this must be done after the second pass has run, it does not
             // reference anything on the stack, so it is safe to run in an
             // SEH __except clause as well as a C++ catch clause.
             ExInfo::PopTrackers(pArgs->pFrame);
-    #endif // FEATURE_EH_FUNCLETS
 
             _ASSERTE(!pArgs->pThread->IsAbortRequested());
         }

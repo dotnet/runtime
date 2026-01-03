@@ -210,37 +210,19 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
 // chance at them.
 //==========================================================================
 #define INSTALL_COMPLUS_EXCEPTION_HANDLER()                                     \
-    DECLARE_CPFH_EH_RECORD(GET_THREAD());                                       \
     INSTALL_COMPLUS_EXCEPTION_HANDLER_NO_DECLARE()
 
 #define INSTALL_COMPLUS_EXCEPTION_HANDLER_NO_DECLARE()                          \
 {                                                                               \
-    INSTALL_EXCEPTION_HANDLING_RECORD(&(___pExRecord->m_ExReg));                \
     /* work around unreachable code warning */                                  \
     if (true) {
 
 #define UNINSTALL_COMPLUS_EXCEPTION_HANDLER()                                   \
     }                                                                           \
-    UNINSTALL_EXCEPTION_HANDLING_RECORD(&(___pExRecord->m_ExReg));              \
 }
-
-#if !defined(FEATURE_EH_FUNCLETS)
-
-#define INSTALL_NESTED_EXCEPTION_HANDLER(frame)                                                                       \
-   NestedHandlerExRecord *__pNestedHandlerExRecord = (NestedHandlerExRecord*) _alloca(sizeof(NestedHandlerExRecord)); \
-   __pNestedHandlerExRecord->m_handlerInfo.m_hThrowable = NULL;                                                       \
-   __pNestedHandlerExRecord->Init((PEXCEPTION_ROUTINE)COMPlusNestedExceptionHandler, frame);                          \
-   INSTALL_EXCEPTION_HANDLING_RECORD(&(__pNestedHandlerExRecord->m_ExReg));
-
-#define UNINSTALL_NESTED_EXCEPTION_HANDLER()                                                                          \
-   UNINSTALL_EXCEPTION_HANDLING_RECORD(&(__pNestedHandlerExRecord->m_ExReg));
-
-#else // defined(FEATURE_EH_FUNCLETS)
 
 #define INSTALL_NESTED_EXCEPTION_HANDLER(frame)
 #define UNINSTALL_NESTED_EXCEPTION_HANDLER()
-
-#endif // !defined(FEATURE_EH_FUNCLETS)
 
 enum VEH_ACTION
 {
@@ -322,7 +304,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
             UNREACHABLE();                                                                          \
         }
 
-#elif defined(TARGET_X86) && defined(TARGET_WINDOWS) && defined(FEATURE_EH_FUNCLETS)
+#elif defined(TARGET_X86) && defined(TARGET_WINDOWS)
 
 #define INSTALL_MANAGED_EXCEPTION_DISPATCHER
 #define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER

@@ -974,7 +974,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                             // back to source lines for functions on stacks is very useful and we don't
                             // want to allow the function to fail for all targets.
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
+#if defined(USE_GC_INFO_DECODER)
 
                             if (addr != (PCODE)NULL)
                             {
@@ -995,7 +995,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                                     }
                                 }
                             }
-#endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER
+#endif // USE_GC_INFO_DECODER
                         }
                         pMethodDefinition.Clear();
                     }
