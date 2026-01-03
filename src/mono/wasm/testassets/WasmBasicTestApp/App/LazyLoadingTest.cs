@@ -17,5 +17,7 @@ public partial class LazyLoadingTest
         // In the test case it is done in the JS before call to this method
         var text = JsonSerializer.Serialize(new Person("John", "Doe"), PersonJsonSerializerContext.Default.Person);
         TestOutput.WriteLine(text);
+        Console.WriteLine("LazyLoadingTest done");
+        Console.Out.Flush();
     }
 }

@@ -592,6 +592,8 @@ class SyncBlock
     private:
     void InitializeThinLock(DWORD recursionLevel, DWORD threadId);
 
+    bool TryUpgradeThinLockToFullLock(OBJECTHANDLE lockHandle);
+
     friend struct ::cdac_data<SyncBlock>;
 };
 

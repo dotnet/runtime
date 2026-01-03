@@ -109,7 +109,7 @@ DEFINE_METHOD(ARG_ITERATOR,         CTOR2,                  .ctor,              
 DEFINE_CLASS(ARGUMENT_HANDLE,       System,                 RuntimeArgumentHandle)
 
 DEFINE_CLASS(ARRAY,                 System,                 Array)
-DEFINE_METHOD(ARRAY,                CREATEINSTANCEMDARRAY,  CreateInstanceMDArray,      SM_IntPtr_UInt_VoidPtr_RetObj)
+DEFINE_METHOD(ARRAY,                CTOR,                   Ctor,                       NoSig)
 
 DEFINE_CLASS(ARRAY_WITH_OFFSET,     Interop,                ArrayWithOffset)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_ARRAY,                m_array)
