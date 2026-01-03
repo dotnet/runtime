@@ -89,6 +89,29 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws(exceptionType, () => JsonSerializer.Deserialize<Dictionary<string, int>>(json, options));
         }
 
+        [Fact]
+        public static void ObjectConverterHandlingStrings_DictionaryWithStringKey_DoesNotCauseStackOverflow()
+        {
+            // Regression test: A custom JsonConverter<object> that claims to handle strings
+            // via CanConvert was causing StackOverflowException when serializing dictionaries
+            // with string keys, due to infinite recursion in the CastingConverter.
+            var options = new JsonSerializerOptions { Converters = { new GenericObjectConverterHandlingStrings() } };
+            var value = new Dictionary<string, int> { ["key"] = 123 };
+
+            string json = JsonSerializer.Serialize(value, options);
+            Assert.Equal(@"{""key"":123}", json);
+
+            var deserialized = JsonSerializer.Deserialize<Dictionary<string, int>>(json, options);
+            Assert.Equal(123, deserialized["key"]);
+        }
+
+        public class GenericObjectConverterHandlingStrings : JsonConverter<object>
+        {
+            public override bool CanConvert(Type typeToConvert) => typeToConvert == typeof(string);
+            public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => reader.GetString()!;
+            public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options) => writer.WriteStringValue(value?.ToString());
+        }
+
         public class EmbeddedJsonKeyConverter<T> : JsonConverter<T>
         {
             public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions _)
