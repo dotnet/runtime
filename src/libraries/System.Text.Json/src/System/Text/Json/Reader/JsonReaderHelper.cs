@@ -6,15 +6,74 @@ using System.Buffers.Text;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Text.Json
 {
     internal static partial class JsonReaderHelper
     {
-        private static readonly SearchValues<char> s_specialCharacters = SearchValues.Create(". '/\"[]()\t\n\r\f\b\\\u0085\u2028\u2029");
+        // Characters that require the bracketed property name syntax in JSON Path.
+        private static readonly SearchValues<char> s_specialCharacters = SearchValues.Create("$. '/\"[]()\t\n\r\f\b\\\u0085\u2028\u2029");
+
+        // Characters that need to be escaped in the single-quoted bracket notation.
+        private static readonly SearchValues<char> s_charactersToEscape = SearchValues.Create("'\\");
 
         public static bool ContainsSpecialCharacters(this ReadOnlySpan<char> text) =>
             text.ContainsAny(s_specialCharacters);
+
+        /// <summary>
+        /// Appends a property name escaped for use in JSON Path single-quoted bracket notation.
+        /// Escapes single quotes as \' and backslashes as \\.
+        /// </summary>
+        public static void AppendEscapedPropertyName(this ref ValueStringBuilder builder, string propertyName)
+        {
+            ReadOnlySpan<char> span = propertyName.AsSpan();
+
+            // Fast path: if no characters need escaping, append directly.
+            if (!span.ContainsAny(s_charactersToEscape))
+            {
+                builder.Append(propertyName);
+                return;
+            }
+
+            // Slow path: escape single quotes and backslashes.
+            foreach (char c in span)
+            {
+                if (c is '\\' or '\'')
+                {
+                    builder.Append('\\');
+                }
+
+                builder.Append(c);
+            }
+        }
+
+        /// <summary>
+        /// Appends a property name escaped for use in JSON Path single-quoted bracket notation.
+        /// Escapes single quotes as \' and backslashes as \\.
+        /// </summary>
+        public static void AppendEscapedPropertyName(this StringBuilder builder, string propertyName)
+        {
+            ReadOnlySpan<char> span = propertyName.AsSpan();
+
+            // Fast path: if no characters need escaping, append directly.
+            if (!span.ContainsAny(s_charactersToEscape))
+            {
+                builder.Append(propertyName);
+                return;
+            }
+
+            // Slow path: escape single quotes and backslashes.
+            foreach (char c in span)
+            {
+                if (c is '\\' or '\'')
+                {
+                    builder.Append('\\');
+                }
+
+                builder.Append(c);
+            }
+        }
 
         public static (int, int) CountNewLines(ReadOnlySpan<byte> data)
         {
