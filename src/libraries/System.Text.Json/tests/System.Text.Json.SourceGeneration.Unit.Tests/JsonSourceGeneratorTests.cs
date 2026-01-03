@@ -865,7 +865,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [Fact]
         public void InitOnlyPropertyWithReservedKeywordName_CompilesSuccessfully()
         {
-            // Regression test for https://github.com/dotnet/runtime/issues/116507
             // Verbatim identifiers like @else should be correctly handled in property initializers.
 
             string source = """
