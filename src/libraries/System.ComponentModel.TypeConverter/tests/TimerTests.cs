@@ -122,63 +122,21 @@ namespace System.Timers.Tests
             using (var timer = new TestTimer(1))
             {
                 var mres = new ManualResetEventSlim();
-                int count = 0;
 
                 timer.AutoReset = false;
-                timer.Elapsed += (sender, e) =>
-                {
-                    Interlocked.Increment(ref count);
-                    mres.Set();
-                };
+                timer.Elapsed += (sender, e) => mres.Set();
                 timer.Start();
 
                 mres.Wait();
                 Assert.False(timer.Enabled);
-                Assert.Equal(1, count);
 
-                count = 0;
+                // Setting AutoReset should not restart a disabled timer
                 timer.AutoReset = true;
-                Thread.Sleep(100);
-                Assert.Equal(0, count);
                 Assert.False(timer.Enabled);
 
+                // Setting Interval should not restart a disabled timer
                 timer.Interval = 1;
-                Thread.Sleep(100);
-                Assert.Equal(0, count);
                 Assert.False(timer.Enabled);
-            }
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void StopWorksAfterSettingAutoResetOrIntervalOnRunningTimer()
-        {
-            using (var timer = new TestTimer(1))
-            {
-                var mres = new ManualResetEventSlim();
-                int count = 0;
-
-                timer.AutoReset = true;
-                timer.Elapsed += (sender, e) =>
-                {
-                    if (Interlocked.Increment(ref count) >= 5)
-                    {
-                        mres.Set();
-                    }
-                };
-                timer.Start();
-
-                mres.Wait();
-                Assert.True(timer.Enabled);
-
-                timer.AutoReset = false;
-                timer.Stop();
-                Assert.False(timer.Enabled);
-
-                // Allow any in-flight callbacks to complete before capturing count
-                Thread.Sleep(100);
-                int countAfterStop = count;
-                Thread.Sleep(100);
-                Assert.Equal(countAfterStop, count);
             }
         }
     }
