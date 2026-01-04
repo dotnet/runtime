@@ -131,7 +131,6 @@ public class zip_LargeFiles : ZipFileTestBase
     [OuterLoop("It requires ~11 GB of free disk space")]
     public static async Task LargeFile_At_LargeOffset_ZIP64_HeaderPreservation()
     {
-        // Regression test for https://github.com/dotnet/runtime/issues/114205
         // When a large file (>4GB) is placed at an offset >4GB, both the sizes
         // and offset need ZIP64 extra field entries in the central directory.
         // Previously, the offset handling would overwrite the sizes, causing corruption.
