@@ -158,9 +158,12 @@ namespace System.Diagnostics
         public readonly void CopyTo(KeyValuePair<string, object?>[] array, int arrayIndex)
         {
             ArgumentNullException.ThrowIfNull(array);
-            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)arrayIndex, (uint)array.Length, nameof(arrayIndex));
 
-            CopyTo(array.AsSpan(arrayIndex));
+            if (_tagsCount > 0)
+            {
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)arrayIndex, (uint)array.Length, nameof(arrayIndex));
+                CopyTo(array.AsSpan(arrayIndex));
+            }
         }
 
         /// <summary>
