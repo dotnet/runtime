@@ -2074,16 +2074,6 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable)
         }
     }
 
-    // Can't access the exception object when are in pre-emptive, so find out before
-    // if its an SO.
-    BOOL fIsStackOverflow = IsExceptionOfType(kStackOverflowException, &throwable);
-
-    if (fIsStackOverflow)
-    {
-        // Don't probe if we're already handling an SO.  Just throw the exception.
-        RaiseException(code, flags, argCount, exceptionArgs);
-    }
-
     // This needs to be both here and inside the handler below
     // Enable preemptive mode before call into OS
     GCX_PREEMP_NO_DTOR();
