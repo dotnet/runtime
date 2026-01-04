@@ -12,7 +12,6 @@ set(ROLLUP_TS_SOURCES
     "${CLR_SRC_NATIVE_DIR}/rollup.config.defines.js"
     "${CLR_SRC_NATIVE_DIR}/rollup.config.plugins.js"
     "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/libBrowserHost.footer.js"
-    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/sample/dotnet.boot.js"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/libSystem.Native.Browser.Utils.footer.js"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/libSystem.Native.Browser.extpost.js"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/libSystem.Native.Browser.footer.js"

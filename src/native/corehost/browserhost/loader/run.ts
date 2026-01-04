@@ -4,7 +4,7 @@
 import type { DotnetHostBuilder, JsModuleExports, EmscriptenModuleInternal } from "./types";
 
 import { dotnetAssert, dotnetGetInternals, dotnetBrowserHostExports, Module } from "./cross-module";
-import { findResources, isNodeHosted, isShellHosted } from "./bootstrap";
+import { findResources, isNodeHosted, isShellHosted, validateWasmFeatures } from "./bootstrap";
 import { exit, runtimeState } from "./exit";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { getIcuResourceName } from "./icu";
@@ -30,10 +30,11 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
     const config = getLoaderConfig();
     if (!config.resources || !config.resources.coreAssembly || !config.resources.coreAssembly.length) throw new Error("Invalid config, resources is not set");
 
-
     if (typeof Module.onConfigLoaded === "function") {
         await Module.onConfigLoaded(config);
     }
+
+    await validateWasmFeatures();
 
     if (config.resources.jsModuleDiagnostics && config.resources.jsModuleDiagnostics.length > 0) {
         const diagnosticsModule = await loadJSModule(config.resources.jsModuleDiagnostics[0]);
