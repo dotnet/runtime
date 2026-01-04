@@ -2045,8 +2045,6 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable)
 
     // raise
 
-    //_ASSERTE(! pParam->isRethrown || pParam->pExState->m_pExceptionRecord);
-    ULONG_PTR *args = NULL;
     ULONG argCount = 0;
     ULONG flags = 0;
     ULONG code = 0;
@@ -2061,8 +2059,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable)
 
     ULONG_PTR hr = GetHRFromThrowable(throwable);
 
-    args = exceptionArgs;
-    argCount = MarkAsThrownByUs(args, hr);
+    argCount = MarkAsThrownByUs(exceptionArgs, hr);
     flags = EXCEPTION_NONCONTINUABLE;
     code = EXCEPTION_COMPLUS;
 
@@ -2084,7 +2081,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable)
     if (fIsStackOverflow)
     {
         // Don't probe if we're already handling an SO.  Just throw the exception.
-        RaiseException(code, flags, argCount, args);
+        RaiseException(code, flags, argCount, exceptionArgs);
     }
 
     // This needs to be both here and inside the handler below
@@ -2092,7 +2089,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable)
     GCX_PREEMP_NO_DTOR();
 
     // In non-debug, we can just raise the exception once we've probed.
-    RaiseException(code, flags, argCount, args);
+    RaiseException(code, flags, argCount, exceptionArgs);
 
     _ASSERTE(!"Cannot continue after CLR exception");      // Debugger can bring you here.
     // For example,
