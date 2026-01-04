@@ -1077,18 +1077,21 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
         (void)context.TargetTypeSig.PeekElemType(&firstArgCorType);
         firstArgType = context.DeclarationMetaSig.GetLastTypeHandleThrowing();
 
-        // For instance member access on value types, the first argument (this) must be a byref.
-        // However, the target type used for token emission must not be parameterized. Keeping the
-        // byref here can lead to incorrect shared generic context lookups at runtime.
+        // For instance member access, the first argument is the receiver ("this").
+        // For value types the receiver must be passed byref. A byref receiver can also occur for reference
+        // types depending on the declaration signature.
+        //
+        // However, when emitting the metadata token for the accessed member, the owning type must not be
+        // a byref. Keeping the byref here can lead to incorrect shared generic context lookups at runtime.
+        //
+        // No special handling is required for other forms of type parameterization here:
+        //  * Arrays and generic instantiations are part of the owning type identity and must not be stripped.
+        //  * Other forms (eg. pointers) are not valid target types and will be rejected by ValidateTargetType().
         if ((context.Kind == UnsafeAccessorKind::Method || context.Kind == UnsafeAccessorKind::Field)
             && firstArgCorType == ELEMENT_TYPE_BYREF)
         {
-            SigPointer targetTypeSig = context.TargetTypeSig;
-            CorElementType elemType;
-            IfFailThrow(targetTypeSig.GetElemType(&elemType));
-            _ASSERTE(elemType == ELEMENT_TYPE_BYREF);
-
-            context.TargetTypeSig = targetTypeSig;
+            // Consume byref token.
+            (void)context.TargetTypeSig.GetElemType(nullptr);
         }
     }
 
