@@ -1751,7 +1751,7 @@ void Thread::HandleThreadStartupFailure()
 
     GCPROTECT_END(); //Prot
 
-    RaiseTheExceptionInternalOnly(gc.pThrowable, FALSE);
+    RaiseTheExceptionInternalOnly(gc.pThrowable);
 }
 
 #ifndef TARGET_UNIX

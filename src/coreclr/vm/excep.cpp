@@ -94,8 +94,6 @@ BOOL IsExceptionFromManagedCode(const EXCEPTION_RECORD * pExceptionRecord)
 PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord();
 BOOL IsUnmanagedToManagedSEHHandler(EXCEPTION_REGISTRATION_RECORD*);
 
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow);
-
 //-------------------------------------------------------------------------------
 // Basically, this asks whether the exception is a managed exception thrown by
 // this instance of the CLR.
@@ -2041,14 +2039,14 @@ HRESULT GetHRFromThrowable(OBJECTREF throwable)
     return hr;
 }
 
-VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL rethrow, BOOL fForStackOverflow)
+VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    STRESS_LOG3(LF_EH, LL_INFO100, "******* MANAGED EXCEPTION THROWN: Object thrown: %p MT %pT rethrow %d\n",
-                OBJECTREFToObject(throwable), (throwable!=0)?throwable->GetMethodTable():0, rethrow);
+    STRESS_LOG2(LF_EH, LL_INFO100, "******* MANAGED EXCEPTION THROWN: Object thrown: %p MT %pT rethrow 0\n",
+                OBJECTREFToObject(throwable), (throwable!=0)?throwable->GetMethodTable():0);
 
 #ifdef STRESS_LOG
     // Any object could have been thrown, but System.Exception objects have useful information for the stress log
@@ -2074,14 +2072,11 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     struct Param : RaiseExceptionFilterParam
     {
         OBJECTREF throwable;
-        BOOL fForStackOverflow;
         ULONG_PTR exceptionArgs[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE];
         Thread *pThread;
         ThreadExceptionState* pExState;
     } param;
-    param.isRethrown = rethrow ? 1 : 0; // normalize because we use it as a count in RaiseExceptionFilter
     param.throwable = throwable;
-    param.fForStackOverflow = fForStackOverflow;
     param.pThread = GetThread();
 
     _ASSERTE(param.pThread);
@@ -2164,7 +2159,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
         // if its an SO.
         BOOL fIsStackOverflow = IsExceptionOfType(kStackOverflowException, &pParam->throwable);
 
-        if (fIsStackOverflow || pParam->fForStackOverflow)
+        if (fIsStackOverflow)
         {
             // Don't probe if we're already handling an SO.  Just throw the exception.
             RaiseException(code, flags, argCount, args);
@@ -2190,7 +2185,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     UNREACHABLE();
 }
 
-static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable, BOOL rethrow)
+static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2208,10 +2203,10 @@ static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable, BOOL r
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
 
-    RaiseTheExceptionInternalOnly(throwable, rethrow);
+    RaiseTheExceptionInternalOnly(throwable);
 }
 
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow)
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2224,41 +2219,18 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow)
 
     _ASSERTE(IsException(throwable->GetMethodTable()));
 
-    // This may look a bit odd, but there is an explanation.  The rethrow boolean
-    //  means that an actual RaiseException(EXCEPTION_COMPLUS,...) is being re-thrown,
-    //  and that the exception context saved on the Thread object should replace
-    //  the exception context from the upcoming RaiseException().  There is logic
-    //  in the stack trace code to preserve MOST of the stack trace, but to drop the
-    //  last element of the stack trace (has to do with having the address of the rethrow
-    //  instead of the address of the original call in the stack trace.  That is
-    //  controversial itself, but we won't get into that here.)
-    // However, if this is not re-raising that original exception, but rather a new
+    // If this is not re-raising that original exception, but rather a new
     //  os exception for what may be an existing exception object, it is generally
     //  a good thing to preserve the stack trace.
-    if (!rethrow)
-    {
-        Thread *pThread = GetThread();
-        pThread->IncPreventAbort();
-        ExceptionPreserveStackTrace(throwable);
-        pThread->DecPreventAbort();
-    }
 
-    RealCOMPlusThrowWorker(throwable, rethrow);
+    Thread *pThread = GetThread();
+    pThread->IncPreventAbort();
+    ExceptionPreserveStackTrace(throwable);
+    pThread->DecPreventAbort();
+
+    RealCOMPlusThrowWorker(throwable);
 
     GCPROTECT_END();
-}
-
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    RealCOMPlusThrow(throwable, FALSE);
 }
 
 VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *exceptionObj)
@@ -2272,7 +2244,7 @@ VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *
     CONTRACTL_END;
 
     OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
-    RealCOMPlusThrowWorker(throwable, FALSE);
+    RealCOMPlusThrowWorker(throwable);
 }
 
 // this function finds the managed callback to get a resource
@@ -6879,7 +6851,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
     }
     else
     {
-        RaiseTheExceptionInternalOnly(orThrowable, FALSE);
+        RaiseTheExceptionInternalOnly(orThrowable);
     }
 }
 
