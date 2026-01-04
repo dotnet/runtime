@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.IO.Compression.Tests;
@@ -135,7 +136,16 @@ public class zip_LargeFiles : ZipFileTestBase
         // and offset need ZIP64 extra field entries in the central directory.
         // Previously, the offset handling would overwrite the sizes, causing corruption.
 
-        byte[] buffer = GC.AllocateUninitializedArray<byte>(1_000_000_000); // 1 GB
+        byte[] buffer;
+        try
+        {
+            buffer = GC.AllocateUninitializedArray<byte>(1_000_000_000); // 1 GB
+        }
+        catch (OutOfMemoryException)
+        {
+            throw new SkipTestException("Insufficient memory to run test");
+        }
+
         string zipArchivePath = Path.Combine(Path.GetTempPath(), "largeFileAtLargeOffset.zip");
 
         try
