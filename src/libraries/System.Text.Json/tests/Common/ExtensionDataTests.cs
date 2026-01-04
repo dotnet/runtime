@@ -818,7 +818,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task SerializeJsonObjectExtensionData_ProducesValidJson()
         {
-            // Regression test for https://github.com/dotnet/runtime/issues/115555
             // JsonSerializer.Serialize was producing invalid JSON for [JsonExtensionData] property of type JsonObject
             // Output was: {"Id":1,{"nested":true}} instead of {"Id":1,"nested":true}
 
