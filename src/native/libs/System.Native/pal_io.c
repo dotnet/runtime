@@ -1565,7 +1565,8 @@ static uint32_t MapFileSystemNameToEnum(const char* fileSystemName)
 {
     uint32_t result = 0;
 
-    if (strcmp(fileSystemName, "adfs") == 0) result = 0xADF5;
+    if (strcmp(fileSystemName, "aafs") == 0) result = 0x5A3C69F0;
+    else if (strcmp(fileSystemName, "adfs") == 0) result = 0xADF5;
     else if (strcmp(fileSystemName, "affs") == 0) result = 0xADFF;
     else if (strcmp(fileSystemName, "afs") == 0) result = 0x5346414F;
     else if (strcmp(fileSystemName, "anoninode") == 0) result = 0x09041934;
@@ -1573,13 +1574,16 @@ static uint32_t MapFileSystemNameToEnum(const char* fileSystemName)
     else if (strcmp(fileSystemName, "aufs") == 0) result = 0x61756673;
     else if (strcmp(fileSystemName, "autofs") == 0) result = 0x0187;
     else if (strcmp(fileSystemName, "autofs4") == 0) result = 0x6D4A556D;
+    else if (strcmp(fileSystemName, "bcachefs") == 0) result = 0xCA451A4E;
     else if (strcmp(fileSystemName, "befs") == 0) result = 0x42465331;
     else if (strcmp(fileSystemName, "bdevfs") == 0) result = 0x62646576;
     else if (strcmp(fileSystemName, "bfs") == 0) result = 0x1BADFACE;
     else if (strcmp(fileSystemName, "bpf_fs") == 0) result = 0xCAFE4A11;
+    else if (strcmp(fileSystemName, "binderfs") == 0) result = 0x6C6F6F70;
     else if (strcmp(fileSystemName, "binfmt_misc") == 0) result = 0x42494E4D;
     else if (strcmp(fileSystemName, "bootfs") == 0) result = 0xA56D3FF9;
     else if (strcmp(fileSystemName, "btrfs") == 0) result = 0x9123683E;
+    else if (strcmp(fileSystemName, "btrfs_test") == 0) result = 0x73727279;
     else if (strcmp(fileSystemName, "ceph") == 0) result = 0x00C36400;
     else if (strcmp(fileSystemName, "cgroupfs") == 0) result = 0x0027E0EB;
     else if (strcmp(fileSystemName, "cgroup2fs") == 0) result = 0x63677270;
@@ -1591,11 +1595,15 @@ static uint32_t MapFileSystemNameToEnum(const char* fileSystemName)
     else if (strcmp(fileSystemName, "cramfs") == 0) result = 0x28CD3D45;
     else if (strcmp(fileSystemName, "ctfs") == 0) result = 0x01021994;
     else if (strcmp(fileSystemName, "debugfs") == 0) result = 0x64626720;
+    else if (strcmp(fileSystemName, "daxfs") == 0) result = 0x64646178;
     else if (strcmp(fileSystemName, "dev") == 0) result = 0x1373;
     else if (strcmp(fileSystemName, "devfs") == 0) result = 0x1373;
     else if (strcmp(fileSystemName, "devpts") == 0) result = 0x1CD1;
     else if (strcmp(fileSystemName, "ecryptfs") == 0) result = 0xF15F;
+    else if (strcmp(fileSystemName, "efivarfs") == 0) result = 0xDE5E81E4;
     else if (strcmp(fileSystemName, "efs") == 0) result = 0x00414A53;
+    else if (strcmp(fileSystemName, "erofs") == 0) result = 0xE0F5E1E2;
+    else if (strcmp(fileSystemName, "exfat") == 0) result = 0x2011BAB0;
     else if (strcmp(fileSystemName, "exofs") == 0) result = 0x5DF5;
     else if (strcmp(fileSystemName, "ext") == 0) result = 0x137D;
     else if (strcmp(fileSystemName, "ext2_old") == 0) result = 0xEF51;
@@ -1615,8 +1623,10 @@ static uint32_t MapFileSystemNameToEnum(const char* fileSystemName)
     else if (strcmp(fileSystemName, "gpfs") == 0) result = 0x47504653;
     else if (strcmp(fileSystemName, "hfs") == 0) result = 0x4244;
     else if (strcmp(fileSystemName, "hfsplus") == 0) result = 0x482B;
+    else if (strcmp(fileSystemName, "hostfs") == 0) result = 0x00C0FFEE;
     else if (strcmp(fileSystemName, "hpfs") == 0) result = 0xF995E849;
     else if (strcmp(fileSystemName, "hugetlbfs") == 0) result = 0x958458F6;
+    else if (strcmp(fileSystemName, "ibrix") == 0) result = 0x013111A8;
     else if (strcmp(fileSystemName, "inodefs") == 0) result = 0x11307854;
     else if (strcmp(fileSystemName, "inotifyfs") == 0) result = 0x2BAD1DEA;
     else if (strcmp(fileSystemName, "isofs") == 0) result = 0x9660;
@@ -1639,6 +1649,7 @@ static uint32_t MapFileSystemNameToEnum(const char* fileSystemName)
     else if (strcmp(fileSystemName, "nfsd") == 0) result = 0x6E667364;
     else if (strcmp(fileSystemName, "nilfs") == 0) result = 0x3434;
     else if (strcmp(fileSystemName, "novell") == 0) result = 0x564C;
+    else if (strcmp(fileSystemName, "nsfs") == 0) result = 0x6E736673;
     else if (strcmp(fileSystemName, "ntfs") == 0) result = 0x5346544E;
     else if (strcmp(fileSystemName, "objfs") == 0) result = 0x01021994;
     else if (strcmp(fileSystemName, "ocfs2") == 0) result = 0x7461636F;
@@ -1647,12 +1658,15 @@ static uint32_t MapFileSystemNameToEnum(const char* fileSystemName)
     else if (strcmp(fileSystemName, "overlay") == 0) result = 0x794C7630;
     else if (strcmp(fileSystemName, "overlayfs") == 0) result = 0x794C764F;
     else if (strcmp(fileSystemName, "panfs") == 0) result = 0xAAD7AAEA;
+    else if (strcmp(fileSystemName, "pidfs") == 0) result = 0x50494446;
     else if (strcmp(fileSystemName, "pipefs") == 0) result = 0x50495045;
+    else if (strcmp(fileSystemName, "prl_fs") == 0) result = 0x7C7C6673;
     else if (strcmp(fileSystemName, "proc") == 0) result = 0x9FA0;
     else if (strcmp(fileSystemName, "pstorefs") == 0) result = 0x6165676C;
     else if (strcmp(fileSystemName, "qnx4") == 0) result = 0x002F;
     else if (strcmp(fileSystemName, "qnx6") == 0) result = 0x68191122;
     else if (strcmp(fileSystemName, "ramfs") == 0) result = 0x858458F6;
+    else if (strcmp(fileSystemName, "rdtgroup") == 0) result = 0x07655821;
     else if (strcmp(fileSystemName, "reiserfs") == 0) result = 0x52654973;
     else if (strcmp(fileSystemName, "romfs") == 0) result = 0x7275;
     else if (strcmp(fileSystemName, "rootfs") == 0) result = 0x53464846;
@@ -1665,6 +1679,8 @@ static uint32_t MapFileSystemNameToEnum(const char* fileSystemName)
     else if (strcmp(fileSystemName, "sharefs") == 0) result = 0x01021994;
     else if (strcmp(fileSystemName, "smb") == 0) result = 0x517B;
     else if (strcmp(fileSystemName, "smb2") == 0) result = 0xFE534D42;
+    else if (strcmp(fileSystemName, "smackfs") == 0) result = 0x43415D53;
+    else if (strcmp(fileSystemName, "snfs") == 0) result = 0xBEEFDEAD;
     else if (strcmp(fileSystemName, "sockfs") == 0) result = 0x534F434B;
     else if (strcmp(fileSystemName, "squashfs") == 0) result = 0x73717368;
     else if (strcmp(fileSystemName, "sysfs") == 0) result = 0x62656572;
@@ -1690,6 +1706,7 @@ static uint32_t MapFileSystemNameToEnum(const char* fileSystemName)
     else if (strcmp(fileSystemName, "xia") == 0) result = 0x012FD16D;
     else if (strcmp(fileSystemName, "udev") == 0) result = 0x01021994;
     else if (strcmp(fileSystemName, "zfs") == 0) result = 0x2FC12FC1;
+    else if (strcmp(fileSystemName, "zonefs") == 0) result = 0x5A4F4653;
 
     assert(result != 0);
     return result;
