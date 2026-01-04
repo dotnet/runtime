@@ -292,6 +292,12 @@ namespace System.Diagnostics.Tests
             emptyList.CopyTo(emptyArray.AsSpan());
             emptyList.CopyTo(emptyArray);
 
+            KeyValuePair<string, object?>[] nonEmptyArray = new KeyValuePair<string, object?>[3];
+            emptyList.CopyTo(nonEmptyArray, 0);
+            emptyList.CopyTo(nonEmptyArray, 2);
+            emptyList.CopyTo(nonEmptyArray.AsSpan());
+            emptyList.CopyTo(nonEmptyArray);
+
             KeyValuePair<string, object?>[] result = emptyList.ToArray();
             Assert.Empty(result);
         }
