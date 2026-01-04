@@ -295,8 +295,12 @@ namespace System.Diagnostics.Tests
             KeyValuePair<string, object?>[] nonEmptyArray = new KeyValuePair<string, object?>[3];
             emptyList.CopyTo(nonEmptyArray, 0);
             emptyList.CopyTo(nonEmptyArray, 2);
+            emptyList.CopyTo(nonEmptyArray, 3);
             emptyList.CopyTo(nonEmptyArray.AsSpan());
             emptyList.CopyTo(nonEmptyArray);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => emptyList.CopyTo(nonEmptyArray, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => emptyList.CopyTo(nonEmptyArray, 4));
 
             KeyValuePair<string, object?>[] result = emptyList.ToArray();
             Assert.Empty(result);
