@@ -849,7 +849,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task SerializeJsonObjectExtensionData_RoundTrip()
         {
-            // Regression test for https://github.com/dotnet/runtime/issues/115555
             var original = new ClassWithJsonObjectExtensionDataAndProperty
             {
                 Id = 42,
