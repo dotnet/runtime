@@ -16,9 +16,7 @@
 #include "sigformat.h"
 #include "eeconfig.h"
 
-#ifdef FEATURE_EH_FUNCLETS
 #include "exceptionhandling.h"
-#endif // FEATURE_EH_FUNCLETS
 
 #ifdef FEATURE_COMINTEROP
 #include "interoputil.inl"

@@ -1698,18 +1698,13 @@ namespace System.Diagnostics.Tracing
                     etwProvider = new OverrideEventProvider(eventSourceFactory, EventProviderType.ETW);
                     etwProvider.Register(eventSourceGuid, eventSourceName);
     #if TARGET_WINDOWS
-                    // API available on OS >= Win 8 and patched Win 7.
-                    // Disable only for FrameworkEventSource to avoid recursion inside exception handling.
-                    if (this.Name != "System.Diagnostics.Eventing.FrameworkEventSource" || Environment.IsWindows8OrAbove)
+                    var providerMetadata = ProviderMetadata;
+                    fixed (byte* pMetadata = providerMetadata)
                     {
-                        var providerMetadata = ProviderMetadata;
-                        fixed (byte* pMetadata = providerMetadata)
-                        {
-                            etwProvider.SetInformation(
-                                Interop.Advapi32.EVENT_INFO_CLASS.SetTraits,
-                                pMetadata,
-                                (uint)providerMetadata.Length);
-                        }
+                        etwProvider.SetInformation(
+                            Interop.Advapi32.EVENT_INFO_CLASS.SetTraits,
+                            pMetadata,
+                            (uint)providerMetadata.Length);
                     }
     #endif // TARGET_WINDOWS
                 }

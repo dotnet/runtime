@@ -737,6 +737,10 @@ namespace ILCompiler.Dataflow
             if (sourceMember == null)
                 return false;
 
+            Debug.Assert(sourceMember is not MethodDesc sourceMethod || sourceMethod.IsTypicalMethodDefinition);
+            if (sourceMember is AsyncMethodVariant asyncVariant)
+                sourceMember = asyncVariant.Target;
+
             TypeSystemEntity member = sourceMember;
             MethodDesc? userMethodCandidate;
             while (TryGetOwningMethodForCompilerGeneratedMember(member, out userMethodCandidate))
