@@ -1990,7 +1990,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable)
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    STRESS_LOG2(LF_EH, LL_INFO100, "******* MANAGED EXCEPTION THROWN: Object thrown: %p MT %pT rethrow 0\n",
+    STRESS_LOG2(LF_EH, LL_INFO100, "******* MANAGED EXCEPTION THROWN: Object thrown: %p MT %pT\n",
                 OBJECTREFToObject(throwable), (throwable!=0)?throwable->GetMethodTable():0);
 
 #ifdef STRESS_LOG
@@ -2085,10 +2085,9 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable)
     }
 
     // This needs to be both here and inside the handler below
-    // enable preemptive mode before call into OS
+    // Enable preemptive mode before call into OS
     GCX_PREEMP_NO_DTOR();
 
-    // In non-debug, we can just raise the exception once we've probed.
     RaiseException(code, flags, argCount, exceptionArgs);
 
     _ASSERTE(!"Cannot continue after CLR exception");      // Debugger can bring you here.
