@@ -1963,61 +1963,6 @@ ReplaceExceptionContextRecord(CONTEXT *pTarget, CONTEXT *pSource)
 #endif // !CONTEXT_EXTENDED_REGISTERS
 }
 
-VOID FixupOnRethrow(Thread* pCurThread, EXCEPTION_POINTERS* pExceptionPointers)
-{
-    WRAPPER_NO_CONTRACT;
-
-    ThreadExceptionState* pExState = pCurThread->GetExceptionState();
-
-    // Don't allow rethrow of a STATUS_STACK_OVERFLOW -- it's a new throw of the CLR exception.
-    if (pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW)
-    {
-        return;
-    }
-
-    // For COMPLUS exceptions, we don't need the original context for our rethrow.
-    if (!(pExState->IsComPlusException()))
-    {
-        _ASSERTE(pExState->GetExceptionRecord());
-
-        // don't copy parm args as have already supplied them on the throw
-        memcpy((void*)pExceptionPointers->ExceptionRecord,
-               (void*)pExState->GetExceptionRecord(),
-               offsetof(EXCEPTION_RECORD, ExceptionInformation));
-    }
-
-    pExState->GetFlags()->SetIsRethrown();
-}
-
-struct RaiseExceptionFilterParam
-{
-    BOOL isRethrown;
-};
-
-LONG RaiseExceptionFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    RaiseExceptionFilterParam *pParam = (RaiseExceptionFilterParam *) pv;
-
-    if (1 == pParam->isRethrown)
-    {
-        // need to reset the EH info back to the original thrown exception
-        FixupOnRethrow(GetThread(), ep);
-
-        // only do this once
-        pParam->isRethrown++;
-    }
-    else
-    {
-        CONSISTENCY_CHECK((2 == pParam->isRethrown) || (0 == pParam->isRethrown));
-    }
-
-    return EXCEPTION_CONTINUE_SEARCH;
-}
-
 HRESULT GetHRFromThrowable(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
@@ -2069,23 +2014,16 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable)
     }
 #endif
 
-    struct Param : RaiseExceptionFilterParam
-    {
-        OBJECTREF throwable;
-        ULONG_PTR exceptionArgs[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE];
-        Thread *pThread;
-        ThreadExceptionState* pExState;
-    } param;
-    param.throwable = throwable;
-    param.pThread = GetThread();
+    ULONG_PTR exceptionArgs[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE];
+    Thread* pThread = GetThread();
 
-    _ASSERTE(param.pThread);
-    param.pExState = param.pThread->GetExceptionState();
+    _ASSERTE(pThread);
+    ThreadExceptionState* pExState = pThread->GetExceptionState();
 
-    if (param.pThread->IsRudeAbortInitiated())
+    if (pThread->IsRudeAbortInitiated())
     {
         // Nobody should be able to swallow rude thread abort.
-        param.throwable = CLRException::GetBestThreadAbortException();
+        throwable = CLRException::GetBestThreadAbortException();
     }
 
 #if 0
@@ -2093,7 +2031,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable)
 #ifdef _DEBUG
     // If ThreadAbort exception is thrown, the thread should be marked with AbortRequest.
     // If not, we may see unhandled exception.
-    if (param.throwable->GetMethodTable() == g_pThreadAbortExceptionClass)
+    if (throwable->GetMethodTable() == g_pThreadAbortExceptionClass)
     {
         _ASSERTE(GetThread()->IsAbortRequested()
 #ifdef TARGET_X86
@@ -2106,76 +2044,56 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable)
 #endif
 
     // raise
-    PAL_TRY(Param *, pParam, &param)
+
+    //_ASSERTE(! pParam->isRethrown || pParam->pExState->m_pExceptionRecord);
+    ULONG_PTR *args = NULL;
+    ULONG argCount = 0;
+    ULONG flags = 0;
+    ULONG code = 0;
+
+    // Always save the current object in the handle so on rethrow we can reuse it. This is important as it
+    // contains stack trace info.
+    //
+    // Note: we use SafeSetLastThrownObject, which will try to set the throwable and if there are any problems,
+    // it will set the throwable to something appropriate (like OOM exception) and return the new
+    // exception. Thus, the user's exception object can be replaced here.
+    throwable = pThread->SafeSetLastThrownObject(throwable);
+
+    ULONG_PTR hr = GetHRFromThrowable(throwable);
+
+    args = exceptionArgs;
+    argCount = MarkAsThrownByUs(args, hr);
+    flags = EXCEPTION_NONCONTINUABLE;
+    code = EXCEPTION_COMPLUS;
+
+    if (pThread->IsAbortInitiated () && IsExceptionOfType(kThreadAbortException,&throwable))
     {
-        //_ASSERTE(! pParam->isRethrown || pParam->pExState->m_pExceptionRecord);
-        ULONG_PTR *args = NULL;
-        ULONG argCount = 0;
-        ULONG flags = 0;
-        ULONG code = 0;
+        pThread->ResetPreparingAbort();
 
-        // Always save the current object in the handle so on rethrow we can reuse it. This is important as it
-        // contains stack trace info.
-        //
-        // Note: we use SafeSetLastThrownObject, which will try to set the throwable and if there are any problems,
-        // it will set the throwable to something appropriate (like OOM exception) and return the new
-        // exception. Thus, the user's exception object can be replaced here.
-        pParam->throwable = pParam->pThread->SafeSetLastThrownObject(pParam->throwable);
-
-        if (!pParam->isRethrown ||
-             pParam->pExState->IsComPlusException() ||
-            (pParam->pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW))
+        if (pThread->GetFrame() == FRAME_TOP)
         {
-            ULONG_PTR hr = GetHRFromThrowable(pParam->throwable);
-
-            args = pParam->exceptionArgs;
-            argCount = MarkAsThrownByUs(args, hr);
-            flags = EXCEPTION_NONCONTINUABLE;
-            code = EXCEPTION_COMPLUS;
+            // There is no more managed code on stack.
+            pThread->ResetAbort();
         }
-        else
-        {
-            // Exception code should be consistent.
-            _ASSERTE((DWORD)(pParam->pExState->GetExceptionRecord()->ExceptionCode) == pParam->pExState->GetExceptionCode());
+    }
 
-            args     = pParam->pExState->GetExceptionRecord()->ExceptionInformation;
-            argCount = pParam->pExState->GetExceptionRecord()->NumberParameters;
-            flags    = pParam->pExState->GetExceptionRecord()->ExceptionFlags;
-            code     = pParam->pExState->GetExceptionRecord()->ExceptionCode;
-        }
+    // Can't access the exception object when are in pre-emptive, so find out before
+    // if its an SO.
+    BOOL fIsStackOverflow = IsExceptionOfType(kStackOverflowException, &throwable);
 
-        if (pParam->pThread->IsAbortInitiated () && IsExceptionOfType(kThreadAbortException,&pParam->throwable))
-        {
-            pParam->pThread->ResetPreparingAbort();
-
-            if (pParam->pThread->GetFrame() == FRAME_TOP)
-            {
-                // There is no more managed code on stack.
-                pParam->pThread->ResetAbort();
-            }
-        }
-
-        // Can't access the exception object when are in pre-emptive, so find out before
-        // if its an SO.
-        BOOL fIsStackOverflow = IsExceptionOfType(kStackOverflowException, &pParam->throwable);
-
-        if (fIsStackOverflow)
-        {
-            // Don't probe if we're already handling an SO.  Just throw the exception.
-            RaiseException(code, flags, argCount, args);
-        }
-
-        // This needs to be both here and inside the handler below
-        // enable preemptive mode before call into OS
-        GCX_PREEMP_NO_DTOR();
-
-        // In non-debug, we can just raise the exception once we've probed.
+    if (fIsStackOverflow)
+    {
+        // Don't probe if we're already handling an SO.  Just throw the exception.
         RaiseException(code, flags, argCount, args);
     }
-    PAL_EXCEPT_FILTER (RaiseExceptionFilter)
-    {
-    }
-    PAL_ENDTRY
+
+    // This needs to be both here and inside the handler below
+    // enable preemptive mode before call into OS
+    GCX_PREEMP_NO_DTOR();
+
+    // In non-debug, we can just raise the exception once we've probed.
+    RaiseException(code, flags, argCount, args);
+
     _ASSERTE(!"Cannot continue after CLR exception");      // Debugger can bring you here.
     // For example,
     // Debugger breaks in due to second chance exception (unhandled)
