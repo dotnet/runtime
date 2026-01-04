@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: Prestub.cpp
 //
@@ -1733,13 +1734,10 @@ extern "C" size_t CallDescrWorkerInternalReturnAddressOffset;
 bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode)
 {
     LIMITED_METHOD_CONTRACT;
-#ifdef FEATURE_EH_FUNCLETS
+
     size_t CallDescrWorkerInternalReturnAddress = (size_t)CallDescrWorkerInternal + CallDescrWorkerInternalReturnAddressOffset;
 
     return pCode == CallDescrWorkerInternalReturnAddress;
-#else // FEATURE_EH_FUNCLETS
-    return false;
-#endif // FEATURE_EH_FUNCLETS
 }
 
 //=============================================================================
