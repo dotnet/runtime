@@ -174,6 +174,8 @@ namespace System.Timers.Tests
                 timer.Stop();
                 Assert.False(timer.Enabled);
 
+                // Allow any in-flight callbacks to complete before capturing count
+                Thread.Sleep(100);
                 int countAfterStop = count;
                 Thread.Sleep(100);
                 Assert.Equal(countAfterStop, count);
