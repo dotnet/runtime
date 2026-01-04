@@ -72,7 +72,7 @@ export function emsAmbient() {
 
 // force always unix line ending
 export const alwaysLF = () => ({
-    name: "writeOnChange",
+    name: "alwaysLF",
     generateBundle: (options, bundle) => {
         const name = Object.keys(bundle)[0];
         const asset = bundle[name];
