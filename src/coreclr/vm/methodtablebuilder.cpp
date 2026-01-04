@@ -8568,11 +8568,11 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
             {
                 MethodTable * pByValueMT = pByValueClassCache[i];
 
+                int alignmentRequirement;
 #if !defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4)
                 if (pByValueMT->GetNumInstanceFieldBytes() >= DATA_ALIGNMENT)
                 {
-                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, DATA_ALIGNMENT);
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, DATA_ALIGNMENT);
+                    alignmentRequirement = DATA_ALIGNMENT;
                 }
                 else
 #endif // !defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4)
@@ -8580,24 +8580,22 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
                 {
                     // this field type has GC pointers in it, which need to be pointer-size aligned
                     // so do this if it has not been done already
-                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, TARGET_POINTER_SIZE);
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, TARGET_POINTER_SIZE);
+                    alignmentRequirement = TARGET_POINTER_SIZE;
                     containsGCPointers = true;
                 }
                 else
                 {
-                    int fieldAlignmentRequirement = pByValueMT->GetFieldAlignmentRequirement();
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, fieldAlignmentRequirement);
-                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, fieldAlignmentRequirement);
+                    alignmentRequirement = pByValueMT->GetFieldAlignmentRequirement();
                 }
 #if defined(FEATURE_64BIT_ALIGNMENT)
                 if (pByValueMT->RequiresAlign8())
                 {
-                    int fieldAlignmentRequirement = max(8, pByValueMT->GetFieldAlignmentRequirement());
-                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, fieldAlignmentRequirement);
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, fieldAlignmentRequirement);
+                    alignmentRequirement = max(8, alignmentRequirement);
                 }
 #endif // FEATURE_64BIT_ALIGNMENT
+
+                largestAlignmentRequirement = max(largestAlignmentRequirement, alignmentRequirement);
+                dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, alignmentRequirement);
 
                 pFieldDescList[i].SetOffset(dwCumulativeInstanceFieldPos - dwOffsetBias);
                 dwCumulativeInstanceFieldPos += pByValueMT->GetNumInstanceFieldBytes();
