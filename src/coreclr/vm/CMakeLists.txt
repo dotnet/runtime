@@ -293,6 +293,7 @@ set(VM_SOURCES_WKS
     bundle.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
     CachedInterfaceDispatch_Coreclr.cpp
+    ${RUNTIME_DIR}/MiscNativeHelpers.cpp
     cachelinealloc.cpp
     callconvbuilder.cpp
     callhelpers.cpp
@@ -386,7 +387,7 @@ set(VM_SOURCES_WKS
 
 if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     list(APPEND VM_SOURCES_WKS
-        ${RUNTIME_DIR}/asyncsafethreadmap.cpp
+        ${RUNTIME_DIR}/SignalSafeThreadMap.cpp
     )
 endif()
 
@@ -493,7 +494,7 @@ set(VM_HEADERS_WKS
 
 if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     list(APPEND VM_HEADERS_WKS
-        ${RUNTIME_DIR}/asyncsafethreadmap.h
+        ${RUNTIME_DIR}/SignalSafeThreadMap.h
     )
 endif()
 

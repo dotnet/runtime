@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Describes all of the P/Invokes to the special QCall module that resolves to internal runtime methods.
+
 #include "common.h"
 
 //
@@ -79,6 +81,8 @@
 #ifdef FEATURE_INTERPRETER
 #include "interpexec.h"
 #endif // FEATURE_INTERPRETER
+
+#include "MiscNativeHelpers.h"
 
 static const Entry s_QCall[] =
 {
@@ -229,7 +233,7 @@ static const Entry s_QCall[] =
     DllImportEntry(TypeBuilder_DefineCustomAttribute)
     DllImportEntry(MdUtf8String_EqualsCaseInsensitive)
     DllImportEntry(Array_CreateInstance)
-    DllImportEntry(Array_CreateInstanceMDArray)
+    DllImportEntry(Array_Ctor)
     DllImportEntry(Array_GetElementConstructorEntrypoint)
     DllImportEntry(AssemblyName_InitializeAssemblySpec)
     DllImportEntry(AssemblyNative_GetFullName)
@@ -313,8 +317,8 @@ static const Entry s_QCall[] =
 #endif // FEATURE_COMINTEROP
     DllImportEntry(Monitor_GetOrCreateLockObject)
     DllImportEntry(ClrConfig_GetConfigBoolValue)
-    DllImportEntry(Buffer_Clear)
-    DllImportEntry(Buffer_MemMove)
+    DllImportEntry(memset)
+    DllImportEntry(memmove)
     DllImportEntry(DependentHandle_InternalAllocWithGCTransition)
     DllImportEntry(DependentHandle_InternalFreeWithGCTransition)
     DllImportEntry(GCInterface_GetTotalAllocatedBytesPrecise)
@@ -485,7 +489,7 @@ static const Entry s_QCall[] =
     DllImportEntry(SetEnvironmentVariableW)
 #endif
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-    DllImportEntry(X86BaseCpuId)
+    DllImportEntry(X86Base_CpuId)
 #endif
     DllImportEntry(StubHelpers_CreateCustomMarshaler)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
@@ -509,14 +513,12 @@ static const Entry s_QCall[] =
     DllImportEntry(ComWeakRefToObject)
     DllImportEntry(ObjectToComWeakRef)
 #endif
-#ifdef FEATURE_EH_FUNCLETS
     DllImportEntry(SfiInit)
     DllImportEntry(SfiNext)
     DllImportEntry(CallFilterFunclet)
     DllImportEntry(EHEnumInitFromStackFrameIterator)
     DllImportEntry(EHEnumNext)
     DllImportEntry(AppendExceptionStackFrame)
-#endif // FEATURE_EH_FUNCLETS
     DllImportEntry(InitClassHelper)
     DllImportEntry(ResolveVirtualFunctionPointer)
     DllImportEntry(GetThreadStaticsByMethodTable)
