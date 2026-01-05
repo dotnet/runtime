@@ -1126,18 +1126,21 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
         return (unsigned)ICorDebugInfo::UNKNOWN_ILNUM;
     }
 
+    unsigned originalVarNum = varNum;
+
     // Now mutate varNum to remove extra parameters from the count.
-    if (((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) != 0) && (varNum > info.compTypeCtxtArg))
+    if (((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) != 0) &&
+        (originalVarNum > info.compTypeCtxtArg))
     {
         varNum--;
     }
 
-    if (info.compIsVarArgs && (varNum > lvaVarargsHandleArg))
+    if (info.compIsVarArgs && (originalVarNum > lvaVarargsHandleArg))
     {
         varNum--;
     }
 
-    if ((lvaAsyncContinuationArg != BAD_VAR_NUM) && (varNum > lvaAsyncContinuationArg))
+    if ((lvaAsyncContinuationArg != BAD_VAR_NUM) && (originalVarNum > lvaAsyncContinuationArg))
     {
         varNum--;
     }
@@ -1145,7 +1148,7 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
     // Is there a hidden argument for the return buffer. Note that this code
     // works because if the RetBuffArg is not present, compRetBuffArg will be
     // BAD_VAR_NUM
-    if ((info.compRetBuffArg != BAD_VAR_NUM) && (varNum > info.compRetBuffArg))
+    if ((info.compRetBuffArg != BAD_VAR_NUM) && (originalVarNum > info.compRetBuffArg))
     {
         varNum--;
     }
@@ -3684,9 +3687,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
     //      saved EBP                       <-- EBP points here
     //      other callee-saved registers    // InfoHdrSmall.savedRegsCountExclFP specifies this size
     //      optional GS cookie              // InfoHdrSmall.security is 1 if this exists
-    // if FEATURE_EH_FUNCLETS
     //      issynchronized bool if it is a synchronized method
-    // endif // FEATURE_EH_FUNCLETS
     //      LocAllocSP slot
     //      -- lower addresses --
     //
@@ -4606,7 +4607,14 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
         JITDUMP("--- delta bump %d for FP frame\n", delta);
     }
-#endif // !TARGET_LOONGARCH64 || !TARGET_RISCV64
+#elif defined(TARGET_WASM)
+    else
+    {
+        // The FP always points at the bottom of the fixed portion of the frame.
+        JITDUMP("--- delta bump %d for FP frame\n", codeGen->genTotalFrameSize());
+        delta += codeGen->genTotalFrameSize();
+    }
+#endif
 
     if (opts.IsOSR())
     {
@@ -6257,7 +6265,7 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum, int minLength)
 #else
     bool EBPbased;
     offset  = lvaFrameAddress(lclNum, &EBPbased);
-    baseReg = EBPbased ? REG_FPBASE : REG_SPBASE;
+    baseReg = EBPbased ? codeGen->GetFramePointerReg() : codeGen->GetStackPointerReg();
 #endif
 
     int printed =
