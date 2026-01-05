@@ -3,8 +3,6 @@
 
 include AsmMacros.inc
 
-ifdef FEATURE_DYNAMIC_CODE
-
 ifdef _DEBUG
 TRASH_SAVED_ARGUMENT_REGISTERS equ 1
 else
@@ -152,12 +150,6 @@ NESTED_END Rhp&FunctionName, _TEXT
 
         endm
 
-        ; To enable proper step-in behavior in the debugger, we need to have two instances
-        ; of the thunk. For the first one, the debugger steps into the call in the function,
-        ; for the other, it steps over it.
-        UNIVERSAL_TRANSITION UniversalTransition
-        UNIVERSAL_TRANSITION UniversalTransition_DebugStepTailCall
-
-endif
+        UNIVERSAL_TRANSITION UniversalTransitionTailCall
 
 end

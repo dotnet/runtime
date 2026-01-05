@@ -3687,9 +3687,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
     //      saved EBP                       <-- EBP points here
     //      other callee-saved registers    // InfoHdrSmall.savedRegsCountExclFP specifies this size
     //      optional GS cookie              // InfoHdrSmall.security is 1 if this exists
-    // if FEATURE_EH_FUNCLETS
     //      issynchronized bool if it is a synchronized method
-    // endif // FEATURE_EH_FUNCLETS
     //      LocAllocSP slot
     //      -- lower addresses --
     //
@@ -4609,7 +4607,14 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
         JITDUMP("--- delta bump %d for FP frame\n", delta);
     }
-#endif // !TARGET_LOONGARCH64 || !TARGET_RISCV64
+#elif defined(TARGET_WASM)
+    else
+    {
+        // The FP always points at the bottom of the fixed portion of the frame.
+        JITDUMP("--- delta bump %d for FP frame\n", codeGen->genTotalFrameSize());
+        delta += codeGen->genTotalFrameSize();
+    }
+#endif
 
     if (opts.IsOSR())
     {
@@ -6260,7 +6265,7 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum, int minLength)
 #else
     bool EBPbased;
     offset  = lvaFrameAddress(lclNum, &EBPbased);
-    baseReg = EBPbased ? REG_FPBASE : REG_SPBASE;
+    baseReg = EBPbased ? codeGen->GetFramePointerReg() : codeGen->GetStackPointerReg();
 #endif
 
     int printed =

@@ -135,7 +135,7 @@ namespace ILCompiler.ObjectWriter
                 _sectionNumberToComdatAuxRecord[_sections.Count] = auxRecord;
                 _symbols.Add(new CoffSymbol
                 {
-                    Name = sectionHeader.Name,
+                    Name = new Utf8String(sectionHeader.Name),
                     Value = 0,
                     SectionIndex = coffSectionIndex,
                     StorageClass = CoffSymbolClass.IMAGE_SYM_CLASS_STATIC,
@@ -268,7 +268,7 @@ namespace ILCompiler.ObjectWriter
                 // Emit the feat.00 symbol that controls various linker behaviors
                 _symbols.Add(new CoffSymbol
                 {
-                    Name = "@feat.00",
+                    Name = new Utf8String("@feat.00"u8),
                     StorageClass = CoffSymbolClass.IMAGE_SYM_CLASS_STATIC,
                     SectionIndex = uint.MaxValue, // IMAGE_SYM_ABSOLUTE
                     Value = (uint)feat00Flags,
@@ -615,7 +615,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     buffer.Clear();
                     buffer[0] = (byte)'/';
-                    uint offset = stringTable.GetStringOffset(Name);
+                    uint offset = stringTable.GetStringOffset(new Utf8String(Name));
                     if (offset <= 9999999)
                     {
                         Span<char> charBuffer = stackalloc char[16];

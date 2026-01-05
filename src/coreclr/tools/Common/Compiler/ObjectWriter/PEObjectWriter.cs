@@ -12,7 +12,9 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
 using System.Text;
+
 using ILCompiler.DependencyAnalysis;
+
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -485,6 +487,20 @@ namespace ILCompiler.ObjectWriter
             foreach (SectionDefinition s in _sections)
             {
                 CoffSectionHeader h = s.Header;
+
+                // Skip calculating the layout for empty sections.
+                if (s.Stream.Length == 0 && !h.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData))
+                {
+                    if (recordFinalLayout)
+                    {
+                        // Although we omit the empty sections in EmitObjectFile, we add them to _sections in order to match indexes.
+                        // We assign zero VA/size to avoid wasting virtual address space and inflating the final PE file size.
+                        _outputSectionLayout.Add(new OutputSection(h.Name, 0, 0, 0));
+                    }
+
+                    continue;
+                }
+
                 h.SizeOfRawData = (uint)s.Stream.Length;
                 uint requestedAlignment = GetSectionAlignment(h);
                 uint rawAligned = h.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData)
@@ -541,8 +557,6 @@ namespace ILCompiler.ObjectWriter
                 if (recordFinalLayout)
                 {
                     // Use the stream length so we don't include any space that's appended just for alignment purposes.
-                    // To ensure that we match the section indexes in _sections, we don't skip empty sections here
-                    // even though we omit them in EmitObjectFile.
                     _outputSectionLayout.Add(new OutputSection(h.Name, h.VirtualAddress, h.PointerToRawData, (uint)s.Stream.Length));
                 }
                 firstSection = false;
@@ -582,10 +596,21 @@ namespace ILCompiler.ObjectWriter
 
         private void EmitExportDirectory(SectionWriter sectionWriter)
         {
-            List<string> exports = [.._exportedSymbolNames];
+            if (_exportedSymbolNames.Count == 0)
+            {
+                // No exports to emit.
+                return;
+            }
 
-            exports.Sort(StringComparer.Ordinal);
-            string moduleName = Path.GetFileName(_outputPath);
+            // Build sorted list of exports as Utf8String
+            List<Utf8String> exports = new(_exportedSymbolNames.Count);
+            foreach (var exportName in _exportedSymbolNames)
+            {
+                exports.Add(new Utf8String(exportName));
+            }
+            exports.Sort();
+
+            Utf8String moduleName = new Utf8String(Path.GetFileName(_outputPath));
             const int minOrdinal = 1;
 
             StringTableBuilder exportsStringTable = new();
@@ -596,10 +621,10 @@ namespace ILCompiler.ObjectWriter
                 exportsStringTable.ReserveString(exportName);
             }
 
-            string exportsStringTableSymbol = GenerateSymbolNameForReloc("exportsStringTable");
-            string addressTableSymbol = GenerateSymbolNameForReloc("addressTable");
-            string namePointerTableSymbol = GenerateSymbolNameForReloc("namePointerTable");
-            string ordinalPointerTableSymbol = GenerateSymbolNameForReloc("ordinalPointerTable");
+            Utf8String exportsStringTableSymbol = new Utf8String(GenerateSymbolNameForReloc("exportsStringTable"));
+            Utf8String addressTableSymbol = new Utf8String(GenerateSymbolNameForReloc("addressTable"));
+            Utf8String namePointerTableSymbol = new Utf8String(GenerateSymbolNameForReloc("namePointerTable"));
+            Utf8String ordinalPointerTableSymbol = new Utf8String(GenerateSymbolNameForReloc("ordinalPointerTable"));
 
             // +0x00: reserved
             sectionWriter.WriteLittleEndian(0);

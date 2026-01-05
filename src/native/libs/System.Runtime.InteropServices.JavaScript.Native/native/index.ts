@@ -5,6 +5,8 @@ import type { InternalExchange, InteropJavaScriptExports, InteropJavaScriptExpor
 import { InternalExchangeIndex } from "../types";
 import { } from "./cross-linked"; // ensure ambient symbols are declared
 
+import GitHash from "consts:gitHash";
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function SystemInteropJS_InvokeJSImportST(function_handle: JSFnHandle, args: JSMarshalerArguments) {
     // WASM-TODO implementation
@@ -12,7 +14,16 @@ export function SystemInteropJS_InvokeJSImportST(function_handle: JSFnHandle, ar
     return - 1;
 }
 
+export const gitHash = GitHash;
 export function dotnetInitializeModule(internals: InternalExchange): void {
+    if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
+    const runtimeApi = internals[InternalExchangeIndex.RuntimeAPI];
+    if (typeof runtimeApi !== "object") throw new Error("Expected internals to have RuntimeAPI");
+
+    if (runtimeApi.runtimeBuildInfo.gitHash && runtimeApi.runtimeBuildInfo.gitHash !== DOTNET_INTEROP.gitHash) {
+        throw new Error(`Mismatched git hashes between loader and runtime. Loader: ${runtimeApi.runtimeBuildInfo.gitHash}, DOTNET_INTEROP: ${DOTNET_INTEROP.gitHash}`);
+    }
+
     internals[InternalExchangeIndex.InteropJavaScriptExportsTable] = interopJavaScriptExportsToTable({
     });
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
