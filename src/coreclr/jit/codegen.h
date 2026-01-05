@@ -589,6 +589,9 @@ protected:
     void genReserveProlog(BasicBlock* block); // currently unused
     void genReserveEpilog(BasicBlock* block);
     void genFnProlog();
+#if defined(TARGET_WASM)
+    void genWasmLocals();
+#endif
     void genFnEpilog(BasicBlock* block);
 
     void genReserveFuncletProlog(BasicBlock* block);
@@ -1131,7 +1134,7 @@ protected:
     void genCodeForLclAddr(GenTreeLclFld* lclAddrNode);
     void genCodeForIndexAddr(GenTreeIndexAddr* tree);
     void genCodeForIndir(GenTreeIndir* tree);
-    void genCodeForNegNot(GenTree* tree);
+    void genCodeForNegNot(GenTreeOp* tree);
     void genCodeForBswap(GenTree* tree);
     bool genCanOmitNormalizationForBswap16(GenTree* tree);
     void genCodeForLclVar(GenTreeLclVar* tree);

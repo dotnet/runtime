@@ -29,6 +29,7 @@
                     }
                 },
                 dotnetInitializeModule: exports.dotnetInitializeModule,
+                gitHash: exports.gitHash,
             },
             $DOTNET_INTEROP__postset: "DOTNET_INTEROP.selfInitialize()",
             $DOTNET_INTEROP__deps: commonDeps,
@@ -36,7 +37,7 @@
 
         for (const exportName of Reflect.ownKeys(exports)) {
             const name = String(exportName);
-            if (name === "dotnetInitializeModule") continue;
+            if (name === "dotnetInitializeModule" || name === "gitHash") continue;
             lib[name] = exports[name];
         }
 

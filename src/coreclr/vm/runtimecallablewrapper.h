@@ -191,27 +191,6 @@ struct RCW
     void MinorCleanup();
 
     //-----------------------------------------------------
-    // The amount of GC pressure we apply has one of a few possible values.
-    // We save space in the RCW structure by tracking this instead of the
-    // actual value.
-    enum GCPressureSize
-    {
-        GCPressureSize_None         = 0,
-        GCPressureSize_ProcessLocal = 1,
-        GCPressureSize_MachineLocal = 2,
-        GCPressureSize_Remote       = 3,
-        GCPressureSize_COUNT        = 4
-    };
-
-    //---------------------------------------------------
-    // Add memory pressure to the GC representing the native cost
-    void AddMemoryPressure(GCPressureSize pressureSize);
-
-    //---------------------------------------------------
-    // Remove memory pressure from the GC representing the native cost
-    void RemoveMemoryPressure();
-
-    //-----------------------------------------------------
     // AddRef
     LONG AddRef(RCWCache* pCache);
 
@@ -538,9 +517,6 @@ public:
             DWORD       m_fURTContained:1;         // this RCW represents a COM object contained by a managed object
             DWORD       m_fAllowEagerSTACleanup:1; // this RCW can be cleaned up eagerly (as opposed to via CleanupUnusedObjectsInCurrentContext)
 
-            static_assert((1 << 3) >= GCPressureSize_COUNT, "m_GCPressure needs a bigger data type");
-            DWORD       m_GCPressure:3;            // index into s_rGCPressureTable
-
             // Reserve 2 bits for marshaling type
             DWORD       m_MarshalingType:2;        // Marshaling type of the COM object.
 
@@ -550,9 +526,6 @@ public:
     m_Flags;
 
     static_assert(sizeof(RCWFlags) == 4, "Flags don't fit in 4 bytes, there's too many of them");
-
-    // GC pressure sizes in bytes
-    static const int s_rGCPressureTable[GCPressureSize_COUNT];
 
     // Tracks concurrent access to this RCW to prevent using RCW instances that have already been released
     LONG                m_cbUseCount;

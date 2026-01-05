@@ -12,8 +12,6 @@ namespace System
 {
     public static partial class Environment
     {
-        internal static bool IsWindows8OrAbove => WindowsVersion.IsWindows8OrAbove;
-
         private static string? GetEnvironmentVariableFromRegistry(string variable, bool fromMachine)
         {
             Debug.Assert(variable != null);
@@ -384,14 +382,6 @@ namespace System
 
             // Fallback logic if SHGetKnownFolderPath failed (nanoserver)
             return fallbackEnv != null ? Environment.GetEnvironmentVariable(fallbackEnv) ?? string.Empty : string.Empty;
-        }
-
-        // Separate type so a .cctor is not created for Environment which then would be triggered during startup
-        private static class WindowsVersion
-        {
-            // Cache the value in static readonly that can be optimized out by the JIT
-            // Windows 8 version is 6.2
-            internal static readonly bool IsWindows8OrAbove = OperatingSystem.IsWindowsVersionAtLeast(6, 2);
         }
     }
 }

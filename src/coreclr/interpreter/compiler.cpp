@@ -396,6 +396,7 @@ InterpBasicBlock* InterpCompiler::AllocBB(int32_t ilOffset)
 
     new (bb) InterpBasicBlock (m_BBCount, ilOffset);
     m_BBCount++;
+
     return bb;
 }
 
@@ -406,6 +407,31 @@ InterpBasicBlock* InterpCompiler::GetBB(int32_t ilOffset)
     if (!bb)
     {
         bb = AllocBB(ilOffset);
+
+        uint32_t stackHeight;
+        StackInfo* stack;
+        // In some cases while linearly processing the IL, we may discover that we predicted the wrong stack state for a given IL merge point.
+        // In those cases, we will restart the compilation, and on the retry we will have the correct stack state information available here.
+        if (m_pRetryData->GetOverrideILMergePointStackType(ilOffset, &stackHeight, &stack))
+        {
+            bb->stackHeight = stackHeight;
+            bb->pStackState = (StackInfo*)AllocMemPool(sizeof(StackInfo) * stackHeight);
+            memcpy(bb->pStackState, stack, sizeof(StackInfo) * stackHeight);
+            for (uint32_t i = 0; i < stackHeight; i++)
+            {
+                int size = INTERP_STACK_SLOT_SIZE;
+                if (bb->pStackState[i].GetStackType() == StackTypeVT)
+                {
+                    size = m_compHnd->getClassSize(bb->pStackState[i].clsHnd);
+                }
+                int32_t var = CreateVarExplicit(g_interpTypeFromStackType[bb->pStackState[i].GetStackType()], bb->pStackState[i].clsHnd, size);
+                AllocGlobalVarOffset(var);
+                m_pVars[var].global = true;
+
+                bb->pStackState[i].var = var;
+                INTERP_DUMP("Using StackType %s for stack height %d with var %d\n", g_stackTypeString[bb->pStackState[i].GetStackType()], (int)i, var);
+            }
+        }
 
         m_ppOffsetToBB[ilOffset] = bb;
     }
@@ -561,6 +587,8 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
     if (pTargetBB->stackHeight <= 0)
         return;
 
+    assert(m_ppOffsetToBB[pTargetBB->ilOffset] == pTargetBB);
+
     for (int i = 0; i < pTargetBB->stackHeight; i++)
     {
         int sVar = m_pStackBase[i].var;
@@ -578,11 +606,23 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
                 }
                 else if (interpType == InterpTypeR8 && interpDestType == InterpTypeR4)
                 {
+                    // Data-loss conversion on IL stack merge point. We will need to restart compilation, but for now, emit a conv to continue processing, but update the stack data to reflect the change we need to make.
+                    // in the next retry of compilation.
                     movOp = INTOP_CONV_R4_R8;
+                    pTargetBB->pStackState[i] = StackInfo(StackTypeR8, nullptr, pTargetBB->pStackState[i].var);
+                    m_pRetryData->SetOverrideILMergePointStack(pTargetBB->ilOffset, pTargetBB->stackHeight, pTargetBB->pStackState);
                 }
                 else if (interpType == InterpTypeI && interpDestType == InterpTypeByRef)
                 {
                     movOp = InterpGetMovForType(interpDestType, false);
+                }
+                else if (interpType == InterpTypeByRef && interpDestType == InterpTypeI)
+                {
+                    // GC pointer conversion on IL stack merge point. We will need to restart compilation, but for now, emit a mov to continue processing, but update the stack data to reflect the change we need to make.
+                    // in the next retry of compilation.
+                    movOp = InterpGetMovForType(interpType, false);
+                    pTargetBB->pStackState[i] = StackInfo(StackTypeByRef, nullptr, pTargetBB->pStackState[i].var);
+                    m_pRetryData->SetOverrideILMergePointStack(pTargetBB->ilOffset, pTargetBB->stackHeight, pTargetBB->pStackState);
                 }
 #ifdef TARGET_64BIT
                 // nint and int32 can be used interchangeably. Add implicit conversions.
@@ -590,9 +630,13 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
                 {
                     movOp = INTOP_CONV_I8_I4;
                 }
-                else if (interpType == InterpTypeI8 && interpDestType == InterpTypeI4)
+                else if ((interpType == InterpTypeI8 || interpType == InterpTypeByRef) && interpDestType == InterpTypeI4)
                 {
-                    movOp = InterpGetMovForType(interpDestType, false);
+                    // Data-loss conversion on IL stack merge point. We will need to restart compilation, but for now, emit a mov to continue processing, but update the stack data to reflect the change we need to make.
+                    // in the next retry of compilation.
+                    movOp = INTOP_MOV_8;
+                    pTargetBB->pStackState[i] = StackInfo(g_stackTypeFromInterpType[interpType], nullptr, pTargetBB->pStackState[i].var);
+                    m_pRetryData->SetOverrideILMergePointStack(pTargetBB->ilOffset, pTargetBB->stackHeight, pTargetBB->pStackState);
                 }
 #endif // TARGET_64BIT
                 else
@@ -1719,13 +1763,11 @@ InterpMethod* InterpCompiler::CreateInterpMethod()
         pDataItems[i] = m_dataItems.Get(i);
 
     bool initLocals = (m_methodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0;
-    CORJIT_FLAGS corJitFlags;
-    DWORD jitFlagsSize = m_compHnd->getJitFlags(&corJitFlags, sizeof(corJitFlags));
-    assert(jitFlagsSize == sizeof(corJitFlags));
 
-    bool unmanagedCallersOnly = corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
+    bool unmanagedCallersOnly = m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
+    bool publishSecretStubParam = m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM);
 
-    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems, initLocals, unmanagedCallersOnly);
+    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems, initLocals, unmanagedCallersOnly, publishSecretStubParam);
 
     return pMethod;
 }
@@ -1758,8 +1800,9 @@ static void InterpreterCompilerBreak()
 }
 
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
-                                CORINFO_METHOD_INFO* methodInfo)
+                                CORINFO_METHOD_INFO* methodInfo, InterpreterRetryData* pRetryData)
     : m_stackmapsByClass(FreeInterpreterStackMap)
+    , m_pRetryData(pRetryData)
     , m_pInitLocalsIns(nullptr)
     , m_hiddenArgumentVar(-1)
     , m_nextCallGenericContextVar(-1)
@@ -1784,6 +1827,8 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     m_compHnd = compHnd;
     m_methodInfo = methodInfo;
     m_classHnd   = compHnd->getMethodClass(m_methodHnd);
+    DWORD jitFlagsSize = m_compHnd->getJitFlags(&m_corJitFlags, sizeof(m_corJitFlags));
+    assert(jitFlagsSize == sizeof(m_corJitFlags));
 
 #ifdef DEBUG
     m_methodName = ::PrintMethodName(compHnd, m_classHnd, m_methodHnd, &m_methodInfo->args,
@@ -1812,6 +1857,11 @@ InterpMethod* InterpCompiler::CompileMethod()
     }
 #endif
 
+    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE))
+    {
+        NO_WAY("Interpreter does not support profiling enter/leave hooks\n");
+    }
+
     m_isSynchronized = m_compHnd->getMethodAttribs(m_methodHnd) & CORINFO_FLG_SYNCH;
     if (m_isSynchronized)
     {
@@ -1826,6 +1876,12 @@ InterpMethod* InterpCompiler::CompileMethod()
     CreateILVars();
 
     GenerateCode(m_methodInfo);
+
+    if (m_pRetryData->NeedsRetry())
+    {
+        INTERP_DUMP("Retrying compilation due to %s\n", m_pRetryData->GetReasonString());
+        return nullptr;
+    }
 
 #ifdef DEBUG
     if (IsInterpDumpActive())
@@ -2505,6 +2561,26 @@ void InterpCompiler::EmitOneArgBranch(InterpOpcode opcode, int32_t ilOffset, int
     }
 }
 
+// Determines whether I4 to I8 promotion should use zero-extension (for unsigned operations)
+// or sign-extension (for signed operations), based on the opcode.
+InterpOpcode InterpOpForWideningArgForImplicitUpcast(InterpOpcode opcode)
+{
+    switch (opcode)
+    {
+        case INTOP_BNE_UN_I4:
+        case INTOP_BLE_UN_I4:
+        case INTOP_BLT_UN_I4:
+        case INTOP_BGE_UN_I4:
+        case INTOP_BGT_UN_I4:
+        case INTOP_ADD_OVF_UN_I4:
+        case INTOP_SUB_OVF_UN_I4:
+        case INTOP_MUL_OVF_UN_I4:
+            return INTOP_CONV_U8_U4;
+        default:
+            return INTOP_CONV_I8_I4;
+    }
+}
+
 void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int insSize)
 {
     CHECK_STACK(2);
@@ -2515,12 +2591,12 @@ void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int
     // emitting the conditional branch
     if (argType1 == StackTypeI4 && argType2 == StackTypeI8)
     {
-        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+        EmitConv(m_pStackPointer - 1, StackTypeI8, InterpOpForWideningArgForImplicitUpcast(opcode));
         argType1 = StackTypeI8;
     }
     else if (argType1 == StackTypeI8 && argType2 == StackTypeI4)
     {
-        EmitConv(m_pStackPointer - 2, StackTypeI8, INTOP_CONV_I8_I4);
+        EmitConv(m_pStackPointer - 2, StackTypeI8, InterpOpForWideningArgForImplicitUpcast(opcode));
     }
     else if (argType1 == StackTypeR4 && argType2 == StackTypeR8)
     {
@@ -2756,12 +2832,12 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
 #if TARGET_64BIT
         if (type1 == StackTypeI8 && type2 == StackTypeI4)
         {
-            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+            EmitConv(m_pStackPointer - 1, StackTypeI8, InterpOpForWideningArgForImplicitUpcast((InterpOpcode)opBase));
             type2 = StackTypeI8;
         }
         else if (type1 == StackTypeI4 && type2 == StackTypeI8)
         {
-            EmitConv(m_pStackPointer - 2, StackTypeI8, INTOP_CONV_I8_I4);
+            EmitConv(m_pStackPointer - 2, StackTypeI8, InterpOpForWideningArgForImplicitUpcast((InterpOpcode)opBase));
             type1 = StackTypeI8;
         }
 #endif
@@ -3144,7 +3220,9 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             if (g_stackTypeFromInterpType[targetType] != StackTypeI4 &&
                 g_stackTypeFromInterpType[targetType] != StackTypeI8)
             {
-                goto FAIL_TO_EXPAND_INTRINSIC;
+                // The intrinsic is must expand only when the target type is primitive. For other types (e.g. int128),
+                // use the compiled method.
+                return false;
             }
 
             InterpOpcode convOp;
@@ -3926,7 +4004,7 @@ void InterpCompiler::EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pRes
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 }
 
-static bool DisallowTailCall(CORINFO_SIG_INFO* callerSig, CORINFO_SIG_INFO* calleeSig)
+bool InterpCompiler::DisallowTailCall(CORINFO_SIG_INFO* callerSig, CORINFO_SIG_INFO* calleeSig)
 {
     // We allow only the return value types to differ between caller and callee as long as their stack types are the same.
     // In principle we could allow more differences (e.g. I8 coercion to I4, or O to I) but for now we keep it simple.
@@ -3946,6 +4024,16 @@ static bool DisallowTailCall(CORINFO_SIG_INFO* callerSig, CORINFO_SIG_INFO* call
         // Disallow tail calls from async methods for now
         return true;
     }
+    if (m_isSynchronized)
+    {
+        // Disallow tail calls from synchronized methods
+        return true;
+    }
+    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE))
+    {
+        // Disallow tail calls from reverse pinvoke methods
+        return true;
+    }
     return false;
 }
 
@@ -3961,6 +4049,8 @@ void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunc
     {
         if (m_compHnd->pInvokeMarshalingRequired(NULL, callSiteSig))
         {
+            // If we remove this restriction, we should handle the track transitions scenario by forcing a 
+            // p/invoke marshaling calli stub even when not needed.
             BADCODE("PInvoke marshalling for calli is not supported in interpreted code");
         }
         m_compHnd->getUnmanagedCallConv(nullptr, callSiteSig, &suppressGCTransition);
@@ -4308,6 +4398,12 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             m_ip += 5;
         }
 
+        if (newObj)
+        {
+            // The jit is expected to call the getNewHelper api to trigger a set of validations
+            bool hasSideEffects = false;
+            m_compHnd->getNewHelper(resolvedCallToken.hClass, &hasSideEffects);
+        }
 
         CORINFO_CALLINFO_FLAGS flags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_DISALLOW_STUB);
         if (isVirtual)
@@ -4402,7 +4498,14 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 #endif
     }
 
-    if (tailcall && DisallowTailCall(&m_methodInfo->args, &callInfo.sig))
+    if (tailcall && (
+        DisallowTailCall(&m_methodInfo->args, &callInfo.sig) // Disallow tail-calls for code gen reasons
+        || !m_compHnd->canTailCall(m_methodHnd, // Disallow tail calls due to rules specified by the VM
+                                   isCalli ? (CORINFO_METHOD_HANDLE)NULL : callInfo.hMethod, // The method we are attempting to call logically
+                                   isCalli ? (CORINFO_METHOD_HANDLE)NULL : (callInfo.kind == CORINFO_CALL ? callInfo.hMethod : (CORINFO_METHOD_HANDLE)NULL),
+                                   true) // The method we are calling exactly. We only know this if it's a non-virtual call
+        || (!isJmp && *m_ip != CEE_RET) // Disallow tailcalls that are not immediately before a ret
+        ))
     {
         if (isJmp)
         {
@@ -4420,6 +4523,16 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     bool isPInvoke = callInfo.methodFlags & CORINFO_FLG_PINVOKE;
     bool isMarshaledPInvoke = isPInvoke && m_compHnd->pInvokeMarshalingRequired(callInfo.hMethod, &callInfo.sig);
+
+    if (isPInvoke && m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE))
+    {
+        // If the method is a pinvoke il stub, we can inline pinvokes
+        if (!(m_compHnd->getMethodAttribs(m_methodInfo->ftn) & CORINFO_FLG_PINVOKE))
+        {
+            // Otherwise, we have to treat it as a marshaled pinvoke
+            isMarshaledPInvoke = true;
+        }
+    }
 
     // Process sVars
     int numArgsFromStack = callInfo.sig.numArgs + (newObj ? 0 : callInfo.sig.hasImplicitThis());
@@ -5964,6 +6077,12 @@ static OpcodePeepElement peepTypeEqualityCheckOpcodes[] = {
     { 25, CEE_ILLEGAL } // End marker
 };
 
+static OpcodePeepElement peepConvRUn_R4Opcodes[] = {
+    { 0, CEE_CONV_R_UN },
+    { 1, CEE_CONV_R4 },
+    { 2, CEE_ILLEGAL } // End marker
+};
+
 static OpcodePeepElement peepStLdLoc0[] = {
     { 0, CEE_STLOC_0 },
     { 1, CEE_LDLOC_0 },
@@ -6090,6 +6209,7 @@ class InterpILOpcodePeeps
 {
 public:
     OpcodePeep peepTypeEqualityCheck = { peepTypeEqualityCheckOpcodes, &InterpCompiler::IsTypeEqualityCheckPeep, &InterpCompiler::ApplyTypeEqualityCheckPeep, "TypeEqualityCheck" };
+    OpcodePeep peepConvRUn_R4 = { peepConvRUn_R4Opcodes, &InterpCompiler::IsConvRUnR4Peep, &InterpCompiler::ApplyConvRUnR4Peep, "ConvRUn_R4" };
     OpcodePeep peepStoreLoad0 = { peepStLdLoc0, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad0" };
     OpcodePeep peepStoreLoad1 = { peepStLdLoc1, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad1" };
     OpcodePeep peepStoreLoad2 = { peepStLdLoc2, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad2" };
@@ -6111,8 +6231,9 @@ public:
     OpcodePeep peepTypeValueType = { peepTypeValueTypeOpcodesOpcodes, &InterpCompiler::IsTypeValueTypePeep, &InterpCompiler::ApplyTypeValueTypePeep, "TypeValueType" };
 
 public:
-    OpcodePeep* Peeps[21] = {
+    OpcodePeep* Peeps[22] = {
         &peepTypeEqualityCheck,
+        &peepConvRUn_R4, // This peep is not an optimization. It is for correctness.
         &peepStoreLoad,
         &peepStoreLoad1,
         &peepStoreLoad2,
@@ -6343,6 +6464,32 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip
     return true;
 }
 
+int InterpCompiler::ApplyConvRUnR4Peep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo)
+{
+    // Replace with CONV_R4_UN
+    CHECK_STACK(1);
+    m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+    switch (m_pStackPointer[-1].GetStackType())
+    {
+    case StackTypeR4:
+        break;
+    case StackTypeR8:
+        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
+        break;
+    case StackTypeI8:
+        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_UN_I8);
+        break;
+    case StackTypeI4:
+        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_UN_I4);
+        break;
+    default:
+        BADCODE("conv.r.un operand must be R4, R8, I4 or I8");
+        break;
+    }
+
+    return -1;
+}
+
 bool InterpCompiler::FindAndApplyPeep(OpcodePeep* Peeps[])
 {
     const uint8_t* ip = m_ip;
@@ -6500,6 +6647,11 @@ int InterpCompiler::ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElem
 
 bool InterpCompiler::IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
 {
+    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
+    {
+        return false; // Don't optimize in debug code, this can remove needed sequence points
+    }
+
     int localVar = 0;
 
     switch(pattern[0].opcode)
@@ -7143,7 +7295,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 
 #if DEBUG
     if (InterpConfig.InterpHalt().contains(m_compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args))
-        AddIns(INTOP_BREAKPOINT);
+        AddIns(INTOP_HALT);
 #endif
 
     // We need to always generate this opcode because even if we have no IL locals, we may have
@@ -7166,11 +7318,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         m_pLastNewIns->SetSVar(m_continuationArgIndex);
     }
 
-    CORJIT_FLAGS corJitFlags;
-    DWORD jitFlagsSize = m_compHnd->getJitFlags(&corJitFlags, sizeof(corJitFlags));
-    assert(jitFlagsSize == sizeof(corJitFlags));
-
-    if (corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM))
+    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM))
     {
         m_hiddenArgumentVar = CreateVarExplicit(InterpTypeI, NULL, sizeof(void *));
         AddIns(INTOP_STORESTUBCONTEXT);
@@ -8118,10 +8266,10 @@ retry_emit:
                 case StackTypeR8:
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R_UN_I8);
+                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_UN_I8);
                     break;
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R_UN_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_UN_I4);
                     break;
                 default:
                     BADCODE("conv.r8 operand must be R4, R8, I4 or I8");
@@ -8675,6 +8823,14 @@ retry_emit:
                     }
                 }
 
+#ifdef TARGET_64BIT
+                if (m_pStackPointer->GetStackType() == StackTypeI)
+                {
+                    // Emit a saturating conversion from U8 to U4
+                    EmitConv(m_pStackPointer, StackTypeI4, INTOP_CONV_U4_U8_SAT);
+                }
+#endif // TARGET_64BIT
+
                 AddInsExplicit(INTOP_SWITCH, n + 3);
                 m_pLastNewIns->data[0] = n;
                 m_pLastNewIns->SetSVar(m_pStackPointer->var);
@@ -8904,7 +9060,7 @@ retry_emit:
                 tailcall = false;
                 break;
             case CEE_CALLI:
-                EmitCall(NULL /*pConstrainedToken*/, false /* readonly*/, false /* tailcall*/, false /*newObj*/, true /*isCalli*/);
+                EmitCall(NULL /*pConstrainedToken*/, false /* readonly*/, tailcall /* tailcall*/, false /*newObj*/, true /*isCalli*/);
                 pConstrainedToken = NULL;
                 readonly = false;
                 tailcall = false;
@@ -10331,6 +10487,65 @@ void InterpCompiler::UpdateWithFinalMethodByteCodeAddress(InterpByteCodeStart *p
     for (int32_t i = 0; i < m_asyncSuspendDataItems.GetSize(); i++)
     {
         m_asyncSuspendDataItems.Get(i)->methodStartIP = pByteCodeStart;
+    }
+}
+
+void InterpreterRetryData::SetOverrideILMergePointStack(int32_t ilOffset, uint32_t stackHeight, StackInfo *pStackInfo)
+{
+    assert(stackHeight > 0);
+    SetNeedsRetry("IL stack type override change at merge point");
+
+    INTERP_DUMP("  Override IL merge point stack at IL offset 0x%X, stack depth %u: ", ilOffset, stackHeight);
+
+    uint32_t key = (uint32_t)ilOffset;
+    StackInfo* value = (StackInfo*)malloc(sizeof(StackInfo) * stackHeight);
+    if (value == nullptr)
+    {
+        NOMEM();
+    }
+
+    for (uint32_t i = 0; i < stackHeight; i++)
+    {
+        value[i] = pStackInfo[i];
+        value[i].var = (int)stackHeight; // Encode the stack depth in the var field
+    }
+
+    void* oldValue;
+    if (dn_simdhash_u32_ptr_try_get_value(m_ilMergePointStackTypes.GetValue(), key, &oldValue))
+    {
+        assert(((StackInfo*)oldValue)[0].var == (int)stackHeight);
+        FreeStackInfo(key, oldValue, nullptr);
+        uint8_t success = dn_simdhash_u32_ptr_try_replace_value(m_ilMergePointStackTypes.GetValue(), key, value);
+        if (!success)
+        {
+            NOMEM();
+        }
+    }
+    else
+    {
+        checkAddedNew(dn_simdhash_u32_ptr_try_add(m_ilMergePointStackTypes.GetValue(), key, value));
+    }
+}
+
+bool InterpreterRetryData::GetOverrideILMergePointStackType(int32_t ilOffset, uint32_t* stackHeight, StackInfo** stack)
+{
+    if (!m_ilMergePointStackTypes.HasValue())
+    {
+        return false;
+    }
+
+    uint32_t key = (uint32_t)ilOffset;
+    void* value;
+    if (dn_simdhash_u32_ptr_try_get_value(m_ilMergePointStackTypes.GetValue(), key, &value))
+    {
+        INTERP_DUMP("  Found override IL merge point stack at IL offset 0x%X, stack depth %u\n", ilOffset, (uint32_t)((StackInfo*)value)[0].var);
+        *stack = (StackInfo*)value;
+        *stackHeight = (uint32_t)((StackInfo*)value)[0].var;
+        return true;
+    }
+    else
+    {
+        return false;
     }
 }
 
