@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
@@ -459,26 +458,13 @@ namespace System.Text.Json.Serialization
             if (dictionaryConverter == null)
             {
                 // If not JsonDictionaryConverter<T> then we are JsonObject.
-                // Avoid a type reference to JsonObject and its converter to support trimming.
                 Debug.Assert(Type == typeof(JsonObject));
 
                 // Write the JsonObject extension data contents without the wrapping braces.
                 // This is necessary because extension data properties should be flattened
                 // into the parent object, not nested as a separate object.
                 JsonObject jsonObject = (JsonObject)(object)value!;
-                foreach (KeyValuePair<string, JsonNode?> entry in jsonObject)
-                {
-                    writer.WritePropertyName(entry.Key);
-
-                    if (entry.Value is null)
-                    {
-                        writer.WriteNullValue();
-                    }
-                    else
-                    {
-                        entry.Value.WriteTo(writer, options);
-                    }
-                }
+                jsonObject.WriteContentsTo(writer, options);
 
                 return true;
             }
