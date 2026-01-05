@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // vars.cpp - Global Var definitions
 //
-
-
 
 #include "common.h"
 #include "vars.hpp"
@@ -104,11 +103,10 @@ GVAL_IMPL_INIT(DWORD, g_gcNotificationFlags, 0);
 
 
 MethodTable* g_pCastHelpers;
-#ifdef FEATURE_EH_FUNCLETS
+
 GPTR_IMPL(MethodTable,      g_pEHClass);
 GPTR_IMPL(MethodTable,      g_pExceptionServicesInternalCallsClass);
 GPTR_IMPL(MethodTable,      g_pStackFrameIteratorClass);
-#endif
 
 GVAL_IMPL_INIT(PTR_WSTR, g_EntryAssemblyPath, NULL);
 
@@ -134,7 +132,6 @@ SpinConstants g_SpinConstants = {
     40000,     // dwMaximumDuration - ideally (20000 * max(2, numProc))
     3,         // dwBackoffFactor
     10,        // dwRepetitions
-    0          // dwMonitorSpinCount
 };
 
 // support for Event Tracing for Windows (ETW)

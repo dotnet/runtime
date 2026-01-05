@@ -40,40 +40,47 @@ namespace TestUnhandledExceptionTester
             Console.WriteLine($"Test process {assembly} with argument {unhandledType} exited");
             testProcess.CancelErrorRead();
 
-            int expectedExitCode;
+            int[] expectedExitCodes;
             if (TestLibrary.Utilities.IsMonoRuntime)
             {
-                expectedExitCode = 1;
+                expectedExitCodes = new[] { 1 };
             }
             else if (!OperatingSystem.IsWindows())
             {
-                expectedExitCode = 128 + 6; // SIGABRT
+                expectedExitCodes = new[] { 128 + 6 }; // SIGABRT
             }
             else if (TestLibrary.Utilities.IsNativeAot)
             {
-                expectedExitCode = unchecked((int)0xC0000409);
+                expectedExitCodes = new[] { unchecked((int)0xC0000409) };
             }
             else
             {
                 if (unhandledType.EndsWith("hardware"))
                 {
                     // Null reference exception code
-                    expectedExitCode = unchecked((int)0xC0000005);
+                    expectedExitCodes = new[] { unchecked((int)0xC0000005), unchecked((int)0xE0434352) };
                 }
                 else if (unhandledType == "collecteddelegate")
                 {
                     // Fail fast exit code
-                    expectedExitCode = unchecked((int)0x80131623);
+                    expectedExitCodes = new[] { unchecked((int)0x80131623) };
                 }
                 else
                 {
-                    expectedExitCode = unchecked((int)0xE0434352);
+                    expectedExitCodes = new[] { unchecked((int)0xE0434352) };
                 }
             }
 
-            if (expectedExitCode != testProcess.ExitCode)
+            if (!Array.Exists(expectedExitCodes, code => testProcess.ExitCode == code))
             {
-                throw new Exception($"Wrong exit code 0x{testProcess.ExitCode:X8}, expected 0x{expectedExitCode:X8}");
+                string separator = string.Empty;
+                StringBuilder expectedListBuilder = new StringBuilder();
+                Array.ForEach(expectedExitCodes, code =>
+                {
+                    expectedListBuilder.Append($"{separator}0x{code:X8}");
+                    separator = " or ";
+                });
+                throw new Exception($"Wrong exit code: 0x{testProcess.ExitCode:X8}, expected {expectedListBuilder}");
             }
 
             int exceptionStackFrameLine = 1;
@@ -93,6 +100,13 @@ namespace TestUnhandledExceptionTester
                 else if (unhandledType == "foreign")
                 {
                     if (lines[1] != "System.EntryPointNotFoundException: HelloCpp")
+                    {
+                        throw new Exception("Missing exception type and message");
+                    }
+                }
+                else if (unhandledType.EndsWith("hardware"))
+                {
+                    if (!lines[1].StartsWith("System.NullReferenceException: Object reference not set to an instance of an object"))
                     {
                         throw new Exception("Missing exception type and message");
                     }

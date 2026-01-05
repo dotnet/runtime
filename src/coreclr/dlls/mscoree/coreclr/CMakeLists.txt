@@ -74,10 +74,6 @@ if (NOT CLR_CMAKE_HOST_ARCH_WASM)
     set(LIB_INTEROP interop)
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
-set(LIB_CDAC_CONTRACT_DESCRIPTOR cdac_contract_descriptor)
-set(LIB_CDAC_GC_WKS_DESCRIPTOR gc_wks_descriptor)
-set(LIB_CDAC_GC_SVR_DESCRIPTOR gc_svr_descriptor)
-
 if (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     set(LIB_UNWINDER unwinder_wks)
 endif (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
@@ -86,6 +82,7 @@ endif (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 # order dependent and changing the order can result in undefined symbols in the shared
 # library.
 set(CORECLR_LIBRARIES
+    mscorrc
     utilcode
     ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
     ${LIB_CORDBEE}
@@ -96,9 +93,7 @@ set(CORECLR_LIBRARIES
     mdcompiler_wks
     mdruntime_wks
     mdruntimerw_wks
-    bcltype
     ceefgen
-    comfloat_wks
     corguids
     utilcode
     v3binder
@@ -106,13 +101,13 @@ set(CORECLR_LIBRARIES
     ${LIB_INTEROP}
     coreclrminipal
     gc_pal
-    ${LIB_CDAC_CONTRACT_DESCRIPTOR}
-    ${LIB_CDAC_GC_WKS_DESCRIPTOR}
+    cdac_contract_descriptor
+    gc_wks_descriptor
 )
 
 if (FEATURE_SVR_GC)
     list(APPEND CORECLR_LIBRARIES
-        ${LIB_CDAC_GC_SVR_DESCRIPTOR}
+        gc_svr_descriptor
     )
 endif(FEATURE_SVR_GC)
 
@@ -141,7 +136,6 @@ if(CLR_CMAKE_TARGET_WIN32)
 else()
     list(APPEND CORECLR_LIBRARIES
         coreclrpal
-        mscorrc
     )
 endif(CLR_CMAKE_TARGET_WIN32)
 
@@ -188,11 +182,11 @@ if(FEATURE_JIT)
     set(CORECLR_STATIC_CLRJIT_STATIC clrjit_static)
 endif(FEATURE_JIT)
 
-if(NOT CLR_CMAKE_HOST_ARCH_WASM)
-    set(CEE_WKS_STATIC cee_wks_mergeable)
-else()
+if(CLR_CMAKE_HOST_ARCH_WASM)
     set(CEE_WKS_STATIC cee_wks)
-endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
+else()
+    set(CEE_WKS_STATIC cee_wks_mergeable)
+endif()
 
 if (CLR_CMAKE_TARGET_OSX)
     find_library(FOUNDATION Foundation REQUIRED)
@@ -202,7 +196,7 @@ if(NOT CLR_CMAKE_HOST_ARCH_WASM)
     target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} ${CLRINTERPRETER_STATIC} cee_wks_core cee_wks ${FOUNDATION})
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
-target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} cee_wks_core ${CORECLR_STATIC_CLRJIT_STATIC} ${CLRINTERPRETER_STATIC} ${CEE_WKS_STATIC} ${FOUNDATION})
+target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} ${CORECLR_STATIC_CLRJIT_STATIC} ${CLRINTERPRETER_STATIC} cee_wks_core ${CEE_WKS_STATIC} ${FOUNDATION})
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
 if (CLR_CMAKE_HOST_ANDROID)

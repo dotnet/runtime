@@ -195,6 +195,9 @@ class ObjectAllocator final : public Phase
     bool           m_trackFields;
     NodeToIndexMap m_StoreAddressToIndexMap;
 
+    // Info to distinguish cloned blocks
+    unsigned m_initialMaxBlockID;
+
     //===============================================================================
     // Methods
 public:
@@ -284,6 +287,8 @@ private:
     bool ShouldClone(CloneInfo* info);
     void CloneAndSpecialize(CloneInfo* info);
     void CloneAndSpecialize();
+
+    bool BlockIsCloneOrWasCloned(BasicBlock* block);
 
     static const unsigned int s_StackAllocMaxSize = 0x2000U;
 

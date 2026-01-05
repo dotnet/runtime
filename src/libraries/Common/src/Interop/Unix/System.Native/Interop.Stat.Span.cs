@@ -3,32 +3,16 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Text;
+using System.Runtime.InteropServices.Marshalling;
 
 internal static partial class Interop
 {
     internal static partial class Sys
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Stat", SetLastError = true)]
-        internal static partial int Stat(ref byte path, out FileStatus output);
-
-        internal static int Stat(ReadOnlySpan<char> path, out FileStatus output)
-        {
-            var converter = new ValueUtf8Converter(stackalloc byte[DefaultPathBufferSize]);
-            int result = Stat(ref MemoryMarshal.GetReference(converter.ConvertAndTerminateString(path)), out output);
-            converter.Dispose();
-            return result;
-        }
+        internal static partial int Stat([MarshalUsing(typeof(SpanOfCharAsUtf8StringMarshaller))] ReadOnlySpan<char> path, out FileStatus output);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LStat", SetLastError = true)]
-        internal static partial int LStat(ref byte path, out FileStatus output);
-
-        internal static int LStat(ReadOnlySpan<char> path, out FileStatus output)
-        {
-            var converter = new ValueUtf8Converter(stackalloc byte[DefaultPathBufferSize]);
-            int result = LStat(ref MemoryMarshal.GetReference(converter.ConvertAndTerminateString(path)), out output);
-            converter.Dispose();
-            return result;
-        }
+        internal static partial int LStat([MarshalUsing(typeof(SpanOfCharAsUtf8StringMarshaller))] ReadOnlySpan<char> path, out FileStatus output);
     }
 }

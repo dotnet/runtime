@@ -1,20 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 /*============================================================
-**
 ** File:    callhelpers.h
 ** Purpose: Provides helpers for making managed calls
-**
-
 ===========================================================*/
+
 #ifndef __CALLHELPERS_H__
 #define __CALLHELPERS_H__
 
 struct CallDescrData
 {
-    //
     // Input arguments
-    //
     LPVOID                      pSrc;
     UINT32                      numStackSlots;
 #ifdef CALLDESCR_ARGREGS
@@ -468,20 +465,6 @@ void FillInRegTypeMap(int argOffset, CorElementType typ, BYTE * pMap);
 /* Macros used to indicate a call to managed code is starting/ending   */
 /***********************************************************************/
 
-#ifdef TARGET_UNIX
-// Install a native exception holder that doesn't catch any exceptions but its presence
-// in a stack range of native frames indicates that there was a call from native to
-// managed code. It is used by the DispatchManagedException to detect the case when
-// the INSTALL_MANAGED_EXCEPTION_DISPATCHER was not at the managed to native boundary.
-// For example in the PreStubWorker, which can be called from both native and managed
-// code.
-#define INSTALL_CALL_TO_MANAGED_EXCEPTION_HOLDER() \
-    NativeExceptionHolderNoCatch __exceptionHolder;    \
-    __exceptionHolder.Push();
-#else // TARGET_UNIX
-#define INSTALL_CALL_TO_MANAGED_EXCEPTION_HOLDER()
-#endif // TARGET_UNIX
-
 enum EEToManagedCallFlags
 {
     EEToManagedDefault                  = 0x0000,
@@ -494,7 +477,6 @@ enum EEToManagedCallFlags
 #define BEGIN_CALL_TO_MANAGEDEX(flags)                                          \
 {                                                                               \
     MAKE_CURRENT_THREAD_AVAILABLE();                                            \
-    DECLARE_CPFH_EH_RECORD(CURRENT_THREAD);                                     \
     _ASSERTE(CURRENT_THREAD);                                                   \
     _ASSERTE((CURRENT_THREAD->m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);     \
     /* This bit should never be set when we call into managed code.  The */     \
@@ -508,12 +490,9 @@ enum EEToManagedCallFlags
         if (CURRENT_THREAD->IsAbortRequested()) {                               \
             CURRENT_THREAD->HandleThreadAbort();                                \
         }                                                                       \
-    }                                                                           \
-    INSTALL_CALL_TO_MANAGED_EXCEPTION_HOLDER();                                 \
-    INSTALL_COMPLUS_EXCEPTION_HANDLER_NO_DECLARE();
+    }
 
 #define END_CALL_TO_MANAGED()                                                   \
-    UNINSTALL_COMPLUS_EXCEPTION_HANDLER();                                      \
 }
 
 /***********************************************************************/
