@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum);net47</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(NetFrameworkMinimum)', 'net47'))">$(TargetFrameworks);net47</TargetFrameworks>
     <IsPackable>true</IsPackable>
 
     <!-- Various IAsyncEnumerable implementations that don't need to use await -->
