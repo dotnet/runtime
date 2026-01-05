@@ -186,7 +186,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             var attr = new JsonSourceGenerationOptionsAttribute(JsonSerializerDefaults.General);
             
-            // General should not set any properties (default values)
+            // General uses default property values
             Assert.False(attr.PropertyNameCaseInsensitive);
             Assert.Equal(JsonKnownNamingPolicy.Unspecified, attr.PropertyNamingPolicy);
             Assert.Equal(JsonNumberHandling.Strict, attr.NumberHandling);
@@ -201,7 +201,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             var attr = new JsonSourceGenerationOptionsAttribute(JsonSerializerDefaults.Web);
             
-            // Web sets PropertyNameCaseInsensitive, PropertyNamingPolicy, and NumberHandling
+            // Web sets PropertyNameCaseInsensitive=true, PropertyNamingPolicy=CamelCase, and NumberHandling=AllowReadingFromString
             Assert.True(attr.PropertyNameCaseInsensitive);
             Assert.Equal(JsonKnownNamingPolicy.CamelCase, attr.PropertyNamingPolicy);
             Assert.Equal(JsonNumberHandling.AllowReadingFromString, attr.NumberHandling);
@@ -218,7 +218,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             var attr = new JsonSourceGenerationOptionsAttribute(JsonSerializerDefaults.Strict);
             
-            // Strict sets UnmappedMemberHandling, AllowDuplicateProperties, RespectNullableAnnotations, and RespectRequiredConstructorParameters
+            // Strict sets UnmappedMemberHandling=Disallow, AllowDuplicateProperties=false, RespectNullableAnnotations=true, and RespectRequiredConstructorParameters=true
             Assert.Equal(JsonUnmappedMemberHandling.Disallow, attr.UnmappedMemberHandling);
             Assert.False(attr.AllowDuplicateProperties);
             Assert.True(attr.RespectNullableAnnotations);
