@@ -5,7 +5,7 @@ import type { check, error, info, warn, debug } from "../../../../corehost/brows
 import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise, abortStartup } from "../../../../corehost/browserhost/loader/run";
 import type { addOnExitListener, isExited, isRuntimeRunning, quitNow } from "../../../../corehost/browserhost/loader/exit";
 
-import type { installVfsFile, registerDllBytes, loadIcuData, initializeCoreCLR } from "../../../../corehost/browserhost/host/host";
+import type { installVfsFile, registerDllBytes, loadIcuData, initializeCoreCLR, registerPdbBytes } from "../../../../corehost/browserhost/host/host";
 import type { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "../../../../corehost/browserhost/loader/promise-completion-source";
 
 import type { isSharedArrayBuffer, zeroRegion } from "../../../System.Native.Browser/utils/memory";
@@ -69,6 +69,7 @@ export type BrowserHostExports = {
     installVfsFile: typeof installVfsFile
     loadIcuData: typeof loadIcuData
     initializeCoreCLR: typeof initializeCoreCLR
+    registerPdbBytes: typeof registerPdbBytes
 }
 
 export type BrowserHostExportsTable = [
@@ -76,6 +77,7 @@ export type BrowserHostExportsTable = [
     typeof installVfsFile,
     typeof loadIcuData,
     typeof initializeCoreCLR,
+    typeof registerPdbBytes,
 ]
 
 export type InteropJavaScriptExports = {

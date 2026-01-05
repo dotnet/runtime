@@ -42,20 +42,7 @@ interface EmscriptenModule {
     stackSave(): VoidPtr;
     stackRestore(stack: VoidPtr): void;
     stackAlloc(size: number): VoidPtr;
-    instantiateWasm?: InstantiateWasmCallBack;
-    preInit?: (() => any)[] | (() => any);
-    preRun?: (() => any)[] | (() => any);
-    onRuntimeInitialized?: () => any;
-    postRun?: (() => any)[] | (() => any);
-    onAbort?: {
-        (error: any): void;
-    };
-    onExit?: {
-        (code: number): void;
-    };
 }
-type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => void;
-type InstantiateWasmCallBack = (imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback) => any;
 type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
 
 interface DotnetHostBuilder {
@@ -142,10 +129,6 @@ interface DotnetHostBuilder {
     runMainAndExit(): Promise<number>;
 }
 type LoaderConfig = {
-    /**
-     * Additional search locations for assets.
-     */
-    remoteSources?: string[];
     /**
      * It will not fail the startup is .pdb files can't be downloaded
      */
