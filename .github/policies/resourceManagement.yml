@@ -1472,6 +1472,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - bartonjs
+            - vcsjones
             - dotnet/area-system-runtime-intrinsics
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
