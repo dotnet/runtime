@@ -2232,7 +2232,6 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
     ClrCaptureContext(pContext);
 
     TADDR targetSP = pInterpreterFrame->GetInterpExecMethodSP();
-    bool firstFrame = true;
 
     // We are resuming in interpreter frame. So we need to skip all native, JIT and AOT generated frames until we reach
     // the resumeSP
@@ -2246,19 +2245,11 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
         else
         {
 #ifdef TARGET_UNIX
-            if (!firstFrame)
-            {
-                // Augment the IP to point to the call instruction so that the unwind works correctly even for
-                // calls to noreturn functions that can get optimized by the compiler so that the caller method code
-                // ends at the call.
-                SetIP(pContext, GetIP(pContext) - STACKWALK_CONTROLPC_ADJUST_OFFSET);
-            }
             PAL_VirtualUnwind(pContext, NULL);
 #else
             Thread::VirtualUnwindCallFrame(pContext);
 #endif
         }
-        firstFrame = false;
     }
     while (GetSP(pContext) != targetSP);
 

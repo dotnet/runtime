@@ -7310,7 +7310,6 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
             }
 #endif // FEATURE_INTERPRETER
             DispatchManagedException(orThrowable);
-            UNREACHABLE();
         }
     }
     else

@@ -275,7 +275,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueResumeAfterCatch(TADDR resumeSP, TADDR r
 #endif // FEATURE_INTERPRETER
 
 #ifdef TARGET_UNIX
-DECLSPEC_NORETURN VOID DispatchManagedException(PAL_SEHException& ex, bool isHardwareException);
+VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHardwareException);
 
 #define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX     \
         PAL_SEHException exCopy;                    \

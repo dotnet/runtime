@@ -4132,7 +4132,6 @@ do                                                                      \
                             pInterpreterFrame->SetIsFaulting(true);
                             DispatchManagedException(exception);
                             UNREACHABLE();
-                            break;
                         }
                     }
 
