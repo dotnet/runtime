@@ -1100,7 +1100,7 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
 
             if (layout->IsCustomLayout())
             {
-                inf.Alignment = 1;
+                inf.Alignment = layout->HasGCPtr() ? TARGET_POINTER_SIZE : 1;
                 inf.Size      = layout->GetSize();
             }
             else
