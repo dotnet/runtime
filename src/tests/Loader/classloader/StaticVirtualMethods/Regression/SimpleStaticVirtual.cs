@@ -8,6 +8,7 @@ namespace SimpleStaticVirtual
     public class Tests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/122863", TestRuntimes.Mono)]
         public static void TestEntryPoint()
         {
             Assert.Equal(nameof(IGetter), Get<IGetter>());
