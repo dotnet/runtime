@@ -204,7 +204,10 @@ NESTED_ENTRY InterpreterStubThunk, _TEXT, NoHandler
 	std %r0, 16(%r1)
 	std %r2, 24(%r1)
 	.cfi_offset 65, 16
-	.cfi_def_cfa_offset 496
+	.cfi_offset 31, -8
+	.cfi_def_cfa_offset 504
+	mr %r31, %r1
+        .cfi_def_cfa_register 31
 	
 	mr %r12, %r9
 	mtctr %r12
@@ -274,10 +277,12 @@ NESTED_ENTRY InterpreterStubThunk, _TEXT, NoHandler
         lfd %f30, 480(%r1)
         lfd %f31, 488(%r1)
 
-        addi %r1, %r1, 496
-	.cfi_def_cfa_offset 0
+        addi %r1, %r1, 504
+	.cfi_def_cfa %r1, 0
+	//.cfi_def_cfa_offset 0
         ld %r0, 16(%r1)
         ld %r2, 24(%r1)
+	ld %r31, -8(%r1)
         mtlr %r0
 	blr
 NESTED_END InterpreterStubThunk, _TEXT
