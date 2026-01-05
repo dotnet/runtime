@@ -25273,7 +25273,7 @@ GenTree* Compiler::gtNewSimdMinMaxNativeNode(
 }
 
 GenTree* Compiler::gtNewSimdNarrowNode(
-    var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize)
+    var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize, bool inputsAlreadyClamped)
 {
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
@@ -25443,17 +25443,28 @@ GenTree* Compiler::gtNewSimdNarrowNode(
 
                 // This is the same in principle to the other comments below, however due to
                 // code formatting, its too long to reasonably display here.
-                GenTreeVecCon* vecCon1 = gtNewVconNode(type);
 
-                for (unsigned i = 0; i < (simdSize / 8); i++)
+                if (inputsAlreadyClamped)
                 {
-                    vecCon1->gtSimdVal.u64[i] = 0x00FF00FF00FF00FF;
+                    // Inputs are already clamped to the target range, so we can skip the AND masking
+                    tmp1 = op1;
+                    tmp2 = op2;
+                }
+                else
+                {
+                    GenTreeVecCon* vecCon1 = gtNewVconNode(type);
+
+                    for (unsigned i = 0; i < (simdSize / 8); i++)
+                    {
+                        vecCon1->gtSimdVal.u64[i] = 0x00FF00FF00FF00FF;
+                    }
+
+                    GenTree* vecCon2 = gtCloneExpr(vecCon1);
+
+                    tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseType, simdSize);
+                    tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseType, simdSize);
                 }
 
-                GenTree* vecCon2 = gtCloneExpr(vecCon1);
-
-                tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseType, simdSize);
-                tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseType, simdSize);
                 tmp3 = gtNewSimdHWIntrinsicNode(type, tmp1, tmp2, NI_AVX2_PackUnsignedSaturate, TYP_UBYTE, simdSize);
 
                 var_types permuteBaseType = (simdBaseType == TYP_BYTE) ? TYP_LONG : TYP_ULONG;
@@ -25480,17 +25491,27 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 // var tmp3 = Avx2.PackUnsignedSaturate(tmp1, tmp2);
                 // return Avx2.Permute4x64(tmp3.AsUInt64(), SHUFFLE_WYZX).As<T>();
 
-                GenTreeVecCon* vecCon1 = gtNewVconNode(type);
-
-                for (unsigned i = 0; i < (simdSize / 8); i++)
+                if (inputsAlreadyClamped)
                 {
-                    vecCon1->gtSimdVal.u64[i] = 0x0000FFFF0000FFFF;
+                    // Inputs are already clamped to the target range, so we can skip the AND masking
+                    tmp1 = op1;
+                    tmp2 = op2;
+                }
+                else
+                {
+                    GenTreeVecCon* vecCon1 = gtNewVconNode(type);
+
+                    for (unsigned i = 0; i < (simdSize / 8); i++)
+                    {
+                        vecCon1->gtSimdVal.u64[i] = 0x0000FFFF0000FFFF;
+                    }
+
+                    GenTree* vecCon2 = gtCloneExpr(vecCon1);
+
+                    tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseType, simdSize);
+                    tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseType, simdSize);
                 }
 
-                GenTree* vecCon2 = gtCloneExpr(vecCon1);
-
-                tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseType, simdSize);
-                tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseType, simdSize);
                 tmp3 = gtNewSimdHWIntrinsicNode(type, tmp1, tmp2, NI_AVX2_PackUnsignedSaturate, TYP_USHORT, simdSize);
 
                 var_types permuteBaseType = (simdBaseType == TYP_BYTE) ? TYP_LONG : TYP_ULONG;
@@ -25578,17 +25599,26 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 // var tmp2 = Sse2.And(op2.AsSByte(), vcns);
                 // return Sse2.PackUnsignedSaturate(tmp1, tmp2).As<T>();
 
-                GenTreeVecCon* vecCon1 = gtNewVconNode(type);
-
-                for (unsigned i = 0; i < (simdSize / 8); i++)
+                if (inputsAlreadyClamped)
                 {
-                    vecCon1->gtSimdVal.u64[i] = 0x00FF00FF00FF00FF;
+                    // Inputs are already clamped to the target range, so we can skip the AND masking
+                    tmp1 = op1;
+                    tmp2 = op2;
                 }
+                else
+                {
+                    GenTreeVecCon* vecCon1 = gtNewVconNode(type);
 
-                GenTree* vecCon2 = gtCloneExpr(vecCon1);
+                    for (unsigned i = 0; i < (simdSize / 8); i++)
+                    {
+                        vecCon1->gtSimdVal.u64[i] = 0x00FF00FF00FF00FF;
+                    }
 
-                tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseType, simdSize);
-                tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseType, simdSize);
+                    GenTree* vecCon2 = gtCloneExpr(vecCon1);
+
+                    tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseType, simdSize);
+                    tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseType, simdSize);
+                }
 
                 return gtNewSimdHWIntrinsicNode(type, tmp1, tmp2, NI_X86Base_PackUnsignedSaturate, TYP_UBYTE, simdSize);
             }
@@ -25608,17 +25638,26 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 // var tmp2 = Sse2.And(op2.AsInt16(), vcns);
                 // return Sse2.PackUnsignedSaturate(tmp1, tmp2).As<T>();
 
-                GenTreeVecCon* vecCon1 = gtNewVconNode(type);
-
-                for (unsigned i = 0; i < (simdSize / 8); i++)
+                if (inputsAlreadyClamped)
                 {
-                    vecCon1->gtSimdVal.u64[i] = 0x0000FFFF0000FFFF;
+                    // Inputs are already clamped to the target range, so we can skip the AND masking
+                    tmp1 = op1;
+                    tmp2 = op2;
                 }
+                else
+                {
+                    GenTreeVecCon* vecCon1 = gtNewVconNode(type);
 
-                GenTree* vecCon2 = gtCloneExpr(vecCon1);
+                    for (unsigned i = 0; i < (simdSize / 8); i++)
+                    {
+                        vecCon1->gtSimdVal.u64[i] = 0x0000FFFF0000FFFF;
+                    }
 
-                tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseType, simdSize);
-                tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseType, simdSize);
+                    GenTree* vecCon2 = gtCloneExpr(vecCon1);
+
+                    tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseType, simdSize);
+                    tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseType, simdSize);
+                }
 
                 return gtNewSimdHWIntrinsicNode(type, tmp1, tmp2, NI_X86Base_PackUnsignedSaturate, TYP_USHORT,
                                                 simdSize);
