@@ -2203,10 +2203,18 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                     switch (comp->lookupNamedIntrinsic(call->gtCallMethHnd))
                     {
                         case NI_System_SpanHelpers_ClearWithoutReferences:
-                        case NI_System_SpanHelpers_Fill:
                         case NI_System_SpanHelpers_Memmove:
                         case NI_System_SpanHelpers_SequenceEqual:
                             canLclVarEscapeViaParentStack = false;
+                            break;
+
+                        case NI_System_SpanHelpers_Fill:
+                            // For Fill only the first (byref span) arg does not escape
+                            //
+                            if (tree == call->gtArgs.GetUserArgByIndex(0)->GetNode())
+                            {
+                                canLclVarEscapeViaParentStack = false;
+                            }
                             break;
 
                         default:
