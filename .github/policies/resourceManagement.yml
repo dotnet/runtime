@@ -1486,6 +1486,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - bartonjs
+            - vcsjones
             - dotnet/area-system-security
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
