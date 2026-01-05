@@ -2363,7 +2363,6 @@ void Thread::BaseWinRTUninitialize()
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_PREEMPTIVE;
 
-    _ASSERTE(WinRTSupported());
     _ASSERTE(GetThread() == this);
     _ASSERTE(IsWinRTInitialized());
 
@@ -2401,7 +2400,6 @@ void Thread::CoUninitialize()
 #ifdef FEATURE_COMINTEROP
         if (IsWinRTInitialized())
         {
-            _ASSERTE(WinRTSupported());
             BaseWinRTUninitialize();
             ResetWinRTInitialized();
         }
@@ -2612,7 +2610,6 @@ void Thread::CleanupCOMState()
 #ifdef FEATURE_COMINTEROP
         if (IsWinRTInitialized())
         {
-            _ASSERTE(WinRTSupported());
             BaseWinRTUninitialize();
             ResetWinRTInitialized();
         }
@@ -3783,7 +3780,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
 #ifdef FEATURE_COMINTEROP
             if (IsWinRTInitialized())
             {
-                _ASSERTE(WinRTSupported());
                 BaseWinRTUninitialize();
                 ResetWinRTInitialized();
             }
@@ -3875,10 +3871,10 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
         _ASSERTE(!"Unexpected HRESULT returned from CoInitializeEx!");
     }
 
-    // If WinRT is supported on this OS, also initialize it at the same time.  Since WinRT sits on top of COM
-    // we need to make sure that it is initialized in the same threading mode as we just started COM itself
+    // Since WinRT sits on top of COM we need to make sure that it is initialized
+    // in the same threading mode as we just started COM itself
     // with (or that we detected COM had already been started with).
-    if (WinRTSupported() && !IsWinRTInitialized())
+    if (!IsWinRTInitialized())
     {
         GCX_PREEMP();
 
