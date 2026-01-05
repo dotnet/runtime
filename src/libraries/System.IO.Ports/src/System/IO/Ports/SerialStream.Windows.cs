@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -71,17 +72,18 @@ namespace System.IO.Ports
         {
             set
             {
-                if (value <= 0 || (value > _commProp.dwMaxBaud && _commProp.dwMaxBaud > 0))
+                int maxBaud = ConvertBaudBitMaskToBaudRate((uint)_commProp.dwMaxBaud);
+                if (value <= 0 || (value > maxBaud && maxBaud > 0))
                 {
                     // if no upper bound on baud rate imposed by serial driver, note that argument must be positive
-                    if (_commProp.dwMaxBaud == 0)
+                    if (maxBaud == 0)
                     {
                         throw new ArgumentOutOfRangeException(nameof(BaudRate), SR.ArgumentOutOfRange_NeedPosNum);
                     }
                     else
                     {
                         // otherwise, we can present the bounds on the baud rate for this driver
-                        throw new ArgumentOutOfRangeException(nameof(BaudRate), SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 0, _commProp.dwMaxBaud));
+                        throw new ArgumentOutOfRangeException(nameof(BaudRate), SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 0, maxBaud));
                     }
                 }
                 // Set only if it's different.  Rollback to previous values if setting fails.
@@ -623,8 +625,9 @@ namespace System.IO.Ports
                         throw Win32Marshal.GetExceptionForWin32Error(errorCode, string.Empty);
                 }
 
-                if (_commProp.dwMaxBaud != 0 && baudRate > _commProp.dwMaxBaud)
-                    throw new ArgumentOutOfRangeException(nameof(baudRate), SR.Format(SR.Max_Baud, _commProp.dwMaxBaud));
+                int maxBaud = ConvertBaudBitMaskToBaudRate((uint)_commProp.dwMaxBaud);
+                if (maxBaud != 0 && baudRate > maxBaud)
+                    throw new ArgumentOutOfRangeException(nameof(baudRate), SR.Format(SR.Max_Baud, maxBaud));
 
                 _comStat = default;
                 // create internal DCB structure, initialize according to Platform SDK
@@ -1524,6 +1527,32 @@ namespace System.IO.Ports
             asyncResult._userCallback?.Invoke(asyncResult);
         }
 
+        private static int ConvertBaudBitMaskToBaudRate(uint baudBitMask)
+        {
+            const uint BAUD_USER = 0x10000000;
+            if (baudBitMask == 0 || baudBitMask == BAUD_USER)
+            {
+                return 0;
+            }
+
+            if (BitOperations.PopCount(baudBitMask) != 1)
+            {
+                throw new ArgumentException("??? Not a valid baud bitmask");
+            }
+
+            // https://learn.microsoft.com/windows/win32/api/winbase/ns-winbase-commprop
+            // todo make static and const?
+            int[] bauds = { 75, 110, 135, 150, 300, 600, 1200, 1800, 2400, 4800, 7200, 9600, 14400, 19200, 38400, 56000, 57600, 115200, 128000 };
+
+            int index = BitOperations.LeadingZeroCount(baudBitMask);
+
+            if (index >= bauds.Length)
+            {
+                throw new Exception("??? Unsupported baudrate bitmask");
+            }
+
+            return bauds[index];
+        }
 
         // ----SECTION: internal classes --------*
 
