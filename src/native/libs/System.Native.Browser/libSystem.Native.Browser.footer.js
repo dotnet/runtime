@@ -29,6 +29,7 @@
                     }
                 },
                 dotnetInitializeModule: exports.dotnetInitializeModule,
+                gitHash: exports.gitHash,
             },
             $DOTNET__deps: commonDeps,
             $DOTNET__postset: "DOTNET.selfInitialize()",

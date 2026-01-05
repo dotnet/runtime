@@ -26,6 +26,7 @@ type emAmbientSymbolsType = {
     _wasm_load_icu_data: (dataPtr: VoidPtr) => number;
 
     DOTNET: any;
+    DOTNET_INTEROP: any;
     BROWSER_HOST: any;
 
     Module: EmscriptenModuleInternal;

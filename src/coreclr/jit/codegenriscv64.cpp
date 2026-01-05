@@ -4190,6 +4190,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genRecordAsyncResume(treeNode->AsVal());
             break;
 
+        case GT_ASYNC_CONTINUATION:
+            genCodeForAsyncContinuation(treeNode);
+            break;
+
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
+            break;
+
         case GT_SH1ADD:
         case GT_SH1ADD_UW:
         case GT_SH2ADD:
