@@ -447,7 +447,10 @@ namespace ILCompiler.ObjectWriter
             LayoutSections(recordFinalLayout: false, out _, out _, out _, out _, out _);
         }
 
-        private string ExportDirectorySymbol => $"{_nodeFactory.NameMangler.CompilationUnitPrefix}__ExportDirectory";
+        private Utf8String ExportDirectorySymbol
+            => field.IsNull
+            ? (field = Utf8String.Concat(_nodeFactory.NameMangler.CompilationUnitPrefix.AsSpan(), "__ExportDirectory"u8))
+            : field;
 
         private void LayoutSections(bool recordFinalLayout, out ushort numberOfSections, out uint sizeOfHeaders, out uint sizeOfImage, out uint sizeOfInitializedData, out uint sizeOfCode)
         {
