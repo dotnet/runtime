@@ -5,6 +5,8 @@ import type { InternalExchange, BrowserHostExports, RuntimeAPI, BrowserHostExpor
 import { InternalExchangeIndex } from "./types";
 import { } from "./cross-linked"; // ensure ambient symbols are declared
 
+import GitHash from "consts:gitHash";
+
 import { runMain, runMainAndExit, registerDllBytes, installVfsFile, loadIcuData, initializeCoreCLR } from "./host";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
@@ -15,6 +17,9 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     };
     const runtimeApi = internals[InternalExchangeIndex.RuntimeAPI];
     if (typeof runtimeApi !== "object") throw new Error("Expected internals to have RuntimeAPI");
+    if (runtimeApi.runtimeBuildInfo.gitHash && runtimeApi.runtimeBuildInfo.gitHash !== GitHash) {
+        throw new Error(`Mismatched git hashes between loader and runtime. Loader: ${runtimeApi.runtimeBuildInfo.gitHash}, BrowserHost: ${GitHash}`);
+    }
     Object.assign(runtimeApi, runtimeApiLocal);
 
     internals[InternalExchangeIndex.BrowserHostExportsTable] = browserHostExportsToTable({
