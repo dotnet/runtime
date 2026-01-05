@@ -3,6 +3,9 @@
 
 #ifdef FEATURE_INTERPRETER
 
+#include <limits>
+#include <functional>
+
 #include "threads.h"
 #include "gcenv.h"
 #include "interpexec.h"
@@ -11,10 +14,6 @@
 #include "comdelegate.h"
 #include "gchelpers.inl"
 #include "arraynative.inl"
-
-// for numeric_limits
-#include <limits>
-#include <functional>
 
 #ifdef TARGET_WASM
 // Unused on WASM
@@ -494,7 +493,7 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
         ctx.ContextFlags = CONTEXT_FULL;
         SetSP(&ctx, (DWORD64)pFrame);
         SetFP(&ctx, (DWORD64)stack);
-        SetIP(&ctx, (DWORD64)ip); 
+        SetIP(&ctx, (DWORD64)ip);
         SetFirstArgReg(&ctx, dac_cast<TADDR>(pInterpreterFrame)); // Enable debugger to iterate over interpreter frames
 
         // We need to add a FaultingExceptionFrame because debugger checks for it
@@ -857,7 +856,7 @@ void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont,
         else
             returnValueSize = sizeof(OBJECTREF);
     }
-    
+
     void* returnValueLocation = alloca(returnValueSize < (int32_t)sizeof(StackVal) ? (int32_t)sizeof(StackVal) : returnValueSize);
     memset(returnValueLocation, 0, returnValueSize);
 
@@ -4050,7 +4049,7 @@ do                                                                      \
                         break;
                     }
                     ip += 3;
-                    
+
                     // copy locals that need to move to the continuation object
                     size_t continuationOffset = OFFSETOF__CORINFO_Continuation__data;
                     uint8_t *pContinuationDataStart = continuation->GetResultStorage();
@@ -4069,7 +4068,7 @@ do                                                                      \
                         }
                         InlinedSetCardsAfterBulkCopyHelper((Object**)pContinuationDataStart, bytesTotal);
                     }
-                    
+
                     int32_t returnValueSize = pAsyncSuspendData->asyncMethodReturnTypePrimitiveSize;
                     if (pAsyncSuspendData->asyncMethodReturnType != NULL)
                     {
@@ -4144,7 +4143,7 @@ do                                                                      \
                         // A continuation is present, begin the restoration process
                         int32_t state = continuation->GetState();
                         ip = (int32_t*)((uint8_t*)pFrame->startIp + state);
-                        
+
                         // Now we have an IP to where we should resume execution. This should be an INTOP_HANDLE_CONTINUATION_RESUME opcode
                         // And before it should be an INTOP_HANDLE_CONTINUATION_SUSPEND opcode
                         _ASSERTE(*ip == INTOP_HANDLE_CONTINUATION_RESUME);
