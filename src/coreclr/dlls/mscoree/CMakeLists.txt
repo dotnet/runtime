@@ -10,6 +10,9 @@ set(CLR_SOURCES
 )
 
 if(CLR_CMAKE_TARGET_WIN32)
+list(APPEND CLR_SOURCES
+  Native.rc
+)
 set (DEF_SOURCES
   mscorwks_ntdef.src
 )
