@@ -678,7 +678,7 @@ inline size_t GetSizeOfFrameHeaderForEnC(MethodDesc* pMD, hdrInfo * info)
                         info->genericsContext + // For CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
                         ((info->syncStartOffset != INVALID_SYNC_OFFSET) ? 1 : 0) + // Is this method synchronized
                         (pMD->RequiresAsyncContextSaveAndRestore() ? 2 : 0) + // Does this method save async contexts?
-                        + 1; // for ebpFrame
+                        1; // for ebpFrame
     return position * sizeof(TADDR);
 #else
     // See comment above Compiler::lvaAssignFrameOffsets() in src\jit\il\lclVars.cpp

@@ -5974,7 +5974,7 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
 //   stkOffs - Current stack offset
 //
 // Return Value:
-//    New stck offset.
+//    New stack offset.
 //
 int Compiler::lvaAllocAsyncContexts(int stkOffs)
 {
