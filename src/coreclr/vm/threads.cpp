@@ -34,7 +34,7 @@
 #include "exceptmacros.h"
 #include "minipal/time.h"
 #include "minipal/thread.h"
-#include "asyncsafethreadmap.h"
+#include "SignalSafeThreadMap.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -56,9 +56,7 @@
 #include "perfmap.h"
 #endif
 
-#ifdef FEATURE_EH_FUNCLETS
 #include "exinfo.h"
-#endif
 
 #ifdef FEATURE_INTERPRETER
 #include "interpexec.h"
@@ -68,7 +66,7 @@
 Thread* GetThreadAsyncSafe()
 {
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
-    return (Thread*)FindThreadInAsyncSafeMap(minipal_get_current_thread_id_no_cache());
+    return (Thread*)FindThreadInSignalSafeMap(minipal_get_current_thread_id_no_cache());
 #else
     return GetThreadNULLOk();
 #endif
@@ -387,9 +385,9 @@ void SetThread(Thread* t)
     {
         t_CurrentThreadInfo.m_pAppDomain = AppDomain::GetCurrentDomain();
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
-        if (!InsertThreadIntoAsyncSafeMap(t->GetOSThreadId64(), t))
+        if (!InsertThreadIntoSignalSafeMap(t->GetOSThreadId64(), t))
         {
-            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to insert thread into async-safe map due to out of memory."));
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to insert thread into signal-safe map due to out of memory."));
         }
 #endif // TARGET_UNIX && !TARGET_WASM
     }
@@ -399,7 +397,7 @@ void SetThread(Thread* t)
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
         if (origThread != NULL)
         {
-            RemoveThreadFromAsyncSafeMap(origThread->GetOSThreadId64(), origThread);
+            RemoveThreadFromSignalSafeMap(origThread->GetOSThreadId64(), origThread);
         }
 #endif // TARGET_UNIX && !TARGET_WASM
     }
@@ -1344,10 +1342,8 @@ Thread::Thread()
 
     m_pCreatingThrowableForException = NULL;
 
-#ifdef FEATURE_EH_FUNCLETS
     m_dwIndexClauseForCatch = 0;
     m_sfEstablisherOfActualHandlerFrame.Clear();
-#endif // FEATURE_EH_FUNCLETS
 
     // Do not expose thread until it is fully constructed
     g_pThinLockThreadIdDispenser->NewId(this, this->m_ThreadId);
@@ -2641,15 +2637,7 @@ void Thread::CooperativeCleanup()
     GCX_COOP();
 
     // Clear any outstanding stale EH state that maybe still active on the thread.
-#ifdef FEATURE_EH_FUNCLETS
     ExInfo::PopTrackers((void*)-1);
-#else // !FEATURE_EH_FUNCLETS
-    PTR_ThreadExceptionState pExState = GetExceptionState();
-    if (pExState->IsExceptionInProgress())
-    {
-        pExState->GetCurrentExceptionTracker()->UnwindExInfo((void *)-1);
-    }
-#endif // FEATURE_EH_FUNCLETS
 
     if (m_ThreadLocalDataPtr != NULL)
     {
@@ -2701,13 +2689,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     DWORD CurrentThreadID = pCurrentThread?pCurrentThread->GetThreadId():0;
     DWORD ThisThreadID = GetThreadId();
 
-#ifdef FEATURE_INTERPRETER
-    if (m_pInterpThreadContext != nullptr)
-    {
-        delete m_pInterpThreadContext;
-    }
-#endif // FEATURE_INTERPRETER
-
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     // If the currently running thread is the thread that died and it is an STA thread, then we
     // need to release all the RCW's in the current context. However, we cannot do this if we
@@ -2732,6 +2713,13 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     // We took a count during construction, and we rely on the count being
     // non-zero as we terminate the thread here.
     _ASSERTE(m_ExternalRefCount > 0);
+
+#ifdef FEATURE_INTERPRETER
+    if (m_pInterpThreadContext != nullptr)
+    {
+        delete m_pInterpThreadContext;
+    }
+#endif // FEATURE_INTERPRETER
 
     // The thread is no longer running.  It's important that we zero any general OBJECTHANDLE's
     // on this Thread object.  That's because we need the managed Thread object to be subject to
@@ -6112,9 +6100,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     _ASSERTE(GetThreadNULLOk() != NULL);
 
     Thread *pThread = GetThread();
-#ifdef FEATURE_EH_FUNCLETS
     Frame  *pFrame = pThread->m_pFrame;
-#endif // FEATURE_EH_FUNCLETS
 
     // The sole purpose of having this frame is to tell the debugger that we have a catch handler here
     // which may swallow managed exceptions.  The debugger needs this in order to send a
@@ -6131,9 +6117,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
 
         BOOL *pfHadException;
 
-#ifdef FEATURE_EH_FUNCLETS
         Frame *pFrame;
-#endif // FEATURE_EH_FUNCLETS
     }args;
 
     args.pTryParam = &param;
@@ -6142,9 +6126,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     BOOL fHadException = TRUE;
     args.pfHadException = &fHadException;
 
-#ifdef FEATURE_EH_FUNCLETS
     args.pFrame = pFrame;
-#endif // FEATURE_EH_FUNCLETS
 
     PAL_TRY(TryArgs *, pArgs, &args)
     {
@@ -6159,12 +6141,10 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
             //
             // If eCLRDeterminedPolicy, we only swallow for TA, RTA, and ADU exception.
             // For eHostDeterminedPolicy, we will swallow all the managed exception.
-    #ifdef FEATURE_EH_FUNCLETS
             // this must be done after the second pass has run, it does not
             // reference anything on the stack, so it is safe to run in an
             // SEH __except clause as well as a C++ catch clause.
             ExInfo::PopTrackers(pArgs->pFrame);
-    #endif // FEATURE_EH_FUNCLETS
 
             _ASSERTE(!pArgs->pThread->IsAbortRequested());
         }
@@ -6819,11 +6799,23 @@ void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP)
 #ifdef FEATURE_INTERPRETER
 InterpThreadContext* Thread::GetInterpThreadContext()
 {
-    WRAPPER_NO_CONTRACT;
+    LIMITED_METHOD_CONTRACT;
+    return m_pInterpThreadContext;
+}
+
+InterpThreadContext* Thread::GetOrCreateInterpThreadContext()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (m_pInterpThreadContext == nullptr)
     {
-        m_pInterpThreadContext = new (nothrow) InterpThreadContext();
+        m_pInterpThreadContext = new InterpThreadContext();
     }
 
     return m_pInterpThreadContext;
@@ -6839,9 +6831,7 @@ InterpThreadContext* GetInterpThreadContextWithPossiblyMissingThreadOrCallStub_W
     }
     CONTRACTL_END;
 
-    InterpThreadContext *pThreadContext = currentThread->GetInterpThreadContext();
-    if (pThreadContext == NULL)
-        COMPlusThrowOM();
+    InterpThreadContext *pThreadContext = currentThread->GetOrCreateInterpThreadContext();
     CreateNativeToInterpreterCallStub(pByteCodeStart->Method);
 
     return pThreadContext;
