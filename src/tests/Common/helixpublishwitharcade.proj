@@ -592,8 +592,7 @@
     <Copy
       SourceFiles="$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner"
       DestinationFiles="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName).XHarnessNoRunner"
-      Lines="@(FilteredTestExclusionList)"
-      Condition="'@(_TestExclusionListPlaceholder)' != ''" />
+      Condition="Exists('$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner')" />
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectoryForAppleMobileBuildOnHelix"
@@ -629,8 +628,7 @@
     <Copy
       SourceFiles="$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner"
       DestinationFiles="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName).XHarnessNoRunner"
-      Lines="@(FilteredTestExclusionList)"
-      Condition="'@(_TestExclusionListPlaceholder)' != ''" />
+      Condition="Exists('$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner')" />
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectory"
