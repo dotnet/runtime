@@ -12649,9 +12649,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             case GT_GCPOLL:
             case GT_JMP:   // Control flow
             case GT_LABEL: // Control flow
-#if defined(FEATURE_EH_WINDOWS_X86)
-            case GT_END_LFIN: // Control flow
-#endif
                 tree->gtVNPair = vnStore->VNPForVoid();
                 break;
 

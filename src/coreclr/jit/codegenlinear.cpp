@@ -658,26 +658,6 @@ void CodeGen::genCodeForBBlist()
 #endif // DEBUG
     }  //------------------ END-FOR each block of the method -------------------
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    // If this is a synchronized method on x86, and we generated all the code without
-    // generating the "exit monitor" call, then we must have deleted the single return block
-    // with that call because it was dead code. We still need to report the monitor range
-    // to the VM in the GC info, so create a label at the very end so we have a marker for
-    // the monitor end range.
-    //
-    // Do this before cleaning the GC refs below; we don't want to create an IG that clears
-    // the `this` pointer for lvaKeepAliveAndReportThis.
-
-    if (!compiler->UsesFunclets() && (compiler->info.compFlags & CORINFO_FLG_SYNCH) &&
-        (compiler->syncEndEmitCookie == nullptr))
-    {
-        JITDUMP("Synchronized method with missing exit monitor call; adding final label\n");
-        compiler->syncEndEmitCookie =
-            GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
-        noway_assert(compiler->syncEndEmitCookie != nullptr);
-    }
-#endif
-
     // There could be variables alive at this point. For example see lvaKeepAliveAndReportThis.
     // This call is for cleaning the GC refs
     genUpdateLife(VarSetOps::MakeEmpty(compiler));
@@ -848,23 +828,13 @@ BasicBlock* CodeGen::genEmitEndBlock(BasicBlock* block)
             break;
 
         case BBJ_EHCATCHRET:
-            assert(compiler->UsesFunclets());
             genEHCatchRet(block);
             FALLTHROUGH;
 
         case BBJ_EHFINALLYRET:
         case BBJ_EHFAULTRET:
         case BBJ_EHFILTERRET:
-            if (compiler->UsesFunclets())
-            {
-                genReserveFuncletEpilog(block);
-            }
-#if defined(FEATURE_EH_WINDOWS_X86)
-            else
-            {
-                genEHFinallyOrFilterRet(block);
-            }
-#endif // FEATURE_EH_WINDOWS_X86
+            genReserveFuncletEpilog(block);
             break;
 
         case BBJ_SWITCH:
