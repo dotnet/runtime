@@ -12,7 +12,9 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
 using System.Text;
+
 using ILCompiler.DependencyAnalysis;
+
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -548,10 +550,15 @@ namespace ILCompiler.ObjectWriter
                 return;
             }
 
-            List<string> exports = [.._exportedSymbolNames];
+            // Build sorted list of exports as Utf8String
+            List<Utf8String> exports = new(_exportedSymbolNames.Count);
+            foreach (var exportName in _exportedSymbolNames)
+            {
+                exports.Add(new Utf8String(exportName));
+            }
+            exports.Sort();
 
-            exports.Sort(StringComparer.Ordinal);
-            string moduleName = Path.GetFileName(_outputPath);
+            Utf8String moduleName = new Utf8String(Path.GetFileName(_outputPath));
             const int minOrdinal = 1;
 
             StringTableBuilder exportsStringTable = new();
@@ -562,10 +569,10 @@ namespace ILCompiler.ObjectWriter
                 exportsStringTable.ReserveString(exportName);
             }
 
-            string exportsStringTableSymbol = GenerateSymbolNameForReloc("exportsStringTable");
-            string addressTableSymbol = GenerateSymbolNameForReloc("addressTable");
-            string namePointerTableSymbol = GenerateSymbolNameForReloc("namePointerTable");
-            string ordinalPointerTableSymbol = GenerateSymbolNameForReloc("ordinalPointerTable");
+            Utf8String exportsStringTableSymbol = new Utf8String(GenerateSymbolNameForReloc("exportsStringTable"));
+            Utf8String addressTableSymbol = new Utf8String(GenerateSymbolNameForReloc("addressTable"));
+            Utf8String namePointerTableSymbol = new Utf8String(GenerateSymbolNameForReloc("namePointerTable"));
+            Utf8String ordinalPointerTableSymbol = new Utf8String(GenerateSymbolNameForReloc("ordinalPointerTable"));
 
             Debug.Assert(sectionWriter.Position == 0);
 
