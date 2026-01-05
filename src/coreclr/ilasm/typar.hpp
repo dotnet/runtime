@@ -105,11 +105,6 @@ public:
         return ret;
     };
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6211) // "Leaking memory 'b' due to an exception. Consider using a local catch block to clean up memory"
-#endif /*_PREFAST_ */
-
     int ToArray(BinStr ***bounds, LPCWSTR** names, DWORD **attrs)
     {
         int n = Count();
@@ -139,10 +134,6 @@ public:
             *attrs = attr;
         return n;
     };
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif /*_PREFAST_*/
 
     int ToArray(TyParDescr **ppTPD)
     {

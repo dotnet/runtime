@@ -31,12 +31,18 @@ namespace System.Security.Cryptography.X509Certificates
         DSA? GetDSAPrivateKey();
         ECDsa? GetECDsaPrivateKey();
         ECDiffieHellman? GetECDiffieHellmanPrivateKey();
+        MLDsa? GetMLDsaPrivateKey();
+        MLKem? GetMLKemPrivateKey();
+        SlhDsa? GetSlhDsaPrivateKey();
         string GetNameInfo(X509NameType nameType, bool forIssuer);
         void AppendPrivateKeyInfo(StringBuilder sb);
         ICertificatePal CopyWithPrivateKey(DSA privateKey);
         ICertificatePal CopyWithPrivateKey(ECDsa privateKey);
         ICertificatePal CopyWithPrivateKey(RSA privateKey);
         ICertificatePal CopyWithPrivateKey(ECDiffieHellman privateKey);
+        ICertificatePal CopyWithPrivateKey(MLDsa privateKey);
+        ICertificatePal CopyWithPrivateKey(MLKem privateKey);
+        ICertificatePal CopyWithPrivateKey(SlhDsa privateKey);
         PolicyData GetPolicyData();
     }
 }

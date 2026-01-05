@@ -383,6 +383,7 @@ namespace System.Text.Json.Serialization.Tests
                 yield return (GetProp(nameof(JsonSerializerOptions.IndentSize)), 1);
                 yield return (GetProp(nameof(JsonSerializerOptions.ReferenceHandler)), ReferenceHandler.Preserve);
                 yield return (GetProp(nameof(JsonSerializerOptions.TypeInfoResolver)), new DefaultJsonTypeInfoResolver());
+                yield return (GetProp(nameof(JsonSerializerOptions.AllowDuplicateProperties)), false /* true is default */);
 
                 static PropertyInfo GetProp(string name)
                 {

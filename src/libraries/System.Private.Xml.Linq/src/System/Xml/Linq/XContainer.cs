@@ -75,7 +75,7 @@ namespace System.Xml.Linq
                     XText t = new XText(s);
                     t.parent = this;
                     t.next = t;
-                    Interlocked.CompareExchange<object>(ref content, t, s);
+                    Interlocked.CompareExchange(ref content, t, s);
                 }
                 return (XNode)content;
             }

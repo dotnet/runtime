@@ -392,6 +392,11 @@
         <target state="translated">類型 '{1}' 的進入點封送處理器類型 '{0}' 必須是具有至少一個 'System.Runtime.InteropServices.CustomMarshallerAttribute' 的類型，指定此類型為受控類型</target>
         <note />
       </trans-unit>
+      <trans-unit id="ExceptionToUnmanagedMarshallerNotAccessibleByGeneratedCode">
+        <source>The type '{0}' specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</source>
+        <target state="translated">指定為 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' 的類型 '{0}' 不是有效的封送處理器類型。類型必須至少具有 'internal' 可存取性。{1}</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ExtraneousMarshallingInfo">
         <source>Marshalling info was specified for 'ElementIndirectionDepth' {0}, but marshalling info was only needed for {1} level(s) of indirection</source>
         <target state="translated">已為 'ElementIndirectionDepth' {0}指定封送處理資訊，但只有 {1}層級 (間接) 需要封送處理資訊</target>
@@ -430,6 +435,11 @@
       <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</source>
         <target state="translated">'StringMarshalling' 和 'StringMarshallingCustomType' 的設定必須和基底 COM 介面相符。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GenericDelegatesNotSupported">
+        <source>Marshalling a generic delegate is not supported. Consider using a function pointer instead.</source>
+        <target state="translated">不支援封送一般委派。請考慮改用函式指標。</target>
         <note />
       </trans-unit>
       <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
@@ -610,6 +620,11 @@
       <trans-unit id="InvalidExceptionMarshallingValue">
         <source>The provided value is not a known flag of the 'ExceptionMarshalling' enum.</source>
         <target state="translated">提供的值不是 'ExceptionMarshalling' 列舉的已知旗標。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidExceptionToUnmanagedMarshallerType">
+        <source>The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</source>
+        <target state="translated">指定為 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' 的類型不是有效的封送處理器類型。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageDescription">

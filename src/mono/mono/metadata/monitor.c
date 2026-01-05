@@ -1345,7 +1345,7 @@ mono_monitor_wait (MonoObjectHandle obj_handle, guint32 ms, MonoBoolean allow_in
 	 * is private to this thread.  Therefore even if the event was
 	 * signalled before we wait, we still succeed.
 	 */
-	ret = mono_w32handle_wait_one (event, ms, TRUE);
+	ret = mono_w32handle_wait_one (event, ms, allow_interruption);
 
 	/* Reset the thread state fairly early, so we don't have to worry
 	 * about the monitor error checking
@@ -1390,6 +1390,10 @@ mono_monitor_wait (MonoObjectHandle obj_handle, guint32 ms, MonoBoolean allow_in
 		 * wait queue
 		 */
 		mon->wait_list = g_slist_remove (mon->wait_list, event);
+
+		if (is_ok (error) && allow_interruption && ret == MONO_W32HANDLE_WAIT_RET_ALERTED)
+			mono_error_set_thread_interrupted (error);
+
 	}
 	mono_w32event_close (event);
 

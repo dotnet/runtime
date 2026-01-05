@@ -312,8 +312,6 @@ namespace Internal.Runtime
     {
         private IntPtr returnValue;
         private IntPtr returnValue2;
-        private IntPtr returnValue3;
-        private IntPtr returnValue4;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -353,8 +351,8 @@ namespace Internal.Runtime
 
         public const int NUM_ARGUMENT_REGISTERS = 8;
         public const int ARGUMENTREGISTERS_SIZE = NUM_ARGUMENT_REGISTERS * 8;
-        public const int ENREGISTERED_RETURNTYPE_MAXSIZE = 32;                  // bytes (four FP registers: d0,d1,d2 and d3)
-        public const int ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE = 16;          // bytes (two int registers: x0 and x1)
+        public const int ENREGISTERED_RETURNTYPE_MAXSIZE = 16;                  // bytes (two FP registers: f0, f1)
+        public const int ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE = 16;          // bytes (two int registers: a0, a1)
         public const int ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE_PRIMITIVE = 8;
         public const int ENREGISTERED_PARAMTYPE_MAXSIZE = 16;                   // bytes (max value type size that can be passed by value)
         public const int STACK_ELEM_SIZE = 8;

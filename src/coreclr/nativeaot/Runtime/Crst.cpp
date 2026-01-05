@@ -3,8 +3,8 @@
 #include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
 #include "holder.h"
 #include "Crst.h"
 
@@ -16,14 +16,14 @@ void CrstStatic::Init(CrstType eType, CrstFlags eFlags)
 #if defined(_DEBUG)
     m_uiOwnerId.Clear();
 #endif // _DEBUG
-    PalInitializeCriticalSectionEx(&m_sCritSec, 0, 0);
+    minipal_mutex_init(&m_Lock);
 #endif // !DACCESS_COMPILE
 }
 
 void CrstStatic::Destroy()
 {
 #ifndef DACCESS_COMPILE
-    PalDeleteCriticalSection(&m_sCritSec);
+    minipal_mutex_destroy(&m_Lock);
 #endif // !DACCESS_COMPILE
 }
 
@@ -31,7 +31,7 @@ void CrstStatic::Destroy()
 void CrstStatic::Enter(CrstStatic *pCrst)
 {
 #ifndef DACCESS_COMPILE
-    PalEnterCriticalSection(&pCrst->m_sCritSec);
+    minipal_mutex_enter(&pCrst->m_Lock);
 #if defined(_DEBUG)
     pCrst->m_uiOwnerId.SetToCurrentThread();
 #endif // _DEBUG
@@ -47,7 +47,7 @@ void CrstStatic::Leave(CrstStatic *pCrst)
 #if defined(_DEBUG)
     pCrst->m_uiOwnerId.Clear();
 #endif // _DEBUG
-    PalLeaveCriticalSection(&pCrst->m_sCritSec);
+    minipal_mutex_leave(&pCrst->m_Lock);
 #else
     UNREFERENCED_PARAMETER(pCrst);
 #endif // !DACCESS_COMPILE

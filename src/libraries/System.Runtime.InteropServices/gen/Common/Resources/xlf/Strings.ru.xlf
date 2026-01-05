@@ -392,6 +392,11 @@
         <target state="translated">Тип маршалера точки входа "{0}" для типа "{1}" должен содержать хотя бы один атрибут "System.Runtime.InteropServices.CustomMarshallerAttribute", указывающий этот тип в качестве управляемого типа</target>
         <note />
       </trans-unit>
+      <trans-unit id="ExceptionToUnmanagedMarshallerNotAccessibleByGeneratedCode">
+        <source>The type '{0}' specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</source>
+        <target state="translated">Тип "{0}", указанный как "GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller", недоступен для сгенерированного кода. Тип должен обеспечивать уровень доступности хотя бы на уровне "internal". {1}</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ExtraneousMarshallingInfo">
         <source>Marshalling info was specified for 'ElementIndirectionDepth' {0}, but marshalling info was only needed for {1} level(s) of indirection</source>
         <target state="translated">Для \"ElementIndirectionDepth\" {0} указаны сведения маршализации, но они необходимы только для {1} уровней косвенного обращения</target>
@@ -430,6 +435,11 @@
       <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</source>
         <target state="translated">Конфигурация "StringMarshalling" и "StringMarshallingCustomType" должна соответствовать базовому COM-интерфейсу.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GenericDelegatesNotSupported">
+        <source>Marshalling a generic delegate is not supported. Consider using a function pointer instead.</source>
+        <target state="translated">Маршализация делегата общего назначения не поддерживается. Рассмотрите возможность использования вместо этого указателя на функцию.</target>
         <note />
       </trans-unit>
       <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
@@ -610,6 +620,11 @@
       <trans-unit id="InvalidExceptionMarshallingValue">
         <source>The provided value is not a known flag of the 'ExceptionMarshalling' enum.</source>
         <target state="translated">Указанное значение не является известным флагом перечисления ExceptionMarshalling.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidExceptionToUnmanagedMarshallerType">
+        <source>The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</source>
+        <target state="translated">Указан тип "GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller", недопустимый для маршализатора.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageDescription">

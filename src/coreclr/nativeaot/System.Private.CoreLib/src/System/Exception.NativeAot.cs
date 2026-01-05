@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Tracing;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -136,17 +137,13 @@ namespace System
                     ex.AppendStackIP(IP, isFirstRethrowFrame);
 
 #if FEATURE_PERFTRACING
-                if (isFirstFrame)
+                if (isFirstFrame && NativeRuntimeEventSource.Log.IsEnabled())
                 {
                     string typeName = !fatalOutOfMemory ? ex.GetType().ToString() : "System.OutOfMemoryException";
                     string message = !fatalOutOfMemory ? ex.Message :
                         "Insufficient memory to continue the execution of the program.";
 
-                    unsafe
-                    {
-                        fixed (char* exceptionTypeName = typeName, exceptionMessage = message)
-                            RuntimeImports.NativeRuntimeEventSource_LogExceptionThrown(exceptionTypeName, exceptionMessage, IP, ex.HResult);
-                    }
+                    NativeRuntimeEventSource.Log.ExceptionThrown_V1(typeName, message, IP, (uint)ex.HResult, 0);
                 }
 #endif
             }

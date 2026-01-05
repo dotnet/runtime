@@ -78,11 +78,35 @@ namespace System.Net.Security
                         KeyHandle = ecdsa.DuplicateKeyHandle();
                     }
                 }
+            }
 
-                if (KeyHandle == null)
+#pragma warning disable SYSLIB5006 // Post-Quantum Cryptography (PQC) types are experimental
+            if (KeyHandle == null && MLDsa.IsSupported)
+            {
+                using (MLDsaOpenSsl? mlDsa = (MLDsaOpenSsl?)target.GetMLDsaPrivateKey())
                 {
-                    throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
+                    if (mlDsa != null)
+                    {
+                        KeyHandle = mlDsa.DuplicateKeyHandle();
+                    }
                 }
+            }
+
+            if (KeyHandle == null && SlhDsa.IsSupported)
+            {
+                using (SlhDsaOpenSsl? slhDsa = (SlhDsaOpenSsl?)target.GetSlhDsaPrivateKey())
+                {
+                    if (slhDsa != null)
+                    {
+                        KeyHandle = slhDsa.DuplicateKeyHandle();
+                    }
+                }
+            }
+#pragma warning restore SYSLIB5006
+
+            if (KeyHandle == null)
+            {
+                throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
             }
 
             CertificateHandle = Interop.Crypto.X509UpRef(target.Handle);
@@ -391,6 +415,20 @@ namespace System.Net.Security
             }
 
             return uriString;
+        }
+
+        partial void ReleasePlatformSpecificResources()
+        {
+            Debug.Assert(_staplingForbidden, "Shouldn't release resources while OCSP stapling may be happening on the background.");
+
+            CertificateHandle.Dispose();
+            KeyHandle.Dispose();
+            _rootCertificate?.Dispose();
+
+            foreach (X509Certificate2 cert in _privateIntermediateCertificates)
+            {
+                cert.Dispose();
+            }
         }
     }
 }

@@ -114,7 +114,7 @@ PALTEST(composite_object_management_event_nonshared_paltest_event_nonshared, "co
     }
     
      /* Register the start time */  
-    dwStartTime = GetTickCount();
+    dwStartTime = (DWORD)minipal_lowres_ticks();
     testStats.relationId   = RELATION_ID;
     testStats.processCount = PROCESS_COUNT;
     testStats.threadCount  = THREAD_COUNT;

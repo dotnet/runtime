@@ -394,11 +394,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return vector ^ Vector64.Create(-0.0f).As<float, T>();
+                return vector ^ Vector64<float>.NegativeZero.As<float, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return vector ^ Vector64.Create(-0.0).As<double, T>();
+                return vector ^ Vector64<double>.NegativeZero.As<double, T>();
             }
             else
             {
@@ -528,7 +528,7 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Alignment" />
         static int ISimdVector<Vector64<T>, T>.Alignment => Vector64.Alignment;
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.Count" />
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.ElementCount" />
         static int ISimdVector<Vector64<T>, T>.ElementCount => Vector64<T>.Count;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.IsHardwareAccelerated" />

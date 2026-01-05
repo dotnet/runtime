@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="config">The configuration instance.</param>
         public ConfigurationChangeTokenSource(string? name, IConfiguration config)
         {
-            ThrowHelper.ThrowIfNull(config);
+            ArgumentNullException.ThrowIfNull(config);
 
             _config = config;
             Name = name ?? Options.DefaultName;

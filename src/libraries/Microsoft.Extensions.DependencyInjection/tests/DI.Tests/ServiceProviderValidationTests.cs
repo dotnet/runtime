@@ -146,6 +146,131 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.IsType<Bar3>(actual);
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void BuildServiceProvider_AnyKey_ServiceKeyWithStronglyTypedArgument(bool validateOnBuild)
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddKeyedTransient<ServiceKeyWithStronglyTypedArgument>(KeyedService.AnyKey);
+            using var serviceProvider = serviceCollection.BuildServiceProvider(new ServiceProviderOptions
+            {
+                ValidateScopes = true,
+                ValidateOnBuild = validateOnBuild
+            });
+
+            // Act
+            var actual = serviceProvider.GetKeyedService<ServiceKeyWithStronglyTypedArgument>(42);
+
+            // Assert
+            Assert.Equal(42, actual.Key);
+            Assert.Throws<InvalidOperationException>(() => serviceProvider.GetKeyedService<ServiceKeyWithStronglyTypedArgument>("Hello"));
+        }
+
+        private class ServiceKeyWithStronglyTypedArgument
+        {
+            public int Key { get; set; }
+
+            public ServiceKeyWithStronglyTypedArgument([ServiceKey] int key)
+            {
+                Key = key;
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void BuildServiceProvider_AnyKey_ServiceKeyWithObjectTypedArgument(bool validateOnBuild)
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddKeyedTransient<ServiceKeyWithObjectTypedArgument>(KeyedService.AnyKey);
+            using var serviceProvider = serviceCollection.BuildServiceProvider(new ServiceProviderOptions
+            {
+                ValidateScopes = true,
+                ValidateOnBuild = validateOnBuild
+            });
+
+            // Act
+            var actualInt = serviceProvider.GetKeyedService<ServiceKeyWithObjectTypedArgument>(42);
+            var actualString = serviceProvider.GetKeyedService<ServiceKeyWithObjectTypedArgument>("hello");
+
+            // Assert
+            Assert.Equal(42, actualInt.Key);
+            Assert.Equal("hello", actualString.Key);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void BuildServiceProvider_ServiceKeyWithObjectTypedArgument(bool validateOnBuild)
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddKeyedTransient<ServiceKeyWithObjectTypedArgument>(42);
+            serviceCollection.AddKeyedTransient<ServiceKeyWithObjectTypedArgument>("hello");
+            using var serviceProvider = serviceCollection.BuildServiceProvider(new ServiceProviderOptions
+            {
+                ValidateScopes = true,
+                ValidateOnBuild = validateOnBuild
+            });
+
+            // Act
+            var actualInt = serviceProvider.GetKeyedService<ServiceKeyWithObjectTypedArgument>(42);
+            var actualString = serviceProvider.GetKeyedService<ServiceKeyWithObjectTypedArgument>("hello");
+            var notFound = serviceProvider.GetKeyedService<ServiceKeyWithObjectTypedArgument>(false);
+
+            // Assert
+            Assert.Equal(42, actualInt.Key);
+            Assert.Equal("hello", actualString.Key);
+            Assert.Null(notFound);
+        }
+
+        private class ServiceKeyWithObjectTypedArgument
+        {
+            public object Key { get; set; }
+
+            public ServiceKeyWithObjectTypedArgument([ServiceKey] object key)
+            {
+                Key = key;
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void BuildServiceProvider_AnyKey_ServiceKeyWithObjectAndIntTypedArguments(bool validateOnBuild)
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddKeyedTransient<ServiceKeyWithObjectAndIntTypedArguments>(KeyedService.AnyKey);
+            using var serviceProvider = serviceCollection.BuildServiceProvider(new ServiceProviderOptions
+            {
+                ValidateScopes = true,
+                ValidateOnBuild = validateOnBuild
+            });
+
+            // Act
+            var actual = serviceProvider.GetKeyedService<ServiceKeyWithObjectAndIntTypedArguments>(42);
+
+            // Assert
+            Assert.Equal(42, actual.Key);
+            Assert.Equal(42, actual.IntKey);
+        }
+
+        private class ServiceKeyWithObjectAndIntTypedArguments
+        {
+            public object Key { get; set; }
+            public int IntKey { get; set; }
+
+            public ServiceKeyWithObjectAndIntTypedArguments([ServiceKey] object key, [ServiceKey] int intKey)
+            {
+                Key = key;
+                IntKey = intKey;
+            }
+        }
+
         [Fact]
         public void ScopeValidation_ShouldBeAbleToDistingushGenericCollections_WhenGetServiceIsCalledOnRoot()
         {

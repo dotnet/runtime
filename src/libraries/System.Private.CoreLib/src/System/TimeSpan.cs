@@ -15,15 +15,9 @@ namespace System
     // to 100 nanoseconds. While this maps well into units of time such as hours
     // and days, any periods longer than that aren't representable in a nice fashion.
     // For instance, a month can be between 28 and 31 days, while a year
-    // can contain 365 or 366 days.  A decade can have between 1 and 3 leap-years,
+    // can contain 365 or 366 days.  A decade can have between 1 and 3 leap years,
     // depending on when you map the TimeSpan into the calendar.  This is why
     // we do not provide Years() or Months().
-    //
-    // Note: System.TimeSpan needs to interop with the WinRT structure
-    // type Windows::Foundation:TimeSpan. These types are currently binary-compatible in
-    // memory so no custom marshalling is required. If at any point the implementation
-    // details of this type should change, or new fields added, we need to remember to add
-    // an appropriate custom ILMarshaler to keep WInRT interop scenarios enabled.
     //
     [Serializable]
     public readonly struct TimeSpan

@@ -38,6 +38,13 @@ typedef var_types RegisterType;
 #define FloatRegisterType TYP_FLOAT
 #define MaskRegisterType  TYP_MASK
 
+// NEXT_REGISTER : update reg to next active registers.
+#ifdef TARGET_AMD64
+#define NEXT_REGISTER(reg, index) index++, reg = regIndices[index]
+#else
+#define NEXT_REGISTER(reg, index) reg = REG_NEXT(reg)
+#endif
+
 //------------------------------------------------------------------------
 // regType: Return the RegisterType to use for a given type
 //
@@ -582,7 +589,7 @@ inline bool leafInRange(GenTree* leaf, int lower, int upper, int multiple)
 
 inline bool leafAddInRange(GenTree* leaf, int lower, int upper, int multiple = 1)
 {
-    if (leaf->OperGet() != GT_ADD)
+    if (!leaf->OperIs(GT_ADD))
     {
         return false;
     }
@@ -615,7 +622,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // to the next RefPosition in code order
 // THIS IS THE OPTION CURRENTLY BEING PURSUED
 
-class LinearScan : public LinearScanInterface
+class LinearScan : public RegAllocInterface
 {
     friend class RefPosition;
     friend class Interval;
@@ -627,7 +634,7 @@ public:
     LinearScan(Compiler* theCompiler);
 
     // This is the main driver
-    virtual PhaseStatus doLinearScan();
+    virtual PhaseStatus doRegisterAllocation();
 
     static bool isSingleRegister(SingleTypeRegSet regMask)
     {
@@ -981,6 +988,8 @@ public:
     bool isContainableMemoryOp(GenTree* node);
 
 private:
+    Compiler* GetCompiler() const;
+
     // Determine which locals are candidates for allocation
     template <bool localVarsEnregistered>
     void identifyCandidates();
@@ -1030,7 +1039,7 @@ private:
     // insert refpositions representing prolog zero-inits which will be added later
     void insertZeroInitRefPositions();
 
-    void addKillForRegs(regMaskTP mask, LsraLocation currentLoc);
+    RefPosition* addKillForRegs(regMaskTP mask, LsraLocation currentLoc);
 
     void resolveConflictingDefAndUse(Interval* interval, RefPosition* defRefPosition);
 
@@ -1059,7 +1068,7 @@ private:
     regMaskTP getKillSetForCall(GenTreeCall* call);
     regMaskTP getKillSetForModDiv(GenTreeOp* tree);
     regMaskTP getKillSetForBlockStore(GenTreeBlk* blkNode);
-    regMaskTP getKillSetForReturn();
+    regMaskTP getKillSetForReturn(GenTree* returnNode);
     regMaskTP getKillSetForProfilerHook();
 #ifdef FEATURE_HW_INTRINSICS
     regMaskTP getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node);
@@ -1135,7 +1144,8 @@ private:
         return getIntervalForLocalVar(varDsc->lvVarIndex);
     }
 
-    RegRecord* getRegisterRecord(regNumber regNum);
+    RegRecord*       getRegisterRecord(regNumber regNum);
+    SingleTypeRegSet getAvailableGPRsForType(SingleTypeRegSet candidates, var_types regType);
 
     RefPosition* newRefPositionRaw(LsraLocation nodeLocation, GenTree* treeNode, RefType refType);
 
@@ -1195,7 +1205,8 @@ private:
     void setIntervalAsSplit(Interval* interval);
     void spillInterval(Interval* interval, RefPosition* fromRefPosition DEBUGARG(RefPosition* toRefPosition));
 
-    void             processKills(RefPosition* killRefPosition);
+    void processKills(RefPosition* killRefPosition);
+    template <bool isLow>
     FORCEINLINE void freeKilledRegs(RefPosition*     killRefPosition,
                                     SingleTypeRegSet killedRegs,
                                     RefPosition*     nextKill,
@@ -1822,9 +1833,28 @@ private:
     }
     SingleTypeRegSet getMatchingConstants(SingleTypeRegSet mask, Interval* currentInterval, RefPosition* refPosition);
 
-    regMaskTP    fixedRegs;
+    SingleTypeRegSet fixedRegsLow;
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    SingleTypeRegSet fixedRegsHigh;
+#endif
     LsraLocation nextFixedRef[REG_COUNT];
-    void         updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill);
+    template <bool isLow>
+    void updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill);
+    void updateNextFixedRefDispatch(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill)
+    {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        if (regRecord->regNum < 64)
+        {
+            updateNextFixedRef<true>(regRecord, nextRefPosition, nextKill);
+        }
+        else
+        {
+            updateNextFixedRef<false>(regRecord, nextRefPosition, nextKill);
+        }
+#else
+        updateNextFixedRef<true>(regRecord, nextRefPosition, nextKill);
+#endif
+    }
     LsraLocation getNextFixedRef(regNumber regNum, var_types regType)
     {
         LsraLocation loc = nextFixedRef[regNum];
@@ -1908,6 +1938,7 @@ private:
     // 'tgtPrefUse' to that RefPosition.
     RefPosition* tgtPrefUse  = nullptr;
     RefPosition* tgtPrefUse2 = nullptr;
+    RefPosition* tgtPrefUse3 = nullptr;
 
 public:
     // The following keep track of information about internal (temporary register) intervals
@@ -1930,6 +1961,7 @@ private:
     {
         tgtPrefUse               = nullptr;
         tgtPrefUse2              = nullptr;
+        tgtPrefUse3              = nullptr;
         internalCount            = 0;
         setInternalRegsDelayFree = false;
         pendingDelayFree         = false;
@@ -1946,9 +1978,12 @@ private:
     int BuildRMWUses(
         GenTree* node, GenTree* op1, GenTree* op2, SingleTypeRegSet op1Candidates, SingleTypeRegSet op2Candidates);
     inline SingleTypeRegSet BuildEvexIncompatibleMask(GenTree* tree);
-    inline SingleTypeRegSet BuildApxIncompatibleGPRMask(GenTree*         tree,
-                                                        SingleTypeRegSet candidates = RBM_NONE,
-                                                        bool             isGPR      = false);
+    inline SingleTypeRegSet ForceLowGprForApx(GenTree*         tree,
+                                              SingleTypeRegSet candidates = RBM_NONE,
+                                              bool             isGPR      = false);
+    inline SingleTypeRegSet ForceLowGprForApxIfNeeded(GenTree*         tree,
+                                                      SingleTypeRegSet candidates = RBM_NONE,
+                                                      bool             UseApxRegs = false);
     inline bool             DoesThisUseGPR(GenTree* op);
 #endif // !TARGET_XARCH
     int BuildSelect(GenTreeOp* select);
@@ -1994,6 +2029,7 @@ private:
     int  BuildPutArgReg(GenTreeUnOp* node);
     int  BuildCall(GenTreeCall* call);
     void MarkSwiftErrorBusyForCall(GenTreeCall* call);
+    void MarkAsyncContinuationBusyForCall(GenTreeCall* call);
     int  BuildCmp(GenTree* tree);
     int  BuildCmpOperands(GenTree* tree);
     int  BuildBlockStore(GenTreeBlk* blkNode);
@@ -2053,9 +2089,6 @@ private:
 #endif // DEBUG
 
     int BuildPutArgStk(GenTreePutArgStk* argNode);
-#if FEATURE_ARG_SPLIT
-    int BuildPutArgSplit(GenTreePutArgSplit* tree);
-#endif // FEATURE_ARG_SPLIT
     int BuildLclHeap(GenTree* tree);
 
 #if defined(TARGET_AMD64)
@@ -2064,7 +2097,7 @@ private:
     regMaskTP rbmAllInt;
     regMaskTP rbmIntCalleeTrash;
     regNumber regIntLast;
-    bool      isApxSupported;
+    bool      apxIsSupported;
 
     FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
@@ -2086,9 +2119,9 @@ private:
     {
         return this->regIntLast;
     }
-    FORCEINLINE bool getIsApxSupported() const
+    FORCEINLINE bool getApxIsSupported() const
     {
-        return this->isApxSupported;
+        return this->apxIsSupported;
     }
 #else
     FORCEINLINE regNumber get_REG_INT_LAST() const
@@ -2101,6 +2134,7 @@ private:
     regMaskTP        rbmAllMask;
     regMaskTP        rbmMskCalleeTrash;
     SingleTypeRegSet lowGprRegs;
+    bool             evexIsSupported;
 
     FORCEINLINE regMaskTP get_RBM_ALLMASK() const
     {
@@ -2110,9 +2144,14 @@ private:
     {
         return this->rbmMskCalleeTrash;
     }
+    FORCEINLINE bool getEvexIsSupported() const
+    {
+        return this->evexIsSupported;
+    }
 #endif // TARGET_XARCH
 
-    unsigned availableRegCount;
+    unsigned   availableRegCount;
+    regNumber* regIndices;
 
     FORCEINLINE unsigned get_AVAILABLE_REG_COUNT() const
     {
@@ -2161,6 +2200,8 @@ private:
         return varTypeCalleeTrashRegs[rt].GetRegSetForType(rt);
     }
 };
+
+using RegAllocImpl = LinearScan;
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

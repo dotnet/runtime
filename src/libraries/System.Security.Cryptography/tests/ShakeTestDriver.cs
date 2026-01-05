@@ -52,10 +52,7 @@ namespace System.Security.Cryptography.Tests
             get
             {
                 const long OpenSsl_3_3_0 = 0x30300000L;
-                return IsSupported && (
-                    PlatformDetection.IsWindows ||
-                    // Disabled on AzureLinux https://github.com/dotnet/runtime/issues/112036
-                    (SafeEvpPKeyHandle.OpenSslVersion >= OpenSsl_3_3_0 && !PlatformDetection.IsAzureLinux));
+                return IsSupported && (PlatformDetection.IsWindows || SafeEvpPKeyHandle.OpenSslVersion >= OpenSsl_3_3_0);
             }
         }
 
@@ -748,7 +745,6 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(nameof(IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/112036", typeof(PlatformDetection), nameof(PlatformDetection.IsAzureLinux))]
         public void Read_NotSupported()
         {
             // This is testing when a TShake can be created, but the platform does not have Read.

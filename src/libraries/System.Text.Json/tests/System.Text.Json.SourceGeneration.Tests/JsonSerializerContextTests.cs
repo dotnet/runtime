@@ -937,5 +937,59 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             public SelfReference Me { get; set; }
         }
+
+        [Fact]
+        public static void SerializeIgnoreWhenWritingTest()
+        {
+            var p = new IgnoreWhenReadingWritingPerson
+            {
+                Id = 1,
+                Name = "Alice",
+                Description = "test"
+            };
+            var serializedJson = JsonSerializer.Serialize(p, SerializeIgnoreReadingWritingJsonSerializerContext.Default.IgnoreWhenReadingWritingPerson);
+            Assert.Equal("""{"Name":"Alice","Description":"test"}""", serializedJson);
+        }
+
+        [Fact]
+        public static void SerializeIgnoreWhenReadingTest()
+        {
+            var json = """{"Id":1,"Name":"Alice","Description":"test"}""";
+            var deserialized = JsonSerializer.Deserialize<IgnoreWhenReadingWritingPerson>(json, SerializeIgnoreReadingWritingJsonSerializerContext.Default.IgnoreWhenReadingWritingPerson);
+            Assert.NotNull(deserialized);
+            Assert.Equal(1, deserialized.Id);
+            Assert.Equal("Alice", deserialized.Name);
+            Assert.Null(deserialized.Description);
+        }
+
+        internal sealed class IgnoreWhenReadingWritingPerson
+        {
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWriting)]
+            public int Id { get; set; }
+
+            public string Name { get; set; }
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
+            public string? Description { get; set; }
+        }
+
+        [JsonSerializable(typeof(IgnoreWhenReadingWritingPerson))]
+        internal partial class SerializeIgnoreReadingWritingJsonSerializerContext : JsonSerializerContext
+        {
+        }
+
+        [Fact]
+        public static void SupportsDisallowDuplicateProperty()
+        {
+            JsonTypeInfo typeInfo =
+                ContextWithAllowDuplicateProperties.Default.GetTypeInfo(typeof(Dictionary<string, int>));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize("""{"a":1,"a":2}""", typeInfo));
+        }
+
+        [JsonSourceGenerationOptions(AllowDuplicateProperties = false)]
+        [JsonSerializable(typeof(Dictionary<string, int>))]
+        internal partial class ContextWithAllowDuplicateProperties : JsonSerializerContext
+        {
+        }
     }
 }

@@ -89,6 +89,12 @@ public class Bridge1 : BridgeBase
     }
 }
 
+[InlineArray(14)]
+public struct InlineData
+{
+    public object obj;
+}
+
 // 128 size
 public class Bridge14 : BridgeBase
 {
@@ -107,7 +113,7 @@ public class NonBridge2 : NonBridge
 
 public class NonBridge14
 {
-    public object a,b,c,d,e,f,g,h,i,j,k,l,m,n;
+    public InlineData Data;
 }
 
 
@@ -220,8 +226,8 @@ public class BridgeTest
         tail.Link = tail;
     }
 
-    const int L0_COUNT = 50000;
-    const int L1_COUNT = 50000;
+    const int L0_COUNT = 100000;
+    const int L1_COUNT = 100000;
     const int EXTRA_LEVELS = 4;
 
     // Set a complex graph from one bridge to a couple.
@@ -278,6 +284,35 @@ public class BridgeTest
         asyncStreamWriter.Link = byteArrayOutputStream;
         asyncStreamWriter.Link2 = asyncStateMachineBox;
     }
+
+	// Simulates a graph where a heavy node has its fanout components
+	// represented by cycles with back-references to the heavy node and
+	// references to the same bridge objects.
+	// This enters a pathological path in the SCC contraction where the
+	// links to the bridge objects need to be correctly deduplicated. The
+	// deduplication causes the heavy node to no longer be heavy.
+	static void FauxHeavyNodeWithCycles()
+	{
+		Bridge fanout = new Bridge();
+
+		// Need enough edges for the node to be considered heavy by bridgeless_color_is_heavy
+		NonBridge[] fauxHeavyNode = new NonBridge[100];
+		for (int i = 0; i < fauxHeavyNode.Length; i++)
+        {
+			NonBridge2 cycle = new NonBridge2();
+			cycle.Link = fanout;
+			cycle.Link2 = fauxHeavyNode;
+			fauxHeavyNode[i] = cycle;
+		}
+
+		// Need at least HEAVY_REFS_MIN + 1 fan-in nodes
+		Bridge[] faninNodes = new Bridge[3];
+		for (int i = 0; i < faninNodes.Length; i++)
+        {
+			faninNodes[i] = new Bridge();
+			faninNodes[i].Links.Add(fauxHeavyNode);
+		}
+	}
 
     static void RunGraphTest(Action test)
     {
@@ -374,11 +409,32 @@ public class BridgeTest
         }
     }
 
+    public static void BridgelessHeavyColorChanging()
+    {
+        Bridge1[] left = new Bridge1[8];
+        for (int i = 0; i < 8; i++)
+            left[i] = new Bridge1();
+        Bridge[] right = new Bridge[7];
+        for (int i = 0; i < 7; i++)
+            right[i] = new Bridge();
+        NonBridge2 right7 = new NonBridge2();
+
+        NonBridge14 mid = new NonBridge14();
+
+        for (int i = 0; i < 8; i++)
+            left[i].Link = mid;
+        for (int i = 0; i < 7; i++)
+            mid.Data[i] = right[i];
+        mid.Data[7] = right7;
+        right7.Link = right[6];
+        right7.Link2 = right[5];
+    }
+
     public static int Main(string[] args)
     {
-//        TestLinkedList(); // Crashes, but only in this multithreaded variant
-        RunGraphTest(SetupFragmentation<Bridge14, NonBridge14>); // This passes but the following crashes ??
-//        RunGraphTest(SetupFragmentation<Bridge, NonBridge>);
+        TestLinkedList();
+        RunGraphTest(SetupFragmentation<Bridge14, NonBridge14>);
+        RunGraphTest(SetupFragmentation<Bridge, NonBridge>);
         RunGraphTest(SetupLinks);
         RunGraphTest(SetupLinkedFan);
         RunGraphTest(SetupInverseFan);
@@ -386,7 +442,9 @@ public class BridgeTest
         RunGraphTest(SetupDeadList);
         RunGraphTest(SetupSelfLinks);
         RunGraphTest(NestedCycles);
-//        RunGraphTest(Spider); // Crashes
+        RunGraphTest(FauxHeavyNodeWithCycles);
+        RunGraphTest(Spider);
+        RunGraphTest(BridgelessHeavyColorChanging);
         return 100;
     }
 }

@@ -75,6 +75,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     /// dispid.
     ///  </summary>
     [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class IDispatchComObject : ComObject, IDynamicMetaObjectProvider
     {
         private ComTypeDesc _comTypeDesc;

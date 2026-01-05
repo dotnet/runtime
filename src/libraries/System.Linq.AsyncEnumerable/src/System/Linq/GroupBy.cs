@@ -29,8 +29,8 @@ namespace System.Linq
             Func<TSource, TKey> keySelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return
                 source.IsKnownEmpty() ? Empty<IGrouping<TKey, TSource>>() :
@@ -42,7 +42,7 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                foreach (IGrouping<TKey, TSource> item in await ToLookupAsync(source, keySelector, comparer, cancellationToken).ConfigureAwait(false))
+                foreach (IGrouping<TKey, TSource> item in await ToLookupAsync(source, keySelector, comparer, cancellationToken))
                 {
                     yield return item;
                 }
@@ -66,8 +66,8 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return
                 source.IsKnownEmpty() ? Empty<IGrouping<TKey, TSource>>() :
@@ -79,7 +79,7 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                foreach (IGrouping<TKey, TSource> item in await ToLookupAsync(source, keySelector, comparer, cancellationToken).ConfigureAwait(false))
+                foreach (IGrouping<TKey, TSource> item in await ToLookupAsync(source, keySelector, comparer, cancellationToken))
                 {
                     yield return item;
                 }
@@ -111,9 +111,9 @@ namespace System.Linq
             Func<TSource, TElement> elementSelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
-            ThrowHelper.ThrowIfNull(elementSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(elementSelector);
 
             return
                 source.IsKnownEmpty() ? Empty<IGrouping<TKey, TElement>>() :
@@ -126,7 +126,7 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                foreach (IGrouping<TKey, TElement> item in await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken).ConfigureAwait(false))
+                foreach (IGrouping<TKey, TElement> item in await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken))
                 {
                     yield return item;
                 }
@@ -158,9 +158,9 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<TElement>> elementSelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
-            ThrowHelper.ThrowIfNull(elementSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(elementSelector);
 
             return
                 source.IsKnownEmpty() ? Empty<IGrouping<TKey, TElement>>() :
@@ -173,7 +173,7 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                foreach (IGrouping<TKey, TElement> item in await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken).ConfigureAwait(false))
+                foreach (IGrouping<TKey, TElement> item in await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken))
                 {
                     yield return item;
                 }
@@ -204,9 +204,9 @@ namespace System.Linq
             Func<TKey, IEnumerable<TSource>, TResult> resultSelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :
@@ -219,7 +219,7 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                if (await ToLookupAsync(source, keySelector, comparer, cancellationToken).ConfigureAwait(false) is AsyncLookup<TKey, TSource> lookup)
+                if (await ToLookupAsync(source, keySelector, comparer, cancellationToken) is AsyncLookup<TKey, TSource> lookup)
                 {
                     foreach (TResult item in lookup.ApplyResultSelector(resultSelector))
                     {
@@ -253,9 +253,9 @@ namespace System.Linq
             Func<TKey, IEnumerable<TSource>, CancellationToken, ValueTask<TResult>> resultSelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :
@@ -268,9 +268,9 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                if (await ToLookupAsync(source, keySelector, comparer, cancellationToken).ConfigureAwait(false) is AsyncLookup<TKey, TSource> lookup)
+                if (await ToLookupAsync(source, keySelector, comparer, cancellationToken) is AsyncLookup<TKey, TSource> lookup)
                 {
-                    await foreach (TResult item in lookup.ApplyResultSelector(resultSelector, cancellationToken).ConfigureAwait(false))
+                    await foreach (TResult item in lookup.ApplyResultSelector(resultSelector, cancellationToken))
                     {
                         yield return item;
                     }
@@ -305,10 +305,10 @@ namespace System.Linq
             Func<TKey, IEnumerable<TElement>, TResult> resultSelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
-            ThrowHelper.ThrowIfNull(elementSelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(elementSelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :
@@ -322,7 +322,7 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                if (await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken).ConfigureAwait(false) is AsyncLookup<TKey, TElement> lookup)
+                if (await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken) is AsyncLookup<TKey, TElement> lookup)
                 {
                     foreach (TResult item in lookup.ApplyResultSelector(resultSelector))
                     {
@@ -359,10 +359,10 @@ namespace System.Linq
             Func<TKey, IEnumerable<TElement>, CancellationToken, ValueTask<TResult>> resultSelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
-            ThrowHelper.ThrowIfNull(elementSelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(elementSelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :
@@ -376,9 +376,9 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                if (await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken).ConfigureAwait(false) is AsyncLookup<TKey, TElement> lookup)
+                if (await ToLookupAsync(source, keySelector, elementSelector, comparer, cancellationToken) is AsyncLookup<TKey, TElement> lookup)
                 {
-                    await foreach (TResult item in lookup.ApplyResultSelector(resultSelector, cancellationToken).ConfigureAwait(false))
+                    await foreach (TResult item in lookup.ApplyResultSelector(resultSelector, cancellationToken))
                     {
                         yield return item;
                     }

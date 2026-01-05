@@ -22,7 +22,7 @@ namespace System.Linq
         public static IAsyncEnumerable<TSource> Shuffle<TSource>(
             this IAsyncEnumerable<TSource> source)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return
                 source.IsKnownEmpty() ? Empty<TSource>() :
@@ -32,7 +32,7 @@ namespace System.Linq
                 IAsyncEnumerable<TSource> source,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                TSource[] array = await source.ToArrayAsync(cancellationToken).ConfigureAwait(false);
+                TSource[] array = await source.ToArrayAsync(cancellationToken);
 
 #if NET
                 Random.Shared.Shuffle(array);

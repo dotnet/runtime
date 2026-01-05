@@ -24,11 +24,6 @@ void EEContract::Disable()
 
 void EEContract::DoChecks(UINT testmask, _In_z_ const char *szFunction, _In_z_ const char *szFile, int lineNum)
 {
-    SCAN_IGNORE_THROW;      // Tell the static contract analyzer to ignore contract violations
-    SCAN_IGNORE_FAULT;      // due to the contract checking logic itself.
-    SCAN_IGNORE_TRIGGER;
-    SCAN_IGNORE_LOCK;
-
     // Many of the checks below result in calls to GetThread()
     // that work just fine if GetThread() returns NULL, so temporarily
     // allow such calls.

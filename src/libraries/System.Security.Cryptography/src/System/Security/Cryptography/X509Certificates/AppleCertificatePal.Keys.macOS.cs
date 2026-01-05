@@ -16,45 +16,17 @@ namespace System.Security.Cryptography.X509Certificates
     {
         public DSA? GetDSAPrivateKey()
         {
-            if (_identityHandle == null)
-                return null;
-
-            Debug.Assert(!_identityHandle.IsInvalid);
-            SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.X509GetPublicKey(_certHandle);
-            SafeSecKeyRefHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
-
-            if (publicKey.IsInvalid)
-            {
-                // SecCertificateCopyKey returns null for DSA, so fall back to manually building it.
-                publicKey = Interop.AppleCrypto.ImportEphemeralKey(_certData.SubjectPublicKeyInfo, false);
-            }
-
-            privateKey.SetParentHandle(_certHandle);
-            return new DSAImplementation.DSASecurityTransforms(publicKey, privateKey);
+            throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(DSA)));
         }
 
         public ICertificatePal CopyWithPrivateKey(DSA privateKey)
         {
-            var typedKey = privateKey as DSAImplementation.DSASecurityTransforms;
-
-            if (typedKey != null)
-            {
-                return CopyWithPrivateKey(typedKey.GetKeys().PrivateKey);
-            }
-
-            DSAParameters dsaParameters = privateKey.ExportParameters(true);
-
-            using (PinAndClear.Track(dsaParameters.X!))
-            using (typedKey = new DSAImplementation.DSASecurityTransforms())
-            {
-                typedKey.ImportParameters(dsaParameters);
-                return CopyWithPrivateKey(typedKey.GetKeys().PrivateKey);
-            }
+            throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(DSA)));
         }
 
         public ICertificatePal CopyWithPrivateKey(ECDsa privateKey)
         {
-            var typedKey = privateKey as ECDsaImplementation.ECDsaSecurityTransforms;
+            var typedKey = privateKey as ECDsaImplementation.ECDsaAppleCrypto;
             byte[] ecPrivateKey;
 
             if (typedKey != null)
@@ -89,7 +61,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public ICertificatePal CopyWithPrivateKey(ECDiffieHellman privateKey)
         {
-            var typedKey = privateKey as ECDiffieHellmanImplementation.ECDiffieHellmanSecurityTransforms;
+            var typedKey = privateKey as ECDiffieHellmanImplementation.ECDiffieHellmanAppleCrypto;
             byte[] ecPrivateKey;
 
             if (typedKey != null)
@@ -122,9 +94,15 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        public ICertificatePal CopyWithPrivateKey(MLDsa privateKey)
+        {
+            throw new PlatformNotSupportedException(
+                SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLDsa)));
+        }
+
         public ICertificatePal CopyWithPrivateKey(RSA privateKey)
         {
-            var typedKey = privateKey as RSAImplementation.RSASecurityTransforms;
+            var typedKey = privateKey as RSAImplementation.RSAAppleCrypto;
 
             if (typedKey != null)
             {

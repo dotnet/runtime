@@ -23,16 +23,6 @@
 
 LOADEDMODULES * LOADEDMODULES::s_pLoadedModules = NULL;
 UTSemReadWrite * LOADEDMODULES::m_pSemReadWrite = NULL;
-RegMeta * LOADEDMODULES::m_HashedModules[LOADEDMODULES_HASH_SIZE] = { NULL };
-
-//*****************************************************************************
-// Hash a file name.
-//*****************************************************************************
-ULONG LOADEDMODULES::HashFileName(
-    LPCWSTR szName)
-{
-    return HashString(szName) % LOADEDMODULES_HASH_SIZE;
-} // LOADEDMODULES::HashFileName
 
 //---------------------------------------------------------------------------------------
 //
@@ -77,27 +67,6 @@ ErrExit:
     return hr;
 } // LOADEDMODULES::InitializeStatics
 
-//---------------------------------------------------------------------------------------
-//
-// Destroy the static instance and lock.
-//
-void
-LOADEDMODULES::DeleteStatics()
-{
-    HRESULT hr = S_OK;
-
-    if (s_pLoadedModules != NULL)
-    {
-        delete s_pLoadedModules;
-        s_pLoadedModules = NULL;
-    }
-    if (m_pSemReadWrite != NULL)
-    {
-        delete m_pSemReadWrite;
-        m_pSemReadWrite = NULL;
-    }
-} // LOADEDMODULES::DeleteStatics
-
 //*****************************************************************************
 // Add a RegMeta pointer to the loaded module list
 //*****************************************************************************
@@ -118,13 +87,6 @@ HRESULT LOADEDMODULES::AddModuleToLoadedList(RegMeta * pRegMeta)
         //  point to the ref-count, because it just changes comparisons against 0
         //  to comparisons against 1.
         *ppRegMeta = pRegMeta;
-
-        // If the module is read-only, hash it.
-        if (pRegMeta->IsReadOnly())
-        {
-            ULONG ixHash = HashFileName(pRegMeta->GetNameOfDBFile());
-            m_HashedModules[ixHash] = pRegMeta;
-        }
     }
 
 ErrExit:
@@ -192,135 +154,12 @@ BOOL LOADEDMODULES::RemoveModuleFromLoadedList(RegMeta * pRegMeta)
             //  that we're done with it.  (Caller will delete.)
             s_pLoadedModules->Delete(iFound);
             bRemoved = TRUE;
-
-            // If the module is read-only, remove from hash.
-            if (pRegMeta->IsReadOnly())
-            {
-                // There may have been multiple capitalizations pointing to the same entry.
-                //  Find and remove all of them.
-                for (ULONG ixHash = 0; ixHash < LOADEDMODULES_HASH_SIZE; ++ixHash)
-                {
-                    if (m_HashedModules[ixHash] == pRegMeta)
-                        m_HashedModules[ixHash] = NULL;
-                }
-            }
         }
     }
 
 ErrExit:
     return bRemoved;
 }  // LOADEDMODULES::RemoveModuleFromLoadedList
-
-
-//*****************************************************************************
-// Search the cached RegMetas for a given scope.
-//*****************************************************************************
-HRESULT LOADEDMODULES::FindCachedReadOnlyEntry(
-    LPCWSTR    szName,      // Name of the desired file.
-    DWORD      dwOpenFlags, // Flags the new file is opened with.
-    RegMeta ** ppMeta)      // Put found RegMeta here.
-{
-    RegMeta * pRegMeta = 0;
-    BOOL      bWillBeCopyMemory;    // Will the opened file be copied to memory?
-    DWORD     dwLowFileSize;        // Low bytes of this file's size
-    DWORD     dwLowFileTime;        // Low butes of this file's last write time
-    HRESULT   hr;
-    ULONG     ixHash = 0;
-
-    IfFailGo(InitializeStatics());
-
-    {
-        LOCKREAD();
-
-        hr = S_FALSE; // We haven't found a match yet.
-
-        // Avoid confusion.
-        *ppMeta = NULL;
-
-        bWillBeCopyMemory = IsOfCopyMemory(dwOpenFlags);
-
-        // The cache is locked for read, so the list will not change.
-
-        // Figure out the size and timestamp of this file
-        WIN32_FILE_ATTRIBUTE_DATA faData;
-        if (!WszGetFileAttributesEx(szName, GetFileExInfoStandard, &faData))
-            return E_FAIL;
-        dwLowFileSize = faData.nFileSizeLow;
-        dwLowFileTime = faData.ftLastWriteTime.dwLowDateTime;
-
-        // Check the hash first.
-        ixHash = HashFileName(szName);
-        if ((pRegMeta = m_HashedModules[ixHash]) != NULL)
-        {
-            _ASSERTE(pRegMeta->IsReadOnly());
-
-            // Only match if the IsOfCopyMemory() bit is the same in both.  This is because
-            //  when ofCopyMemory is set, the file is not locked on disk, and may become stale
-            //  in memory.
-            //
-            // Also, only match if the date and size are the same
-            if (pRegMeta->IsCopyMemory() == bWillBeCopyMemory &&
-                pRegMeta->GetLowFileTimeOfDBFile() == dwLowFileTime &&
-                pRegMeta->GetLowFileSizeOfDBFile() == dwLowFileSize)
-            {
-                // If the name matches...
-                LPCWSTR pszName = pRegMeta->GetNameOfDBFile();
-                if (SString::_wcsicmp(szName, pszName) == 0)
-                {
-                    ULONG cRefs;
-
-                    // Found it.  Add a reference, and return it.
-                    *ppMeta = pRegMeta;
-                    cRefs = pRegMeta->AddRef();
-
-                    LOG((LF_METADATA, LL_INFO10, "Disp::OpenScope found cached RegMeta in hash: %#8x, crefs: %d\n", pRegMeta, cRefs));
-
-                    return S_OK;
-                }
-            }
-        }
-
-        // Not found in hash; loop through each loaded modules
-        int count = s_pLoadedModules->Count();
-        for (int index = 0; index < count; index++)
-        {
-            pRegMeta = (*s_pLoadedModules)[index];
-
-            // If the module is read-only, and the CopyMemory bit matches, and the date
-            // and size are the same....
-            if (pRegMeta->IsReadOnly() &&
-                pRegMeta->IsCopyMemory() == bWillBeCopyMemory &&
-                pRegMeta->GetLowFileTimeOfDBFile() == dwLowFileTime &&
-                pRegMeta->GetLowFileSizeOfDBFile() == dwLowFileSize)
-            {
-                // If the name matches...
-                LPCWSTR pszName = pRegMeta->GetNameOfDBFile();
-                if (SString::_wcsicmp(szName, pszName) == 0)
-                {
-                    ULONG cRefs;
-
-                    // Found it.  Add a reference, and return it.
-                    *ppMeta = pRegMeta;
-                    cRefs = pRegMeta->AddRef();
-
-                    // Update the hash.
-                    m_HashedModules[ixHash] = pRegMeta;
-
-                    LOG((LF_METADATA, LL_INFO10, "Disp::OpenScope found cached RegMeta by search: %#8x, crefs: %d\n", pRegMeta, cRefs));
-
-                    return S_OK;
-                }
-            }
-        }
-    }
-
-ErrExit:
-    // Didn't find it.
-    LOG((LF_METADATA, LL_INFO10, "Disp::OpenScope did not find cached RegMeta\n"));
-
-    _ASSERTE(hr != S_OK);
-    return hr;
-} // LOADEDMODULES::FindCachedReadOnlyEntry
 
 #ifdef _DEBUG
 

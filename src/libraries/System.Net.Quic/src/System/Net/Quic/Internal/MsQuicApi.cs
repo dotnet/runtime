@@ -4,7 +4,9 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Quic;
 using static Microsoft.Quic.MsQuic;
 
@@ -61,8 +63,8 @@ internal sealed unsafe partial class MsQuicApi
     internal static string MsQuicLibraryVersion { get; } = "unknown";
     internal static string? NotSupportedReason { get; }
 
-    // workaround for https://github.com/microsoft/msquic/issues/4132
-    internal static bool SupportsAsyncCertValidation => Version >= new Version(2, 4);
+    // Workaround for https://github.com/microsoft/msquic/issues/4132
+    internal static bool SupportsAsyncCertValidation => Version > new Version(2, 4);
 
     internal static bool UsesSChannelBackend { get; }
 
@@ -75,7 +77,7 @@ internal sealed unsafe partial class MsQuicApi
     static MsQuicApi()
     {
         bool loaded = false;
-        IntPtr msQuicHandle;
+        IntPtr msQuicHandle = IntPtr.Zero;
         Version = default;
 
         // MsQuic is using DualMode sockets and that will fail even for IPv4 if AF_INET6 is not available.
@@ -94,7 +96,7 @@ internal sealed unsafe partial class MsQuicApi
             // Windows ships msquic in the assembly directory next to System.Net.Quic, so load that.
             // For single-file deployments, the assembly location is an empty string so we fall back
             // to AppContext.BaseDirectory which is the directory containing the single-file executable.
-            string path = typeof(MsQuicApi).Assembly.Location is string assemblyLocation && !string.IsNullOrEmpty(assemblyLocation)
+            string path = !ShouldUseAppLocalMsQuic() && typeof(MsQuicApi).Assembly.Location is string assemblyLocation && !string.IsNullOrEmpty(assemblyLocation)
                 ? System.IO.Path.GetDirectoryName(assemblyLocation)!
                 : AppContext.BaseDirectory;
 
@@ -158,8 +160,8 @@ internal sealed unsafe partial class MsQuicApi
             }
             Version = new Version((int)libVersion[0], (int)libVersion[1], (int)libVersion[2], (int)libVersion[3]);
 
-            paramSize = 64 * sizeof(sbyte);
-            sbyte* libGitHash = stackalloc sbyte[64];
+            paramSize = 64 * sizeof(byte);
+            byte* libGitHash = stackalloc byte[64];
             status = apiTable->GetParam(null, QUIC_PARAM_GLOBAL_LIBRARY_GIT_HASH, &paramSize, libGitHash);
             if (StatusFailed(status))
             {
@@ -169,7 +171,7 @@ internal sealed unsafe partial class MsQuicApi
                 }
                 return;
             }
-            string? gitHash = Marshal.PtrToStringUTF8((IntPtr)libGitHash);
+            string? gitHash = Utf8StringMarshaller.ConvertToManaged(libGitHash);
 
             MsQuicLibraryVersion = $"{Interop.Libraries.MsQuic} {Version} ({gitHash})";
 
@@ -278,4 +280,7 @@ internal sealed unsafe partial class MsQuicApi
 #endif
         return false;
     }
+
+    private static bool ShouldUseAppLocalMsQuic() => AppContextSwitchHelper.GetBooleanConfig(
+        "System.Net.Quic.AppLocalMsQuic");
 }

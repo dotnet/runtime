@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using System.Runtime.Loader;
 using Xunit;
@@ -9,8 +10,7 @@ namespace System.Reflection.Tests
 {
     public class AssemblyTests
     {
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39650", TestPlatforms.Browser)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void CurrentLocation_HasLocaton()
         {
             string location = GetExecutingAssembly().Location;

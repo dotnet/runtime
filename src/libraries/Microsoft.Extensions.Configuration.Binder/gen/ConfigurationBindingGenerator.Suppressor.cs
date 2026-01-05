@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     public sealed partial class ConfigurationBindingGenerator
     {
         /// <summary>
-        /// Supresses false-positive diagnostics emitted by the linker
+        /// Suppresses false-positive diagnostics emitted by the linker
         /// when analyzing binding invocations that we have intercepted.
         /// Workaround for https://github.com/dotnet/roslyn/issues/68669.
         /// </summary>

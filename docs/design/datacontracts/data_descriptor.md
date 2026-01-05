@@ -31,6 +31,7 @@ endianness.  The types `nint`, `nuint` and `pointer` have target architecture po
 The data descriptor consists of:
 * a collection of type structure descriptors
 * a collection of global value descriptors
+* an optional collection of pointers to sub-descriptors
 
 ## Types
 
@@ -92,6 +93,15 @@ The value must be an integral constant within the range of its type.  Signed val
 natural encoding.  Pointer values need not be aligned and need not point to addressable target
 memory.
 
+## Sub-descriptor descriptors
+
+Each sub-descriptor descriptor is effectively a global with a type of `pointer`. They will consist of:
+* a name
+* a pointer value
+
+If the value is non-null, the pointer points to another [contract descriptor](contract-descriptor.md#contract-descriptor-1).
+
+When parsing a data descriptor with sub-descriptors each sub-descriptor should be parsed then its type, global, and contract values should be merged in. If any conflicts arise when merging in sub-descriptor data, this is an error and behavior is undefined.
 
 ## Physical descriptors
 
@@ -129,6 +139,7 @@ The toplevel dictionary will contain:
 * optional `"baseline": "BASELINE_ID"` see below
 * `"types": TYPES_DESCRIPTOR` see below
 * `"globals": GLOBALS_DESCRIPTOR` see below
+* optional `"sub-descriptors": SUB_DESCRIPTORS_DESCRIPTOR` see below
 
 Additional toplevel keys may be present. For example, the in-memory data descriptor will contain a
 `"contracts"` key (see [contract descriptor](./contract_descriptor.md#Compatible_contracts)) for the
@@ -212,25 +223,61 @@ The global values will be in an array, with each value described by a dictionary
 
 * `"name": "global value name"` the name of the global value
 * `"type": "type name"` the type of the global value
-* optional `"value": VALUE | [ int ] | "unknown"` the value of the global value, or an offset in an auxiliary array containing the value or "unknown".
+* optional `"value": <global_value>` where `<global_value>` is defined below
 
-The `VALUE` may be a JSON numeric constant integer or a string containing a signed or unsigned
-decimal or hex (with prefix `0x` or `0X`) integer constant.  The constant must be within the range
-of the type of the global value.
+
+Numeric constants must be within the range of the type of the global value. If a constant is out of range, behavior is undefined.
+
 
 **Compact format**:
 
 The global values will be in a dictionary, with each key being the name of a global and the values being one of:
 
-* `[VALUE | [int], "type name"]` the type and value of a global
-* `VALUE | [int]` just the value of a global
+* `[<global_value>, "type name"]` the type and value of a global
+* `<global_value>` just the value of a global
 
-As in the regular format, `VALUE` is a numeric constant or a string containing an integer constant.
+Where `<global_value>` is defined as below.
+
+Numeric constants must be within the range of the type of the global value. If a constant is out of range, behavior is undefined.
 
 Note that a two element array is unambiguously "type and value", whereas a one-element array is
 unambiguously "indirect value".
 
-**Both formats**
+
+### Sub-descriptor Values
+
+Sub-descriptor values will be an additional array, with the same specification as [global values](#Global-values) with the exception that the only valid value type is a `pointer`.
+
+#### Specification Appendix
+
+```
+<global_value> ::= <value> | <pointer_table_index>
+<pointer_table_index> ::= [ <number_value> ]
+<value> ::= <json_string> | <number_value>
+<number_value> ::=  <json_number> | <decimal_string> | <hex_string>
+
+<json_string> is any JSON string element
+<json_number> is any JSON number element
+<hex_string> is a <json_string> which can be parsed as a hexadecimal number prefixed with "0x" or "0X"
+<decimal_string> is a <json_string> which can be parsed as a decimal number.
+```
+
+#### Parsing Rules
+`<json_number>` is parsed as a numeric value.
+`<hex_string>` and `<decimal_string>` can be parsed as either a string or numeric value.
+`<json_string>` (that does not form a valid hex or decimal number) is parsed as a string.
+
+Example using compact format:
+```json
+{
+    "int" : 1234, // Can only be parsed as numeric constant 1234
+    "stringyInt" : "1234", // Can be parsed as 1234 or "1234"
+    "stringyHex" : "0x1234", // Can be parsed as 4660 (0x1234 in decimal) or "0x1234"
+    "stringValue" : "Hello World" // Can only be parsed as "Hello World"
+}
+```
+
+#### Typing
 
 For pointer and nuint globals, the value may be assumed to fit in a 64-bit unsigned integer.  For
 nint globals, the value may be assumed to fit in a 64-bit signed integer.
@@ -238,6 +285,8 @@ nint globals, the value may be assumed to fit in a 64-bit signed integer.
 Note that the logical descriptor does not contain "unknown" values: it is expected that the
 in-memory data descriptor will augment the baseline with a known offset for all fields in the
 baseline.
+
+#### Indirect Types
 
 If the value is given as a single-element array `[ int ]` then the value is stored in an auxiliary
 array that is part of the data contract descriptor.  Only in-memory data descriptors may have
@@ -248,8 +297,7 @@ string.  For pointers, the address can be stored at a known offset in an in-proc
 array of pointers and the offset written into the constant JSON string.
 
 The indirection array is not part of the data descriptor spec.  It is part of the [contract
-descriptor](./contract_descriptor.md#Contract_descriptor).
-
+descriptor](./contract-descriptor.md#Contract_descriptor).
 
 
 ## Example
@@ -287,8 +335,7 @@ The baseline is given in the "regular" format.
     }
   ],
   "globals": [
-    { "name": "FEATURE_EH_FUNCLETS", "type": "uint8", "value": "0" }, // baseline defaults value to 0
-    { "name": "FEATURE_COMINTEROP", "type", "uint8", "value": "1"},
+    { "name": "FEATURE_COMINTEROP", "type": "uint8", "value": "1"},
     { "name": "s_pThreadStore", "type": "pointer" } // no baseline value
   ]
 }
@@ -308,7 +355,12 @@ The following is an example of an in-memory descriptor that references the above
   "globals":
   {
     "FEATURE_COMINTEROP": 0,
-    "s_pThreadStore": [ 0 ] // indirect from aux data offset 0
+    "s_pThreadStore": [ 0 ], // indirect from aux data offset 0
+    "RuntimeID": "windows-x64"
+  },
+  "sub-descriptors": 
+  {
+    "GC": [ 1 ] // indirect from aux data offset 1
   }
 }
 ```
@@ -330,11 +382,10 @@ And the globals will be:
 | Name                | Type    | Value      |
 | ------------------- | ------- | ---------- |
 | FEATURE_COMINTEROP  | uint8   | 0          |
-| FEATURE_EH_FUNCLETS | uint8   | 0          |
 | s_pThreadStore      | pointer | 0x0100ffe0 |
+| RuntimeID           | string  |"windows-x64"|
 
-The `FEATURE_EH_FUNCLETS` global's value comes from the baseline - not the in-memory data
-descriptor.  By contrast, `FEATURE_COMINTEROP` comes from the in-memory data descriptor - with the
-value embedded directly in the json since it is known at build time and does not vary.  Finally the
+The `FEATURE_COMINTEROP` comes from the in-memory data descriptor - with the
+value embedded directly in the json since it is known at build time and does not vary.  The
 value of the pointer `s_pThreadStore` comes from the auxiliary vector's offset 0 since it is an
 execution-time value that is only known to the running process.

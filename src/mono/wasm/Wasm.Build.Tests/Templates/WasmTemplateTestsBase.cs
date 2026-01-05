@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -20,7 +21,8 @@ namespace Wasm.Build.Tests;
 public class WasmTemplateTestsBase : BuildTestBase
 {
     private readonly WasmSdkBasedProjectProvider _provider;
-    private readonly string _extraBuildArgsPublish = "-p:CompressionEnabled=false";
+    private readonly string _extraBuildArgsBuild = "-p:WasmEnableHotReload=false";
+    private readonly string _extraBuildArgsPublish = "-p:CompressionEnabled=false -p:WasmEnableHotReload=false";
     protected readonly PublishOptions _defaultPublishOptions;
     protected readonly BuildOptions _defaultBuildOptions;
     protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";
@@ -30,7 +32,7 @@ public class WasmTemplateTestsBase : BuildTestBase
     {
         _provider = GetProvider<WasmSdkBasedProjectProvider>();
         _defaultPublishOptions = new PublishOptions(ExtraMSBuildArgs: _extraBuildArgsPublish);
-        _defaultBuildOptions = new BuildOptions();
+        _defaultBuildOptions = new BuildOptions(ExtraMSBuildArgs: _extraBuildArgsBuild);
     }
 
     private Dictionary<string, string> browserProgramReplacements = new Dictionary<string, string>
@@ -71,8 +73,15 @@ public class WasmTemplateTestsBase : BuildTestBase
         (string projectName, string logPath, string nugetDir) =
             InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath ?? s_buildEnv.IsRunningOnCI);
 
-        if (addFrameworkArg)
-            extraArgs += $" -f {DefaultTargetFramework}";
+        if (addFrameworkArg) {
+            var defaultTarget = template switch
+            {
+                Template.BlazorWasm => DefaultTargetFrameworkForBlazorTemplate,
+                _ => DefaultTargetFramework,
+            };
+
+            extraArgs += $" -f {defaultTarget}";
+        }
 
         using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false);
         CommandResult result = cmd.WithWorkingDirectory(_projectDir)
@@ -104,6 +113,47 @@ public class WasmTemplateTestsBase : BuildTestBase
             _projectDir = Path.Combine(_projectDir, asset.RunnableProjectSubPath);
         }
         string projectFilePath = Path.Combine(_projectDir, $"{asset.Name}.csproj");
+
+        if (EnvironmentVariables.UseJavascriptBundler)
+        {
+            extraProperties +=
+            """
+                <WasmBundlerFriendlyBootConfig>true</WasmBundlerFriendlyBootConfig>
+                <WasmFingerprintAssets>false</WasmFingerprintAssets>
+                <CompressionEnabled>false</CompressionEnabled>
+            """;
+        }
+
+        if (EnvironmentVariables.RuntimeFlavor == "CoreCLR")
+        {
+            // TODO-WASM: https://github.com/dotnet/sdk/issues/51213
+            string versionSuffix = s_buildEnv.IsRunningOnCI ? "ci" : "dev";
+
+            extraProperties +=
+            """
+                <UseMonoRuntime>false</UseMonoRuntime>
+            """;
+            extraItems +=
+            $$"""
+                <KnownFrameworkReference Update="Microsoft.NETCore.App">
+                  <TargetingPackVersion>11.0.0-{{versionSuffix}}</TargetingPackVersion>
+                  <DefaultRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</DefaultRuntimeFrameworkVersion>
+                  <LatestRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</LatestRuntimeFrameworkVersion>
+                  <RuntimePackRuntimeIdentifiers>browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
+                </KnownFrameworkReference>
+            """;
+            insertAtEnd +=
+            $$"""
+                <Target Name="_UpdateKnownWebAssemblySdkPack" BeforeTargets="ProcessFrameworkReferences">
+                    <ItemGroup>
+                    <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
+                        <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net11.0'">11.0.0-{{versionSuffix}}</WebAssemblySdkPackVersion>
+                    </KnownWebAssemblySdkPack>
+                    </ItemGroup>
+                </Target>
+            """;
+        }
+
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(asset.Name, projectFilePath, logPath, nugetDir);
     }
@@ -119,39 +169,51 @@ public class WasmTemplateTestsBase : BuildTestBase
     public virtual (string projectDir, string buildOutput) PublishProject(
         ProjectInfo info,
         Configuration configuration,
-        bool? isNativeBuild = null) => // null for WasmBuildNative unset
-        BuildProjectCore(info, configuration, _defaultPublishOptions, isNativeBuild);
+        bool? isNativeBuild = null,
+        bool? wasmFingerprintDotnetJs = null) => // null for unset properties
+        BuildProjectCore(info, configuration, _defaultPublishOptions, isNativeBuild, wasmFingerprintDotnetJs);
 
     public virtual (string projectDir, string buildOutput) PublishProject(
         ProjectInfo info,
         Configuration configuration,
         PublishOptions publishOptions,
-        bool? isNativeBuild = null) =>
+        bool? isNativeBuild = null,
+        bool? wasmFingerprintDotnetJs = null) =>
         BuildProjectCore(
             info,
             configuration,
             publishOptions with { ExtraMSBuildArgs = $"{_extraBuildArgsPublish} {publishOptions.ExtraMSBuildArgs}" },
-            isNativeBuild
+            isNativeBuild,
+            wasmFingerprintDotnetJs
         );
 
     public virtual (string projectDir, string buildOutput) BuildProject(
         ProjectInfo info,
         Configuration configuration,
-        bool? isNativeBuild = null) => // null for WasmBuildNative unset
-        BuildProjectCore(info, configuration, _defaultBuildOptions, isNativeBuild);
+        bool? isNativeBuild = null,
+        bool? wasmFingerprintDotnetJs = null) => // null for unset properties
+        BuildProjectCore(info, configuration, _defaultBuildOptions, isNativeBuild, wasmFingerprintDotnetJs);
 
     public virtual (string projectDir, string buildOutput) BuildProject(
         ProjectInfo info,
         Configuration configuration,
         BuildOptions buildOptions,
-        bool? isNativeBuild = null) =>
-        BuildProjectCore(info, configuration, buildOptions, isNativeBuild);
+        bool? isNativeBuild = null,
+        bool? wasmFingerprintDotnetJs = null) =>
+        BuildProjectCore(
+            info,
+            configuration,
+            buildOptions with { ExtraMSBuildArgs = $"{_extraBuildArgsBuild} {buildOptions.ExtraMSBuildArgs}" },
+            isNativeBuild,
+            wasmFingerprintDotnetJs
+        );
 
     private (string projectDir, string buildOutput) BuildProjectCore(
         ProjectInfo info,
         Configuration configuration,
         MSBuildOptions buildOptions,
-        bool? isNativeBuild = null)
+        bool? isNativeBuild = null,
+        bool? wasmFingerprintDotnetJs = null)
     {
         if (buildOptions.AOT)
         {
@@ -163,7 +225,7 @@ public class WasmTemplateTestsBase : BuildTestBase
 
         buildOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
 
-        if (buildOptions.BootConfigFileName != "dotnet.boot.js")
+        if (buildOptions.BootConfigFileName != null)
         {
             // Omit implicit default
             buildOptions = buildOptions with { ExtraMSBuildArgs = $"{buildOptions.ExtraMSBuildArgs} -p:WasmBootConfigFileName={buildOptions.BootConfigFileName}" };
@@ -180,9 +242,26 @@ public class WasmTemplateTestsBase : BuildTestBase
             return (_projectDir, res.Output);
         }
 
+        if (EnvironmentVariables.UseJavascriptBundler && buildOptions.IsPublish)
+        {
+            string publicWwwrootDir = Path.GetFullPath(Path.Combine(GetBinFrameworkDir(configuration, forPublish: true), ".."));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "JavascriptBundlers", "package.json"), Path.Combine(publicWwwrootDir, "package.json"));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "JavascriptBundlers", "rollup.config.mjs"), Path.Combine(publicWwwrootDir, "rollup.config.mjs"));
+
+            string npmPath = s_isWindows ? @"C:\Program Files\nodejs\npm.cmd" : "/bin/npm";
+            ToolCommand npmCommand = new ToolCommand(npmPath, _testOutput).WithWorkingDirectory(publicWwwrootDir);
+            npmCommand.Execute("install").EnsureSuccessful();
+            npmCommand.Execute("run build").EnsureSuccessful();
+
+            string publicDir = Path.Combine(publicWwwrootDir, "public");
+            File.Copy(Path.Combine(publicWwwrootDir, "index.html"), Path.Combine(publicDir, "index.html"));
+
+            buildOptions = buildOptions with { AssertAppBundle = false };
+        }
+
         if (buildOptions.AssertAppBundle)
         {
-            _provider.AssertWasmSdkBundle(configuration, buildOptions, IsUsingWorkloads, isNativeBuild, res.Output);
+            _provider.AssertWasmSdkBundle(configuration, buildOptions, IsUsingWorkloads, isNativeBuild, wasmFingerprintDotnetJs, res.Output);
         }
         return (_projectDir, res.Output);
     }
@@ -231,7 +310,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         }
     }
 
-    protected void UpdateBrowserMainJs(string? targetFramework = null, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
+    protected void UpdateBrowserMainJs(string? targetFramework = null, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath, bool forwardConsole = false)
     {
         targetFramework ??= DefaultTargetFramework;
         string mainJsPath = Path.Combine(_projectDir, "wwwroot", "main.js");
@@ -242,13 +321,20 @@ public class WasmTemplateTestsBase : BuildTestBase
             mainJsContent,
             ".create()",
             (targetFrameworkVersion.Major >= 8)
-                    ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
-                    : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()"
+                    ? $".withConfig({{ forwardConsole: {forwardConsole.ToString().ToLowerInvariant()}, appendElementOnExit: true, logExitCode: true, exitOnUnhandledError: true }}).create()"
+                    : ".withConfig({ appendElementOnExit: true, logExitCode: true }).create()"
             );
 
-        // dotnet.run() is used instead of runMain() in net9.0+
-        if (targetFrameworkVersion.Major >= 9)
+        if (targetFrameworkVersion.Major >= 11)
+        {
+            // runMainAndExit() is used instead of runMain() in net11.0+
+            updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "runMain()", "runMainAndExit()");
+        }
+        else if (targetFrameworkVersion.Major >= 9)
+        {
+            // dotnet.run() is used instead of runMain() in net9.0+
             updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "runMain()", "dotnet.run()");
+        }
 
         updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
 
@@ -264,20 +350,28 @@ public class WasmTemplateTestsBase : BuildTestBase
     public virtual async Task<RunResult> RunForPublishWithWebServer(RunOptions runOptions)
         => await BrowserRun(runOptions with { Host = RunHost.WebServer });
 
-    private async Task<RunResult> BrowserRun(RunOptions runOptions) => runOptions.Host switch
+    private async Task<RunResult> BrowserRun(RunOptions runOptions)
     {
-        RunHost.DotnetRun =>
-                await BrowserRunTest($"run -c {runOptions.Configuration} --no-build", _projectDir, runOptions),
+        if (EnvironmentVariables.UseJavascriptBundler)
+        {
+            runOptions = runOptions with { CustomBundleDir = Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..", "public")) };
+        }
 
-        RunHost.WebServer =>
-                await BrowserRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
-                    string.IsNullOrEmpty(runOptions.CustomBundleDir) ?
-                        Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..")) :
-                        runOptions.CustomBundleDir,
-                     runOptions),
+        return runOptions.Host switch
+        {
+            RunHost.DotnetRun =>
+                    await BrowserRunTest($"run -c {runOptions.Configuration} --no-build", _projectDir, runOptions),
 
-        _ => throw new NotImplementedException(runOptions.Host.ToString())
-    };
+            RunHost.WebServer =>
+                    await BrowserRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
+                        string.IsNullOrEmpty(runOptions.CustomBundleDir) ?
+                            Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..")) :
+                            runOptions.CustomBundleDir,
+                         runOptions),
+
+            _ => throw new NotImplementedException(runOptions.Host.ToString())
+        };
+    }
 
     private async Task<RunResult> BrowserRunTest(string runArgs,
                                     string workingDirectory,
@@ -292,6 +386,11 @@ public class WasmTemplateTestsBase : BuildTestBase
         using RunCommand runCommand = new RunCommand(s_buildEnv, _testOutput);
         ToolCommand cmd = runCommand.WithWorkingDirectory(workingDirectory);
 
+        return await BrowserRun(cmd, runArgs, runOptions);
+    }
+
+    protected async Task<RunResult> BrowserRun(ToolCommand cmd, string runArgs, RunOptions runOptions)
+    {
         var query = runOptions.BrowserQueryString ?? new NameValueCollection();
         if (runOptions.AOT)
         {
@@ -318,7 +417,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             modifyBrowserUrl: browserUrl => new Uri(new Uri(browserUrl), runOptions.BrowserPath + queryString).ToString());
 
         _testOutput.WriteLine("Waiting for page to load");
-        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new () { Timeout = 1 * 60 * 1000 });
+        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new() { Timeout = 1 * 60 * 1000 });
 
         if (runOptions.ExecuteAfterLoaded is not null)
         {
@@ -329,7 +428,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             await blazorOp.Test(page);
 
         _testOutput.WriteLine($"Waiting for additional 10secs to see if any errors are reported");
-        int exitCode = await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(10));
+        int exitCode = await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(runOptions.TimeoutSeconds ?? 10));
         if (runOptions.ExpectedExitCode is not null && exitCode != runOptions.ExpectedExitCode)
             throw new Exception($"Expected exit code {runOptions.ExpectedExitCode} but got {exitCode}.\nconsoleOutput={string.Join("\n", consoleOutput)}");
 
@@ -376,8 +475,11 @@ public class WasmTemplateTestsBase : BuildTestBase
     public string GetBinFrameworkDir(Configuration config, bool forPublish, string? framework = null, string? projectDir = null) =>
         _provider.GetBinFrameworkDir(config, forPublish, framework ?? DefaultTargetFramework, projectDir);
 
-    public BuildPaths GetBuildPaths(Configuration config, bool forPublish) =>
-        _provider.GetBuildPaths(config, forPublish);
+    public string GetObjDir(Configuration config, string? framework = null, string? projectDir = null) =>
+        _provider.GetObjDir(config, framework ?? DefaultTargetFramework, projectDir);
+
+    public BuildPaths GetBuildPaths(Configuration config, bool forPublish, string? projectDir = null) =>
+        _provider.GetBuildPaths(config, forPublish, projectDir);
 
     public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(string projectName, bool isAOT, BuildPaths paths, bool unchanged) =>
         _provider.GetFilesTable(projectName, isAOT, paths, unchanged);

@@ -1,46 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
+using System.IO;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace System.Security.Cryptography
 {
     internal static class NetStandardShims
     {
-        internal static unsafe int GetByteCount(this Encoding encoding, ReadOnlySpan<char> str)
-        {
-            if (str.IsEmpty)
-            {
-                return 0;
-            }
-
-            fixed (char* pStr = str)
-            {
-                return encoding.GetByteCount(pStr, str.Length);
-            }
-        }
-
-        internal static unsafe int GetBytes(this Encoding encoding, ReadOnlySpan<char> str, Span<byte> destination)
-        {
-            if (str.IsEmpty)
-            {
-                return 0;
-            }
-
-            fixed (char* pStr = str)
-            fixed (byte* pDestination = destination)
-            {
-                return encoding.GetBytes(pStr, str.Length, pDestination, destination.Length);
-            }
-        }
-
-        internal static void ReadExactly(this System.IO.Stream stream, Span<byte> buffer) =>
+        internal static void ReadExactly(this Stream stream, Span<byte> buffer) =>
             ReadAtLeast(stream, buffer, buffer.Length, throwOnEndOfStream: true);
 
         internal static int ReadAtLeast(
-            this System.IO.Stream stream,
+            this Stream stream,
             Span<byte> buffer,
             int minimumBytes,
             bool throwOnEndOfStream = true)
@@ -114,6 +86,7 @@ namespace System.Security.Cryptography
         }
     }
 
+#if !NETSTANDARD2_1_OR_GREATER
     internal static class CryptographicOperations
     {
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
@@ -146,18 +119,5 @@ namespace System.Security.Cryptography
             return accum == 0;
         }
     }
-}
-
-namespace System.Runtime.CompilerServices
-{
-    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
-    internal sealed class CallerArgumentExpressionAttribute : Attribute
-    {
-        public CallerArgumentExpressionAttribute(string parameterName)
-        {
-            ParameterName = parameterName;
-        }
-
-        public string ParameterName { get; }
-    }
+#endif
 }

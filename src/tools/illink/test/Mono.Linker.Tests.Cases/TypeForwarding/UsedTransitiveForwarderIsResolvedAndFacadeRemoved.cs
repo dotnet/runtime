@@ -7,21 +7,21 @@ using Mono.Linker.Tests.Cases.TypeForwarding.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.TypeForwarding
 {
-	[SetupCompileBefore ("SecondForwarder.dll", new[] { "Dependencies/ReferenceImplementationLibrary.cs" }, defines: new[] { "INCLUDE_REFERENCE_IMPL" })]
-	[SetupCompileBefore ("FirstForwarder.dll", new[] { "Dependencies/ForwarderLibrary.cs" }, references: new[] { "SecondForwarder.dll" })]
-	[SetupCompileAfter ("Implementation.dll", new[] { "Dependencies/ImplementationLibrary.cs" })]
-	[SetupCompileAfter ("SecondForwarder.dll", new[] { "Dependencies/ForwarderLibrary.cs" }, references: new[] { "Implementation.dll" })]
+    [SetupCompileBefore("SecondForwarder.dll", new[] { "Dependencies/ReferenceImplementationLibrary.cs" }, defines: new[] { "INCLUDE_REFERENCE_IMPL" })]
+    [SetupCompileBefore("FirstForwarder.dll", new[] { "Dependencies/ForwarderLibrary.cs" }, references: new[] { "SecondForwarder.dll" })]
+    [SetupCompileAfter("Implementation.dll", new[] { "Dependencies/ImplementationLibrary.cs" })]
+    [SetupCompileAfter("SecondForwarder.dll", new[] { "Dependencies/ForwarderLibrary.cs" }, references: new[] { "Implementation.dll" })]
 
-	[KeptMemberInAssembly ("Implementation.dll", typeof (ImplementationLibrary), "GetSomeValue()")]
-	[RemovedMemberInAssembly ("Implementation.dll", nameof (ImplementationStruct))]
-	[RemovedAssembly ("FirstForwarder.dll")]
-	[RemovedAssembly ("SecondForwarder.dll")]
-	class UsedTransitiveForwarderIsResolvedAndFacadeRemoved
-	{
-		static void Main ()
-		{
-			var instance = new ImplementationLibrary ();
-			instance.GetSomeValue ();
-		}
-	}
+    [KeptMemberInAssembly("Implementation.dll", typeof(ImplementationLibrary), "GetSomeValue()")]
+    [RemovedMemberInAssembly("Implementation.dll", nameof(ImplementationStruct))]
+    [RemovedAssembly("FirstForwarder.dll")]
+    [RemovedAssembly("SecondForwarder.dll")]
+    class UsedTransitiveForwarderIsResolvedAndFacadeRemoved
+    {
+        static void Main()
+        {
+            var instance = new ImplementationLibrary();
+            instance.GetSomeValue();
+        }
+    }
 }

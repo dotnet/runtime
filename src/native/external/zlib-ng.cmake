@@ -23,12 +23,13 @@ endif()
 if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
   # 'aligned_alloc' is not available in browser/wasi, yet it is set by zlib-ng/CMakeLists.txt.
   set(HAVE_ALIGNED_ALLOC FALSE CACHE BOOL "have aligned_alloc" FORCE)
+endif()
 
-  # zlib-ng uses atomics, so we need to enable threads when requested for browser/wasi, otherwise the wasm target won't have thread support.
-  if (CMAKE_USE_PTHREADS)
-      add_compile_options(-pthread)
-      add_linker_flag(-pthread)
-  endif()
+if (MSVC)
+  #zlib-ng sets /utf-8 which clashes with /source-charset:utf-8 that we set centrally
+  get_directory_property(dirCompileOptions COMPILE_OPTIONS)
+  string(REPLACE "/source-charset:utf-8" "" dirCompileOptions "${dirCompileOptions}")
+  set_directory_properties(PROPERTIES COMPILE_OPTIONS "${dirCompileOptions}")
 endif()
 
 set(BUILD_SHARED_LIBS OFF) # Shared libraries aren't supported in wasm
@@ -41,5 +42,13 @@ target_compile_options(zlib PRIVATE $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:
 target_compile_options(zlib PRIVATE $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wno-logical-op-parentheses>) # place parentheses around the '&&' expression to silence this warning
 target_compile_options(zlib PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4127>) # warning C4127: conditional expression is constant
 target_compile_options(zlib PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/guard:cf>) # Enable CFG always for zlib-ng so we don't need to build two flavors.
+
+if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
+  # zlib-ng uses atomics, so we need to enable threads when requested for browser/wasi, otherwise the wasm target won't have thread support.
+  if (CMAKE_USE_PTHREADS)
+    target_compile_options(zlib PRIVATE -pthread)
+    target_link_options(zlib PRIVATE -pthread)
+  endif()
+endif()
 
 set_target_properties(zlib PROPERTIES DEBUG_POSTFIX "") # Workaround: zlib's debug lib name is zlibd.lib

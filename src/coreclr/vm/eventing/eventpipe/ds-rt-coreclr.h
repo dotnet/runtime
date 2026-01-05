@@ -90,7 +90,7 @@ ds_rt_auto_trace_init (void)
 		auto_trace_init ();
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 #endif
 }
 
@@ -106,7 +106,7 @@ ds_rt_auto_trace_launch (void)
 		auto_trace_launch ();
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 #endif
 }
 
@@ -122,7 +122,7 @@ ds_rt_auto_trace_signal (void)
 		auto_trace_signal ();
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 #endif
 }
 
@@ -138,7 +138,7 @@ ds_rt_auto_trace_wait (void)
 		auto_trace_wait ();
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 #endif
 }
 
@@ -210,7 +210,7 @@ ds_rt_generate_core_dump (
 		}
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 	return result;
 }
 

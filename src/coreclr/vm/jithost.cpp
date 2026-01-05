@@ -6,6 +6,7 @@
 #include "utilcode.h"
 #include "corjit.h"
 #include "jithost.h"
+#include "minipal/time.h"
 
 void* JitHost::allocateMemory(size_t size)
 {
@@ -24,6 +25,11 @@ void JitHost::freeMemory(void* block)
 int JitHost::getIntConfigValue(const char* name, int defaultValue)
 {
     WRAPPER_NO_CONTRACT;
+
+    if (!strcmp(name, "EnableHWIntrinsic"))
+    {
+        return g_pConfig->EnableHWIntrinsic() ? 1 : 0;
+    }
 
     StackSString str;
     SString(SString::Utf8Literal, name).ConvertToUnicode(str);
@@ -176,7 +182,7 @@ void JitHost::reclaim()
 {
     if (m_pCurrentCachedList != NULL || m_pPreviousCachedList != NULL)
     {
-        DWORD ticks = ::GetTickCount();
+        DWORD ticks = (DWORD)minipal_lowres_ticks();
 
         if (m_lastFlush == 0) // Just update m_lastFlush first time around
         {

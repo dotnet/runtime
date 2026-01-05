@@ -4,7 +4,6 @@
 using FluentAssertions;
 using FluentAssertions.Execution;
 using Microsoft.DotNet.Cli.Build.Framework;
-using System;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -20,13 +19,10 @@ namespace Microsoft.DotNet.CoreSetup.Test
             int i = commandResult.StdErr.IndexOf(pattern);
             i.Should().BeGreaterThanOrEqualTo(
                 0,
-                "Trying to filter StdErr after '{0}', but such string can't be found in the StdErr.{1}{2}",
-                pattern,
-                Environment.NewLine,
-                commandResult.StdErr);
+                $"'{pattern}' should be in StdErr - cannot filter StdErr to after expected string.{commandResult.GetDiagnosticsInfo()}");
             string filteredStdErr = commandResult.StdErr.Substring(i);
 
-            return new CommandResult(commandResult.StartInfo, commandResult.ExitCode, commandResult.StdOut, filteredStdErr);
+            return new CommandResult(commandResult.StartInfo, commandResult.ProcessId, commandResult.ExitCode, commandResult.StdOut, filteredStdErr);
         }
     }
 }

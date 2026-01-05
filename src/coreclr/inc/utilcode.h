@@ -49,12 +49,8 @@ using std::nothrow;
 
 #define CoreLibName_W W("System.Private.CoreLib")
 #define CoreLibName_IL_W W("System.Private.CoreLib.dll")
-#define CoreLibName_NI_W W("System.Private.CoreLib.ni.dll")
-#define CoreLibName_TLB_W W("System.Private.CoreLib.tlb")
 #define CoreLibName_A "System.Private.CoreLib"
 #define CoreLibName_IL_A "System.Private.CoreLib.dll"
-#define CoreLibName_NI_A "System.Private.CoreLib.ni.dll"
-#define CoreLibName_TLB_A "System.Private.CoreLib.tlb"
 #define CoreLibNameLen 22
 #define CoreLibSatelliteName_A "System.Private.CoreLib.resources"
 #define CoreLibSatelliteNameLen 32
@@ -105,6 +101,17 @@ inline ResultType ThumbCodeToDataPointer(SourceType pCode)
 
 #endif // TARGET_ARM
 
+#ifdef TARGET_RISCV64
+
+inline bool Is32BitInstruction(WORD opcode)
+{
+    bool is32 = ((opcode & 0b11) == 0b11);
+    assert(!is32 || ((opcode & 0b11111) != 0b11111)); // 48-bit and larger instructions unsupported
+    return is32;
+}
+
+#endif
+
 // Convert from a PCODE to the corresponding PINSTR.  On many architectures this will be the identity function;
 // on ARM, this will mask off the THUMB bit.
 inline TADDR PCODEToPINSTR(PCODE pc)
@@ -135,13 +142,6 @@ typedef LPSTR   LPUTF8;
 #include "stdmacros.h"
 
 //********** Macros. **********************************************************
-#ifndef FORCEINLINE
- #if _MSC_VER < 1200
-   #define FORCEINLINE inline
- #else
-   #define FORCEINLINE __forceinline
- #endif
-#endif
 
 #ifndef DEBUG_NOINLINE
 #if defined(_DEBUG)
@@ -342,51 +342,11 @@ inline HRESULT OutOfMemory()
 }
 #endif
 
-//*****************************************************************************
-// Handle accessing localizable resource strings
-//*****************************************************************************
-typedef LPCWSTR LocaleID;
-typedef WCHAR LocaleIDValue[LOCALE_NAME_MAX_LENGTH];
-
-// Notes about the culture callbacks:
-// - The language we're operating in can change at *runtime*!
-// - A process may operate in *multiple* languages.
-//     (ex: Each thread may have it's own language)
-// - If we don't care what language we're in (or have no way of knowing),
-//     then return a 0-length name and UICULTUREID_DONTCARE for the culture ID.
-// - GetCultureName() and the GetCultureId() must be in sync (refer to the
-//     same language).
-// - We have two functions separate functions for better performance.
-//     - The name is used to resolve a directory for MsCorRC.dll.
-//     - The id is used as a key to map to a dll hinstance.
-
-// Callback to obtain both the culture name and the culture's parent culture name
-typedef HRESULT (*FPGETTHREADUICULTURENAMES)(__inout StringArrayList* pCultureNames);
-const LPCWSTR UICULTUREID_DONTCARE = NULL;
-
-typedef int (*FPGETTHREADUICULTUREID)(LocaleIDValue*);
-
 HMODULE CLRLoadLibrary(LPCWSTR lpLibFileName);
 
 HMODULE CLRLoadLibraryEx(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 
 BOOL CLRFreeLibrary(HMODULE hModule);
-
-// Load a string using the resources for the current module.
-STDAPI UtilLoadStringRC(UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax, int bQuiet=FALSE);
-
-// Specify callbacks so that UtilLoadStringRC can find out which language we're in.
-// If no callbacks specified (or both parameters are NULL), we default to the
-// resource dll in the root (which is probably english).
-void SetResourceCultureCallbacks(
-    FPGETTHREADUICULTURENAMES fpGetThreadUICultureNames,
-    FPGETTHREADUICULTUREID fpGetThreadUICultureId
-);
-
-void GetResourceCultureCallbacks(
-        FPGETTHREADUICULTURENAMES* fpGetThreadUICultureNames,
-        FPGETTHREADUICULTUREID* fpGetThreadUICultureId
-);
 
 //*****************************************************************************
 // Use this class by privately deriving from noncopyable to disallow copying of
@@ -406,205 +366,14 @@ private:
 };
 
 //*****************************************************************************
-// Must associate each handle to an instance of a resource dll with the int
-// that it represents
-//*****************************************************************************
-typedef HINSTANCE HRESOURCEDLL;
-
-
-class CCulturedHInstance
-{
-    LocaleIDValue   m_LangId;
-    HRESOURCEDLL    m_hInst;
-    BOOL            m_fMissing;
-
-public:
-    CCulturedHInstance()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_hInst = NULL;
-        m_fMissing = FALSE;
-    }
-
-    BOOL HasID(LocaleID id)
-    {
-        _ASSERTE(m_hInst != NULL || m_fMissing);
-        if (id == UICULTUREID_DONTCARE)
-            return FALSE;
-
-        return u16_strcmp(id, m_LangId) == 0;
-    }
-
-    HRESOURCEDLL GetLibraryHandle()
-    {
-        return m_hInst;
-    }
-
-    BOOL IsSet()
-    {
-        return m_hInst != NULL;
-    }
-
-    BOOL IsMissing()
-    {
-        return m_fMissing;
-    }
-
-    void SetMissing(LocaleID id)
-    {
-        _ASSERTE(m_hInst == NULL);
-        SetId(id);
-        m_fMissing = TRUE;
-    }
-
-    void Set(LocaleID id, HRESOURCEDLL hInst)
-    {
-        _ASSERTE(m_hInst == NULL);
-        _ASSERTE(m_fMissing == FALSE);
-        SetId(id);
-        m_hInst = hInst;
-    }
-  private:
-    void SetId(LocaleID id)
-    {
-        if (id != UICULTUREID_DONTCARE)
-        {
-            wcsncpy_s(m_LangId, ARRAY_SIZE(m_LangId), id, ARRAY_SIZE(m_LangId));
-            m_LangId[STRING_LENGTH(m_LangId)] = W('\0');
-        }
-        else
-        {
-            m_LangId[0] = W('\0');
-        }
-    }
- };
-
-#ifndef DACCESS_COMPILE
-void AddThreadPreferredUILanguages(StringArrayList* pArray);
-#endif
-//*****************************************************************************
-// CCompRC manages string Resource access for CLR. This includes loading
-// the MsCorRC.dll for resources as well allowing each thread to use a
-// a different localized version.
+// CCompRC manages string Resource access for CLR.
 //*****************************************************************************
 class CCompRC
 {
 public:
 
-    enum ResourceCategory
-    {
-        // must be present
-        Required,
-
-        // present in Desktop CLR and Core CLR + debug pack, an error
-        // If missing, get a generic error message instead
-        Error,
-
-        // present in Desktop CLR and Core CLR + debug pack, normal operation (e.g tracing)
-        // if missing, get a generic "resource not found" message instead
-        Debugging,
-
-        // present in Desktop CLR, optional for CoreCLR
-        DesktopCLR,
-
-        // might not be present, non essential
-        Optional
-    };
-
-    CCompRC()
-    {
-        // This constructor will be fired up on startup. Make sure it doesn't
-        // do anything besides zero-out out values.
-        m_fpGetThreadUICultureId = NULL;
-        m_fpGetThreadUICultureNames = NULL;
-
-        m_pHash = NULL;
-        m_nHashSize = 0;
-        m_csMap = NULL;
-        m_pResourceFile = NULL;
-    }// CCompRC
-
-    HRESULT Init(LPCWSTR pResourceFile);
-    void Destroy();
-
-    HRESULT LoadString(ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);
-    HRESULT LoadString(ResourceCategory eCategory, LocaleID langId, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax, int *pcwchUsed);
-
-    void SetResourceCultureCallbacks(
-        FPGETTHREADUICULTURENAMES fpGetThreadUICultureNames,
-        FPGETTHREADUICULTUREID fpGetThreadUICultureId
-    );
-
-    void GetResourceCultureCallbacks(
-        FPGETTHREADUICULTURENAMES* fpGetThreadUICultureNames,
-        FPGETTHREADUICULTUREID* fpGetThreadUICultureId
-    );
-
-    // Get the default resource location (mscorrc.dll)
-    static CCompRC* GetDefaultResourceDll();
-
-    static void GetDefaultCallbacks(
-                    FPGETTHREADUICULTURENAMES* fpGetThreadUICultureNames,
-                    FPGETTHREADUICULTUREID* fpGetThreadUICultureId)
-    {
-        WRAPPER_NO_CONTRACT;
-        m_DefaultResourceDll.GetResourceCultureCallbacks(
-                    fpGetThreadUICultureNames,
-                    fpGetThreadUICultureId);
-    }
-
-    static void SetDefaultCallbacks(
-                FPGETTHREADUICULTURENAMES fpGetThreadUICultureNames,
-                FPGETTHREADUICULTUREID fpGetThreadUICultureId)
-    {
-        WRAPPER_NO_CONTRACT;
-        // Either both are NULL or neither are NULL
-        _ASSERTE((fpGetThreadUICultureNames != NULL) ==
-                 (fpGetThreadUICultureId != NULL));
-
-        m_DefaultResourceDll.SetResourceCultureCallbacks(
-                fpGetThreadUICultureNames,
-                fpGetThreadUICultureId);
-    }
-
-private:
-// String resources packaged as PE files only exist on Windows
-#ifdef HOST_WINDOWS
-    HRESULT GetLibrary(LocaleID langId, HRESOURCEDLL* phInst);
-#ifndef DACCESS_COMPILE
-    HRESULT LoadLibraryHelper(HRESOURCEDLL *pHInst,
-                              SString& rcPath);
-    HRESULT LoadLibraryThrows(HRESOURCEDLL * pHInst);
-    HRESULT LoadLibrary(HRESOURCEDLL * pHInst);
-    HRESULT LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName);
-#endif // DACCESS_COMPILE
-#endif // HOST_WINDOWS
-
-    // We do not have global constructors any more
-    static LONG     m_dwDefaultInitialized;
-    static CCompRC  m_DefaultResourceDll;
-    static LPCWSTR  m_pDefaultResource;
-
-    // We must map between a thread's int and a dll instance.
-    // Since we only expect 1 language almost all of the time, we'll special case
-    // that and then use a variable size map for everything else.
-    CCulturedHInstance m_Primary;
-    CCulturedHInstance * m_pHash;
-    int m_nHashSize;
-
-    CRITSEC_COOKIE m_csMap;
-
-    LPCWSTR m_pResourceFile;
-
-    // Main accessors for hash
-    HRESOURCEDLL LookupNode(LocaleID langId, BOOL &fMissing);
-    HRESULT AddMapNode(LocaleID langId, HRESOURCEDLL hInst, BOOL fMissing = FALSE);
-
-    FPGETTHREADUICULTUREID m_fpGetThreadUICultureId;
-    FPGETTHREADUICULTURENAMES m_fpGetThreadUICultureNames;
+    static HRESULT LoadString(UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);
 };
-
-HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax);
 
 // The HRESULT_FROM_WIN32 macro evaluates its arguments three times.
 // <TODO>TODO: All HRESULT_FROM_WIN32(GetLastError()) should be replaced by calls to
@@ -729,8 +498,6 @@ void    SplitPathInterior(
 
 #include "ostype.h"
 
-#define CLRGetTickCount64() GetTickCount64()
-
 //
 // Allocate free memory within the range [pMinAddr..pMaxAddr] using
 // ClrVirtualQuery to find free memory and ClrVirtualAlloc to allocate it.
@@ -850,13 +617,14 @@ inline void SetBit(BYTE * pcBits,int iBit,int bOn)
 #endif
 
 template<typename T>
-class SimpleListNode
+class SimpleListNode final
 {
 public:
-    SimpleListNode(const T& _t)
+    SimpleListNode(T const& _t)
+        : data{ _t }
+        , next{}
     {
-        data = _t;
-        next = 0;
+        LIMITED_METHOD_CONTRACT;
     }
 
     T                  data;
@@ -864,43 +632,45 @@ public:
 };
 
 template<typename T>
-class SimpleList
+class SimpleList final
 {
 public:
-    typedef SimpleListNode<T> NodeType;
+    typedef SimpleListNode<T> Node;
 
     SimpleList()
+        : _head{}
     {
-        head = NULL;
+        LIMITED_METHOD_CONTRACT;
     }
 
-    void LinkHead(NodeType* pNode)
+    void LinkHead(Node* pNode)
     {
-        pNode->next = head;
-                      head = pNode;
+        LIMITED_METHOD_CONTRACT;
+        pNode->next = _head;
+        _head = pNode;
     }
 
-    NodeType* UnlinkHead()
+    Node* UnlinkHead()
     {
-        NodeType* ret = head;
+        LIMITED_METHOD_CONTRACT;
+        Node* ret = _head;
 
-        if (head)
+        if (_head)
         {
-            head = head->next;
+            _head = _head->next;
         }
         return ret;
     }
 
-    NodeType* Head()
+    Node* Head()
     {
-        return head;
+        LIMITED_METHOD_CONTRACT;
+        return _head;
     }
 
-protected:
-
-    NodeType* head;
+private:
+    Node* _head;
 };
-
 
 //*****************************************************************************
 // This class implements a dynamic array of structures for which the order of
@@ -941,6 +711,37 @@ public:
         // Free the chunk of memory.
         if (m_pTable != NULL)
             ALLOCATOR::Free(this, m_pTable);
+    }
+
+    CUnorderedArrayWithAllocator(CUnorderedArrayWithAllocator const&) = delete;
+    CUnorderedArrayWithAllocator& operator=(CUnorderedArrayWithAllocator const&) = delete;
+    CUnorderedArrayWithAllocator(CUnorderedArrayWithAllocator&& other)
+        : m_iCount{ 0 }
+        , m_iSize{ 0 }
+        , m_pTable{ NULL}
+    {
+        LIMITED_METHOD_CONTRACT;
+        other.m_iCount = 0;
+        other.m_iSize = 0;
+        other.m_pTable = NULL;
+    }
+    CUnorderedArrayWithAllocator& operator=(CUnorderedArrayWithAllocator&& other)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (this != &other)
+        {
+            if (m_pTable != NULL)
+                ALLOCATOR::Free(this, m_pTable);
+
+            m_iCount = other.m_iCount;
+            m_iSize = other.m_iSize;
+            m_pTable = other.m_pTable;
+
+            other.m_iCount = 0;
+            other.m_iSize = 0;
+            other.m_pTable = NULL;
+        }
+        return *this;
     }
 
     void Clear()
@@ -1063,12 +864,11 @@ public:
 
 #endif // #ifndef DACCESS_COMPILE
 
-    USHORT Count()
+    INT32 Count()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        _ASSERTE(FitsIn<USHORT>(m_iCount));
-        return static_cast<USHORT>(m_iCount);
+        return m_iCount;
     }
 
 private:
@@ -3202,14 +3002,6 @@ inline HRESULT FakeCoCreateInstance(REFCLSID   rclsid,
 };
 
 //*****************************************************************************
-// Gets the directory based on the location of the module. This routine
-// is called at COR setup time. Set is called during EEStartup and by the
-// MetaData dispenser.
-//*****************************************************************************
-HRESULT GetInternalSystemDirectory(_Out_writes_to_opt_(*pdwLength,*pdwLength) LPWSTR buffer, __inout DWORD* pdwLength);
-LPCWSTR GetInternalSystemDirectory(_Out_opt_ DWORD * pdwLength = NULL);
-
-//*****************************************************************************
 // This function validates the given Method/Field/Standalone signature. (util.cpp)
 //*****************************************************************************
 struct IMDInternalImport;
@@ -3219,13 +3011,6 @@ HRESULT validateTokenSig(
     ULONG               cbSig,                  // [IN] Size in bytes of the signature.
     DWORD               dwFlags,                // [IN] Method flags.
     IMDInternalImport*  pImport);               // [IN] Internal MD Import interface ptr
-
-//*****************************************************************************
-// Determine the version number of the runtime that was used to build the
-// specified image. The pMetadata pointer passed in is the pointer to the
-// metadata contained in the image.
-//*****************************************************************************
-HRESULT GetImageRuntimeVersionString(PVOID pMetaData, LPCSTR* pString);
 
 //*****************************************************************************
 // The registry keys and values that contain the information regarding
@@ -3337,6 +3122,16 @@ void PutLoongArch64PC12(UINT32 * pCode, INT64 imm);
 void PutLoongArch64JIR(UINT32 * pCode, INT64 imm);
 
 //*****************************************************************************
+//  Extract the PC-Relative offset from auipc + I-type or S-type adder (addi/load/store/jalr)
+//*****************************************************************************
+INT64 GetRiscV64AuipcCombo(UINT32 * pCode, bool isStype);
+
+//*****************************************************************************
+//  Deposit the PC-Relative offset into auipc + I-type or S-type adder (addi/load/store/jalr)
+//*****************************************************************************
+void PutRiscV64AuipcCombo(UINT32 * pCode, INT64 offset, bool isStype);
+
+//*****************************************************************************
 // Returns whether the offset fits into bl instruction
 //*****************************************************************************
 inline bool FitsInThumb2BlRel24(INT32 imm24)
@@ -3374,6 +3169,19 @@ inline bool FitsInRel12(INT32 val32)
 inline bool FitsInRel28(INT64 val64)
 {
     return (val64 >= -0x08000000LL) && (val64 < 0x08000000LL);
+}
+
+//*****************************************************************************
+// Returns whether the offset fits into a RISC-V auipc + I-type or S-type instruction combo
+//*****************************************************************************
+inline bool FitsInRiscV64AuipcCombo(INT64 val64)
+{
+    // A PC relative load/store/jalr/addi is 2 instructions, e.g.:
+    //     auipc reg,      offset_hi20  # range: [0x80000000, 0x7FFFF000]
+    //     ld    reg, reg, offset_lo12  # range: [0xFFFFF800, 0x000007FF]
+    // Both hi20 and lo12 immediates are sign-extended and combined with a 64-bit adder,
+    // which shifts the total 32-bit range into the negative by half of the 12-bit immediate range.
+    return (val64 >= -(1ll << 31) - (1ll << 11)) && (val64 < (1ll << 31) - (1ll << 11));
 }
 
 //
@@ -3735,7 +3543,7 @@ namespace UtilCode
             T volatile * target,
             T            value)
         {
-            static_assert_no_msg(sizeof(T) == sizeof(LONG));
+            static_assert(sizeof(T) == sizeof(LONG));
             LONG res = ::InterlockedExchange(
                 reinterpret_cast<LONG volatile *>(target),
                 *reinterpret_cast<LONG *>(/*::operator*/&(value)));
@@ -3747,7 +3555,7 @@ namespace UtilCode
             T            exchange,
             T            comparand)
         {
-            static_assert_no_msg(sizeof(T) == sizeof(LONG));
+            static_assert(sizeof(T) == sizeof(LONG));
             LONG res = ::InterlockedCompareExchange(
                 reinterpret_cast<LONG volatile *>(destination),
                 *reinterpret_cast<LONG*>(/*::operator*/&(exchange)),
@@ -3763,7 +3571,7 @@ namespace UtilCode
             T volatile * target,
             T            value)
         {
-            static_assert_no_msg(sizeof(T) == sizeof(LONGLONG));
+            static_assert(sizeof(T) == sizeof(LONGLONG));
             LONGLONG res = ::InterlockedExchange64(
                 reinterpret_cast<LONGLONG volatile *>(target),
                 *reinterpret_cast<LONGLONG *>(/*::operator*/&(value)));
@@ -3775,7 +3583,7 @@ namespace UtilCode
             T            exchange,
             T            comparand)
         {
-            static_assert_no_msg(sizeof(T) == sizeof(LONGLONG));
+            static_assert(sizeof(T) == sizeof(LONGLONG));
             LONGLONG res = ::InterlockedCompareExchange64(
                 reinterpret_cast<LONGLONG volatile *>(destination),
                 *reinterpret_cast<LONGLONG*>(/*::operator*/&(exchange)),
@@ -3970,7 +3778,6 @@ struct SpinConstants
     DWORD dwMaximumDuration;
     DWORD dwBackoffFactor;
     DWORD dwRepetitions;
-    DWORD dwMonitorSpinCount;
 };
 
 extern SpinConstants g_SpinConstants;

@@ -8,6 +8,9 @@
 #ifdef _WIN32
     #define c_static_assert(e) static_assert((e),"")
     #include "../Common/pal_utilities.h"
+    #if _WIN64
+        #include <zlib_allocator.h>
+    #endif
 #else
     #include "pal_utilities.h"
 #endif
@@ -38,6 +41,11 @@ Initializes the PAL_ZStream by creating and setting its underlying z_stream.
 static int32_t Init(PAL_ZStream* stream)
 {
     z_stream* zStream = (z_stream*)calloc(1, sizeof(z_stream));
+
+#ifdef _WIN64
+    zStream->zalloc = z_custom_calloc;
+    zStream->zfree = z_custom_cfree;
+#endif
 
     stream->internalState = zStream;
 
@@ -177,6 +185,17 @@ int32_t CompressionNative_InflateEnd(PAL_ZStream* stream)
     z_stream* zStream = GetCurrentZStream(stream);
     int32_t result = inflateEnd(zStream);
     End(stream);
+
+    return result;
+}
+
+int32_t CompressionNative_InflateReset2_(PAL_ZStream* stream, int32_t windowBits)
+{
+    assert(stream != NULL);
+
+    z_stream* zStream = GetCurrentZStream(stream);
+    int32_t result = inflateReset2(zStream, windowBits);
+    TransferStateToPalZStream(zStream, stream);
 
     return result;
 }

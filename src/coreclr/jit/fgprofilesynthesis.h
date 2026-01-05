@@ -37,12 +37,36 @@ public:
         p.Run(option);
     }
 
+    static PhaseStatus AdjustThrowEdgeLikelihoods(Compiler* compiler);
+
     static constexpr weight_t epsilon = 0.001;
 
 private:
     ProfileSynthesis(Compiler* compiler)
         : m_comp(compiler)
+        , m_dfsTree(compiler->m_dfsTree)
+        , m_loops(compiler->m_loops)
+        // Profile synthesis can be run before or after morph, so tolerate (non-)canonical method entries
+        , m_entryBlock((compiler->opts.IsOSR() && (compiler->fgEntryBB != nullptr)) ? compiler->fgEntryBB
+                                                                                    : compiler->fgFirstBB)
     {
+        // If the Compiler object didn't give us flowgraph annotations to use, re-compute them
+        if (m_dfsTree == nullptr)
+        {
+            m_dfsTree = compiler->fgComputeDfs();
+            m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+        }
+        else
+        {
+            assert(m_loops != nullptr);
+        }
+
+        m_improperLoopHeaders = m_loops->ImproperLoopHeaders();
+
+        if (m_loops->NumLoops() > 0)
+        {
+            m_cyclicProbabilities = new (compiler, CMK_Pgo) weight_t[m_loops->NumLoops()];
+        }
     }
 
     static constexpr weight_t exceptionWeight       = 0.00001;

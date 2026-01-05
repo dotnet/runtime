@@ -147,7 +147,7 @@ namespace System.Globalization.Tests
         public void PredefinedCulturesOnlyEnvVarTest(string predefinedCulturesOnlyEnvVar, string cultureName)
         {
             var psi = new ProcessStartInfo();
-            psi.Environment.Clear();
+            TestEnvironment.ClearGlobalizationEnvironmentVars(psi.Environment);
 
             psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", predefinedCulturesOnlyEnvVar);
 
@@ -176,7 +176,7 @@ namespace System.Globalization.Tests
         public void TestAllowInvariantCultureOnly(bool enableInvariant, bool predefinedCulturesOnly, bool declarePredefinedCulturesOnly)
         {
             var psi = new ProcessStartInfo();
-            psi.Environment.Clear();
+            TestEnvironment.ClearGlobalizationEnvironmentVars(psi.Environment);
 
             if (enableInvariant)
             {

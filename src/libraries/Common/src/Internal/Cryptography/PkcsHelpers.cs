@@ -223,7 +223,7 @@ namespace Internal.Cryptography
                 return Oids.Sha384;
             if (algName == HashAlgorithmName.SHA512)
                 return Oids.Sha512;
-#if NET8_0_OR_GREATER
+#if NET
             if (algName == HashAlgorithmName.SHA3_256)
                 return Oids.Sha3_256;
             if (algName == HashAlgorithmName.SHA3_384)
@@ -353,9 +353,12 @@ namespace Internal.Cryptography
             };
         }
 
+        public static AttributeAsn[] NormalizeAttributeSet(AttributeAsn[] setItems) =>
+            NormalizeAttributeSet(setItems, out _);
+
         public static AttributeAsn[] NormalizeAttributeSet(
             AttributeAsn[] setItems,
-            Action<byte[]>? encodedValueProcessor = null)
+            out byte[] encodedValue)
         {
             byte[] normalizedValue;
 
@@ -370,7 +373,7 @@ namespace Internal.Cryptography
             writer.PopSetOf();
             normalizedValue = writer.Encode();
 
-            encodedValueProcessor?.Invoke(normalizedValue);
+            encodedValue = normalizedValue;
 
             try
             {

@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,10 +45,7 @@ namespace System.Text.Json
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json);
 
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
             return jsonTypeInfo.DeserializeAsync(utf8Json, cancellationToken);
@@ -81,10 +77,7 @@ namespace System.Text.Json
             Stream utf8Json,
             JsonSerializerOptions? options = null)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json);
 
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
             return jsonTypeInfo.Deserialize(utf8Json);
@@ -121,14 +114,8 @@ namespace System.Text.Json
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
-            if (returnType is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json);
+            ArgumentNullException.ThrowIfNull(returnType);
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
             return jsonTypeInfo.DeserializeAsObjectAsync(utf8Json, cancellationToken);
@@ -161,14 +148,8 @@ namespace System.Text.Json
             Type returnType,
             JsonSerializerOptions? options = null)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
-            if (returnType is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json);
+            ArgumentNullException.ThrowIfNull(returnType);
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
             return jsonTypeInfo.DeserializeAsObject(utf8Json);
@@ -198,14 +179,8 @@ namespace System.Text.Json
             JsonTypeInfo<TValue> jsonTypeInfo,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
-            if (jsonTypeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json);
+            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
 
             jsonTypeInfo.EnsureConfigured();
             return jsonTypeInfo.DeserializeAsync(utf8Json, cancellationToken);
@@ -233,14 +208,8 @@ namespace System.Text.Json
             JsonTypeInfo jsonTypeInfo,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
-            if (jsonTypeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json);
+            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
 
             jsonTypeInfo.EnsureConfigured();
             return jsonTypeInfo.DeserializeAsObjectAsync(utf8Json, cancellationToken);
@@ -266,14 +235,8 @@ namespace System.Text.Json
             Stream utf8Json,
             JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
-            if (jsonTypeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json);
+            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
 
             jsonTypeInfo.EnsureConfigured();
             return jsonTypeInfo.Deserialize(utf8Json);
@@ -297,14 +260,8 @@ namespace System.Text.Json
             Stream utf8Json,
             JsonTypeInfo jsonTypeInfo)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
-            if (jsonTypeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json);
+            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
 
             jsonTypeInfo.EnsureConfigured();
             return jsonTypeInfo.DeserializeAsObject(utf8Json);
@@ -343,18 +300,9 @@ namespace System.Text.Json
             JsonSerializerContext context,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
-            if (returnType is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
-            }
-            if (context is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json);
+            ArgumentNullException.ThrowIfNull(returnType);
+            ArgumentNullException.ThrowIfNull(context);
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
             return jsonTypeInfo.DeserializeAsObjectAsync(utf8Json, cancellationToken);
@@ -389,18 +337,9 @@ namespace System.Text.Json
             Type returnType,
             JsonSerializerContext context)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
-            if (returnType is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
-            }
-            if (context is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json);
+            ArgumentNullException.ThrowIfNull(returnType);
+            ArgumentNullException.ThrowIfNull(context);
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
             return jsonTypeInfo.DeserializeAsObject(utf8Json);
@@ -455,10 +394,7 @@ namespace System.Text.Json
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json);
 
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
             return DeserializeAsyncEnumerableCore(utf8Json, jsonTypeInfo, topLevelValues, cancellationToken);
@@ -509,15 +445,8 @@ namespace System.Text.Json
             bool topLevelValues,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
-
-            if (jsonTypeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json);
+            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
 
             jsonTypeInfo.EnsureConfigured();
             return DeserializeAsyncEnumerableCore(utf8Json, jsonTypeInfo, topLevelValues, cancellationToken);
@@ -556,16 +485,16 @@ namespace System.Text.Json
                 ReadStack readStack = default;
                 readStack.Initialize(listTypeInfo, supportContinuation: true);
                 JsonReaderState jsonReaderState = new(readerOptions);
-                // Note: The ReadBufferState ctor rents pooled buffers.
-                ReadBufferState bufferState = new(listTypeInfo.Options.DefaultBufferSize);
+                // Note: The StreamReadBufferState ctor rents pooled buffers.
+                StreamReadBufferState bufferState = new StreamReadBufferState(listTypeInfo.Options.DefaultBufferSize);
 
                 try
                 {
                     bool success;
                     do
                     {
-                        bufferState = await bufferState.ReadFromStreamAsync(utf8Json, cancellationToken, fillBuffer: false).ConfigureAwait(false);
-                        success = listTypeInfo.ContinueDeserialize(
+                        bufferState = await bufferState.ReadAsync(utf8Json, cancellationToken, fillBuffer: false).ConfigureAwait(false);
+                        success = listTypeInfo.ContinueDeserialize<StreamReadBufferState, Stream>(
                             ref bufferState,
                             ref jsonReaderState,
                             ref readStack,
@@ -588,43 +517,6 @@ namespace System.Text.Json
                 {
                     bufferState.Dispose();
                 }
-            }
-
-            static JsonTypeInfo<List<T?>> GetOrAddListTypeInfoForArrayMode(JsonTypeInfo<T> elementTypeInfo)
-            {
-                if (elementTypeInfo._asyncEnumerableArrayTypeInfo != null)
-                {
-                    return (JsonTypeInfo<List<T?>>)elementTypeInfo._asyncEnumerableArrayTypeInfo;
-                }
-
-                var converter = new ListOfTConverter<List<T>, T>();
-                var listTypeInfo = new JsonTypeInfo<List<T?>>(converter, elementTypeInfo.Options)
-                {
-                    CreateObject = static () => new List<T?>(),
-                    ElementTypeInfo = elementTypeInfo,
-                };
-
-                listTypeInfo.EnsureConfigured();
-                elementTypeInfo._asyncEnumerableArrayTypeInfo = listTypeInfo;
-                return listTypeInfo;
-            }
-
-            static JsonTypeInfo<List<T?>> GetOrAddListTypeInfoForRootLevelValueMode(JsonTypeInfo<T> elementTypeInfo)
-            {
-                if (elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo != null)
-                {
-                    return (JsonTypeInfo<List<T?>>)elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo;
-                }
-
-                var converter = new RootLevelListConverter<T>(elementTypeInfo);
-                var listTypeInfo = new JsonTypeInfo<List<T?>>(converter, elementTypeInfo.Options)
-                {
-                    ElementTypeInfo = elementTypeInfo,
-                };
-
-                listTypeInfo.EnsureConfigured();
-                elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo = listTypeInfo;
-                return listTypeInfo;
             }
         }
     }

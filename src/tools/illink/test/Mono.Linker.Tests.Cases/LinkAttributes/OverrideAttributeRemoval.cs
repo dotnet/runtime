@@ -8,32 +8,32 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.LinkAttributes
 {
-	[SetupLinkAttributesFile ("LinkerAttributeRemovalWithOverride.xml")]
-	[SetupLinkerDescriptorFile ("OverrideAttributeRemoval.xml")]
-	[IgnoreLinkAttributes (false)]
-	[KeptMember (".ctor()")]
-	class OverrideAttributeRemoval
-	{
-		public static void Main ()
-		{
-			var instance = new OverrideAttributeRemoval ();
-			instance._fieldWithCustomAttribute = null;
-			string value = instance.methodWithCustomAttribute ("parameter");
-		}
-		[Kept]
-		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-		Type _fieldWithCustomAttribute;
+    [SetupLinkAttributesFile("LinkerAttributeRemovalWithOverride.xml")]
+    [SetupLinkerDescriptorFile("OverrideAttributeRemoval.xml")]
+    [IgnoreLinkAttributes(false)]
+    [KeptMember(".ctor()")]
+    class OverrideAttributeRemoval
+    {
+        public static void Main()
+        {
+            var instance = new OverrideAttributeRemoval();
+            instance._fieldWithCustomAttribute = null;
+            string value = instance.methodWithCustomAttribute("parameter");
+        }
+        [Kept]
+        [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        Type _fieldWithCustomAttribute;
 
-		[Kept]
-		[return: KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
-		private string methodWithCustomAttribute (
-			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
-			string parameterWithCustomAttribute)
-		{
-			return "this is a return value";
-		}
-	}
+        [Kept]
+        [return: KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        private string methodWithCustomAttribute(
+            [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            string parameterWithCustomAttribute)
+        {
+            return "this is a return value";
+        }
+    }
 }

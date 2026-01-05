@@ -5,18 +5,12 @@
 #define _UNWIND_X86_H
 
 // This file is shared between CoreCLR and NativeAOT. Some of the differences are handled
-// with the FEATURE_NATIVEAOT and FEATURE_EH_FUNCLETS defines. There are three main methods
-// that are used by both runtimes - DecodeGCHdrInfo, UnwindStackFrameX86, and EnumGcRefsX86.
+// with the FEATURE_NATIVEAOT define. There are three main methods that are used by both
+// runtimes - DecodeGCHdrInfo, UnwindStackFrameX86, and EnumGcRefsX86.
 //
-// The IN_EH_FUNCLETS and IN_EH_FUNCLETS_COMMA macros are used to specify some parameters
-// for the above methods that are specific for a certain runtime or configuration.
-#ifdef FEATURE_EH_FUNCLETS
-#define IN_EH_FUNCLETS(a) a
+// The IN_EH_FUNCLETS_COMMA macro is used to specify some parameters for the above methods
+// that are specific for a certain runtime or configuration.
 #define IN_EH_FUNCLETS_COMMA(a) a,
-#else
-#define IN_EH_FUNCLETS(a)
-#define IN_EH_FUNCLETS_COMMA(a)
-#endif
 
 enum regNum
 {
@@ -351,7 +345,7 @@ struct hdrInfo
     bool                isSpeculativeStackWalk; // is the stackwalk seeded by an untrusted source (e.g., sampling profiler)?
 
     // These always includes EBP for EBP-frames and double-aligned-frames
-    RegMask             savedRegMask:8; // which callee-saved regs are saved on stack
+    RegMask             savedRegMask;   // which callee-saved regs are saved on stack
 
     // Count of the callee-saved registers, excluding the frame pointer.
     // This does not include EBP for EBP-frames and double-aligned-frames.
@@ -366,6 +360,8 @@ struct hdrInfo
     unsigned int        syncEndOffset;   // INVALID_SYNC_OFFSET if there not synchronized method
     unsigned int        syncEpilogStart; // The start of the epilog. Synchronized methods are guaranteed to have no more than one epilog.
     unsigned int        revPInvokeOffset; // INVALID_REV_PINVOKE_OFFSET if there is no Reverse PInvoke frame
+
+    unsigned int        noGCRegionCnt;
 
     enum { NOT_IN_PROLOG = -1, NOT_IN_EPILOG = -1 };
 
@@ -397,8 +393,19 @@ bool UnwindStackFrameX86(PREGDISPLAY     pContext,
                          IN_EH_FUNCLETS_COMMA(bool            isFunclet)
                          bool            updateAllRegs);
 
+unsigned int DecodeGCHdrInfoMethodSize(GCInfoToken gcInfoToken);
+
 size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
                        unsigned    curOffset,
                        hdrInfo   * infoPtr);
+
+bool IsInNoGCRegion(hdrInfo   * infoPtr,
+                    PTR_CBYTE   table,
+                    unsigned    curOffset);
+
+unsigned FindFirstInterruptiblePoint(hdrInfo   * infoPtr,
+                                     PTR_CBYTE   table,
+                                     unsigned    offs,
+                                     unsigned    endOffs);
 
 #endif // _UNWIND_X86_H

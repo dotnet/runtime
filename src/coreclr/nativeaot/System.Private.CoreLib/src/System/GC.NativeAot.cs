@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Threading;
 
 using Internal.Runtime;
@@ -142,6 +143,11 @@ namespace System
 
         public static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting)
         {
+            Collect(generation, mode, blocking, compacting, lowMemoryPressure: false);
+        }
+
+        internal static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting, bool lowMemoryPressure)
+        {
             ArgumentOutOfRangeException.ThrowIfNegative(generation);
 
             if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Aggressive))
@@ -186,7 +192,7 @@ namespace System
                 iInternalModes |= (int)InternalGCCollectionMode.NonBlocking;
             }
 
-            RuntimeImports.RhCollect(generation, (InternalGCCollectionMode)iInternalModes);
+            RuntimeImports.RhCollect(generation, (InternalGCCollectionMode)iInternalModes, lowMemoryPressure ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
         }
 
         /// <summary>
@@ -421,7 +427,11 @@ namespace System
             }
 
             StartNoGCRegionStatus status =
-                (StartNoGCRegionStatus)RuntimeImports.RhStartNoGCRegion(totalSize, hasLohSize, lohSize, disallowFullBlockingGC);
+                (StartNoGCRegionStatus)RuntimeImports.RhStartNoGCRegion(
+                    totalSize,
+                    hasLohSize ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
+                    lohSize,
+                    disallowFullBlockingGC ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
             switch (status)
             {
                 case StartNoGCRegionStatus.NotEnoughMemory:
@@ -643,7 +653,7 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void ConfigCallback(void* configurationContext, void* name, void* publicKey, RuntimeImports.GCConfigurationType type, long data)
+        private static unsafe void ConfigCallback(void* configurationContext, byte* name, byte* publicKey, RuntimeImports.GCConfigurationType type, long data)
         {
             // If the public key is null, it means that the corresponding configuration isn't publicly available
             // and therefore, we shouldn't add it to the configuration dictionary to return to the user.
@@ -659,7 +669,7 @@ namespace System
             Debug.Assert(context.Configurations != null);
             Dictionary<string, object> configurationDictionary = context.Configurations!;
 
-            string nameAsString = Marshal.PtrToStringUTF8((IntPtr)name)!;
+            string nameAsString = Utf8StringMarshaller.ConvertToManaged(name)!;
             switch (type)
             {
                 case RuntimeImports.GCConfigurationType.Int64:
@@ -668,7 +678,7 @@ namespace System
 
                 case RuntimeImports.GCConfigurationType.StringUtf8:
                     {
-                        string? dataAsString = Marshal.PtrToStringUTF8((nint)data);
+                        string? dataAsString = Utf8StringMarshaller.ConvertToManaged((byte*)data);
                         configurationDictionary[nameAsString] = dataAsString ?? string.Empty;
                         break;
                     }
@@ -759,7 +769,7 @@ namespace System
 
         /// <summary>Gets garbage collection memory information.</summary>
         /// <returns>An object that contains information about the garbage collector's memory usage.</returns>
-        public static GCMemoryInfo GetGCMemoryInfo() => GetGCMemoryInfo(GCKind.Any);
+        public static GCMemoryInfo GetGCMemoryInfo() => GetGCMemoryInfoUnchecked(GCKind.Any);
 
         /// <summary>Gets garbage collection memory information.</summary>
         /// <param name="kind">The kind of collection for which to retrieve memory information.</param>
@@ -775,6 +785,11 @@ namespace System
                                           GCKind.Background));
             }
 
+            return GetGCMemoryInfoUnchecked(kind);
+        }
+
+        private static GCMemoryInfo GetGCMemoryInfoUnchecked(GCKind kind)
+        {
             var data = new GCMemoryInfoData();
             RuntimeImports.RhGetMemoryInfo(ref data.GetRawData(), kind);
             return new GCMemoryInfo(data);

@@ -166,7 +166,9 @@ struct NATIVE_CONTEXT
 #elif defined(TARGET_LOONGARCH64)
 
     uint64_t& R0();
+    uint64_t& Ra();
     uint64_t& R2();
+    uint64_t& Sp();
     uint64_t& R4();
     uint64_t& R5();
     uint64_t& R6();
@@ -185,6 +187,7 @@ struct NATIVE_CONTEXT
     uint64_t& R19();
     uint64_t& R20();
     uint64_t& R21();
+    uint64_t& Fp();
     uint64_t& R23();
     uint64_t& R24();
     uint64_t& R25();
@@ -194,9 +197,6 @@ struct NATIVE_CONTEXT
     uint64_t& R29();
     uint64_t& R30();
     uint64_t& R31();
-    uint64_t& Fp(); // R22
-    uint64_t& Ra(); // R1
-    uint64_t& Sp(); // R3
     uint64_t& Pc();
 
     uintptr_t GetIp() { return (uintptr_t)Pc(); }
@@ -210,7 +210,7 @@ struct NATIVE_CONTEXT
         ASSERT(&R4() + 1 == &R5());
         ASSERT(&R4() + 10 == &R14());
 
-        for (uint64_t* pReg = &R0(); pReg <= &R31(); pReg++)
+        for (uint64_t* pReg = &Ra(); pReg <= &R31(); pReg++)
             lambda((size_t*)pReg);
 
         // Ra can be used as a scratch register

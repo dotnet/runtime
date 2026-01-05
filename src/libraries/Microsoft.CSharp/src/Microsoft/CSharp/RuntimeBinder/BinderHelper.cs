@@ -21,6 +21,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         private static MethodInfo s_SingleIsNaN;
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal static DynamicMetaObject Bind(
                 ICSharpBinder action,
                 RuntimeBinder binder,
@@ -474,6 +475,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         }
 
 #if !ENABLECOMBINDER
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal static void ThrowIfUsingDynamicCom(DynamicMetaObject target)
         {
             if (target.LimitType.IsCOMObject)

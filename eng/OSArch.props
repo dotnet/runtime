@@ -32,4 +32,12 @@
     <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
     <Platform Condition="'$(Platform)' == '' and '$(InferPlatformFromTargetArchitecture)' == 'true'">$(TargetArchitecture)</Platform>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetsWasm Condition="'$(TargetArchitecture)' == 'wasm'">true</TargetsWasm>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <_ImportedOSArchProps>true</_ImportedOSArchProps>
+  </PropertyGroup>
 </Project>

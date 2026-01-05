@@ -3,67 +3,47 @@
 
 using System.Diagnostics;
 using System.Formats.Asn1;
-using System.Numerics;
 
 namespace System.Security.Cryptography
 {
-    internal static class KeyBlobHelpers
+    internal static partial class KeyBlobHelpers
     {
-        internal static byte[] ToUnsignedIntegerBytes(this ReadOnlyMemory<byte> memory, int length)
+        internal static byte[] ToUnsignedIntegerBytes(this ReadOnlyMemory<byte> memory)
         {
-            if (memory.Length == length)
+            if (memory.Length > 1 && memory.Span[0] == 0)
             {
-                return memory.ToArray();
+                return memory.Slice(1).ToArray();
             }
 
-            ReadOnlySpan<byte> span = memory.Span;
+            return memory.ToArray();
+        }
+
+        internal static void ToUnsignedIntegerBytes(this ReadOnlyMemory<byte> memory, Span<byte> destination)
+        {
+            int length = destination.Length;
+
+            if (memory.Length == length)
+            {
+                memory.Span.CopyTo(destination);
+                return;
+            }
 
             if (memory.Length == length + 1)
             {
-                if (span[0] == 0)
+                if (memory.Span[0] == 0)
                 {
-                    return span.Slice(1).ToArray();
+                    memory.Span.Slice(1).CopyTo(destination);
+                    return;
                 }
             }
 
-            if (span.Length > length)
+            if (memory.Length > length)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            byte[] target = new byte[length];
-            span.CopyTo(target.AsSpan(length - span.Length));
-            return target;
-        }
-
-        internal static byte[] ToUnsignedIntegerBytes(this ReadOnlyMemory<byte> memory)
-        {
-            ReadOnlySpan<byte> span = memory.Span;
-
-            if (span.Length > 1 && span[0] == 0)
-            {
-                return span.Slice(1).ToArray();
-            }
-
-            return span.ToArray();
-        }
-
-        internal static byte[] ExportKeyParameter(this BigInteger value, int length)
-        {
-            byte[] target = new byte[length];
-
-            if (value.TryWriteBytes(target, out int bytesWritten, isUnsigned: true, isBigEndian: true))
-            {
-                if (bytesWritten < length)
-                {
-                    Buffer.BlockCopy(target, 0, target, length - bytesWritten, bytesWritten);
-                    target.AsSpan(0, length - bytesWritten).Clear();
-                }
-
-                return target;
-            }
-
-            throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
+            destination.Slice(0, destination.Length - memory.Length).Clear();
+            memory.Span.CopyTo(destination.Slice(length - memory.Length));
         }
 
         internal static void WriteKeyParameterInteger(this AsnWriter writer, ReadOnlySpan<byte> integer)

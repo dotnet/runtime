@@ -45,11 +45,11 @@ namespace Microsoft.Extensions.Hosting.Internal
         /// <exception cref="ArgumentNullException"><paramref name="options"/> or <paramref name="environment"/> or <paramref name="applicationLifetime"/> or <paramref name="hostOptions"/> or <paramref name="loggerFactory"/> is <see langword="null"/>.</exception>
         public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, IOptions<HostOptions> hostOptions, ILoggerFactory loggerFactory)
         {
-            ThrowHelper.ThrowIfNull(options?.Value, nameof(options));
-            ThrowHelper.ThrowIfNull(applicationLifetime);
-            ThrowHelper.ThrowIfNull(environment);
-            ThrowHelper.ThrowIfNull(hostOptions?.Value, nameof(hostOptions));
-            ThrowHelper.ThrowIfNull(loggerFactory);
+            ArgumentNullException.ThrowIfNull(options?.Value, nameof(options));
+            ArgumentNullException.ThrowIfNull(applicationLifetime);
+            ArgumentNullException.ThrowIfNull(environment);
+            ArgumentNullException.ThrowIfNull(hostOptions?.Value, nameof(hostOptions));
+            ArgumentNullException.ThrowIfNull(loggerFactory);
 
             Options = options.Value;
             Environment = environment;
@@ -99,9 +99,12 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         private void OnApplicationStarted()
         {
-            Logger.LogInformation("Application started. Press Ctrl+C to shut down.");
-            Logger.LogInformation("Hosting environment: {EnvName}", Environment.EnvironmentName);
-            Logger.LogInformation("Content root path: {ContentRoot}", Environment.ContentRootPath);
+            if (Logger.IsEnabled(LogLevel.Information))
+            {
+                Logger.LogInformation("Application started. Press Ctrl+C to shut down.");
+                Logger.LogInformation("Hosting environment: {EnvName}", Environment.EnvironmentName);
+                Logger.LogInformation("Content root path: {ContentRoot}", Environment.ContentRootPath);
+            }
         }
 
         private void OnApplicationStopping()

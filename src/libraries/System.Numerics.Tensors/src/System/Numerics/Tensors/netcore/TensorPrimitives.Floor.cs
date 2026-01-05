@@ -19,8 +19,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Floor<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IFloatingPoint<T> =>
+            where T : IFloatingPoint<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, FloorOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, FloorOperator<T>>(x, destination);
+        }
 
         private readonly struct FloorOperator<T> : IUnaryOperator<T, T> where T : IFloatingPoint<T>
         {

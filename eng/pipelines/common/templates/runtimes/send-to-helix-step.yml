@@ -21,6 +21,7 @@ parameters:
   helixProjectArguments: ''
   extraHelixArguments: ''
   runInUnloadableContext: ''
+  runInterpreter: ''
   tieringTest: ''
   hotColdSplitting: ''
   nativeAotTest: ''
@@ -55,6 +56,7 @@ steps:
       _RunCrossGen2: ${{ parameters.runCrossGen2 }}
       _CompositeBuildMode: ${{ parameters.compositeBuildMode }}
       _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+      _RunInterpreter: ${{ parameters.runInterpreter }}
       _TieringTest: ${{ parameters.tieringTest }}
       _HotColdSplitting: ${{ parameters.hotColdSplitting }}
       _NativeAotTest: ${{ parameters.nativeAotTest }}

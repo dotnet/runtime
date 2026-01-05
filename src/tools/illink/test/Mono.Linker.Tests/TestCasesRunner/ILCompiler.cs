@@ -13,84 +13,85 @@ using NUnit.Framework;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class ILCompiler
-	{
-		public NPath Compile (CompilerOptions options)
-		{
-			var capturedOutput = new List<string> ();
-			var capturedError = new List<string> ();
-			var process = new Process ();
-			SetupProcess (process, options);
-			process.StartInfo.RedirectStandardOutput = true;
-			process.StartInfo.RedirectStandardError = true;
-			process.OutputDataReceived += (sender, args) => capturedOutput.Add (args.Data);
-			process.ErrorDataReceived += (sender, args) => capturedError.Add (args.Data);
-			process.Start ();
-			process.BeginOutputReadLine ();
-			process.BeginErrorReadLine ();
-			process.WaitForExit ();
+    public class ILCompiler
+    {
+        public NPath Compile(CompilerOptions options)
+        {
+            var capturedOutput = new List<string>();
+            var capturedError = new List<string>();
+            var process = new Process();
+            SetupProcess(process, options);
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.OutputDataReceived += (sender, args) => capturedOutput.Add(args.Data);
+            process.ErrorDataReceived += (sender, args) => capturedError.Add(args.Data);
+            process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+            process.WaitForExit();
 
-			if (process.ExitCode != 0) {
-				Assert.Fail ($"Failed to compile IL assembly : {options.OutputPath}\n{capturedOutput.Aggregate ((buff, s) => buff + Environment.NewLine + s)}{capturedError.Aggregate ((buff, s) => buff + Environment.NewLine + s)}");
-			}
+            if (process.ExitCode != 0)
+            {
+                Assert.Fail($"Failed to compile IL assembly : {options.OutputPath}\n{capturedOutput.Aggregate((buff, s) => buff + Environment.NewLine + s)}{capturedError.Aggregate((buff, s) => buff + Environment.NewLine + s)}");
+            }
 
-			return options.OutputPath;
-		}
+            return options.OutputPath;
+        }
 
-		protected virtual void SetupProcess (Process process, CompilerOptions options)
-		{
-			process.StartInfo.FileName = LocateIlasm ().ToString ();
-			process.StartInfo.Arguments = BuildArguments (options);
-			process.StartInfo.UseShellExecute = false;
-			process.StartInfo.CreateNoWindow = true;
-			process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-		}
+        protected virtual void SetupProcess(Process process, CompilerOptions options)
+        {
+            process.StartInfo.FileName = LocateIlasm().ToString();
+            process.StartInfo.Arguments = BuildArguments(options);
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.CreateNoWindow = true;
+            process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+        }
 
-		private static string BuildArguments (CompilerOptions options)
-		{
-			var args = new StringBuilder ();
+        private static string BuildArguments(CompilerOptions options)
+        {
+            var args = new StringBuilder();
 #if NET
-			args.Append (options.OutputPath.ExtensionWithDot == ".dll" ? "-dll" : "-exe");
-			args.Append ($" -out:{options.OutputPath.InQuotes ()}");
+            args.Append(options.OutputPath.ExtensionWithDot == ".dll" ? "-dll" : "-exe");
+            args.Append($" -out:{options.OutputPath.InQuotes()}");
 #else
-			args.Append (options.OutputPath.ExtensionWithDot == ".dll" ? "/dll" : "/exe");
-			args.Append ($" /out:{options.OutputPath.InQuotes ()}");
+            args.Append(options.OutputPath.ExtensionWithDot == ".dll" ? "/dll" : "/exe");
+            args.Append($" /out:{options.OutputPath.InQuotes()}");
 #endif
-			args.Append ($" {options.SourceFiles.Aggregate (string.Empty, (buff, file) => $"{buff} {file.InQuotes ()}")}");
-			return args.ToString ();
-		}
+            args.Append($" {options.SourceFiles.Aggregate(string.Empty, (buff, file) => $"{buff} {file.InQuotes()}")}");
+            return args.ToString();
+        }
 
-		protected virtual NPath LocateIlasm ()
-		{
+        protected virtual NPath LocateIlasm()
+        {
 #if NET
-			var extension = RuntimeInformation.IsOSPlatform (OSPlatform.Windows) ? ".exe" : "";
+            var extension = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "";
 
-			var toolsDir = (string)AppContext.GetData("Mono.Linker.Tests.ILToolsDir")!;
+            var toolsDir = (string)AppContext.GetData("Mono.Linker.Tests.ILToolsDir")!;
 
-			var ilasmPath = Path.GetFullPath (Path.Combine (toolsDir, $"ilasm{extension}")).ToNPath ();
-			if (ilasmPath.FileExists ())
-				return ilasmPath;
+            var ilasmPath = Path.GetFullPath(Path.Combine(toolsDir, $"ilasm{extension}")).ToNPath();
+            if (ilasmPath.FileExists())
+                return ilasmPath;
 
-			throw new InvalidOperationException ("ilasm not found at " + ilasmPath);
+            throw new InvalidOperationException("ilasm not found at " + ilasmPath);
 #else
-			return Environment.OSVersion.Platform == PlatformID.Win32NT ? LocateIlasmOnWindows () : "ilasm".ToNPath ();
+            return Environment.OSVersion.Platform == PlatformID.Win32NT ? LocateIlasmOnWindows() : "ilasm".ToNPath();
 #endif
-		}
+        }
 
-		public static NPath LocateIlasmOnWindows ()
-		{
-			if (Environment.OSVersion.Platform != PlatformID.Win32NT)
-				throw new InvalidOperationException ("This method should only be called on windows");
+        public static NPath LocateIlasmOnWindows()
+        {
+            if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+                throw new InvalidOperationException("This method should only be called on windows");
 
-			var possiblePath = RuntimeEnvironment.GetRuntimeDirectory ().ToNPath ().Combine ("ilasm.exe");
-			if (possiblePath.FileExists ())
-				return possiblePath;
+            var possiblePath = RuntimeEnvironment.GetRuntimeDirectory().ToNPath().Combine("ilasm.exe");
+            if (possiblePath.FileExists())
+                return possiblePath;
 
-			possiblePath = Environment.CurrentDirectory.ToNPath ().Combine ("ilasm.exe");
-			if (possiblePath.FileExists ())
-				return possiblePath;
+            possiblePath = Environment.CurrentDirectory.ToNPath().Combine("ilasm.exe");
+            if (possiblePath.FileExists())
+                return possiblePath;
 
-			throw new InvalidOperationException ("Could not locate a ilasm.exe executable");
-		}
-	}
+            throw new InvalidOperationException("Could not locate a ilasm.exe executable");
+        }
+    }
 }

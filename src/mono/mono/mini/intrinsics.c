@@ -654,18 +654,8 @@ MONO_RESTORE_WARNING
 			return NULL;
 		}
 
-		// We also always throw for Nullable<T> inputs, so fallback to the
-		// managed implementation here as well.
-
 		MonoClass *tfrom_klass = mono_class_from_mono_type_internal (tfrom);
-		if (mono_class_is_nullable (tfrom_klass)) {
-			return NULL;
-		}
-
 		MonoClass *tto_klass = mono_class_from_mono_type_internal (tto);
-		if (mono_class_is_nullable (tto_klass)) {
-			return NULL;
-		}
 
 		// The same applies for when the type sizes do not match, as this will always throw
 		// and so its not an expected case and we can fallback to the managed implementation
@@ -710,6 +700,17 @@ MONO_RESTORE_WARNING
 				opcode = (tto_type == MONO_TYPE_I2) ? OP_ICONV_TO_I2 : OP_ICONV_TO_U2;
 				tto_stack = STACK_I4;
 			} else if (size == 4) {
+#if TARGET_SIZEOF_VOID_P == 4
+				if (tto_type == MONO_TYPE_I)
+					tto_type = MONO_TYPE_I4;
+				else if (tto_type == MONO_TYPE_U)
+					tto_type = MONO_TYPE_U4;
+
+				if (tfrom_type == MONO_TYPE_I)
+					tfrom_type = MONO_TYPE_I4;
+				else if (tfrom_type == MONO_TYPE_U)
+					tfrom_type = MONO_TYPE_U4;
+#endif
 				if ((tfrom_type == MONO_TYPE_R4) && ((tto_type == MONO_TYPE_I4) || (tto_type == MONO_TYPE_U4))) {
 					opcode = OP_MOVE_F_TO_I4;
 					tto_stack = STACK_I4;
@@ -722,26 +723,42 @@ MONO_RESTORE_WARNING
 				}
 			} else if (size == 8) {
 #if TARGET_SIZEOF_VOID_P == 8
-					if ((tfrom_type == MONO_TYPE_R8) && ((tto_type == MONO_TYPE_I8) || (tto_type == MONO_TYPE_U8))) {
-						opcode = OP_MOVE_F_TO_I8;
-						tto_stack = STACK_I8;
-					} else if ((tto_type == MONO_TYPE_R8) && ((tfrom_type == MONO_TYPE_I8) || (tfrom_type == MONO_TYPE_U8))) {
-						opcode = OP_MOVE_I8_TO_F;
-						tto_stack = STACK_R8;
-					} else {
-						opcode = OP_MOVE;
-						tto_stack = STACK_I8;
-					}
+				if (tto_type == MONO_TYPE_I)
+					tto_type = MONO_TYPE_I8;
+				else if (tto_type == MONO_TYPE_U)
+					tto_type = MONO_TYPE_U8;
+
+				if (tfrom_type == MONO_TYPE_I)
+					tfrom_type = MONO_TYPE_I8;
+				else if (tfrom_type == MONO_TYPE_U)
+					tfrom_type = MONO_TYPE_U8;
+#endif
+#if TARGET_SIZEOF_VOID_P == 8 || defined(TARGET_WASM)
+				if ((tfrom_type == MONO_TYPE_R8) && ((tto_type == MONO_TYPE_I8) || (tto_type == MONO_TYPE_U8))) {
+					opcode = OP_MOVE_F_TO_I8;
+					tto_stack = STACK_I8;
+				} else if ((tto_type == MONO_TYPE_R8) && ((tfrom_type == MONO_TYPE_I8) || (tfrom_type == MONO_TYPE_U8))) {
+					opcode = OP_MOVE_I8_TO_F;
+					tto_stack = STACK_R8;
+				} else {
+					opcode = OP_MOVE;
+					tto_stack = STACK_I8;
+				}
 #else
-					return NULL;
+				return NULL;
 #endif
 			}
 		} else if (mini_class_is_simd (cfg, tfrom_klass) && mini_class_is_simd (cfg, tto_klass)) {
-#if TARGET_SIZEOF_VOID_P == 8
-				opcode = OP_XCAST;
-				tto_stack = STACK_VTYPE;
-#else
+#if TARGET_SIZEOF_VOID_P == 8 || defined(TARGET_WASM)
+#if defined(TARGET_WIN32) && defined(TARGET_AMD64)
+			if (!COMPILE_LLVM (cfg))
+				// FIXME: Fix the register allocation for SIMD on Windows x64
 				return NULL;
+#endif
+			opcode = OP_XCAST;
+			tto_stack = STACK_VTYPE;
+#else
+			return NULL;
 #endif
 		}
 

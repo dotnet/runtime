@@ -60,7 +60,7 @@ namespace System.ComponentModel
     internal sealed class ReflectEventDescriptor : EventDescriptor
     {
         private Type? _type;           // the delegate type for the event
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)]
         private readonly Type _componentClass; // the class of the component this info is for
 
         private MethodInfo? _addMethod;     // the method to use when adding an event
@@ -72,7 +72,7 @@ namespace System.ComponentModel
         /// This is the main constructor for an ReflectEventDescriptor.
         /// </summary>
         public ReflectEventDescriptor(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentClass,
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type componentClass,
             string name,
             Type type,
             Attribute[] attributes)
@@ -92,7 +92,7 @@ namespace System.ComponentModel
         }
 
         public ReflectEventDescriptor(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentClass,
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type componentClass,
             EventInfo eventInfo)
             : base(eventInfo.Name, Array.Empty<Attribute>())
         {
@@ -111,7 +111,7 @@ namespace System.ComponentModel
         /// passed-in attributes.
         /// </summary>
         public ReflectEventDescriptor(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType,
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type componentType,
             EventDescriptor oldReflectEventDescriptor,
             Attribute[] attributes)
             : base(oldReflectEventDescriptor, attributes)

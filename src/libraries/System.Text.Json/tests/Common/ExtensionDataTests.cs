@@ -615,6 +615,56 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        [InlineData("""{ "1": 0   , "1": 1    }""")]
+        [InlineData("""{ "1": null, "1": null }""")]
+        [InlineData("""{ "1": "a" , "1": null }""")]
+        [InlineData("""{ "1": null, "1": "b"  }""")]
+        public async Task ExtensionProperty_DuplicatesThrow(string payload)
+        {
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicateProperties;
+
+            Exception ex = await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsObject>(payload, options));
+            Assert.Contains("Duplicate", ex.Message);
+
+            await Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsObject>(payload); // Assert no throw
+
+            ex = await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonObject>(payload, options));
+            Assert.Contains("Duplicate", ex.Message);
+
+            await Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonObject>(payload); // Assert no throw
+
+            ex = await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonElement>(payload, options));
+            Assert.Contains("Duplicate", ex.Message);
+
+            await Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonElement>(payload); // Assert no throw
+        }
+
+        [Theory]
+        [InlineData("""{ "a": 0   , "A": 1    }""")]
+        [InlineData("""{ "a": null, "A": null }""")]
+        [InlineData("""{ "a": "a" , "A": null }""")]
+        [InlineData("""{ "a": null, "A": "b"  }""")]
+        public async Task ExtensionProperty_CaseInsensitiveDuplicatesNoThrow(string payload)
+        {
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicatePropertiesIgnoringCase;
+
+            // Dictionary extension properties are always case-sensitive
+            ICollection d;
+            d = (await Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsObject>(payload, options)).MyOverflow;
+            Assert.Equal(2, d.Count);
+
+            d = (await Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonElement>(payload, options)).MyOverflow;
+            Assert.Equal(2, d.Count);
+
+            // But JsonObject abides by options
+            Exception ex = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonObject>(payload, options));
+            Assert.Contains("Duplicate", ex.Message);
+        }
+
+        [Theory]
         [MemberData(nameof(JsonSerializerOptions))]
         public async Task Null_SystemObject(JsonSerializerOptions options)
         {
@@ -894,10 +944,10 @@ namespace System.Text.Json.Serialization.Tests
         public async Task NestedClassWithJsonElementExtensionDataProperty()
         {
             var child = new ChildClassWithJsonElement { Number = 4 };
-            child.ExtensionData.Add("SpecialInformation", JsonDocument.Parse(await Serializer.SerializeWrapper("I am child class")).RootElement);
+            child.ExtensionData.Add("SpecialInformation", JsonElement.Parse(await Serializer.SerializeWrapper("I am child class")));
 
             var parent = new ParentClassWithJsonElement { Text = "Hello World" };
-            parent.ExtensionData.Add("SpecialInformation", JsonDocument.Parse(await Serializer.SerializeWrapper("I am parent class")).RootElement);
+            parent.ExtensionData.Add("SpecialInformation", JsonElement.Parse(await Serializer.SerializeWrapper("I am parent class")));
             parent.Children.Add(child);
 
             Verify();
@@ -1432,6 +1482,143 @@ namespace System.Text.Json.Serialization.Tests
 
             [JsonExtensionData]
             public IDictionary<string, JsonElement> MyOverflow { get; set; }
+        }
+
+        [Fact]
+        public async Task IReadOnlyDictionary_ObjectExtensionPropertyRoundTrip()
+        {
+            string json = @"{""MyIntMissing"":2, ""MyInt"":1}";
+            ClassWithIReadOnlyDictionaryExtensionPropertyAsObjectWithProperty obj = await Serializer.DeserializeWrapper<ClassWithIReadOnlyDictionaryExtensionPropertyAsObjectWithProperty>(json);
+            
+            Assert.NotNull(obj.MyOverflow);
+            Assert.Equal(1, obj.MyInt);
+            Assert.IsType<JsonElement>(obj.MyOverflow["MyIntMissing"]);
+            Assert.Equal(2, ((JsonElement)obj.MyOverflow["MyIntMissing"]).GetInt32());
+
+            string jsonSerialized = await Serializer.SerializeWrapper(obj);
+            Assert.Contains("\"MyIntMissing\"", jsonSerialized);
+            Assert.Contains("\"MyInt\"", jsonSerialized);
+            Assert.DoesNotContain(nameof(ClassWithIReadOnlyDictionaryExtensionPropertyAsObjectWithProperty.MyOverflow), jsonSerialized);
+        }
+
+        [Fact]
+        public async Task IReadOnlyDictionary_JsonElementExtensionPropertyRoundTrip()
+        {
+            string json = @"{""MyIntMissing"":2, ""MyInt"":1}";
+            ClassWithIReadOnlyDictionaryExtensionPropertyAsJsonElementWithProperty obj = await Serializer.DeserializeWrapper<ClassWithIReadOnlyDictionaryExtensionPropertyAsJsonElementWithProperty>(json);
+            
+            Assert.NotNull(obj.MyOverflow);
+            Assert.Equal(1, obj.MyInt);
+            Assert.Equal(2, obj.MyOverflow["MyIntMissing"].GetInt32());
+
+            string jsonSerialized = await Serializer.SerializeWrapper(obj);
+            Assert.Contains("\"MyIntMissing\"", jsonSerialized);
+            Assert.Contains("\"MyInt\"", jsonSerialized);
+            Assert.DoesNotContain(nameof(ClassWithIReadOnlyDictionaryExtensionPropertyAsJsonElementWithProperty.MyOverflow), jsonSerialized);
+        }
+
+        [Fact]
+        public async Task IReadOnlyDictionary_ExtensionPropertyIgnoredWhenWritingDefault()
+        {
+            string expected = @"{}";
+            string actual = await Serializer.SerializeWrapper(new ClassWithIReadOnlyDictionaryExtensionPropertyAsObject());
+            Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        public async Task IReadOnlyDictionary_PrePopulated_SeedsNewInstance()
+        {
+            string json = @"{""MyIntMissing"":2, ""KeyToOverwrite"":""NewValue"", ""MyInt"":1}";
+            var obj = await Serializer.DeserializeWrapper<ClassWithIReadOnlyDictionaryAlreadyInstantiated>(json);
+
+            Assert.NotNull(obj.MyOverflow);
+            Assert.Equal(1, obj.MyInt);
+
+            // Should have the existing key from the initializer
+            Assert.True(obj.MyOverflow.ContainsKey("ExistingKey"));
+            Assert.Equal("ExistingValue", ((JsonElement)obj.MyOverflow["ExistingKey"]).GetString());
+
+            // Should have the new key from deserialization
+            Assert.True(obj.MyOverflow.ContainsKey("MyIntMissing"));
+            Assert.Equal(2, ((JsonElement)obj.MyOverflow["MyIntMissing"]).GetInt32());
+
+            // Existing key should be overwritten with new value from deserialization
+            Assert.True(obj.MyOverflow.ContainsKey("KeyToOverwrite"));
+            Assert.Equal("NewValue", ((JsonElement)obj.MyOverflow["KeyToOverwrite"]).GetString());
+        }
+
+        [Fact]
+        public async Task IReadOnlyDictionary_PrePopulated_JsonElement_SeedsNewInstance()
+        {
+            string json = @"{""MyIntMissing"":2, ""KeyToOverwrite"":""NewValue"", ""MyInt"":1}";
+            var obj = await Serializer.DeserializeWrapper<ClassWithIReadOnlyDictionaryJsonElementAlreadyInstantiated>(json);
+
+            Assert.NotNull(obj.MyOverflow);
+            Assert.Equal(1, obj.MyInt);
+
+            // Should have the existing key from the initializer
+            Assert.True(obj.MyOverflow.ContainsKey("ExistingKey"));
+            Assert.Equal("ExistingValue", obj.MyOverflow["ExistingKey"].GetString());
+
+            // Should have the new key from deserialization
+            Assert.True(obj.MyOverflow.ContainsKey("MyIntMissing"));
+            Assert.Equal(2, obj.MyOverflow["MyIntMissing"].GetInt32());
+
+            // Existing key should be overwritten with new value from deserialization
+            Assert.True(obj.MyOverflow.ContainsKey("KeyToOverwrite"));
+            Assert.Equal("NewValue", obj.MyOverflow["KeyToOverwrite"].GetString());
+        }
+
+        public class ClassWithIReadOnlyDictionaryExtensionPropertyAsObject
+        {
+            [JsonExtensionData]
+            public IReadOnlyDictionary<string, object> MyOverflow { get; set; }
+        }
+
+        public class ClassWithIReadOnlyDictionaryExtensionPropertyAsJsonElement
+        {
+            [JsonExtensionData]
+            public IReadOnlyDictionary<string, JsonElement> MyOverflow { get; set; }
+        }
+
+        public class ClassWithIReadOnlyDictionaryExtensionPropertyAsObjectWithProperty
+        {
+            public int MyInt { get; set; }
+
+            [JsonExtensionData]
+            public IReadOnlyDictionary<string, object> MyOverflow { get; set; }
+        }
+
+        public class ClassWithIReadOnlyDictionaryExtensionPropertyAsJsonElementWithProperty
+        {
+            public int MyInt { get; set; }
+
+            [JsonExtensionData]
+            public IReadOnlyDictionary<string, JsonElement> MyOverflow { get; set; }
+        }
+
+        public class ClassWithIReadOnlyDictionaryAlreadyInstantiated
+        {
+            public int MyInt { get; set; }
+
+            [JsonExtensionData]
+            public IReadOnlyDictionary<string, object> MyOverflow { get; set; } = new Dictionary<string, object>
+            {
+                ["ExistingKey"] = JsonDocument.Parse("\"ExistingValue\"").RootElement,
+                ["KeyToOverwrite"] = JsonDocument.Parse("\"OldValue\"").RootElement
+            };
+        }
+
+        public class ClassWithIReadOnlyDictionaryJsonElementAlreadyInstantiated
+        {
+            public int MyInt { get; set; }
+
+            [JsonExtensionData]
+            public IReadOnlyDictionary<string, JsonElement> MyOverflow { get; set; } = new Dictionary<string, JsonElement>
+            {
+                ["ExistingKey"] = JsonDocument.Parse("\"ExistingValue\"").RootElement,
+                ["KeyToOverwrite"] = JsonDocument.Parse("\"OldValue\"").RootElement
+            };
         }
     }
 }

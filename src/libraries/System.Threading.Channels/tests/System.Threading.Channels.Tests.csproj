@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
@@ -11,6 +11,7 @@
     <Compile Include="ChannelTestBase.cs" />
     <Compile Include="ChannelTests.cs" />
     <Compile Include="DebugAttributeTests.cs" />
+    <Compile Include="RendezvousChannelTests.cs" />
     <Compile Include="Stress.cs" />
     <Compile Include="TestBase.cs" />
     <Compile Include="UnboundedChannelTests.cs" />

@@ -66,7 +66,7 @@ macro(check_armv6_compiler_flag)
             return __uqsub16(a, b);
         #endif
         }
-        int main(void) { return 0; }"
+        int main(void) { return f(1,2); }"
         HAVE_ARMV6_INTRIN
     )
     set(CMAKE_REQUIRED_FLAGS)
@@ -76,14 +76,14 @@ macro(check_avx512_intrinsics)
     if(NOT NATIVEFLAG)
         if(CMAKE_C_COMPILER_ID MATCHES "Intel")
             if(CMAKE_HOST_UNIX OR APPLE)
-                set(AVX512FLAG "-mavx512f -mavx512dq -mavx512bw -mavx512vl")
+                set(AVX512FLAG "-mavx512f -mavx512dq -mavx512bw -mavx512vl -mbmi2")
             else()
                 set(AVX512FLAG "/arch:AVX512")
             endif()
         elseif(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
             # For CPUs that can benefit from AVX512, it seems GCC generates suboptimal
             # instruction scheduling unless you specify a reasonable -mtune= target
-            set(AVX512FLAG "-mavx512f -mavx512dq -mavx512bw -mavx512vl")
+            set(AVX512FLAG "-mavx512f -mavx512dq -mavx512bw -mavx512vl -mbmi2")
             if(NOT MSVC)
                 check_c_compiler_flag("-mtune=cascadelake" HAVE_CASCADE_LAKE)
                 if(HAVE_CASCADE_LAKE)
@@ -114,12 +114,12 @@ macro(check_avx512vnni_intrinsics)
     if(NOT NATIVEFLAG)
         if(CMAKE_C_COMPILER_ID MATCHES "Intel")
             if(CMAKE_HOST_UNIX OR APPLE OR CMAKE_C_COMPILER_ID MATCHES "IntelLLVM")
-                set(AVX512VNNIFLAG "-mavx512f -mavx512dq -mavx512bw -mavx512vl -mavx512vnni")
+                set(AVX512VNNIFLAG "-mavx512f -mavx512dq -mavx512bw -mavx512vl -mavx512vnni -mbmi2")
             else()
                 set(AVX512VNNIFLAG "/arch:AVX512")
             endif()
         elseif(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-            set(AVX512VNNIFLAG "-mavx512f -mavx512dq -mavx512bw -mavx512vl -mavx512vnni")
+            set(AVX512VNNIFLAG "-mavx512f -mavx512dq -mavx512bw -mavx512vl -mavx512vnni -mbmi2")
             if(NOT MSVC)
                 check_c_compiler_flag("-mtune=cascadelake" HAVE_CASCADE_LAKE)
                 if(HAVE_CASCADE_LAKE)
@@ -137,11 +137,15 @@ macro(check_avx512vnni_intrinsics)
     set(CMAKE_REQUIRED_FLAGS "${AVX512VNNIFLAG} ${NATIVEFLAG} ${ZNOLTOFLAG}")
     check_c_source_compiles(
         "#include <immintrin.h>
-        __m512i f(__m512i x, __m512i y) {
-            __m512i z = _mm512_setzero_epi32();
-            return _mm512_dpbusd_epi32(z, x, y);
-        }
-        int main(void) { return 0; }"
+        int main(void) {
+            const __m512i z512 = _mm512_setzero_si512();
+            const __m256i z256 = _mm256_setzero_si256();
+            volatile __m512i r512 = _mm512_dpbusd_epi32(z512, z512, z512);
+            volatile __m256i r256 = _mm256_dpbusd_epi32(z256, z256, z256);
+            (void)r512;
+            (void)r256;
+            return 0;
+        }"
         HAVE_AVX512VNNI_INTRIN
     )
     set(CMAKE_REQUIRED_FLAGS)
@@ -151,12 +155,12 @@ macro(check_avx2_intrinsics)
     if(NOT NATIVEFLAG)
         if(CMAKE_C_COMPILER_ID MATCHES "Intel")
             if(CMAKE_HOST_UNIX OR APPLE)
-                set(AVX2FLAG "-mavx2")
+                set(AVX2FLAG "-mavx2 -mbmi2")
             else()
                 set(AVX2FLAG "/arch:AVX2")
             endif()
         elseif(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-            set(AVX2FLAG "-mavx2")
+            set(AVX2FLAG "-mavx2 -mbmi2")
         elseif(MSVC)
             set(AVX2FLAG "/arch:AVX2")
         endif()
@@ -433,7 +437,7 @@ macro(check_s390_intrinsics)
     check_c_source_compiles(
         "#include <sys/auxv.h>
         #ifndef HWCAP_S390_VXRS
-        #define HWCAP_S390_VXRS HWCAP_S390_VX
+        #define HWCAP_S390_VXRS (1 << 11)
         #endif
         int main() {
             return (getauxval(AT_HWCAP) & HWCAP_S390_VXRS);

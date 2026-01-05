@@ -173,7 +173,7 @@ namespace System.Net
             ThrowOnFailure(err);
         }
 
-        public static unsafe void Clear(Span<byte> buffer)
+        public static void Clear(Span<byte> buffer)
         {
             AddressFamily family = GetAddressFamily(buffer);
             buffer.Clear();

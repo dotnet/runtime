@@ -301,7 +301,7 @@ namespace System.Speech.Internal.Synthesis
         {
             lock (_thisObjectLock)
             {
-                Helpers.ThrowIfNull(eventHandler, nameof(eventHandler));
+                ArgumentNullException.ThrowIfNull(eventHandler);
 
                 // could through if unsuccessful - delay the SetEventInterest
                 bool fSetSapiInterest = internalEventHandler == null;
@@ -320,7 +320,7 @@ namespace System.Speech.Internal.Synthesis
         {
             lock (_thisObjectLock)
             {
-                Helpers.ThrowIfNull(eventHandler, nameof(eventHandler));
+                ArgumentNullException.ThrowIfNull(eventHandler);
 
                 // could through if unsuccessful - delay the SetEventInterest
                 internalEventHandler -= eventHandler;
@@ -390,10 +390,7 @@ namespace System.Speech.Internal.Synthesis
                     foreach (Parameters parameter in parameters)
                     {
                         ParametersSpeak paramSpeak = parameter._parameter as ParametersSpeak;
-                        if (paramSpeak != null)
-                        {
-                            paramSpeak._prompt.Exception = new OperationCanceledException(SR.Get(SRID.PromptAsyncOperationCancelled));
-                        }
+                        paramSpeak?._prompt.Exception = new OperationCanceledException(SR.Get(SRID.PromptAsyncOperationCancelled));
                     }
                     // Restart the worker thread
                     _evtPendingSpeak.Set();
@@ -1506,7 +1503,7 @@ namespace System.Speech.Internal.Synthesis
 
         private void SignalWorkerThread(object ignored)
         {
-            if (_asyncWorkerUI.AsyncMode == false)
+            if (!_asyncWorkerUI.AsyncMode)
             {
                 _workerWaitHandle.Set();
             }
@@ -1670,7 +1667,7 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         private void Speak(string textToSpeak, Prompt prompt, bool fIsXml)
         {
-            Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
+            ArgumentNullException.ThrowIfNull(textToSpeak);
 
             if (_isDisposed)
             {

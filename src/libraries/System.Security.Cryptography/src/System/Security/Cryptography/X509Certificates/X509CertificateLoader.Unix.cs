@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.X509Certificates
     {
         private static partial Pkcs12Return FromCertAndKey(CertAndKey certAndKey, ImportState importState);
 
-        private static partial AsymmetricAlgorithm? CreateKey(string algorithm);
+        private static partial Pkcs12Key? CreateKey(string algorithm, ReadOnlySpan<byte> pkcs8);
 
         private static partial ICertificatePalCore LoadX509Der(ReadOnlyMemory<byte> data);
 
@@ -196,7 +196,7 @@ namespace System.Security.Cryptography.X509Certificates
         private struct CertAndKey
         {
             internal ICertificatePalCore? Cert;
-            internal AsymmetricAlgorithm? Key;
+            internal Pkcs12Key? Key;
 
             internal void Dispose()
             {
@@ -209,7 +209,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             private CertAndKey[] _certAndKeys;
             private int _certCount;
-            private AsymmetricAlgorithm?[] _keys;
+            private Pkcs12Key?[] _keys;
             private RentedSubjectPublicKeyInfo[] _rentedSpki;
             private int _keyCount;
 
@@ -247,11 +247,11 @@ namespace System.Security.Cryptography.X509Certificates
                     return;
                 }
 
-                _keys = ArrayPool<AsymmetricAlgorithm?>.Shared.Rent(bagState.KeyCount);
+                _keys = ArrayPool<Pkcs12Key?>.Shared.Rent(bagState.KeyCount);
 
                 foreach (SafeBagAsn safeBag in bagState.GetKeysSpan())
                 {
-                    AsymmetricAlgorithm? key = null;
+                    Pkcs12Key? key = null;
 
                     try
                     {
@@ -260,12 +260,10 @@ namespace System.Security.Cryptography.X509Certificates
                             PrivateKeyInfoAsn privateKeyInfo =
                                 PrivateKeyInfoAsn.Decode(safeBag.BagValue, AsnEncodingRules.BER);
 
-                            key = CreateKey(privateKeyInfo.PrivateKeyAlgorithm.Algorithm);
+                            key = CreateKey(privateKeyInfo.PrivateKeyAlgorithm.Algorithm, safeBag.BagValue.Span);
 
                             if (key is not null)
                             {
-                                ImportPrivateKey(key, safeBag.BagValue.Span);
-
                                 if (_rentedSpki is null)
                                 {
                                     _rentedSpki =
@@ -376,7 +374,7 @@ namespace System.Security.Cryptography.X509Certificates
                             if (allowDoubleBind)
                             {
 
-                                AsymmetricAlgorithm? key = CreateKey(cert.KeyAlgorithm);
+                                Pkcs12Key? key = CreateKey(cert.KeyAlgorithm, keyBag.BagValue.Span);
 
                                 if (key is null)
                                 {
@@ -388,7 +386,6 @@ namespace System.Security.Cryptography.X509Certificates
                                 }
 
                                 _certAndKeys[certBagIdx].Key = key;
-                                ImportPrivateKey(key, keyBag.BagValue.Span);
                             }
                             else
                             {
@@ -492,6 +489,8 @@ namespace System.Security.Cryptography.X509Certificates
                             publicKeyInfo.Algorithm.Parameters.Value.Span.SequenceEqual(certKeyParameters);
                 }
 
+                // ML-KEM requires parameters to match exactly. ML-KEM also prohibits parameters, but that is checked
+                // by MLKem when loading the key.
                 // Any other algorithm matches null/empty parameters as equivalent
                 if (!publicKeyInfo.Algorithm.Parameters.HasValue)
                 {
@@ -504,7 +503,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             private static void ExtractPublicKey(
                 ref RentedSubjectPublicKeyInfo spki,
-                AsymmetricAlgorithm key,
+                Pkcs12Key key,
                 int sizeHint)
             {
                 Debug.Assert(sizeHint > 0);
@@ -550,7 +549,7 @@ namespace System.Security.Cryptography.X509Certificates
                         _keys[i]?.Dispose();
                     }
 
-                    ArrayPool<AsymmetricAlgorithm?>.Shared.Return(_keys, clearArray: true);
+                    ArrayPool<Pkcs12Key?>.Shared.Return(_keys, clearArray: true);
                 }
 
                 if (_rentedSpki is not null)
@@ -618,5 +617,120 @@ namespace System.Security.Cryptography.X509Certificates
                 DisposeCore();
             }
         }
+    }
+
+    internal abstract class Pkcs12Key : IDisposable
+    {
+        internal abstract IDisposable Key { get; }
+
+        internal abstract bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten);
+
+        public void Dispose() => Key.Dispose();
+    }
+
+    internal sealed class MLKemPkcs12PrivateKey : Pkcs12Key
+    {
+        private readonly MLKem _key;
+
+        internal MLKemPkcs12PrivateKey(ReadOnlySpan<byte> pkcs8)
+        {
+            try
+            {
+                _key = MLKem.ImportPkcs8PrivateKey(pkcs8);
+            }
+            catch (PlatformNotSupportedException nse)
+            {
+                // PKCS12 loader turns PNSE in to a CryptographicException
+                throw new CryptographicException(SR.Cryptography_NotValidPrivateKey, nse);
+            }
+        }
+
+        internal override bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten) =>
+            _key.TryExportSubjectPublicKeyInfo(destination, out bytesWritten);
+
+        internal override MLKem Key => _key;
+    }
+
+    internal sealed class MLDsaPkcs12PrivateKey : Pkcs12Key
+    {
+        private readonly MLDsa _key;
+
+        internal MLDsaPkcs12PrivateKey(ReadOnlySpan<byte> pkcs8)
+        {
+            try
+            {
+                _key = MLDsa.ImportPkcs8PrivateKey(pkcs8);
+            }
+            catch (PlatformNotSupportedException nse)
+            {
+                // PKCS12 loader turns PNSE in to a CryptographicException
+                throw new CryptographicException(SR.Cryptography_NotValidPrivateKey, nse);
+            }
+        }
+
+        internal override bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten) =>
+            _key.TryExportSubjectPublicKeyInfo(destination, out bytesWritten);
+
+        internal override MLDsa Key => _key;
+    }
+
+    internal sealed class SlhDsaPkcs12PrivateKey : Pkcs12Key
+    {
+        private readonly SlhDsa _key;
+
+        internal SlhDsaPkcs12PrivateKey(ReadOnlySpan<byte> pkcs8)
+        {
+            try
+            {
+                _key = SlhDsa.ImportPkcs8PrivateKey(pkcs8);
+            }
+            catch (PlatformNotSupportedException nse)
+            {
+                // PKCS12 loader turns PNSE in to a CryptographicException
+                throw new CryptographicException(SR.Cryptography_NotValidPrivateKey, nse);
+            }
+        }
+
+        internal override bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten) =>
+            _key.TryExportSubjectPublicKeyInfo(destination, out bytesWritten);
+
+        internal override SlhDsa Key => _key;
+    }
+
+    internal sealed class AsymmetricAlgorithmPkcs12PrivateKey : Pkcs12Key
+    {
+        private readonly AsymmetricAlgorithm _key;
+
+        internal AsymmetricAlgorithmPkcs12PrivateKey(ReadOnlySpan<byte> pkcs8, Func<AsymmetricAlgorithm> factory)
+        {
+            _key = factory();
+
+            try
+            {
+                _key.ImportPkcs8PrivateKey(pkcs8, out int bytesRead);
+                Debug.Assert(bytesRead == pkcs8.Length);
+            }
+            catch (Exception ex)
+            {
+                _key.Dispose();
+
+                if (ex is PlatformNotSupportedException nse)
+                {
+                    // Turn a "curve not supported" PNSE (or other PNSE)
+                    // into a standardized CryptographicException.
+                    throw new CryptographicException(SR.Cryptography_NotValidPrivateKey, nse);
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+        }
+
+        internal override bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten) =>
+            _key.TryExportSubjectPublicKeyInfo(destination, out bytesWritten);
+
+        internal override AsymmetricAlgorithm Key => _key;
     }
 }

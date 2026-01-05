@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -23,7 +25,7 @@ namespace ILCompiler
         {
             Debug.Assert(IsIntegerType(defType));
 
-            string name = defType.Name;
+            string name = defType.GetName();
             Debug.Assert((name == "Int128") || (name == "UInt128"));
 
             ComputedInstanceFieldLayout layoutFromMetadata = _fallbackAlgorithm.ComputeInstanceLayout(defType, layoutKind);
@@ -31,7 +33,7 @@ namespace ILCompiler
             // 32bit platforms use standard metadata layout engine
             if (defType.Context.Target.Architecture == TargetArchitecture.ARM)
             {
-                layoutFromMetadata.LayoutAbiStable = false; // Int128 parameter passing ABI is unstable at this time
+                layoutFromMetadata.LayoutAbiStable = true;
                 layoutFromMetadata.IsInt128OrHasInt128Fields = true;
                 return layoutFromMetadata;
             }
@@ -45,7 +47,7 @@ namespace ILCompiler
                 FieldAlignment = new LayoutInt(16),
                 FieldSize = layoutFromMetadata.FieldSize,
                 Offsets = layoutFromMetadata.Offsets,
-                LayoutAbiStable = false, // Int128 parameter passing ABI is unstable at this time
+                LayoutAbiStable = true,
                 IsInt128OrHasInt128Fields = true
             };
         }
@@ -82,8 +84,8 @@ namespace ILCompiler
         public static bool IsIntegerType(DefType type)
         {
             return type.IsIntrinsic
-                && type.Namespace == "System"
-                && ((type.Name == "Int128") || (type.Name == "UInt128"));
+                && type.Namespace.SequenceEqual("System"u8)
+                && (type.Name.SequenceEqual("Int128"u8) || type.Name.SequenceEqual("UInt128"u8));
         }
     }
 }

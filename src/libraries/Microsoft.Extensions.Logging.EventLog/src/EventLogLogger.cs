@@ -29,8 +29,8 @@ namespace Microsoft.Extensions.Logging.EventLog
         /// <param name="externalScopeProvider">The <see cref="IExternalScopeProvider"/>.</param>
         public EventLogLogger(string name, EventLogSettings settings, IExternalScopeProvider? externalScopeProvider)
         {
-            ThrowHelper.ThrowIfNull(name);
-            ThrowHelper.ThrowIfNull(settings);
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(settings);
 
             _name = name;
             _settings = settings;
@@ -79,7 +79,7 @@ namespace Microsoft.Extensions.Logging.EventLog
                 return;
             }
 
-            ThrowHelper.ThrowIfNull(formatter);
+            ArgumentNullException.ThrowIfNull(formatter);
 
             string message = formatter(state, exception);
 

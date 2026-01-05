@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
-    public sealed unsafe partial class HttpListenerRequest
+    public sealed partial class HttpListenerRequest
     {
         private CookieCollection? _cookies;
         private bool? _keepAlive;

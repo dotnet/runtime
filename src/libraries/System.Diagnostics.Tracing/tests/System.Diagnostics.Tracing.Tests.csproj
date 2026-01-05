@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)</TargetFrameworks>
@@ -8,7 +8,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- this is necessary for libmono-component-diagnostics_tracing-static.a to be linked, which makes the EventPipeEventProvider.EventActivityIdControl to work in Mono -->
-    <WasmPerfTracing>true</WasmPerfTracing>
+    <EnableDiagnostics>true</EnableDiagnostics>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'android'">
     <RuntimeComponents Include="diagnostics_tracing" />
@@ -27,6 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BasicEventSourceTest\ActivityTracking.cs" />
+    <Compile Include="BasicEventSourceTest\Harness\EventPipeListener.cs" />
     <Compile Include="BasicEventSourceTest\Harness\EventTestHarness.cs" />
     <Compile Include="BasicEventSourceTest\FuzzyTests.cs" />
     <Compile Include="BasicEventSourceTest\Harness\Listeners.cs" />
@@ -54,5 +55,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
+    <PackageReference Include="Microsoft.Diagnostics.NetCore.Client" Version="$(MicrosoftDiagnosticsNetCoreClientVersion)" />
   </ItemGroup>
 </Project>

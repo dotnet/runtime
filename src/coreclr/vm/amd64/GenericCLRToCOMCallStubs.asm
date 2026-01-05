@@ -8,10 +8,8 @@ include asmconstants.inc
 
 
 extern CLRToCOMWorker:proc
-extern ProcessCLRException:proc
 
-
-NESTED_ENTRY GenericCLRToCOMCallStub, _TEXT, ProcessCLRException
+NESTED_ENTRY GenericCLRToCOMCallStub, _TEXT
 
         PROLOG_WITH_TRANSITION_BLOCK 8
 

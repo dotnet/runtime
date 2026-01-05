@@ -50,6 +50,8 @@ namespace System.Security.Cryptography.X509Certificates
             get { return _certContext.DangerousGetHandle(); }
         }
 
+        internal SafeCertContextHandle? SafeHandle => _certContext;
+
         public string Issuer => GetIssuerOrSubject(issuer: true, reverse: true);
 
         public string Subject => GetIssuerOrSubject(issuer: false, reverse: true);
@@ -394,7 +396,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public unsafe string GetNameInfo(X509NameType nameType, bool forIssuer) =>
+        public string GetNameInfo(X509NameType nameType, bool forIssuer) =>
             Interop.crypt32.CertGetNameString(
                 _certContext,
                 MapNameType(nameType),
@@ -418,7 +420,7 @@ namespace System.Security.Cryptography.X509Certificates
             CspKeyContainerInfo? cspKeyContainerInfo = null;
             try
             {
-                CspParameters? parameters = GetPrivateKeyCsp();
+                CspParameters? parameters = CertificateHelpers.GetPrivateKeyCsp(_certContext);
 
                 if (parameters != null)
                 {
@@ -515,7 +517,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private unsafe string GetIssuerOrSubject(bool issuer, bool reverse) =>
+        private string GetIssuerOrSubject(bool issuer, bool reverse) =>
             Interop.crypt32.CertGetNameString(
                 _certContext,
                 Interop.Crypt32.CertNameType.CERT_NAME_RDN_TYPE,

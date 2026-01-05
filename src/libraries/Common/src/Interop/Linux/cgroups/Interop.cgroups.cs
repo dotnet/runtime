@@ -26,8 +26,6 @@ internal static partial class Interop
 
         /// <summary>Path to cgroup filesystem that tells us which version of cgroup is in use.</summary>
         private const string SysFsCgroupFileSystemPath = "/sys/fs/cgroup";
-        /// <summary>Path to mountinfo file in procfs for the current process.</summary>
-        private const string ProcMountInfoFilePath = "/proc/self/mountinfo";
         /// <summary>Path to cgroup directory in procfs for the current process.</summary>
         private const string ProcCGroupFilePath = "/proc/self/cgroup";
 
@@ -209,13 +207,10 @@ internal static partial class Interop
         private static unsafe CGroupVersion FindCGroupVersion()
         {
             CGroupVersion cgroupVersion = CGroupVersion.None;
-            const int MountPointFormatBufferSizeInBytes = 32;
-            byte* formatBuffer = stackalloc byte[MountPointFormatBufferSizeInBytes];    // format names should be small
-            long numericFormat;
-            int result = Interop.Sys.GetFormatInfoForMountPoint(SysFsCgroupFileSystemPath, formatBuffer, MountPointFormatBufferSizeInBytes, &numericFormat);
-            if (result == 0)
+            Interop.Error error = Interop.procfs.GetFileSystemTypeForRealPath(SysFsCgroupFileSystemPath, out string format);
+            if (error == Interop.Error.SUCCESS)
             {
-                if (numericFormat == (int)Interop.Sys.UnixFileSystemTypes.cgroup2fs)
+                if (format == "cgroup2")
                 {
                     cgroupVersion = CGroupVersion.CGroup2;
                 }
@@ -304,7 +299,7 @@ internal static partial class Interop
         /// <returns>true if the mount was found; otherwise, null.</returns>
         private static bool TryFindHierarchyMount(CGroupVersion cgroupVersion, string subsystem, [NotNullWhen(true)] out string? root, [NotNullWhen(true)] out string? path)
         {
-            return TryFindHierarchyMount(cgroupVersion, ProcMountInfoFilePath, subsystem, out root, out path);
+            return TryFindHierarchyMount(cgroupVersion, Interop.procfs.ProcMountInfoFilePath, subsystem, out root, out path);
         }
 
         /// <summary>Find the cgroup mount information for the specified subsystem.</summary>
@@ -325,65 +320,41 @@ internal static partial class Interop
                         string? line;
                         while ((line = reader.ReadLine()) != null)
                         {
-                            // Look for an entry that has cgroup as the "filesystem type"
-                            // and, for cgroup1, that has options containing the specified subsystem
-                            // See man page for /proc/[pid]/mountinfo for details, e.g.:
-                            //     (1)(2)(3)   (4)   (5)      (6)      (7)   (8) (9)   (10)         (11)
-                            //     36 35 98:0 /mnt1 /mnt2 rw,noatime master:1 - ext3 /dev/root rw,errors=continue
-                            // but (7) is optional and could exist as multiple fields; the (8) separator marks
-                            // the end of the optional values.
-
-                            const string Separator = " - ";
-                            int endOfOptionalFields = line.IndexOf(Separator, StringComparison.Ordinal);
-                            if (endOfOptionalFields == -1)
+                            if (Interop.procfs.TryParseMountInfoLine(line, out Interop.procfs.ParsedMount mount))
                             {
-                                // Malformed line.
-                                continue;
-                            }
-
-                            string postSeparatorLine = line.Substring(endOfOptionalFields + Separator.Length);
-                            string[] postSeparatorlineParts = postSeparatorLine.Split(' ');
-                            if (postSeparatorlineParts.Length < 3)
-                            {
-                                // Malformed line.
-                                continue;
-                            }
-
-                            if (cgroupVersion == CGroupVersion.CGroup1)
-                            {
-                                bool validCGroup1Entry = ((postSeparatorlineParts[0] == "cgroup") &&
-                                        (Array.IndexOf(postSeparatorlineParts[2].Split(','), subsystem) >= 0));
-                                if (!validCGroup1Entry)
+                                if (cgroupVersion == CGroupVersion.CGroup1)
                                 {
-                                    continue;
+                                    bool validCGroup1Entry = mount.FileSystemType.SequenceEqual("cgroup") && mount.SuperOptions.IndexOf(subsystem) >= 0;
+                                    if (!validCGroup1Entry)
+                                    {
+                                        continue;
+                                    }
                                 }
-                            }
-                            else if (cgroupVersion == CGroupVersion.CGroup2)
-                            {
-                                bool validCGroup2Entry = postSeparatorlineParts[0] == "cgroup2";
-                                if (!validCGroup2Entry)
+                                else if (cgroupVersion == CGroupVersion.CGroup2)
                                 {
-                                    continue;
+                                    bool validCGroup2Entry = mount.FileSystemType.SequenceEqual("cgroup2");
+                                    if (!validCGroup2Entry)
+                                    {
+                                        continue;
+                                    }
+
+                                }
+                                else
+                                {
+                                    Debug.Fail($"Unexpected cgroup version \"{cgroupVersion}\"");
                                 }
 
+                                root = mount.Root.ToString();
+                                path = mount.MountPoint.ToString();
+
+                                return true;
                             }
-                            else
-                            {
-                                Debug.Fail($"Unexpected cgroup version \"{cgroupVersion}\"");
-                            }
-
-
-                            string[] lineParts = line.Substring(0, endOfOptionalFields).Split(' ');
-                            root = lineParts[3];
-                            path = lineParts[4];
-
-                            return true;
                         }
                     }
                 }
                 catch (Exception e)
                 {
-                    Debug.Fail($"Failed to read or parse \"{ProcMountInfoFilePath}\": {e}");
+                    Debug.Fail($"Failed to read or parse \"{mountInfoFilePath}\": {e}");
                 }
             }
 

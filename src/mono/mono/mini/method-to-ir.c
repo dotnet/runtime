@@ -3732,6 +3732,45 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	return obj;
 }
 
+static MonoInst*
+mono_emit_cached_localloc (MonoCompile *cfg, int cache_index, int new_size)
+{
+	g_assert (cache_index < (int)G_N_ELEMENTS (cfg->localloc_cache));
+	MonoCachedLocallocInfo *info = &cfg->localloc_cache [cache_index];
+
+	// Create var or update the size. All locallocs will be patched to the max size after IR code emit ends.
+	if (info->alloc_size == 0) {
+		info->addr_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+		info->alloc_size = new_size;
+	} else if (info->alloc_size < new_size) {
+		info->alloc_size = new_size;
+	}
+
+	int cache_dreg = info->addr_var->dreg;
+	MonoInst* ins;
+	MonoBasicBlock *done_bb;
+
+	NEW_BBLOCK (cfg, done_bb);
+
+	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, cache_dreg, 0);
+	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, done_bb);
+
+	// If we have no localloc-ed memory, allocate it now and save it in the cache
+	MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
+	ins->dreg = alloc_preg (cfg);
+	ins->inst_imm = new_size;
+	MONO_ADD_INS (cfg->cbb, ins);
+
+	info->localloc_ins = g_slist_append (info->localloc_ins, ins);
+
+	MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cache_dreg, ins->dreg);
+
+	// Return the value from the cache
+	MONO_START_BB (cfg, done_bb);
+	EMIT_NEW_UNALU (cfg, ins, OP_MOVE, alloc_preg (cfg), cache_dreg);
+	return ins;
+}
+
 /*
  * handle_constrained_gsharedvt_call:
  *
@@ -3865,20 +3904,12 @@ handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 
 		/* Pass an array of bools which signal whenever the corresponding argument is a gsharedvt ref type */
 		if (has_gsharedvt) {
-			MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
-			ins->dreg = alloc_preg (cfg);
-			ins->inst_imm = fsig->param_count;
-			MONO_ADD_INS (cfg->cbb, ins);
-			is_gsharedvt_ins = ins;
+			is_gsharedvt_ins = mono_emit_cached_localloc (cfg, 0, fsig->param_count);
 		} else {
 			EMIT_NEW_PCONST (cfg, is_gsharedvt_ins, 0);
 		}
 		/* Pass the arguments using a localloc-ed array using the format expected by runtime_invoke () */
-		MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
-		ins->dreg = alloc_preg (cfg);
-		ins->inst_imm = fsig->param_count * sizeof (target_mgreg_t);
-		MONO_ADD_INS (cfg->cbb, ins);
-		args_ins = ins;
+		args_ins = mono_emit_cached_localloc (cfg, 1, fsig->param_count * sizeof (target_mgreg_t));
 
 		for (int i = 0; i < fsig->param_count; ++i) {
 			int addr_reg;
@@ -7785,7 +7816,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			gboolean noreturn; noreturn = FALSE;
 			gboolean gshared_static_virtual; gshared_static_virtual = FALSE;
 #ifdef TARGET_WASM
-			gboolean needs_stack_walk; needs_stack_walk = FALSE;
+			gboolean needs_LMF; needs_LMF = FALSE;
 #endif
 
 			// Variables shared by CEE_CALLI and CEE_CALL/CEE_CALLVIRT.
@@ -7881,10 +7912,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 #ifdef TARGET_WASM
 				else {
-					needs_stack_walk = TRUE;
+					needs_LMF = TRUE;
 				}
 #endif
 			}
+#ifdef TARGET_WASM
+			if (cfg->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT) {
+				needs_LMF = TRUE;
+			}
+#endif
 
 			if (!virtual_ && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT) && !gshared_static_virtual) {
 				if (!mono_class_is_interface (method->klass))
@@ -8557,7 +8593,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 #ifdef TARGET_WASM
 			/* Push an LMF so these frames can be enumerated during stack walks by mono_arch_unwind_frame () */
-			if (needs_stack_walk && !cfg->deopt) {
+			if (needs_LMF && !cfg->deopt) {
 				MonoInst *method_ins;
 				int lmf_reg;
 
@@ -8594,7 +8630,7 @@ call_end:
 				ins = handle_call_res_devirt (cfg, cmethod, ins);
 
 #ifdef TARGET_WASM
-			if (common_call && needs_stack_walk && !cfg->deopt)
+			if (common_call && needs_LMF && !cfg->deopt)
 				emit_pop_lmf (cfg);
 #endif
 
@@ -12330,7 +12366,24 @@ all_bbs_done:
 				cfg->cbb = init_localsbb;
 			emit_init_local (cfg, i, header->locals [i], init_locals);
 		}
+
+		// Patch all locallocs using the cache to allocate the max used size.
+		for (int i = 0; i < 2; i++) {
+			MonoCachedLocallocInfo *info = &cfg->localloc_cache [i];
+			if (info->alloc_size != 0) {
+				MONO_EMIT_NEW_PCONST (cfg, info->addr_var->dreg, NULL);
+				GSList *p = info->localloc_ins;
+				while (p != NULL) {
+					MonoInst *localloc_ins = (MonoInst*)p->data;
+					localloc_ins->inst_imm = info->alloc_size;
+					p = p->next;
+				}
+				g_slist_free (info->localloc_ins);
+				info->localloc_ins = NULL;
+			}
+		}
 	}
+
 
 	if (cfg->init_ref_vars && cfg->method == method) {
 		/* Emit initialization for ref vars */

@@ -17,11 +17,29 @@
 #define HOST_PROPERTY_RUNTIME_CONTRACT "HOST_RUNTIME_CONTRACT"
 #define HOST_PROPERTY_APP_PATHS "APP_PATHS"
 #define HOST_PROPERTY_BUNDLE_PROBE "BUNDLE_PROBE"
+#define HOST_PROPERTY_BUNDLE_EXTRACTION_PATH "BUNDLE_EXTRACTION_PATH"
 #define HOST_PROPERTY_ENTRY_ASSEMBLY_NAME "ENTRY_ASSEMBLY_NAME"
 #define HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES "NATIVE_DLL_SEARCH_DIRECTORIES"
 #define HOST_PROPERTY_PINVOKE_OVERRIDE "PINVOKE_OVERRIDE"
 #define HOST_PROPERTY_PLATFORM_RESOURCE_ROOTS "PLATFORM_RESOURCE_ROOTS"
 #define HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES "TRUSTED_PLATFORM_ASSEMBLIES"
+
+// Context passed to get_native_code_data callback
+struct host_runtime_contract_native_code_context
+{
+    size_t size;                       // size of this struct
+    const char* assembly_path;         // component assembly path
+    const char* owner_composite_name;  // name from component R2R header
+};
+
+// Data returned by get_native_code_data callback
+struct host_runtime_contract_native_code_data
+{
+    size_t size;           // size of this struct
+    void* r2r_header_ptr;  // ReadyToRun header
+    size_t image_size;     // size of the image
+    void* image_base;      // base address where the image was loaded
+};
 
 // Any callbacks set on this contract are expected to be valid for the lifetime of the process
 struct host_runtime_contract
@@ -59,6 +77,10 @@ struct host_runtime_contract
         const char* path,
         /*out*/ void **data_start,
         /*out*/ int64_t* size);
-};
 
+    // Get native code data for the assembly specified by the supplied context
+    bool(HOST_CONTRACT_CALLTYPE* get_native_code_data)(
+       const struct host_runtime_contract_native_code_context* context,
+       /*out*/ struct host_runtime_contract_native_code_data* data);
+};
 #endif // __HOST_RUNTIME_CONTRACT_H__

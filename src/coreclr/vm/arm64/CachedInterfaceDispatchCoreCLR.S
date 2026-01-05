@@ -6,10 +6,18 @@
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
+    // Workaround for Xcode 15 ld-classic linker which cannot deal with
+    // .alt_entry labels at beginning of section.
+    nop
+
 //
 // Stub dispatch routine for dispatch to a vtable slot
 //
     LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
+
+        // Load the MethodTable from the object instance in x0
+    ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
+        ldr     x9, [x0]
 
         // x11 currently contains the indirection cell address.
         // load x11 to point to the vtable offset (which is stored in the m_pCache field).
@@ -19,10 +27,8 @@
         // to get to the VTable chunk
         lsr     x10, x11, #32
 
-        // Load the MethodTable from the object instance in x0, and add it to the vtable offset
+        // Add the MethodTable to the vtable offset
         // to get the address in the vtable chunk list of what we want to dereference
-    ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
-        ldr     x9, [x0]
         add     x9, x10, x9
 
         // Load the target address of the vtable chunk into x9

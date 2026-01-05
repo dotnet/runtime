@@ -948,7 +948,7 @@ ves_icall_System_Array_SetGenericValue_icall (MonoObjectHandleOnStack *arr_handl
 }
 
 void
-ves_icall_System_Runtime_RuntimeImports_Memmove (guint8 *destination, guint8 *source, size_t byte_count)
+ves_icall_System_SpanHelpers_memmove (void *destination, void *source, size_t byte_count)
 {
 	mono_gc_memmove_atomic (destination, source, byte_count);
 }
@@ -966,9 +966,9 @@ ves_icall_System_Buffer_BulkMoveWithWriteBarrier (guint8 *destination, guint8 *s
 }
 
 void
-ves_icall_System_Runtime_RuntimeImports_ZeroMemory (guint8 *p, size_t byte_length)
+ves_icall_System_SpanHelpers_memset (void *p, gint32 value, size_t byte_length)
 {
-	memset (p, 0, byte_length);
+	memset (p, value, byte_length);
 }
 
 gpointer
@@ -5145,7 +5145,7 @@ ves_icall_System_Reflection_Assembly_GetEntryAssembly (MonoError *error)
 }
 
 MonoReflectionAssemblyHandle
-ves_icall_System_Reflection_Assembly_GetCallingAssembly (MonoError *error)
+ves_icall_System_Reflection_Assembly_GetCallingAssembly (MonoStackCrawlMark *stack_mark, MonoError *error)
 {
 	MonoMethod *m;
 	MonoMethod *dest;
@@ -6242,19 +6242,6 @@ ves_icall_System_Environment_FailFast (MonoStringHandle message, MonoExceptionHa
 	// for us and pass it as much information as possible. On Windows 8+ we can also
 	// use the __fastfail intrinsic.
 	abort ();
-}
-
-gint32
-ves_icall_System_Environment_get_TickCount (void)
-{
-	/* this will overflow after ~24 days */
-	return (gint32) (mono_msec_boottime () & 0xffffffff);
-}
-
-gint64
-ves_icall_System_Environment_get_TickCount64 (void)
-{
-	return mono_msec_boottime ();
 }
 
 gpointer

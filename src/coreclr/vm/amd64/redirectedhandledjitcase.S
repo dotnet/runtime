@@ -16,10 +16,10 @@
 
         //
         // IN: rdi: original IP before redirect
-        //     rsi: Rip from the Thread::GetAbortContext()
         //
 
         mov             rdx, rsp
+        mov             rsi, rdi
 
         // This push of the return address must not be recorded in the unwind
         // info.  After this push, unwinding will work.

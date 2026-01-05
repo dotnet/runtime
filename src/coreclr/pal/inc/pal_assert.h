@@ -16,21 +16,6 @@
 extern "C" {
 #endif
 
-#ifdef __cplusplus
-//
-// C_ASSERT() can be used to perform many compile-time assertions:
-//            type sizes, field offsets, etc.
-//
-#define C_ASSERT(e) static_assert(e, #e)
-
-//
-// CPP_ASSERT() can be used within a class definition, to perform a
-// compile-time assertion involving private names within the class.
-//
-#define CPP_ASSERT(n, e) static_assert(e, #e)
-
-#endif // __cplusplus
-
 #ifndef _ASSERTE
 #if defined(_DEBUG)
 #define _ASSERTE(e) do {                                        \
@@ -38,10 +23,10 @@ extern "C" {
             fprintf (stderr,                                    \
                      "ASSERT FAILED\n"                          \
                      "\tExpression: %s\n"                       \
-                     "\tLocation:   line %d in %s\n"            \
+                     "\tLocation:   %s:%d\n"                    \
                      "\tFunction:   %s\n"                       \
                      "\tProcess:    %d\n",                      \
-                     #e, __LINE__, __FILE__, __FUNCTION__,      \
+                     #e, __FILE__, __LINE__, __FUNCTION__,      \
                      GetCurrentProcessId());                    \
             DebugBreak();                                       \
         }                                                       \

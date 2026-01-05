@@ -43,33 +43,4 @@ static inline void zng_free(void *ptr) {
 #endif
 }
 
-/* Use memcpy instead of memcmp to avoid older compilers not converting memcmp calls to
-   unaligned comparisons when unaligned access is supported. */
-static inline int32_t zng_memcmp_2(const void *src0, const void *src1) {
-    uint16_t src0_cmp, src1_cmp;
-
-    memcpy(&src0_cmp, src0, sizeof(src0_cmp));
-    memcpy(&src1_cmp, src1, sizeof(src1_cmp));
-
-    return src0_cmp != src1_cmp;
-}
-
-static inline int32_t zng_memcmp_4(const void *src0, const void *src1) {
-    uint32_t src0_cmp, src1_cmp;
-
-    memcpy(&src0_cmp, src0, sizeof(src0_cmp));
-    memcpy(&src1_cmp, src1, sizeof(src1_cmp));
-
-    return src0_cmp != src1_cmp;
-}
-
-static inline int32_t zng_memcmp_8(const void *src0, const void *src1) {
-    uint64_t src0_cmp, src1_cmp;
-
-    memcpy(&src0_cmp, src0, sizeof(src0_cmp));
-    memcpy(&src1_cmp, src1, sizeof(src1_cmp));
-
-    return src0_cmp != src1_cmp;
-}
-
 #endif

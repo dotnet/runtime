@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b102729;
+
 using Xunit;
 struct Foo
 {
@@ -21,6 +24,7 @@ public class Bar
         arg = _myArray[3];
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

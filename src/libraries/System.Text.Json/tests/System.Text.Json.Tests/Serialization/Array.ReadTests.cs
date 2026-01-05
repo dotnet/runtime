@@ -689,5 +689,29 @@ namespace System.Text.Json.Serialization.Tests
                 set => Networks = (value != null) ? string.Join(",", value) : string.Empty;
             }
         }
+
+        [Fact]
+        public static void ReadLargeArray()
+        {
+            int[] largeArray = Enumerable.Range(0, 10000).ToArray();
+            string json = JsonSerializer.Serialize(largeArray);
+            int[] deserialized = JsonSerializer.Deserialize<int[]>(json);
+            
+            Assert.Equal(largeArray.Length, deserialized.Length);
+            Assert.Equal(largeArray[0], deserialized[0]);
+            Assert.Equal(largeArray[9999], deserialized[9999]);
+        }
+
+        [Fact]
+        public static void ReadNestedArrays()
+        {
+            int[][] nested = new int[][] { new[] { 1, 2 }, new[] { 3, 4, 5 } };
+            string json = JsonSerializer.Serialize(nested);
+            int[][] deserialized = JsonSerializer.Deserialize<int[][]>(json);
+            
+            Assert.Equal(2, deserialized.Length);
+            Assert.Equal(2, deserialized[0].Length);
+            Assert.Equal(3, deserialized[1].Length);
+        }
     }
 }

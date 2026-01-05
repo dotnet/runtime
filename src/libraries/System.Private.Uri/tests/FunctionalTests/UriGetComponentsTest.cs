@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.PrivateUri.Tests
@@ -81,6 +82,44 @@ namespace System.PrivateUri.Tests
             Uri testUri = new Uri("tcp://127.0.0.1:23714");
             Assert.Equal("127.0.0.1", testUri.Host);
             Assert.Equal(23714, testUri.Port);
+        }
+
+        public static IEnumerable<object[]> NonAsciiFile_TestData
+        {
+            get
+            {
+                yield return new object[] { "file:///\u00FC", "file:///%C3%BC" };
+                yield return new object[] { "        file:///\u00FC", "file:///%C3%BC" };
+
+                yield return new object[] { "file://C:/\u00FC", "file:///C:/%C3%BC" };
+                yield return new object[] { "file:///C:/\u00FC", "file:///C:/%C3%BC" };
+                yield return new object[] { "        file://C:/\u00FC", "file:///C:/%C3%BC" };
+                yield return new object[] { "        file:///C:/\u00FC", "file:///C:/%C3%BC" };
+
+                yield return new object[] { "C:/\u00FC", "file:///C:/%C3%BC" };
+                yield return new object[] { "        C:/\u00FC", "file:///C:/%C3%BC" };
+
+                if (PlatformDetection.IsNotWindows)
+                {
+                    yield return new object[] { "/\u00FC", "file:///%C3%BC" };
+                    yield return new object[] { "        /\u00FC", "file:///%C3%BC" };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NonAsciiFile_TestData))]
+        public static void NonAsciiFile(string uriString, string absoluteUri)
+        {
+            Uri testUri = new Uri(uriString);
+
+            Assert.Equal("file", testUri.GetComponents(UriComponents.Scheme, UriFormat.UriEscaped));
+            Assert.Equal("file://", testUri.GetComponents(UriComponents.Scheme | UriComponents.Host, UriFormat.UriEscaped));
+            Assert.Equal("file://", testUri.GetComponents(UriComponents.Scheme | UriComponents.Host | UriComponents.Port, UriFormat.UriEscaped));
+            Assert.Equal("", testUri.GetComponents(UriComponents.UserInfo, UriFormat.UriEscaped));
+            Assert.Equal("", testUri.GetComponents(UriComponents.UserInfo | UriComponents.Host, UriFormat.UriEscaped));
+            Assert.Equal("", testUri.GetComponents(UriComponents.UserInfo | UriComponents.Host | UriComponents.Port, UriFormat.UriEscaped));
+            Assert.Equal(absoluteUri, testUri.GetComponents(UriComponents.AbsoluteUri, UriFormat.UriEscaped));
         }
     }
 }

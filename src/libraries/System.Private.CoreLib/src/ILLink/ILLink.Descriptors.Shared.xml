@@ -32,13 +32,8 @@
   <assembly fullname="System.Private.CoreLib" feature="System.Diagnostics.Debugger.IsSupported" featurevalue="true" featuredefault="true">
     <type fullname="System.Threading.Tasks.Task">
       <property name="ParentForDebugger" />
-      <property name="StateFlagsForDebugger" />
-      <property name="StateFlags" />
       <method name="GetDelegateContinuationsForDebugger" />
       <method name="SetNotificationForWaitCompletion" />
-    </type>
-    <type fullname="System.Threading.Timer">
-      <property name="AllTimers" />
     </type>
     <type fullname="System.Threading.Tasks.TaskScheduler">
       <method name="GetScheduledTasksForDebugger" />
@@ -67,6 +62,11 @@
     <type fullname="System.Runtime.CompilerServices.AsyncValueTaskMethodBuilder`1">
       <property name="ObjectIdForDebugger" />
     </type>
+
+    <type fullname="System.Threading.ThreadBlockingInfo">
+      <property name="LockOwnerManagedThreadId" />
+    </type>
+
     <type fullname="System.Threading.Tasks.Task">
       <!-- Methods is used by VS Tasks Window. -->
       <method name="GetActiveTaskFromId" />

@@ -50,6 +50,31 @@ namespace TestCompare
                 fail = true;
             }
 
+            if (!CmpOptimizeBoolsReturn(5, 3, 10))
+            {
+                fail = true;
+            }
+
+            if (!CmpOptimizeBoolsReturnOr(2, 3, 4))
+            {
+                fail = true;
+            }
+
+            if (CmpOptimizeBoolsIf(5, 3, 10) != 1)
+            {
+                fail = true;
+            }
+
+            if (CmpOptimizeBoolsIfOr(2, 3, 4) != 1)
+            {
+                fail = true;
+            }
+
+            if (!CmpMultipleOptimizeBools(1, 2, 3, 3, 5, 4))
+            {
+                fail = true;
+            }
+
             if (fail)
             {
                 return 101;
@@ -133,6 +158,60 @@ namespace TestCompare
                 return true;
             }
             return false;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool CmpOptimizeBoolsReturn(int a, int lower, int upper)
+        {
+            //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: ccmp {{w[0-9]+}}, {{w[0-9]+}}, 0, ge
+            //ARM64-FULL-LINE: cset {{x[0-9]+}}, le
+            return a >= lower && a <= upper;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool CmpOptimizeBoolsReturnOr(int a, int lower, int upper)
+        {
+            //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: ccmp {{w[0-9]+}}, {{w[0-9]+}}, nzc, lt
+            //ARM64-FULL-LINE: cset {{x[0-9]+}}, le
+            return a >= lower || a <= upper;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int CmpOptimizeBoolsIf(int a, int lower, int upper)
+        {
+            //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: ccmp {{w[0-9]+}}, {{w[0-9]+}}, 0, ge
+            //ARM64-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, gt
+            if (a >= lower && a <= upper)
+            {
+                return 1;
+            }
+            return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int CmpOptimizeBoolsIfOr(int a, int lower, int upper)
+        {
+            //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: ccmp {{w[0-9]+}}, {{w[0-9]+}}, nzc, lt
+            //ARM64-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, gt
+            if (a >= lower || a <= upper)
+            {
+                return 1;
+            }
+            return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool CmpMultipleOptimizeBools(int a, int b, int c, int d, int e, int f)
+        {
+            //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: ccmp {{w[0-9]+}}, {{w[0-9]+}}, 0, lt
+            //ARM64-FULL-LINE: ccmp {{w[0-9]+}}, {{w[0-9]+}}, nzc, le
+            //ARM64-FULL-LINE: cset {{x[0-9]+}}, gt
+            return (a < b) && (c <= d) && (e > f);
         }
     }
 }

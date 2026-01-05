@@ -460,9 +460,7 @@ m_dwMachine(0),
 m_pStreamList(0),
 m_pNextStgdb(0),
 m_eFileType(0),
-m_wszFileName(0),
-m_dwDatabaseLFT(0),
-m_dwDatabaseLFS(0)
+m_wszFileName(0)
 {}
 
 HRESULT Target_CLiteWeightStgdbRW::ReadFrom(DataTargetReader & reader)
@@ -480,8 +478,6 @@ HRESULT Target_CLiteWeightStgdbRW::ReadFrom(DataTargetReader & reader)
     IfFailRet(reader.ReadPointer(&m_pNextStgdb));
     IfFailRet(reader.Read32(&m_eFileType));
     IfFailRet(reader.ReadPointer(&m_wszFileName));
-    IfFailRet(reader.Read32(&m_dwDatabaseLFT));
-    IfFailRet(reader.Read32(&m_dwDatabaseLFS));
     IfFailRet(reader.ReadPointer(&m_pStgIO));
     return S_OK;
 }

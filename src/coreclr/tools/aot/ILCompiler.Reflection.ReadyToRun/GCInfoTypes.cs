@@ -19,7 +19,8 @@ namespace ILCompiler.Reflection.ReadyToRun
         SET_EPILOGSIZE_MAX = 10,
         SET_EPILOGCNT_MAX = 4,
         SET_UNTRACKED_MAX = 3,
-        SET_RET_KIND_MAX = 4,
+        SET_RET_KIND_MAX = 3,
+        SET_NOGCREGIONS_MAX = 4,
         ADJ_ENCODING_MAX = 0x7f,
         MORE_BYTES_TO_FOLLOW = 0x80
     };
@@ -65,6 +66,16 @@ namespace ILCompiler.Reflection.ReadyToRun
         NEXT_FOUR_ARGCOUNT = 0x60,
         NEXT_THREE_PROLOGSIZE = 0x70,
         NEXT_THREE_EPILOGSIZE = 0x78
+    };
+
+    /// <summary>
+    /// Second set of opcodes, when first code is 0x4F
+    /// </summary>
+    enum InfoHdrAdjust2
+    {
+        SET_RETURNKIND = 0,  // 0x00-SET_RET_KIND_MAX Set ReturnKind to value
+        SET_NOGCREGIONS_CNT = SET_RETURNKIND + InfoHdrAdjustConstants.SET_RET_KIND_MAX + 1,        // 0x04
+        FFFF_NOGCREGION_CNT = SET_NOGCREGIONS_CNT + InfoHdrAdjustConstants.SET_NOGCREGIONS_MAX + 1 // 0x09 There is a count (>SET_NOGCREGIONS_MAX) after the header encoding
     };
 
     /// <summary>
@@ -169,10 +180,10 @@ namespace ILCompiler.Reflection.ReadyToRun
             switch (_target)
             {
                 case Machine.ArmThumb2:
+                case Machine.RiscV64:
                     return (x << 1);
                 case Machine.Arm64:
                 case Machine.LoongArch64:
-                case Machine.RiscV64:
                     return (x << 2);
             }
             return x;
@@ -183,10 +194,10 @@ namespace ILCompiler.Reflection.ReadyToRun
             switch (_target)
             {
                 case Machine.ArmThumb2:
+                case Machine.RiscV64:
                     return (x >> 1);
                 case Machine.Arm64:
                 case Machine.LoongArch64:
-                case Machine.RiscV64:
                     return (x >> 2);
             }
             return x;

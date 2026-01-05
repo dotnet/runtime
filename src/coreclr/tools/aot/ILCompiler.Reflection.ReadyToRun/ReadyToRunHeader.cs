@@ -22,16 +22,12 @@ namespace ILCompiler.Reflection.ReadyToRun
         public readonly int AssemblyHeaderRVA;
         public readonly int AssemblyHeaderSize;
 
-        public ComponentAssembly(byte[] image, ref int curOffset)
+        public ComponentAssembly(NativeReader imageReader, ref int curOffset)
         {
-            CorHeaderRVA = BitConverter.ToInt32(image, curOffset);
-            curOffset += sizeof(int);
-            CorHeaderSize = BitConverter.ToInt32(image, curOffset);
-            curOffset += sizeof(int);
-            AssemblyHeaderRVA = BitConverter.ToInt32(image, curOffset);
-            curOffset += sizeof(int);
-            AssemblyHeaderSize = BitConverter.ToInt32(image, curOffset);
-            curOffset += sizeof(int);
+            CorHeaderRVA = imageReader.ReadInt32(ref curOffset);
+            CorHeaderSize = imageReader.ReadInt32(ref curOffset);
+            AssemblyHeaderRVA = imageReader.ReadInt32(ref curOffset);
+            AssemblyHeaderSize = imageReader.ReadInt32(ref curOffset);
         }
     }
 
@@ -55,32 +51,32 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
         }
 
-        public ReadyToRunCoreHeader(byte[] image, ref int curOffset)
+        public ReadyToRunCoreHeader(NativeReader imageReader, ref int curOffset)
         {
-            ParseCoreHeader(image, ref curOffset);
+            ParseCoreHeader(imageReader, ref curOffset);
         }
 
         /// <summary>
         /// Parse core header fields common to global R2R file header and per assembly headers in composite R2R images.
         /// </summary>
-        /// <param name="image">PE image</param>
+        /// <param name="imageReader">PE Image reader</param>
         /// <param name="curOffset">Index in the image byte array to the start of the ReadyToRun core header</param>
-        public void ParseCoreHeader(byte[] image, ref int curOffset)
+        public void ParseCoreHeader(NativeReader imageReader, ref int curOffset)
         {
-            Flags = NativeReader.ReadUInt32(image, ref curOffset);
-            int nSections = NativeReader.ReadInt32(image, ref curOffset);
+            Flags = imageReader.ReadUInt32(ref curOffset);
+            int nSections = imageReader.ReadInt32(ref curOffset);
             Sections = new Dictionary<ReadyToRunSectionType, ReadyToRunSection>();
 
             for (int i = 0; i < nSections; i++)
             {
-                int type = NativeReader.ReadInt32(image, ref curOffset);
+                int type = imageReader.ReadInt32(ref curOffset);
                 var sectionType = (ReadyToRunSectionType)type;
                 if (!Enum.IsDefined(typeof(ReadyToRunSectionType), type))
                 {
                     throw new BadImageFormatException("Warning: Invalid ReadyToRun section type");
                 }
-                int sectionStartRva = NativeReader.ReadInt32(image, ref curOffset);
-                int sectionLength = NativeReader.ReadInt32(image, ref curOffset);
+                int sectionStartRva = imageReader.ReadInt32(ref curOffset);
+                int sectionLength = imageReader.ReadInt32(ref curOffset);
                 Sections[sectionType] = new ReadyToRunSection(sectionType, sectionStartRva, sectionLength);
             }
         }
@@ -124,28 +120,29 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// Initializes the fields of the R2RHeader
         /// </summary>
-        /// <param name="image">PE image</param>
+        /// <param name="imageReader">PE Image reader</param>
         /// <param name="rva">Relative virtual address of the ReadyToRun header</param>
         /// <param name="curOffset">Index in the image byte array to the start of the ReadyToRun header</param>
         /// <exception cref="BadImageFormatException">The signature must be 0x00525452</exception>
-        public ReadyToRunHeader(byte[] image, int rva, int curOffset)
+        public ReadyToRunHeader(NativeReader imageReader, int rva, int curOffset)
         {
             RelativeVirtualAddress = rva;
             int startOffset = curOffset;
 
             byte[] signature = new byte[sizeof(uint) - 1]; // -1 removes the null character at the end of the cstring
-            Array.Copy(image, curOffset, signature, 0, sizeof(uint) - 1);
+            imageReader.ReadSpanAt(ref curOffset, signature);
+            curOffset = startOffset;
             SignatureString = Encoding.UTF8.GetString(signature);
-            Signature = NativeReader.ReadUInt32(image, ref curOffset);
+            Signature = imageReader.ReadUInt32(ref curOffset);
             if (Signature != READYTORUN_SIGNATURE)
             {
                 throw new System.BadImageFormatException("Incorrect R2R header signature: " + SignatureString);
             }
 
-            MajorVersion = NativeReader.ReadUInt16(image, ref curOffset);
-            MinorVersion = NativeReader.ReadUInt16(image, ref curOffset);
+            MajorVersion = imageReader.ReadUInt16(ref curOffset);
+            MinorVersion = imageReader.ReadUInt16(ref curOffset);
 
-            ParseCoreHeader(image, ref curOffset);
+            ParseCoreHeader(imageReader, ref curOffset);
 
             Size = curOffset - startOffset;
         }

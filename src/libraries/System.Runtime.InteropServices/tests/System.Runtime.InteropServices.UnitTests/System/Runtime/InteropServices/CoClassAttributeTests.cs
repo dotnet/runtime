@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [InlineData(null)]
         [InlineData(typeof(int))]
-        public void Ctor_CoClass(Type coClass)
+        public void Ctor_CoClass(Type? coClass)
         {
             var attribute = new CoClassAttribute(coClass);
             Assert.Equal(coClass, attribute.CoClass);

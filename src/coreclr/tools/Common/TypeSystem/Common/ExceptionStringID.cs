@@ -19,6 +19,7 @@ namespace Internal.TypeSystem
         ClassLoadInlineArrayFieldCount,
         ClassLoadInlineArrayLength,
         ClassLoadInlineArrayExplicit,
+        ClassLoadInlineArrayExplicitSize,
 
         // MissingMethodException
         MissingMethod,
@@ -38,6 +39,7 @@ namespace Internal.TypeSystem
         InvalidProgramGenericMethod,
         InvalidProgramNonBlittableTypes,
         InvalidProgramMultipleCallConv,
+        InvalidProgramAsync,
 
         // BadImageFormatException
         BadImageFormatGeneric,

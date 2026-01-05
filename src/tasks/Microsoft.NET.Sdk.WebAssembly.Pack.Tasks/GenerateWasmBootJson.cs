@@ -43,9 +43,6 @@ public class GenerateWasmBootJson : Task
     public string DebugLevel { get; set; }
 
     [Required]
-    public bool LinkerEnabled { get; set; }
-
-    [Required]
     public bool CacheBootResources { get; set; }
 
     public bool LoadFullICUData { get; set; }
@@ -60,7 +57,9 @@ public class GenerateWasmBootJson : Task
 
     public ITaskItem[] Extensions { get; set; }
 
-    public string StartupMemoryCache { get; set; }
+    public string[]? Profilers { get; set; }
+
+    public string? RuntimeConfigJsonPath { get; set; }
 
     public string Jiterpreter { get; set; }
 
@@ -88,6 +87,20 @@ public class GenerateWasmBootJson : Task
 
     public string ApplicationEnvironment { get; set; }
 
+    public string MergeWith { get; set; }
+
+    public bool BundlerFriendly { get; set; }
+
+    public bool ExitOnUnhandledError { get; set; }
+
+    public bool AppendElementOnExit { get; set; }
+
+    public bool LogExitCode { get; set; }
+
+    public bool AsyncFlushOnExit { get; set; }
+
+    public bool ForwardConsole { get; set; }
+
     public override bool Execute()
     {
         var entryAssemblyName = AssemblyName.GetAssemblyName(AssemblyPath).Name;
@@ -111,7 +124,6 @@ public class GenerateWasmBootJson : Task
         var result = new BootJsonData
         {
             resources = new ResourcesData(),
-            startupMemoryCache = helper.ParseOptionalBool(StartupMemoryCache)
         };
 
         if (IsTargeting100OrLater())
@@ -119,21 +131,29 @@ public class GenerateWasmBootJson : Task
             result.applicationEnvironment = ApplicationEnvironment;
         }
 
+        if (IsTargeting110OrLater())
+        {
+            if (ExitOnUnhandledError) result.exitOnUnhandledError = true;
+            if (AppendElementOnExit) result.appendElementOnExit = true;
+            if (LogExitCode) result.logExitCode = true;
+            if (AsyncFlushOnExit) result.asyncFlushOnExit = true;
+            if (ForwardConsole) result.forwardConsole = true;
+        }
+
         if (IsTargeting80OrLater())
         {
             result.mainAssemblyName = entryAssemblyName;
             result.globalizationMode = GetGlobalizationMode().ToString().ToLowerInvariant();
 
-            if (CacheBootResources)
-                result.cacheBootResources = CacheBootResources;
-
-            if (LinkerEnabled)
-                result.linkerEnabled = LinkerEnabled;
+            if (!IsTargeting100OrLater())
+            {
+                if (CacheBootResources)
+                    result.cacheBootResources = CacheBootResources;
+            }
         }
         else
         {
             result.cacheBootResources = CacheBootResources;
-            result.linkerEnabled = LinkerEnabled;
             result.config = new();
             result.debugBuild = DebugBuild;
             result.entryAssembly = entryAssemblyName;
@@ -177,6 +197,7 @@ public class GenerateWasmBootJson : Task
         // - runtime:
         //   - UriPath (e.g., "dotnet.js")
         //     - ContentHash (e.g., "3448f339acf512448")
+        ResourcesData resourceData = (ResourcesData)result.resources;
         if (Resources != null)
         {
             var endpointByAsset = Endpoints.ToDictionary(e => e.GetMetadata("AssetFile"));
@@ -191,7 +212,6 @@ public class GenerateWasmBootJson : Task
             });
 
             var remainingLazyLoadAssemblies = new List<ITaskItem>(LazyLoadedAssemblies ?? Array.Empty<ITaskItem>());
-            var resourceData = result.resources;
 
             if (FingerprintAssets)
                 resourceData.fingerprinting = new();
@@ -206,7 +226,8 @@ public class GenerateWasmBootJson : Task
                 var assetTraitName = resource.GetMetadata("AssetTraitName");
                 var assetTraitValue = resource.GetMetadata("AssetTraitValue");
                 var resourceName = Path.GetFileName(resource.GetMetadata("OriginalItemSpec"));
-                var resourceRoute = Path.GetFileName(endpointByAsset[resource.ItemSpec].ItemSpec);
+                var resourceEndpoint = endpointByAsset[resource.ItemSpec].ItemSpec;
+                var resourceRoute = Path.GetFileName(resourceEndpoint);
 
                 if (TryGetLazyLoadedAssembly(lazyLoadAssembliesWithoutExtension, resourceName, out var lazyLoad))
                 {
@@ -346,6 +367,16 @@ public class GenerateWasmBootJson : Task
                     AddResourceToList(resource, resourceList, targetPath);
                     continue;
                 }
+                else if (string.Equals("WasmResource", assetTraitName, StringComparison.OrdinalIgnoreCase) && assetTraitValue.StartsWith("vfs:", StringComparison.OrdinalIgnoreCase))
+                {
+                    Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as VFS resource '{1}'.", resource.ItemSpec, assetTraitValue);
+
+                    var targetPath = assetTraitValue.Substring("vfs:".Length).Replace("\\", "/");
+
+                    resourceData.vfs ??= [];
+                    resourceData.vfs[targetPath] = [];
+                    AddResourceToList(resource, resourceData.vfs[targetPath], resourceEndpoint.Replace("\\", "/"));
+                }
                 else
                 {
                     Log.LogMessage(MessageImportance.Low, "Skipping resource '{0}' since it doesn't belong to a defined category.", resource.ItemSpec);
@@ -380,7 +411,7 @@ public class GenerateWasmBootJson : Task
                     endLineNumber: 0,
                     endColumnNumber: 0,
                     message: message,
-                    string.Join(";", LazyLoadedAssemblies.Select(a => a.ItemSpec)));
+                    string.Join(";", remainingLazyLoadAssemblies.Select(a => a.ItemSpec)));
 
                 return;
             }
@@ -388,7 +419,7 @@ public class GenerateWasmBootJson : Task
 
         if (IsTargeting80OrLater())
         {
-            result.debugLevel = helper.GetDebugLevel(result.resources?.pdb?.Count > 0);
+            result.debugLevel = helper.GetDebugLevel(resourceData.pdb?.Count > 0);
         }
 
         if (ConfigurationFiles != null)
@@ -410,7 +441,6 @@ public class GenerateWasmBootJson : Task
             }
         }
 
-
         if (EnvVariables != null && EnvVariables.Length > 0)
         {
             result.environmentVariables = new Dictionary<string, string>();
@@ -420,6 +450,7 @@ public class GenerateWasmBootJson : Task
                 result.environmentVariables[name] = env.GetMetadata("Value");
             }
         }
+
         if (Extensions != null && Extensions.Length > 0)
         {
             result.extensions = new Dictionary<string, Dictionary<string, object>>();
@@ -432,8 +463,28 @@ public class GenerateWasmBootJson : Task
             }
         }
 
+        if (RuntimeConfigJsonPath != null && File.Exists(RuntimeConfigJsonPath))
+        {
+            using var fs = File.OpenRead(RuntimeConfigJsonPath);
+            var runtimeConfig = JsonSerializer.Deserialize<RuntimeConfigData>(fs, BootJsonBuilderHelper.JsonOptions);
+            result.runtimeConfig = runtimeConfig;
+        }
+
+        Profilers ??= Array.Empty<string>();
+        var browserProfiler = Profilers.FirstOrDefault(p => p.StartsWith("browser:"));
+        if (browserProfiler != null)
+        {
+            result.environmentVariables ??= new();
+            result.environmentVariables["DOTNET_WasmPerformanceInstrumentation"] = browserProfiler.Substring("browser:".Length);
+        }
+
         helper.ComputeResourcesHash(result);
-        helper.WriteConfigToFile(result, OutputPath);
+
+        string? imports = null;
+        if (IsTargeting100OrLater())
+            imports = helper.TransformResourcesToAssets(result, BundlerFriendly);
+
+        helper.WriteConfigToFile(result, OutputPath, mergeWith: MergeWith, imports: imports);
 
         void AddResourceToList(ITaskItem resource, ResourceHashesByNameDictionary resourceList, string resourceKey)
         {
@@ -491,6 +542,7 @@ public class GenerateWasmBootJson : Task
     private static readonly Version version80 = new Version(8, 0);
     private static readonly Version version90 = new Version(9, 0);
     private static readonly Version version100 = new Version(10, 0);
+    private static readonly Version version110 = new Version(11, 0);
 
     private bool IsTargeting80OrLater()
         => IsTargetingVersionOrLater(version80);
@@ -500,6 +552,9 @@ public class GenerateWasmBootJson : Task
 
     private bool IsTargeting100OrLater()
         => IsTargetingVersionOrLater(version100);
+
+    private bool IsTargeting110OrLater()
+        => IsTargetingVersionOrLater(version110);
 
     private bool IsTargetingVersionOrLater(Version version)
     {

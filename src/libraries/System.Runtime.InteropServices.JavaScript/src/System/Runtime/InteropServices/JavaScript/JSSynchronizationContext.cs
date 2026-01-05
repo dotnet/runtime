@@ -249,7 +249,7 @@ namespace System.Runtime.InteropServices.JavaScript
         internal static extern unsafe void ScheduleSynchronizationContext(IntPtr targetTID);
 
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
-        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
 #pragma warning restore CS3016
         // this callback will arrive on the target thread, called from mono_background_exec
         private static void PumpHandler()

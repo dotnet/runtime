@@ -11,7 +11,7 @@ import { type RuntimeAPI } from "./types";
 
 import { Module, exportedRuntimeAPI, loaderHelpers, passEmscriptenInternals, runtimeHelpers, setRuntimeGlobals, } from "./globals";
 import { GlobalObjects, RuntimeHelpers } from "./types/internal";
-import { configureEmscriptenStartup, configureRuntimeStartup, configureWorkerStartup } from "./startup";
+import { configureEmscriptenStartup, configureRuntimeStartup, configureWorkerStartup, SystemJS_GetCurrentProcessId } from "./startup";
 
 import { create_weak_ref } from "./weak-ref";
 import { export_internal } from "./exports-internal";
@@ -42,6 +42,7 @@ function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
         jiterpreter_dump_stats,
         forceDisposeProxies,
         utf8ToString,
+        SystemJS_GetCurrentProcessId,
         mono_background_exec: () => tcwraps.mono_background_exec(),
         mono_wasm_ds_exec: () => tcwraps.mono_wasm_ds_exec(),
     };

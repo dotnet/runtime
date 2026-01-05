@@ -75,7 +75,7 @@ StubCacheBase::~StubCacheBase()
 //    The caller is responsible for DecRef'ing the returned stub in
 //    order to avoid leaks.
 //---------------------------------------------------------
-Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub)
+Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
 {
     CONTRACT (Stub*)
     {
@@ -115,7 +115,7 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub)
     CodeLabel *plabel = psl->EmitNewCodeLabel();
     psl->EmitBytes(pRawStub, Length(pRawStub));
     StubHolder<Stub> pstub;
-    pstub = psl->Link(m_heap, linkFlags);
+    pstub = psl->Link(m_heap, linkFlags, stubType);
     UINT32 offset = psl->GetLabelOffset(plabel);
 
     if (offset > 0xffff)

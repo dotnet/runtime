@@ -40,9 +40,7 @@ namespace System.Runtime.CompilerServices
 
         private sealed class LambdaSignature<T> where T : class
         {
-            private static LambdaSignature<T>? s_instance;
-
-            internal static LambdaSignature<T> Instance => s_instance ??= new LambdaSignature<T>();
+            internal static LambdaSignature<T> Instance => field ??= new LambdaSignature<T>();
 
             internal readonly ReadOnlyCollection<ParameterExpression> Parameters;
             internal readonly LabelTarget ReturnLabel;

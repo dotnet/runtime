@@ -55,6 +55,10 @@ int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallb
             return StatusCode::CoreHostLibMissingFailure;
         }
 
+        // We should always be loading hostfxr from an absolute path
+        if (!pal::is_path_fully_qualified(fxr_path))
+            return StatusCode::CoreHostLibMissingFailure;
+
         // Load library
         if (!pal::load_library(&fxr_path, &fxr))
         {

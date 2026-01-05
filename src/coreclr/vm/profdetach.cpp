@@ -17,6 +17,7 @@
 #include "profilinghelper.h"
 #include "profilinghelper.inl"
 #include "eetoprofinterfaceimpl.inl"
+#include "minipal/time.h"
 
 // Class static member variables
 CQuickArrayList<ProfilerDetachInfo> ProfilingAPIDetach::s_profilerDetachInfos;
@@ -55,9 +56,6 @@ void ProfilerDetachInfo::Init()
 }
 
 
-// ----------------------------------------------------------------------------
-// Implementation of ProfilingAPIAttachDetach statics
-
 
 // ----------------------------------------------------------------------------
 // ProfilingAPIDetach::Initialize
@@ -92,8 +90,9 @@ HRESULT ProfilingAPIDetach::Initialize()
                 // For exceptions that give us useless hr's, just use E_FAIL
                 hr = E_FAIL;
             }
+            RethrowTerminalExceptions();
         }
-        EX_END_CATCH(RethrowTerminalExceptions)
+        EX_END_CATCH
 
         if (FAILED(hr))
         {
@@ -227,7 +226,7 @@ HRESULT ProfilingAPIDetach::RequestProfilerDetach(ProfilerInfo *pProfilerInfo, D
         {
             ProfilerDetachInfo detachInfo;
             detachInfo.m_pProfilerInfo = pProfilerInfo;
-            detachInfo.m_ui64DetachStartTime = CLRGetTickCount64();
+            detachInfo.m_ui64DetachStartTime = minipal_lowres_ticks();
             detachInfo.m_dwExpectedCompletionMilliseconds = dwExpectedCompletionMilliseconds;
             s_profilerDetachInfos.Push(detachInfo);
         }
@@ -260,12 +259,9 @@ HRESULT ProfilingAPIDetach::RequestProfilerDetach(ProfilerInfo *pProfilerInfo, D
     {
         ProfilingAPIUtility::LogProfInfo(IDS_PROF_DETACH_INITIATED);
     }
-    EX_CATCH
-    {
-        // Oh well, rest of detach succeeded, so we should still return success to the
-        // profiler.
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    // Oh well, rest of detach succeeded, so we should still return success to the
+    // profiler.
+    EX_SWALLOW_NONTERMINAL
 
     return S_OK;
 }
@@ -425,7 +421,7 @@ void ProfilingAPIDetach::SleepWhileProfilerEvacuates(ProfilerDetachInfo *pDetach
     //         (but not too soon)
     //     * Occasionally thereafter (steady state)
 
-    ULONGLONG ui64ElapsedMilliseconds = CLRGetTickCount64() - ui64DetachStartTime;
+    ULONGLONG ui64ElapsedMilliseconds = minipal_lowres_ticks() - ui64DetachStartTime;
     ULONGLONG ui64SleepMilliseconds;
     if (ui64ExpectedCompletionMilliseconds > ui64ElapsedMilliseconds)
     {
@@ -571,8 +567,9 @@ DWORD WINAPI ProfilingAPIDetach::ProfilingAPIDetachThreadStart(LPVOID)
     EX_CATCH
     {
         _ASSERTE(!"Unhandled exception on profiling API detach thread");
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 
     LOG((
         LF_CORPROF,

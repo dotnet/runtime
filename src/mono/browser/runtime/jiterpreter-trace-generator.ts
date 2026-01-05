@@ -1115,7 +1115,7 @@ export function generateWasmBody (
                 // Stash obj->vtable->klass so we can do a fast has_parent check later
                 if (canDoFastCheck)
                     builder.local("src_ptr", WasmOpcode.tee_local);
-                builder.i32_const(klass);
+                builder.ptr_const(klass);
                 builder.appendU8(WasmOpcode.i32_eq);
                 builder.block(WasmValtype.void, WasmOpcode.if_); // if A
 
@@ -1206,7 +1206,7 @@ export function generateWasmBody (
                     elementClassOffset = getMemberOffset(JiterpMember.ClassElementClass),
                     destOffset = getArgU16(ip, 1),
                     // Get the class's element class, which is what we will actually type-check against
-                    elementClass = getU32_unaligned(klass + elementClassOffset);
+                    elementClass = getU32_unaligned(klass + elementClassOffset) >>> 0;
 
                 if (!klass || !elementClass) {
                     record_abort(builder.traceIndex, ip, traceName, "null-klass");
@@ -1234,7 +1234,7 @@ export function generateWasmBody (
                 builder.local("src_ptr", WasmOpcode.tee_local);
                 builder.appendU8(WasmOpcode.i32_load);
                 builder.appendMemarg(elementClassOffset, 0);
-                builder.i32_const(elementClass);
+                builder.ptr_const(elementClass);
                 builder.appendU8(WasmOpcode.i32_eq);
 
                 // Check klass->rank == 0
@@ -1285,7 +1285,7 @@ export function generateWasmBody (
                 builder.block();
                 append_ldloca(builder, getArgU16(ip, 1), 4);
                 const vtable = get_imethod_data(frame, getArgU16(ip, 3));
-                builder.i32_const(vtable);
+                builder.ptr_const(vtable);
                 append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
                 builder.callImport("newarr");
                 // If the newarr operation succeeded, continue, otherwise bailout
@@ -1422,9 +1422,11 @@ export function generateWasmBody (
             // call C
             case MintOpcode.MINT_PROF_ENTER:
             case MintOpcode.MINT_PROF_SAMPLEPOINT:
+                append_profiler_event(builder, ip, opcode);
+                break;
             case MintOpcode.MINT_PROF_EXIT:
             case MintOpcode.MINT_PROF_EXIT_VOID:
-                append_profiler_event(builder, ip, opcode);
+                ip = abort;
                 break;
 
             // Generating code for these is kind of complex due to the intersection of JS and int64,
@@ -1971,6 +1973,7 @@ function append_stloc_tail (builder: WasmBuilder, offset: number, opcodeOrPrefix
         // This looks wrong but I assure you it's correct.
         builder.appendULeb(simdOpcode);
     }
+    offset = offset >>> 0;
     const alignment = computeMemoryAlignment(offset, opcodeOrPrefix, simdOpcode);
     builder.appendMemarg(offset, alignment);
     invalidate_local(offset);
@@ -2333,7 +2336,7 @@ function emit_fieldop (
                     append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
                     append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
                     builder.i32_const(builder.traceIndex);
-                    builder.i32_const(ip);
+                    builder.ptr_const(ip);
                     builder.callImport("notnull");
                 }
             }
@@ -3685,6 +3688,15 @@ function append_simd_4_load (builder: WasmBuilder, ip: MintOpcodePtr) {
 
 function emit_simd_2 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic2): boolean {
     const simple = <WasmSimdOpcode>cwraps.mono_jiterp_get_simd_opcode(1, index);
+    const bitmask = bitmaskTable[index];
+
+    if (bitmask) {
+        append_simd_2_load(builder, ip);
+        builder.appendSimd(bitmask);
+        append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+        return true;
+    }
+
     if (simple >= 0) {
         if (simdLoadTable.has(index)) {
             // Indirect load, so v1 is T** and res is Vector128*
@@ -3698,14 +3710,6 @@ function emit_simd_2 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
             builder.appendSimd(simple);
             append_simd_store(builder, ip);
         }
-        return true;
-    }
-
-    const bitmask = bitmaskTable[index];
-    if (bitmask) {
-        append_simd_2_load(builder, ip);
-        builder.appendSimd(bitmask);
-        append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
         return true;
     }
 
@@ -3915,7 +3919,11 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
             for (let j = 0; j < elementSize; j++)
                 builder.appendU8(i);
         }
-        builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
+        if (runtimeHelpers.featureWasmRelaxedSimd) {
+            builder.appendSimd(WasmSimdOpcode.i8x16_relaxed_swizzle);
+        } else {
+            builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
+        }
         // multiply indices by 2 or 4 to scale from elt indices to byte indices
         builder.i32_const(elementCount === 4 ? 2 : 1);
         builder.appendSimd(WasmSimdOpcode.i8x16_shl);

@@ -18,10 +18,6 @@ namespace System.Runtime.Serialization
 
         private static PropertyInfo? s_collectionItemNameProperty;
 
-        private static ConstructorInfo? s_extensionDataObjectCtor;
-
-        private static PropertyInfo? s_extensionDataProperty;
-
         private static MethodInfo? s_getItemContractMethod;
 
         private static MethodInfo? s_getJsonDataContractMethod;
@@ -53,8 +49,6 @@ namespace System.Runtime.Serialization
         private static MethodInfo? s_readJsonValueMethod;
 
         private static ConstructorInfo? s_serializationExceptionCtor;
-
-        private static Type[]? s_serInfoCtorArgs;
 
         private static MethodInfo? s_throwDuplicateMemberExceptionMethod;
 
@@ -113,11 +107,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        public static ConstructorInfo ExtensionDataObjectCtor => s_extensionDataObjectCtor ??
-                                                                 (s_extensionDataObjectCtor =
-                                                                     typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, Type.EmptyTypes))!;
+        public static ConstructorInfo ExtensionDataObjectCtor => field ??= typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, Type.EmptyTypes)!;
 
-        public static PropertyInfo ExtensionDataProperty => s_extensionDataProperty ??= typeof(IExtensibleDataObject).GetProperty("ExtensionData")!;
+        public static PropertyInfo ExtensionDataProperty => field ??= typeof(IExtensibleDataObject).GetProperty("ExtensionData")!;
 
         public static MethodInfo GetCurrentMethod
         {
@@ -319,7 +311,7 @@ namespace System.Runtime.Serialization
                 return s_serializationExceptionCtor;
             }
         }
-        public static Type[] SerInfoCtorArgs => s_serInfoCtorArgs ??= new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
+        public static Type[] SerInfoCtorArgs => field ??= new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
         public static MethodInfo ThrowDuplicateMemberExceptionMethod
         {
             get

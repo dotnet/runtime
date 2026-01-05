@@ -40,7 +40,6 @@ class    EEClass;
 class    EnCFieldDesc;
 class FieldDesc;
 class JIT_TrialAlloc;
-struct LayoutRawFieldInfo;
 class MetaSig;
 class    MethodDesc;
 class    MethodDescChunk;
@@ -64,6 +63,7 @@ class ClassFactoryBase;
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 class ArgDestination;
 enum class WellKnownAttribute : DWORD;
+enum class AsyncVariantLookup;
 struct MethodTableAuxiliaryData;
 
 typedef DPTR(MethodTableAuxiliaryData) PTR_MethodTableAuxiliaryData;
@@ -939,6 +939,7 @@ public:
     PTR_Module GetModule()
     {
         LIMITED_METHOD_CONTRACT;
+        _ASSERTE(!IsContinuation());
         return m_pModule;
     }
 
@@ -1432,13 +1433,29 @@ public:
     // of the fully loaded type. This is to reduce the amount of type loading
     // performed at process startup.
     //
+    // When placed on a valuetype or a non-generic interface, the special marker will indicate that the interface should be considered instantiated over the valuetype
+    // When placed on an interface, the special marker will indicate that the interface should be considered instantiated over the first generic parameter of the interface
+    //
     // The current rule is that these interfaces can only appear
-    // on valuetypes that are not shared generic, and that the special
+    // on valuetypes and interfaces that are not shared generic, and that the special
     // marker type is the open generic type.
     //
     inline bool IsSpecialMarkerTypeForGenericCasting()
     {
         return IsGenericTypeDefinition();
+    }
+
+    // See comment on IsSpecialMarkerTypeForGenericCasting for details
+    inline TypeHandle GetSpecialInstantiationType()
+    {
+        if (IsInterface() && HasInstantiation())
+        {
+            return GetInstantiation()[0];
+        }
+        else
+        {
+            return TypeHandle(this);
+        }
     }
 
     static const DWORD MaxGenericParametersForSpecialMarkerType = 8;
@@ -1745,15 +1762,13 @@ public:
     // algorithm that does not allocate a temporary entrypoint for the slot if it doesn't exist.
     MethodDesc* GetMethodDescForSlot_NoThrow(DWORD slot);
 
-    static MethodDesc*  GetMethodDescForSlotAddress(PCODE addr, BOOL fSpeculative = FALSE);
-
     PCODE GetRestoredSlot(DWORD slot);
 
     // Returns MethodTable that GetRestoredSlot get its values from
     MethodTable * GetRestoredSlotMT(DWORD slot);
 
     // Used to map methods on the same slot between instantiations.
-    MethodDesc * GetParallelMethodDesc(MethodDesc * pDefMD);
+    MethodDesc * GetParallelMethodDesc(MethodDesc * pDefMD, AsyncVariantLookup asyncVariantLookup = (AsyncVariantLookup)0);
 
     //-------------------------------------------------------------------
     // BoxedEntryPoint MethodDescs.
@@ -2282,7 +2297,7 @@ public:
                     pMT->HasInstantiation() &&
                     pCurrentMethodTable->IsSpecialMarkerTypeForGenericCasting() &&
                     !pMTOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() &&
-                    pMT->GetInstantiation().ContainsAllOneType(pMTOwner))
+                    pMT->GetInstantiation().ContainsAllOneType(pMTOwner->GetSpecialInstantiationType()))
                 {
                     exactMatch = true;
 #ifndef DACCESS_COMPILE
@@ -2297,6 +2312,8 @@ public:
 
             RETURN (exactMatch);
         }
+
+        bool CurrentInterfaceEquivalentTo(MethodTable* pMTOwner, MethodTable* pMT);
 
         inline bool HasSameTypeDefAs(MethodTable* pMT)
         {
@@ -2790,6 +2807,8 @@ public:
         SetFlag(enum_flag_Category_Nullable);
     }
 
+    inline BOOL IsContinuation();
+
     // The following methods are only valid for the method tables for array types.
     CorElementType GetArrayElementType()
     {
@@ -3122,6 +3141,14 @@ public:
         static void HolderRelease(MethodData *pEntry)
             { WRAPPER_NO_CONTRACT; if (pEntry != NULL) pEntry->Release(); }
 
+        static void* operator new(size_t size)
+        {
+            return ::operator new(size);
+        }
+        static void operator delete(void* ptr)
+        {
+            ::operator delete(ptr);
+        }
       protected:
         ULONG m_cRef;
         MethodTable *const m_pImplMT;
@@ -3357,6 +3384,12 @@ protected:
             _ASSERTE(size <= GetObjectSize(targetMT.pMT, computeOptions));
             return ::operator new(GetObjectSize(targetMT.pMT, computeOptions));
         }
+
+        static void operator delete(void* ptr)
+        {
+            ::operator delete(ptr);
+        }
+
         static void* operator new(size_t size) = delete;
     };  // class MethodDataObject
 
@@ -3782,61 +3815,61 @@ private:
         enum_flag_TokenMask                 = 0xFFFFFF00,
     };  // enum WFLAGS2_ENUM
 
-    __forceinline void ClearFlag(WFLAGS_LOW_ENUM flag)
+    FORCEINLINE void ClearFlag(WFLAGS_LOW_ENUM flag)
     {
         _ASSERTE(!IsStringOrArray());
         m_dwFlags &= ~flag;
     }
-    __forceinline void SetFlag(WFLAGS_LOW_ENUM flag)
+    FORCEINLINE void SetFlag(WFLAGS_LOW_ENUM flag)
     {
         _ASSERTE(!IsStringOrArray());
         m_dwFlags |= flag;
     }
-    __forceinline DWORD GetFlag(WFLAGS_LOW_ENUM flag) const
+    FORCEINLINE DWORD GetFlag(WFLAGS_LOW_ENUM flag) const
     {
         SUPPORTS_DAC;
         return (IsStringOrArray() ? (enum_flag_StringArrayValues & flag) : (m_dwFlags & flag));
     }
-    __forceinline BOOL TestFlagWithMask(WFLAGS_LOW_ENUM mask, WFLAGS_LOW_ENUM flag) const
+    FORCEINLINE BOOL TestFlagWithMask(WFLAGS_LOW_ENUM mask, WFLAGS_LOW_ENUM flag) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return (IsStringOrArray() ? (((DWORD)enum_flag_StringArrayValues & (DWORD)mask) == (DWORD)flag) :
             ((m_dwFlags & (DWORD)mask) == (DWORD)flag));
     }
 
-    __forceinline void ClearFlag(WFLAGS_HIGH_ENUM flag)
+    FORCEINLINE void ClearFlag(WFLAGS_HIGH_ENUM flag)
     {
         m_dwFlags &= ~flag;
     }
-    __forceinline void SetFlag(WFLAGS_HIGH_ENUM flag)
+    FORCEINLINE void SetFlag(WFLAGS_HIGH_ENUM flag)
     {
         m_dwFlags |= flag;
     }
-    __forceinline DWORD GetFlag(WFLAGS_HIGH_ENUM flag) const
+    FORCEINLINE DWORD GetFlag(WFLAGS_HIGH_ENUM flag) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_dwFlags & flag;
     }
-    __forceinline BOOL TestFlagWithMask(WFLAGS_HIGH_ENUM mask, WFLAGS_HIGH_ENUM flag) const
+    FORCEINLINE BOOL TestFlagWithMask(WFLAGS_HIGH_ENUM mask, WFLAGS_HIGH_ENUM flag) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return ((m_dwFlags & (DWORD)mask) == (DWORD)flag);
     }
 
-    __forceinline void ClearFlag(WFLAGS2_ENUM flag)
+    FORCEINLINE void ClearFlag(WFLAGS2_ENUM flag)
     {
         m_dwFlags2 &= ~flag;
     }
-    __forceinline void SetFlag(WFLAGS2_ENUM flag)
+    FORCEINLINE void SetFlag(WFLAGS2_ENUM flag)
     {
         m_dwFlags2 |= flag;
     }
-    __forceinline DWORD GetFlag(WFLAGS2_ENUM flag) const
+    FORCEINLINE DWORD GetFlag(WFLAGS2_ENUM flag) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_dwFlags2 & flag;
     }
-    __forceinline BOOL TestFlagWithMask(WFLAGS2_ENUM mask, WFLAGS2_ENUM flag) const
+    FORCEINLINE BOOL TestFlagWithMask(WFLAGS2_ENUM mask, WFLAGS2_ENUM flag) const
     {
         return (m_dwFlags2 & (DWORD)mask) == (DWORD)flag;
     }
@@ -3905,12 +3938,12 @@ private:
         TADDR m_pCanonMT;
     };
 
-    __forceinline static LowBits union_getLowBits(TADDR pCanonMT)
+    FORCEINLINE static LowBits union_getLowBits(TADDR pCanonMT)
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return LowBits(pCanonMT & UNION_MASK);
     }
-    __forceinline static TADDR   union_getPointer(TADDR pCanonMT)
+    FORCEINLINE static TADDR   union_getPointer(TADDR pCanonMT)
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return (pCanonMT & ~UNION_MASK);
@@ -4071,7 +4104,7 @@ template<> struct cdac_data<MethodTable>
 };
 
 #ifndef CROSSBITNESS_COMPILE
-static_assert_no_msg(sizeof(MethodTable) == SIZEOF__MethodTable_);
+static_assert(sizeof(MethodTable) == SIZEOF__MethodTable_);
 #endif
 #if defined(FEATURE_TYPEEQUIVALENCE) && !defined(DACCESS_COMPILE)
 WORD GetEquivalentMethodSlot(MethodTable * pOldMT, MethodTable * pNewMT, WORD wMTslot, BOOL *pfFound);

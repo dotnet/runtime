@@ -183,7 +183,7 @@ adler32.obj: $(TOP)/adler32.c $(TOP)/zbuild.h $(TOP)/functable.h $(TOP)/adler32_
 adler32_c.obj: $(TOP)/arch/generic/adler32_c.c $(TOP)/zbuild.h $(TOP)/functable.h $(TOP)/adler32_p.h
 adler32_fold_c.obj: $(TOP)/arch/generic/adler32_fold_c.c $(TOP)/zbuild.h $(TOP)/functable.h
 chunkset_c.obj: $(TOP)/arch/generic/chunkset_c.c $(TOP)/zbuild.h $(TOP)/chunkset_tpl.h $(TOP)/inffast_tpl.h
-compare256_c.obj: $(TOP)/arch/generic/compare256_c.c $(TOP)/zbuild.h $(TOP)/zutil_p.h $(TOP)/deflate.h $(TOP)/fallback_builtins.h $(TOP)/match_tpl.h
+compare256_c.obj: $(TOP)/arch/generic/compare256_c.c $(TOP)/zbuild.h $(TOP)/zmemory.h $(TOP)/deflate.h $(TOP)/fallback_builtins.h $(TOP)/match_tpl.h
 compress.obj: $(TOP)/compress.c $(TOP)/zbuild.h $(TOP)/zutil.h
 cpu_features.obj: $(TOP)/cpu_features.c $(TOP)/cpu_features.h $(TOP)/zbuild.h
 crc32.obj: $(TOP)/crc32.c $(TOP)/zbuild.h $(TOP)/functable.h $(TOP)/crc32_braid_tbl.h
@@ -194,7 +194,7 @@ deflate.obj: $(TOP)/deflate.c $(TOP)/zbuild.h $(TOP)/deflate.h $(TOP)/deflate_p.
 deflate_fast.obj: $(TOP)/deflate_fast.c $(TOP)/zbuild.h $(TOP)/deflate.h $(TOP)/deflate_p.h $(TOP)/functable.h
 deflate_huff.obj: $(TOP)/deflate_huff.c $(TOP)/zbuild.h $(TOP)/deflate.h $(TOP)/deflate_p.h $(TOP)/functable.h
 deflate_medium.obj: $(TOP)/deflate_medium.c $(TOP)/zbuild.h $(TOP)/deflate.h $(TOP)/deflate_p.h $(TOP)/functable.h
-deflate_quick.obj: $(TOP)/deflate_quick.c $(TOP)/zbuild.h $(TOP)/deflate.h $(TOP)/deflate_p.h $(TOP)/functable.h $(TOP)/trees_emit.h $(TOP)/zutil_p.h
+deflate_quick.obj: $(TOP)/deflate_quick.c $(TOP)/zbuild.h $(TOP)/deflate.h $(TOP)/deflate_p.h $(TOP)/functable.h $(TOP)/trees_emit.h $(TOP)/zmemory.h
 deflate_rle.obj: $(TOP)/deflate_rle.c $(TOP)/zbuild.h $(TOP)/deflate.h $(TOP)/deflate_p.h $(TOP)/functable.h $(TOP)/compare256_rle.h
 deflate_slow.obj: $(TOP)/deflate_slow.c $(TOP)/zbuild.h $(TOP)/deflate.h $(TOP)/deflate_p.h $(TOP)/functable.h
 deflate_stored.obj: $(TOP)/deflate_stored.c $(TOP)/zbuild.h $(TOP)/deflate.h $(TOP)/deflate_p.h $(TOP)/functable.h

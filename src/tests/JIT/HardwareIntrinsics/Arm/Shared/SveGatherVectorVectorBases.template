@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 using System;
+using System.Diagnostics;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -118,7 +119,17 @@ namespace JIT.HardwareIntrinsics.Arm
                 Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(baseArrayPtr), ref Unsafe.As<{RetBaseType}, byte>(ref baseArray[0]), (uint)sizeOfBaseArray);
 
                 // Add the base pointer to the offsets within inArray2 to create complete pointers.
-                for (var i = 0; i < inArray2.Length; i++) { inArray2[i] += ({Op2BaseType})baseArrayPtr; }
+                for (var i = 0; i < inArray2.Length; i++)
+                {
+                    {Op2BaseType} baseAddrToValidate = (({Op2BaseType})baseArrayPtr + (sizeof({RetBaseType}) * inArray2[i]));
+
+                    // Make sure we got the correct base pointers.
+                    Debug.Assert((int)inArray2[i] < (int)baseArray.Length, $"Index {inArray2[i]} exceeds array length {baseArray.Length}");
+                    Debug.Assert(*(({RetBaseType}*)baseAddrToValidate) == baseArray[inArray2[i]]);
+
+                    inArray2[i] = baseAddrToValidate;
+                }
+
                 Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray2Ptr), ref Unsafe.As<{Op2BaseType}, byte>(ref inArray2[0]), (uint)sizeOfinArray2);
             }
 
@@ -158,7 +169,15 @@ namespace JIT.HardwareIntrinsics.Arm
                 for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = {NextValueOp2} % ({Op2BaseType})BaseElementCount; }
 
                 // Add the base pointer to the offsets within inArray2 to create complete pointers.
-                for (var i = 0; i < Op2ElementCount; i++) { _data2[i] += ({Op2BaseType})_dataTable.baseArrayPtr; }
+                for (var i = 0; i < Op2ElementCount; i++)
+                {
+                    {Op2BaseType} baseAddrToValidate = (({Op2BaseType})_dataTable.baseArrayPtr + (sizeof({RetBaseType}) * _data2[i]));
+
+                    // Make sure we got the correct base pointers.           
+                    Debug.Assert(*(({RetBaseType}*)baseAddrToValidate) == (({RetBaseType}*)_dataTable.baseArrayPtr)[_data2[i]]);
+
+                    _data2[i] = baseAddrToValidate;
+                }
 
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref testStruct._fld2), ref Unsafe.As<{Op2BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());

@@ -496,8 +496,7 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
 
 #ifndef FEATURE_NATIVEAOT
     }
-    EX_CATCH { }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_SWALLOW_NONTERMINAL
 #endif // FEATURE_NATIVEAOT
 
     return hr;
@@ -537,7 +536,7 @@ VOID ETW::GCLog::WalkStaticsAndCOMForETW()
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 

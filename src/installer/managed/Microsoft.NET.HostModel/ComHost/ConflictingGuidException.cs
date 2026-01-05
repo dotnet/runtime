@@ -14,6 +14,10 @@ namespace Microsoft.NET.HostModel.ComHost
     {
         public ConflictingGuidException(string typeName1, string typeName2, Guid guid)
         {
+#if NET
+            ArgumentNullException.ThrowIfNull(typeName1);
+            ArgumentNullException.ThrowIfNull(typeName2);
+#else
             if (typeName1 is null)
             {
                 throw new ArgumentNullException(nameof(typeName1));
@@ -22,6 +26,7 @@ namespace Microsoft.NET.HostModel.ComHost
             {
                 throw new ArgumentNullException(nameof(typeName2));
             }
+#endif
             TypeName1 = typeName1;
             TypeName2 = typeName2;
             Guid = guid;

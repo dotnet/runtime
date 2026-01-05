@@ -4,6 +4,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -385,7 +386,8 @@ namespace System.Runtime.CompilerServices
             throw new InvalidOperationException();
         }
 #endif
-
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
 
@@ -414,7 +416,7 @@ namespace System.Runtime.CompilerServices
 
         // Returns pointer to the multi-dimensional array bounds.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ref int GetMultiDimensionalArrayBounds(Array array)
+        internal static ref int GetMultiDimensionalArrayBounds(this Array array)
         {
             Debug.Assert(GetMultiDimensionalArrayRank(array) > 0);
             // See comment on RawArrayData for details
@@ -422,7 +424,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe int GetMultiDimensionalArrayRank(Array array)
+        internal static unsafe int GetMultiDimensionalArrayRank(this Array array)
         {
             int rank = GetMethodTable(array)->MultiDimensionalArrayRank;
             GC.KeepAlive(array); // Keep MethodTable alive
@@ -445,8 +447,8 @@ namespace System.Runtime.CompilerServices
         /// <param name="data">A reference to the data to box.</param>
         /// <returns>A boxed instance of the value at <paramref name="data"/>.</returns>
         /// <remarks>This method includes proper handling for nullable value types as well.</remarks>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe object? Box(MethodTable* methodTable, ref byte data);
+        internal static unsafe object? Box(MethodTable* methodTable, ref byte data) =>
+            methodTable->IsNullable ? CastHelpers.Box_Nullable(methodTable, ref data) : CastHelpers.Box(methodTable, ref data);
 
         // Given an object reference, returns its MethodTable*.
         //
@@ -466,36 +468,92 @@ namespace System.Runtime.CompilerServices
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool AreTypesEquivalent(MethodTable* pMTa, MethodTable* pMTb);
 
-        /// <summary>
-        /// Allocate memory that is associated with the <paramref name="type"/> and
-        /// will be freed if and when the <see cref="Type"/> is unloaded.
-        /// </summary>
-        /// <param name="type">Type associated with the allocated memory.</param>
-        /// <param name="size">Amount of memory in bytes to allocate.</param>
-        /// <returns>The allocated memory</returns>
+        /// <summary>Allocates memory that's associated with the <paramref name="type" /> and is freed if and when the <see cref="Type" /> is unloaded.</summary>
+        /// <param name="type">The type associated with the allocated memory.</param>
+        /// <param name="size">The amount of memory to allocate, in bytes.</param>
+        /// <returns>The allocated memory.</returns>
+        /// <exception cref="ArgumentException"><paramref name="type" /> must be a type provided by the runtime.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="size" /> is negative.</exception>
         public static IntPtr AllocateTypeAssociatedMemory(Type type, int size)
         {
             if (type is not RuntimeType rt)
+            {
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
+            }
 
             ArgumentOutOfRangeException.ThrowIfNegative(size);
 
             return AllocateTypeAssociatedMemory(new QCallTypeHandle(ref rt), (uint)size);
         }
 
+        /// <summary>Allocates aligned memory that's associated with the <paramref name="type" /> and is freed if and when the <see cref="Type" /> is unloaded.</summary>
+        /// <param name="type">The type associated with the allocated memory.</param>
+        /// <param name="size">The amount of memory to allocate, in bytes.</param>
+        /// <param name="alignment">The alignment, in bytes, of the memory to allocate. This must be a power of <c>2</c>.</param>
+        /// <returns>The allocated aligned memory.</returns>
+        /// <exception cref="ArgumentException"><paramref name="type" /> must be a type provided by the runtime.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="size" /> is negative.</exception>
+        /// <exception cref="ArgumentException"><paramref name="alignment" /> is not a power of <c>2</c>.</exception>
+        public static IntPtr AllocateTypeAssociatedMemory(Type type, int size, int alignment)
+        {
+            if (type is not RuntimeType rt)
+            {
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
+            }
+
+            ArgumentOutOfRangeException.ThrowIfNegative(size);
+
+            if (!BitOperations.IsPow2(alignment))
+            {
+                // The C standard doesn't define what a valid alignment is, however Windows and POSIX implementation requires a power of 2
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_AlignmentMustBePow2);
+            }
+
+            return AllocateTypeAssociatedMemoryAligned(new QCallTypeHandle(ref rt), (uint)size, (uint)alignment);
+        }
+
         [LibraryImport(QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemory")]
         private static partial IntPtr AllocateTypeAssociatedMemory(QCallTypeHandle type, uint size);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr AllocTailCallArgBufferWorker(int size, IntPtr gcDesc);
+        [LibraryImport(QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned")]
+        private static partial IntPtr AllocateTypeAssociatedMemoryAligned(QCallTypeHandle type, uint size, uint alignment);
 
-        private static IntPtr AllocTailCallArgBuffer(int size, IntPtr gcDesc)
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe TailCallArgBuffer* GetTailCallArgBuffer();
+
+        [LibraryImport(QCall, EntryPoint = "TailCallHelp_AllocTailCallArgBufferInternal")]
+        private static unsafe partial TailCallArgBuffer* AllocTailCallArgBufferInternal(int size);
+
+        private const int TAILCALLARGBUFFER_ACTIVE = 0;
+        // private const int TAILCALLARGBUFFER_INSTARG_ONLY = 1;
+        private const int TAILCALLARGBUFFER_INACTIVE = 2;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // To allow unrolling of Span.Clear
+        private static unsafe TailCallArgBuffer* AllocTailCallArgBuffer(int size, IntPtr gcDesc)
         {
-            IntPtr buffer = AllocTailCallArgBufferWorker(size, gcDesc);
-            if (buffer == IntPtr.Zero)
+            TailCallArgBuffer* buffer = GetTailCallArgBuffer();
+            if (buffer != null && buffer->Size >= size)
             {
-                throw new OutOfMemoryException();
+                buffer->State = TAILCALLARGBUFFER_INACTIVE;
             }
+            else
+            {
+                buffer = AllocTailCallArgBufferWorker(size);
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static TailCallArgBuffer* AllocTailCallArgBufferWorker(int size) => AllocTailCallArgBufferInternal(size);
+            }
+            Debug.Assert(buffer != null);
+            Debug.Assert(buffer->Size >= size);
+            Debug.Assert(buffer->State == TAILCALLARGBUFFER_INACTIVE);
+
+            buffer->GCDesc = gcDesc;
+
+            new Span<byte>(buffer + 1, size - sizeof(TailCallArgBuffer)).Clear();
+
+            // The buffer is now ready to be used.
+            buffer->State = TAILCALLARGBUFFER_ACTIVE;
+
             return buffer;
         }
 
@@ -505,7 +563,7 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         private static unsafe void DispatchTailCalls(
             IntPtr callersRetAddrSlot,
-            delegate*<IntPtr, ref byte, PortableTailCallFrame*, void> callTarget,
+            delegate*<TailCallArgBuffer*, ref byte, PortableTailCallFrame*, void> callTarget,
             ref byte retVal)
         {
             IntPtr callersRetAddr;
@@ -536,11 +594,8 @@ namespace System.Runtime.CompilerServices
             {
                 tls->Frame = prevFrame;
 
-                // If the arg buffer is reporting inst argument, it is safe to abandon it now
-                if (tls->ArgBuffer != IntPtr.Zero && *(int*)tls->ArgBuffer == 1 /* TAILCALLARGBUFFER_INSTARG_ONLY */)
-                {
-                    *(int*)tls->ArgBuffer = 2 /* TAILCALLARGBUFFER_ABANDONED */;
-                }
+                // If the arg buffer is reporting inst argument (TAILCALLARGBUFFER_INSTARG_ONLY), it is safe to abandon it now.
+                tls->ArgBuffer->State = TAILCALLARGBUFFER_INACTIVE;
             }
         }
 
@@ -625,6 +680,8 @@ namespace System.Runtime.CompilerServices
         public IntPtr CodeData;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         private MethodDescChunk* GetMethodDescChunk() => (MethodDescChunk*)(((byte*)Unsafe.AsPointer<MethodDesc>(ref this)) - (sizeof(MethodDescChunk) + ChunkIndex * sizeof(IntPtr)));
 
         public MethodTable* MethodTable => GetMethodDescChunk()->MethodTable;
@@ -755,6 +812,7 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_HasTypeEquivalence = 0x02000000;
 #endif // FEATURE_TYPEEQUIVALENCE
         private const uint enum_flag_HasFinalizer = 0x00100000;
+        private const uint enum_flag_Collectible = 0x00200000;
         private const uint enum_flag_Category_Mask = 0x000F0000;
         private const uint enum_flag_Category_ValueType = 0x00040000;
         private const uint enum_flag_Category_Nullable = 0x00050000;
@@ -815,9 +873,21 @@ namespace System.Runtime.CompilerServices
 
         public bool HasFinalizer => (Flags & enum_flag_HasFinalizer) != 0;
 
+        public bool IsCollectible => (Flags & enum_flag_Collectible) != 0;
+
         internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2) => mt1 == mt2;
 
         public bool HasDefaultConstructor => (Flags & (enum_flag_HasComponentSize | enum_flag_HasDefaultCtor)) == enum_flag_HasDefaultCtor;
+
+        public bool IsSzArray
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                Debug.Assert(IsArray);
+                return BaseSize == (uint)(3 * sizeof(IntPtr));
+            }
+        }
 
         public bool IsMultiDimensionalArray
         {
@@ -930,6 +1000,9 @@ namespace System.Runtime.CompilerServices
             Debug.Assert((BaseSize - (nuint)(2 * sizeof(IntPtr)) == GetNumInstanceFieldBytes()));
             return BaseSize - (uint)(2 * sizeof(IntPtr));
         }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern IntPtr GetLoaderAllocatorHandle();
     }
 
     // Subset of src\vm\typedesc.h
@@ -939,11 +1012,21 @@ namespace System.Runtime.CompilerServices
         private uint _typeAndFlags;
         private nint _exposedClassObject;
 
+        private const uint enum_flag_IsCollectible = 0x00000100;
+
         public RuntimeType? ExposedClassObject
         {
             get
             {
                 return *(RuntimeType*)Unsafe.AsPointer(ref _exposedClassObject);
+            }
+        }
+
+        public bool IsCollectible
+        {
+            get
+            {
+                return (_typeAndFlags & enum_flag_IsCollectible) != 0;
             }
         }
     }
@@ -959,11 +1042,13 @@ namespace System.Runtime.CompilerServices
         /// Given a statics pointer in the DynamicStaticsInfo, get the actual statics pointer.
         /// If the class it initialized, this mask is not necessary
         /// </summary>
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         internal static ref byte MaskStaticsPointer(ref byte staticsPtr)
         {
             fixed (byte* p = &staticsPtr)
             {
-                 return ref Unsafe.AsRef<byte>((byte*)((nuint)p & ~(nuint)DynamicStaticsInfo.ISCLASSNOTINITED));
+                return ref Unsafe.AsRef<byte>((byte*)((nuint)p & ~(nuint)DynamicStaticsInfo.ISCLASSNOTINITED));
             }
         }
 
@@ -1049,12 +1134,16 @@ namespace System.Runtime.CompilerServices
         public bool IsClassInitedAndActive => (Volatile.Read(ref Flags) & (enum_flag_Initialized | enum_flag_EnsuredInstanceActive)) == (enum_flag_Initialized | enum_flag_EnsuredInstanceActive);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public ref DynamicStaticsInfo GetDynamicStaticsInfo()
         {
             return ref Unsafe.Subtract(ref Unsafe.As<MethodTableAuxiliaryData, DynamicStaticsInfo>(ref this), 1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public ref ThreadStaticsInfo GetThreadStaticsInfo()
         {
             return ref Unsafe.Subtract(ref Unsafe.As<MethodTableAuxiliaryData, ThreadStaticsInfo>(ref this), 1);
@@ -1150,8 +1239,8 @@ namespace System.Runtime.CompilerServices
                 CastResult.CanCast => true,
                 CastResult.CannotCast => false,
 
-                 // Reflection allows T to be cast to Nullable<T>.
-                 // See ObjIsInstanceOfCore()
+                // Reflection allows T to be cast to Nullable<T>.
+                // See ObjIsInstanceOfCore()
                 _ => CanCastToWorker(srcTH, destTH, nullableCast: true)
             };
         }
@@ -1195,13 +1284,22 @@ namespace System.Runtime.CompilerServices
     internal unsafe struct PortableTailCallFrame
     {
         public IntPtr TailCallAwareReturnAddress;
-        public delegate*<IntPtr, ref byte, PortableTailCallFrame*, void> NextCall;
+        public delegate*<TailCallArgBuffer*, ref byte, PortableTailCallFrame*, void> NextCall;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct TailCallArgBuffer
+    {
+        public int State;
+        public int Size;
+        public IntPtr GCDesc;
+        // Args
     }
 
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct TailCallTls
     {
         public PortableTailCallFrame* Frame;
-        public IntPtr ArgBuffer;
+        public TailCallArgBuffer* ArgBuffer;
     }
 }

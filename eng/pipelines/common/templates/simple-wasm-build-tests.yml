@@ -25,11 +25,12 @@ jobs:
       - name: alwaysRunVar
         value: ${{ parameters.alwaysRun }}
       - name: workloadsTestPreviousVersionsVar
-        value: $[
-          or(
-            eq(variables['Build.SourceBranchName'], 'main'),
-            eq(variables['System.PullRequest.TargetBranch'], 'main'))
-          ]
+        value: false
+#       value: $[
+#         or(
+#           eq(variables['Build.SourceBranchName'], 'main'),
+#           eq(variables['System.PullRequest.TargetBranch'], 'main'))
+#         ]
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop

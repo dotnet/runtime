@@ -48,6 +48,7 @@ namespace System.Diagnostics.Metrics
         private DateTime _startTime;
         private DateTime _intervalStartTime;
         private DateTime _nextIntervalStartTime;
+        private Func<Aggregator?> _histogramAggregatorFactory = () => new ExponentialHistogramAggregator(s_defaultHistogramConfig);
 
         public AggregationManager(
             int maxTimeSeries,
@@ -117,6 +118,16 @@ namespace System.Diagnostics.Metrics
             lock (this)
             {
                 _instrumentConfigFuncs.Add(instrumentFilter);
+            }
+        }
+
+        public void SetHistogramAggregation(Func<Aggregator?> histogramAggregatorFactory)
+        {
+            lock (this)
+            {
+                // While this operation is atomic, we use a lock to ensure thread safety when it's accessed by other parts of the code.
+                // Using lock(this) guarantees that no other thread is interacting with the field concurrently.
+                _histogramAggregatorFactory = histogramAggregatorFactory;
             }
         }
 
@@ -417,9 +428,7 @@ namespace System.Diagnostics.Metrics
                     lock (this)
                     {
                         // checking currentHistograms first because avoiding unexpected increment of TimeSeries count.
-                        return (!CheckHistogramAllowed() || !CheckTimeSeriesAllowed()) ?
-                            null :
-                            new ExponentialHistogramAggregator(s_defaultHistogramConfig);
+                        return (!CheckHistogramAllowed() || !CheckTimeSeriesAllowed()) ? null : _histogramAggregatorFactory();
                     }
                 };
             }

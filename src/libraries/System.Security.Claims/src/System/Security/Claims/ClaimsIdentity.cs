@@ -38,6 +38,7 @@ namespace System.Security.Claims
         private readonly List<Claim> _instanceClaims = new List<Claim>();
         private string _nameClaimType = DefaultNameClaimType;
         private string _roleClaimType = DefaultRoleClaimType;
+        private readonly StringComparison _stringComparison = StringComparison.OrdinalIgnoreCase;
 
         public const string DefaultIssuer = @"LOCAL AUTHORITY";
         public const string DefaultNameClaimType = ClaimTypes.Name;
@@ -206,6 +207,26 @@ namespace System.Security.Claims
         }
 
         /// <summary>
+        ///   Initializes an instance of <see cref="ClaimsIdentity" /> with the specified <see cref="BinaryReader" />.
+        /// </summary>
+        /// <param name="reader">A <see cref="BinaryReader" /> pointing to a <see cref="ClaimsIdentity" />.</param>
+        /// <param name="stringComparison">The string comparison to use when comparing claim types.</param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="reader"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="stringComparison"/> is out of range or a not supported value.
+        /// </exception>
+        public ClaimsIdentity(BinaryReader reader, StringComparison stringComparison)
+        {
+            ArgumentNullException.ThrowIfNull(reader);
+            ValidateStringComparison(stringComparison);
+            _stringComparison = stringComparison;
+
+            Initialize(reader);
+        }
+
+        /// <summary>
         /// Copy constructor.
         /// </summary>
         /// <param name="other"><see cref="ClaimsIdentity"/> to copy.</param>
@@ -213,23 +234,56 @@ namespace System.Security.Claims
         protected ClaimsIdentity(ClaimsIdentity other)
         {
             ArgumentNullException.ThrowIfNull(other);
+            Initialize(other);
+        }
 
-            if (other._actor != null)
-            {
-                _actor = other._actor.Clone();
-            }
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="ClaimsIdentity" /> class from an existing
+        ///   <see cref="ClaimsIdentity" /> instance.
+        /// </summary>
+        /// <param name="other">The <see cref="ClaimsIdentity" /> to copy.</param>
+        /// <param name="stringComparison">The string comparison to use when comparing claim types.</param>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="stringComparison"/> is out of range or a not supported value.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="other"/> is <see langword="null"/> .
+        /// </exception>
+        protected ClaimsIdentity(ClaimsIdentity other, StringComparison stringComparison)
+        {
+            ArgumentNullException.ThrowIfNull(other);
+            ValidateStringComparison(stringComparison);
+            _stringComparison = stringComparison;
+            Initialize(other);
+        }
 
-            _authenticationType = other._authenticationType;
-            _bootstrapContext = other._bootstrapContext;
-            _label = other._label;
-            _nameClaimType = other._nameClaimType;
-            _roleClaimType = other._roleClaimType;
-            if (other._userSerializationData != null)
-            {
-                _userSerializationData = other._userSerializationData.Clone() as byte[];
-            }
-
-            SafeAddClaims(other._instanceClaims);
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="ClaimsIdentity" /> class.
+        /// </summary>
+        /// <param name="identity">The identity from which to base the new claims identity.</param>
+        /// <param name="claims">The claims with which to populate the claims identity.</param>
+        /// <param name="authenticationType">The type of authentication used.</param>
+        /// <param name="nameType">The claim type to use for name claims.</param>
+        /// <param name="roleType">The claim type to use for role claims.</param>
+        /// <param name="stringComparison">The string comparison to use when comparing claim types.</param>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="stringComparison"/> is out of range or a not supported value.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   <paramref name="identity"/> is a <see cref="ClaimsIdentity"/> and <see cref="Actor" />
+        ///   results in a circular reference back to <see langword="this"/>.
+        /// </exception>
+        public ClaimsIdentity(
+            IIdentity? identity = null,
+            IEnumerable<Claim>? claims = null,
+            string? authenticationType = null,
+            string? nameType = null,
+            string? roleType = null,
+            StringComparison stringComparison = StringComparison.OrdinalIgnoreCase)
+            : this(identity, claims, authenticationType, nameType, roleType)
+        {
+            ValidateStringComparison(stringComparison);
+            _stringComparison = stringComparison;
         }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
@@ -401,7 +455,7 @@ namespace System.Security.Claims
         /// </summary>
         public virtual ClaimsIdentity Clone()
         {
-            return new ClaimsIdentity(this);
+            return new ClaimsIdentity(this, _stringComparison);
         }
 
         /// <summary>
@@ -566,7 +620,6 @@ namespace System.Security.Claims
         /// </summary>
         /// <param name="type">The type of the claim to match.</param>
         /// <returns>A <see cref="IEnumerable{Claim}"/> of matched claims.</returns>
-        /// <remarks>Comparison is: StringComparison.OrdinalIgnoreCase.</remarks>
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
         public virtual IEnumerable<Claim> FindAll(string type)
         {
@@ -579,7 +632,7 @@ namespace System.Security.Claims
                 {
                     if (claim != null)
                     {
-                        if (string.Equals(claim.Type, type, StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(claim.Type, type, _stringComparison))
                         {
                             yield return claim;
                         }
@@ -614,7 +667,6 @@ namespace System.Security.Claims
         /// </summary>
         /// <param name="type">The type of the claim to match.</param>
         /// <returns>A <see cref="Claim"/>, null if nothing matches.</returns>
-        /// <remarks>Comparison is: StringComparison.OrdinalIgnoreCase.</remarks>
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
         public virtual Claim? FindFirst(string type)
         {
@@ -624,7 +676,7 @@ namespace System.Security.Claims
             {
                 if (claim != null)
                 {
-                    if (string.Equals(claim.Type, type, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(claim.Type, type, _stringComparison))
                     {
                         return claim;
                     }
@@ -661,7 +713,6 @@ namespace System.Security.Claims
         /// <param name="type">the type of the claim to match.</param>
         /// <param name="value">the value of the claim to match.</param>
         /// <returns>true if a claim is matched, false otherwise.</returns>
-        /// <remarks>Comparison is: StringComparison.OrdinalIgnoreCase for Claim.Type, StringComparison.Ordinal for Claim.Value.</remarks>
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
         /// <exception cref="ArgumentNullException">if 'value' is null.</exception>
         public virtual bool HasClaim(string type, string value)
@@ -672,7 +723,7 @@ namespace System.Security.Claims
             foreach (Claim claim in Claims)
             {
                 if (claim != null
-                        && string.Equals(claim.Type, type, StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(claim.Type, type, _stringComparison)
                         && string.Equals(claim.Value, value, StringComparison.Ordinal))
                 {
                     return true;
@@ -680,6 +731,26 @@ namespace System.Security.Claims
             }
 
             return false;
+        }
+
+        private void Initialize(ClaimsIdentity other)
+        {
+            if (other._actor != null)
+            {
+                _actor = other._actor.Clone();
+            }
+
+            _authenticationType = other._authenticationType;
+            _bootstrapContext = other._bootstrapContext;
+            _label = other._label;
+            _nameClaimType = other._nameClaimType;
+            _roleClaimType = other._roleClaimType;
+            if (other._userSerializationData != null)
+            {
+                _userSerializationData = other._userSerializationData.Clone() as byte[];
+            }
+
+            SafeAddClaims(other._instanceClaims);
         }
 
         /// <summary>
@@ -960,6 +1031,22 @@ namespace System.Security.Claims
             }
 
             return debugText;
+        }
+
+        private static void ValidateStringComparison(StringComparison stringComparison)
+        {
+            switch (stringComparison)
+            {
+                case StringComparison.Ordinal:
+                case StringComparison.OrdinalIgnoreCase:
+                case StringComparison.InvariantCulture:
+                case StringComparison.InvariantCultureIgnoreCase:
+                    break;
+                default:
+                    throw new ArgumentException(
+                        SR.ArgumentException_StringComparisonCultureAware,
+                        nameof(stringComparison));
+            }
         }
     }
 }

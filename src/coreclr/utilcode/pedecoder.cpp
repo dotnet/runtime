@@ -497,7 +497,6 @@ CHECK PEDecoder::CheckRva(RVA rva, COUNT_T size, int forbiddenFlags, IsNullOK ok
         CHECK(section != NULL);
 
         CHECK(CheckBounds(VAL32(section->VirtualAddress),
-                          // AlignUp((UINT)VAL32(section->Misc.VirtualSize), (UINT)VAL32(FindNTHeaders()->OptionalHeader.SectionAlignment)),
                           (UINT)VAL32(section->Misc.VirtualSize),
                           rva, size));
         if(!IsMapped())
@@ -776,9 +775,17 @@ IMAGE_SECTION_HEADER *PEDecoder::RvaToSection(RVA rva) const
 
     while (section < sectionEnd)
     {
-        if (rva < (VAL32(section->VirtualAddress)
-                   + AlignUp((UINT)VAL32(section->Misc.VirtualSize), (UINT)VAL32(FindNTHeaders()->OptionalHeader.SectionAlignment))))
+        // The RVA should be within a section's virtual address range. 
+        if (rva < (VAL32(section->VirtualAddress) + VAL32(section->Misc.VirtualSize)))
         {
+            if (!IsMapped())
+            {
+                // On flat images (!IsMapped()), the RVA should also be within the section's raw data range.
+                if (rva >= (VAL32(section->VirtualAddress) + VAL32(section->SizeOfRawData)))
+                {
+                    return NULL;
+                }
+            }
             if (rva < VAL32(section->VirtualAddress))
                 RETURN NULL;
             else
@@ -847,7 +854,6 @@ TADDR PEDecoder::GetRvaData(RVA rva, IsNullOK ok /*= NULL_NOT_OK*/) const
         offset = rva;
     else
     {
-        // !!! check for case where rva is in padded portion of segment
         offset = RvaToOffset(rva);
     }
 
@@ -1274,7 +1280,7 @@ const void *PEDecoder::GetResource(COUNT_T offset, COUNT_T *pSize) const
 
     void * resourceBlob = (void *)GetRvaData(VAL32(pDir->VirtualAddress) + offset);
     // Holds if CheckResource(offset) == TRUE
-    PREFIX_ASSUME(resourceBlob != NULL);
+    _ASSERTE(resourceBlob != NULL);
 
      if (pSize != NULL)
         *pSize = GET_UNALIGNED_VAL32(resourceBlob);
@@ -1461,7 +1467,7 @@ CHECK PEDecoder::CheckILOnlyImportDlls() const
     // Get the import directory entry
     PIMAGE_DATA_DIRECTORY pDirEntryImport = GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_IMPORT);
     CHECK(pDirEntryImport != NULL);
-    PREFIX_ASSUME(pDirEntryImport != NULL);
+    _ASSERTE(pDirEntryImport != NULL);
 
     // There should be space for 2 entries. (mscoree and NULL)
     CHECK(VAL32(pDirEntryImport->Size) >= (2 * sizeof(IMAGE_IMPORT_DESCRIPTOR)));
@@ -1469,7 +1475,7 @@ CHECK PEDecoder::CheckILOnlyImportDlls() const
     // Get the import data
     PIMAGE_IMPORT_DESCRIPTOR pID = (PIMAGE_IMPORT_DESCRIPTOR) GetDirectoryData(pDirEntryImport);
     CHECK(pID != NULL);
-    PREFIX_ASSUME(pID != NULL);
+    _ASSERTE(pID != NULL);
 
     // Entry 0: ILT, Name, IAT must be be non-null.  Forwarder, DateTime should be NULL.
     CHECK( IMAGE_IMPORT_DESC_FIELD(pID[0], Characteristics) != 0
@@ -1528,7 +1534,7 @@ CHECK PEDecoder::CheckILOnlyImportByNameTable(RVA rva) const
 #define DLL_NAME "_CorDllMain"
 #define EXE_NAME "_CorExeMain"
 
-    static_assert_no_msg(sizeof(DLL_NAME) == sizeof(EXE_NAME));
+    static_assert(sizeof(DLL_NAME) == sizeof(EXE_NAME));
 
     // Check if we have enough space to hold 2 bytes +
     // _CorExeMain or _CorDllMain and a NULL char
@@ -1631,7 +1637,7 @@ CHECK PEDecoder::CheckILOnlyEntryPoint() const
         static const BYTE s_DllOrExeMain[] = JMP_DWORD_PTR_DS_OPCODE;
 
         // 403570: prefix complained about stub being possibly NULL.
-        // Unsure here. PREFIX_ASSUME might be also correct as indices are
+        // Unsure here. _ASSERTE might be also correct as indices are
         // verified in the above CHECK statement.
         CHECK(stub != NULL);
         CHECK(memcmp(stub, s_DllOrExeMain, JMP_DWORD_PTR_DS_OPCODE_SIZE) == 0);
@@ -2499,7 +2505,6 @@ BOOL PEDecoder::ForceRelocForDLL(LPCWSTR lpFileName)
 {
 #ifdef _DEBUG
 		STATIC_CONTRACT_NOTHROW;                                        \
-		ANNOTATION_DEBUG_ONLY;                                          \
 		STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 #endif
 
@@ -2575,11 +2580,11 @@ ErrExit:
 #endif // _DEBUG
 
 //
-//  MethodSectionIterator class is used to iterate hot (or) cold method section in an ngen image.
-//  Also used to iterate over jitted methods in the code heap
+//  MethodSectionIterator class is used to iterate hot (or) cold method sections
+//  over jitted methods in the code heap
 //
-MethodSectionIterator::MethodSectionIterator(const void *code, SIZE_T codeSize,
-                                             const void *codeTable, SIZE_T codeTableSize)
+MethodSectionIterator::MethodSectionIterator(void *code, SIZE_T codeSize,
+                                             void *codeTable, SIZE_T codeTableSize)
 {
     using namespace NibbleMap;
 

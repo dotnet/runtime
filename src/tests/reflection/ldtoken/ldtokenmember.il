@@ -21,6 +21,7 @@
   .locals init (class [mscorlib]System.Type nonGenericHolderType,
                 class [mscorlib]System.Reflection.FieldInfo staticField,
                 class [mscorlib]System.Reflection.MethodBase staticInt32Method,
+                class [mscorlib]System.Reflection.MethodBase staticTaskMethod,
                 class [mscorlib]System.Reflection.MethodBase staticMethodT,
                 class [mscorlib]System.Reflection.MethodBase staticMethodU,
                 class [mscorlib]System.Reflection.FieldInfo staticFieldT,
@@ -72,7 +73,7 @@ NonGenericStaticFieldOK:
   stloc      staticInt32Method
 
   //
-  // if (staticInt32Method.Name != "StaticField" || staticInt32Method.DeclaringType != nonGenericHolderType)
+  // if (staticInt32Method.Name != "StaticMethod" || staticInt32Method.DeclaringType != nonGenericHolderType)
   //     return 2;
   //
   ldloc      staticInt32Method
@@ -88,6 +89,33 @@ NonGenericStaticFieldOK:
   ldc.i4     2
   ret
 NonGenericStaticMethodOK:
+
+  //
+  // MethodInfo staticTaskMethod = infoof(NonGenericHolder.StaticTaskMethod)
+  //
+  ldtoken    method class [mscorlib]System.Threading.Tasks.Task NonGenericHolder::StaticTaskMethod()
+  call       class [mscorlib]System.Reflection.MethodBase 
+                 [mscorlib]System.Reflection.MethodBase::GetMethodFromHandle(
+                     valuetype [mscorlib]System.RuntimeMethodHandle)
+  stloc      staticTaskMethod
+
+  //
+  // if (staticTaskMethod.Name != "StaticTaskMethod" || staticTaskMethod.DeclaringType != nonGenericHolderType)
+  //     return 2;
+  //
+  ldloc      staticTaskMethod
+  callvirt   instance string [mscorlib]System.Reflection.MethodBase::get_Name()
+  ldstr      "StaticTaskMethod"
+  callvirt   instance bool [mscorlib]System.Object::Equals(object)
+  ldloc      staticTaskMethod
+  callvirt   instance class [mscorlib]System.Type [mscorlib]System.Reflection.MethodBase::get_DeclaringType()
+  ldloc      nonGenericHolderType
+  ceq
+  and
+  brtrue     NonGenericStaticTaskMethodOK
+  ldc.i4     2
+  ret
+NonGenericStaticTaskMethodOK:
 
   //
   // if (staticInt32Method.Equals(infoof(NonGenericHolder.StaticMethod))
@@ -312,6 +340,12 @@ OtherWeirdoGenericMethodOwningTypeOK:
   .method public hidebysig static int16 StaticMethod()
   {
     ldc.i4.0
+    ret
+  }
+
+  .method public hidebysig static class [mscorlib]System.Threading.Tasks.Task StaticTaskMethod()
+  {
+    ldnull
     ret
   }
 

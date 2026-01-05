@@ -99,7 +99,7 @@ namespace Internal.Cryptography.Pal.Windows
             return GetPrivateKey<T>(certificate, silent, preferNCrypt: false);
         }
 
-        private static T? GetPrivateKey<T>(X509Certificate2 certificate, bool silent, bool preferNCrypt) where T : AsymmetricAlgorithm
+        private static T? GetPrivateKey<T>(X509Certificate2 certificate, bool silent, bool preferNCrypt) where T : class, IDisposable
         {
             if (!certificate.HasPrivateKey)
             {
@@ -150,6 +150,10 @@ namespace Internal.Cryptography.Pal.Windows
                                 return (T)(object)new ECDsaCng(cngKey);
                             if (typeof(T) == typeof(DSA))
                                 return (T)(object)new DSACng(cngKey);
+                            if (typeof(T) == typeof(MLDsa))
+                                return (T)(object)new MLDsaCng(cngKey);
+                            if (typeof(T) == typeof(SlhDsa))
+                                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(SlhDsa)));
 
                             Debug.Fail($"Unknown CNG key type request: {typeof(T).FullName}");
                             return null;

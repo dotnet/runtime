@@ -20,23 +20,27 @@ inline void ReJitManager::InitStatic()
     s_csGlobalRequest.Init(CrstReJITGlobalRequest);
 }
 
+static BOOL RejitOnAttachEnabled()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    static ConfigDWORD rejitOnAttachEnabled;
+    return rejitOnAttachEnabled.val(CLRConfig::EXTERNAL_ProfAPI_RejitOnAttach) != 0;
+}
+
 // static
 inline BOOL ReJitManager::IsReJITEnabled()
 {
     LIMITED_METHOD_CONTRACT;
 
     static bool profilerStartupRejit = CORProfilerEnableRejit() != FALSE;
-    static ConfigDWORD rejitOnAttachEnabled;
-
-    return  profilerStartupRejit || (rejitOnAttachEnabled.val(CLRConfig::EXTERNAL_ProfAPI_RejitOnAttach) != 0);
+    return  profilerStartupRejit || RejitOnAttachEnabled();
 }
 
 inline BOOL ReJitManager::IsReJITInlineTrackingEnabled()
 {
     LIMITED_METHOD_CONTRACT;
-
-    static ConfigDWORD rejitInliningEnabled;
-    return rejitInliningEnabled.val(CLRConfig::EXTERNAL_ProfAPI_RejitOnAttach) != 0;
+    return RejitOnAttachEnabled();
 }
 
 #ifndef DACCESS_COMPILE

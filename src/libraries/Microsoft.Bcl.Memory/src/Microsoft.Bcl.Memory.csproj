@@ -1,11 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);MICROSOFT_BCL_MEMORY</DefineConstants>
     <IsPackable>true</IsPackable>
-    <PackageDescription>Provides Base64Url, Index and Range types support for .NET Framework and .NET Standard.</PackageDescription>
+    <PackageDescription>Provides Base64Url, Utf8, Index, and Range types support for .NET Framework and .NET Standard.</PackageDescription>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -27,6 +27,22 @@
     <Compile Include="$(CoreLibSharedDir)System\Buffers\Text\Base64Url\Base64UrlValidator.cs" Link="System\Buffers\Text\Base64Url\Base64UrlValidator.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="Polyfills\System.Numerics.BitOperations.netstandard20.cs" />
+    <Compile Include="System\ThrowHelper.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\Ascii.Utility.cs" Link="System\Text\Ascii.Utility.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\Ascii.Utility.Helpers.cs" Link="System\Text\Ascii.Utility.Helpers.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\Rune.cs" Link="System\Text\Rune.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs" Link="System\Text\UnicodeDebug.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs" Link="System\Text\UnicodeUtility.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf16Utility.cs" Link="System\Text\Unicode\Utf16Utility.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf8.cs" Link="System\Text\Unicode\Utf8.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf8Utility.cs" Link="System\Text\Unicode\Utf8Utility.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf8Utility.Helpers.cs" Link="System\Text\Unicode\Utf8Utility.Helpers.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf8Utility.Transcoding.cs" Link="System\Text\Unicode\Utf8Utility.Transcoding.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf8Utility.Validation.cs" Link="System\Text\Unicode\Utf8Utility.Validation.cs" />
+  </ItemGroup>
+  
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <Compile Include="$(CoreLibSharedDir)System\Index.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Range.cs" />

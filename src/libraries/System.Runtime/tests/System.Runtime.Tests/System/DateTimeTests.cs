@@ -15,6 +15,55 @@ namespace System.Tests
     public class DateTimeTests
     {
         [Fact]
+        public static void ParseExact_GenitiveMonthNames()
+        {
+            // Create a German culture with explicitly defined genitive month names
+            var culture = new CultureInfo("de-DE");
+            culture.DateTimeFormat.AbbreviatedMonthGenitiveNames = new[] { "Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sept.", "Okt.", "Nov.", "Dez.", "" };
+            culture.DateTimeFormat.MonthGenitiveNames = new[] { "Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember.", "" };
+            culture.DateTimeFormat.DayNames = new[] { "Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag" };
+            culture.DateTimeFormat.DateSeparator = ".";
+            // Regular month names (non-genitive)
+            culture.DateTimeFormat.AbbreviatedMonthNames = new[] { "Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez", "" };
+            culture.DateTimeFormat.MonthNames = new[] { "Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember", "" };
+            // Test cases for abbreviated month names (MMM)
+            // Case 1: Format without day specifier - should use regular month name
+            DateTime result;
+            bool success = DateTime.TryParseExact("Dez.20", "MMM.yy", culture, DateTimeStyles.None, out result);
+            Assert.True(success);
+            Assert.Equal(12, result.Month);
+            Assert.Equal(2020, result.Year);
+            // Case 2: Format with day-of-month specifier - should use genitive month name
+            success = DateTime.TryParseExact("Dez.20 01", "MMM.yy dd", culture, DateTimeStyles.None, out result);
+            Assert.False(success);
+            // Case 3: Format with day-of-month specifier before month - should use genitive month name
+            success = DateTime.TryParseExact("01 Dez.20", "d MMM.yy", culture, DateTimeStyles.None, out result);
+            Assert.False(success);
+            // Case 4: Format with day-of-week specifier - should use regular month name
+            success = DateTime.TryParseExact("Dienstag Dez.20", "dddd MMM.yy", culture, DateTimeStyles.None, out result);
+            Assert.True(success);
+            Assert.Equal(12, result.Month);
+            Assert.Equal(2020, result.Year);
+            // Test cases for full month names (MMMM)
+            // Case 5: Format without day specifier - should use regular month name
+            success = DateTime.TryParseExact("Dezember.20", "MMMM.yy", culture, DateTimeStyles.None, out result);
+            Assert.True(success);
+            Assert.Equal(12, result.Month);
+            Assert.Equal(2020, result.Year);
+            // Case 6: Format with day-of-month specifier - should use genitive month name
+            success = DateTime.TryParseExact("Dezember.20 01", "MMMM.yy dd", culture, DateTimeStyles.None, out result);
+            Assert.False(success);
+            // Case 7: Format with day-of-month specifier before month - should use genitive month name
+            success = DateTime.TryParseExact("01 Dezember.20", "d MMMM.yy", culture, DateTimeStyles.None, out result);
+            Assert.False(success);
+            // Case 8: Format with day-of-week specifier - should use regular month name
+            success = DateTime.TryParseExact("Dienstag Dezember.20", "dddd MMMM.yy", culture, DateTimeStyles.None, out result);
+            Assert.True(success);
+            Assert.Equal(12, result.Month);
+            Assert.Equal(2020, result.Year);
+        }
+
+        [Fact]
         public static void MaxValue()
         {
             VerifyDateTime(DateTime.MaxValue, 9999, 12, 31, 23, 59, 59, 999, DateTimeKind.Unspecified);
@@ -1290,7 +1339,7 @@ namespace System.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public static void TryParse_NullOrEmptyString_ReturnsFalse(string input)
+        public static void TryParse_NullOrEmptyString_ReturnsFalse(string? input)
         {
             Assert.False(DateTime.TryParse(input, out DateTime result));
             Assert.False(DateTime.TryParse(input, new MyFormatter(), DateTimeStyles.None, out result));
@@ -2714,8 +2763,8 @@ namespace System.Tests
             DateTime dt = DateTime.UtcNow;
             GetSystemTime(out st1);
 
-            DateTime systemDateTimeNow1  = new DateTime(st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMillisecond, DateTimeKind.Utc);
-            DateTime systemDateTimeNow2  = new DateTime(st1.wYear, st1.wMonth, st1.wDay, st1.wHour, st1.wMinute, st1.wSecond, st1.wMillisecond, DateTimeKind.Utc);
+            DateTime systemDateTimeNow1 = new DateTime(st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMillisecond, DateTimeKind.Utc);
+            DateTime systemDateTimeNow2 = new DateTime(st1.wYear, st1.wMonth, st1.wDay, st1.wHour, st1.wMinute, st1.wSecond, st1.wMillisecond, DateTimeKind.Utc);
 
             // Usually GetSystemTime and DateTime.UtcNow calls doesn't take one second to execute, if this is not the case then
             // the thread was sleeping for awhile and we cannot test reliably on that case.
@@ -2726,6 +2775,44 @@ namespace System.Tests
                 diff = dt - systemDateTimeNow1;
                 Assert.True(diff < TimeSpan.FromSeconds(1), $"Reported DateTime.UtcNow {dt} is shifted by more than one second then the system time {systemDateTimeNow1}");
             }
+        }
+
+        [Fact]
+        public void TestFractionSpecifier()
+        {
+            DateTime date = new DateTime(2008, 8, 29, 7, 27, 15, 18);
+            CultureInfo ci = CultureInfo.InvariantCulture;
+
+            // Test using .F format https://learn.microsoft.com/dotnet/standard/base-types/custom-date-and-time-format-strings#F_Specifier
+            string pattern = "yyyy-MM-ddThh:mm:ss.F";
+            string formatted = date.ToString(pattern, ci);
+            Assert.Equal("2008-08-29T07:27:15", formatted);
+            Assert.True(DateTime.TryParseExact(formatted, pattern, ci, DateTimeStyles.None, out DateTime parsedDate));
+            Assert.Equal(date, parsedDate.AddTicks((long)(TimeSpan.TicksPerMillisecond * 18))); // 18 milliseconds fraction difference
+            pattern = "yyyy-MM-ddThh:mm.F:ss";
+            formatted = date.ToString(pattern, ci);
+            Assert.True(DateTime.TryParseExact(formatted, "yyyy-MM-ddThh:mm.F:ss", ci, DateTimeStyles.None, out parsedDate));
+            Assert.Equal(date, parsedDate.AddTicks((long)(TimeSpan.TicksPerMillisecond * 18))); // 18 milliseconds fraction difference
+
+            pattern = "yyyy-MM-ddThh:mm:ss.FF";
+            formatted = date.ToString(pattern, ci);
+            Assert.Equal("2008-08-29T07:27:15.01", formatted);
+            Assert.True(DateTime.TryParseExact(formatted, pattern, ci, DateTimeStyles.None, out parsedDate), $"Failed to parse '{formatted}' using the pattern '{pattern}'.");
+            Assert.Equal(date, parsedDate.AddTicks((long)(TimeSpan.TicksPerMillisecond * 8))); // 8 milliseconds fraction difference
+            pattern = "yyyy-MM-ddThh.FF:mm:ss";
+            formatted = date.ToString(pattern, ci);
+            Assert.True(DateTime.TryParseExact(formatted, pattern, ci, DateTimeStyles.None, out parsedDate), $"Failed to parse '{formatted}' using the pattern '{pattern}'.");
+            Assert.Equal(date, parsedDate.AddTicks((long)(TimeSpan.TicksPerMillisecond * 8))); // 8 milliseconds fraction difference
+
+            pattern = "yyyy-MM-ddThh:mm:ss.FFF";
+            formatted = date.ToString(pattern, ci);
+            Assert.Equal("2008-08-29T07:27:15.018", formatted);
+            Assert.True(DateTime.TryParseExact(formatted, pattern, ci, DateTimeStyles.None, out parsedDate), $"Failed to parse '{formatted}' using the pattern '{pattern}'.");
+            Assert.Equal(date, parsedDate);
+            pattern = "yyyy-MM-ddThh.FFF:mm:ss";
+            formatted = date.ToString(pattern, ci);
+            Assert.True(DateTime.TryParseExact(formatted, pattern, ci, DateTimeStyles.None, out parsedDate), $"Failed to parse '{formatted}' using the pattern '{pattern}'.");
+            Assert.Equal(date, parsedDate);
         }
 
         [DllImport("Kernel32.dll")]

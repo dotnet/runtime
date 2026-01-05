@@ -3,20 +3,14 @@
 
 namespace System.Threading.Channels
 {
-    internal partial class AsyncOperation<TResult> : IThreadPoolWorkItem
+    internal partial class AsyncOperation : IThreadPoolWorkItem
     {
         void IThreadPoolWorkItem.Execute() => SetCompletionAndInvokeContinuation();
 
         private void UnsafeQueueSetCompletionAndInvokeContinuation() =>
             ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
 
-        private static void UnsafeQueueUserWorkItem(Action<object?> action, object? state) =>
-            ThreadPool.UnsafeQueueUserWorkItem(action, state, preferLocal: false);
-
-        private static void QueueUserWorkItem(Action<object?> action, object? state) =>
-            ThreadPool.QueueUserWorkItem(action, state, preferLocal: false);
-
-        private static CancellationTokenRegistration UnsafeRegister(CancellationToken cancellationToken, Action<object?> action, object? state) =>
-            cancellationToken.UnsafeRegister(action, state);
+        private static void Unregister(CancellationTokenRegistration registration) =>
+            registration.Unregister();
     }
 }

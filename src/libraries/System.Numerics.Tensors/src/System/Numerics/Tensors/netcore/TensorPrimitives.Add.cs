@@ -24,8 +24,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Add<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
-            where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T> =>
+            where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, AddOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanIntoSpan<T, AddOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Computes the element-wise addition of numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -42,8 +49,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Add<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
-            where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T> =>
+            where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, AddOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarIntoSpan<T, AddOperator<T>>(x, y, destination);
+        }
 
         /// <summary>x + y</summary>
         internal readonly struct AddOperator<T> : IAggregationOperator<T> where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>

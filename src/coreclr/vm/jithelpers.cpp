@@ -52,10 +52,8 @@
 #include "onstackreplacement.h"
 #include "pgo.h"
 #include "pgo_formatprocessing.h"
+#include "patchpointinfo.h"
 
-#ifndef FEATURE_EH_FUNCLETS
-#include "excep.h"
-#endif
 #include "exinfo.h"
 #include "arraynative.inl"
 
@@ -117,206 +115,14 @@ HCIMPLEND
 #endif // !TARGET_X86 || TARGET_UNIX
 
 /*********************************************************************/
-HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
-{
-    FCALL_CONTRACT;
-
-    RuntimeExceptionKind ehKind;
-
-    if (((UINT32) (divisor + 1)) <= 1)  // Unsigned test for divisor in [-1 .. 0]
-    {
-        if (divisor == 0)
-        {
-            ehKind = kDivideByZeroException;
-            goto ThrowExcep;
-        }
-        else if (divisor == -1)
-        {
-            if (dividend == INT32_MIN)
-            {
-                ehKind = kOverflowException;
-                goto ThrowExcep;
-            }
-            return -dividend;
-        }
-    }
-
-    return(dividend / divisor);
-
-ThrowExcep:
-    FCThrow(ehKind);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor)
-{
-    FCALL_CONTRACT;
-
-    RuntimeExceptionKind ehKind;
-
-    if (((UINT32) (divisor + 1)) <= 1)  // Unsigned test for divisor in [-1 .. 0]
-    {
-        if (divisor == 0)
-        {
-            ehKind = kDivideByZeroException;
-            goto ThrowExcep;
-        }
-        else if (divisor == -1)
-        {
-            if (dividend == INT32_MIN)
-            {
-                ehKind = kOverflowException;
-                goto ThrowExcep;
-            }
-            return 0;
-        }
-    }
-
-    return(dividend % divisor);
-
-ThrowExcep:
-    FCThrow(ehKind);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2(UINT32, JIT_UDiv, UINT32 dividend, UINT32 divisor)
-{
-    FCALL_CONTRACT;
-
-    if (divisor == 0)
-        FCThrow(kDivideByZeroException);
-
-    return(dividend / divisor);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2(UINT32, JIT_UMod, UINT32 dividend, UINT32 divisor)
-{
-    FCALL_CONTRACT;
-
-    if (divisor == 0)
-        FCThrow(kDivideByZeroException);
-
-    return(dividend % divisor);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(INT64, JIT_LDiv, INT64 dividend, INT64 divisor)
-{
-    FCALL_CONTRACT;
-
-    RuntimeExceptionKind ehKind;
-
-    if (Is32BitSigned(divisor))
-    {
-        if ((INT32)divisor == 0)
-        {
-            ehKind = kDivideByZeroException;
-            goto ThrowExcep;
-        }
-
-        if ((INT32)divisor == -1)
-        {
-            if ((UINT64) dividend == UI64(0x8000000000000000))
-            {
-                ehKind = kOverflowException;
-                goto ThrowExcep;
-            }
-            return -dividend;
-        }
-
-        // Check for -ive or +ive numbers in the range -2**31 to 2**31
-        if (Is32BitSigned(dividend))
-            return((INT32)dividend / (INT32)divisor);
-    }
-
-    // For all other combinations fallback to int64 div.
-    return(dividend / divisor);
-
-ThrowExcep:
-    FCThrow(ehKind);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor)
-{
-    FCALL_CONTRACT;
-
-    RuntimeExceptionKind ehKind;
-
-    if (Is32BitSigned(divisor))
-    {
-        if ((INT32)divisor == 0)
-        {
-            ehKind = kDivideByZeroException;
-            goto ThrowExcep;
-        }
-
-        if ((INT32)divisor == -1)
-        {
-            // <TODO>TODO, we really should remove this as it lengthens the code path
-            // and the spec really says that it should not throw an exception. </TODO>
-            if ((UINT64) dividend == UI64(0x8000000000000000))
-            {
-                ehKind = kOverflowException;
-                goto ThrowExcep;
-            }
-            return 0;
-        }
-
-        // Check for -ive or +ive numbers in the range -2**31 to 2**31
-        if (Is32BitSigned(dividend))
-            return((INT32)dividend % (INT32)divisor);
-    }
-
-    // For all other combinations fallback to int64 div.
-    return(dividend % divisor);
-
-ThrowExcep:
-    FCThrow(ehKind);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_ULDiv, UINT64 dividend, UINT64 divisor)
-{
-    FCALL_CONTRACT;
-
-    if (Hi32Bits(divisor) == 0)
-    {
-        if ((UINT32)(divisor) == 0)
-        FCThrow(kDivideByZeroException);
-
-        if (Hi32Bits(dividend) == 0)
-            return((UINT32)dividend / (UINT32)divisor);
-    }
-
-    return(dividend / divisor);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor)
-{
-    FCALL_CONTRACT;
-
-    if (Hi32Bits(divisor) == 0)
-    {
-        if ((UINT32)(divisor) == 0)
-        FCThrow(kDivideByZeroException);
-
-        if (Hi32Bits(dividend) == 0)
-            return((UINT32)dividend % (UINT32)divisor);
-    }
-
-    return(dividend % divisor);
-}
-HCIMPLEND
+extern "C" FCDECL2(INT32, JIT_Div, INT32 dividend, INT32 divisor);
+extern "C" FCDECL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor);
+extern "C" FCDECL2(UINT32, JIT_UDiv, UINT32 dividend, UINT32 divisor);
+extern "C" FCDECL2(UINT32, JIT_UMod, UINT32 dividend, UINT32 divisor);
+extern "C" FCDECL2_VV(INT64, JIT_LDiv, INT64 dividend, INT64 divisor);
+extern "C" FCDECL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor);
+extern "C" FCDECL2_VV(UINT64, JIT_ULDiv, UINT64 dividend, UINT64 divisor);
+extern "C" FCDECL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor);
 
 #if !defined(HOST_64BIT) && !defined(TARGET_X86)
 /*********************************************************************/
@@ -356,10 +162,26 @@ HCIMPLEND
 #include <optsmallperfcritical.h>
 
 /*********************************************************************/
+HCIMPL1_V(float, JIT_ULng2Flt, uint64_t val)
+{
+    FCALL_CONTRACT;
+    return (float)val;
+}
+HCIMPLEND
+
+/*********************************************************************/
 HCIMPL1_V(double, JIT_ULng2Dbl, uint64_t val)
 {
     FCALL_CONTRACT;
     return (double)val;
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL1_V(float, JIT_Lng2Flt, int64_t val)
+{
+    FCALL_CONTRACT;
+    return (float)val;
 }
 HCIMPLEND
 
@@ -382,36 +204,6 @@ HCIMPL1_V(int64_t, JIT_Dbl2Lng, double val)
     return (val != val) ? 0 : (val <= int64_min) ? INT64_MIN : (val >= int64_max) ? INT64_MAX : (int64_t)val;
 #else
     return (int64_t)val;
-#endif
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(uint32_t, JIT_Dbl2UInt, double val)
-{
-    FCALL_CONTRACT;
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    const double uint_max = 4294967295.0;
-    // Note that this expression also works properly for val = NaN case
-    return (val >= 0) ? ((val >= uint_max) ? UINT32_MAX : (uint32_t)val) : 0;
-#else
-    return (uint32_t)val;
-#endif
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(int32_t, JIT_Dbl2Int, double val)
-{
-    FCALL_CONTRACT;
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    const double int32_min = -2147483648.0;
-    const double int32_max_plus_1 = 2147483648.0;
-    return (val != val) ? 0 : (val <= int32_min) ? INT32_MIN : (val >= int32_max_plus_1) ? INT32_MAX : (int32_t)val;
-#else
-    return (int32_t)val;
 #endif
 }
 HCIMPLEND
@@ -519,14 +311,11 @@ HCIMPLEND
 //
 //========================================================================
 
-// Define the t_ThreadStatics variable here, so that these helpers can use
-// the most optimal TLS access pattern for the platform when inlining the
-// GetThreadLocalStaticBaseIfExistsAndInitialized function
+// Using compiler specific thread local storage directives due to linkage issues.
 #ifdef _MSC_VER
-__declspec(selectany) __declspec(thread)  ThreadLocalData t_ThreadStatics;
-#else
-__thread ThreadLocalData t_ThreadStatics;
+__declspec(selectany)
 #endif // _MSC_VER
+PLATFORM_THREAD_LOCAL ThreadLocalData t_ThreadStatics;
 
 extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack refHandle, MethodTable* pMT, bool gcStatic)
 {
@@ -582,34 +371,6 @@ HCIMPL1(void*, JIT_GetNonGCThreadStaticBaseOptimized2, UINT32 staticBlockIndex)
 }
 HCIMPLEND
 
-#include <optdefault.h>
-
-//========================================================================
-//
-//      STATIC FIELD DYNAMIC HELPERS
-//
-//========================================================================
-
-#include <optsmallperfcritical.h>
-HCIMPL1_RAW(TADDR, JIT_StaticFieldAddress_Dynamic, StaticFieldAddressArgs * pArgs)
-{
-    FCALL_CONTRACT;
-
-    TADDR base = HCCALL1(pArgs->staticBaseHelper, pArgs->arg0);
-    return base + pArgs->offset;
-}
-HCIMPLEND_RAW
-#include <optdefault.h>
-
-#include <optsmallperfcritical.h>
-HCIMPL1_RAW(TADDR, JIT_StaticFieldAddressUnbox_Dynamic, StaticFieldAddressArgs * pArgs)
-{
-    FCALL_CONTRACT;
-
-    TADDR base = HCCALL1(pArgs->staticBaseHelper, pArgs->arg0);
-    return *(TADDR *)(base + pArgs->offset) + Object::GetOffsetOfFirstField();
-}
-HCIMPLEND_RAW
 #include <optdefault.h>
 
 //========================================================================
@@ -698,7 +459,7 @@ BOOL ObjIsInstanceOf(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastExcept
     return ObjIsInstanceOfCore(pObject, toTypeHnd, throwCastException);
 }
 
-extern "C" BOOL QCALLTYPE IsInstanceOf_NoCacheLookup(CORINFO_CLASS_HANDLE type, BOOL throwCastException, QCall::ObjectHandleOnStack objOnStack)
+extern "C" BOOL QCALLTYPE IsInstanceOf_NoCacheLookup(EnregisteredTypeHandle type, BOOL throwCastException, QCall::ObjectHandleOnStack objOnStack)
 {
     QCALL_CONTRACT;
     BOOL result = FALSE;
@@ -707,8 +468,7 @@ extern "C" BOOL QCALLTYPE IsInstanceOf_NoCacheLookup(CORINFO_CLASS_HANDLE type, 
 
     GCX_COOP();
 
-    TypeHandle clsHnd(type);
-    result = ObjIsInstanceOfCore(OBJECTREFToObject(objOnStack.Get()), clsHnd, throwCastException);
+    result = ObjIsInstanceOfCore(OBJECTREFToObject(objOnStack.Get()), TypeHandle::FromPtr(type), throwCastException);
 
     END_QCALL;
 
@@ -717,537 +477,24 @@ extern "C" BOOL QCALLTYPE IsInstanceOf_NoCacheLookup(CORINFO_CLASS_HANDLE type, 
 
 //========================================================================
 //
-//      ALLOCATION HELPERS
-//
-//========================================================================
-
-#include <optsmallperfcritical.h>
-
-//*************************************************************
-// Allocation fast path for typical objects
-//
-HCIMPL1_RAW(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    CONTRACTL {
-        THROWS;
-        DISABLED(GC_TRIGGERS);
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
-    ee_alloc_context *eeAllocContext = &t_runtime_thread_locals.alloc_context;
-    gc_alloc_context *allocContext = &eeAllocContext->m_GCAllocContext;
-
-    TypeHandle typeHandle(typeHnd_);
-    _ASSERTE(!typeHandle.IsTypeDesc()); // heap objects must have method tables
-    MethodTable *methodTable = typeHandle.AsMethodTable();
-
-    SIZE_T size = methodTable->GetBaseSize();
-    _ASSERTE(size % DATA_ALIGNMENT == 0);
-
-    BYTE *allocPtr = allocContext->alloc_ptr;
-    _ASSERTE(allocPtr <= eeAllocContext->getCombinedLimit());
-    if (size > static_cast<SIZE_T>(eeAllocContext->getCombinedLimit() - allocPtr))
-    {
-        // Tail call to the slow helper
-        return HCCALL1(JIT_New, typeHnd_);
-    }
-
-    allocContext->alloc_ptr = allocPtr + size;
-
-    _ASSERTE(allocPtr != nullptr);
-    Object *object = reinterpret_cast<Object *>(allocPtr);
-    _ASSERTE(object->HasEmptySyncBlockInfo());
-    object->SetMethodTable(methodTable);
-
-    return object;
-}
-HCIMPLEND_RAW
-
-#include <optdefault.h>
-
-/*************************************************************/
-HCIMPL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF newobj = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
-
-    TypeHandle typeHnd(typeHnd_);
-
-    _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
-    MethodTable *pMT = typeHnd.AsMethodTable();
-
-#ifdef _DEBUG
-    if (g_pConfig->FastGCStressLevel()) {
-        GetThread()->DisableStressHeap();
-    }
-#endif // _DEBUG
-
-    newobj = AllocateObject(pMT);
-
-    HELPER_METHOD_FRAME_END();
-    return(OBJECTREFToObject(newobj));
-}
-HCIMPLEND
-
-/*************************************************************/
-HCIMPL1(Object*, JIT_NewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF newobj = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
-
-    TypeHandle typeHnd(typeHnd_);
-
-    _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
-    MethodTable* pMT = typeHnd.AsMethodTable();
-
-#ifdef _DEBUG
-    if (g_pConfig->FastGCStressLevel()) {
-        GetThread()->DisableStressHeap();
-    }
-#endif // _DEBUG
-
-    newobj = TryAllocateFrozenObject(pMT);
-    if (newobj == NULL)
-    {
-        // Fallback to normal heap allocation.
-        newobj = AllocateObject(pMT);
-    }
-
-    HELPER_METHOD_FRAME_END();
-    return(OBJECTREFToObject(newobj));
-}
-HCIMPLEND
-
-
-//========================================================================
-//
-//      STRING HELPERS
-//
-//========================================================================
-
-#include <optsmallperfcritical.h>
-
-//*************************************************************
-// Allocation fast path for typical objects
-//
-HCIMPL1_RAW(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
-{
-    CONTRACTL {
-        THROWS;
-        DISABLED(GC_TRIGGERS);
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
-
-    // Instead of doing elaborate overflow checks, we just limit the number of elements. This will avoid all overflow
-    // problems, as well as making sure big string objects are correctly allocated in the big object heap.
-    if (stringLength >= (LARGE_OBJECT_SIZE - 256) / sizeof(WCHAR))
-    {
-        // Tail call to the slow helper
-        return HCCALL1(FramedAllocateString, stringLength);
-    }
-
-    ee_alloc_context *eeAllocContext = &t_runtime_thread_locals.alloc_context;
-    gc_alloc_context *allocContext = &eeAllocContext->m_GCAllocContext;
-
-    SIZE_T totalSize = StringObject::GetSize(stringLength);
-
-    // The method table's base size includes space for a terminating null character
-    _ASSERTE(totalSize >= g_pStringClass->GetBaseSize());
-    _ASSERTE((totalSize - g_pStringClass->GetBaseSize()) / sizeof(WCHAR) == stringLength);
-
-    SIZE_T alignedTotalSize = ALIGN_UP(totalSize, DATA_ALIGNMENT);
-    _ASSERTE(alignedTotalSize >= totalSize);
-    totalSize = alignedTotalSize;
-
-    BYTE *allocPtr = allocContext->alloc_ptr;
-    _ASSERTE(allocPtr <= eeAllocContext->getCombinedLimit());
-    if (totalSize > static_cast<SIZE_T>(eeAllocContext->getCombinedLimit() - allocPtr))
-    {
-        // Tail call to the slow helper
-        return HCCALL1(FramedAllocateString, stringLength);
-    }
-    allocContext->alloc_ptr = allocPtr + totalSize;
-
-    _ASSERTE(allocPtr != nullptr);
-    StringObject *stringObject = reinterpret_cast<StringObject *>(allocPtr);
-    stringObject->SetMethodTable(g_pStringClass);
-    stringObject->SetStringLength(stringLength);
-    _ASSERTE(stringObject->GetBuffer()[stringLength] == W('\0'));
-
-    return stringObject;
-}
-HCIMPLEND_RAW
-
-#include <optdefault.h>
-
-HCIMPL1(StringObject*, FramedAllocateString, DWORD stringLength)
-{
-    FCALL_CONTRACT;
-
-    STRINGREF result = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
-
-    result = AllocateString(stringLength);
-
-    HELPER_METHOD_FRAME_END();
-    return((StringObject*) OBJECTREFToObject(result));
-}
-HCIMPLEND
-
-/*********************************************************************/
-STRINGREF* ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void** ppPinnedString)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(TypeFromToken(metaTok) == mdtString);
-    Module* module = GetModule(scopeHnd);
-    return module->ResolveStringRef(metaTok, ppPinnedString);
-}
-
-//========================================================================
-//
-//      ARRAY HELPERS
-//
-//========================================================================
-
-#include <optsmallperfcritical.h>
-
-//*************************************************************
-// Array allocation fast path for arrays of value type elements
-//
-HCIMPL2_RAW(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
-{
-    CONTRACTL {
-        THROWS;
-        DISABLED(GC_TRIGGERS);
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
-
-    // Do a conservative check here.  This is to avoid overflow while doing the calculations.  We don't
-    // have to worry about "large" objects, since the allocation quantum is never big enough for
-    // LARGE_OBJECT_SIZE.
-    //
-    // For Value Classes, this needs to be 2^16 - slack (2^32 / max component size),
-    // The slack includes the size for the array header and round-up ; for alignment.  Use 256 for the
-    // slack value out of laziness.
-    SIZE_T componentCount = static_cast<SIZE_T>(size);
-    if (componentCount >= static_cast<SIZE_T>(65535 - 256))
-    {
-        // Tail call to the slow helper
-        return HCCALL2(JIT_NewArr1, arrayMT, size);
-    }
-
-    ee_alloc_context* eeAllocContext = &t_runtime_thread_locals.alloc_context;
-    gc_alloc_context* allocContext = &eeAllocContext->m_GCAllocContext;
-
-    MethodTable *pArrayMT = (MethodTable *)arrayMT;
-
-    _ASSERTE(pArrayMT->HasComponentSize());
-    SIZE_T componentSize = pArrayMT->RawGetComponentSize();
-    SIZE_T totalSize = componentCount * componentSize;
-    _ASSERTE(totalSize / componentSize == componentCount);
-
-    SIZE_T baseSize = pArrayMT->GetBaseSize();
-    totalSize += baseSize;
-    _ASSERTE(totalSize >= baseSize);
-
-    SIZE_T alignedTotalSize = ALIGN_UP(totalSize, DATA_ALIGNMENT);
-    _ASSERTE(alignedTotalSize >= totalSize);
-    totalSize = alignedTotalSize;
-
-    BYTE *allocPtr = allocContext->alloc_ptr;
-    _ASSERTE(allocPtr <= eeAllocContext->getCombinedLimit());
-    if (totalSize > static_cast<SIZE_T>(eeAllocContext->getCombinedLimit() - allocPtr))
-    {
-        // Tail call to the slow helper
-        return HCCALL2(JIT_NewArr1, arrayMT, size);
-    }
-    allocContext->alloc_ptr = allocPtr + totalSize;
-
-    _ASSERTE(allocPtr != nullptr);
-    ArrayBase *array = reinterpret_cast<ArrayBase *>(allocPtr);
-    array->SetMethodTable(pArrayMT);
-    _ASSERTE(static_cast<DWORD>(componentCount) == componentCount);
-    array->m_NumComponents = static_cast<DWORD>(componentCount);
-
-    return array;
-}
-HCIMPLEND_RAW
-
-//*************************************************************
-// Array allocation fast path for arrays of object elements
-//
-HCIMPL2_RAW(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
-{
-    CONTRACTL {
-        THROWS;
-        DISABLED(GC_TRIGGERS);
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
-
-    // Make sure that the total size cannot reach LARGE_OBJECT_SIZE, which also allows us to avoid overflow checks. The
-    // "256" slack is to cover the array header size and round-up, using a constant value here out of laziness.
-    SIZE_T componentCount = static_cast<SIZE_T>(size);
-    if (componentCount >= static_cast<SIZE_T>((LARGE_OBJECT_SIZE - 256) / sizeof(void *)))
-    {
-        // Tail call to the slow helper
-        return HCCALL2(JIT_NewArr1, arrayMT, size);
-    }
-
-    SIZE_T totalSize = componentCount * sizeof(void *);
-    _ASSERTE(totalSize / sizeof(void *) == componentCount);
-
-    MethodTable *pArrayMT = (MethodTable *)arrayMT;
-
-    SIZE_T baseSize = pArrayMT->GetBaseSize();
-    totalSize += baseSize;
-    _ASSERTE(totalSize >= baseSize);
-
-    _ASSERTE(ALIGN_UP(totalSize, DATA_ALIGNMENT) == totalSize);
-
-    ee_alloc_context* eeAllocContext = &t_runtime_thread_locals.alloc_context;
-    gc_alloc_context* allocContext = &eeAllocContext->m_GCAllocContext;
-    BYTE *allocPtr = allocContext->alloc_ptr;
-    _ASSERTE(allocPtr <= eeAllocContext->getCombinedLimit());
-    if (totalSize > static_cast<SIZE_T>(eeAllocContext->getCombinedLimit() - allocPtr))
-    {
-        // Tail call to the slow helper
-        return HCCALL2(JIT_NewArr1, arrayMT, size);
-    }
-    allocContext->alloc_ptr = allocPtr + totalSize;
-
-    _ASSERTE(allocPtr != nullptr);
-    ArrayBase *array = reinterpret_cast<ArrayBase *>(allocPtr);
-    array->SetMethodTable(pArrayMT);
-    _ASSERTE(static_cast<DWORD>(componentCount) == componentCount);
-    array->m_NumComponents = static_cast<DWORD>(componentCount);
-
-    return array;
-}
-HCIMPLEND_RAW
-
-#include <optdefault.h>
-
-/*************************************************************/
-HCIMPL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF newArray = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
-
-    MethodTable *pArrayMT = (MethodTable *)arrayMT;
-
-    _ASSERTE(pArrayMT->IsFullyLoaded());
-    _ASSERTE(pArrayMT->IsArray());
-    _ASSERTE(!pArrayMT->IsMultiDimArray());
-
-    if (size < 0)
-        COMPlusThrow(kOverflowException);
-
-#ifdef HOST_64BIT
-    // Even though ECMA allows using a native int as the argument to newarr instruction
-    // (therefore size is INT_PTR), ArrayBase::m_NumComponents is 32-bit, so even on 64-bit
-    // platforms we can't create an array whose size exceeds 32 bits.
-    if (size > INT_MAX)
-        EX_THROW(EEMessageException, (kOverflowException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
-#endif
-
-#ifdef _DEBUG
-    if (g_pConfig->FastGCStressLevel()) {
-        GetThread()->DisableStressHeap();
-    }
-#endif // _DEBUG
-
-    newArray = AllocateSzArray(pArrayMT, (INT32)size);
-    HELPER_METHOD_FRAME_END();
-
-    return(OBJECTREFToObject(newArray));
-}
-HCIMPLEND
-
-
-/*************************************************************/
-HCIMPL2(Object*, JIT_NewArr1MaybeFrozen, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF newArray = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
-
-    MethodTable* pArrayMT = (MethodTable*)arrayMT;
-
-    _ASSERTE(pArrayMT->IsFullyLoaded());
-    _ASSERTE(pArrayMT->IsArray());
-    _ASSERTE(!pArrayMT->IsMultiDimArray());
-
-    if (size < 0)
-        COMPlusThrow(kOverflowException);
-
-#ifdef HOST_64BIT
-    // Even though ECMA allows using a native int as the argument to newarr instruction
-    // (therefore size is INT_PTR), ArrayBase::m_NumComponents is 32-bit, so even on 64-bit
-    // platforms we can't create an array whose size exceeds 32 bits.
-    if (size > INT_MAX)
-        EX_THROW(EEMessageException, (kOverflowException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
-#endif
-
-#ifdef _DEBUG
-    if (g_pConfig->FastGCStressLevel()) {
-        GetThread()->DisableStressHeap();
-    }
-#endif // _DEBUG
-
-    newArray = TryAllocateFrozenSzArray(pArrayMT, (INT32)size);
-    if (newArray == NULL)
-    {
-        // Fallback to default heap allocation
-        newArray = AllocateSzArray(pArrayMT, (INT32)size);
-    }
-    _ASSERTE(newArray != NULL);
-
-    HELPER_METHOD_FRAME_END();
-
-    return(OBJECTREFToObject(newArray));
-}
-HCIMPLEND
-
-#include <optdefault.h>
-
-//========================================================================
-//
 //      VALUETYPE/BYREF HELPERS
 //
 //========================================================================
 /*************************************************************/
-HCIMPL2_RAW(Object*, JIT_Box_MP_FastPortable, CORINFO_CLASS_HANDLE type, void* unboxedData)
-{
-    CONTRACTL {
-        THROWS;
-        DISABLED(GC_TRIGGERS);
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    if (unboxedData == nullptr)
-    {
-        // Tail call to the slow helper
-        return HCCALL2(JIT_Box, type, unboxedData);
-    }
-
-    _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
-    ee_alloc_context* eeAllocContext = &t_runtime_thread_locals.alloc_context;
-    gc_alloc_context* allocContext = &eeAllocContext->m_GCAllocContext;
-
-    TypeHandle typeHandle(type);
-    _ASSERTE(!typeHandle.IsTypeDesc()); // heap objects must have method tables
-    MethodTable *methodTable = typeHandle.AsMethodTable();
-    // The fast helper should never be called for nullable types.
-    _ASSERTE(!methodTable->IsNullable());
-
-#ifdef FEATURE_64BIT_ALIGNMENT
-    if (methodTable->RequiresAlign8())
-    {
-        return HCCALL2(JIT_Box, type, unboxedData);
-    }
-#endif
-
-    SIZE_T size = methodTable->GetBaseSize();
-    _ASSERTE(size % DATA_ALIGNMENT == 0);
-
-    BYTE *allocPtr = allocContext->alloc_ptr;
-    _ASSERTE(allocPtr <= eeAllocContext->getCombinedLimit());
-    if (size > static_cast<SIZE_T>(eeAllocContext->getCombinedLimit() - allocPtr))
-    {
-        // Tail call to the slow helper
-        return HCCALL2(JIT_Box, type, unboxedData);
-    }
-
-    allocContext->alloc_ptr = allocPtr + size;
-
-    _ASSERTE(allocPtr != nullptr);
-    Object *object = reinterpret_cast<Object *>(allocPtr);
-    _ASSERTE(object->HasEmptySyncBlockInfo());
-    object->SetMethodTable(methodTable);
-
-    // Copy the data into the object
-    CopyValueClass(object->UnBox(), unboxedData, methodTable);
-
-    return object;
-}
-HCIMPLEND_RAW
-
-/*************************************************************/
-HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
+HCIMPL2(BOOL, JIT_IsInstanceOfException, EnregisteredTypeHandle type, Object* obj)
 {
     FCALL_CONTRACT;
-
-    OBJECTREF newobj = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();    // Set up a frame
-    GCPROTECT_BEGININTERIOR(unboxedData);
-    HELPER_METHOD_POLL();
-
-    // A null can be passed for boxing of a null ref.
-    if (unboxedData == NULL)
-        COMPlusThrow(kNullReferenceException);
-
-    TypeHandle clsHnd(type);
-
-    _ASSERTE(!clsHnd.IsTypeDesc());  // boxable types have method tables
-
-    MethodTable *pMT = clsHnd.AsMethodTable();
-
-    _ASSERTE(pMT->IsFullyLoaded());
-
-    _ASSERTE (pMT->IsValueType() && !pMT->IsByRefLike());
-
-#ifdef _DEBUG
-    if (g_pConfig->FastGCStressLevel()) {
-        GetThread()->DisableStressHeap();
-    }
-#endif // _DEBUG
-
-    newobj = pMT->FastBox(&unboxedData);
-
-    GCPROTECT_END();
-    HELPER_METHOD_FRAME_END();
-    return(OBJECTREFToObject(newobj));
+    return ExceptionIsOfRightType(TypeHandle::FromPtr(type), obj->GetTypeHandle());
 }
 HCIMPLEND
 
-/*************************************************************/
-HCIMPL2(BOOL, JIT_IsInstanceOfException, CORINFO_CLASS_HANDLE type, Object* obj)
-{
-    FCALL_CONTRACT;
-    TypeHandle clsHnd(type);
-    return ExceptionIsOfRightType(clsHnd, obj->GetTypeHandle());
-}
-HCIMPLEND
-
-extern "C" void QCALLTYPE ThrowInvalidCastException(CORINFO_CLASS_HANDLE pTargetType, CORINFO_CLASS_HANDLE pSourceType)
+extern "C" void QCALLTYPE ThrowInvalidCastException(EnregisteredTypeHandle pSourceType, EnregisteredTypeHandle pTargetType)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
-    TypeHandle targetType(pTargetType);
-    TypeHandle sourceType(pSourceType);
-
-    GCX_COOP();
-
-    COMPlusThrowInvalidCastException(sourceType, targetType);
+    COMPlusThrowInvalidCastException(TypeHandle::FromPtr(pSourceType), TypeHandle::FromPtr(pTargetType));
 
     END_QCALL;
 }
@@ -1258,13 +505,11 @@ extern "C" void QCALLTYPE ThrowInvalidCastException(CORINFO_CLASS_HANDLE pTarget
 //
 //========================================================================
 
-extern "C" CORINFO_GENERIC_HANDLE QCALLTYPE GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
+DictionaryEntry GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
 {
-    QCALL_CONTRACT;
+    STANDARD_VM_CONTRACT;
 
-    CORINFO_GENERIC_HANDLE result = NULL;
-
-    BEGIN_QCALL;
+    DictionaryEntry result = NULL;
 
     _ASSERTE(pMT != NULL || pMD != NULL);
     _ASSERTE(pMT == NULL || pMD == NULL);
@@ -1312,7 +557,7 @@ extern "C" CORINFO_GENERIC_HANDLE QCALLTYPE GenericHandleWorker(MethodDesc * pMD
     }
 
     DictionaryEntry * pSlot;
-    result = (CORINFO_GENERIC_HANDLE)Dictionary::PopulateEntry(pMD, pDeclaringMT, signature, FALSE, &pSlot, dictionaryIndexAndSlot, pModule);
+    result = Dictionary::PopulateEntry(pMD, pDeclaringMT, signature, FALSE, &pSlot, dictionaryIndexAndSlot, pModule);
 
     if (pMT != NULL && pDeclaringMT != pMT)
     {
@@ -1327,6 +572,19 @@ extern "C" CORINFO_GENERIC_HANDLE QCALLTYPE GenericHandleWorker(MethodDesc * pMD
             InterlockedExchangeT(pPerInstInfo + dictionaryIndex, (TypeHandle*)pDeclaringMTDictionary);
         }
     }
+
+    return result;
+}
+
+extern "C" void* QCALLTYPE GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
+{
+    QCALL_CONTRACT;
+
+    void* result = NULL;
+
+    BEGIN_QCALL;
+
+    result = GenericHandleWorkerCore(pMD, pMT, signature, dictionaryIndexAndSlot, pModule);
 
     END_QCALL;
 
@@ -1391,14 +649,14 @@ void FlushVirtualFunctionPointerCaches()
 // static method signature (i.e. might be for a superclass of classHnd)
 
 // slow helper to call from the fast one
-extern "C" void* QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnStack obj,
-                                                       CORINFO_CLASS_HANDLE classHnd,
-                                                       CORINFO_METHOD_HANDLE methodHnd)
+extern "C" PCODE QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnStack obj,
+                                                       EnregisteredTypeHandle classHnd,
+                                                       MethodDesc* pStaticMD)
 {
     QCALL_CONTRACT;
 
     // The address of the method that's returned.
-    CORINFO_MethodPtr   addr = NULL;
+    PCODE addr = (PCODE)NULL;
 
     BEGIN_QCALL;
 
@@ -1425,8 +683,7 @@ extern "C" void* QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnSt
 
     // This is the static method descriptor describing the call.
     // It is not the destination of the call, which we must compute.
-    MethodDesc* pStaticMD = (MethodDesc*) methodHnd;
-    TypeHandle staticTH(classHnd);
+    TypeHandle staticTH = TypeHandle::FromPtr(classHnd);
 
     if (staticTH.IsNull())
     {
@@ -1448,14 +705,14 @@ extern "C" void* QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnSt
     // as we have no good scheme for reporting an actionable error here.
     if (!pStaticMD->IsVtableMethod())
     {
-        addr = (CORINFO_MethodPtr) pStaticMD->GetMultiCallableAddrOfCode();
+        addr = pStaticMD->GetMultiCallableAddrOfCode();
         _ASSERTE(addr);
     }
     else
     {
         // This is the new way of resolving a virtual call, including generic virtual methods.
         // The code is now also used by reflection, remoting etc.
-        addr = (CORINFO_MethodPtr) pStaticMD->GetMultiCallableAddrOfVirtualizedCode(&objRef, staticTH);
+        addr = pStaticMD->GetMultiCallableAddrOfVirtualizedCode(&objRef, staticTH);
         _ASSERTE(addr);
     }
 
@@ -1475,18 +732,16 @@ HCIMPLEND
 
 // Helper for synchronized static methods in shared generics code
 #include <optsmallperfcritical.h>
-HCIMPL1(CORINFO_CLASS_HANDLE, JIT_GetClassFromMethodParam, CORINFO_METHOD_HANDLE methHnd_)
+HCIMPL1(EnregisteredTypeHandle, JIT_GetClassFromMethodParam, MethodDesc* pMD)
     CONTRACTL {
         FCALL_CHECK;
-        PRECONDITION(methHnd_ != NULL);
+        PRECONDITION(pMD != NULL);
     } CONTRACTL_END;
-
-    MethodDesc *  pMD = (MethodDesc*)  methHnd_;
 
     MethodTable * pMT = pMD->GetMethodTable();
     _ASSERTE(!pMT->IsSharedByGenericInstantiations());
 
-    return((CORINFO_CLASS_HANDLE)pMT);
+    return pMT;
 HCIMPLEND
 #include <optdefault.h>
 
@@ -1510,155 +765,104 @@ HCIMPLEND
 
 /*************************************************************/
 
+#if defined(TARGET_X86)
+EXTERN_C FCDECL1(void, IL_Throw,  Object* obj);
+EXTERN_C HCIMPL2(void, IL_Throw_x86,  Object* obj, TransitionBlock* transitionBlock)
+#else
 HCIMPL1(void, IL_Throw,  Object* obj)
+#endif
 {
     FCALL_CONTRACT;
 
     /* Make no assumptions about the current machine state */
     ResetCurrentContext();
 
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
     OBJECTREF oref = ObjectToOBJECTREF(obj);
 
-#ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled)
-    {
-        Thread *pThread = GetThread();
+    Thread *pThread = GetThread();
 
-        SoftwareExceptionFrame exceptionFrame;
-        RtlCaptureContext(exceptionFrame.GetContext());
-        exceptionFrame.InitAndLink(pThread);
+    SoftwareExceptionFrame exceptionFrame;
+#ifdef TARGET_X86
+    exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
+#else
+    RtlCaptureContext(exceptionFrame.GetContext());
+#endif
+    exceptionFrame.InitAndLink(pThread);
 
-        FC_CAN_TRIGGER_GC();
-
-        if (oref == 0)
-            DispatchManagedException(kNullReferenceException);
-        else
-        if (!IsException(oref->GetMethodTable()))
-        {
-            GCPROTECT_BEGIN(oref);
-
-            WrapNonCompliantException(&oref);
-
-            GCPROTECT_END();
-        }
-        else
-        {   // We know that the object derives from System.Exception
-
-            // If the flag indicating ForeignExceptionRaise has been set,
-            // then do not clear the "_stackTrace" field of the exception object.
-            if (pThread->GetExceptionState()->IsRaisingForeignException())
-            {
-                ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
-            }
-            else
-            {
-                ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
-            }
-        }
-
-        DispatchManagedException(oref, exceptionFrame.GetContext());
-        FC_CAN_TRIGGER_GC_END();
-        UNREACHABLE();
-    }
-#endif // FEATURE_EH_FUNCLETS
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-#if defined(_DEBUG) && defined(TARGET_X86)
-    __helperframe.EnsureInit(NULL);
-    g_ExceptionEIP = (LPVOID)__helperframe.GetReturnAddress();
-#endif // defined(_DEBUG) && defined(TARGET_X86)
+    FC_CAN_TRIGGER_GC();
 
     if (oref == 0)
-        COMPlusThrow(kNullReferenceException);
-    else
-    if (!IsException(oref->GetMethodTable()))
-    {
-        GCPROTECT_BEGIN(oref);
+        DispatchManagedException(kNullReferenceException);
 
-        WrapNonCompliantException(&oref);
+    NormalizeThrownObject(&oref);
+    DispatchManagedException(oref, exceptionFrame.GetContext());
 
-        GCPROTECT_END();
-    }
-    else
-    {   // We know that the object derives from System.Exception
-
-        // If the flag indicating ForeignExceptionRaise has been set,
-        // then do not clear the "_stackTrace" field of the exception object.
-        if (GetThread()->GetExceptionState()->IsRaisingForeignException())
-        {
-            ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
-        }
-        else
-        {
-            ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
-        }
-    }
-
-    RaiseTheExceptionInternalOnly(oref, FALSE);
-
-    HELPER_METHOD_FRAME_END();
+    FC_CAN_TRIGGER_GC_END();
+    UNREACHABLE();
 }
 HCIMPLEND
 
 /*************************************************************/
 
+#if defined(TARGET_X86)
+EXTERN_C FCDECL0(void, IL_Rethrow);
+EXTERN_C HCIMPL1(void, IL_Rethrow_x86, TransitionBlock* transitionBlock)
+#else
 HCIMPL0(void, IL_Rethrow)
+#endif
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
+    Thread *pThread = GetThread();
 
-#ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled)
-    {
-        Thread *pThread = GetThread();
-
-        SoftwareExceptionFrame exceptionFrame;
-        RtlCaptureContext(exceptionFrame.GetContext());
-        exceptionFrame.InitAndLink(pThread);
-
-        ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
-
-        ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, exceptionFrame.GetContext(), ExKind::None);
-
-        FC_CAN_TRIGGER_GC();
-
-        GCPROTECT_BEGIN(exInfo.m_exception);
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
-        DECLARE_ARGHOLDER_ARRAY(args, 2);
-
-        args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
-        args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
-
-        pThread->IncPreventAbort();
-
-        //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
-        CALL_MANAGED_METHOD_NORET(args)
-        GCPROTECT_END();
-
-        FC_CAN_TRIGGER_GC_END();
-        UNREACHABLE();
-    }
+    SoftwareExceptionFrame exceptionFrame;
+#ifdef TARGET_X86
+    exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
+#else
+    RtlCaptureContext(exceptionFrame.GetContext());
 #endif
+    exceptionFrame.InitAndLink(pThread);
 
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
+    FC_CAN_TRIGGER_GC();
 
-    OBJECTREF throwable = GetThread()->GetThrowable();
-    if (throwable != NULL)
-    {
-        RaiseTheExceptionInternalOnly(throwable, TRUE);
-    }
-    else
-    {
-        // This can only be the result of bad IL (or some internal EE failure).
-        _ASSERTE(!"No throwable on rethrow");
-        RealCOMPlusThrow(kInvalidProgramException, (UINT)IDS_EE_RETHROW_NOT_ALLOWED);
-    }
+    DispatchRethrownManagedException(exceptionFrame.GetContext());
 
-    HELPER_METHOD_FRAME_END();
+    FC_CAN_TRIGGER_GC_END();
+    UNREACHABLE();
+}
+HCIMPLEND
+
+#if defined(TARGET_X86)
+EXTERN_C FCDECL1(void, IL_ThrowExact,  Object* obj);
+EXTERN_C HCIMPL2(void, IL_ThrowExact_x86,  Object* obj, TransitionBlock* transitionBlock)
+#else
+HCIMPL1(void, IL_ThrowExact, Object* obj)
+#endif
+{
+    FCALL_CONTRACT;
+
+    /* Make no assumptions about the current machine state */
+    ResetCurrentContext();
+
+    OBJECTREF oref = ObjectToOBJECTREF(obj);
+    GetThread()->GetExceptionState()->SetRaisingForeignException();
+
+    Thread *pThread = GetThread();
+
+    SoftwareExceptionFrame exceptionFrame;
+#ifdef TARGET_X86
+    exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
+#else
+    RtlCaptureContext(exceptionFrame.GetContext());
+#endif
+    exceptionFrame.InitAndLink(pThread);
+
+    FC_CAN_TRIGGER_GC();
+
+    DispatchManagedException(oref, exceptionFrame.GetContext());
+
+    FC_CAN_TRIGGER_GC_END();
+    UNREACHABLE();
 }
 HCIMPLEND
 
@@ -1725,6 +929,20 @@ HCIMPL0(void, JIT_FailFast)
     DoJITFailFast ();
 }
 HCIMPLEND
+
+// FailFast if a method marked UnmanagedCallersOnlyAttribute is
+// invoked directly from managed code. UMThunkStub.asm check the
+// mode and call this function to failfast.
+void ReversePInvokeBadTransition()
+{
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    // Fail
+    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
+                                             COR_E_EXECUTIONENGINE,
+                                             W("Invalid Program: attempted to call a UnmanagedCallersOnly method from managed code.")
+                                            );
+}
 
 //========================================================================
 //
@@ -1839,7 +1057,7 @@ extern "C" VOID JIT_PInvokeEndRarePath();
 
 void JIT_PInvokeEndRarePath()
 {
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     Thread *thread = GetThread();
 
@@ -1864,12 +1082,10 @@ void JIT_PInvokeEndRarePath()
     }
 
     thread->m_pFrame->Pop(thread);
-
-    END_PRESERVE_LAST_ERROR;
 }
 
 /*************************************************************/
-// For an inlined N/Direct call (and possibly for other places that need this service)
+// For an inlined PInvoke call (and possibly for other places that need this service)
 // we have noticed that the returning thread should trap for one reason or another.
 // ECall sets up the frame.
 
@@ -1903,7 +1119,7 @@ void JIT_RareDisableHelper()
     // in the first phase.
     //      </TODO>
 
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     Thread *thread = GetThread();
     // We execute RareDisablePreemptiveGC manually before checking any abort conditions
@@ -1925,15 +1141,11 @@ void JIT_RareDisableHelper()
         END_QCALL;
         thread->DisablePreemptiveGC();
     }
-
-    END_PRESERVE_LAST_ERROR;
 }
 
 FCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
 {
     FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();
 
     Thread * pThread = GetThread();
     return pThread->GetThreadId();
@@ -1983,7 +1195,7 @@ HCIMPL0(void, JIT_DebugLogLoopCloning)
      } CONTRACTL_END;
 
 #ifdef _DEBUG
-     printf(">> Logging loop cloning optimization\n");
+     minipal_log_print_info(">> Logging loop cloning optimization\n");
 #endif
 }
 HCIMPLEND
@@ -2354,7 +1566,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
 
 extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransitionBlock)
 {
-    // BEGIN_PRESERVE_LAST_ERROR;
+    // Manually preserve the last error as we may not return normally from this method.
     DWORD dwLastError = ::GetLastError();
 
     // This method may not return normally
@@ -2375,7 +1587,7 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
     MethodDesc* pMD = codeInfo.GetMethodDesc();
     LoaderAllocator* allocator = pMD->GetLoaderAllocator();
     OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
-    PerPatchpointInfo * ppInfo = manager->GetPerPatchpointInfo(ip);
+    PerPatchpointInfo * ppInfo = manager->GetPerPatchpointInfo(codeInfo.GetStartAddress(), ilOffset);
 
 #ifdef _DEBUG
     const int ppId = ppInfo->m_patchpointId;
@@ -2519,7 +1731,6 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
 #endif
 
         // Restore last error (since call below does not return)
-        // END_PRESERVE_LAST_ERROR;
         ::SetLastError(dwLastError);
 
         // Transition!
@@ -2527,11 +1738,8 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
     }
 
  DONE:
-
-    // END_PRESERVE_LAST_ERROR;
     ::SetLastError(dwLastError);
 }
-
 
 #else
 
@@ -2545,7 +1753,7 @@ HCIMPL2(void, JIT_Patchpoint, int* counter, int ilOffset)
 }
 HCIMPLEND
 
-HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
+HCIMPL1(VOID, JIT_PatchpointForced, int ilOffset)
 {
     // Stub version if OSR feature is disabled
     //
@@ -2579,8 +1787,8 @@ FORCEINLINE static bool CheckSample(T* pIndex, size_t* sampleIndex)
 {
     const unsigned S = ICorJitInfo::HandleHistogram32::SIZE;
     const unsigned N = ICorJitInfo::HandleHistogram32::SAMPLE_INTERVAL;
-    static_assert_no_msg(N >= S);
-    static_assert_no_msg((std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
+    static_assert(N >= S);
+    static_assert((std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
 
     // If table is not yet full, just add entries in
     // and increment the table index.
@@ -2620,7 +1828,6 @@ FORCEINLINE static bool CheckSample(T* pIndex, size_t* sampleIndex)
 HCIMPL2(void, JIT_ValueProfile32, intptr_t val, ICorJitInfo::ValueHistogram32* valueProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     size_t sampleIndex;
     if (!CheckSample(&valueProfile->Count, &sampleIndex))
@@ -2640,7 +1847,6 @@ HCIMPLEND
 HCIMPL2(void, JIT_ValueProfile64, intptr_t val, ICorJitInfo::ValueHistogram64* valueProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     size_t sampleIndex;
     if (!CheckSample(&valueProfile->Count, &sampleIndex))
@@ -2660,7 +1866,6 @@ HCIMPLEND
 HCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* classProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
@@ -2695,7 +1900,6 @@ HCIMPLEND
 HCIMPL2(void, JIT_ClassProfile64, Object *obj, ICorJitInfo::HandleHistogram64* classProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
@@ -2725,7 +1929,6 @@ HCIMPLEND
 HCIMPL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32* methodProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
@@ -2772,7 +1975,6 @@ HCIMPLEND
 HCIMPL2(void, JIT_DelegateProfile64, Object *obj, ICorJitInfo::HandleHistogram64* methodProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
@@ -2815,10 +2017,9 @@ HCIMPL2(void, JIT_DelegateProfile64, Object *obj, ICorJitInfo::HandleHistogram64
 }
 HCIMPLEND
 
-HCIMPL3(void, JIT_VTableProfile32, Object* obj, CORINFO_METHOD_HANDLE baseMethod, ICorJitInfo::HandleHistogram32* methodProfile)
+HCIMPL3(void, JIT_VTableProfile32, Object* obj, MethodDesc* pBaseMD, ICorJitInfo::HandleHistogram32* methodProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
@@ -2828,8 +2029,6 @@ HCIMPL3(void, JIT_VTableProfile32, Object* obj, CORINFO_METHOD_HANDLE baseMethod
     {
         return;
     }
-
-    MethodDesc* pBaseMD = GetMethod(baseMethod);
 
     // Method better be virtual
     _ASSERTE(pBaseMD->IsVirtual());
@@ -2864,10 +2063,9 @@ HCIMPL3(void, JIT_VTableProfile32, Object* obj, CORINFO_METHOD_HANDLE baseMethod
 }
 HCIMPLEND
 
-HCIMPL3(void, JIT_VTableProfile64, Object* obj, CORINFO_METHOD_HANDLE baseMethod, ICorJitInfo::HandleHistogram64* methodProfile)
+HCIMPL3(void, JIT_VTableProfile64, Object* obj, MethodDesc* pBaseMD, ICorJitInfo::HandleHistogram64* methodProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
@@ -2877,8 +2075,6 @@ HCIMPL3(void, JIT_VTableProfile64, Object* obj, CORINFO_METHOD_HANDLE baseMethod
     {
         return;
     }
-
-    MethodDesc* pBaseMD = GetMethod(baseMethod);
 
     // Method better be virtual
     _ASSERTE(pBaseMD->IsVirtual());
@@ -2923,7 +2119,6 @@ HCIMPLEND
 HCIMPL1(void, JIT_CountProfile32, volatile LONG* pCounter)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     LONG count = *pCounter;
     LONG delta = 1;
@@ -2950,7 +2145,6 @@ HCIMPLEND
 HCIMPL1(void, JIT_CountProfile64, volatile LONG64* pCounter)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     LONG64 count = *pCounter;
     LONG64 delta = 1;
@@ -3010,15 +2204,31 @@ Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame)
 EXTERN_C void JIT_PInvokeBegin(InlinedCallFrame* pFrame);
 EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame);
 
-// Forward declaration
-EXTERN_C void STDCALL ReversePInvokeBadTransition();
+#ifdef DEBUGGING_SUPPORTED
+void DebuggerTraceCall(void* returnAddr, void* thunkDataMaybe)
+{
+    _ASSERTE(CORDebuggerTraceCall());
+    _ASSERTE(returnAddr != NULL);
 
-#ifndef FEATURE_EH_FUNCLETS
-EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
-#endif
+    const BYTE* addr;
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    addr = (const BYTE*)returnAddr;
+    _ASSERTE(thunkDataMaybe == NULL); // Should not be used with portable entrypoints
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+    addr = (thunkDataMaybe != NULL) ? (const BYTE*)((UMEntryThunkData*)thunkDataMaybe)->GetManagedTarget() : (const BYTE*)returnAddr;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+    // If the debugger is attached, we use this opportunity to see if
+    // we're disabling preemptive GC on the way into the runtime from
+    // unmanaged code. We end up here because
+    // Increment/DecrementTraceCallCount() will bump
+    // g_TrapReturningThreads for us.
+    g_pDebugInterface->TraceCall(addr);
+}
+#endif // DEBUGGING_SUPPORTED
 
 // This is a slower version of the reverse PInvoke enter function.
-NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame, void* returnAddr, UMEntryThunk* pThunk = NULL)
+NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame, void* returnAddr, void* thunkDataMaybe = NULL)
 {
     _ASSERTE(frame != NULL);
 
@@ -3041,46 +2251,33 @@ NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame, voi
 
     thread->DisablePreemptiveGC();
 #ifdef DEBUGGING_SUPPORTED
-    // If the debugger is attached, we use this opportunity to see if
-    // we're disabling preemptive GC on the way into the runtime from
-    // unmanaged code. We end up here because
-    // Increment/DecrementTraceCallCount() will bump
-    // g_TrapReturningThreads for us.
     if (CORDebuggerTraceCall())
-        g_pDebugInterface->TraceCall(pThunk ? (const BYTE*)pThunk->GetManagedTarget() : (const BYTE*)returnAddr);
+        DebuggerTraceCall(returnAddr, thunkDataMaybe);
 #endif // DEBUGGING_SUPPORTED
 }
 
-NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, void* returnAddr, UMEntryThunk* pThunk = NULL)
+NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, void* returnAddr, void* thunkDataMaybe = NULL)
 {
     frame->currentThread->RareDisablePreemptiveGC();
 #ifdef DEBUGGING_SUPPORTED
-    // If the debugger is attached, we use this opportunity to see if
-    // we're disabling preemptive GC on the way into the runtime from
-    // unmanaged code. We end up here because
-    // Increment/DecrementTraceCallCount() will bump
-    // g_TrapReturningThreads for us.
     if (CORDebuggerTraceCall())
-        g_pDebugInterface->TraceCall(pThunk ? (const BYTE*)pThunk->GetManagedTarget() : (const BYTE*)returnAddr);
+        DebuggerTraceCall(returnAddr, thunkDataMaybe);
 #endif // DEBUGGING_SUPPORTED
 }
 
 // The following JIT_ReversePInvoke helpers are special.
 // They handle setting up Reverse P/Invoke calls and transitioning back to unmanaged code.
-// As a result, we may not have a thread in JIT_ReversePInvokeEnter and we will be in the wrong GC mode for the HCALL prolog.
-// Additionally, we set up and tear down SEH handlers when we're on x86, so we can't use dynamic contracts anyway.
-// As a result, we specially decorate this method to have the correct calling convention
-// and argument ordering for an HCALL, but we don't use the HCALL macros and contracts
-// since this method doesn't follow the contracts.
-HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* frame, CORINFO_METHOD_HANDLE handle, void* secretArg)
+// We may not have a managed thread set up in JIT_ReversePInvokeEnter, and the GC mode may be incorrect.
+// On x86, SEH handlers are set up and torn down explicitly, so we avoid using dynamic contracts.
+// This method uses the correct calling convention and argument layout manually, without relying on standard macros or contracts.
+HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* frame, MethodDesc* pMD, void* thunkDataMaybe)
 {
-    _ASSERTE(frame != NULL && handle != NULL);
+    _ASSERTE(frame != NULL && pMD != NULL);
+    _ASSERTE(!pMD->IsILStub() || thunkDataMaybe != NULL);
 
-    MethodDesc* pMD = GetMethod(handle);
-    if (pMD->IsILStub() && secretArg != NULL)
-    {
-        pMD = ((UMEntryThunkData*)secretArg)->m_pMD;
-    }
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+    pMD = (thunkDataMaybe != NULL) ? ((UMEntryThunkData*)thunkDataMaybe)->GetMethod() : pMD;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
     frame->pMD = pMD;
 
     Thread* thread = GetThreadNULLOk();
@@ -3105,20 +2302,19 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
         {
             // If we're in an IL stub, we want to trace the address of the target method,
             // not the next instruction in the stub.
-            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? ((UMEntryThunkData*)secretArg)->m_pUMEntryThunk : (UMEntryThunk*)NULL);
+            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), thunkDataMaybe);
         }
     }
     else
     {
         // If we're in an IL stub, we want to trace the address of the target method,
         // not the next instruction in the stub.
-        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? ((UMEntryThunkData*)secretArg)->m_pUMEntryThunk  : (UMEntryThunk*)NULL);
+        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), thunkDataMaybe);
     }
 
-#ifndef FEATURE_EH_FUNCLETS
-    frame->record.m_pEntryFrame = frame->currentThread->GetFrame();
-    frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
-    INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+    frame->m_ExReg.Handler = (PEXCEPTION_ROUTINE)ProcessCLRException;
+    INSTALL_SEH_RECORD(&frame->m_ExReg);
 #endif
 }
 HCIMPLEND_RAW
@@ -3148,10 +2344,9 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
         JIT_ReversePInvokeEnterRare(frame, _ReturnAddress());
     }
 
-#ifndef FEATURE_EH_FUNCLETS
-    frame->record.m_pEntryFrame = frame->currentThread->GetFrame();
-    frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
-    INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+    frame->m_ExReg.Handler = (PEXCEPTION_ROUTINE)ProcessCLRException;
+    INSTALL_SEH_RECORD(&frame->m_ExReg);
 #endif
 }
 HCIMPLEND_RAW
@@ -3166,8 +2361,8 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* f
     // to make this exit faster.
     frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
 
-#ifndef FEATURE_EH_FUNCLETS
-    UNINSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+    UNINSTALL_SEH_RECORD(&frame->m_ExReg);
 #endif
 
 #ifdef PROFILING_SUPPORTED
@@ -3189,8 +2384,8 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
     // to make this exit faster.
     frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
 
-#ifndef FEATURE_EH_FUNCLETS
-    UNINSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+    UNINSTALL_SEH_RECORD(&frame->m_ExReg);
 #endif
 }
 HCIMPLEND_RAW
@@ -3210,28 +2405,35 @@ enum __CorInfoHelpFunc {
 #define JITHELPER(code, pfnHelper, sig) __##code,
 #include "jithelpers.h"
 };
-#define JITHELPER(code, pfnHelper, sig) C_ASSERT((int)__##code == (int)code);
+#define JITHELPER(code, pfnHelper, sig) static_assert((int)__##code == (int)code);
 #include "jithelpers.h"
 
 #ifdef _DEBUG
-#define HELPERDEF(code, lpv, sig) { (LPVOID)(lpv), #code },
+#define HELPERDEF(code, lpv, isDynamicHelper) { (PCODE)(lpv), #code, isDynamicHelper },
+#elif defined(TARGET_WASM)
+#define HELPERDEF(code, lpv, isDynamicHelper) { (PCODE)(lpv), isDynamicHelper },
 #else // !_DEBUG
-#define HELPERDEF(code, lpv, sig) { (LPVOID)(lpv) },
+#define HELPERDEF(code, lpv, isDynamicHelper) { (PCODE)(lpv) },
 #endif // !_DEBUG
 
 // static helpers - constant array
 const VMHELPDEF hlpFuncTable[CORINFO_HELP_COUNT] =
 {
-#define JITHELPER(code, pfnHelper, binderId) HELPERDEF(code, pfnHelper, binderId)
-#define DYNAMICJITHELPER(code, pfnHelper, binderId) HELPERDEF(code, 1 + DYNAMIC_##code, binderId)
+#define JITHELPER(code, pfnHelper, binderId) HELPERDEF(code, pfnHelper, false)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) HELPERDEF(code, 1 + DYNAMIC_##code, true)
 #include "jithelpers.h"
 };
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+// Collection of entry points for JIT helpers
+PCODE hlpFuncEntryPoints[CORINFO_HELP_COUNT] = {};
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 // dynamic helpers - filled in at runtime - See definition of DynamicCorInfoHelpFunc.
 VMHELPDEF hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_COUNT] =
 {
 #define JITHELPER(code, pfnHelper, binderId)
-#define DYNAMICJITHELPER(code, pfnHelper, binderId) HELPERDEF(DYNAMIC_ ## code, pfnHelper, binderId)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) HELPERDEF(DYNAMIC_##code, pfnHelper, true)
 #include "jithelpers.h"
 };
 
@@ -3242,6 +2444,34 @@ static const BinderMethodID hlpDynamicToBinderMap[DYNAMIC_CORINFO_HELP_COUNT] =
 #define DYNAMICJITHELPER(code, pfnHelper, binderId) (pfnHelper != NULL) ? (BinderMethodID)METHOD__NIL : (BinderMethodID)binderId, // If pre-compiled code is provided for a jit helper, prefer that over the IL implementation
 #include "jithelpers.h"
 };
+
+bool VMHELPDEF::IsDynamicHelper(DynamicCorInfoHelpFunc* dynamicFtnNum) const
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(dynamicFtnNum != nullptr);
+
+    size_t dynamicFtnNumMaybe = (size_t)pfnHelper - 1;
+
+    bool isDynamic;
+#ifdef TARGET_WASM
+    // Functions on Wasm are ordinal values, not memory addresses.
+    // On Wasm, we need some metadata to indicate whether the helper is a dynamic helper.
+    isDynamic = _isDynamicHelper;
+#else // !TARGET_WASM
+    // If pfnHelper is an index into the dynamic helper table, it should be less
+    // than DYNAMIC_CORINFO_HELP_COUNT.
+    isDynamic = (dynamicFtnNumMaybe < DYNAMIC_CORINFO_HELP_COUNT);
+#endif // TARGET_WASM
+
+#if defined(_DEBUG) || defined(TARGET_WASM)
+    _ASSERTE(isDynamic == _isDynamicHelper);
+#endif // _DEBUG || TARGET_WASM
+
+    if (isDynamic)
+        *dynamicFtnNum = (DynamicCorInfoHelpFunc)dynamicFtnNumMaybe;
+
+    return isDynamic;
+}
 
 // Set the JIT helper function in the helper table
 // Handles the case where the function does not reside in mscorwks.dll
@@ -3260,18 +2490,18 @@ void _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc)
     LOG((LF_JIT, LL_INFO1000000, "Setting JIT dynamic helper %3d (%s) to %p\n",
         ftnNum, hlpDynamicFuncTable[ftnNum].name, pFunc));
 
-    hlpDynamicFuncTable[ftnNum].pfnHelper = (void*)pFunc;
+    hlpDynamicFuncTable[ftnNum].pfnHelper = (PCODE)pFunc;
 }
 
-VMHELPDEF LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDesc)
+PCODE LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum)
 {
     STANDARD_VM_CONTRACT;
 
     _ASSERTE(ftnNum < DYNAMIC_CORINFO_HELP_COUNT);
 
     MethodDesc* pMD = NULL;
-    void* helper = VolatileLoad(&hlpDynamicFuncTable[ftnNum].pfnHelper);
-    if (helper == NULL)
+    PCODE helper = VolatileLoad(&hlpDynamicFuncTable[ftnNum].pfnHelper);
+    if (helper == (PCODE)NULL)
     {
         BinderMethodID binderId = hlpDynamicToBinderMap[ftnNum];
 
@@ -3283,32 +2513,26 @@ VMHELPDEF LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** metho
 
         pMD = CoreLibBinder::GetMethod(binderId);
         PCODE pFunc = pMD->GetMultiCallableAddrOfCode();
-        InterlockedCompareExchangeT<void*>(&hlpDynamicFuncTable[ftnNum].pfnHelper, (void*)pFunc, nullptr);
+        InterlockedCompareExchangeT<PCODE>(&hlpDynamicFuncTable[ftnNum].pfnHelper, (PCODE)pFunc, (PCODE)NULL);
     }
 
-    // If the caller wants the MethodDesc, we may need to try and load it.
-    if (methodDesc != NULL)
-    {
-        if (pMD == NULL)
-        {
-            BinderMethodID binderId = hlpDynamicToBinderMap[ftnNum];
-            pMD = binderId != METHOD__NIL
-                ? CoreLibBinder::GetMethod(binderId)
-                : NULL;
-        }
-        *methodDesc = pMD;
-    }
-
-    return hlpDynamicFuncTable[ftnNum];
+    return hlpDynamicFuncTable[ftnNum].pfnHelper;
 }
 
 bool HasILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum)
 {
-    STANDARD_VM_CONTRACT;
+    LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(ftnNum < DYNAMIC_CORINFO_HELP_COUNT);
 
     return (METHOD__NIL != hlpDynamicToBinderMap[ftnNum]);
+}
+
+MethodDesc* GetMethodDescForILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(HasILBasedDynamicJitHelper(ftnNum));
+    return CoreLibBinder::GetMethod(hlpDynamicToBinderMap[ftnNum]);
 }
 
 bool IndirectionAllowedForJitHelper(CorInfoHelpFunc ftnNum)

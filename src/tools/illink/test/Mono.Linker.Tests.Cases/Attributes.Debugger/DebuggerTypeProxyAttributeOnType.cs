@@ -4,26 +4,26 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes.Debugger
 {
-	[SetupLinkAttributesFile ("DebuggerAttributesRemoved.xml")]
-	public class DebuggerTypeProxyAttributeOnType
-	{
-		public static void Main ()
-		{
-			var foo = new Foo ();
-		}
+    [SetupLinkAttributesFile("DebuggerAttributesRemoved.xml")]
+    public class DebuggerTypeProxyAttributeOnType
+    {
+        public static void Main()
+        {
+            var foo = new Foo();
+        }
 
-		[Kept]
-		[KeptMember (".ctor()")]
-		[DebuggerTypeProxy (typeof (FooDebugView))]
-		class Foo
-		{
-		}
+        [Kept]
+        [KeptMember(".ctor()")]
+        [DebuggerTypeProxy(typeof(FooDebugView))]
+        class Foo
+        {
+        }
 
-		class FooDebugView
-		{
-			public FooDebugView (Foo foo)
-			{
-			}
-		}
-	}
+        class FooDebugView
+        {
+            public FooDebugView(Foo foo)
+            {
+            }
+        }
+    }
 }

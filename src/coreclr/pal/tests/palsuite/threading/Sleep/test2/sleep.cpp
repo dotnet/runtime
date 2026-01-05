@@ -5,11 +5,9 @@
 **
 ** Source: Sleep.c
 **
-** Purpose: Test to establish whether the Sleep function stops the thread from 
+** Purpose: Test to establish whether the Sleep function stops the thread from
 ** executing for the specified times.
 **
-** Dependencies: GetTickCount
-** 
 
 **
 **=========================================================*/
@@ -18,7 +16,7 @@
 
 PALTEST(threading_Sleep_test2_paltest_sleep_test2, "threading/Sleep/test2/paltest_sleep_test2")
 {
-    /* 
+    /*
     * times in 10^(-3) seconds
     */
 
@@ -33,8 +31,8 @@ PALTEST(threading_Sleep_test2_paltest_sleep_test2, "threading/Sleep/test2/paltes
     /* Milliseconds of error which are acceptable Function execution time, etc. */
     DWORD AcceptableTimeError = 150;
 
-    UINT64 OldTimeStamp;
-    UINT64 NewTimeStamp;
+    int64_t OldTimeStamp;
+    int64_t NewTimeStamp;
     DWORD MaxDelta;
     DWORD TimeDelta;
     DWORD i;
@@ -44,19 +42,13 @@ PALTEST(threading_Sleep_test2_paltest_sleep_test2, "threading/Sleep/test2/paltes
         return ( FAIL );
     }
 
-    LARGE_INTEGER performanceFrequency;
-    if (!QueryPerformanceFrequency(&performanceFrequency))
-    {
-        return FAIL;
-    }
-
     for( i = 0; i < sizeof(SleepTimes) / sizeof(DWORD); i++)
     {
-        OldTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+        OldTimeStamp = minipal_hires_ticks();
         Sleep(SleepTimes[i]);
-        NewTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+        NewTimeStamp = minipal_hires_ticks();
 
-        TimeDelta = NewTimeStamp - OldTimeStamp;
+        TimeDelta = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);
 
         MaxDelta = SleepTimes[i] + AcceptableTimeError;
 

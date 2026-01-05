@@ -731,8 +731,8 @@ DWORD LCM(DWORD u, DWORD v)
     if (m_nGroups > 1)
     {
         m_enableGCCPUGroups = TRUE;
-        m_threadUseAllCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups, groupCount > 1) != 0;
-        m_threadAssignCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_AssignCpuGroups) != 0;
+        m_threadUseAllCpuGroups = Configuration::GetKnobBooleanValue(W("System.Threading.Thread.UseAllCpuGroups"), CLRConfig::EXTERNAL_Thread_UseAllCpuGroups, groupCount > 1) != 0;
+        m_threadAssignCpuGroups = Configuration::GetKnobBooleanValue(W("System.Threading.Thread.AssignCpuGroups"), CLRConfig::EXTERNAL_Thread_AssignCpuGroups) != 0;
 
         // Save the processor group affinity of the initial thread
         GROUP_AFFINITY groupAffinity;
@@ -1923,35 +1923,6 @@ HRESULT validateTokenSig(
     return S_OK;
 }   // validateTokenSig()
 
-HRESULT GetImageRuntimeVersionString(PVOID pMetaData, LPCSTR* pString)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(pString);
-    STORAGESIGNATURE* pSig = (STORAGESIGNATURE*) pMetaData;
-
-    // Verify the signature.
-
-    // If signature didn't match, you shouldn't be here.
-    if (pSig->GetSignature() != STORAGE_MAGIC_SIG)
-        return CLDB_E_FILE_CORRUPT;
-
-    // The version started in version 1.1
-    if (pSig->GetMajorVer() < 1)
-        return CLDB_E_FILE_OLDVER;
-
-    if (pSig->GetMajorVer() == 1 && pSig->GetMinorVer() < 1)
-        return CLDB_E_FILE_OLDVER;
-
-    // Header data starts after signature.
-    *pString = (LPCSTR) pSig->pVersion;
-    return S_OK;
-}
-
 //*****************************************************************************
 // Convert a UTF8 string to Unicode, into a CQuickArray<WCHAR>.
 //*****************************************************************************
@@ -2359,6 +2330,68 @@ void PutLoongArch64JIR(UINT32 * pCode, INT64 imm38)
     *(pCode + 1) = pcInstr; // write the assembled instruction
 
     _ASSERTE(GetLoongArch64JIR(pCode) == imm38);
+}
+
+
+//*****************************************************************************
+//  Extract the PC-Relative offset from auipc + I-type or S-type adder (addi/load/store/jalr)
+//*****************************************************************************
+INT64 GetRiscV64AuipcCombo(UINT32 * pCode, bool isStype)
+{
+    enum
+    {
+        OpcodeAuipc = 0x17,
+        OpcodeAddi = 0x13,
+        OpcodeLoad = 0x03,
+        OpcodeStore = 0x23,
+        OpcodeLoadFp = 0x07,
+        OpcodeStoreFp = 0x27,
+        OpcodeJalr = 0x67,
+        OpcodeMask = 0x7F,
+
+        Funct3AddiJalr = 0x0000,
+        Funct3Mask = 0x7000,
+    };
+
+    UINT32 auipc = pCode[0];
+    _ASSERTE((auipc & OpcodeMask) == OpcodeAuipc);
+    int auipcRegDest = (auipc >> 7) & 0x1F;
+    _ASSERTE(auipcRegDest != 0);
+
+    INT64 hi20 = (INT32(auipc) >> 12) << 12;
+
+    UINT32 instr = pCode[1];
+    UINT32 opcode = instr & OpcodeMask;
+    UINT32 funct3 = instr & Funct3Mask;
+    _ASSERTE(opcode == OpcodeLoad || opcode == OpcodeStore || opcode == OpcodeLoadFp || opcode == OpcodeStoreFp ||
+        ((opcode == OpcodeAddi || opcode == OpcodeJalr) && funct3 == Funct3AddiJalr));
+    _ASSERTE(isStype == (opcode == OpcodeStore || opcode == OpcodeStoreFp));
+    int addrReg = (instr >> 15) & 0x1F;
+    _ASSERTE(auipcRegDest == addrReg);
+
+    INT64 lo12 = (INT32(instr) >> 25) << 5; // top 7 bits are in the same spot
+    int bottomBitsPos = isStype ? 7 : 20;
+    lo12 |= (instr >> bottomBitsPos) & 0x1F;
+
+    return hi20 + lo12;
+}
+
+
+//*****************************************************************************
+//  Deposit the PC-Relative offset into auipc + I-type or S-type adder (addi/load/store/jalr)
+//*****************************************************************************
+void PutRiscV64AuipcCombo(UINT32 * pCode, INT64 offset, bool isStype)
+{
+    INT32 lo12 = (offset << (64 - 12)) >> (64 - 12);
+    INT32 hi20 = INT32(offset - lo12);
+    _ASSERTE(INT64(lo12) + INT64(hi20) == offset);
+
+    _ASSERTE(GetRiscV64AuipcCombo(pCode, isStype) == 0);
+    pCode[0] |= hi20;
+    int bottomBitsPos = isStype ? 7 : 20;
+    pCode[1] |= (lo12 >> 5) << 25; // top 7 bits are in the same spot
+    pCode[1] |= (lo12 & 0x1F) << bottomBitsPos;
+    _ASSERTE(GetRiscV64AuipcCombo(pCode, isStype) == offset);
 }
 
 //======================================================================

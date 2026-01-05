@@ -24,7 +24,7 @@ namespace System.Speech.Recognition
         }
         public SpeechRecognitionEngine(CultureInfo culture)
         {
-            Helpers.ThrowIfNull(culture, nameof(culture));
+            ArgumentNullException.ThrowIfNull(culture);
 
             if (culture.Equals(CultureInfo.InvariantCulture))
             {
@@ -70,7 +70,7 @@ namespace System.Speech.Recognition
         }
         public SpeechRecognitionEngine(RecognizerInfo recognizerInfo)
         {
-            Helpers.ThrowIfNull(recognizerInfo, nameof(recognizerInfo));
+            ArgumentNullException.ThrowIfNull(recognizerInfo);
 
             Initialize(recognizerInfo);
         }
@@ -234,8 +234,8 @@ namespace System.Speech.Recognition
         }
         public void SetInputToAudioStream(Stream audioSource, SpeechAudioFormatInfo audioFormat)
         {
-            Helpers.ThrowIfNull(audioSource, nameof(audioSource));
-            Helpers.ThrowIfNull(audioFormat, nameof(audioFormat));
+            ArgumentNullException.ThrowIfNull(audioSource);
+            ArgumentNullException.ThrowIfNull(audioFormat);
 
             RecoBase.SetInput(audioSource, audioFormat);
         }
@@ -414,7 +414,7 @@ namespace System.Speech.Recognition
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 if (_speechHypothesizedDelegate == null)
                 {
                     RecoBase.SpeechHypothesized += SpeechHypothesizedProxy;
@@ -425,7 +425,7 @@ namespace System.Speech.Recognition
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 _speechHypothesizedDelegate -= value;
                 if (_speechHypothesizedDelegate == null)
                 {
@@ -438,7 +438,7 @@ namespace System.Speech.Recognition
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 if (_audioSignalProblemOccurredDelegate == null)
                 {
                     RecoBase.AudioSignalProblemOccurred += AudioSignalProblemOccurredProxy;
@@ -449,7 +449,7 @@ namespace System.Speech.Recognition
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 _audioSignalProblemOccurredDelegate -= value;
                 if (_audioSignalProblemOccurredDelegate == null)
                 {
@@ -462,7 +462,7 @@ namespace System.Speech.Recognition
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 if (_audioLevelUpdatedDelegate == null)
                 {
                     RecoBase.AudioLevelUpdated += AudioLevelUpdatedProxy;
@@ -473,7 +473,7 @@ namespace System.Speech.Recognition
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 _audioLevelUpdatedDelegate -= value;
                 if (_audioLevelUpdatedDelegate == null)
                 {
@@ -486,7 +486,7 @@ namespace System.Speech.Recognition
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 if (_audioStateChangedDelegate == null)
                 {
                     RecoBase.AudioStateChanged += AudioStateChangedProxy;
@@ -497,7 +497,7 @@ namespace System.Speech.Recognition
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             remove
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 _audioStateChangedDelegate -= value;
                 if (_audioStateChangedDelegate == null)
                 {

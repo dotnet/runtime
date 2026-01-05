@@ -25,6 +25,7 @@ namespace System
         /// <summary>
         /// Compute a Marvin hash and collapse it into a 32-bit hash.
         /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static int ComputeHash32(ref byte data, uint count, uint p0, uint p1)
         {
             // Control flow of this method generally flows top-to-bottom, trying to

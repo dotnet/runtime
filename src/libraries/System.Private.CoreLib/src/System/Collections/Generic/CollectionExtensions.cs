@@ -136,14 +136,13 @@ namespace System.Collections.Generic
             {
                 if (list._items.Length - list._size < source.Length)
                 {
-                    list.Grow(checked(list._size + source.Length));
+                    list.GrowForInsertion(index, source.Length);
                 }
-
-                // If the index at which to insert is less than the number of items in the list,
-                // shift all items past that location in the list down to the end, making room
-                // to copy in the new data.
-                if (index < list._size)
+                else if (index < list._size)
                 {
+                    // If the index at which to insert is less than the number of items in the list,
+                    // shift all items past that location in the list down to the end, making room
+                    // to copy in the new data.
                     Array.Copy(list._items, index, list._items, index + source.Length, list._size - index);
                 }
 

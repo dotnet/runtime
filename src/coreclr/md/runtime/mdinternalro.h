@@ -66,13 +66,6 @@ public:
         return static_cast<IMetaModelCommonRO*>(&m_LiteWeightStgdb.m_MiniMd);
     }
 
-    __checkReturn
-    STDMETHODIMP SetOptimizeAccessForSpeed(
-        BOOL fOptSpeed)
-    {
-        return S_OK;
-    }
-
     //*****************************************************************************
     // return the count of entries of a given kind in a scope
     // For example, pass in mdtMethodDef will tell you how many MethodDef
@@ -734,15 +727,6 @@ public:
         ULONG       cbData,                 // [IN] length of pData
         IMDInternalImport **ppv);           // [OUT] the resulting metadata interface
 
-    STDMETHODIMP GetRvaOffsetData(
-        DWORD   *pFirstMethodRvaOffset,     // [OUT] Offset (from start of metadata) to the first RVA field in MethodDef table.
-        DWORD   *pMethodDefRecordSize,      // [OUT] Size of each record in MethodDef table.
-        DWORD   *pMethodDefCount,           // [OUT] Number of records in MethodDef table.
-        DWORD   *pFirstFieldRvaOffset,      // [OUT] Offset (from start of metadata) to the first RVA field in FieldRVA table.
-        DWORD   *pFieldRvaRecordSize,       // [OUT] Size of each record in FieldRVA table.
-        DWORD   *pFieldRvaCount             // [OUT] Number of records in FieldRVA table.
-        );
-
     CLiteWeightStgdb<CMiniMd>   m_LiteWeightStgdb;
 
 private:
@@ -784,12 +768,6 @@ public:
         ((DWORD)m_LiteWeightStgdb.m_MiniMd.m_Schema.m_major << 16);
     };
 
-    STDMETHODIMP SetVerifiedByTrustedSource(// return hresult
-        BOOL    fVerified)
-    {
-        m_LiteWeightStgdb.m_MiniMd.SetVerifiedByTrustedSource(fVerified);
-        return S_OK;
-    }
 };  // class MDInternalRO
 
 #endif //FEATURE_METADATA_INTERNAL_APIS

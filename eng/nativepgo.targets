@@ -33,7 +33,7 @@
   <!--                                                                       -->
   <!-- Notes:                                                                -->
   <!--                                                                       -->
-  <!-- DumpPgoDataPackagePath is used to get the path of the native PGO data -->
+  <!-- GetPgoDataPackagePath is used to get the path of the native PGO data -->
   <!-- for other MSBuild projects, generally to pass to another project or   -->
   <!-- native script like build-runtime.cmd/sh.                              -->
   <!--                                                                       -->
@@ -59,9 +59,5 @@
     </PropertyGroup>
 
     <Error Condition="!Exists('$(PgoPackagePath)') And '$(NativeOptimizationDataSupported)' == 'true'" Text="Unable to locate restored PGO package at $(PgoPackagePath). Maybe the platform-specific package naming changed?" />
-  </Target>
-
-  <Target Name="OutputPgoPathForCI" Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(NativeOptimizationDataSupported)' == 'true'" DependsOnTargets="GetPgoDataPackagePath">
-    <Message Text="##vso[task.setvariable variable=CoreClrPgoDataArg]-pgodatapath &quot;$(PgoPackagePath)&quot;" Importance="High" />
   </Target>
 </Project>

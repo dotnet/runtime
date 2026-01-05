@@ -29,7 +29,7 @@ EXTERN g_card_bundle_table:QWORD
 endif
 
 ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-EXTERN  g_sw_ww_table:QWORD
+EXTERN  g_write_watch_table:QWORD
 EXTERN  g_sw_ww_enabled_for_gc_heap:BYTE
 endif
 
@@ -141,7 +141,7 @@ ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         je      CheckCardTable
         mov     rax, rdi
         shr     rax, 0Ch ; SoftwareWriteWatch::AddressToTableByteIndexShift
-        add     rax, qword ptr [g_sw_ww_table]
+        add     rax, qword ptr [g_write_watch_table]
         cmp     byte ptr [rax], 0h
         jne     CheckCardTable
         mov     byte ptr [rax], 0FFh

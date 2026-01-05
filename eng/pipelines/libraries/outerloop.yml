@@ -6,10 +6,12 @@ schedules:
   branches:
     include:
     - main
-    - release/*.*
+    - release/*.0
+  always: false # run only if there were changes since the last successful scheduled run.
 
 variables:
   - template: variables.yml
+  - template: /eng/pipelines/helix-platforms.yml
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml

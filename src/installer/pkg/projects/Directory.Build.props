@@ -72,7 +72,7 @@
   <Import Project="$(RIDPropsFile)" />
 
   <ItemGroup>
-    <_buildingOnRID Include="$(PackageRID)" Condition="'$(BuildOnUnknownPlatforms)' != 'false'">
+    <_buildingOnRID Include="$(NETCoreSdkRuntimeIdentifier)" Condition="'$(BuildOnUnknownPlatforms)' != 'false'">
       <Platform>$(Platform)</Platform>
     </_buildingOnRID>
     <!-- Ensure we have a RID-specific package for the current build, even if it isn't in our official set -->
@@ -123,7 +123,7 @@
     <!-- During NuGet restore, grab assets for all applicable RIDs. -->
     <RuntimeIdentifiers Condition="'$(RestoreAllBuildRids)' == 'true'">@(RestoreBuildRID)</RuntimeIdentifiers>
     <!-- When resolving assets to pack, use the target runtime (if any). -->
-    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>

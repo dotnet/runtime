@@ -50,6 +50,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private sealed class BinOpFullSig : BinOpSig
         {
             private readonly LiftFlags _grflt;

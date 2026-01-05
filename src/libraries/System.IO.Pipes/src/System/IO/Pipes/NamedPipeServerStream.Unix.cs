@@ -139,10 +139,7 @@ namespace System.IO.Pipes
 
             if (disposing)
             {
-                if (State != PipeState.Closed)
-                {
-                    _internalTokenSource.Cancel();
-                }
+                _internalTokenSource.Cancel();
             }
         }
 

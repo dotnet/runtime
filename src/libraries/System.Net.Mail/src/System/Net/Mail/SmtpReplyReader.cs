@@ -3,12 +3,19 @@
 
 using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Mail
 {
     //streams are read only; return of 0 means end of server's reply
-    internal sealed class SmtpReplyReader
+    internal sealed class SmtpReplyReader : IDisposable
     {
+        public void Dispose()
+        {
+            Close();
+        }
+
         private readonly SmtpReplyReaderFactory _reader;
 
         internal SmtpReplyReader(SmtpReplyReaderFactory reader)
@@ -16,39 +23,19 @@ namespace System.Net.Mail
             _reader = reader;
         }
 
-        internal IAsyncResult BeginReadLines(AsyncCallback? callback, object? state)
-        {
-            return _reader.BeginReadLines(this, callback, state);
-        }
-
-        internal IAsyncResult BeginReadLine(AsyncCallback? callback, object? state)
-        {
-            return _reader.BeginReadLine(this, callback, state);
-        }
-
         public void Close()
         {
             _reader.Close(this);
         }
 
-        internal static LineInfo[] EndReadLines(IAsyncResult result)
+        internal Task<LineInfo[]> ReadLinesAsync<TIOAdapter>(CancellationToken cancellationToken) where TIOAdapter : IReadWriteAdapter
         {
-            return SmtpReplyReaderFactory.EndReadLines(result);
+            return _reader.ReadLinesAsync<TIOAdapter>(this, false, cancellationToken);
         }
 
-        internal static LineInfo EndReadLine(IAsyncResult result)
+        internal Task<LineInfo> ReadLineAsync<TIOAdapter>(CancellationToken cancellationToken) where TIOAdapter : IReadWriteAdapter
         {
-            return SmtpReplyReaderFactory.EndReadLine(result);
-        }
-
-        internal LineInfo[] ReadLines()
-        {
-            return _reader.ReadLines(this);
-        }
-
-        internal LineInfo ReadLine()
-        {
-            return _reader.ReadLine(this);
+            return _reader.ReadLineAsync<TIOAdapter>(this, cancellationToken);
         }
     }
 }

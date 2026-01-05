@@ -17,7 +17,6 @@
 #endif
 
 #include "corpriv.h"
-#include "../../dlls/mscorrc/resource.h"
 #include <limits.h>
 
 
@@ -29,7 +28,7 @@ CordbAssembly::CordbAssembly(CordbAppDomain *       pAppDomain,
                              VMPTR_DomainAssembly   vmDomainAssembly)
 
     : CordbBase(pAppDomain->GetProcess(),
-                vmDomainAssembly.IsNull() ? VmPtrToCookie(vmAssembly) : VmPtrToCookie(vmDomainAssembly),
+                VmPtrToCookie(vmAssembly),
                 enumCordbAssembly),
       m_vmAssembly(vmAssembly),
       m_vmDomainAssembly(vmDomainAssembly),

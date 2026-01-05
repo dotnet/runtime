@@ -17,15 +17,20 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public static Command EnableHostTracingToFile(this Command command, out string filePath)
         {
-            filePath = Path.Combine(TestContext.TestArtifactsPath, "trace" + Guid.NewGuid().ToString() + ".log");
+            filePath = Path.Combine(HostTestContext.TestArtifactsPath, "trace" + Guid.NewGuid().ToString() + ".log");
             if (File.Exists(filePath))
             {
                 File.Delete(filePath);
             }
 
+            return command.EnableHostTracingToPath(filePath);
+        }
+
+        public static Command EnableHostTracingToPath(this Command command, string path)
+        {
             return command
                 .EnableHostTracing()
-                .EnvironmentVariable(Constants.HostTracing.TraceFileEnvironmentVariable, filePath);
+                .EnvironmentVariable(Constants.HostTracing.TraceFileEnvironmentVariable, path);
         }
 
         public static Command EnableTracingAndCaptureOutputs(this Command command)
@@ -41,9 +46,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
             if (!string.IsNullOrEmpty(architecture))
                 return command.EnvironmentVariable(Constants.DotnetRoot.ArchitectureEnvironmentVariablePrefix + architecture.ToUpper(), dotNetRoot);
 
+            // If we are clearing out the variable, make sure we clear out any architecture-specific one too
+            if (string.IsNullOrEmpty(dotNetRoot))
+                command = command.EnvironmentVariable($"{Constants.DotnetRoot.ArchitectureEnvironmentVariablePrefix}{HostTestContext.BuildArchitecture.ToUpperInvariant()}", dotNetRoot);
+
             return command
-                .EnvironmentVariable(Constants.DotnetRoot.EnvironmentVariable, dotNetRoot)
-                .EnvironmentVariable(Constants.DotnetRoot.WindowsX86EnvironmentVariable, dotNetRoot);
+                    .EnvironmentVariable(Constants.DotnetRoot.EnvironmentVariable, dotNetRoot)
+                    .EnvironmentVariable(Constants.DotnetRoot.WindowsX86EnvironmentVariable, dotNetRoot);
         }
 
         public static Command MultilevelLookup(this Command command, bool? enable)

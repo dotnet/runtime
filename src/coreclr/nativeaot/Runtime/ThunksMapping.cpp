@@ -5,10 +5,10 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
+#include "PalLimitedContext.h"
 #include "CommonMacros.inl"
 #include "volatile.h"
-#include "PalRedhawk.h"
+#include "Pal.h"
 #include "rhassert.h"
 
 
@@ -33,7 +33,7 @@
 static_assert((THUNK_SIZE % 4) == 0, "Thunk stubs size not aligned correctly. This will cause runtime failures.");
 
 // 32 K or OS page
-#define THUNKS_MAP_SIZE (max(0x8000, OS_PAGE_SIZE))
+#define THUNKS_MAP_SIZE (max((size_t)0x8000, OS_PAGE_SIZE))
 
 #ifdef TARGET_ARM
 //*****************************************************************************
@@ -63,13 +63,13 @@ FCIMPL0(int, RhpGetNumThunkBlocksPerMapping)
 {
     ASSERT_MSG((THUNKS_MAP_SIZE % OS_PAGE_SIZE) == 0, "Thunks map size should be in multiples of pages");
 
-    return THUNKS_MAP_SIZE / OS_PAGE_SIZE;
+    return (int)(THUNKS_MAP_SIZE / OS_PAGE_SIZE);
 }
 FCIMPLEND
 
 FCIMPL0(int, RhpGetNumThunksPerBlock)
 {
-    return min(
+    return (int)min(
         OS_PAGE_SIZE / THUNK_SIZE,                              // Number of thunks that can fit in a page
         (OS_PAGE_SIZE - POINTER_SIZE) / (POINTER_SIZE * 2)      // Number of pointer pairs, minus the jump stub cell, that can fit in a page
     );
@@ -96,20 +96,24 @@ FCIMPLEND
 
 FCIMPL0(int, RhpGetThunkBlockSize)
 {
-    return OS_PAGE_SIZE;
+    return (int)OS_PAGE_SIZE;
 }
 FCIMPLEND
 
-EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
+EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 {
+    size_t thunksMapSize = THUNKS_MAP_SIZE;
+
 #ifdef WIN32
 
-    void * pNewMapping = PalVirtualAlloc(THUNKS_MAP_SIZE * 2, PAGE_READWRITE);
+    void * pNewMapping = PalVirtualAlloc(thunksMapSize * 2, PAGE_READWRITE);
     if (pNewMapping == NULL)
-        return NULL;
+    {
+        return E_OUTOFMEMORY;
+    }
 
     void * pThunksSection = pNewMapping;
-    void * pDataSection = (uint8_t*)pNewMapping + THUNKS_MAP_SIZE;
+    void * pDataSection = (uint8_t*)pNewMapping + thunksMapSize;
 
 #else
 
@@ -118,18 +122,20 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
     // reduce it to RW for the data section. For the stubs section we need to increase to RWX to generate the stubs
     // instructions. After this we go back to RX for the stubs section before the stubs are used and should not be
     // changed anymore.
-    void * pNewMapping = PalVirtualAlloc(THUNKS_MAP_SIZE * 2, PAGE_EXECUTE_READ);
+    void * pNewMapping = PalVirtualAlloc(thunksMapSize * 2, PAGE_EXECUTE_READ);
     if (pNewMapping == NULL)
-        return NULL;
+    {
+        return E_OUTOFMEMORY;
+    }
 
     void * pThunksSection = pNewMapping;
-    void * pDataSection = (uint8_t*)pNewMapping + THUNKS_MAP_SIZE;
+    void * pDataSection = (uint8_t*)pNewMapping + thunksMapSize;
 
-    if (!PalVirtualProtect(pDataSection, THUNKS_MAP_SIZE, PAGE_READWRITE) ||
-        !PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READWRITE))
+    if (!PalVirtualProtect(pDataSection, thunksMapSize, PAGE_READWRITE) ||
+        !PalVirtualProtect(pThunksSection, thunksMapSize, PAGE_EXECUTE_READWRITE))
     {
         PalVirtualFree(pNewMapping, THUNKS_MAP_SIZE * 2);
-        return NULL;
+        return E_FAIL;
     }
 
 #if defined(HOST_APPLE) && defined(HOST_ARM64)
@@ -168,7 +174,7 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
 
             *((uint32_t*)pCurrentThunkAddress) = 0x00a2ff41;
             pCurrentThunkAddress += 3;
-            *((uint32_t*)pCurrentThunkAddress) = OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2);
+            *((uint32_t*)pCurrentThunkAddress) = (uint32_t)(OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2));
             pCurrentThunkAddress += 4;
 
             // nops for alignment
@@ -227,7 +233,7 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
             *((uint32_t*)pCurrentThunkAddress) = 0x10000010 | (((delta & 0x03) << 29) | (((delta & 0x1FFFFC) >> 2) << 5));
             pCurrentThunkAddress += 4;
 
-            *((uint32_t*)pCurrentThunkAddress) = 0xF9400211 | (((OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2)) / 8) << 10);
+            *((uint32_t*)pCurrentThunkAddress) = 0xF9400211 | (((uint32_t)((OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2)) / 8) << 10));
             pCurrentThunkAddress += 4;
 
             *((uint32_t*)pCurrentThunkAddress) = 0xD61F0220;
@@ -244,10 +250,14 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
             //jirl      $r0, $t8, 0
 
             int delta = (int)(pCurrentDataAddress - pCurrentThunkAddress);
+            ASSERT((-0x200000 <= delta) && (delta < 0x200000));
+
             *((uint32_t*)pCurrentThunkAddress) = 0x18000013 | (((delta & 0x3FFFFC) >> 2) << 5);
             pCurrentThunkAddress += 4;
 
             delta += OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2) - 4;
+            ASSERT((-0x200000 <= delta) && (delta < 0x200000));
+
             *((uint32_t*)pCurrentThunkAddress) = 0x18000014 | (((delta & 0x3FFFFC) >> 2) << 5);
             pCurrentThunkAddress += 4;
 
@@ -299,16 +309,17 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
     #error "Unknown OS"
 #endif
 #else
-    if (!PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READ))
+    if (!PalVirtualProtect(pThunksSection, thunksMapSize, PAGE_EXECUTE_READ))
     {
-        PalVirtualFree(pNewMapping, THUNKS_MAP_SIZE * 2);
-        return NULL;
+        PalVirtualFree(pNewMapping, thunksMapSize * 2);
+        return E_FAIL;
     }
 #endif
 
-    PalFlushInstructionCache(pThunksSection, THUNKS_MAP_SIZE);
+    PalFlushInstructionCache(pThunksSection, thunksMapSize);
 
-    return pThunksSection;
+    *ppThunksSection = pThunksSection;
+    return S_OK;
 }
 
 // FEATURE_RX_THUNKS
@@ -323,7 +334,7 @@ FCDECL0(int, RhpGetThunkBlockSize);
 FCDECL1(void*, RhpGetThunkDataBlockAddress, void* addr);
 FCDECL1(void*, RhpGetThunkStubsBlockAddress, void* addr);
 
-EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
+EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 {
     static int nextThunkDataMapping = 0;
 
@@ -338,7 +349,7 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
 
     if (nextThunkDataMapping == thunkDataMappingCount)
     {
-        return NULL;
+        return E_FAIL;
     }
 
     if (g_pThunkStubData == NULL)
@@ -349,7 +360,7 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
 
         if (g_pThunkStubData == NULL)
         {
-            return NULL;
+            return E_OUTOFMEMORY;
         }
     }
 
@@ -357,7 +368,7 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
 
     if (VirtualAlloc(pThunkDataBlock, thunkDataMappingSize, MEM_COMMIT, PAGE_READWRITE) == NULL)
     {
-        return NULL;
+        return E_OUTOFMEMORY;
     }
 
     nextThunkDataMapping++;
@@ -365,7 +376,8 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
     void* pThunks = RhpGetThunkStubsBlockAddress(pThunkDataBlock);
     ASSERT(RhpGetThunkDataBlockAddress(pThunks) == pThunkDataBlock);
 
-    return pThunks;
+    *ppThunksSection = pThunks;
+    return S_OK;
 }
 
 #else // FEATURE_FIXED_POOL_THUNKS
@@ -376,7 +388,7 @@ FCDECL0(int, RhpGetNumThunksPerBlock);
 FCDECL0(int, RhpGetThunkSize);
 FCDECL0(int, RhpGetThunkBlockSize);
 
-EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
+EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 {
     static void* pThunksTemplateAddress = NULL;
 
@@ -405,7 +417,7 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
         int templateRva = (int)((uint8_t*)RhpGetThunksBase() - pModuleBase);
 
         if (!PalAllocateThunksFromTemplate((HANDLE)pModuleBase, templateRva, templateSize, &pThunkMap))
-            return NULL;
+            return E_OUTOFMEMORY;
     }
 
     if (!PalMarkThunksAsValidCallTargets(
@@ -418,10 +430,11 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
         if (pThunkMap != pThunksTemplateAddress)
             PalFreeThunksFromTemplate(pThunkMap, templateSize);
 
-        return NULL;
+        return E_FAIL;
     }
 
-    return pThunkMap;
+    *ppThunksSection = pThunkMap;
+    return S_OK;
 }
 
 #endif // FEATURE_RX_THUNKS

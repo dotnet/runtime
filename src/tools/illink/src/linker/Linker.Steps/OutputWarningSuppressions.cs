@@ -5,25 +5,25 @@ using System.IO;
 
 namespace Mono.Linker.Steps
 {
-	public class OutputWarningSuppressions : BaseStep
-	{
-		protected override bool ConditionToProcess ()
-		{
-			return Context.WarningSuppressionWriter?.IsEmpty == false;
-		}
+    public class OutputWarningSuppressions : BaseStep
+    {
+        protected override bool ConditionToProcess()
+        {
+            return Context.WarningSuppressionWriter?.IsEmpty == false;
+        }
 
-		protected override void Process ()
-		{
-			CheckOutputDirectory ();
-			Context.WarningSuppressionWriter?.OutputSuppressions (Context.OutputDirectory);
-		}
+        protected override void Process()
+        {
+            CheckOutputDirectory();
+            Context.WarningSuppressionWriter?.OutputSuppressions(Context.OutputDirectory);
+        }
 
-		void CheckOutputDirectory ()
-		{
-			if (Directory.Exists (Context.OutputDirectory))
-				return;
+        void CheckOutputDirectory()
+        {
+            if (Directory.Exists(Context.OutputDirectory))
+                return;
 
-			Directory.CreateDirectory (Context.OutputDirectory);
-		}
-	}
+            Directory.CreateDirectory(Context.OutputDirectory);
+        }
+    }
 }

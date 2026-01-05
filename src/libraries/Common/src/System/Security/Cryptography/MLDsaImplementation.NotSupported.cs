@@ -8,7 +8,15 @@ namespace System.Security.Cryptography
 {
     internal sealed partial class MLDsaImplementation : MLDsa
     {
+        private MLDsaImplementation(MLDsaAlgorithm algorithm)
+            : base(algorithm)
+        {
+            ThrowIfNotSupported();
+        }
+
         internal static partial bool SupportsAny() => false;
+
+        internal static partial bool IsAlgorithmSupported(MLDsaAlgorithm algorithm) => false;
 
         // The instance override methods are unreachable, as the constructor will always throw.
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
@@ -17,28 +25,40 @@ namespace System.Security.Cryptography
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
             throw new PlatformNotSupportedException();
 
+        protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination) =>
+            throw new PlatformNotSupportedException();
+
+        protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
+            throw new PlatformNotSupportedException();
+
+        protected override void SignMuCore(ReadOnlySpan<byte> mu, Span<byte> destination) =>
+            throw new PlatformNotSupportedException();
+
+        protected override bool VerifyMuCore(ReadOnlySpan<byte> mu, ReadOnlySpan<byte> signature) =>
+            throw new PlatformNotSupportedException();
+
         protected override void ExportMLDsaPublicKeyCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException();
 
-        protected override void ExportMLDsaSecretKeyCore(Span<byte> destination) =>
+        protected override void ExportMLDsaPrivateKeyCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException();
 
         protected override void ExportMLDsaPrivateSeedCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial MLDsa GenerateKey(MLDsaAlgorithm algorithm) =>
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial MLDsa ImportPublicKey(MLDsa.ParameterSetInfo info, ReadOnlySpan<byte> source) =>
+        internal static partial MLDsaImplementation GenerateKeyImpl(MLDsaAlgorithm algorithm) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial MLDsa ImportPkcs8PrivateKeyValue(MLDsa.ParameterSetInfo info, ReadOnlySpan<byte> source) =>
+        internal static partial MLDsaImplementation ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial MLDsa ImportSecretKey(ParameterSetInfo info, ReadOnlySpan<byte> source) =>
+        internal static partial MLDsaImplementation ImportPrivateKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial MLDsa ImportSeed(ParameterSetInfo info, ReadOnlySpan<byte> source) =>
+        internal static partial MLDsaImplementation ImportSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
     }
 }

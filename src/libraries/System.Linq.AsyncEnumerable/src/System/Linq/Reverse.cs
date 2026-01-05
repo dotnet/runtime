@@ -17,7 +17,7 @@ namespace System.Linq
         public static IAsyncEnumerable<TSource> Reverse<TSource>(
             this IAsyncEnumerable<TSource> source)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return
                 source.IsKnownEmpty() ? Empty<TSource>() :
@@ -27,7 +27,7 @@ namespace System.Linq
                 IAsyncEnumerable<TSource> source,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                TSource[] array = await source.ToArrayAsync(cancellationToken).ConfigureAwait(false);
+                TSource[] array = await source.ToArrayAsync(cancellationToken);
                 for (int i = array.Length - 1; i >= 0; i--)
                 {
                     yield return array[i];

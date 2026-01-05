@@ -12,6 +12,8 @@ namespace System.Reflection.Emit
     {
         internal static BlobBuilder GetLocalSignature(List<LocalBuilder> locals, ModuleBuilderImpl module)
         {
+            locals.Sort((l1, l2) => l1.LocalIndex - l2.LocalIndex); // sort by created order
+
             BlobBuilder localSignature = new();
             LocalVariablesEncoder encoder = new BlobEncoder(localSignature).LocalVariableSignature(locals.Count);
 
@@ -46,7 +48,7 @@ namespace System.Reflection.Emit
 
             retType.Void();
 
-            WriteParametersSignature(module, Array.ConvertAll(parameters, p => p.ParameterType), parameterEncoder);
+            WriteParametersSignature(module, GetParameterTypes(parameters), parameterEncoder);
 
             return constructorSignature;
         }
@@ -104,6 +106,23 @@ namespace System.Reflection.Emit
             return methodSignature;
         }
 
+        internal static Type[] GetParameterTypes(ParameterInfo[] parameterInfos)
+        {
+            if (parameterInfos.Length == 0)
+            {
+                return Type.EmptyTypes;
+            }
+
+            Type[] parameterTypes = new Type[parameterInfos.Length];
+
+            for (int i = 0; i < parameterInfos.Length; i++)
+            {
+                parameterTypes[i] = parameterInfos[i].GetModifiedParameterType();
+            }
+
+            return parameterTypes;
+        }
+
         private static void WriteReturnTypeCustomModifiers(CustomModifiersEncoder encoder,
             Type[]? requiredModifiers, Type[]? optionalModifiers, ModuleBuilderImpl module)
         {
@@ -120,8 +139,10 @@ namespace System.Reflection.Emit
 
         private static void WriteCustomModifiers(CustomModifiersEncoder encoder, Type[] customModifiers, bool isOptional, ModuleBuilderImpl module)
         {
-            foreach (Type modifier in customModifiers)
+            // GetOptionalCustomModifiers and GetRequiredCustomModifiers return modifiers in reverse order
+            for (int i = customModifiers.Length - 1; i >= 0; i--)
             {
+                Type modifier = customModifiers[i];
                 encoder.AddModifier(module.GetTypeHandle(modifier), isOptional);
             }
         }
@@ -221,14 +242,79 @@ namespace System.Reflection.Emit
             {
                 signature.GenericTypeParameter(type.GenericParameterPosition);
             }
+            else if (type.IsFunctionPointer)
+            {
+                WriteSignatureForFunctionPointerType(signature, type, module);
+            }
             else
             {
                 WriteSimpleSignature(signature, type, module);
             }
         }
 
+        private static void WriteSignatureForFunctionPointerType(SignatureTypeEncoder signature, Type type, ModuleBuilderImpl module)
+        {
+            SignatureCallingConvention callConv = SignatureCallingConvention.Default;
+            FunctionPointerAttributes attribs = FunctionPointerAttributes.None;
+
+            Type returnType = type.GetFunctionPointerReturnType();
+            Type[] paramTypes = type.GetFunctionPointerParameterTypes();
+
+            if (type.IsUnmanagedFunctionPointer)
+            {
+                callConv = SignatureCallingConvention.Unmanaged;
+
+                if (type.GetFunctionPointerCallingConventions() is Type[] conventions && conventions.Length == 1)
+                {
+                    switch (conventions[0].FullName)
+                    {
+                        case "System.Runtime.CompilerServices.CallConvCdecl":
+                            callConv = SignatureCallingConvention.CDecl;
+                            break;
+                        case "System.Runtime.CompilerServices.CallConvStdcall":
+                            callConv = SignatureCallingConvention.StdCall;
+                            break;
+                        case "System.Runtime.CompilerServices.CallConvThiscall":
+                            callConv = SignatureCallingConvention.ThisCall;
+                            break;
+                        case "System.Runtime.CompilerServices.CallConvFastcall":
+                            callConv = SignatureCallingConvention.FastCall;
+                            break;
+                    }
+                }
+            }
+
+            MethodSignatureEncoder sigEncoder = signature.FunctionPointer(callConv, attribs);
+            sigEncoder.Parameters(paramTypes.Length, out ReturnTypeEncoder retTypeEncoder, out ParametersEncoder paramsEncoder);
+
+            CustomModifiersEncoder retModifiersEncoder = retTypeEncoder.CustomModifiers();
+
+            if (returnType.GetOptionalCustomModifiers() is Type[] retModOpts)
+                WriteCustomModifiers(retModifiersEncoder, retModOpts, isOptional: true, module);
+
+            if (returnType.GetRequiredCustomModifiers() is Type[] retModReqs)
+                WriteCustomModifiers(retModifiersEncoder, retModReqs, isOptional: false, module);
+
+            WriteSignatureForType(retTypeEncoder.Type(), returnType, module);
+
+            foreach (Type paramType in paramTypes)
+            {
+                ParameterTypeEncoder paramEncoder = paramsEncoder.AddParameter();
+                CustomModifiersEncoder paramModifiersEncoder = paramEncoder.CustomModifiers();
+
+                if (paramType.GetOptionalCustomModifiers() is Type[] paramModOpts)
+                    WriteCustomModifiers(paramModifiersEncoder, paramModOpts, isOptional: true, module);
+
+                if (paramType.GetRequiredCustomModifiers() is Type[] paramModReqs)
+                    WriteCustomModifiers(paramModifiersEncoder, paramModReqs, isOptional: false, module);
+
+                WriteSignatureForType(paramEncoder.Type(), paramType, module);
+            }
+        }
+
         private static void WriteSimpleSignature(SignatureTypeEncoder signature, Type type, ModuleBuilderImpl module)
         {
+            type = type.UnderlyingSystemType;
             CoreTypeId? typeId = module.GetTypeIdFromCoreTypes(type);
 
             switch (typeId)

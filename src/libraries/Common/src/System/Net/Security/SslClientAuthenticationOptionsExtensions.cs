@@ -29,14 +29,18 @@ namespace System.Net.Security
                 EncryptionPolicy = options.EncryptionPolicy,
                 LocalCertificateSelectionCallback = options.LocalCertificateSelectionCallback,
                 RemoteCertificateValidationCallback = options.RemoteCertificateValidationCallback,
-                TargetHost = options.TargetHost
+                TargetHost = options.TargetHost,
+#pragma warning disable CA1416 // Ignore SupportedOSPlatform checks, the value will be validated at runtime inside SslStream
+                AllowRsaPssPadding = options.AllowRsaPssPadding,
+                AllowRsaPkcs1Padding = options.AllowRsaPkcs1Padding
+#pragma warning restore CA1416
             };
 
 #if DEBUG
             // Try to detect if a property gets added that we're not copying correctly.
             // The property count is guard for new properties that also needs to be added above.
             PropertyInfo[] properties = typeof(SslClientAuthenticationOptions).GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)!;
-            Debug.Assert(properties.Length == 13);
+            Debug.Assert(properties.Length == 15);
             foreach (PropertyInfo pi in properties)
             {
                 object? origValue = pi.GetValue(options);

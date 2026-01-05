@@ -4,16 +4,6 @@
 project(singlefilehost)
 set(DOTNET_PROJECT_NAME "singlefilehost")
 
-# Add RPATH to the apphost binary that allows using local copies of shared libraries
-# dotnet core depends on for special scenarios when system wide installation of such
-# dependencies is not possible for some reason.
-# This cannot be enabled for MacOS (Darwin) since its RPATH works in a different way,
-# doesn't apply to libraries loaded via dlopen and most importantly, it is not transitive.
-if (NOT CLR_CMAKE_TARGET_APPLE)
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-    set(CMAKE_INSTALL_RPATH "\$ORIGIN/netcoredeps")
-endif()
-
 include_directories(..)
 include_directories(../..)
 include_directories(../../hostmisc)
@@ -26,6 +16,8 @@ add_subdirectory(../../hostmisc hostmisc)
 
 configure_file(${CLR_SRC_NATIVE_DIR}/corehost/configure.h.in ${GENERATED_INCLUDE_DIR}/corehost/configure.h)
 target_include_directories(hostmisc_interface INTERFACE ${GENERATED_INCLUDE_DIR}/corehost)
+
+add_compile_definitions(RAPIDJSON_HAS_CXX17)
 
 if ((NOT DEFINED CLR_CMAKE_USE_SYSTEM_RAPIDJSON) OR (NOT CLR_CMAKE_USE_SYSTEM_RAPIDJSON))
     include_directories(${CLR_SRC_NATIVE_DIR}/external/)
@@ -176,10 +168,11 @@ else()
     )
 
     if(NOT CLR_CMAKE_TARGET_ANDROID)
-        list(APPEND NATIVE_LIBS
-            System.Net.Security.Native-Static
-            System.Security.Cryptography.Native.OpenSsl-Static
-        )
+        list(APPEND NATIVE_LIBS System.Net.Security.Native-Static)
+
+        if(NOT CLR_CMAKE_TARGET_APPLE)
+            list(APPEND NATIVE_LIBS System.Security.Cryptography.Native.OpenSsl-Static)
+        endif()
     else()
         list(APPEND NATIVE_LIBS
             System.Security.Cryptography.Native.Android-Static
@@ -195,7 +188,7 @@ else()
         LIST(APPEND NATIVE_LIBS
             eventprovider
         )
-    endif(FEATURE_EVENT_TRACE) 
+    endif(FEATURE_EVENT_TRACE)
     LIST(APPEND NATIVE_LIBS
         nativeresourcestring
     )
@@ -214,7 +207,7 @@ else()
     include(${CLR_SRC_NATIVE_DIR}/libs/System.Native/extra_libs.cmake)
     append_extra_system_libs(NATIVE_LIBS)
 
-    if(NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
+    if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
         # Additional requirements for System.Security.Cryptography.Native.OpenSsl
         include(${CLR_SRC_NATIVE_DIR}/libs/System.Security.Cryptography.Native/extra_libs.cmake)
         append_extra_cryptography_libs(NATIVE_LIBS)
@@ -223,6 +216,10 @@ else()
     set(RUNTIMEINFO_LIB runtimeinfo)
 
 endif()
+
+LIST(APPEND NATIVE_LIBS
+    gcinfo
+)
 
 if(CLR_CMAKE_TARGET_APPLE)
     LIST(APPEND NATIVE_LIBS
@@ -309,3 +306,7 @@ target_link_libraries(
 target_link_libraries(singlefilehost PRIVATE hostmisc)
 
 add_sanitizer_runtime_support(singlefilehost)
+
+if (CLR_CMAKE_HOST_APPLE)
+    adhoc_sign_with_entitlements(singlefilehost "${CLR_ENG_NATIVE_DIR}/entitlements.plist")
+endif()

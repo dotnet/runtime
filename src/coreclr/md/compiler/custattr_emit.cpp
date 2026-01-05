@@ -1001,10 +1001,6 @@ ErrExit:
 
 //*****************************************************************************
 //*****************************************************************************
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
     mdToken     tkObj,                  // [IN] Object being attributed.
     const void  *pData,                 // [IN] Custom Attribute data blob.
@@ -1025,7 +1021,7 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
     CQuickArray<BYTE>       qNativeType;// Native type string.
 
     _ASSERTE(ixCa > 0 && ixCa < CA_COUNT);
-    *bKeep = props->bKeepCa || m_bKeepKnownCa;
+    *bKeep = props->bKeepCa;
 
     // Validate that target is valid for attribute.
     tkObjType = TypeFromToken(tkObj);
@@ -1353,6 +1349,9 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         case 0: // tdSequentialLayout:
             dwFlags = (dwFlags & ~tdLayoutMask) | tdSequentialLayout;
             break;
+        case 1: // tdExtendedLayout:
+            dwFlags = (dwFlags & ~tdLayoutMask) | tdExtendedLayout;
+            break;
         case 2: // tdExplicitLayout:
             dwFlags = (dwFlags & ~tdLayoutMask) | tdExplicitLayout;
             break;
@@ -1448,16 +1447,9 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
 ErrExit:
     return hr;
 } // RegMeta::_HandleKnownCustomAttribute
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //*****************************************************************************
 //*****************************************************************************
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 HRESULT RegMeta::_HandleNativeTypeCustomAttribute(// S_OK or error.
     mdToken     tkObj,                  // The token this CA is applied on.
     CaArg       *pArgs,                 // Pointer to args.
@@ -1983,9 +1975,6 @@ ErrExit:
         CloseEnum(phEnum);
     return hr;
 } // RegMeta::_HandleNativeTypeCustomAttribute
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 #endif // !FEATURE_METADATA_EMIT_IN_DEBUGGER
 

@@ -44,18 +44,9 @@ namespace System.Composition
 
         private static void SatisfyImportsInternal(this CompositionContext exportProvider, object objectWithLooseImports, AttributedModelProvider conventions)
         {
-            if (exportProvider is null)
-            {
-                throw new ArgumentNullException(nameof(exportProvider));
-            }
-            if (objectWithLooseImports is null)
-            {
-                throw new ArgumentNullException(nameof(objectWithLooseImports));
-            }
-            if (conventions is null)
-            {
-                throw new ArgumentNullException(nameof(conventions));
-            }
+            ArgumentNullException.ThrowIfNull(exportProvider);
+            ArgumentNullException.ThrowIfNull(objectWithLooseImports);
+            ArgumentNullException.ThrowIfNull(conventions);
 
             var objType = objectWithLooseImports.GetType();
 

@@ -60,10 +60,6 @@ inline DebuggerModule::DebuggerModule(Module *      pRuntimeModule,
     LOG((LF_CORDB,LL_INFO10000, "DM::DM this:0x%x Module:0x%x DF:0x%x\n",
         this, pRuntimeModule, pDomainAssembly));
 
-    // Do we have any optimized code?
-    DWORD dwDebugBits = pRuntimeModule->GetDebuggerInfoBits();
-    m_fHasOptimizedCode = CORDebuggerAllowJITOpts(dwDebugBits);
-
     // Dynamic modules must receive ClassLoad callbacks in order to receive metadata updates as the module
     // evolves. So we force this on here and refuse to change it for all dynamic modules.
     if (pRuntimeModule->IsReflectionEmit())
@@ -83,8 +79,7 @@ inline bool DebuggerModule::HasAnyOptimizedCode()
 {
     LIMITED_METHOD_CONTRACT;
     Module * pModule = GetRuntimeModule();
-    DWORD dwDebugBits = pModule->GetDebuggerInfoBits();
-    return CORDebuggerAllowJITOpts(dwDebugBits);
+    return !pModule->AreJITOptimizationsDisabled();
 }
 
 //-----------------------------------------------------------------------------

@@ -91,7 +91,7 @@ namespace System.IO.Ports
                     int baudRateOld = (int)_dcb.BaudRate;
                     _dcb.BaudRate = (uint)value;
 
-                    if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
+                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
                     {
                         _dcb.BaudRate = (uint)baudRateOld;
                         throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -107,13 +107,13 @@ namespace System.IO.Ports
             {
                 if (value)
                 {
-                    if (Interop.Kernel32.SetCommBreak(_handle) == false)
+                    if (!Interop.Kernel32.SetCommBreak(_handle))
                         throw Win32Marshal.GetExceptionForLastWin32Error();
                     _inBreak = true;
                 }
                 else
                 {
-                    if (Interop.Kernel32.ClearCommBreak(_handle) == false)
+                    if (!Interop.Kernel32.ClearCommBreak(_handle))
                         throw Win32Marshal.GetExceptionForLastWin32Error();
                     _inBreak = false;
                 }
@@ -130,7 +130,7 @@ namespace System.IO.Ports
                     byte byteSizeOld = _dcb.ByteSize;
                     _dcb.ByteSize = (byte)value;
 
-                    if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
+                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
                     {
                         _dcb.ByteSize = byteSizeOld;
                         throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -149,7 +149,7 @@ namespace System.IO.Ports
                     int fNullOld = fNullFlag;
                     SetDcbFlag(Interop.Kernel32.DCBFlags.FNULL, value ? 1 : 0);
 
-                    if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
+                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
                     {
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FNULL, fNullOld);
                         throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -172,7 +172,7 @@ namespace System.IO.Ports
                 int fDtrControlOld = GetDcbFlag(Interop.Kernel32.DCBFlags.FDTRCONTROL);
 
                 SetDcbFlag(Interop.Kernel32.DCBFlags.FDTRCONTROL, value ? Interop.Kernel32.DCBDTRFlowControl.DTR_CONTROL_ENABLE : Interop.Kernel32.DCBDTRFlowControl.DTR_CONTROL_DISABLE);
-                if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
+                if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
                 {
                     SetDcbFlag(Interop.Kernel32.DCBFlags.FDTRCONTROL, fDtrControlOld);
                     throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -222,7 +222,7 @@ namespace System.IO.Ports
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL, Interop.Kernel32.DCBRTSFlowControl.RTS_CONTROL_DISABLE);
                     }
 
-                    if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
+                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
                     {
                         _handshake = handshakeOld;
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FINX, fInOutXOld);
@@ -268,7 +268,7 @@ namespace System.IO.Ports
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FERRORCHAR, 0);
                         _dcb.ErrorChar = (byte)'\0';
                     }
-                    if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
+                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
                     {
                         _dcb.Parity = parityOld;
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FPARITY, fParityOld);
@@ -307,7 +307,7 @@ namespace System.IO.Ports
                         _dcb.ErrorChar = (byte)'\0';
                     }
 
-                    if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
+                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
                     {
                         _parityReplace = parityReplaceOld;
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FERRORCHAR, fErrorCharOld);
@@ -373,7 +373,7 @@ namespace System.IO.Ports
                     _commTimeouts.ReadIntervalTimeout = Interop.Kernel32.MAXDWORD;
                 }
 
-                if (Interop.Kernel32.SetCommTimeouts(_handle, ref _commTimeouts) == false)
+                if (!Interop.Kernel32.SetCommTimeouts(_handle, ref _commTimeouts))
                 {
                     _commTimeouts.ReadTotalTimeoutConstant = oldReadConstant;
                     _commTimeouts.ReadTotalTimeoutMultiplier = oldReadMultiplier;
@@ -408,7 +408,7 @@ namespace System.IO.Ports
                     else
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL, Interop.Kernel32.DCBRTSFlowControl.RTS_CONTROL_DISABLE);
 
-                    if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
+                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
                     {
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL, fRtsControlOld);
                         // set it back to the old value on a failure
@@ -448,7 +448,7 @@ namespace System.IO.Ports
                     byte stopBitsOld = _dcb.StopBits;
                     _dcb.StopBits = nativeValue;
 
-                    if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
+                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
                     {
                         _dcb.StopBits = stopBitsOld;
                         throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -475,7 +475,7 @@ namespace System.IO.Ports
                 int oldWriteConstant = _commTimeouts.WriteTotalTimeoutConstant;
                 _commTimeouts.WriteTotalTimeoutConstant = ((value == SerialPort.InfiniteTimeout) ? 0 : value);
 
-                if (Interop.Kernel32.SetCommTimeouts(_handle, ref _commTimeouts) == false)
+                if (!Interop.Kernel32.SetCommTimeouts(_handle, ref _commTimeouts))
                 {
                     _commTimeouts.WriteTotalTimeoutConstant = oldWriteConstant;
                     throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -491,7 +491,7 @@ namespace System.IO.Ports
             get
             {
                 int pinStatus = 0;
-                if (Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus) == false)
+                if (!Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus))
                     throw Win32Marshal.GetExceptionForLastWin32Error();
 
                 return (Interop.Kernel32.CommModemState.MS_RLSD_ON & pinStatus) != 0;
@@ -503,7 +503,7 @@ namespace System.IO.Ports
             get
             {
                 int pinStatus = 0;
-                if (Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus) == false)
+                if (!Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus))
                     throw Win32Marshal.GetExceptionForLastWin32Error();
                 return (Interop.Kernel32.CommModemState.MS_CTS_ON & pinStatus) != 0;
             }
@@ -515,7 +515,7 @@ namespace System.IO.Ports
             get
             {
                 int pinStatus = 0;
-                if (Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus) == false)
+                if (!Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus))
                     throw Win32Marshal.GetExceptionForLastWin32Error();
 
                 return (Interop.Kernel32.CommModemState.MS_DSR_ON & pinStatus) != 0;
@@ -530,7 +530,7 @@ namespace System.IO.Ports
             get
             {
                 int errorCode = 0; // "ref" arguments need to have values, as opposed to "out" arguments
-                if (Interop.Kernel32.ClearCommError(_handle, ref errorCode, ref _comStat) == false)
+                if (!Interop.Kernel32.ClearCommError(_handle, ref errorCode, ref _comStat))
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
@@ -545,7 +545,7 @@ namespace System.IO.Ports
             get
             {
                 int errorCode = 0; // "ref" arguments need to be set before method invocation, as opposed to "out" arguments
-                if (Interop.Kernel32.ClearCommError(_handle, ref errorCode, ref _comStat) == false)
+                if (!Interop.Kernel32.ClearCommError(_handle, ref errorCode, ref _comStat))
                     throw Win32Marshal.GetExceptionForLastWin32Error();
                 return (int)_comStat.cbOutQue;
 
@@ -672,7 +672,7 @@ namespace System.IO.Ports
                 _commTimeouts.WriteTotalTimeoutConstant = ((writeTimeout == SerialPort.InfiniteTimeout) ? 0 : writeTimeout);
 
                 // set unmanaged timeout structure
-                if (Interop.Kernel32.SetCommTimeouts(_handle, ref _commTimeouts) == false)
+                if (!Interop.Kernel32.SetCommTimeouts(_handle, ref _commTimeouts))
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
@@ -839,14 +839,14 @@ namespace System.IO.Ports
         internal void DiscardInBuffer()
         {
 
-            if (Interop.Kernel32.PurgeComm(_handle, Interop.Kernel32.PurgeFlags.PURGE_RXCLEAR | Interop.Kernel32.PurgeFlags.PURGE_RXABORT) == false)
+            if (!Interop.Kernel32.PurgeComm(_handle, Interop.Kernel32.PurgeFlags.PURGE_RXCLEAR | Interop.Kernel32.PurgeFlags.PURGE_RXABORT))
                 throw Win32Marshal.GetExceptionForLastWin32Error();
         }
 
         // Uses Win32 method to dump out the xmit buffer; analogous to MSComm's "OutBufferCount = 0"
         internal void DiscardOutBuffer()
         {
-            if (Interop.Kernel32.PurgeComm(_handle, Interop.Kernel32.PurgeFlags.PURGE_TXCLEAR | Interop.Kernel32.PurgeFlags.PURGE_TXABORT) == false)
+            if (!Interop.Kernel32.PurgeComm(_handle, Interop.Kernel32.PurgeFlags.PURGE_TXCLEAR | Interop.Kernel32.PurgeFlags.PURGE_TXABORT))
                 throw Win32Marshal.GetExceptionForLastWin32Error();
         }
 
@@ -1148,7 +1148,7 @@ namespace System.IO.Ports
         private unsafe void InitializeDCB(int baudRate, Parity parity, int dataBits, StopBits stopBits, bool discardNull)
         {
             // first get the current dcb structure setup
-            if (Interop.Kernel32.GetCommState(_handle, ref _dcb) == false)
+            if (!Interop.Kernel32.GetCommState(_handle, ref _dcb))
             {
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             }
@@ -1241,7 +1241,7 @@ namespace System.IO.Ports
             _dcb.EvtChar = Interop.Kernel32.DCB.EOFCHAR;
 
             // set DCB structure
-            if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
+            if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
             {
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             }
@@ -1600,7 +1600,7 @@ namespace System.IO.Ports
 
                     fixed (int* eventsOccurredPtr = &eventsOccurred)
                     {
-                        if (Interop.Kernel32.WaitCommEvent(handle, eventsOccurredPtr, intOverlapped) == false)
+                        if (!Interop.Kernel32.WaitCommEvent(handle, eventsOccurredPtr, intOverlapped))
                         {
                             int hr = Marshal.GetLastPInvokeError();
 
@@ -1683,7 +1683,7 @@ namespace System.IO.Ports
                 if ((nativeEvents & (Interop.Kernel32.CommEvents.EV_ERR | Interop.Kernel32.CommEvents.EV_RXCHAR)) != 0)
                 {
                     int errors = 0;
-                    if (Interop.Kernel32.ClearCommError(handle, ref errors, IntPtr.Zero) == false)
+                    if (!Interop.Kernel32.ClearCommError(handle, ref errors, IntPtr.Zero))
                     {
 
                         //throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -1729,42 +1729,37 @@ namespace System.IO.Ports
             {
                 int errors = (int)state;
                 SerialStream stream = (SerialStream)streamWeakReference.Target;
-                if (stream == null)
+                if (stream is null)
                     return;
 
-                if (stream.ErrorReceived != null)
-                {
-                    if ((errors & (int)SerialError.TXFull) != 0)
-                        stream.ErrorReceived(stream, new SerialErrorReceivedEventArgs(SerialError.TXFull));
+                if ((errors & (int)SerialError.TXFull) != 0)
+                    stream.ErrorReceived?.Invoke(stream, new SerialErrorReceivedEventArgs(SerialError.TXFull));
 
-                    if ((errors & (int)SerialError.RXOver) != 0)
-                        stream.ErrorReceived(stream, new SerialErrorReceivedEventArgs(SerialError.RXOver));
+                if ((errors & (int)SerialError.RXOver) != 0)
+                    stream.ErrorReceived?.Invoke(stream, new SerialErrorReceivedEventArgs(SerialError.RXOver));
 
-                    if ((errors & (int)SerialError.Overrun) != 0)
-                        stream.ErrorReceived(stream, new SerialErrorReceivedEventArgs(SerialError.Overrun));
+                if ((errors & (int)SerialError.Overrun) != 0)
+                    stream.ErrorReceived?.Invoke(stream, new SerialErrorReceivedEventArgs(SerialError.Overrun));
 
-                    if ((errors & (int)SerialError.RXParity) != 0)
-                        stream.ErrorReceived(stream, new SerialErrorReceivedEventArgs(SerialError.RXParity));
+                if ((errors & (int)SerialError.RXParity) != 0)
+                    stream.ErrorReceived?.Invoke(stream, new SerialErrorReceivedEventArgs(SerialError.RXParity));
 
-                    if ((errors & (int)SerialError.Frame) != 0)
-                        stream.ErrorReceived(stream, new SerialErrorReceivedEventArgs(SerialError.Frame));
-                }
+                if ((errors & (int)SerialError.Frame) != 0)
+                    stream.ErrorReceived?.Invoke(stream, new SerialErrorReceivedEventArgs(SerialError.Frame));
             }
 
             private void CallReceiveEvents(object state)
             {
                 int nativeEvents = (int)state;
                 SerialStream stream = (SerialStream)streamWeakReference.Target;
-                if (stream == null)
+                if (stream is null)
                     return;
 
-                if (stream.DataReceived != null)
-                {
-                    if ((nativeEvents & (int)SerialData.Chars) != 0)
-                        stream.DataReceived(stream, new SerialDataReceivedEventArgs(SerialData.Chars));
-                    if ((nativeEvents & (int)SerialData.Eof) != 0)
-                        stream.DataReceived(stream, new SerialDataReceivedEventArgs(SerialData.Eof));
-                }
+                if ((nativeEvents & (int)SerialData.Chars) != 0)
+                    stream.DataReceived?.Invoke(stream, new SerialDataReceivedEventArgs(SerialData.Chars));
+
+                if ((nativeEvents & (int)SerialData.Eof) != 0)
+                    stream.DataReceived?.Invoke(stream, new SerialDataReceivedEventArgs(SerialData.Eof));
             }
 
             private void CallPinEvents(object state)
@@ -1772,26 +1767,23 @@ namespace System.IO.Ports
                 int nativeEvents = (int)state;
 
                 SerialStream stream = (SerialStream)streamWeakReference.Target;
-                if (stream == null)
+                if (stream is null)
                     return;
 
-                if (stream.PinChanged != null)
-                {
-                    if ((nativeEvents & (int)SerialPinChange.CtsChanged) != 0)
-                        stream.PinChanged(stream, new SerialPinChangedEventArgs(SerialPinChange.CtsChanged));
+                if ((nativeEvents & (int)SerialPinChange.CtsChanged) != 0)
+                    stream.PinChanged?.Invoke(stream, new SerialPinChangedEventArgs(SerialPinChange.CtsChanged));
 
-                    if ((nativeEvents & (int)SerialPinChange.DsrChanged) != 0)
-                        stream.PinChanged(stream, new SerialPinChangedEventArgs(SerialPinChange.DsrChanged));
+                if ((nativeEvents & (int)SerialPinChange.DsrChanged) != 0)
+                    stream.PinChanged?.Invoke(stream, new SerialPinChangedEventArgs(SerialPinChange.DsrChanged));
 
-                    if ((nativeEvents & (int)SerialPinChange.CDChanged) != 0)
-                        stream.PinChanged(stream, new SerialPinChangedEventArgs(SerialPinChange.CDChanged));
+                if ((nativeEvents & (int)SerialPinChange.CDChanged) != 0)
+                    stream.PinChanged?.Invoke(stream, new SerialPinChangedEventArgs(SerialPinChange.CDChanged));
 
-                    if ((nativeEvents & (int)SerialPinChange.Ring) != 0)
-                        stream.PinChanged(stream, new SerialPinChangedEventArgs(SerialPinChange.Ring));
+                if ((nativeEvents & (int)SerialPinChange.Ring) != 0)
+                    stream.PinChanged?.Invoke(stream, new SerialPinChangedEventArgs(SerialPinChange.Ring));
 
-                    if ((nativeEvents & (int)SerialPinChange.Break) != 0)
-                        stream.PinChanged(stream, new SerialPinChangedEventArgs(SerialPinChange.Break));
-                }
+                if ((nativeEvents & (int)SerialPinChange.Break) != 0)
+                    stream.PinChanged?.Invoke(stream, new SerialPinChangedEventArgs(SerialPinChange.Break));
             }
 
         }

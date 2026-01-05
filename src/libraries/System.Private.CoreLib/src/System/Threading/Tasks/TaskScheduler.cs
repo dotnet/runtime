@@ -219,12 +219,6 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Indicates whether this is a custom scheduler, in which case the safe code paths will be taken upon task entry
-        /// using a CAS to transition from queued state to executing.
-        /// </summary>
-        internal virtual bool RequiresAtomicStartTransition => true;
-
-        /// <summary>
         /// Calls QueueTask() after performing any needed firing of events
         /// </summary>
         internal void InternalQueueTask(Task task)

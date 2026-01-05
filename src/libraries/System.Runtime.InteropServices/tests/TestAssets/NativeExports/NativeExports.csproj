@@ -7,24 +7,23 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <DnneAddGeneratedBinaryToProject>true</DnneAddGeneratedBinaryToProject>
     <DnneGenRollForward>Major</DnneGenRollForward>
-    <!-- NativeExports should use the live built apphost. We need to define a dependency
-         to the apphost to make sure that it is built before this project invokes DNNE. -->
-    <UseLocalAppHostPack>false</UseLocalAppHostPack>
     <!-- To integrate with DNNE's architecture calculation, we need to set the RID for this project. -->
-    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
-    <AppHostRuntimeIdentifier>$(PackageRID)</AppHostRuntimeIdentifier>
+    <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
+    <!-- Set the apphost RID so we download the apphost pack if needed. -->
+    <AppHostRuntimeIdentifier>$(TargetRid)</AppHostRuntimeIdentifier>
+    <UseLocalAppHostPack>true</UseLocalAppHostPack>
+    <!-- Don't use the local apphost pack on Windows as matching linker configurations is difficult. -->
+    <UseLocalAppHostPack Condition="'$(TargetOS)' == 'windows'">false</UseLocalAppHostPack>
     <_TargetsAppleOS Condition="'$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst' or
       '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'iossimulator' or
       '$(TargetOS)' == 'tvossimulator'">true</_TargetsAppleOS>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\TestAssets\SharedTypes\ComInterfaces\**\*.cs" Link="ComInterfaceGenerator\ComInterfaces\%(RecursiveDir)\%(FileName).cs" />
+    <Compile Include="..\..\Common\ComInterfaces\**\*.cs" Link="ComInterfaceGenerator\ComInterfaces\%(RecursiveDir)\%(FileName).cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
   </ItemGroup>
 
-  <!-- Until we use the live app host, use a prebuilt from the SDK.
-       Issue: https://github.com/dotnet/runtime/issues/58109. -->
   <ItemGroup Condition="'$(UseLocalAppHostPack)' != 'true' and '$(NetCoreAppToolCurrent)' != '$(NetCoreAppCurrent)'">
     <KnownAppHostPack Include="@(KnownAppHostPack->WithMetadataValue('Identity', 'Microsoft.NETCore.App')->WithMetadataValue('TargetFramework', '$(NetCoreAppToolCurrent)'))"
                       TargetFramework="$(NetCoreAppCurrent)" />
@@ -83,7 +82,7 @@
     </XmlPeek>
 
     <PropertyGroup>
-      <CommonToolchainArgs>--target=$(TargetTriple) --gcc-toolchain=$(ROOTFS_DIR)/usr --sysroot=$(ROOTFS_DIR)</CommonToolchainArgs>
+      <CommonToolchainArgs>--target=$(TargetTriple) --sysroot=$(ROOTFS_DIR)</CommonToolchainArgs>
       <DnneLinkerUserFlags>$(CommonToolchainArgs) $(DnneLinkerCommand) $(DnneLinkerUserFlags.Replace(';',' '))</DnneLinkerUserFlags>
       <DnneCompilerUserFlags>$(CommonToolchainArgs) $(DnneCompilerUserFlags.Replace(';',' '))</DnneCompilerUserFlags>
     </PropertyGroup>
@@ -119,12 +118,20 @@
 
   <Target Name="GetBuildArgumentsForDNNE"
           DependsOnTargets="ResolveFrameworkReferences;
+                            UpdateLocalAppHostPack;
                             GetUnixBuildArgumentsForDNNE;
                             GetAppleBuildArgumentsForDNNE;
                             GetUnixCrossBuildArgumentsForDNNE"
           BeforeTargets="DnneBuildNativeExports">
     <PropertyGroup>
       <DnneNetHostDir>$([System.IO.Path]::GetDirectoryName('$(AppHostSourcePath)'))</DnneNetHostDir>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="SetRidGraphPath"
+          BeforeTargets="ProcessFrameworkReferences">
+    <PropertyGroup>
+      <RuntimeIdentifierGraphPath Condition="'$(UseBootstrap)' == 'true'">$([MSBuild]::NormalizePath('$(BootstrapRidGraphDir)', 'runtime.json'))</RuntimeIdentifierGraphPath>
     </PropertyGroup>
   </Target>
 </Project>

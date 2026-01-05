@@ -99,9 +99,6 @@ struct RCW
 
     static CreationFlags CreationFlagsFromObjForComIPFlags(ObjFromComIP::flags flags);
 
-    // List of RCW instances that have been freed since the last RCW cleanup.
-    static SLIST_HEADER s_RCWStandbyList;
-
     // Simple read-only iterator for all cached interface pointers.
     class CachedInterfaceEntryIterator
     {
@@ -161,9 +158,6 @@ struct RCW
         ZeroMemory(this, sizeof(*this));
     }
 
-    // Deletes all items in code:s_RCWStandbyList.
-    static void FlushStandbyList();
-
     // Create a new wrapper for given IUnk, IDispatch
     static RCW* CreateRCW(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodTable *pClassMT);
 
@@ -195,27 +189,6 @@ struct RCW
     // called during GC to do minor cleanup and schedule the ips to be
     // released
     void MinorCleanup();
-
-    //-----------------------------------------------------
-    // The amount of GC pressure we apply has one of a few possible values.
-    // We save space in the RCW structure by tracking this instead of the
-    // actual value.
-    enum GCPressureSize
-    {
-        GCPressureSize_None         = 0,
-        GCPressureSize_ProcessLocal = 1,
-        GCPressureSize_MachineLocal = 2,
-        GCPressureSize_Remote       = 3,
-        GCPressureSize_COUNT        = 4
-    };
-
-    //---------------------------------------------------
-    // Add memory pressure to the GC representing the native cost
-    void AddMemoryPressure(GCPressureSize pressureSize);
-
-    //---------------------------------------------------
-    // Remove memory pressure from the GC representing the native cost
-    void RemoveMemoryPressure();
 
     //-----------------------------------------------------
     // AddRef
@@ -489,20 +462,11 @@ struct RCW
 
         if (InterlockedDecrement(&m_cbUseCount) == 0)
         {
-            // this was the final decrement, go ahead and delete/recycle the RCW
-            {
-                GCX_PREEMP();
-                m_UnkEntry.Free();
-            }
+            // this was the final decrement, go ahead and delete the RCW
+            GCX_PREEMP();
+            m_UnkEntry.Free();
 
-            if (g_fEEShutDown)
-            {
-                delete this;
-            }
-            else
-            {
-                InterlockedPushEntrySList(&RCW::s_RCWStandbyList, (PSLIST_ENTRY)this);
-            }
+            delete this;
         }
     }
 
@@ -553,9 +517,6 @@ public:
             DWORD       m_fURTContained:1;         // this RCW represents a COM object contained by a managed object
             DWORD       m_fAllowEagerSTACleanup:1; // this RCW can be cleaned up eagerly (as opposed to via CleanupUnusedObjectsInCurrentContext)
 
-            static_assert((1 << 3) >= GCPressureSize_COUNT, "m_GCPressure needs a bigger data type");
-            DWORD       m_GCPressure:3;            // index into s_rGCPressureTable
-
             // Reserve 2 bits for marshaling type
             DWORD       m_MarshalingType:2;        // Marshaling type of the COM object.
 
@@ -565,9 +526,6 @@ public:
     m_Flags;
 
     static_assert(sizeof(RCWFlags) == 4, "Flags don't fit in 4 bytes, there's too many of them");
-
-    // GC pressure sizes in bytes
-    static const int s_rGCPressureTable[GCPressureSize_COUNT];
 
     // Tracks concurrent access to this RCW to prevent using RCW instances that have already been released
     LONG                m_cbUseCount;
@@ -648,7 +606,7 @@ inline RCW::CreationFlags RCW::CreationFlagsFromObjForComIPFlags(ObjFromComIP::f
 {
     LIMITED_METHOD_CONTRACT;
 
-    static_assert_no_msg(CF_NeedUniqueObject     == ObjFromComIP::UNIQUE_OBJECT);
+    static_assert(CF_NeedUniqueObject     == ObjFromComIP::UNIQUE_OBJECT);
 
     RCW::CreationFlags result = (RCW::CreationFlags)(dwFlags &
                                         (ObjFromComIP::UNIQUE_OBJECT));

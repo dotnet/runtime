@@ -67,7 +67,7 @@ namespace Microsoft.Extensions.Configuration.Json
                 index++;
             }
 
-            SetNullIfElementIsEmpty(isEmpty: index == 0);
+            SetEmptyIfElementIsEmpty(isEmpty: index == 0);
         }
 
         private void SetNullIfElementIsEmpty(bool isEmpty)
@@ -75,6 +75,14 @@ namespace Microsoft.Extensions.Configuration.Json
             if (isEmpty && _paths.Count > 0)
             {
                 _data[_paths.Peek()] = null;
+            }
+        }
+
+        private void SetEmptyIfElementIsEmpty(bool isEmpty)
+        {
+            if (isEmpty && _paths.Count > 0)
+            {
+                _data[_paths.Peek()] = string.Empty;
             }
         }
 
@@ -102,7 +110,7 @@ namespace Microsoft.Extensions.Configuration.Json
                     {
                         throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key));
                     }
-                    _data[key] = value.ToString();
+                    _data[key] = value.ValueKind == JsonValueKind.Null ? null : value.ToString();
                     break;
 
                 default:

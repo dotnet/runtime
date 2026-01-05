@@ -4,33 +4,33 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.LinkXml
 {
-	[SetupLinkerDescriptorFile ("UnusedFieldPreservedByLinkXmlIsKept.xml")]
-	class UnusedFieldPreservedByLinkXmlIsKept
-	{
-		public static void Main ()
-		{
-		}
+    [SetupLinkerDescriptorFile("UnusedFieldPreservedByLinkXmlIsKept.xml")]
+    class UnusedFieldPreservedByLinkXmlIsKept
+    {
+        public static void Main()
+        {
+        }
 
-		[Kept]
-		class Unused
-		{
-			[Kept]
-			private int _preserved;
+        [Kept]
+        class Unused
+        {
+            [Kept]
+            private int _preserved;
 
-			[Kept]
-			private int _preserved2;
+            [Kept]
+            private int _preserved2;
 
-			[Kept]
-			private List<int> _preserved3;
+            [Kept]
+            private List<int> _preserved3;
 
-			private int _notPreserved;
-		}
+            private int _notPreserved;
+        }
 
-		[Kept]
-		class UnusedWithGenerics<T>
-		{
-			[Kept]
-			private List<T> _preserved1;
-		}
-	}
+        [Kept]
+        class UnusedWithGenerics<T>
+        {
+            [Kept]
+            private List<T> _preserved1;
+        }
+    }
 }

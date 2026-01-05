@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.Logging.Test
 
             services.AddLogging(builder => builder.ClearProviders());
 
-            Assert.Empty(services.Where(desctriptor => desctriptor.ServiceType == typeof(ILoggerProvider)));
+            Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(ILoggerProvider));
         }
     }
 }

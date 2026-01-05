@@ -22,6 +22,9 @@
  * IN assertions: cur_match is the head of the hash chain for the current
  * string (strstart) and its distance is <= MAX_DIST, and prev_length >=1
  * OUT assertion: the match length is not greater than s->lookahead
+ *
+ * The LONGEST_MATCH_SLOW variant spends more time to attempt to find longer
+ * matches once a match has already been found.
  */
 Z_INTERNAL uint32_t LONGEST_MATCH(deflate_state *const s, Pos cur_match) {
     unsigned int strstart = s->strstart;
@@ -40,10 +43,8 @@ Z_INTERNAL uint32_t LONGEST_MATCH(deflate_state *const s, Pos cur_match) {
     uint32_t chain_length, nice_match, best_len, offset;
     uint32_t lookahead = s->lookahead;
     Pos match_offset = 0;
-#ifdef UNALIGNED_OK
-    uint8_t scan_start[8];
-#endif
-    uint8_t scan_end[8];
+    uint64_t scan_start;
+    uint64_t scan_end;
 
 #define GOTO_NEXT_CHAIN \
     if (--chain_length && (cur_match = prev[cur_match & wmask]) > limit) \
@@ -59,26 +60,14 @@ Z_INTERNAL uint32_t LONGEST_MATCH(deflate_state *const s, Pos cur_match) {
      * to find the next best match length.
      */
     offset = best_len-1;
-#ifdef UNALIGNED_OK
     if (best_len >= sizeof(uint32_t)) {
         offset -= 2;
-#ifdef UNALIGNED64_OK
         if (best_len >= sizeof(uint64_t))
             offset -= 4;
-#endif
     }
-#endif
 
-#ifdef UNALIGNED64_OK
-    memcpy(scan_start, scan, sizeof(uint64_t));
-    memcpy(scan_end, scan+offset, sizeof(uint64_t));
-#elif defined(UNALIGNED_OK)
-    memcpy(scan_start, scan, sizeof(uint32_t));
-    memcpy(scan_end, scan+offset, sizeof(uint32_t));
-#else
-    scan_end[0] = *(scan+offset);
-    scan_end[1] = *(scan+offset+1);
-#endif
+    scan_start = zng_memread_8(scan);
+    scan_end = zng_memread_8(scan+offset);
     mbase_end  = (mbase_start+offset);
 
     /* Do not waste too much time if we already have a good match */
@@ -138,39 +127,28 @@ Z_INTERNAL uint32_t LONGEST_MATCH(deflate_state *const s, Pos cur_match) {
          * that depend on those values. However the length of the match is limited to the
          * lookahead, so the output of deflate is not affected by the uninitialized values.
          */
-#ifdef UNALIGNED_OK
         if (best_len < sizeof(uint32_t)) {
             for (;;) {
-                if (zng_memcmp_2(mbase_end+cur_match, scan_end) == 0 &&
-                    zng_memcmp_2(mbase_start+cur_match, scan_start) == 0)
+                if (zng_memcmp_2(mbase_end+cur_match, &scan_end) == 0 &&
+                    zng_memcmp_2(mbase_start+cur_match, &scan_start) == 0)
                     break;
                 GOTO_NEXT_CHAIN;
             }
-#  ifdef UNALIGNED64_OK
         } else if (best_len >= sizeof(uint64_t)) {
             for (;;) {
-                if (zng_memcmp_8(mbase_end+cur_match, scan_end) == 0 &&
-                    zng_memcmp_8(mbase_start+cur_match, scan_start) == 0)
+                if (zng_memcmp_8(mbase_end+cur_match, &scan_end) == 0 &&
+                    zng_memcmp_8(mbase_start+cur_match, &scan_start) == 0)
                     break;
                 GOTO_NEXT_CHAIN;
             }
-#  endif
         } else {
             for (;;) {
-                if (zng_memcmp_4(mbase_end+cur_match, scan_end) == 0 &&
-                    zng_memcmp_4(mbase_start+cur_match, scan_start) == 0)
+                if (zng_memcmp_4(mbase_end+cur_match, &scan_end) == 0 &&
+                    zng_memcmp_4(mbase_start+cur_match, &scan_start) == 0)
                     break;
                 GOTO_NEXT_CHAIN;
             }
         }
-#else
-        for (;;) {
-            if (mbase_end[cur_match] == scan_end[0] && mbase_end[cur_match+1] == scan_end[1] &&
-                mbase_start[cur_match] == scan[0] && mbase_start[cur_match+1] == scan[1])
-                break;
-            GOTO_NEXT_CHAIN;
-        }
-#endif
         uint32_t len = COMPARE256(scan+2, mbase_start+cur_match+2) + 2;
         Assert(scan+len <= window+(unsigned)(s->window_size-1), "wild scan");
 
@@ -186,24 +164,13 @@ Z_INTERNAL uint32_t LONGEST_MATCH(deflate_state *const s, Pos cur_match) {
                 return best_len;
 
             offset = best_len-1;
-#ifdef UNALIGNED_OK
             if (best_len >= sizeof(uint32_t)) {
                 offset -= 2;
-#ifdef UNALIGNED64_OK
                 if (best_len >= sizeof(uint64_t))
                     offset -= 4;
-#endif
             }
-#endif
 
-#ifdef UNALIGNED64_OK
-            memcpy(scan_end, scan+offset, sizeof(uint64_t));
-#elif defined(UNALIGNED_OK)
-            memcpy(scan_end, scan+offset, sizeof(uint32_t));
-#else
-            scan_end[0] = *(scan+offset);
-            scan_end[1] = *(scan+offset+1);
-#endif
+            scan_end = zng_memread_8(scan+offset);
 
 #ifdef LONGEST_MATCH_SLOW
             /* Look for a better string offset */
@@ -281,4 +248,3 @@ break_matching:
 
 #undef LONGEST_MATCH_SLOW
 #undef LONGEST_MATCH
-#undef COMPARE256

@@ -16,7 +16,7 @@ public abstract record RunOptions
     bool AOT = false,
     RunHost Host = RunHost.DotnetRun,
     bool DetectRuntimeFailures = true,
-    
+
     Dictionary<string, string>? ServerEnvironment = null,
     NameValueCollection? BrowserQueryString = null,
     Action<string, string>? OnConsoleMessage = null,
@@ -27,6 +27,7 @@ public abstract record RunOptions
     string Locale = "en-US",
     int? ExpectedExitCode = 0,
     string CustomBundleDir = "",
+    int? TimeoutSeconds = 10,
     Func<RunOptions, IPage, Task>? ExecuteAfterLoaded = null
 );
 

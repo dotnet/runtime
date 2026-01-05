@@ -11,11 +11,11 @@
 // The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
 // mismatches can still interoperate correctly, with some care.
-#define GC_INTERFACE_MINOR_VERSION 4
+#define GC_INTERFACE_MINOR_VERSION 6
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define EE_INTERFACE_MAJOR_VERSION 3
+#define EE_INTERFACE_MAJOR_VERSION 4
 
 struct ScanContext;
 struct gc_alloc_context;
@@ -142,6 +142,40 @@ struct EtwGCSettingsInfo
     bool hard_limit_config_p;
     bool no_affinitize_p;
 };
+
+// These definitions are also in managed code.
+struct StronglyConnectedComponent
+{
+    size_t Count;
+    uintptr_t* Contexts;
+};
+
+struct ComponentCrossReference
+{
+    size_t SourceGroupIndex;
+    size_t DestinationGroupIndex;
+};
+
+struct MarkCrossReferencesArgs
+{
+    size_t ComponentCount;
+    StronglyConnectedComponent* Components;
+    size_t CrossReferenceCount;
+    ComponentCrossReference* CrossReferences;
+
+    MarkCrossReferencesArgs(
+        size_t componentCount,
+        StronglyConnectedComponent* components,
+        size_t crossReferenceCount,
+        ComponentCrossReference* crossReferences)
+        : ComponentCount { componentCount }
+        , Components { components }
+        , CrossReferenceCount { crossReferenceCount }
+        , CrossReferences { crossReferences }
+    {
+    }
+};
+
 
 // Opaque type for tracking object pointers
 #ifndef DACCESS_COMPILE
@@ -506,7 +540,14 @@ typedef enum
      * have an extra pointer which points at an interior pointer into the first object.
      *
      */
-    HNDTYPE_WEAK_INTERIOR_POINTER = 10
+    HNDTYPE_WEAK_INTERIOR_POINTER = 10,
+
+    /*
+     * CROSSREFERENCE HANDLES
+     *
+     * Crossreference handles are used to track the lifetime of an object in another VM heap.
+     */
+    HNDTYPE_CROSSREFERENCE = 11
 } HandleType;
 
 typedef enum
@@ -600,9 +641,12 @@ enum class GCConfigurationType
     Boolean
 };
 
-using ConfigurationValueFunc = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
+using ConfigurationValueFunc = void (*)(void* context, const char* name, const char* publicKey, GCConfigurationType type, int64_t data);
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.
+// NOTE!
+// Only add methods to the end.
+// Do not add overloaded methods. Always use a different name.
 class IGCHeap {
 public:
     /*
@@ -1022,6 +1066,8 @@ public:
 
     // Walk the heap object by object outside of a GC.
     virtual void DiagWalkHeapWithACHandling(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) PURE_VIRTUAL
+
+    virtual void NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles) PURE_VIRTUAL;
 };
 
 #ifdef WRITE_BARRIER_CHECK

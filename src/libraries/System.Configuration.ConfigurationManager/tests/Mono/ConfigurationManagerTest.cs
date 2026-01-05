@@ -42,7 +42,7 @@ namespace MonoTests.System.Configuration
 
     public class ConfigurationManagerTest
     {
-        [Fact] // OpenExeConfiguration (ConfigurationUserLevel)
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))] // OpenExeConfiguration (ConfigurationUserLevel)
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21528", TargetFrameworkMonikers.NetFramework)]
         public void OpenExeConfiguration1_UserLevel_None()
         {
@@ -249,7 +249,7 @@ namespace MonoTests.System.Configuration
             Assert.Equal("machineconfig", fi.Name);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         // Doesn't pass on Mono
         // [Category("NotWorking")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21528", TargetFrameworkMonikers.NetFramework)]

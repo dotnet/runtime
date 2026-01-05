@@ -97,7 +97,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/110578")]
         public async Task UseCallback_NotSecureConnection_CallbackNotCalled()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -233,7 +232,9 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/106634", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine))]
         public async Task NoCallback_RevokedCertificate_NoRevocationChecking_Succeeds()
         {
-            using (HttpClient client = CreateHttpClient())
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.CheckCertificateRevocationList = false;
+            using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RevokedCertRemoteServer))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -267,6 +268,14 @@ namespace System.Net.Http.Functional.Tests
 
                 handler.ServerCertificateCustomValidationCallback = (request, cert, chain, errors) =>
                 {
+                    // https://github.com/dotnet/corefx/issues/21922#issuecomment-315555237
+                    X509ChainStatusFlags flags = chain.ChainStatus.Aggregate(X509ChainStatusFlags.NoError, (cur, status) => cur | status.Status);
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) &&
+                        flags == X509ChainStatusFlags.RevocationStatusUnknown)
+                    {
+                        expectedErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
+                    }
+
                     callbackCalled = true;
                     Assert.NotNull(request);
                     Assert.NotNull(cert);

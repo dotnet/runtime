@@ -11,7 +11,7 @@ namespace Microsoft.NET.HostModel.AppHost
     {
         internal static unsafe void SearchAndReplace(
             MemoryMappedViewAccessor accessor,
-            byte[] searchPattern,
+            ReadOnlySpan<byte> searchPattern,
             byte[] patternToReplace,
             bool pad0s = true)
         {
@@ -48,7 +48,7 @@ namespace Microsoft.NET.HostModel.AppHost
             }
         }
 
-        private static unsafe void Pad0(byte[] searchPattern, byte[] patternToReplace, byte* bytes, int offset)
+        private static unsafe void Pad0(ReadOnlySpan<byte> searchPattern, ReadOnlySpan<byte> patternToReplace, byte* bytes, int offset)
         {
             if (patternToReplace.Length < searchPattern.Length)
             {
@@ -74,7 +74,7 @@ namespace Microsoft.NET.HostModel.AppHost
             }
         }
 
-        internal static unsafe int SearchInFile(MemoryMappedViewAccessor accessor, byte[] searchPattern)
+        internal static unsafe int SearchInFile(MemoryMappedViewAccessor accessor, ReadOnlySpan<byte> searchPattern)
         {
             var safeBuffer = accessor.SafeMemoryMappedViewHandle;
             return KMPSearch(searchPattern, (byte*)safeBuffer.DangerousGetHandle(), (int)safeBuffer.ByteLength);
@@ -92,7 +92,7 @@ namespace Microsoft.NET.HostModel.AppHost
         }
 
         // See: https://en.wikipedia.org/wiki/Knuth%E2%80%93Morris%E2%80%93Pratt_algorithm
-        private static int[] ComputeKMPFailureFunction(byte[] pattern)
+        private static int[] ComputeKMPFailureFunction(ReadOnlySpan<byte> pattern)
         {
             int[] table = new int[pattern.Length];
             if (pattern.Length >= 1)
@@ -128,7 +128,7 @@ namespace Microsoft.NET.HostModel.AppHost
         }
 
         // See: https://en.wikipedia.org/wiki/Knuth%E2%80%93Morris%E2%80%93Pratt_algorithm
-        private static unsafe int KMPSearch(byte[] pattern, byte* bytes, long bytesLength)
+        private static unsafe int KMPSearch(ReadOnlySpan<byte> pattern, byte* bytes, long bytesLength)
         {
             int m = 0;
             int i = 0;

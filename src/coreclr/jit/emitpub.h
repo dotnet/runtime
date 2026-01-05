@@ -43,7 +43,7 @@ unsigned emitEndCodeGen(Compiler*         comp,
 unsigned emitGetEpilogCnt();
 
 template <typename Callback>
-bool emitGenNoGCLst(Callback& cb);
+bool emitGenNoGCLst(Callback& cb, bool skipMainPrologsAndEpilogs = false);
 
 void     emitBegProlog();
 unsigned emitGetPrologOffsetEstimate();
@@ -65,7 +65,6 @@ void emitFinishPrologEpilogGeneration();
 /*           Record a code position and later convert it to offset      */
 /************************************************************************/
 
-void*    emitCurBlock();
 unsigned emitCurOffset();
 unsigned emitSpecifiedOffset(unsigned insCount, unsigned igSize);
 
@@ -80,6 +79,8 @@ const char* emitOffsetToLabel(unsigned offs);
 /************************************************************************/
 
 UNATIVE_OFFSET emitDataGenBeg(unsigned size, unsigned alignment, var_types dataType);
+
+void emitEnsureDataSectionAlignment(unsigned alignment);
 
 UNATIVE_OFFSET emitBBTableDataGenBeg(unsigned numEntries, bool relativeAddr);
 

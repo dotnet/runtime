@@ -4,12 +4,14 @@
 #include "pal_config.h"
 #include "pal_mount.h"
 #include "pal_utilities.h"
+#include "pal_safecrt.h"
 #include <assert.h>
 #include <string.h>
 #include <errno.h>
 #include <limits.h>
+#include <stdlib.h>
 
-// Check if we should use getmntinfo or /proc/mounts
+// Check if we should use getfsstat or /proc/mounts
 #if HAVE_MNTINFO
 #include <sys/mount.h>
 #else
@@ -32,18 +34,83 @@
 int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
 {
 #if HAVE_MNTINFO
-    // getmntinfo returns pointers to OS-internal structs, so we don't need to worry about free'ing the object
+    // Use getfsstat which is thread-safe (unlike getmntinfo which uses internal static buffers)
 #if HAVE_STATFS
     struct statfs* mounts = NULL;
 #else
     struct statvfs* mounts = NULL;
 #endif
-    int count = getmntinfo(&mounts, MNT_WAIT);
+
+    int count;
+    int capacity = 0;
+    size_t bufferSize = 0;
+
+    // Loop to handle the case where mount points are added between calls
+    while (1)
+    {
+        // Get the current number of mount points
+        count = getfsstat(NULL, 0, MNT_NOWAIT);
+        if (count < 0)
+        {
+            free(mounts);
+            return -1;
+        }
+
+        // Reallocate buffer if needed - allocate one extra to detect if more mounts were added
+        if (count >= capacity)
+        {
+            free(mounts);
+            capacity = count + 1;
+            if (!multiply_s((size_t)capacity, sizeof(*mounts), &bufferSize))
+            {
+                errno = ENOMEM;
+                return -1;
+            }
+            if (bufferSize > INT_MAX)
+            {
+                errno = ENOMEM;
+                return -1;
+            }
+#if HAVE_STATFS
+            mounts = (struct statfs*)malloc(bufferSize);
+#else
+            mounts = (struct statvfs*)malloc(bufferSize);
+#endif
+            if (mounts == NULL)
+            {
+                errno = ENOMEM;
+                return -1;
+            }
+        }
+
+        // If count is 0, break - post-loop code handles empty case
+        if (count == 0)
+        {
+            break;
+        }
+
+        // Get actual mount point information
+        count = getfsstat(mounts, (int)bufferSize, MNT_NOWAIT);
+        if (count < 0)
+        {
+            free(mounts);
+            return -1;
+        }
+
+        // If count is less than capacity, we got all mount points
+        if (count < capacity)
+        {
+            break;
+        }
+        // Otherwise, more mounts were added - loop again with larger buffer
+    }
+
     for (int32_t i = 0; i < count; i++)
     {
         onFound(context, mounts[i].f_mntonname);
     }
 
+    free(mounts);
     return 0;
 }
 
@@ -132,7 +199,7 @@ int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInfor
 }
 
 int32_t
-SystemNative_GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer, int32_t bufferLength, int64_t* formatType)
+SystemNative_GetFileSystemTypeNameForMountPoint(const char* name, char* formatNameBuffer, int32_t bufferLength, int64_t* formatType)
 {
     assert((formatNameBuffer != NULL) && (formatType != NULL));
     assert(bufferLength > 0);
@@ -144,35 +211,38 @@ SystemNative_GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer
     struct statvfs stats;
     int result = statvfs(name, &stats);
 #endif
+
     if (result == 0)
     {
-
 #if HAVE_STATFS_FSTYPENAME || HAVE_STATVFS_FSTYPENAME
-#ifdef VFS_NAMELEN
-        if (bufferLength < VFS_NAMELEN)
-#else
-        if (bufferLength < MFSNAMELEN)
+#ifdef HAVE_STATFS_FSTYPENAME
+        if (bufferLength < (MFSNAMELEN + 1)) // MFSNAMELEN does not include the null byte
+#elif HAVE_STATVFS_FSTYPENAME
+        if (bufferLength < VFS_NAMELEN) // VFS_NAMELEN includes the null byte
 #endif
         {
-            result = ERANGE;
-            *formatType = 0;
+            errno = ERANGE;
+            result = -1;
         }
-        else
+        SafeStringCopy(formatNameBuffer, Int32ToSizeT(bufferLength), stats.f_fstypename);
+        *formatType = -1;
+#elif HAVE_STATVFS_BASETYPE
+        if (bufferLength < _FSTYPSZ)        // SunOS
         {
-            SafeStringCopy(formatNameBuffer, Int32ToSizeT(bufferLength), stats.f_fstypename);
-            *formatType = -1;
+            errno = ERANGE;
+            result = -1;
         }
-#elif HAVE_NON_LEGACY_STATFS
-        assert(formatType != NULL);
-        *formatType = (int64_t)(stats.f_type);
-        SafeStringCopy(formatNameBuffer, Int32ToSizeT(bufferLength), "");
+        SafeStringCopy(formatNameBuffer, Int32ToSizeT(bufferLength), stats.f_basetype);
+        *formatType = -1;
 #else
-        *formatType = 0;
+        SafeStringCopy(formatNameBuffer, Int32ToSizeT(bufferLength), "");
+        *formatType = (int64_t)(stats.f_type);
 #endif
     }
     else
     {
-        *formatType = 0;
+        SafeStringCopy(formatNameBuffer, Int32ToSizeT(bufferLength), "");
+        *formatType = -1;
     }
 
     return result;

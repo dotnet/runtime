@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -27,14 +27,14 @@
              Link="ProductionCode\Common\System\Net\HttpDateParser.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs"
              Link="ProductionCode\Common\System\Net\HttpKnownHeaderNames.cs" />
-    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs"
-             Link="ProductionCode\Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpStatusDescription.cs"
              Link="ProductionCode\Common\System\Net\HttpStatusDescription.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="ProductionCode\Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.Associate.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.Associate.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\UriRedactionHelper.cs"
+             Link="Common\System\Net\Http\UriRedactionHelper.cs" />
     <Compile Include="$(CommonPath)System\Net\UriScheme.cs"
              Link="ProductionCode\Common\System\Net\UriScheme.cs" />
     <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs"
@@ -77,6 +77,8 @@
              Link="ProductionCode\System\Net\Http\GlobalHttpSettings.cs"/>
     <Compile Include="..\..\src\System\Net\Http\HeaderEncodingSelector.cs"
              Link="ProductionCode\System\Net\Http\HeaderEncodingSelector.cs" />
+    <Compile Include="..\..\src\System\Net\Http\HttpUtilities.cs"
+             Link="ProductionCode\System\Net\Http\HttpUtilities.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\AltSvcHeaderParser.cs"
              Link="ProductionCode\System\Net\Http\Headers\AltSvcHeaderParser.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\AltSvcHeaderValue.cs"
@@ -241,8 +243,8 @@
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Unix.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Windows.cs" />
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpUtilities.cs"
-             Link="ProductionCode\System\Net\Http\SocketsHttpHandler\HttpUtilities.cs" />
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpUtilities.SocketsHttpHandler.cs"
+             Link="ProductionCode\System\Net\Http\SocketsHttpHandler\HttpUtilities.SocketsHttpHandler.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.OSX.cs" Condition=" '$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'"
@@ -267,6 +269,7 @@
     <Compile Include="Headers\ContentDispositionHeaderValueTest.cs" />
     <Compile Include="Headers\ContentRangeHeaderValueTest.cs" />
     <Compile Include="Headers\DateHeaderParserTest.cs" />
+    <Compile Include="Headers\CookieHeaderParserTest.cs" />
     <Compile Include="Headers\EntityTagHeaderParserTest.cs" />
     <Compile Include="Headers\EntityTagHeaderValueTest.cs" />
     <Compile Include="Headers\GenericHeaderParserTest\AuthenticationParserTest.cs" />
@@ -340,6 +343,8 @@
              Link="ProductionCode\System\Net\Http\HttpNoProxy.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpWindowsProxy.cs"
              Link="ProductionCode\System\Net\Http\HttpWindowsProxy.cs" />
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\WinInetProxyHelper.cs"
+             Link="ProductionCode\System\Net\Http\WinInetProxyHelper.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\IMultiWebProxy.cs"
              Link="ProductionCode\System\Net\Http\IMultiWebProxy.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\MultiProxy.cs"
@@ -362,8 +367,6 @@
              Link="ProductionCode\Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinHttp\Interop.winhttp_types.cs"
              Link="ProductionCode\Common\Interop\Windows\WinHttp\Interop.winhttp_types.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\WinInetProxyHelper.cs"
-             Link="Common\System\Net\Http\WinInetProxyHelper.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\IHttpStreamHeadersHandler.cs"
              Link="Common\System\Net\Http\aspnetcore\IHttpStreamHeadersHandler.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\DynamicTable.cs"

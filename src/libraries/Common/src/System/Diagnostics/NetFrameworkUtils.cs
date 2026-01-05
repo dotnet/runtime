@@ -4,6 +4,8 @@
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using Microsoft.Win32;
@@ -20,7 +22,17 @@ namespace System.Diagnostics
 
         internal static void EnterMutexWithoutGlobal(string mutexName, ref Mutex mutex)
         {
-            Mutex tmpMutex = new Mutex(false, mutexName, out _);
+            Mutex tmpMutex = new Mutex(false, mutexName, out bool createdNew);
+
+            if (createdNew)
+            {
+                // Specify a SID in case the mutex has not yet been created; this prevents it from using the SID from the current thread.
+                // This SID (AuthenticatedUserSid) is the same one used by .NET Framework.
+                MutexSecurity sec = new MutexSecurity();
+                SecurityIdentifier authenticatedUserSid = new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null);
+                sec.AddAccessRule(new MutexAccessRule(authenticatedUserSid, MutexRights.Synchronize | MutexRights.Modify, AccessControlType.Allow));
+                tmpMutex.SetAccessControl(sec);
+            }
 
             SafeWaitForMutex(tmpMutex, ref mutex);
         }

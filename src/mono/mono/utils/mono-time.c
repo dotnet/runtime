@@ -15,32 +15,11 @@
 #include <sys/time.h>
 #endif
 
-#ifdef HOST_DARWIN
-#include <mach/clock.h>
-#include <mach/mach.h>
-#endif
-
 
 #include <mono/utils/mono-time.h>
 #include <mono/utils/atomic.h>
 
-#if HAVE_MACH_ABSOLUTE_TIME
-#include <mach/mach_time.h>
-#endif
-
 #define MTICKS_PER_SEC (10 * 1000 * 1000)
-
-typedef enum _TimeConversionConstants
-{
-	tccSecondsToMillieSeconds       = 1000,         // 10^3
-	tccSecondsToMicroSeconds        = 1000000,      // 10^6
-	tccSecondsToNanoSeconds         = 1000000000,   // 10^9
-	tccMillieSecondsToMicroSeconds  = 1000,         // 10^3
-	tccMillieSecondsToNanoSeconds   = 1000000,      // 10^6
-	tccMicroSecondsToNanoSeconds    = 1000,         // 10^3
-	tccSecondsTo100NanoSeconds      = 10000000,     // 10^7
-	tccMicroSecondsTo100NanoSeconds = 10            // 10^1
-} TimeConversionConstants;
 
 gint64
 mono_msec_ticks (void)
@@ -50,18 +29,6 @@ mono_msec_ticks (void)
 
 #ifdef HOST_WIN32
 #include <windows.h>
-
-#ifndef _MSC_VER
-/* we get "error: implicit declaration of function 'GetTickCount64'" */
-WINBASEAPI ULONGLONG WINAPI GetTickCount64(void);
-#endif
-
-gint64
-mono_msec_boottime (void)
-{
-	/* GetTickCount () is reportedly monotonic */
-	return GetTickCount64 ();
-}
 
 /* Returns the number of 100ns ticks from unspecified time: this should be monotonic */
 gint64
@@ -112,69 +79,6 @@ MONO_RESTORE_WARNING
 #endif
 
 #include <time.h>
-
-/* Returns the number of milliseconds from boot time: this should be monotonic */
-/* Adapted from CoreCLR: https://github.com/dotnet/runtime/blob/402aa8584ed18792d6bc6ed1869f7c31b38f8139/src/coreclr/pal/src/misc/time.cpp */
-gint64
-mono_msec_boottime (void)
-{
-	/* clock_gettime () is found by configure on Apple builds, but its only present from ios 10, macos 10.12, tvos 10 and watchos 3 */
-#if ((defined(HAVE_CLOCK_MONOTONIC_COARSE) || defined(HAVE_CLOCK_MONOTONIC)) && !(defined(TARGET_IOS) || defined(TARGET_OSX) || defined(TARGET_WATCHOS) || defined(TARGET_TVOS)))
-	clockid_t clockType =
-	/* emscripten exposes CLOCK_MONOTONIC_COARSE but doesn't implement it */
-#if defined(HAVE_CLOCK_MONOTONIC_COARSE) && !defined(TARGET_WASM)
-	CLOCK_MONOTONIC_COARSE; /* good enough resolution, fastest speed */
-#else
-	CLOCK_MONOTONIC;
-#endif
-	struct timespec ts;
-	if (clock_gettime (clockType, &ts) != 0) {
-		g_error ("clock_gettime(CLOCK_MONOTONIC*) failed; errno is %d", errno, strerror (errno));
-		return 0;
-	}
-	return (ts.tv_sec * tccSecondsToMillieSeconds) + (ts.tv_nsec / tccMillieSecondsToNanoSeconds);
-
-#elif HAVE_MACH_ABSOLUTE_TIME
-	static gboolean timebase_inited;
-	static mach_timebase_info_data_t s_TimebaseInfo;
-
-	if (!timebase_inited) {
-		kern_return_t machRet;
-		mach_timebase_info_data_t tmp;
-		machRet = mach_timebase_info (&tmp);
-		g_assert (machRet == KERN_SUCCESS);
-		/* Assume memcpy works correctly if ran concurrently */
-		memcpy (&s_TimebaseInfo, &tmp, sizeof (mach_timebase_info_data_t));
-		mono_memory_barrier ();
-		timebase_inited = TRUE;
-	} else {
-		// This barrier prevents reading s_TimebaseInfo before reading timebase_inited.
-		mono_memory_barrier ();
-	}
-	return (mach_absolute_time () * s_TimebaseInfo.numer / s_TimebaseInfo.denom) / tccMillieSecondsToNanoSeconds;
-
-#elif HAVE_GETHRTIME
-	return (gint64)(gethrtime () / tccMillieSecondsToNanoSeconds);
-
-#elif HAVE_READ_REAL_TIME
-	timebasestruct_t tb;
-	read_real_time (&tb, TIMEBASE_SZ);
-	if (time_base_to_time (&tb, TIMEBASE_SZ) != 0) {
-		g_error ("time_base_to_time() failed; errno is %d (%s)", errno, strerror (errno));
-		return 0;
-	}
-	return (tb.tb_high * tccSecondsToMillieSeconds) + (tb.tb_low / tccMillieSecondsToNanoSeconds);
-
-#else
-	struct timeval tv;
-	if (gettimeofday (&tv, NULL) == -1) {
-		g_error ("gettimeofday() failed; errno is %d (%s)", errno, strerror (errno));
-		return 0;
-	}
-    return (tv.tv_sec * tccSecondsToMillieSeconds) + (tv.tv_usec / tccMillieSecondsToMicroSeconds);
-
-#endif /* HAVE_CLOCK_MONOTONIC */
-}
 
 /* Returns the number of 100ns ticks from unspecified time: this should be monotonic */
 gint64

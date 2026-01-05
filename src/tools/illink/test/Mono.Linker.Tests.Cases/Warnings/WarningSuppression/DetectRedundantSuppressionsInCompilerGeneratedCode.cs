@@ -9,74 +9,74 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
-	[ExpectedNoWarnings]
-	[SkipKeptItemsValidation]
-	public class DetectRedundantSuppressionsInCompilerGeneratedCode
-	{
-		public static void Main ()
-		{
-			RedundantSuppressionOnLocalMethod.Test ();
-			RedundantSuppressionInIteratorBody.Test ();
-			RedundantSuppressionInAsyncBody.Test ();
-		}
+    [ExpectedNoWarnings]
+    [SkipKeptItemsValidation]
+    public class DetectRedundantSuppressionsInCompilerGeneratedCode
+    {
+        public static void Main()
+        {
+            RedundantSuppressionOnLocalMethod.Test();
+            RedundantSuppressionInIteratorBody.Test();
+            RedundantSuppressionInAsyncBody.Test();
+        }
 
-		public static Type TriggerUnrecognizedPattern ()
-		{
-			return typeof (DetectRedundantSuppressionsInCompilerGeneratedCode);
-		}
+        public static Type TriggerUnrecognizedPattern()
+        {
+            return typeof(DetectRedundantSuppressionsInCompilerGeneratedCode);
+        }
 
-		public static string TrimmerCompatibleMethod ()
-		{
-			return "test";
-		}
+        public static string TrimmerCompatibleMethod()
+        {
+            return "test";
+        }
 
-		public class RedundantSuppressionOnLocalMethod
-		{
-			public static void Test ()
-			{
-				[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
-				[UnconditionalSuppressMessage ("Test", "IL2071")]
-				void LocalMethod ()
-				{
-					TrimmerCompatibleMethod ();
-				}
+        public class RedundantSuppressionOnLocalMethod
+        {
+            public static void Test()
+            {
+                [ExpectedWarning("IL2121", "IL2071", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
+                [UnconditionalSuppressMessage("Test", "IL2071")]
+                void LocalMethod()
+                {
+                    TrimmerCompatibleMethod();
+                }
 
-				LocalMethod ();
-			}
-		}
+                LocalMethod();
+            }
+        }
 
-		public class RedundantSuppressionInIteratorBody
-		{
-			public static void Test ()
-			{
-				Enumerable ();
-			}
+        public class RedundantSuppressionInIteratorBody
+        {
+            public static void Test()
+            {
+                Enumerable();
+            }
 
-			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
-			[UnconditionalSuppressMessage ("Test", "IL2071")]
-			static IEnumerable<int> Enumerable ()
-			{
-				TrimmerCompatibleMethod ();
-				yield return 0;
-			}
-		}
+            [ExpectedWarning("IL2121", "IL2071", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
+            [UnconditionalSuppressMessage("Test", "IL2071")]
+            static IEnumerable<int> Enumerable()
+            {
+                TrimmerCompatibleMethod();
+                yield return 0;
+            }
+        }
 
-		public class RedundantSuppressionInAsyncBody
-		{
-			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
-			[UnconditionalSuppressMessage ("Test", "IL2071")]
-			public static async void Test ()
-			{
-				TrimmerCompatibleMethod ();
-				await MethodAsync ();
-			}
+        public class RedundantSuppressionInAsyncBody
+        {
+            [ExpectedWarning("IL2121", "IL2071", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
+            [UnconditionalSuppressMessage("Test", "IL2071")]
+            public static async void Test()
+            {
+                TrimmerCompatibleMethod();
+                await MethodAsync();
+            }
 
-			[ExpectedWarning ("IL2121", "IL2070", Tool.Trimmer, "")]
-			[UnconditionalSuppressMessage ("Test", "IL2070")]
-			static async Task<int> MethodAsync ()
-			{
-				return await Task.FromResult (0);
-			}
-		}
-	}
+            [ExpectedWarning("IL2121", "IL2070", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
+            [UnconditionalSuppressMessage("Test", "IL2070")]
+            static async Task<int> MethodAsync()
+            {
+                return await Task.FromResult(0);
+            }
+        }
+    }
 }

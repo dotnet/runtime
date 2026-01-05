@@ -12,19 +12,19 @@
     <PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
 
-  <!-- Allow overriding the LKG ILCompiler package with a specific version. -->
-  <PropertyGroup Condition="'$(UseNativeAotForComponents)' == 'true' and '$(PublishAot)' == 'true' and '$(MicrosoftDotNetILCompilerVersion)' != ''">
-    <SuppressGenerateILCompilerExplicitPackageReferenceWarning>true</SuppressGenerateILCompilerExplicitPackageReferenceWarning>
+  <PropertyGroup>
+    <_TrueTargetRid>$(RuntimeIdentifier)</_TrueTargetRid>
+    <!--
+      NativeAOT's targets don't handle cross-targeting to a non-portable RID.
+      Change the RID when importing the NativeAOT targets to the corresponding portable RID.
+    -->
+    <RuntimeIdentifier>$(PortableTargetRid)</RuntimeIdentifier>
+  </PropertyGroup>
+  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(PublishAot)' == 'true' and '$(UseBootstrapLayout)' == 'true'" />
+  <PropertyGroup>
+    <RuntimeIdentifier>$(_TrueTargetRid)</RuntimeIdentifier>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(UseNativeAotForComponents)' == 'true' and '$(PublishAot)' == 'true' and '$(MicrosoftDotNetILCompilerVersion)' != ''">
-    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="$(MicrosoftDotNetILCompilerVersion)" />
-    <PackageReference Include="runtime.$(ToolsRID).Microsoft.DotNet.ILCompiler" Version="$(MicrosoftDotNetILCompilerVersion)" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(NativeAotSupported)' == 'true'">
-    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
-  </ItemGroup>
 
   <Target Name="LocateNativeCompiler"
           Condition="'$(UseNativeAotForComponents)' == 'true' and '$(HostOS)' != 'windows'"

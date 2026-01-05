@@ -24,6 +24,8 @@
              Link="Common\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinHttp\Interop.winhttp_types.cs"
              Link="Common\Interop\Windows\WinHttp\Interop.winhttp_types.cs" />
+    <Compile Include="$(CommonPath)System\AppContextSwitchHelper.cs"
+             Link="Common\System\AppContextSwitchHelper.cs" />
     <Compile Include="$(CommonPath)System\CharArrayHelpers.cs"
              Link="Common\System\CharArrayHelpers.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
@@ -42,8 +44,6 @@
              Link="Common\System\Net\UriScheme.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs"
              Link="Common\System\Net\Http\HttpHandlerDefaults.cs" />
-    <Compile Include="$(CommonPath)\System\Net\Http\WinInetProxyHelper.cs"
-             Link="Common\System\Net\Http\WinInetProxyHelper.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\CertificateHelper.cs"
              Link="Common\System\Net\Security\CertificateHelper.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\CertificateHelper.Windows.cs"
@@ -54,6 +54,8 @@
              Link="Common\System\Text\SimpleRegex.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\RendezvousAwaitable.cs"
              Link="Common\System\Threading\Tasks\RendezvousAwaitable.cs" />
+    <Compile Include="..\..\src\System\Net\Http\CachedCertificateValue.cs"
+             Link="ProductionCode\CachedCertificateValue.cs" />
     <Compile Include="..\..\src\System\Net\Http\NoWriteNoSeekStreamContent.cs"
              Link="ProductionCode\NoWriteNoSeekStreamContent.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpAuthHelper.cs"
@@ -86,8 +88,6 @@
              Link="ProductionCode\WinHttpTrailersHelper.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpTransportContext.cs"
              Link="ProductionCode\WinHttpTransportContext.cs" />
-    <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\HttpWindowsProxy.cs"
-             Link="ProductionCode\HttpWindowsProxy.cs" />
     <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\FailedProxyCache.cs"
              Link="ProductionCode\FailedProxyCache.cs" />
     <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\IMultiWebProxy.cs"
@@ -104,7 +104,6 @@
     <Compile Include="FakeRegistry.cs" />
     <Compile Include="FakeSafeWinHttpHandle.cs" />
     <Compile Include="FakeX509Certificates.cs" />
-    <Compile Include="HttpWindowsProxyTest.cs" />
     <Compile Include="SafeWinHttpHandleTest.cs" />
     <Compile Include="SendRequestHelper.cs" />
     <Compile Include="TestServer.cs" />

@@ -99,7 +99,7 @@ namespace System.Collections.Concurrent
         /// <param name="segment">The segment in which to first attempt to store the item.</param>
         private void EnqueueSlow(T item, ref Segment segment)
         {
-            Debug.Assert(segment != null, "Expected a non-null segment.");
+            Debug.Assert(segment is not null, "Expected a non-null segment.");
 
             if (segment._state._firstCopy != segment._state._first)
             {
@@ -176,8 +176,8 @@ namespace System.Collections.Concurrent
         /// <returns>true if an item could be dequeued; otherwise, false.</returns>
         private bool TryDequeueSlow(Segment segment, T[] array, bool peek, [MaybeNullWhen(false)] out T result)
         {
-            Debug.Assert(segment != null, "Expected a non-null segment.");
-            Debug.Assert(array != null, "Expected a non-null item array.");
+            Debug.Assert(segment is not null, "Expected a non-null segment.");
+            Debug.Assert(array is not null, "Expected a non-null item array.");
 
             if (segment._state._last != segment._state._lastCopy)
             {
@@ -187,7 +187,7 @@ namespace System.Collections.Concurrent
                     TryDequeue(out result); // will only recur once for this operation
             }
 
-            if (segment._next != null && segment._state._first == segment._state._last)
+            if (segment._next is not null && segment._state._first == segment._state._last)
             {
                 segment = segment._next;
                 array = segment._array;
@@ -227,7 +227,7 @@ namespace System.Collections.Concurrent
             if (first != segment._state._lastCopy)
             {
                 result = array[first];
-                if (predicate == null || predicate(result))
+                if (predicate is null || predicate(result))
                 {
                     array[first] = default!; // Clear the slot to release the element
                     segment._state._first = (first + 1) & (array.Length - 1);
@@ -250,8 +250,8 @@ namespace System.Collections.Concurrent
         /// <returns>true if an item could be dequeued; otherwise, false.</returns>
         private bool TryDequeueIfSlow(Predicate<T>? predicate, Segment segment, T[] array, [MaybeNullWhen(false)] out T result)
         {
-            Debug.Assert(segment != null, "Expected a non-null segment.");
-            Debug.Assert(array != null, "Expected a non-null item array.");
+            Debug.Assert(segment is not null, "Expected a non-null segment.");
+            Debug.Assert(array is not null, "Expected a non-null item array.");
 
             if (segment._state._last != segment._state._lastCopy)
             {
@@ -259,7 +259,7 @@ namespace System.Collections.Concurrent
                 return TryDequeueIf(predicate, out result); // will only recur once for this dequeue operation
             }
 
-            if (segment._next != null && segment._state._first == segment._state._last)
+            if (segment._next is not null && segment._state._first == segment._state._last)
             {
                 segment = segment._next;
                 array = segment._array;
@@ -275,7 +275,7 @@ namespace System.Collections.Concurrent
             }
 
             result = array[first];
-            if (predicate == null || predicate(result))
+            if (predicate is null || predicate(result))
             {
                 array[first] = default!; // Clear the slot to release the element
                 segment._state._first = (first + 1) & (segment._array.Length - 1);
@@ -312,7 +312,7 @@ namespace System.Collections.Concurrent
                     return false;
                 }
 
-                return head._next == null;
+                return head._next is null;
             }
         }
 
@@ -320,7 +320,7 @@ namespace System.Collections.Concurrent
         /// <remarks>This method is not safe to use concurrently with any other members that may mutate the collection.</remarks>
         public IEnumerator<T> GetEnumerator()
         {
-            for (Segment? segment = _head; segment != null; segment = segment._next)
+            for (Segment? segment = _head; segment is not null; segment = segment._next)
             {
                 for (int pt = segment._state._first;
                     pt != segment._state._last;
@@ -341,7 +341,7 @@ namespace System.Collections.Concurrent
             get
             {
                 int count = 0;
-                for (Segment? segment = _head; segment != null; segment = segment._next)
+                for (Segment? segment = _head; segment is not null; segment = segment._next)
                 {
                     int arraySize = segment._array.Length;
                     int first, last;
@@ -365,7 +365,7 @@ namespace System.Collections.Concurrent
         /// <remarks>The Count is not thread safe, so we need to acquire the lock.</remarks>
         int IProducerConsumerQueue<T>.GetCountSafe(object syncObj)
         {
-            Debug.Assert(syncObj != null, "The syncObj parameter is null.");
+            Debug.Assert(syncObj is not null, "The syncObj parameter is null.");
             lock (syncObj)
             {
                 return Count;
@@ -426,7 +426,7 @@ namespace System.Collections.Concurrent
             /// <param name="queue">The queue being debugged.</param>
             public SingleProducerSingleConsumerQueue_DebugView(SingleProducerSingleConsumerQueue<T> queue)
             {
-                Debug.Assert(queue != null, "Expected a non-null queue.");
+                Debug.Assert(queue is not null, "Expected a non-null queue.");
                 _queue = queue;
             }
 

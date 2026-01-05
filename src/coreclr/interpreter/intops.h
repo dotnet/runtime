@@ -7,15 +7,31 @@
 #include "openum.h"
 #include <stdint.h>
 
-#include "intopsshared.h"
+#include <intopsshared.h>
 
 typedef enum
 {
     InterpOpNoArgs,
     InterpOpInt,
+    InterpOpLongInt,
+    InterpOpFloat,
+    InterpOpDouble,
+    InterpOpTwoInts,
+    InterpOpThreeInts,
     InterpOpBranch,
     InterpOpSwitch,
-    InterpOpMethodToken,
+    InterpOpMethodHandle,
+    InterpOpClassHandle,
+    InterpOpGenericLookup,
+    InterpOpGenericHelperFtn,
+    InterpOpLdPtr,
+    InterpOpHelperFtn,
+    InterpOpHelperFtnNoArgs,
+    InterpOpPointerHelperFtn,
+    InterpOpPointerInt,
+    InterpOpGenericLookupInt,
+    InterpOpHandleContinuation,
+    InterpOpHandleContinuationPt2,
 } InterpOpArgType;
 
 extern const uint8_t g_interpOpLen[];
@@ -39,10 +55,25 @@ int CEEOpcodeSize(const uint8_t *ip, const uint8_t *codeEnd);
 #ifdef TARGET_64BIT
 #define INTOP_MOV_P INTOP_MOV_8
 #define INTOP_LDNULL INTOP_LDC_I8_0
+#define INTOP_LDIND_I INTOP_LDIND_I8
+#define INTOP_STIND_I INTOP_STIND_I8
+#define INTOP_ADD_P_IMM INTOP_ADD_I8_IMM
+#define INTOP_LDELEM_I INTOP_LDELEM_I8
+#define INTOP_STELEM_I INTOP_STELEM_I8
 #else
 #define INTOP_MOV_P INTOP_MOV_4
 #define INTOP_LDNULL INTOP_LDC_I4_0
+#define INTOP_LDIND_I INTOP_LDIND_I4
+#define INTOP_STIND_I INTOP_STIND_I4
+#define INTOP_ADD_P_IMM INTOP_ADD_I4_IMM
+#define INTOP_LDELEM_I INTOP_LDELEM_I4
+#define INTOP_STELEM_I INTOP_STELEM_I4
 #endif
+
+static inline bool InterpOpIsEmitNop(int32_t opcode)
+{
+    return opcode >= INTOP_NOP && opcode != INTOP_MOV_SRC_OFF;
+}
 
 static inline bool InterpOpIsUncondBranch(int32_t opcode)
 {
@@ -77,7 +108,7 @@ inline int32_t getI4LittleEndian(const uint8_t* ptr)
 
 inline int64_t getI8LittleEndian(const uint8_t* ptr)
 {
-    return (int64_t)getI4LittleEndian(ptr) | ((int64_t)getI4LittleEndian(ptr + 4)) << 32;
+    return (int64_t)getU4LittleEndian(ptr) | ((int64_t)getI4LittleEndian(ptr + 4)) << 32;
 }
 
 inline float getR4LittleEndian(const uint8_t* ptr)
@@ -91,5 +122,14 @@ inline double getR8LittleEndian(const uint8_t* ptr)
     int64_t val = getI8LittleEndian(ptr);
     return *(double*)&val;
 }
+
+// The implementation of syncrhonized methods is done by injecting
+// a try/finally block around the method body, and having some special
+// logic in the finally block and at the actual return for the method.
+// We use a couple of special "intrinsic" tokens to represent these operations.
+// These are recognized by our implementation of the CALL opcode.
+const uint32_t INTERP_CALL_SYNCHRONIZED_MONITOR_EXIT = 0xFFFFFFFE;
+const uint32_t INTERP_LOAD_RETURN_VALUE_FOR_SYNCHRONIZED_OR_ASYNC = 0xFFFFFFFF;
+const uint32_t INTERP_RESTORE_CONTEXTS_FOR_ASYNC_METHOD = 0xFFFFFFFD;
 
 #endif

@@ -72,6 +72,16 @@ private:
     Volatile<LONG> m_refCount;
 public:
     PEImage* m_pOwner;
+
+    friend struct cdac_data<PEImageLayout>;
+};
+
+template<>
+struct cdac_data<PEImageLayout>
+{
+    static constexpr size_t Base = offsetof(PEImageLayout, m_base);
+    static constexpr size_t Size = offsetof(PEImageLayout, m_size);
+    static constexpr size_t Flags = offsetof(PEImageLayout, m_flags);
 };
 
 typedef ReleaseHolder<PEImageLayout> PEImageLayoutHolder;
@@ -135,18 +145,18 @@ public:
 #endif // !DACCESS_COMPILE
 };
 
-#ifndef DACCESS_COMPILE
 // A special layout that is used to load standalone composite r2r files.
 // This layout is not owned by a PEImage and created by simply loading the file
 // at the given path.
 class NativeImageLayout : public PEImageLayout
 {
     VPTR_VTABLE_CLASS(NativeImageLayout, PEImageLayout)
-
-public:
+    
+    public:
+#ifndef DACCESS_COMPILE
     NativeImageLayout(LPCWSTR fullPath);
-};
 #endif
+};
 
 #endif  // PEIMAGELAYOUT_H_
 

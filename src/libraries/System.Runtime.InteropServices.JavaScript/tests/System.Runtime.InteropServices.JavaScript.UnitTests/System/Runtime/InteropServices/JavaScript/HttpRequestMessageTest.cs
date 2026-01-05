@@ -298,7 +298,6 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/113628", TestPlatforms.Browser)]
         public async Task HttpStreamingDisabledBy_WasmEnableStreamingResponse_InProject()
         {
             using var client = new HttpClient();
@@ -386,8 +385,7 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
             Assert.Equal(
                 $"Method: PUT, RequestUri: '{uriData}', Version: 1.0, Content: " + typeof(StringContent).ToString() + ", Headers:" + Environment.NewLine +
                 "{" + Environment.NewLine +
-                "  Accept: text/plain; q=0.2" + Environment.NewLine +
-                "  Accept: text/xml; q=0.1" + Environment.NewLine +
+                "  Accept: text/plain; q=0.2, text/xml; q=0.1" + Environment.NewLine +
                 "  Custom-Request-Header: value1" + Environment.NewLine +
                 "  Content-Type: text/plain; charset=utf-8" + Environment.NewLine +
                 "  Custom-Content-Header: value2" + Environment.NewLine +

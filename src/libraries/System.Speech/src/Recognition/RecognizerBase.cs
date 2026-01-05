@@ -366,7 +366,7 @@ ISpGrammarResourceLoader
                 // Note that even if there are no threading issues, baseUri is not supported with SAPI 5.1.
                 throw new NotSupportedException(SR.Get(SRID.NotSupportedWithThisVersionOfSAPI));
             }
-            Helpers.ThrowIfNull(wordUnits, nameof(wordUnits));
+            ArgumentNullException.ThrowIfNull(wordUnits);
 
             foreach (RecognizedWordUnit wordUnit in wordUnits)
             {
@@ -389,7 +389,7 @@ ISpGrammarResourceLoader
                 // Note that even if there are no threading issues, baseUri is not supported with SAPI 5.1.
                 throw new NotSupportedException(SR.Get(SRID.NotSupportedWithThisVersionOfSAPI));
             }
-            Helpers.ThrowIfNull(wordUnits, nameof(wordUnits));
+            ArgumentNullException.ThrowIfNull(wordUnits);
 
             foreach (RecognizedWordUnit wordUnit in wordUnits)
             {
@@ -531,10 +531,10 @@ ISpGrammarResourceLoader
 
                 // The call to RecognizeAsync may happen before the event for the start stream arrives so remove the assert.
                 //Debug.Assert (_detectingInitialSilenceTimeout == false);
-                Debug.Assert(_detectingBabbleTimeout == false);
-                Debug.Assert(_initialSilenceTimeoutReached == false);
-                Debug.Assert(_babbleTimeoutReached == false);
-                Debug.Assert(_isRecognizeCancelled == false);
+                Debug.Assert(!_detectingBabbleTimeout);
+                Debug.Assert(!_initialSilenceTimeoutReached);
+                Debug.Assert(!_babbleTimeoutReached);
+                Debug.Assert(!_isRecognizeCancelled);
                 Debug.Assert(_lastResult == null);
                 Debug.Assert(_lastException == null);
             } // Not recognizing so no events firing - can unlock now
@@ -1688,7 +1688,6 @@ ISpGrammarResourceLoader
         }
 
         // Method called on background thread to do actual grammar loading.
-#pragma warning disable 56500 // Transferring exceptions to another thread
         private void LoadGrammarAsyncCallback(object grammarObject)
         {
             Debug.WriteLine("Loading grammar asynchronously.");
@@ -1751,8 +1750,6 @@ ISpGrammarResourceLoader
             }
         }
 
-#pragma warning restore 56500
-
         // Method called by AsyncOperationManager on appropriate thread when async grammar loading completes.
         private void LoadGrammarAsyncCompletedCallback(object grammarObject)
         {
@@ -1804,7 +1801,7 @@ ISpGrammarResourceLoader
         // Do some basic parameter validation on a passed in Grammar
         private void ValidateGrammar(Grammar grammar, params GrammarState[] validStates)
         {
-            Helpers.ThrowIfNull(grammar, nameof(grammar));
+            ArgumentNullException.ThrowIfNull(grammar);
 
             // Check if grammar is in a valid state for the caller.
             foreach (GrammarState state in validStates)
@@ -1996,8 +1993,6 @@ ISpGrammarResourceLoader
         }
 
         // Method called on background thread {from RecognizeAsync} to start recognition process.
-#pragma warning disable 56500 // Transferring exceptions to another thread
-
         private void RecognizeAsyncWaitForGrammarsToLoad(object unused)
         {
             Debug.WriteLine("Waiting for any pending grammar loads to complete.");
@@ -2066,7 +2061,6 @@ ISpGrammarResourceLoader
                 _asyncWorkerUI.PostOperation(new WaitCallback(RecognizeAsyncWaitForGrammarsToLoadFailed), eventArgs);
             }
         }
-#pragma warning restore 56500
 
         // Method called on app thread model used to fire the RecognizeCompelted event args if recognition stopped prematurely
         private void RecognizeAsyncWaitForGrammarsToLoadFailed(object eventArgs)
@@ -2089,7 +2083,7 @@ ISpGrammarResourceLoader
         // This method will be called asynchronously
         private void SignalHandlerThread(object ignored)
         {
-            if (_asyncWorkerUI.AsyncMode == false)
+            if (!_asyncWorkerUI.AsyncMode)
             {
                 _handlerWaitHandle.Set();
             }
@@ -2101,7 +2095,7 @@ ISpGrammarResourceLoader
             lock (_thisObjectLock)
             {
                 SpeechEvent speechEvent = eventData as SpeechEvent;
-                if (!_disposed && eventData != null)
+                if (!_disposed && speechEvent != null)
                 {
                     switch (speechEvent.EventId)
                     {

@@ -226,10 +226,6 @@ BOOL Exception::IsPreallocatedOOMException()
 }
 
 //------------------------------------------------------------------------------
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 LPCSTR Exception::GetHRSymbolicName(HRESULT hr)
 {
     LIMITED_METHOD_CONTRACT;
@@ -778,10 +774,6 @@ LPCSTR Exception::GetHRSymbolicName(HRESULT hr)
             return NULL;
     }
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-
 
 // ---------------------------------------------------------------------------
 // HRException class.  Implements exception API for exceptions from HRESULTS
@@ -1013,7 +1005,7 @@ void DECLSPEC_NORETURN ThrowHR(HRESULT hr, UINT uText)
 
     // We won't check the return value here. If it fails, we'll just
     // throw the HR
-    sExceptionText.LoadResource(CCompRC::Error, uText);
+    sExceptionText.LoadResource(uText);
 
     EX_THROW(HRMsgException, (hr, sExceptionText));
 }
@@ -1164,7 +1156,7 @@ void GetHRMsg(HRESULT hr, SString &result, BOOL bNoGeekStuff/* = FALSE*/)
 
     if (FAILED(hr) && HRESULT_FACILITY(hr) == FACILITY_URT && HRESULT_CODE(hr) < MAX_URT_HRESULT_CODE)
     {
-        fHaveDescr = strDescr.LoadResource(CCompRC::Error, MSG_FOR_URT_HR(hr));
+        fHaveDescr = strDescr.LoadResource(MSG_FOR_URT_HR(hr));
     }
     else
     {

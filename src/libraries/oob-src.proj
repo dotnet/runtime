@@ -8,7 +8,7 @@
     <BuildRidSpecificProjects Condition="'$(BuildingAnOfficialBuildLeg)' != 'true'">true</BuildRidSpecificProjects>
     <!-- In the VMR, we're always in a RID-specific leg. -->
     <BuildRidSpecificProjects Condition="'$(BuildRidSpecificProjects)' == '' and
-                                         '$(DotNetBuildOrchestrator)' == 'true'">true</BuildRidSpecificProjects>
+                                         '$(DotNetBuildFromVMR)' == 'true'">true</BuildRidSpecificProjects>
     <!--
       Outside the VMR, only RID-specific packages in official build legs when we're not building AllConfigurations,
       but we're building everything for this RID target (ie don't build on specialized legs like Mono LLVMAOT).
@@ -27,9 +27,9 @@
                                @(NetCoreAppLibrary->'%(Identity)\src\%(Identity).csproj');
                                Microsoft.VisualBasic.Core\src\Microsoft.VisualBasic.Core.vbproj" />
 
-    <!-- During an official Build, build the rid specific package matching the OutputRID only when building all runtime packs.
+    <!-- During an official Build, build the rid specific package matching the TargetRid only when building all runtime packs.
          The limitation on DotNetBuildAllRuntimePacks avoids duplicate assets being publish. -->
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\runtime.$(OutputRID).*.proj"
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\runtime.$(TargetRid).*.proj"
                       Condition="'$(SkipLibrariesNativeRuntimePackages)' != 'true' and
                                  '$(BuildRidSpecificProjects)' == 'true'" />
 

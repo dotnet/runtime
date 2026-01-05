@@ -19,7 +19,7 @@ LEAF_ENTRY GenericPInvokeCalliHelper, _TEXT
         //
         // check for existing IL stub
         //
-        mov             rax, [PINVOKE_CALLI_SIGTOKEN_REGISTER + OFFSETOF__VASigCookie__pNDirectILStub]
+        mov             rax, [PINVOKE_CALLI_SIGTOKEN_REGISTER + OFFSETOF__VASigCookie__pPInvokeILStub]
         test            rax, rax
         jz              C_FUNC(GenericPInvokeCalliGenILStub)
 
@@ -81,7 +81,7 @@ LEAF_ENTRY VarargPInvokeStubHelper, _TEXT
         //
         // check for existing IL stub
         //
-        mov             rax, [PINVOKE_CALLI_SIGTOKEN_REGISTER + OFFSETOF__VASigCookie__pNDirectILStub]
+        mov             rax, [PINVOKE_CALLI_SIGTOKEN_REGISTER + OFFSETOF__VASigCookie__pPInvokeILStub]
         test            rax, rax
         jz              C_FUNC(VarargPInvokeGenILStub)
 

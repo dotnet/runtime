@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 
 using ILCompiler.IBC;
@@ -231,7 +232,7 @@ namespace ILCompiler
 
             if (resolvedType != null)
             {
-                var resolvedMethod = resolvedType.GetMethod(methodName, null);
+                var resolvedMethod = resolvedType.GetMethod(Encoding.UTF8.GetBytes(methodName), null);
                 if (resolvedMethod != null)
                 {
                     return resolvedMethod;

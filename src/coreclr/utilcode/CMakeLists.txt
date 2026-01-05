@@ -14,11 +14,7 @@ set(UTILCODE_COMMON_SOURCES
   configuration.cpp
   collections.cpp
   posterror.cpp
-  fstream.cpp
   clrhelpers.cpp
-  stgpool.cpp
-  stgpooli.cpp
-  stgpoolreadonly.cpp
   utsem.cpp
   check.cpp
   log.cpp
@@ -26,7 +22,12 @@ set(UTILCODE_COMMON_SOURCES
   comex.cpp
   guidfromname.cpp
   memorypool.cpp
+  memorystreams.cpp
   loaderheap.cpp
+  interleavedloaderheap.cpp
+  loaderheap_shared.cpp
+  explicitcontrolloaderheap.cpp
+  rangelist.cpp
   outstring.cpp
   ilformatter.cpp
   opinfo.cpp
@@ -64,6 +65,7 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 set(UTILCODE_SOURCES
   ${UTILCODE_COMMON_SOURCES}
+  allocmemtracker.cpp
   executableallocator.cpp
 )
 

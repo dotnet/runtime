@@ -161,7 +161,7 @@ namespace System.Tests
         [InlineData("!", false)]
         [InlineData("", false)]
         [InlineData(null, false)]
-        public void CheckSchemeName(string schemeName, bool expected)
+        public void CheckSchemeName(string? schemeName, bool expected)
         {
             Assert.Equal(expected, Uri.CheckSchemeName(schemeName));
         }
@@ -272,7 +272,7 @@ namespace System.Tests
         [InlineData("file://C:/directory/filename", UriKind.RelativeOrAbsolute, false)]
         [InlineData("http:\\host/path/file", UriKind.RelativeOrAbsolute, false)]
         [InlineData(null, UriKind.RelativeOrAbsolute, false)]
-        public void IsWellFormedUriString(string uriString, UriKind uriKind, bool expected)
+        public void IsWellFormedUriString(string? uriString, UriKind uriKind, bool expected)
         {
             Assert.Equal(expected, Uri.IsWellFormedUriString(uriString, uriKind));
         }
@@ -443,7 +443,7 @@ namespace System.Tests
         public void EscapeUriString_Long_Success()
         {
             string s;
-            const int LongCount = 65520 + 1;
+            const int LongCount = 100_000;
 
             s = new string('a', LongCount);
             Assert.Equal(s, Uri.EscapeUriString(s));

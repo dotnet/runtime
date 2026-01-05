@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -9,12 +10,12 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a method that is imported from the runtime library.
     /// </summary>
-    public class RuntimeImportMethodNode : ExternSymbolNode, IMethodNode, ISymbolDefinitionNode
+    public class RuntimeImportMethodNode : ExternFunctionSymbolNode, IMethodNode, ISymbolDefinitionNode
     {
         private MethodDesc _method;
 
         public RuntimeImportMethodNode(MethodDesc method, NameMangler nameMangler)
-            : base(nameMangler.NodeMangler.ExternMethod(((EcmaMethod)method).GetRuntimeImportName(), method))
+            : base(nameMangler.NodeMangler.ExternMethod(new Utf8String(((EcmaMethod)method).GetRuntimeImportName()), method))
         {
             _method = method;
         }

@@ -34,10 +34,7 @@ namespace System.Formats.Asn1
         /// </exception>
         public void WriteNamedBitList(Enum value, Asn1Tag? tag = null)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             CheckUniversalTag(tag, UniversalTagNumber.BitString);
 
@@ -96,10 +93,7 @@ namespace System.Formats.Asn1
         /// </remarks>
         public void WriteNamedBitList(BitArray value, Asn1Tag? tag = null)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             CheckUniversalTag(tag, UniversalTagNumber.BitString);
 

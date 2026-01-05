@@ -59,5 +59,12 @@ namespace System.Net.Http
         {
             return IdnHost != null ? $"{IdnHost}:{Port}" : "<empty>";
         }
+
+        public static bool operator ==(HttpAuthority? left, HttpAuthority? right)
+        {
+            return left is null ? right is null : left.Equals(right);
+        }
+        public static bool operator !=(HttpAuthority? left, HttpAuthority? right)
+            => !(left == right);
     }
 }

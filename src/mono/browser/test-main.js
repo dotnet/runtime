@@ -119,7 +119,7 @@ function initRunArgs(runArgs) {
     runArgs.debugging = runArgs.debugging === undefined ? false : runArgs.debugging;
     runArgs.configSrc = runArgs.configSrc === undefined ? './_framework/dotnet.boot.js' : runArgs.configSrc;
     // default'ing to true for tests, unless debugging
-    runArgs.forwardConsole = runArgs.forwardConsole === undefined ? !runArgs.debugging : runArgs.forwardConsole;
+    runArgs.forwardConsole = runArgs.forwardConsole === undefined ? (isFirefox && !runArgs.debugging) : runArgs.forwardConsole;
     runArgs.interpreterPgo = runArgs.interpreterPgo === undefined ? false : runArgs.interpreterPgo;
 
     return runArgs;
@@ -129,10 +129,7 @@ function processArguments(incomingArguments, runArgs) {
     console.log("Incoming arguments: " + incomingArguments.join(' '));
     while (incomingArguments && incomingArguments.length > 0) {
         const currentArg = incomingArguments[0];
-        if (currentArg.startsWith("--profile=")) {
-            const arg = currentArg.substring("--profile=".length);
-            runArgs.profilers.push(arg);
-        } else if (currentArg.startsWith("--setenv=")) {
+        if (currentArg.startsWith("--setenv=")) {
             const arg = currentArg.substring("--setenv=".length);
             const parts = arg.split('=');
             if (parts.length != 2)
@@ -259,20 +256,20 @@ function configureRuntime(dotnet, runArgs) {
         .withVirtualWorkingDirectory(runArgs.workingDirectory)
         .withEnvironmentVariables(runArgs.environmentVariables)
         .withDiagnosticTracing(runArgs.diagnosticTracing)
-        .withExitOnUnhandledError()
-        .withExitCodeLogging()
-        .withElementOnExit()
-        .withInteropCleanupOnExit()
-        .withDumpThreadsOnNonZeroExit()
         .withConfig({
+            appendElementOnExit: true,
+            logExitCode: true,
+            exitOnUnhandledError: true,
+            forwardConsole: runArgs.forwardConsole,
+            asyncFlushOnExit: ENVIRONMENT_IS_NODE,
+            interopCleanupOnExit: true,
+            dumpThreadsOnNonZeroExit: true,
             loadAllSatelliteResources: true,
             jsThreadBlockingMode: "ThrowWhenBlockingWait",
         });
 
     if (ENVIRONMENT_IS_NODE) {
-        dotnet
-            .withEnvironmentVariable("NodeJSPlatform", process.platform)
-            .withAsyncFlushOnExit();
+        dotnet.withEnvironmentVariable("NodeJSPlatform", process.platform);
 
         const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
         if (modulesToLoad) {
@@ -299,10 +296,9 @@ function configureRuntime(dotnet, runArgs) {
     }
     if (runArgs.debugging) {
         dotnet.withDebugging(-1);
-        dotnet.withWaitingForDebugger(-1);
-    }
-    if (runArgs.forwardConsole) {
-        dotnet.withConsoleForwarding();
+        dotnet.withConfig({
+            waitForDebugger: -1
+        });
     }
 }
 
@@ -333,12 +329,6 @@ async function run() {
         }
 
         console.info("Initializing dotnet version " + App.runtime.runtimeBuildInfo.productVersion + " commit hash " + App.runtime.runtimeBuildInfo.gitHash);
-
-        for (let i = 0; i < runArgs.profilers.length; ++i) {
-            const init = App.runtime.Module.cwrap('mono_wasm_load_profiler_' + runArgs.profilers[i], 'void', ['string']);
-            init("");
-        }
-
 
         if (runArgs.applicationArguments[0] == "--regression") {
             const exec_regression = App.runtime.Module.cwrap('mono_wasm_exec_regression', 'number', ['number', 'string']);

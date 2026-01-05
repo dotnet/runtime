@@ -5,12 +5,12 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.CommandLine;
 
-[SetupLinkerArgument ("-a", "test.exe", "entrypoint")]
-[SetupLinkerArgument ("-a", "../input/test.exe", "entrypoint")]
+[SetupLinkerArgument("-a", "test.exe", "entrypoint")]
+[SetupLinkerArgument("-a", "../input/test.exe", "entrypoint")]
 public class DuplicateRootAssembly
 {
-	public static void Main ()
-	{
+    public static void Main()
+    {
 
-	}
+    }
 }

@@ -9,6 +9,7 @@ DEPLOY_AND_RUN?=true
 RUNTIME_FLAVOR?=mono
 R2R?=false
 R2R_COMPOSITE?=false
+STATIC_LINKING?=false
 
 #If DIAGNOSTIC_PORTS is enabled, @(RuntimeComponents) must also include 'diagnostics_tracing'.
 #If @(RuntimeComponents) includes 'diagnostics_tracing', DIAGNOSTIC_PORTS is optional.
@@ -57,6 +58,7 @@ run: appbuilder
 	/p:RuntimeFlavor=$(RUNTIME_FLAVOR) \
 	/p:PublishReadyToRun=$(R2R) \
 	/p:PublishReadyToRunComposite=$(R2R_COMPOSITE) \
+	/p:StaticLinkedRuntime=$(STATIC_LINKING) \
 	/bl
 clean:
 	rm -rf $(REPO_DIR)/artifacts/bin/AndroidSampleApp

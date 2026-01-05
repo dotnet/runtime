@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         /// <returns>Returns the original <see cref="IMetricsBuilder"/> for chaining.</returns>
         public static IMetricsBuilder AddListener<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(this IMetricsBuilder builder) where T : class, IMetricsListener
         {
-            ThrowHelper.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(builder);
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IMetricsListener, T>());
             return builder;
         }
@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         /// <returns>Returns the original <see cref="IMetricsBuilder"/> for chaining.</returns>
         public static IMetricsBuilder AddListener(this IMetricsBuilder builder, IMetricsListener listener)
         {
-            ThrowHelper.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(builder);
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton(listener));
             return builder;
         }
@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         /// <returns>Returns the original <see cref="IMetricsBuilder"/> for chaining.</returns>
         public static IMetricsBuilder ClearListeners(this IMetricsBuilder builder)
         {
-            ThrowHelper.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(builder);
             builder.Services.RemoveAll<IMetricsListener>();
             return builder;
         }

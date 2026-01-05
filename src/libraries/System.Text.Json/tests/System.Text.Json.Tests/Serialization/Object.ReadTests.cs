@@ -672,5 +672,42 @@ namespace System.Text.Json.Serialization.Tests
             object result = JsonSerializer.Deserialize<object>(@"{ ""key"" : ""42"" }", options);
             Assert.IsAssignableFrom(expectedType, result);
         }
+
+        [Theory]
+        [InlineData("""{ "MyInt32" : 42, "MyInt32" : 42 }""")]
+        [InlineData("""{ "MyInt32Array" : null, "MyInt32Array" : null }""")]
+        public static void ReadSimpleObjectWithDuplicateProperties(string payload)
+        {
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicateProperties;
+
+            Exception ex =  Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClass>(payload, options));
+            Assert.Contains("Duplicate", ex.Message);
+
+            _ = JsonSerializer.Deserialize<SimpleTestClass>(payload); // Assert no throw
+        }
+
+        [Theory]
+        [InlineData("""{ "MyData" : null, "MyData" : null }""")]
+        [InlineData("""{ "MyData" : {}, "MyData" : {} }""")]
+        public static void ReadNestedObjectWithDuplicateProperties(string payload)
+        {
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicateProperties;
+
+            Exception ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithNestedObjectInner>(payload, options));
+            Assert.Contains("Duplicate", ex.Message);
+
+            _ = JsonSerializer.Deserialize<TestClassWithNestedObjectInner>(payload); // Assert no throw
+        }
+
+        [Theory]
+        [InlineData("""{ "MyInt32" : 42, "myInt32" : 42 }""")]
+        [InlineData("""{ "MyInt32Array" : null, "myInt32Array" : null }""")]
+        public static void ReadSimpleObjectWithDuplicatePropertiesCaseInsensitive(string payload)
+        {
+            var options = JsonTestSerializerOptions.DisallowDuplicatePropertiesIgnoringCase;
+
+            Exception ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClass>(payload, options));
+            Assert.Contains("Duplicate", ex.Message);
+        }
     }
 }

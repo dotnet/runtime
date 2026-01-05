@@ -11,8 +11,6 @@ using System.Runtime.InteropServices;
 
 using Xunit;
 
-// we will be doing "sizeof" with arrays containing managed references.
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
 #pragma warning disable CS9184 // 'Inline arrays' language feature is not supported for an inline array type that is not valid as a type argument, or has element type that is not valid as a type argument
 
 [InlineArray(LengthConst)]

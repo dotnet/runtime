@@ -3,13 +3,13 @@
 
 namespace Mono.Linker.Tests.Cases.UnreachableBlock.Dependencies
 {
-	public class LibWithConstantSubstitution
-	{
-		static bool _value;
+    public class LibWithConstantSubstitution
+    {
+        static bool _value;
 
-		public static bool ReturnFalse ()
-		{
-			return _value;
-		}
-	}
+        public static bool ReturnFalse()
+        {
+            return _value;
+        }
+    }
 }

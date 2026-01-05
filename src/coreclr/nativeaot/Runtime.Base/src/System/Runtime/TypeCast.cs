@@ -469,9 +469,7 @@ namespace System.Runtime
 
         private static unsafe bool IsInstanceOfInterfaceViaIDynamicInterfaceCastable(MethodTable* pTargetType, object obj, bool throwing)
         {
-            var pfnIsInterfaceImplemented = (delegate*<object, MethodTable*, bool, bool>)
-                pTargetType->GetClasslibFunction(ClassLibFunctionId.IDynamicCastableIsInterfaceImplemented);
-            return pfnIsInterfaceImplemented(obj, pTargetType, throwing);
+            return ((IDynamicInterfaceCastable)obj).IsInterfaceImplemented(new RuntimeTypeHandle(pTargetType), throwing);
         }
 
         internal static unsafe bool IsDerived(MethodTable* pDerivedType, MethodTable* pBaseType)
@@ -789,27 +787,12 @@ namespace System.Runtime
             // This is supported only on arrays
             Debug.Assert(array is null || array.GetMethodTable()->IsArray, "first argument must be an array");
 
-#if INPLACE_RUNTIME
             // This will throw NullReferenceException if obj is null.
             if ((nuint)index >= (uint)array.Length)
                 ThrowIndexOutOfRangeException(array);
 
             Debug.Assert(index >= 0);
             ref object? element = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
-#else
-            if (array is null)
-            {
-                // TODO: If both array and obj are null, we're likely going to throw Redhawk's NullReferenceException.
-                //       This should blame the caller.
-                throw obj.GetMethodTable()->GetClasslibException(ExceptionIDs.NullReference);
-            }
-            if ((uint)index >= (uint)array.Length)
-            {
-                throw array.GetMethodTable()->GetClasslibException(ExceptionIDs.IndexOutOfRange);
-            }
-            ref object rawData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(array).Data);
-            ref object element = ref Unsafe.Add(ref rawData, index);
-#endif
 
             MethodTable* elementType = array.GetMethodTable()->RelatedParameterType;
 
@@ -940,20 +923,23 @@ namespace System.Runtime
             return obj;
         }
 
-        private static unsafe EETypeElementType GetNormalizedIntegralArrayElementType(MethodTable* type)
+        internal static unsafe EETypeElementType GetNormalizedIntegralArrayElementType(MethodTable* type)
         {
-            EETypeElementType elementType = type->ElementType;
-            switch (elementType)
-            {
-                case EETypeElementType.Byte:
-                case EETypeElementType.UInt16:
-                case EETypeElementType.UInt32:
-                case EETypeElementType.UInt64:
-                case EETypeElementType.UIntPtr:
-                    return elementType - 1;
-            }
+            return GetNormalizedIntegralArrayElementType(type->ElementType);
+        }
 
-            return elementType;
+        internal static EETypeElementType GetNormalizedIntegralArrayElementType(EETypeElementType elementType)
+        {
+            // The shift operator respects the low-order five bits of the right-hand operand only.
+            Debug.Assert((int)elementType < 32);
+
+            // Array Primitive types such as E_T_I4 and E_T_U4 are interchangeable
+            // Enums with interchangeable underlying types are interchangeable
+            // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
+
+            // U1/U2/U4/U8/U
+            int shift = (0b0010_1010_1010_0000 >> (int)elementType) & 1;
+            return (EETypeElementType)((int)elementType - shift);
         }
 
         // Would not be inlined, but still need to mark NoInlining so that it doesn't throw off tail calls

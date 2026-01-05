@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "createdump.h"
+#include "minipal/time.h"
 
 #ifdef HOST_WINDOWS
 #define DEFAULT_DUMP_PATH "%TEMP%\\"
@@ -45,8 +46,6 @@ bool g_diagnostics = false;
 bool g_diagnosticsVerbose = false;
 uint64_t g_ticksPerMS = 0;
 uint64_t g_startTime = 0;
-uint64_t GetTickFrequency();
-uint64_t GetTimeStamp();
 
 //
 // Common entry point
@@ -198,8 +197,8 @@ int createdump_main(const int argc, const char* argv[])
         return -1;
     }
 
-    g_ticksPerMS = GetTickFrequency() / 1000UL;
-    g_startTime = GetTimeStamp();
+    g_ticksPerMS = minipal_hires_tick_frequency() / 1000UL;
+    g_startTime = minipal_hires_ticks();
     TRACE("TickFrequency: %d ticks per ms\n", g_ticksPerMS);
 
     ArrayHolder<char> tmpPath = new char[MAX_LONGPATH];
@@ -221,11 +220,11 @@ int createdump_main(const int argc, const char* argv[])
 
     if (CreateDump(options))
     {
-        printf_status("Dump successfully written in %llums\n", GetTimeStamp() - g_startTime);
+        printf_status("Dump successfully written in %llums\n", (minipal_hires_ticks() - g_startTime) / g_ticksPerMS);
     }
     else
     {
-        printf_error("Failure took %llums\n", GetTimeStamp() - g_startTime);
+        printf_error("Failure took %llums\n", (minipal_hires_ticks() - g_startTime) / g_ticksPerMS);
         exitCode = -1;
     }
 
@@ -332,24 +331,6 @@ printf_error(const char* format, ...)
     va_end(args);
 }
 
-uint64_t
-GetTickFrequency()
-{
-    LARGE_INTEGER ret;
-    ZeroMemory(&ret, sizeof(LARGE_INTEGER));
-    QueryPerformanceFrequency(&ret);
-    return ret.QuadPart;
-}
-
-uint64_t
-GetTimeStamp()
-{
-    LARGE_INTEGER ret;
-    ZeroMemory(&ret, sizeof(LARGE_INTEGER));
-    QueryPerformanceCounter(&ret);
-    return ret.QuadPart / g_ticksPerMS;
-}
-
 #ifdef HOST_UNIX
 
 static void
@@ -360,7 +341,7 @@ trace_prefix(const char* format, va_list args)
     {
         fprintf(g_stdout, "[createdump] ");
     }
-    fprintf(g_stdout, "%08" PRIx64 " ", GetTimeStamp());
+    fprintf(g_stdout, "%08" PRIx64 " ", minipal_hires_ticks() / g_ticksPerMS);
     vfprintf(g_stdout, format, args);
     fflush(g_stdout);
 }

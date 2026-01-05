@@ -22,6 +22,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             yield return new object[] { new[] { 800, 600, 400, 200, 100 }, 5, 13, 9 };
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/115763")]
         [MemberData(nameof(TestCases))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test only makes sense with ST TimerQueue
         public async Task TestTimers(int[] timeouts, int? expectedSetCounter, int? expectedSetCounterAfterCleanUp, int? expectedHitCount)

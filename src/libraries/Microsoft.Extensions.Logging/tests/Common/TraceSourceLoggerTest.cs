@@ -86,4 +86,3 @@ namespace Microsoft.Extensions.Logging.Test
         }
     }
 }
-

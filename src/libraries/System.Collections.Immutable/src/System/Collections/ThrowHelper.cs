@@ -9,14 +9,6 @@ namespace System.Collections
 {
     internal static class ThrowHelper
     {
-        public static void ThrowIfNull(object arg, [CallerArgumentExpression(nameof(arg))] string? paramName = null)
-        {
-            if (arg is null)
-            {
-                ThrowArgumentNullException(paramName);
-            }
-        }
-
         [DoesNotReturn]
         public static void ThrowIfDestinationTooSmall() =>
             throw new ArgumentException(SR.CapacityMustBeGreaterThanOrEqualToCount, "destination");

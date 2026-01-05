@@ -29,8 +29,8 @@ namespace System.Linq
             Func<TSource, TKey> keySelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return
                 source.IsKnownEmpty() ? Empty<TSource>() :
@@ -42,26 +42,20 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> enumerator = source.GetAsyncEnumerator(cancellationToken);
-                try
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
+
+                if (await e.MoveNextAsync())
                 {
-                    if (await enumerator.MoveNextAsync().ConfigureAwait(false))
+                    HashSet<TKey> set = new(comparer);
+                    do
                     {
-                        HashSet<TKey> set = new(comparer);
-                        do
+                        TSource element = e.Current;
+                        if (set.Add(keySelector(element)))
                         {
-                            TSource element = enumerator.Current;
-                            if (set.Add(keySelector(element)))
-                            {
-                                yield return element;
-                            }
+                            yield return element;
                         }
-                        while (await enumerator.MoveNextAsync().ConfigureAwait(false));
                     }
-                }
-                finally
-                {
-                    await enumerator.DisposeAsync().ConfigureAwait(false);
+                    while (await e.MoveNextAsync());
                 }
             }
         }
@@ -85,8 +79,8 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return
                 source.IsKnownEmpty() ? Empty<TSource>() :
@@ -98,26 +92,20 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> enumerator = source.GetAsyncEnumerator(cancellationToken);
-                try
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
+
+                if (await e.MoveNextAsync())
                 {
-                    if (await enumerator.MoveNextAsync().ConfigureAwait(false))
+                    HashSet<TKey> set = new(comparer);
+                    do
                     {
-                        HashSet<TKey> set = new(comparer);
-                        do
+                        TSource element = e.Current;
+                        if (set.Add(await keySelector(element, cancellationToken)))
                         {
-                            TSource element = enumerator.Current;
-                            if (set.Add(await keySelector(element, cancellationToken).ConfigureAwait(false)))
-                            {
-                                yield return element;
-                            }
+                            yield return element;
                         }
-                        while (await enumerator.MoveNextAsync().ConfigureAwait(false));
                     }
-                }
-                finally
-                {
-                    await enumerator.DisposeAsync().ConfigureAwait(false);
+                    while (await e.MoveNextAsync());
                 }
             }
         }

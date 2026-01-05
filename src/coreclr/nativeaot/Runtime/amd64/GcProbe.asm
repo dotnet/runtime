@@ -4,12 +4,13 @@
 include AsmMacros.inc
 
 ;;
-;; See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves RAX and accepts
+;; See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves RAX/RCX and accepts
 ;; the register bitmask
 ;;
 ;; On entry:
 ;;  - BITMASK: bitmask describing pushes, a volatile register
 ;;  - RAX: managed function return value, may be an object or byref
+;;  - RCX: managed function return value (async continuation), may be an object
 ;;  - preserved regs: need to stay preserved, may contain objects or byrefs
 ;;
 ;; INVARIANTS
@@ -18,8 +19,9 @@ include AsmMacros.inc
 ;;
 PUSH_PROBE_FRAME macro threadReg, trashReg, BITMASK
 
+    push_vol_reg    rcx                         ; save RCX, it might contain an objectref (async continuation)
     push_vol_reg    rax                         ; save RAX, it might contain an objectref
-    lea             trashReg, [rsp + 10h]
+    lea             trashReg, [rsp + 18h]
     push_vol_reg    trashReg                    ; save caller's RSP
     push_nonvol_reg r15                         ; save preserved registers
     push_nonvol_reg r14                         ;   ..
@@ -31,12 +33,12 @@ PUSH_PROBE_FRAME macro threadReg, trashReg, BITMASK
     push_vol_reg    BITMASK                     ; save the register bitmask passed in by caller
     push_vol_reg    threadReg                   ; Thread * (unused by stackwalker)
     push_nonvol_reg rbp                         ; save caller's RBP
-    mov             trashReg, [rsp + 12*8]      ; Find the return address
+    mov             trashReg, [rsp + 13*8]      ; Find the return address
     push_vol_reg    trashReg                    ; save m_RIP
     lea             trashReg, [rsp + 0]         ; trashReg == address of frame
 
     ;; allocate scratch space and any required alignment
-    alloc_stack     20h + 10h
+    alloc_stack     20h + 10h + 8
 
     ;; save xmm0 in case it's being used as a return value
     movdqa          [rsp + 20h], xmm0
@@ -50,9 +52,9 @@ endm
 ;; registers and return value to their values from before the probe was called (while also updating any
 ;; object refs or byrefs).
 ;;
-POP_PROBE_FRAME macro 
+POP_PROBE_FRAME macro
     movdqa      xmm0, [rsp + 20h]
-    add         rsp, 20h + 10h + 8  ; deallocate stack and discard saved m_RIP
+    add         rsp, 20h + 10h + 8 + 8  ; deallocate stack and discard saved m_RIP
     pop         rbp
     pop         rax     ; discard Thread*
     pop         rax     ; discard BITMASK
@@ -65,6 +67,7 @@ POP_PROBE_FRAME macro
     pop         r15
     pop         rax     ; discard caller RSP
     pop         rax
+    pop         rcx
 endm
 
 ;;
@@ -76,20 +79,20 @@ endm
 ;;
 ;; Register state on exit:
 ;;  RDX: thread pointer
-;;  RAX: preserved, other volatile regs trashed
+;;  RAX/RCX: preserved, other volatile regs trashed
 ;;
 FixupHijackedCallstack macro
-        ;; rdx <- GetThread(), TRASHES rcx
-        INLINE_GETTHREAD rdx, rcx
+        ;; rdx <- GetThread(), TRASHES r8
+        INLINE_GETTHREAD rdx, r8
 
         ;; Fix the stack by pushing the original return address
-        mov         rcx, [rdx + OFFSETOF__Thread__m_pvHijackedReturnAddress]
-        push        rcx
+        mov         r8, [rdx + OFFSETOF__Thread__m_pvHijackedReturnAddress]
+        push        r8
 
         ;; Clear hijack state
-        xor         ecx, ecx
-        mov         [rdx + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], rcx
-        mov         [rdx + OFFSETOF__Thread__m_pvHijackedReturnAddress], rcx
+        xor         r8, r8
+        mov         [rdx + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], r8
+        mov         [rdx + OFFSETOF__Thread__m_pvHijackedReturnAddress], r8
 endm
 
 ;;
@@ -103,30 +106,20 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT
         jnz         @f
         ret
 @@:
-        mov         ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_THREAD_HIJACK
+        mov         r8d, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_SAVE_RCX + PTFF_THREAD_HIJACK
         jmp         RhpWaitForGC
 NESTED_END RhpGcProbeHijack, _TEXT
 
-EXTERN RhpThrowHwEx : PROC
-
 NESTED_ENTRY RhpWaitForGC, _TEXT
-        PUSH_PROBE_FRAME rdx, rax, rcx
+        PUSH_PROBE_FRAME rdx, rax, r8
         END_PROLOGUE
 
         mov         rbx, rdx
         mov         rcx, [rbx + OFFSETOF__Thread__m_pDeferredTransitionFrame]
         call        RhpWaitForGC2
 
-        mov         rax, [rbx + OFFSETOF__Thread__m_pDeferredTransitionFrame]
-        test        dword ptr [rax + OFFSETOF__PInvokeTransitionFrame__m_Flags], PTFF_THREAD_ABORT
-        jnz         Abort
         POP_PROBE_FRAME
         ret
-Abort:
-        POP_PROBE_FRAME
-        mov         rcx, STATUS_REDHAWK_THREAD_ABORT
-        pop         rdx         ;; return address as exception RIP
-        jmp         RhpThrowHwEx ;; Throw the ThreadAbortException as a special kind of hardware exception
 
 NESTED_END RhpWaitForGC, _TEXT
 
@@ -140,7 +133,6 @@ LEAF_END RhpGcPoll, _TEXT
 
 NESTED_ENTRY RhpGcPollRare, _TEXT
         PUSH_COOP_PINVOKE_FRAME rcx
-        END_PROLOGUE
         call        RhpGcPoll2
         POP_COOP_PINVOKE_FRAME
         ret
@@ -155,7 +147,7 @@ ifdef FEATURE_GC_STRESS
 ;;
 LEAF_ENTRY RhpGcStressHijack, _TEXT
         FixupHijackedCallstack
-        or          ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX
+        mov         r8d, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_SAVE_RCX
         jmp         RhpGcStressProbe
 LEAF_END RhpGcStressHijack, _TEXT
 
@@ -166,14 +158,14 @@ LEAF_END RhpGcStressHijack, _TEXT
 ;;
 ;; Register state on entry:
 ;;  RDX: thread pointer
-;;  RCX: register bitmask
+;;  R8: register bitmask
 ;;
 ;; Register state on exit:
-;;  Scratch registers, except for RAX, have been trashed
+;;  Scratch registers, except for RAX/RCX, have been trashed
 ;;  All other registers restored as they were when the hijack was first reached.
 ;;
 NESTED_ENTRY RhpGcStressProbe, _TEXT
-        PUSH_PROBE_FRAME rdx, rax, rcx
+        PUSH_PROBE_FRAME rdx, rax, r8
         END_PROLOGUE
 
         call        RhpStressGc

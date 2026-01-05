@@ -5,19 +5,17 @@ namespace System.CodeDom
 {
     public class CodeMemberProperty : CodeTypeMember
     {
-        private CodeTypeReference _type;
         private bool _hasGet;
         private bool _hasSet;
-        private CodeTypeReferenceCollection _implementationTypes;
 
         public CodeTypeReference PrivateImplementationType { get; set; }
 
-        public CodeTypeReferenceCollection ImplementationTypes => _implementationTypes ??= new CodeTypeReferenceCollection();
+        public CodeTypeReferenceCollection ImplementationTypes => field ??= new CodeTypeReferenceCollection();
 
         public CodeTypeReference Type
         {
-            get => _type ??= new CodeTypeReference("");
-            set => _type = value;
+            get => field ??= new CodeTypeReference("");
+            set => field = value;
         }
 
         public bool HasGet

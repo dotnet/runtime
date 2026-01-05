@@ -15,7 +15,7 @@ internal static class SerializationExtensions
     public static SerializationException ConvertToSerializationException(this Exception ex)
         => ex is SerializationException serializationException
             ? serializationException
-#if NETCOREAPP
+#if NET
             : (SerializationException)ExceptionDispatchInfo.SetRemoteStackTrace(
                 new SerializationException(ex.Message, ex),
                 ex.StackTrace ?? string.Empty);
