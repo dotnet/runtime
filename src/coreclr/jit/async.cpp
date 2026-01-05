@@ -481,14 +481,6 @@ bool AsyncLiveness::IsLocalCaptureUnnecessary(unsigned lclNum)
         return true;
     }
 
-#ifdef FEATURE_EH_WINDOWS_X86
-    if (lclNum == m_comp->lvaShadowSPslotsVar)
-    {
-        // Only expected to be live in handlers
-        return true;
-    }
-#endif
-
     if (lclNum == m_comp->lvaRetAddrVar)
     {
         return true;

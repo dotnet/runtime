@@ -2223,12 +2223,6 @@ PhaseStatus Compiler::optOptimizePreLayout()
     // Run a late pass of unconditional-to-conditional branch optimization, skipping handler blocks.
     for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB; block = block->Next())
     {
-        if (!UsesFunclets() && block->hasHndIndex())
-        {
-            block = ehGetDsc(block->getHndIndex())->ebdHndLast;
-            continue;
-        }
-
         modified |= fgOptimizeBranch(block);
     }
 
@@ -2786,7 +2780,7 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
     JITDUMP("Canonicalize exit " FMT_BB " for " FMT_LP " to have only loop predecessors\n", exit->bbNum,
             loop->GetIndex());
 
-    if (UsesCallFinallyThunks() && exit->KindIs(BBJ_CALLFINALLY))
+    if (exit->KindIs(BBJ_CALLFINALLY))
     {
         // Branches to a BBJ_CALLFINALLY _must_ come from inside its associated
         // try region, and when we have callfinally thunks the BBJ_CALLFINALLY

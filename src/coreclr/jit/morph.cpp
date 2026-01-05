@@ -14170,12 +14170,9 @@ void Compiler::fgSetOptions()
         codeGen->setFramePointerRequiredEH(true);
 
 #ifdef TARGET_X86
-        if (UsesFunclets())
-        {
-            assert(!codeGen->isGCTypeFixed());
-            // Enforce fully interruptible codegen for funclet unwinding
-            SetInterruptible(true);
-        }
+        assert(!codeGen->isGCTypeFixed());
+        // Enforce fully interruptible codegen for funclet unwinding
+        SetInterruptible(true);
 #endif // TARGET_X86
     }
 
