@@ -4176,25 +4176,25 @@
     <value>AssemblyName.GetAssemblyName() is not supported on this platform.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptions" xml:space="preserve">
-    <value>CompareOptions = {0} are not supported on Apple mobile platforms. Adjust your code or open an issue on https://github.com/dotnet/runtime if this is impacting your use case.</value>
+    <value>CompareOptions = {0} are not supported on Apple mobile platforms.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithMixedCompositions" xml:space="preserve">
-    <value>Mixed compositions in string are not supported on Apple mobile platforms. Adjust your code or open an issue on https://github.com/dotnet/runtime if this is impacting your use case.</value>
+    <value>Mixed compositions in string are not supported on Apple mobile platforms.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptionsForCulture" xml:space="preserve">
-    <value>CompareOptions = {0} are not supported for culture = {1} on Apple mobile platforms. Adjust your code or open an issue on https://github.com/dotnet/runtime if this is impacting your use case.</value>
+    <value>CompareOptions = {0} are not supported for culture = {1} on Apple mobile platforms.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithMatchLength" xml:space="preserve">
-    <value>Match length calculation is not supported on Apple mobile platforms. Adjust your code or open an issue on https://github.com/dotnet/runtime if this is impacting your use case.</value>
+    <value>Match length calculation is not supported on Apple mobile platforms.</value>
   </data>
   <data name="PlatformNotSupported_NonZeroLowerBound" xml:space="preserve">
     <value>Arrays with non-zero lower bounds are not supported.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalization" xml:space="preserve">
-    <value>{0} is not supported on Apple mobile platforms. Adjust your code or open an issue on https://github.com/dotnet/runtime if this is impacting your use case.</value>
+    <value>{0} is not supported on Apple mobile platforms.</value>
   </data>
   <data name="PlatformNotSupportedWithReason_HybridGlobalization" xml:space="preserve">
-    <value>{0} is not supported for {1} on Apple mobile platforms. Adjust your code or open an issue on https://github.com/dotnet/runtime if this is impacting your use case.</value>
+    <value>{0} is not supported for {1} on Apple mobile platforms.</value>
   </data>
   <data name="NotSupported_BodyRemoved" xml:space="preserve">
     <value>The body of this method was removed by the AOT compiler because it's not callable.</value>
