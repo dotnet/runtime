@@ -27,9 +27,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
         public void Set(LocalKey key, TValue value)
         {
             current.LocalState.Set(key, value);
-            if (Exception != null)
-                // TODO: optimize this to not meet the whole value, but just modify one value without copying.
-                Exception.Value = Lattice.Meet(Exception.Value, current);
+            // TODO: optimize this to not meet the whole value, but just modify one value without copying.
+            Exception?.Value = Lattice.Meet(Exception.Value, current);
         }
 
         public TValue Get(LocalKey key) => current.LocalState.Get(key);

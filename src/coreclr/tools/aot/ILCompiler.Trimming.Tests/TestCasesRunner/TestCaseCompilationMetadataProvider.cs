@@ -138,6 +138,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 .Combine("Support")
                 .Combine("DynamicallyAccessedMembersAttribute.cs");
             yield return dam;
+
+            var sharedDir = _testCase.RootCasesDirectory.Parent.Parent
+                .Combine("src")
+                .Combine("ILLink.Shared");
+            yield return sharedDir.Combine("RequiresDynamicCodeAttribute.cs");
+            yield return sharedDir.Combine("RequiresUnreferencedCodeAttribute.cs");
         }
 
         public virtual IEnumerable<string> GetCommonReferencedAssemblies(NPath workingDirectory)

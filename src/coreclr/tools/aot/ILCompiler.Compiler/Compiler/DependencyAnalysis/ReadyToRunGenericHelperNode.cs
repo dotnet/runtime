@@ -57,6 +57,8 @@ namespace ILCompiler.DependencyAnalysis
                     return factory.GenericLookup.Type((TypeDesc)target);
                 case ReadyToRunHelperId.NecessaryTypeHandle:
                     return factory.GenericLookup.NecessaryType((TypeDesc)target);
+                case ReadyToRunHelperId.MetadataTypeHandle:
+                    return factory.GenericLookup.MetadataType((TypeDesc)target);
                 case ReadyToRunHelperId.TypeHandleForCasting:
                     // Check that we unwrapped the cases that could be unwrapped to prevent duplicate entries
                     Debug.Assert(factory.GenericLookup.Type((TypeDesc)target) != factory.GenericLookup.UnwrapNullableType((TypeDesc)target));
@@ -188,7 +190,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private static IMethodNode GetBadSlotHelper(NodeFactory factory)
         {
-            return factory.MethodEntrypoint(factory.TypeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowUnavailableType"));
+            return factory.MethodEntrypoint(factory.TypeSystemContext.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowUnavailableType"u8));
         }
 
         protected void AppendLookupSignatureMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

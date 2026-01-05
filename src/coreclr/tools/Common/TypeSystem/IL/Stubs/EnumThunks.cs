@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -28,7 +29,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return Context.GetWellKnownType(WellKnownType.Object).GetKnownMethod("GetHashCode", null);
+                return Context.GetWellKnownType(WellKnownType.Object).GetKnownMethod("GetHashCode"u8, null);
             }
         }
 
@@ -56,11 +57,11 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return "GetHashCode";
+                return "GetHashCode"u8;
             }
         }
 
@@ -119,7 +120,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return Context.GetWellKnownType(WellKnownType.Object).GetKnownMethod("Equals", null);
+                return Context.GetWellKnownType(WellKnownType.Object).GetKnownMethod("Equals"u8, null);
             }
         }
 
@@ -147,11 +148,11 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return "Equals";
+                return "Equals"u8;
             }
         }
 
@@ -196,7 +197,7 @@ namespace Internal.IL.Stubs
             // return ({underlyingtype})this == ({underlyingtype})obj;
 
             // PREFER: ILOpcode.unbox, but the codegen for that is pretty bad
-            codeStream.Emit(ILOpcode.ldflda, emitter.NewToken(Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType")));
+            codeStream.Emit(ILOpcode.ldflda, emitter.NewToken(Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType"u8)));
             codeStream.EmitLdc(Context.Target.PointerSize);
             codeStream.Emit(ILOpcode.add);
             codeStream.EmitLdInd(owningTypeAsOpen);

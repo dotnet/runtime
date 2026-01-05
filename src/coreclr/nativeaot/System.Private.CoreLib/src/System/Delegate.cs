@@ -9,6 +9,7 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Threading;
 
 using Internal.Reflection.Augments;
 using Internal.Runtime;
@@ -465,7 +466,7 @@ namespace System
 
         private static bool TrySetSlot(Wrapper[] a, int index, Delegate o)
         {
-            if (a[index].Value == null && System.Threading.Interlocked.CompareExchange(ref a[index].Value, o, null) == null)
+            if (a[index].Value == null && Interlocked.CompareExchange(ref a[index].Value, o, null) == null)
                 return true;
 
             // The slot may be already set because we have added and removed the same method before.

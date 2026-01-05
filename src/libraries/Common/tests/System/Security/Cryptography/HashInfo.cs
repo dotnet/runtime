@@ -101,6 +101,8 @@ namespace Test.Cryptography
 #endif
         }
 
+        internal static HashSet<string> KnownHashAlgorithmOids => field ??= AllHashInfos().Select(h => h.Oid).ToHashSet();
+
         private HashInfo(string oid, int outputSize, HashAlgorithmName name)
         {
             Oid = oid;

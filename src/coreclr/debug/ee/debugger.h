@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: debugger.h
 //
-
-//
 // Header file for Runtime Controller classes of the CLR Debugging Services.
-//
 //*****************************************************************************
 
 #ifndef DEBUGGER_H_
@@ -381,13 +379,9 @@ inline LPVOID PushedRegAddr(REGDISPLAY* pRD, LPVOID pAddr)
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef FEATURE_EH_FUNCLETS
     if ( ((UINT_PTR)(pAddr) >= (UINT_PTR)pRD->pCurrentContextPointers) &&
          ((UINT_PTR)(pAddr) <= ((UINT_PTR)pRD->pCurrentContextPointers + sizeof(T_KNONVOLATILE_CONTEXT_POINTERS))) )
-#else
-    if ( ((UINT_PTR)(pAddr) >= (UINT_PTR)pRD->pContext) &&
-         ((UINT_PTR)(pAddr) <= ((UINT_PTR)pRD->pContext + sizeof(T_CONTEXT))) )
-#endif
+
         return NULL;
 
     // (Microsoft 2/9/07 - putting this in an else clause confuses gcc for some reason, so I've moved
@@ -1116,8 +1110,8 @@ protected:
 //     different part of the address space (not on the heap).
 // ------------------------------------------------------------------------ */
 
-constexpr uint64_t DBG_MAX_EXECUTABLE_ALLOC_SIZE=112;
-constexpr uint64_t EXPECTED_CHUNKSIZE=128;
+constexpr uint64_t DBG_MAX_EXECUTABLE_ALLOC_SIZE=120; // sizeof (SharedPatchBypassBuffer)
+constexpr uint64_t EXPECTED_CHUNKSIZE=256; // This must be a power of 2.  It represents the size of DebuggerHeapExecutableMemoryChunk, can be the sizeof (DataChunk) or sizeof (BookkeepingChunk). Changes to DBG_MAX_EXECUTABLE_ALLOC_SIZE can affect this number.  Currently we require 136 bytes, and so the closest power of 2 is 256.
 constexpr uint64_t DEBUGGERHEAP_PAGESIZE=4096;
 constexpr uint64_t CHUNKS_PER_DEBUGGERHEAP=(DEBUGGERHEAP_PAGESIZE / EXPECTED_CHUNKSIZE);
 constexpr uint64_t MAX_CHUNK_MASK=((1ull << CHUNKS_PER_DEBUGGERHEAP) - 1);
@@ -1319,9 +1313,7 @@ private:
 
 class DebuggerJitInfo;
 
-#if defined(FEATURE_EH_FUNCLETS)
 const int PARENT_METHOD_INDEX     = -1;
-#endif // FEATURE_EH_FUNCLETS
 
 class CodeRegionInfo
 {
@@ -1600,10 +1592,8 @@ public:
     // The version number of this jitted code
     SIZE_T                   m_encVersion;
 
-#if defined(FEATURE_EH_FUNCLETS)
     DWORD                   *m_rgFunclet;
     int                      m_funcletCount;
-#endif // FEATURE_EH_FUNCLETS
 
 #ifndef DACCESS_COMPILE
 
@@ -1630,9 +1620,7 @@ public:
 
     private:
         SIZE_T m_ilOffset;
-#ifdef FEATURE_EH_FUNCLETS
         int m_funcletIndex;
-#endif
     };
 
     struct NativeOffset
@@ -1679,10 +1667,8 @@ public:
     SIZE_T MapSpecialToNative(CorDebugMappingResult mapping,
                               SIZE_T which,
                               BOOL *pfAccurate);
-#if defined(FEATURE_EH_FUNCLETS)
     void   MapSpecialToNative(int funcletIndex, DWORD* pPrologEndOffset, DWORD* pEpilogStartOffset);
     SIZE_T MapILOffsetToNativeForSetIP(SIZE_T offsetILTo, int funcletIndexFrom, EHRangeTree* pEHRT, BOOL* pExact);
-#endif // FEATURE_EH_FUNCLETS
 
     // MapNativeOffsetToIL Takes a given nativeOffset, and maps it back
     //      to the corresponding IL offset, which it returns.  If mapping indicates
@@ -1696,7 +1682,6 @@ public:
 
     void Init(TADDR newAddress);
 
-#if defined(FEATURE_EH_FUNCLETS)
     enum GetFuncletIndexMode
     {
         GFIM_BYOFFSET,
@@ -1707,7 +1692,6 @@ public:
     DWORD GetFuncletOffsetByIndex(int index);
     int   GetFuncletIndex(CORDB_ADDRESS offset, GetFuncletIndexMode mode);
     int   GetFuncletCount() {return m_funcletCount;}
-#endif // FEATURE_EH_FUNCLETS
 
     void SetVars(ULONG32 cVars, ICorDebugInfo::NativeVarInfo *pVars);
     void SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap);
@@ -1864,7 +1848,7 @@ extern "C" void __stdcall NotifyRightSideOfSyncCompleteFlare(void);
 extern "C" void __stdcall NotifySecondChanceReadyForDataFlare(void);
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size, bool fIsInPlaceSingleStep, PRD_TYPE opcode);
+extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size, DWORD64 flag, PRD_TYPE opcode);
 #else
 #error Platform not supported
 #endif
@@ -2302,10 +2286,12 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
+#ifdef FEATURE_CODE_VERSIONING
 private:
     HRESULT DeoptimizeMethodHelper(Module* pModule, mdMethodDef methodDef);
 
 public:
+#endif // FEATURE_CODE_VERSIONING
     HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef);
 #endif //DACCESS_COMPILE
     HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult);
@@ -2617,11 +2603,7 @@ public:
     BOOL ShouldAutoAttach();
     BOOL FallbackJITAttachPrompt();
 
-    HRESULT AddAppDomainToIPC (AppDomain *pAppDomain);
-    HRESULT RemoveAppDomainFromIPC (AppDomain *pAppDomain);
-    HRESULT UpdateAppDomainEntryInIPC (AppDomain *pAppDomain);
-
-    void SendCreateAppDomainEvent(AppDomain * pAppDomain);
+    void AppDomainCreated(AppDomain * pAppDomain);
 
     // Notify the debugger that an assembly has been unloaded
     void UnloadAssembly(DomainAssembly * pDomainAssembly);
@@ -2837,9 +2819,6 @@ private:
     DebuggerLaunchSetting GetDbgJITDebugLaunchSetting();
 
 public:
-    HRESULT InitAppDomainIPC(void);
-    HRESULT TerminateAppDomainIPC(void);
-
     bool ResumeThreads(AppDomain* pAppDomain);
 
     void ProcessAnyPendingEvals(Thread *pThread);
@@ -2920,7 +2899,6 @@ private:
     Volatile<BOOL>        m_jitAttachInProgress;
     BOOL                  m_launchingDebugger;
     BOOL                  m_LoggingEnabled;
-    AppDomainEnumerationIPCBlock    *m_pAppDomainCB;
 
     LONG                  m_dClassLoadCallbackCount;
 
@@ -3033,7 +3011,7 @@ private:
     BOOL m_fOutOfProcessSetContextEnabled;
 public:
     // Used by Debugger::FirstChanceNativeException to update the context from out of process
-    void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL);
+    void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL, bool fHasActivePatchSkip = false, bool fClearSetIP = false);
     BOOL IsOutOfProcessSetContextEnabled();
 };
 

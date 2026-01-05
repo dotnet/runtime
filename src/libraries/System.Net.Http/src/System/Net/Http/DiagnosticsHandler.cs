@@ -356,12 +356,14 @@ namespace System.Net.Http
         {
             _propagator.Inject(currentActivity, request, static (carrier, key, value) =>
             {
-                if (carrier is HttpRequestMessage request &&
-                    key is not null &&
-                    HeaderDescriptor.TryGet(key, out HeaderDescriptor descriptor) &&
-                    !request.Headers.TryGetHeaderValue(descriptor, out _))
+                if (carrier is HttpRequestMessage request && key is not null)
                 {
-                    request.Headers.TryAddWithoutValidation(descriptor, value);
+                    HeaderDescriptor descriptor = request.Headers.GetHeaderDescriptor(key);
+
+                    if (!request.Headers.Contains(descriptor))
+                    {
+                        request.Headers.Add(descriptor, value);
+                    }
                 }
             });
             request.MarkPropagatorStateInjectedByDiagnosticsHandler();

@@ -377,7 +377,7 @@ namespace System.Xml
         {
             Debug.Assert(text != null);
 
-            if (_trackTextContent && _inTextContent != true) { ChangeTextContentMark(true); }
+            if (_trackTextContent && !_inTextContent) { ChangeTextContentMark(true); }
 
             fixed (char* pSrc = text)
             {
@@ -414,7 +414,7 @@ namespace System.Xml
             Debug.Assert(index >= 0);
             Debug.Assert(count >= 0 && index + count <= buffer.Length);
 
-            if (_trackTextContent && _inTextContent != true) { ChangeTextContentMark(true); }
+            if (_trackTextContent && !_inTextContent) { ChangeTextContentMark(true); }
 
             fixed (char* pSrcBegin = &buffer[index])
             {

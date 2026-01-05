@@ -45,9 +45,6 @@ namespace System.Security.Cryptography.Xml
         private const string XmlDsigMoreHMACSHA512Url = "http://www.w3.org/2001/04/xmldsig-more#hmac-sha512";
         private const string XmlDsigMoreHMACRIPEMD160Url = "http://www.w3.org/2001/04/xmldsig-more#hmac-ripemd160";
 
-        // defines the XML encryption processing rules
-        private EncryptedXml? _exml;
-
         //
         // public constant Url identifiers most frequently used within the XML Signature classes
         //
@@ -177,8 +174,8 @@ namespace System.Security.Cryptography.Xml
         {
             [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "ctors are marked as RDC")]
             [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RUC")]
-            get => _exml ??= new EncryptedXml(_containingDocument!); // default processing rules
-            set => _exml = value;
+            get => field ??= new EncryptedXml(_containingDocument!); // default processing rules
+            set => field = value;
         }
 
         public Signature Signature
@@ -274,7 +271,7 @@ namespace System.Security.Cryptography.Xml
                     bRet = CheckSignature(key);
                     SignedXmlDebugLog.LogVerificationResult(this, key, bRet);
                 }
-            } while (key != null && bRet == false);
+            } while (key != null && !bRet);
 
             signingKey = key;
             return bRet;

@@ -1,19 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: debugger.cpp
 //
-
-//
 // Debugger runtime controller routines.
-//
 //*****************************************************************************
 
 #include "stdafx.h"
 #include "debugdebugger.h"
 #include "../inc/common.h"
 #include "eeconfig.h" // This is here even for retail & free builds...
-#include "../../dlls/mscorrc/resource.h"
 
 #include "vars.hpp"
 #include <limits.h>
@@ -78,7 +75,7 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
 {
     _ASSERTE(!"Don't call this function. It just does compile time checking\n");
 
-    // We use the C_ASSERT macro here to get a compile-time assert.
+    // We use the static_assert macro here to get a compile-time assert.
 
     // Make sure we don't have any duplicate numbers.
     // The switch statements in the main loops won't always catch this
@@ -107,8 +104,8 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
 
     // Make sure all values are subset of the bits specified by DB_IPCE_TYPE_MASK
     #define IPC_EVENT_TYPE0(type, val)
-    #define IPC_EVENT_TYPE1(type, val)  C_ASSERT((val & e_DB_IPCE_TYPE_MASK) == val);
-    #define IPC_EVENT_TYPE2(type, val)  C_ASSERT((val & e_DB_IPCE_TYPE_MASK) == val);
+    #define IPC_EVENT_TYPE1(type, val)  static_assert((val & e_DB_IPCE_TYPE_MASK) == val);
+    #define IPC_EVENT_TYPE2(type, val)  static_assert((val & e_DB_IPCE_TYPE_MASK) == val);
     #include "dbgipceventtypes.h"
     #undef IPC_EVENT_TYPE2
     #undef IPC_EVENT_TYPE1
@@ -116,27 +113,27 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
 
     // Make sure that no value is DB_IPCE_INVALID_EVENT
     #define IPC_EVENT_TYPE0(type, val)
-    #define IPC_EVENT_TYPE1(type, val)  C_ASSERT(val != e_DB_IPCE_INVALID_EVENT);
-    #define IPC_EVENT_TYPE2(type, val)  C_ASSERT(val != e_DB_IPCE_INVALID_EVENT);
+    #define IPC_EVENT_TYPE1(type, val)  static_assert(val != e_DB_IPCE_INVALID_EVENT);
+    #define IPC_EVENT_TYPE2(type, val)  static_assert(val != e_DB_IPCE_INVALID_EVENT);
     #include "dbgipceventtypes.h"
     #undef IPC_EVENT_TYPE2
     #undef IPC_EVENT_TYPE1
     #undef IPC_EVENT_TYPE0
 
     // Make sure first-last values are well structured.
-    static_assert_no_msg(e_DB_IPCE_RUNTIME_FIRST < e_DB_IPCE_RUNTIME_LAST);
-    static_assert_no_msg(e_DB_IPCE_DEBUGGER_FIRST < e_DB_IPCE_DEBUGGER_LAST);
+    static_assert(e_DB_IPCE_RUNTIME_FIRST < e_DB_IPCE_RUNTIME_LAST);
+    static_assert(e_DB_IPCE_DEBUGGER_FIRST < e_DB_IPCE_DEBUGGER_LAST);
 
     // Make sure that event ranges don't overlap.
     // This check is simplified because L->R events come before R<-L
-    static_assert_no_msg(e_DB_IPCE_RUNTIME_LAST < e_DB_IPCE_DEBUGGER_FIRST);
+    static_assert(e_DB_IPCE_RUNTIME_LAST < e_DB_IPCE_DEBUGGER_FIRST);
 
 
     // Make sure values are in the proper ranges
     // Type1 should be in the Runtime range, Type2 in the Debugger range.
     #define IPC_EVENT_TYPE0(type, val)
-    #define IPC_EVENT_TYPE1(type, val)  C_ASSERT((e_DB_IPCE_RUNTIME_FIRST <= val) && (val < e_DB_IPCE_RUNTIME_LAST));
-    #define IPC_EVENT_TYPE2(type, val)  C_ASSERT((e_DB_IPCE_DEBUGGER_FIRST <= val) && (val < e_DB_IPCE_DEBUGGER_LAST));
+    #define IPC_EVENT_TYPE1(type, val)  static_assert((e_DB_IPCE_RUNTIME_FIRST <= val) && (val < e_DB_IPCE_RUNTIME_LAST));
+    #define IPC_EVENT_TYPE2(type, val)  static_assert((e_DB_IPCE_DEBUGGER_FIRST <= val) && (val < e_DB_IPCE_DEBUGGER_LAST));
     #include "dbgipceventtypes.h"
     #undef IPC_EVENT_TYPE2
     #undef IPC_EVENT_TYPE1
@@ -153,7 +150,7 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
     11) && (11 <
     12) && (12 <
     last)
-    static_assert_no_msg(f);
+    static_assert(f);
     */
 
     const bool f1 = (
@@ -167,7 +164,7 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
         #undef IPC_EVENT_TYPE0
         e_DB_IPCE_RUNTIME_LAST)
     );
-    static_assert_no_msg(f1);
+    static_assert(f1);
 
     const bool f2 = (
         (e_DB_IPCE_DEBUGGER_FIRST <=
@@ -180,7 +177,7 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
         #undef IPC_EVENT_TYPE0
         e_DB_IPCE_DEBUGGER_LAST)
     );
-    static_assert_no_msg(f2);
+    static_assert(f2);
 
 } // end checks
 
@@ -926,7 +923,6 @@ Debugger::Debugger()
     m_jitAttachInProgress(FALSE),
     m_launchingDebugger(FALSE),
     m_LoggingEnabled(TRUE),
-    m_pAppDomainCB(NULL),
     m_dClassLoadCallbackCount(0),
     m_pModules(NULL),
     m_RSRequestedSync(FALSE),
@@ -1896,22 +1892,6 @@ HRESULT Debugger::Startup(void)
 
         InitializeHijackFunctionAddress();
 
-        // Also initialize the AppDomainEnumerationIPCBlock
-    #if !defined(FEATURE_IPCMAN) || defined(FEATURE_DBGIPC_TRANSPORT_VM)
-        m_pAppDomainCB = new (nothrow) AppDomainEnumerationIPCBlock();
-    #else
-        m_pAppDomainCB = g_pIPCManagerInterface->GetAppDomainBlock();
-    #endif
-
-        if (m_pAppDomainCB == NULL)
-        {
-            LOG((LF_CORDB, LL_INFO100, "D::S: Failed to get AppDomain IPC block from IPCManager.\n"));
-            ThrowHR(E_FAIL);
-        }
-
-        hr = InitAppDomainIPC();
-        _ASSERTE(SUCCEEDED(hr)); // throws on error.
-
         // Allows the debugger (and profiler) diagnostics to be disabled so resources like
         // the named pipes and semaphores are not created.
         if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableDiagnostics) == 0)
@@ -1939,7 +1919,7 @@ HRESULT Debugger::Startup(void)
     #if defined(FEATURE_DBGIPC_TRANSPORT_VM)
          // Create transport session and initialize it.
         g_pDbgTransport = new DbgTransportSession();
-        hr = g_pDbgTransport->Init(m_pRCThread->GetDCB(), m_pAppDomainCB);
+        hr = g_pDbgTransport->Init(m_pRCThread->GetDCB());
         if (FAILED(hr))
         {
             ShutdownTransport();
@@ -2405,9 +2385,6 @@ void Debugger::StopDebugger(void)
     {
         m_pRCThread->AsyncStop();
     }
-
-    // Also clean up the AppDomain stuff since this is cross-process.
-    TerminateAppDomainIPC ();
 
     //
     // Tell the VM to clear out all references to the debugger before we start cleaning up,
@@ -3506,6 +3483,7 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
 
     LOG((LF_CORDB, LL_INFO1000, "D::SIP: In SetIP ==> fCanSetIPOnly:0x%x <==!\n", fCanSetIPOnly));
 
+#ifdef FEATURE_CODE_VERSIONING
     CodeVersionManager *pCodeVersionManager = module->GetCodeVersionManager();
     {
         CodeVersionManager::LockHolder codeVersioningLockHolder;
@@ -3515,6 +3493,7 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
             return CORDBG_E_SET_IP_IMPOSSIBLE;
         }
     }
+#endif // FEATURE_CODE_VERSIONING
 
     pCtx = GetManagedStoppedCtx(thread);
 
@@ -3531,13 +3510,11 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
     csi.GetStackInfo(ticket, thread, LEAF_MOST_FRAME, NULL);
 
     ULONG offsetNatFrom = csi.m_activeFrame.relOffset;
-#if defined(FEATURE_EH_FUNCLETS)
     if (csi.m_activeFrame.IsFuncletFrame())
     {
         offsetNatFrom = (ULONG)((SIZE_T)GetControlPC(&(csi.m_activeFrame.registers)) -
                                 (SIZE_T)(dji->m_addrOfCode));
     }
-#endif // FEATURE_EH_FUNCLETS
 
     _ASSERTE(dji != NULL);
 
@@ -3546,11 +3523,10 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
     // the size of the individual funclets or the parent method.
     pbBase = (BYTE*)CORDB_ADDRESS_TO_PTR(dji->m_addrOfCode);
     dwSize = (DWORD)dji->m_sizeOfCode;
-#if defined(FEATURE_EH_FUNCLETS)
+
     // Currently, method offsets are not bigger than 4 bytes even on WIN64.
     // Assert that it is so here.
     _ASSERTE((SIZE_T)dwSize == dji->m_sizeOfCode);
-#endif // FEATURE_EH_FUNCLETS
 
 
     // Create our structure for analyzing this.
@@ -3558,10 +3534,8 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
     // CanSetIP & SetIP.</TODO>
     int           cFunclet  = 0;
     const DWORD * rgFunclet = NULL;
-#if defined(FEATURE_EH_FUNCLETS)
     cFunclet  = dji->GetFuncletCount();
     rgFunclet = dji->m_rgFunclet;
-#endif // FEATURE_EH_FUNCLETS
 
     EHRangeTree* pEHRT = new (nothrow) EHRangeTree(csi.m_activeFrame.pIJM,
                                                    csi.m_activeFrame.MethodToken,
@@ -3599,14 +3573,8 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
         // Caveat: we need to go to a sequence point
         if (fIsIL )
         {
-#if defined(FEATURE_EH_FUNCLETS)
             int funcletIndexFrom = dji->GetFuncletIndex((CORDB_ADDRESS)offsetNatFrom, DebuggerJitInfo::GFIM_BYOFFSET);
             offsetNatTo = dji->MapILOffsetToNativeForSetIP(offsetILTo, funcletIndexFrom, pEHRT, &exact);
-#else  // FEATURE_EH_FUNCLETS
-            DebuggerJitInfo::ILToNativeOffsetIterator it;
-            dji->InitILToNativeOffsetIterator(it, offsetILTo);
-            offsetNatTo = it.CurrentAssertOnlyOne(&exact);
-#endif // FEATURE_EH_FUNCLETS
 
             if (!exact)
             {
@@ -5471,6 +5439,14 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
     bool retVal;
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     DebuggerSteppingInfo debuggerSteppingInfo;
+    if ((void*)GetIP(context) == (void*)SetThreadContextNeededFlare)
+    {
+        // The out-of-proc debugger is ignoring the SetThreadContextNeeded flare
+        // SSP will be pointing to the instruction after the breakpoint, so advance the IP to that instruction and continue
+        PCODE ip = ::GetIP(context);
+        ::SetIP(context, ip + CORDbg_BREAK_INSTRUCTION_SIZE);
+        return true;
+    }
 #endif
 
     {
@@ -5493,11 +5469,15 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
     }
 
 #if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
-    if (retVal && fIsVEH)
+    // NOTE: During detach, the right-side will wait until all SendSetThreadContextNeeded flares have been sent
+    // We assume that any breakpoint debug event caught on the right-side will result in a SendSetThreadContextNeeded flare
+    // If there is an active patch skip on the thread, then we assume there will be an additional
+    // SendSetThreadContextNeeded flare to move the instruction pointer out of the patch buffer
+    if ((retVal || code == EXCEPTION_BREAKPOINT) && fIsVEH)
     {
-        // This does not return. Out-of-proc debugger will update the thread context
-        // within this call.
-        SendSetThreadContextNeeded(context, &debuggerSteppingInfo);
+        // If retVal is true, the out-of-proc debugger will update the thread context within this call.
+        // Otherwise we are sending a ClearSetIP request, and in which case the out-of-proc debugger will ignore the SetThreadContextNeeded request and simply clear the PendingSetIP flag
+        SendSetThreadContextNeeded(context, &debuggerSteppingInfo, thread->HasActivePatchSkip(), !retVal);
     }
 #endif
     return retVal;
@@ -7826,7 +7806,7 @@ void Debugger::FirstChanceManagedExceptionCatcherFound(Thread *pThread,
 
     if (pMD != NULL)
     {
-        _ASSERTE(!pMD->IsILStub());
+        _ASSERTE(!pMD->IsDiagnosticsHidden());
 
         pDebugJitInfo = GetJitInfo(pMD, (const BYTE *) pMethodAddr, &pDebugMethodInfo);
         if (pDebugMethodInfo != NULL)
@@ -8651,12 +8631,16 @@ int Debugger::NotifyUserOfFault(bool userBreakpoint, DebuggerLaunchSetting dls)
         if (userBreakpoint)
         {
             msg = "Application has encountered a user-defined breakpoint.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick ABORT to terminate the application.\nClick RETRY to debug the application.\nClick IGNORE to ignore the breakpoint.";
+#ifdef HOST_WINDOWS
             flags |= MB_ABORTRETRYIGNORE | MB_ICONEXCLAMATION;
+#endif
         }
         else
         {
             msg = "Application has generated an exception that could not be handled.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick OK to terminate the application.\nClick CANCEL to debug the application.";
+#ifdef HOST_WINDOWS
             flags |= MB_OKCANCEL | MB_ICONEXCLAMATION;
+#endif
         }
 
         // Format message string using optional parameters
@@ -9180,7 +9164,7 @@ BOOL Debugger::SuspendComplete(bool isEESuspendedForGC)
 
 //---------------------------------------------------------------------------------------
 //
-// Debugger::SendCreateAppDomainEvent - notify the RS of an AppDomain
+// Debugger::AppDomainCreated - notify the RS of an AppDomain
 //
 // Arguments:
 //    pRuntimeAppdomain - pointer to the AppDomain
@@ -9190,18 +9174,13 @@ BOOL Debugger::SuspendComplete(bool isEESuspendedForGC)
 //
 // Notes:
 //    This is used to notify the debugger of either a newly created
-//    AppDomain (when fAttaching is FALSE) or of existing AppDomains
-//    at attach time (fAttaching is TRUE).  In both cases, this should
+//    AppDomain. This should
 //    be called before any LoadModule/LoadAssembly events are sent for
 //    this domain.  Otherwise the RS will get an event for an AppDomain
 //    it doesn't recognize and ASSERT.
 //
-//    For the non-attach case this means there is no need to enumerate
-//    the assemblies/modules in an AppDomain after sending this event
-//    because we know there won't be any.
-//
 
-void Debugger::SendCreateAppDomainEvent(AppDomain * pRuntimeAppDomain)
+void Debugger::AppDomainCreated(AppDomain * pRuntimeAppDomain)
 {
     CONTRACTL
     {
@@ -9224,8 +9203,6 @@ void Debugger::SendCreateAppDomainEvent(AppDomain * pRuntimeAppDomain)
 
     Thread *pThread = g_pEEInterface->GetThread();
     SENDIPCEVENT_BEGIN(this, pThread);
-
-
 
     // We may have detached while waiting in LockForEventSending,
     // in which case we can't send the event.
@@ -9734,42 +9711,30 @@ BOOL Debugger::SendSystemClassLoadUnloadEvent(mdTypeDef classMetadataToken,
 
     Assembly *pAssembly = classModule->GetAssembly();
 
-    if (!m_pAppDomainCB->Lock())
-        return (FALSE);
+    AppDomain *pAppDomain = GetAppDomain();
+    _ASSERTE(pAppDomain != NULL);
 
-    AppDomainInfo *pADInfo = m_pAppDomainCB->FindFirst();
-
-    while (pADInfo != NULL)
+    // Only notify for app domains where the module has been fully loaded already
+    // We used to make a different check here domain->ContainsAssembly() but that
+    // triggers too early in the loading process. FindDomainAssembly will not become
+    // non-NULL until the module is fully loaded into the domain which is what we
+    // want.
+    if (classModule->GetDomainAssembly() != NULL )
     {
-        AppDomain *pAppDomain = pADInfo->m_pAppDomain;
-        _ASSERTE(pAppDomain != NULL);
+        // Find the Left Side module that this class belongs in.
+        DebuggerModule* pModule = LookupOrCreateModule(classModule);
+        _ASSERTE(pModule != NULL);
 
-        // Only notify for app domains where the module has been fully loaded already
-        // We used to make a different check here domain->ContainsAssembly() but that
-        // triggers too early in the loading process. FindDomainAssembly will not become
-        // non-NULL until the module is fully loaded into the domain which is what we
-        // want.
-        if (classModule->GetDomainAssembly() != NULL )
+        // Only send a class load event if they're enabled for this module.
+        if (pModule && pModule->ClassLoadCallbacksEnabled())
         {
-            // Find the Left Side module that this class belongs in.
-            DebuggerModule* pModule = LookupOrCreateModule(classModule);
-            _ASSERTE(pModule != NULL);
-
-            // Only send a class load event if they're enabled for this module.
-            if (pModule && pModule->ClassLoadCallbacksEnabled())
-            {
-                SendClassLoadUnloadEvent(classMetadataToken,
-                                         pModule,
-                                         pAssembly,
-                                         fIsLoadEvent);
-                fRetVal = TRUE;
-            }
+            SendClassLoadUnloadEvent(classMetadataToken,
+                                        pModule,
+                                        pAssembly,
+                                        fIsLoadEvent);
+            fRetVal = TRUE;
         }
-
-        pADInfo = m_pAppDomainCB->FindNext(pADInfo);
     }
-
-    m_pAppDomainCB->Unlock();
 
     return fRetVal;
 }
@@ -10298,6 +10263,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         }
 
     case DB_IPCE_DISABLE_OPTS:
+#ifdef FEATURE_CODE_VERSIONING
         {
             Module *pModule = pEvent->DisableOptData.pModule.GetRawPtr();
             mdToken methodDef = pEvent->DisableOptData.funcMetadataToken;
@@ -10320,6 +10286,19 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
             m_pRCThread->SendIPCReply();
         }
+#else
+        {
+            DebuggerIPCEvent * pIPCResult = m_pRCThread->GetIPCEventReceiveBuffer();
+
+            InitIPCEvent(pIPCResult,
+                         DB_IPCE_DISABLE_OPTS_RESULT,
+                         g_pEEInterface->GetThread());
+
+            pIPCResult->hr = E_NOTIMPL;
+
+            m_pRCThread->SendIPCReply();
+        }
+#endif // FEATURE_CODE_VERSIONING
         break;
 
     case DB_IPCE_FORCE_CATCH_HANDLER_FOUND:
@@ -11391,7 +11370,6 @@ HRESULT Debugger::GetAndSendInterceptCommand(DebuggerIPCEvent *event)
 
                     ULONG relOffset = csi.m_activeFrame.relOffset;
 
-#if defined(FEATURE_EH_FUNCLETS)
                     int funcletIndex = PARENT_METHOD_INDEX;
 
                     // For funclets, we need to make sure that the stack empty sequence point we use is
@@ -11403,7 +11381,6 @@ HRESULT Debugger::GetAndSendInterceptCommand(DebuggerIPCEvent *event)
 
                     // Refer to the loop using pMap below.
                     DebuggerILToNativeMap* pMap = NULL;
-#endif // FEATURE_EH_FUNCLETS
 
                     for (unsigned int i = 0; i < pJitInfo->GetSequenceMapCount(); i++)
                     {
@@ -11440,23 +11417,18 @@ HRESULT Debugger::GetAndSendInterceptCommand(DebuggerIPCEvent *event)
                         }
 
                         if ((foundOffset < startOffset) && (startOffset <= relOffset)
-#if defined(FEATURE_EH_FUNCLETS)
                             // Check if we are still in the same funclet.
                             && (funcletIndex == pJitInfo->GetFuncletIndex(startOffset, DebuggerJitInfo::GFIM_BYOFFSET))
-#endif // FEATURE_EH_FUNCLETS
                            )
                         {
                             LOG((LF_CORDB, LL_INFO10000, "D::HIPCE: updating breakpoint at native offset 0x%zx\n",
                                  startOffset));
                             foundOffset = startOffset;
-#if defined(FEATURE_EH_FUNCLETS)
                             // Save the map entry for modification later.
                             pMap = &(pJitInfo->GetSequenceMap()[i]);
-#endif // FEATURE_EH_FUNCLETS
                         }
                     }
 
-#if defined(FEATURE_EH_FUNCLETS)
                     // This is nasty.  Starting recently we could have multiple sequence points with the same IL offset
                     // in the SAME funclet/parent method (previously different sequence points with the same IL offset
                     // imply that they are in different funclet/parent method).  Fortunately, we only run into this
@@ -11476,7 +11448,6 @@ HRESULT Debugger::GetAndSendInterceptCommand(DebuggerIPCEvent *event)
                         }
                     }
                     _ASSERTE(foundOffset < relOffset);
-#endif // FEATURE_EH_FUNCLETS
 
                     //
                     // Set up a breakpoint on the intercept IP
@@ -11658,16 +11629,19 @@ void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, D
         res->vmTypeHandle = WrapTypeHandle(th);
         res->metadataToken = mdTokenNil;
         res->vmDomainAssembly.SetRawPtr(NULL);
+        res->vmModule.SetRawPtr(NULL);
         break;
 
     case ELEMENT_TYPE_CLASS:
     case ELEMENT_TYPE_VALUETYPE:
         {
+            th = th.UpCastTypeIfNeeded();
             res->vmTypeHandle = th.HasInstantiation() ? WrapTypeHandle(th) : VMPTR_TypeHandle::NullPtr();
                                                                              // only set if instantiated
             res->metadataToken = th.GetCl();
             DebuggerModule * pDModule = LookupOrCreateModule(th.GetModule());
             res->vmDomainAssembly.SetRawPtr((pDModule ? pDModule->GetDomainAssembly() : NULL));
+            res->vmModule.SetRawPtr(NULL);
             break;
         }
 
@@ -11675,6 +11649,7 @@ void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, D
         res->vmTypeHandle = VMPTR_TypeHandle::NullPtr();
         res->metadataToken = mdTokenNil;
         res->vmDomainAssembly.SetRawPtr(NULL);
+        res->vmModule.SetRawPtr(NULL);
         break;
     }
     return;
@@ -11743,10 +11718,12 @@ void Debugger::TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed,
     case ELEMENT_TYPE_CLASS:
         {
 treatAllValuesAsBoxed:
+            th = th.UpCastTypeIfNeeded();
             res->ClassTypeData.typeHandle = th.HasInstantiation() ? WrapTypeHandle(th) : VMPTR_TypeHandle::NullPtr(); // only set if instantiated
             res->ClassTypeData.metadataToken = th.GetCl();
             DebuggerModule * pModule = LookupOrCreateModule(th.GetModule());
             res->ClassTypeData.vmDomainAssembly.SetRawPtr((pModule ? pModule->GetDomainAssembly() : NULL));
+            res->ClassTypeData.vmModule.SetRawPtr(NULL);
             _ASSERTE(!res->ClassTypeData.vmDomainAssembly.IsNull());
             break;
         }
@@ -12122,7 +12099,7 @@ HRESULT Debugger::ReleaseRemoteBuffer(void *pBuffer, bool removeFromBlobList)
     return S_OK;
 }
 
-#ifndef DACCESS_COMPILE
+#if defined(FEATURE_CODE_VERSIONING) && !defined(DACCESS_COMPILE)
 HRESULT Debugger::DeoptimizeMethodHelper(Module* pModule, mdMethodDef methodDef)
 {
     CONTRACTL
@@ -12240,7 +12217,12 @@ HRESULT Debugger::DeoptimizeMethod(Module* pModule, mdMethodDef methodDef)
 
     return hr;
 }
-#endif //DACCESS_COMPILE
+#else
+HRESULT Debugger::DeoptimizeMethod(Module* pModule, mdMethodDef methodDef)
+{
+    return E_NOTIMPL;
+}
+#endif //FEATURE_CODE_VERSIONING && !DACCESS_COMPILE
 
 HRESULT Debugger::IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult)
 {
@@ -12257,12 +12239,16 @@ HRESULT Debugger::IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BO
         return E_INVALIDARG;
     }
 
+#ifdef FEATURE_CODE_VERSIONING
     {
         CodeVersionManager::LockHolder codeVersioningLockHolder;
         CodeVersionManager *pCodeVersionManager = pModule->GetCodeVersionManager();
         ILCodeVersion activeILVersion = pCodeVersionManager->GetActiveILCodeVersion(pModule, methodDef);
         *pResult = activeILVersion.IsDeoptimized();
     }
+#else
+    *pResult = FALSE;
+#endif // FEATURE_CODE_VERSIONING
 
     return S_OK;
 }
@@ -12445,12 +12431,7 @@ bool Debugger::IsThreadAtSafePlaceWorker(Thread *thread)
         CONTEXT ctx;
         ZeroMemory(&rd, sizeof(rd));
         ZeroMemory(&ctx, sizeof(ctx));
-#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
-        rd.ControlPC = ctx.Eip;
-        rd.PCTAddr = (TADDR)&(ctx.Eip);
-#else
         FillRegDisplay(&rd, &ctx);
-#endif
 
         if (ISREDIRECTEDTHREAD(thread))
         {
@@ -13202,7 +13183,7 @@ void STDCALL ExceptionHijackWorker(
     // call SetThreadContext on ourself to fix us.
 }
 
-#if defined(FEATURE_EH_FUNCLETS) && !defined(TARGET_UNIX)
+#ifndef TARGET_UNIX
 
 #if defined(TARGET_AMD64)
 // ----------------------------------------------------------------------------
@@ -13295,7 +13276,7 @@ ExceptionHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord,
     // exactly the behavior we want.
     return ExceptionCollidedUnwind;
 }
-#endif // FEATURE_EH_FUNCLETS && !TARGET_UNIX
+#endif // !TARGET_UNIX
 
 
 // UEF Prototype from excep.cpp
@@ -14486,399 +14467,6 @@ void Debugger::SendCustomDebuggerNotification(Thread * pThread,
 
     SENDIPCEVENT_END;
 }
-
-
-//-----------------------------------------------------------------------------
-//
-// Add the AppDomain to the list stored in the IPC block.  It adds the id and
-// the name.
-//
-// Arguments:
-//     pAppDomain - The runtime app domain object to add.
-//
-// Return Value:
-//     S_OK on success, else detailed error code.
-//
-HRESULT Debugger::AddAppDomainToIPC(AppDomain *pAppDomain)
-{
-    CONTRACTL
-    {
-        MAY_DO_HELPER_THREAD_DUTY_THROWS_CONTRACT;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    LPCWSTR szName = NULL;
-
-    LOG((LF_CORDB, LL_INFO100, "D::AADTIPC: Executing AADTIPC for AppDomain 0x%08x.\n",
-        pAppDomain));
-
-    STRESS_LOG1(LF_CORDB, LL_INFO10000, "D::AADTIPC: AddAppDomainToIPC:%#08x\n",
-            pAppDomain);
-
-
-
-    _ASSERTE(m_pAppDomainCB->m_iTotalSlots > 0);
-    _ASSERTE(m_pAppDomainCB->m_rgListOfAppDomains != NULL);
-
-    {
-        //
-        // We need to synchronize this routine with the attach logic.  The "normal"
-        // attach case uses the HelperThread and TrapAllRuntimeThreads to synchronize
-        // the runtime before sending any of the events (including AppDomainCreates)
-        // to the right-side.  Thus, we can synchronize with this case by forcing us
-        // to go co-operative.  If we were already co-op, then the helper thread will
-        // wait to start the attach until all co-op threads are paused.  If we were
-        // pre-emptive, then going co-op will suspend us until the HelperThread finishes.
-        //
-        // The second case is under the IPC event for ATTACHING, which is where there are
-        // zero app domains, so it is considered an 'early attach' case.  To synchronize
-        // with this we have to grab and hold the AppDomainDB lock.
-        //
-
-        GCX_COOP();
-
-        // Lock the list
-        if (!m_pAppDomainCB->Lock())
-        {
-            return E_FAIL;
-        }
-
-        // Get a free entry from the list
-        AppDomainInfo *pAppDomainInfo = m_pAppDomainCB->GetFreeEntry();
-
-        // Function returns NULL if the list is full and a realloc failed.
-        if (!pAppDomainInfo)
-        {
-            hr = E_OUTOFMEMORY;
-            goto LErrExit;
-        }
-
-        // Now set the AppDomainName.
-
-        /*
-         * TODO :
-         *
-         * Make sure that returning NULL here does not result in a catastrophic
-         * failure.
-         *
-         * GetFriendlyNameNoThrow may call SetFriendlyName, which may call
-         * UpdateAppDomainEntryInIPC. There is no recursive death, however, because
-         * the AppDomainInfo object does not contain a pointer to the app domain
-         * yet.
-         */
-        szName = pAppDomain->GetFriendlyNameForDebugger();
-        pAppDomainInfo->SetName(szName);
-
-        // Save on to the appdomain pointer
-        pAppDomainInfo->m_pAppDomain = pAppDomain;
-
-        // bump the used slot count
-        m_pAppDomainCB->m_iNumOfUsedSlots++;
-
-LErrExit:
-        // UnLock the list
-        m_pAppDomainCB->Unlock();
-
-        // Send event to debugger if one is attached.
-        if (CORDebuggerAttached())
-        {
-            SendCreateAppDomainEvent(pAppDomain);
-        }
-    }
-
-    return hr;
-}
-
-
-/******************************************************************************
- * Remove the AppDomain from the list stored in the IPC block and send an ExitAppDomain
- * event to the debugger if attached.
- ******************************************************************************/
-HRESULT Debugger::RemoveAppDomainFromIPC (AppDomain *pAppDomain)
-{
-    CONTRACTL
-    {
-        MAY_DO_HELPER_THREAD_DUTY_THROWS_CONTRACT;
-        MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = E_FAIL;
-
-    LOG((LF_CORDB, LL_INFO100, "D::RADFIPC: Executing RADFIPC for AppDomain 0x%08x.\n",
-        pAppDomain));
-
-    // if none of the slots are occupied, then simply return.
-    if (m_pAppDomainCB->m_iNumOfUsedSlots == 0)
-        return hr;
-
-    // Lock the list
-    if (!m_pAppDomainCB->Lock())
-        return (E_FAIL);
-
-
-    // Look for the entry
-    AppDomainInfo *pADInfo = m_pAppDomainCB->FindEntry(pAppDomain);
-
-    // Shouldn't be trying to remove an appdomain that was never added
-    if (!pADInfo)
-    {
-        // We'd like to assert this, but there is a small window where we may have
-        // called AppDomain::Init (and so it's fair game to call Stop, and hence come here),
-        // but not yet published the app domain.
-        // _ASSERTE(!"D::RADFIPC: trying to remove an AppDomain that was never added");
-        hr = (E_FAIL);
-        goto ErrExit;
-    }
-
-    // Release the entry
-    m_pAppDomainCB->FreeEntry(pADInfo);
-
-ErrExit:
-    // UnLock the list
-    m_pAppDomainCB->Unlock();
-
-    //
-    // The Debugger expects to never get an unload event for the default AppDomain.
-    //
-
-    return hr;
-}
-
-/******************************************************************************
- * Update the AppDomain in the list stored in the IPC block.
- ******************************************************************************/
-HRESULT Debugger::UpdateAppDomainEntryInIPC(AppDomain *pAppDomain)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        if (GetThreadNULLOk()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    LPCWSTR szName = NULL;
-
-    LOG((LF_CORDB, LL_INFO100,
-         "D::UADEIIPC: Executing UpdateAppDomainEntryInIPC ad:0x%x.\n",
-         pAppDomain));
-
-    // if none of the slots are occupied, then simply return.
-    if (m_pAppDomainCB->m_iNumOfUsedSlots == 0)
-        return (E_FAIL);
-
-    // Lock the list
-    if (!m_pAppDomainCB->Lock())
-        return (E_FAIL);
-
-    // Look up the info entry
-    AppDomainInfo *pADInfo = m_pAppDomainCB->FindEntry(pAppDomain);
-
-    if (!pADInfo)
-    {
-        hr = E_FAIL;
-        goto ErrExit;
-    }
-
-    // Update the name only if new name is non-null
-    szName = pADInfo->m_pAppDomain->GetFriendlyNameForDebugger();
-    pADInfo->SetName(szName);
-
-ErrExit:
-    // UnLock the list
-    m_pAppDomainCB->Unlock();
-
-    return hr;
-}
-
-/******************************************************************************
- *
- ******************************************************************************/
-HRESULT Debugger::InitAppDomainIPC(void)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-
-        PRECONDITION(CheckPointer(m_pAppDomainCB));
-    }
-    CONTRACTL_END;
-
-    // Ensure that if we throw here, the Terminate will get called and cleanup all resources.
-    // This will make Init an atomic operation - it either fully inits or fully fails.
-    class EnsureCleanup
-    {
-        Debugger * m_pThis;
-
-    public:
-        EnsureCleanup(Debugger * pThis)
-        {
-            m_pThis = pThis;
-        }
-
-        void SuppressCleanup()
-        {
-            m_pThis = NULL;
-        }
-
-        ~EnsureCleanup()
-        {
-            if (m_pThis != NULL)
-            {
-                m_pThis->TerminateAppDomainIPC();
-            }
-        }
-    } hEnsureCleanup(this);
-
-    DWORD dwStrLen = 0;
-    SString szExeName;
-    int i;
-
-    // all fields in the object can be zero initialized.
-    // If we throw, before fully initializing this, then cleanup won't try to free
-    // uninited values.
-    ZeroMemory(m_pAppDomainCB, sizeof(*m_pAppDomainCB));
-
-    // Create a mutex to allow the Left and Right Sides to properly
-    // synchronize. The Right Side will spin until m_hMutex is valid,
-    // then it will acquire it before accessing the data.
-    HandleHolder hMutex(CreateMutex(NULL, TRUE/*hold*/, NULL));
-    if (hMutex == NULL)
-    {
-        ThrowLastError();
-    }
-    if (!m_pAppDomainCB->m_hMutex.SetLocal(hMutex))
-    {
-        ThrowLastError();
-    }
-    hMutex.SuppressRelease();
-
-    m_pAppDomainCB->m_iSizeInBytes = INITIAL_APP_DOMAIN_INFO_LIST_SIZE *
-                                                sizeof (AppDomainInfo);
-
-    // Number of slots in AppDomainListElement array
-    m_pAppDomainCB->m_rgListOfAppDomains = new AppDomainInfo[INITIAL_APP_DOMAIN_INFO_LIST_SIZE];
-    _ASSERTE(m_pAppDomainCB->m_rgListOfAppDomains != NULL); // throws on oom
-
-
-    m_pAppDomainCB->m_iTotalSlots = INITIAL_APP_DOMAIN_INFO_LIST_SIZE;
-
-    // Initialize each AppDomainListElement
-    for (i = 0; i < INITIAL_APP_DOMAIN_INFO_LIST_SIZE; i++)
-    {
-        m_pAppDomainCB->m_rgListOfAppDomains[i].FreeEntry();
-    }
-
-    // also initialize the process name
-    dwStrLen = WszGetModuleFileName(NULL,
-                                    szExeName);
-
-
-    // If we couldn't get the name, then use a nice default.
-    if (dwStrLen == 0)
-    {
-        szExeName.Set(W("<NoProcessName>"));
-        dwStrLen = szExeName.GetCount();
-    }
-
-    // If we got the name, copy it into a buffer. dwStrLen is the
-    // count of characters in the name, not including the null
-    // terminator.
-    m_pAppDomainCB->m_szProcessName = new WCHAR[dwStrLen + 1];
-    _ASSERTE(m_pAppDomainCB->m_szProcessName != NULL); // throws on oom
-
-    wcscpy_s(m_pAppDomainCB->m_szProcessName, dwStrLen + 1, szExeName);
-
-    // Add 1 to the string length so the Right Side will copy out the
-    // null terminator, too.
-    m_pAppDomainCB->m_iProcessNameLengthInBytes = (dwStrLen + 1) * sizeof(WCHAR);
-
-    if (m_pAppDomainCB->m_hMutex != NULL)
-    {
-        m_pAppDomainCB->Unlock();
-    }
-
-    hEnsureCleanup.SuppressCleanup();
-    return S_OK;
-}
-
-/******************************************************************************
- * Uninitialize the AppDomain IPC block
- * Returns:
- * S_OK -if fully uninitialized
- * E_FAIL - if we can't get ownership of the block, and thus no uninitialization
- *          work is done.
- ******************************************************************************/
-HRESULT Debugger::TerminateAppDomainIPC(void)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    // If we have no AppDomain block, then we can consider it's already terminated.
-    if (m_pAppDomainCB == NULL)
-        return S_OK;
-
-    HRESULT hr = S_OK;
-
-    // Lock the list
-    // If there's no mutex, then we're in a partially created state.
-    // This means InitAppDomainIPC failed halfway through. But we're still thread safe
-    // since other threads can't access us if we don't have the mutex.
-    if ((m_pAppDomainCB->m_hMutex != NULL) && !m_pAppDomainCB->Lock())
-    {
-        // The callers don't check our return value, we may want to know when we can't gracefully clean up
-       LOG((LF_CORDB, LL_INFO10, "Debugger::TerminateAppDomainIPC: Failed to get AppDomain IPC lock, not cleaning up.\n"));
-
-        // If the lock is valid, but we can't get it, then we can't really
-        // uninitialize since someone else is using the block.
-        return (E_FAIL);
-    }
-
-    // The shared IPC segment could still be around after the debugger
-    // object has been destroyed during process shutdown. So, reset
-    // the UsedSlots count to 0 so that any out of process clients
-    // enumeratingthe app domains in this process see 0 AppDomains.
-    m_pAppDomainCB->m_iNumOfUsedSlots = 0;
-    m_pAppDomainCB->m_iTotalSlots = 0;
-
-    // Now delete the memory allocated for AppDomainInfo  array
-    delete [] m_pAppDomainCB->m_rgListOfAppDomains;
-    m_pAppDomainCB->m_rgListOfAppDomains = NULL;
-
-    delete [] m_pAppDomainCB->m_szProcessName;
-    m_pAppDomainCB->m_szProcessName = NULL;
-    m_pAppDomainCB->m_iProcessNameLengthInBytes = 0;
-
-    // Set the mutex handle to NULL.
-    // If the Right Side acquires the mutex, it will verify
-    // that the handle is still not NULL. If it is, then it knows it
-    // really lost.
-    RemoteHANDLE m = m_pAppDomainCB->m_hMutex;
-    m_pAppDomainCB->m_hMutex.m_hLocal = NULL;
-
-    // And bring us back to a fully uninitialized state.
-    ZeroMemory(m_pAppDomainCB, sizeof(*m_pAppDomainCB));
-
-    // We're done. release and close the mutex.  Note that this must be done
-    // after we clear it out above to ensure there is no race condition.
-    if( m != NULL )
-    {
-        VERIFY(ReleaseMutex(m));
-        m.Close();
-    }
-
-    return hr;
-}
-
 
 #ifndef DACCESS_COMPILE
 
@@ -16599,7 +16187,7 @@ void Debugger::StartCanaryThread()
 
 #ifndef DACCESS_COMPILE
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo)
+void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo, bool fHasDebuggerPatchSkip, bool fClearSetIP)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -16654,10 +16242,20 @@ void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo
     PRD_TYPE opcode = pDebuggerSteppingInfo != NULL ? pDebuggerSteppingInfo->GetOpcode() : CORDbg_BREAK_INSTRUCTION;
 
     // send the context to the right side
-    LOG((LF_CORDB, LL_INFO10000, "D::SSTCN ContextFlags=0x%X contextSize=%d fIsInPlaceSingleStep=%d opcode=%x\n", contextFlags, contextSize, fIsInPlaceSingleStep, opcode));
+    LOG((LF_CORDB, LL_INFO10000, "D::SSTCN ContextFlags=0x%X contextSize=%d fIsInPlaceSingleStep=%d opcode=%x fHasDebuggerPatchSkip=%d\n", contextFlags, contextSize, fIsInPlaceSingleStep, opcode, fHasDebuggerPatchSkip));
     EX_TRY
     {
-        SetThreadContextNeededFlare((TADDR)pContext, contextSize, fIsInPlaceSingleStep, opcode);
+        DWORD flag = fIsInPlaceSingleStep ? 0x1 : 0;
+        if (fHasDebuggerPatchSkip)
+        {
+            flag |= 0x2;
+        }
+        if (fClearSetIP)
+        {
+            _ASSERTE(!fIsInPlaceSingleStep && !fHasDebuggerPatchSkip);
+            flag |= 0x4;
+        }
+        SetThreadContextNeededFlare((TADDR)pContext, contextSize, flag, opcode);
     }
     EX_CATCH
     {
@@ -16668,7 +16266,7 @@ void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo
 #endif
 
     LOG((LF_CORDB, LL_INFO10000, "D::SSTCN SetThreadContextNeededFlare returned\n"));
-    _ASSERTE(!"We failed to SetThreadContext from out of process!");
+    _ASSERTE(fClearSetIP);
 }
 
 BOOL Debugger::IsOutOfProcessSetContextEnabled()
@@ -16676,7 +16274,7 @@ BOOL Debugger::IsOutOfProcessSetContextEnabled()
     return m_fOutOfProcessSetContextEnabled;
 }
 #else
-void Debugger::SendSetThreadContextNeeded(CONTEXT* context, DebuggerSteppingInfo *pDebuggerSteppingInfo)
+void Debugger::SendSetThreadContextNeeded(CONTEXT* context, DebuggerSteppingInfo *pDebuggerSteppingInfo, bool fHasDebuggerPatchSkip, bool fClearSetIP)
 {
     _ASSERTE(!"SendSetThreadContextNeeded is not enabled on this platform");
 }
@@ -16740,12 +16338,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
         return;
     }
 
-#ifndef FEATURE_EH_FUNCLETS
-    // Reset pContext; it's only valid for active (top-most) frame.
-    pRD->pContext = NULL;
-#endif // !FEATURE_EH_FUNCLETS
-
-
 #ifdef TARGET_X86
     // Update all registers in the reg display from the CONTEXT we stored when the thread was hijacked for this func
     // eval. We have to update all registers, not just the callee saved registers, because we can hijack a thread at any
@@ -16759,20 +16351,12 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     pRD->SetEbpLocation(&(pDE->m_context.Ebp));
     SetRegdisplayPCTAddr(pRD, GetReturnAddressPtr());
 
-#ifdef FEATURE_EH_FUNCLETS
-
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Esp = (DWORD)GetSP(&pDE->m_context);
 
     SyncRegDisplayToCurrentContext(pRD);
-
-#else // FEATURE_EH_FUNCLETS
-
-    pRD->SP = (DWORD)GetSP(&pDE->m_context);
-
-#endif // FEATURE_EH_FUNCLETS
 
 #elif defined(TARGET_AMD64)
     pRD->IsCallerContextValid = FALSE;

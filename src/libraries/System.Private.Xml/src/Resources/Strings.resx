@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -2192,6 +2192,9 @@
   </data>
   <data name="XmlUnsupportedSoapTypeKind" xml:space="preserve">
     <value>The type {0} may not be serialized with SOAP-encoded messages. Set the Use for your message to Literal.</value>
+  </data>
+  <data name="XmlObsoleteIsError" xml:space="preserve">
+    <value>Cannot serialize member with [Obsolete(IsError=true)]: {0}</value>
   </data>
   <data name="XmlUnsupportedIDictionary" xml:space="preserve">
     <value>The type {0} is not supported because it implements IDictionary.</value>

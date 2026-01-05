@@ -437,7 +437,7 @@ namespace System.Transactions.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(true, false, null)]
         [InlineData(true, true, null)]
-        public void AsyncTSAndDependantClone(bool requiresNew, bool synchronizeScope, string txId)
+        public void AsyncTSAndDependantClone(bool requiresNew, bool synchronizeScope, string? txId)
         {
             string txId1 = null;
             string txId2 = null;
@@ -527,7 +527,7 @@ namespace System.Transactions.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(true, false, null)]
         [InlineData(true, true, null)]
-        public void NestedAsyncTSAndDependantClone(bool parentrequiresNew, bool childRequiresNew, string txId)
+        public void NestedAsyncTSAndDependantClone(bool parentrequiresNew, bool childRequiresNew, string? txId)
         {
             string txId1;
             string txId2;

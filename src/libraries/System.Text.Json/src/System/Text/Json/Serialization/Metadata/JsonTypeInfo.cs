@@ -1043,6 +1043,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         // Untyped, root-level deserialization methods
         internal abstract object? DeserializeAsObject(ref Utf8JsonReader reader, ref ReadStack state);
+        internal abstract ValueTask<object?> DeserializeAsObjectAsync(PipeReader utf8Json, CancellationToken cancellationToken);
         internal abstract ValueTask<object?> DeserializeAsObjectAsync(Stream utf8Json, CancellationToken cancellationToken);
         internal abstract object? DeserializeAsObject(Stream utf8Json);
 
@@ -1325,6 +1326,8 @@ namespace System.Text.Json.Serialization.Metadata
         {
             return typeof(IDictionary<string, object>).IsAssignableFrom(propertyType) ||
                 typeof(IDictionary<string, JsonElement>).IsAssignableFrom(propertyType) ||
+                propertyType == typeof(IReadOnlyDictionary<string, object>) ||
+                propertyType == typeof(IReadOnlyDictionary<string, JsonElement>) ||
                 // Avoid a reference to typeof(JsonNode) to support trimming.
                 (propertyType.FullName == JsonObjectTypeName && ReferenceEquals(propertyType.Assembly, typeof(JsonTypeInfo).Assembly));
         }

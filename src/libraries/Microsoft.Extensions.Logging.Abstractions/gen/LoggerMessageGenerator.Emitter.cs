@@ -177,7 +177,7 @@ namespace {lc.Namespace}
                 string formatMethodBegin =
                     !lm.Message.Contains('{') ? "" :
                     _hasStringCreate ? "string.Create(global::System.Globalization.CultureInfo.InvariantCulture, " :
-                    "global::System.Diagnostics.CodeAnalysis.FormattableString.Invariant(";
+                    "global::System.FormattableString.Invariant(";
                 string formatMethodEnd = formatMethodBegin.Length > 0 ? ")" : "";
 
                 _builder.Append($@"
@@ -196,7 +196,7 @@ namespace {lc.Namespace}
 ");
                 GenCases(lm, nestedIndentation);
                 _builder.Append($@"
-                    {nestedIndentation}_ => throw new global::System.IndexOutOfRangeException(nameof(index)),  // return the same exception LoggerMessage.Define returns in this case
+                    {nestedIndentation}_ => throw new global::System.IndexOutOfRangeException(),  // return the same exception LoggerMessage.Define returns in this case
                 {nestedIndentation}}};
             }}
 

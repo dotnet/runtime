@@ -132,13 +132,14 @@ static bool IsApxOnlyInstruction(instruction ins);
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
 static bool      HasRex2Encoding(instruction ins);
-static bool      HasApxNdd(instruction ins);
-static bool      HasApxNf(instruction ins);
+static bool      IsApxNddCompatibleInstruction(instruction ins);
+static bool      IsApxNfCompatibleInstruction(instruction ins);
+static bool      IsApxZuCompatibleInstruction(instruction ins);
 bool             IsVexEncodableInstruction(instruction ins) const;
 bool             IsEvexEncodableInstruction(instruction ins) const;
 bool             IsRex2EncodableInstruction(instruction ins) const;
-bool             IsApxNDDEncodableInstruction(instruction ins) const;
-bool             IsApxNFEncodableInstruction(instruction ins) const;
+bool             IsApxNddEncodableInstruction(instruction ins) const;
+bool             IsApxNfEncodableInstruction(instruction ins) const;
 bool             IsApxExtendedEvexInstruction(instruction ins) const;
 bool             IsShiftInstruction(instruction ins) const;
 bool             IsLegacyMap1(code_t code) const;
@@ -572,7 +573,7 @@ void SetEvexNdIfNeeded(instrDesc* id, insOpts instOptions)
     if ((instOptions & INS_OPTS_EVEX_nd_MASK) != 0)
     {
         assert(UsePromotedEVEXEncoding());
-        assert(IsApxNDDEncodableInstruction(id->idIns()));
+        assert(IsApxNddEncodableInstruction(id->idIns()));
         id->idSetEvexNdContext();
     }
     else
@@ -593,12 +594,39 @@ void SetEvexNfIfNeeded(instrDesc* id, insOpts instOptions)
     if ((instOptions & INS_OPTS_EVEX_nf_MASK) != 0)
     {
         assert(UsePromotedEVEXEncoding());
-        assert(IsApxNFEncodableInstruction(id->idIns()));
+        assert(IsApxNfEncodableInstruction(id->idIns()));
         id->idSetEvexNfContext();
     }
     else
     {
         assert((instOptions & INS_OPTS_EVEX_nf_MASK) == 0);
+    }
+}
+
+//------------------------------------------------------------------------
+// SetEvexZuIfNeeded: set Evex.zu on instrDesc
+//
+// Arguments:
+//    id          - instruction descriptor
+//    instOptions - emit options
+//
+void SetEvexZuIfNeeded(instrDesc* id, insOpts instOptions)
+{
+    if ((instOptions & INS_OPTS_EVEX_zu_MASK) != 0)
+    {
+        assert(UsePromotedEVEXEncoding());
+        instruction ins = id->idIns();
+#ifdef TARGET_AMD64
+        assert(IsApxZuCompatibleInstruction(ins));
+#else
+        // This method is not expected to be used on 32-bit systems.
+        unreached();
+#endif
+        id->idSetEvexZuContext();
+    }
+    else
+    {
+        assert((instOptions & INS_OPTS_EVEX_zu_MASK) == 0);
     }
 }
 

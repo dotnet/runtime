@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.Loader;
 
 namespace Profiler.Tests
 {
@@ -21,12 +23,24 @@ namespace Profiler.Tests
                                       .DefineDynamicModule("TestModule")
                                       .DefineType("TestClass", TypeAttributes.Public)
                                       .CreateType();
-                                      
+
             var obj = Activator.CreateInstance(type);
             if (obj == null)
             {
                 throw new NullReferenceException();
             }
+
+            // Trigger module load in multiple threads
+            int threadCount = 20;
+            List<Thread> threads = new(threadCount);
+            for (int i = 0; i < threadCount; i++)
+                threads.Add(new Thread(() => AssemblyLoadContext.Default.LoadFromAssemblyName(new AssemblyName("unloadlibrary"))));
+
+            foreach (var thread in threads)
+                thread.Start();
+
+            foreach (var thread in threads)
+                thread.Join();
 
             return 100;
         }

@@ -77,12 +77,17 @@ namespace System.Threading
 
         public static long CompletedWorkItemCount => 0;
 
+        [DynamicDependency("BackgroundJobHandler")] // https://github.com/dotnet/runtime/issues/101434
         internal static unsafe void RequestWorkerThread()
         {
             if (_callbackQueued)
                 return;
             _callbackQueued = true;
-            MainThreadScheduleBackgroundJob((void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
+#if MONO
+            MainThreadScheduleBackgroundJob((void*)(delegate* unmanaged<void>)&BackgroundJobHandler);
+#else
+            SystemJS_ScheduleBackgroundJob();
+#endif
         }
 
         internal static void NotifyWorkItemProgress()
@@ -95,10 +100,10 @@ namespace System.Threading
         {
         }
 
-        internal static object? GetOrCreateThreadLocalCompletionCountObject() => null;
+        internal static ThreadInt64PersistentCounter.ThreadLocalNode? GetOrCreateThreadLocalCompletionCountNode() => null;
 
 #pragma warning disable IDE0060
-        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int currentTimeMs)
+        internal static bool NotifyWorkItemComplete(ThreadInt64PersistentCounter.ThreadLocalNode? threadLocalCompletionCountNode, int currentTimeMs)
         {
             return true;
         }
@@ -115,12 +120,16 @@ namespace System.Threading
             throw new PlatformNotSupportedException();
         }
 
+
+#if MONO
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern unsafe void MainThreadScheduleBackgroundJob(void* callback);
+#else
+        [LibraryImport(RuntimeHelpers.QCall)]
+        private static unsafe partial void SystemJS_ScheduleBackgroundJob();
+#endif
 
-#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
-        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
-#pragma warning restore CS3016
+        [UnmanagedCallersOnly(EntryPoint = "SystemJS_ExecuteBackgroundJobCallback")]
         // this callback will arrive on the bound thread, called from mono_background_exec
         private static void BackgroundJobHandler()
         {

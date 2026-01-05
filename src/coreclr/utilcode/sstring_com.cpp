@@ -15,12 +15,12 @@
 //----------------------------------------------------------------------------
 // Load the string resource into this string.
 //----------------------------------------------------------------------------
-BOOL SString::LoadResource(CCompRC::ResourceCategory eCategory, int resourceID)
+BOOL SString::LoadResource(int resourceID)
 {
-    return SUCCEEDED(LoadResourceAndReturnHR(eCategory, resourceID));
+    return SUCCEEDED(LoadResourceAndReturnHR(resourceID));
 }
 
-HRESULT SString::LoadResourceAndReturnHR(CCompRC::ResourceCategory eCategory, int resourceID)
+HRESULT SString::LoadResourceAndReturnHR(int resourceID)
 {
     CONTRACT(HRESULT)
     {
@@ -32,59 +32,54 @@ HRESULT SString::LoadResourceAndReturnHR(CCompRC::ResourceCategory eCategory, in
     HRESULT hr = E_FAIL;
 
 #ifndef FEATURE_UTILCODE_NO_DEPENDENCIES
-    CCompRC* pResourceDLL = CCompRC::GetDefaultResourceDll();
-    if (pResourceDLL != NULL)
+    int size = 0;
+
+    EX_TRY
     {
+        if (GetRawCount() == 0)
+            Resize(DEFAULT_RESOURCE_STRING_SIZE, REPRESENTATION_UNICODE);
 
-        int size = 0;
-
-        EX_TRY
+        while (TRUE)
         {
-            if (GetRawCount() == 0)
-                Resize(DEFAULT_RESOURCE_STRING_SIZE, REPRESENTATION_UNICODE);
+            // First try and load the string in the amount of space that we have.
+            // In fatal error reporting scenarios, we may not have enough memory to
+            // allocate a larger buffer.
 
-            while (TRUE)
+            hr = CCompRC::LoadString(resourceID, GetRawUnicode(), GetRawCount()+1, &size);
+            if (hr != HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER))
             {
-                // First try and load the string in the amount of space that we have.
-                // In fatal error reporting scenarios, we may not have enough memory to
-                // allocate a larger buffer.
-
-                hr = pResourceDLL->LoadString(eCategory, resourceID, GetRawUnicode(), GetRawCount()+1, &size);
-                if (hr != HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER))
+                if (FAILED(hr))
                 {
-                    if (FAILED(hr))
-                    {
-                        Clear();
-                        break;
-                    }
-
-                    // Although we cannot generally detect truncation, we can tell if we
-                    // used up all the space (in which case we will assume truncation.)
-                    if (size < (int)GetRawCount())
-                    {
-                        break;
-                    }
+                    Clear();
+                    break;
                 }
 
-                // Double the size and try again.
-                Resize(size*2, REPRESENTATION_UNICODE);
-
+                // Although we cannot generally detect truncation, we can tell if we
+                // used up all the space (in which case we will assume truncation.)
+                if (size < (int)GetRawCount())
+                {
+                    break;
+                }
             }
 
-            if (SUCCEEDED(hr))
-            {
-                Truncate(Begin() + (COUNT_T) u16_strlen(GetRawUnicode()));
-            }
-
-            Normalize();
+            // Double the size and try again.
+            Resize(size*2, REPRESENTATION_UNICODE);
 
         }
-        EX_CATCH
+
+        if (SUCCEEDED(hr))
         {
-            hr = E_FAIL;
+            Truncate(Begin() + (COUNT_T) u16_strlen(GetRawUnicode()));
         }
-        EX_END_CATCH
+
+        Normalize();
+
     }
+    EX_CATCH
+    {
+        hr = E_FAIL;
+    }
+    EX_END_CATCH
 #endif //!FEATURE_UTILCODE_NO_DEPENDENCIES
 
     RETURN hr;

@@ -30,7 +30,6 @@ namespace System.Text.RegularExpressions
         protected internal string[]? capslist;                // if captures are sparse or named captures are used, this is the sorted list of names
         protected internal int capsize;                       // the size of the capture array
 
-        private WeakReference<RegexReplacement?>? _replref;   // cached parsed replacement pattern
         private volatile RegexRunner? _runner;                // cached runner
 
 #if DEBUG
@@ -253,7 +252,7 @@ namespace System.Text.RegularExpressions
                 RegexTree tree = RegexParser.Parse(pattern, options, (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
                 RegexInterpreterCode code = RegexWriter.Write(tree);
 
-                c.GenerateRegexType(pattern, options, fullname, regexinfos[i].IsPublic, tree, code, regexinfos[i].MatchTimeout);
+                c.GenerateRegexType(pattern, options, fullname, regexinfos[i].IsPublic, tree, regexinfos[i].MatchTimeout);
             }
 
             c.Save(assemblyname.Name ?? "RegexCompileToAssembly");
@@ -396,9 +395,9 @@ namespace System.Text.RegularExpressions
 
         /// <summary>A weak reference to a regex replacement, lazily initialized.</summary>
         internal WeakReference<RegexReplacement?> RegexReplacementWeakReference =>
-            _replref ??
-            Interlocked.CompareExchange(ref _replref, new WeakReference<RegexReplacement?>(null), null) ??
-            _replref;
+            field ??
+            Interlocked.CompareExchange(ref field, new WeakReference<RegexReplacement?>(null), null) ??
+            field;
 
         [Obsolete(Obsoletions.RegexExtensibilityImplMessage, DiagnosticId = Obsoletions.RegexExtensibilityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]

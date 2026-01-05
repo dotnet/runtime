@@ -11,7 +11,7 @@
 // The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
 // mismatches can still interoperate correctly, with some care.
-#define GC_INTERFACE_MINOR_VERSION 5
+#define GC_INTERFACE_MINOR_VERSION 6
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
@@ -641,9 +641,12 @@ enum class GCConfigurationType
     Boolean
 };
 
-using ConfigurationValueFunc = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
+using ConfigurationValueFunc = void (*)(void* context, const char* name, const char* publicKey, GCConfigurationType type, int64_t data);
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.
+// NOTE!
+// Only add methods to the end.
+// Do not add overloaded methods. Always use a different name.
 class IGCHeap {
 public:
     /*
@@ -1065,9 +1068,6 @@ public:
     virtual void DiagWalkHeapWithACHandling(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) PURE_VIRTUAL
 
     virtual void NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles) PURE_VIRTUAL;
-
-    // Returns whether nor this GC was promoted by the last GC.
-    virtual bool IsPromoted(Object* object, bool bVerifyNextHeader) PURE_VIRTUAL
 };
 
 #ifdef WRITE_BARRIER_CHECK

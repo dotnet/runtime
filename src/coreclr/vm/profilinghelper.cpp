@@ -85,7 +85,7 @@
 // these actions:
 // * (a) Set the profiler's status to a non-active state like kProfStatusDetaching or
 //     kProfStatusNone
-// * (b) Call FlushProcessWriteBuffers()
+// * (b) Call minipal_memory_barrier_process_wide()
 // * (c) Grab thread store lock, iterate through all threads, and verify each per-thread
 //     evacuation counter is zero.
 //
@@ -110,6 +110,7 @@
 #include "proftoeeinterfaceimpl.inl"
 #include "profilinghelper.h"
 #include "profilinghelper.inl"
+#include <minipal/memorybarrierprocesswide.h>
 
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
@@ -208,7 +209,7 @@ void CurrentProfilerStatus::Set(ProfilerStatus newProfStatus)
         //         can safely perform catchup at that time (see
         //         code:#ProfCatchUpSynchronization).
         //
-        ::FlushProcessWriteBuffers();
+        minipal_memory_barrier_process_wide();
     }
 #endif // !defined(DACCESS_COMPILE)
 }
@@ -249,7 +250,6 @@ void ProfilingAPIUtility::AppendSupplementaryInformation(int iStringResource, SS
 
     StackSString supplementaryInformation;
     if (!supplementaryInformation.LoadResource(
-        CCompRC::Debugging,
         IDS_PROF_SUPPLEMENTARY_INFO
         ))
     {
@@ -301,7 +301,6 @@ void ProfilingAPIUtility::LogProfEventVA(
 
     StackSString messageFromResource;
     if (!messageFromResource.LoadResource(
-        CCompRC::Debugging,
         iStringResourceID
         ))
     {

@@ -43,7 +43,6 @@ extern "C" OBJECTHANDLE QCALLTYPE DependentHandle_InternalAllocWithGCTransition(
 FCIMPL1(Object*, DependentHandle::InternalGetTarget, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
-    FCUnique(0x54);
 
     _ASSERTE(handle != NULL);
 

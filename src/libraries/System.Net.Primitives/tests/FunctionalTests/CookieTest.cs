@@ -166,7 +166,7 @@ namespace System.Net.Primitives.Functional.Tests
         [InlineData("hello=")]
         [InlineData("hello;")]
         [InlineData("hello,")]
-        public static void Name_Set_Invalid(string name)
+        public static void Name_Set_Invalid(string? name)
         {
             Cookie c = new Cookie();
             Assert.Throws<CookieException>(() => c.Name = name);

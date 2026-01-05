@@ -74,7 +74,6 @@ namespace System.Xml
         private readonly XmlImplementation _implementation;
         private readonly DomNameTable _domNameTable; // hash table of XmlName
         private XmlLinkedNode? _lastChild;
-        private XmlNamedNodeMap? _entities;
         private Hashtable? _htElementIdMap;
         private Hashtable? _htElementIDAttrDecl; //key: id; object: the ArrayList of the elements that have the same id (connected or disconnected)
         private SchemaInfo? _schemaInfo;
@@ -453,10 +452,7 @@ namespace System.Xml
                     bSetResolver = true;
 
                 XmlDocumentType? dtd = this.DocumentType;
-                if (dtd != null)
-                {
-                    dtd.DtdSchemaInfo = null;
-                }
+                dtd?.DtdSchemaInfo = null;
             }
         }
         internal override bool IsValidChildType(XmlNodeType type)
@@ -1090,8 +1086,8 @@ namespace System.Xml
 
         internal XmlNamedNodeMap Entities
         {
-            get => _entities ??= new XmlNamedNodeMap(this);
-            set => _entities = value;
+            get => field ??= new XmlNamedNodeMap(this);
+            set => field = value;
         }
 
         internal bool IsLoading
@@ -1393,7 +1389,7 @@ namespace System.Xml
             XmlDOMTextWriter xw = new XmlDOMTextWriter(filename, TextEncoding);
             try
             {
-                if (_preserveWhitespace == false)
+                if (!_preserveWhitespace)
                     xw.Formatting = Formatting.Indented;
                 WriteTo(xw);
                 xw.Flush();
@@ -1408,7 +1404,7 @@ namespace System.Xml
         public virtual void Save(Stream outStream)
         {
             XmlDOMTextWriter xw = new XmlDOMTextWriter(outStream, TextEncoding);
-            if (_preserveWhitespace == false)
+            if (!_preserveWhitespace)
                 xw.Formatting = Formatting.Indented;
             WriteTo(xw);
             xw.Flush();
@@ -1421,7 +1417,7 @@ namespace System.Xml
         public virtual void Save(TextWriter writer)
         {
             XmlDOMTextWriter xw = new XmlDOMTextWriter(writer);
-            if (_preserveWhitespace == false)
+            if (!_preserveWhitespace)
                 xw.Formatting = Formatting.Indented;
             Save(xw);
         }

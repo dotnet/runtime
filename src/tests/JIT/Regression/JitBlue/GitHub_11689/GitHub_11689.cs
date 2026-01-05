@@ -7,7 +7,7 @@
 using System.Runtime.CompilerServices;
 using Xunit;
 
-namespace N
+namespace GitHub_11689
 {
     struct WrappedInt
     {

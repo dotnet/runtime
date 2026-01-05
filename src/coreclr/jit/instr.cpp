@@ -32,8 +32,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 const char* CodeGen::genInsName(instruction ins)
 {
     // clang-format off
-    static
-    const char * const insNames[] =
+    static const char * const insNames[] =
     {
 #if defined(TARGET_XARCH)
         #define INST0(id, nm, um, mr,                 lat, tp, tt, flags) nm,
@@ -84,6 +83,10 @@ const char* CodeGen::genInsName(instruction ins)
 
 #elif defined(TARGET_RISCV64)
         #define INST(id, nm, ldst, e1) nm,
+        #include "instrs.h"
+
+#elif defined(TARGET_WASM)
+        #define INST(id, nm, info, fmt, opcode) nm,
         #include "instrs.h"
 
 #else
@@ -612,13 +615,12 @@ bool CodeGenInterface::instHasPseudoName(instruction ins)
  *  Generate a set instruction.
  */
 
-void CodeGen::inst_SET(emitJumpKind condition, regNumber reg)
+void CodeGen::inst_SET(emitJumpKind condition, regNumber reg, insOpts instOptions)
 {
 #ifdef TARGET_XARCH
     instruction ins;
 
     /* Convert the condition to an instruction opcode */
-
     switch (condition)
     {
         case EJ_js:
@@ -672,10 +674,35 @@ void CodeGen::inst_SET(emitJumpKind condition, regNumber reg)
             return;
     }
 
+#ifdef TARGET_AMD64
+    // If using ZU feature, we need to promote the SETcc to the new instruction.
+    if ((instOptions & INS_OPTS_EVEX_zu_MASK) != 0)
+    {
+        const int offset = (INS_seto - INS_seto_apx);
+        assert(INS_seto == (INS_seto_apx + offset));
+        assert(INS_setno == (INS_setno_apx + offset));
+        assert(INS_setb == (INS_setb_apx + offset));
+        assert(INS_setae == (INS_setae_apx + offset));
+        assert(INS_sete == (INS_sete_apx + offset));
+        assert(INS_setne == (INS_setne_apx + offset));
+        assert(INS_setbe == (INS_setbe_apx + offset));
+        assert(INS_seta == (INS_seta_apx + offset));
+        assert(INS_sets == (INS_sets_apx + offset));
+        assert(INS_setns == (INS_setns_apx + offset));
+        assert(INS_setp == (INS_setp_apx + offset));
+        assert(INS_setnp == (INS_setnp_apx + offset));
+        assert(INS_setl == (INS_setl_apx + offset));
+        assert(INS_setge == (INS_setge_apx + offset));
+        assert(INS_setle == (INS_setle_apx + offset));
+        assert(INS_setg == (INS_setg_apx + offset));
+        ins = (instruction)(ins - offset);
+    }
+#endif
+
     assert(genRegMask(reg) & RBM_BYTE_REGS);
 
     // These instructions only write the low byte of 'reg'
-    GetEmitter()->emitIns_R(ins, EA_1BYTE, reg);
+    GetEmitter()->emitIns_R(ins, EA_1BYTE, reg, instOptions);
 #elif defined(TARGET_ARM64)
 
     GetEmitter()->emitIns_R_COND(INS_cset, EA_8BYTE, reg, JumpKindToInsCond(condition));
@@ -1079,7 +1106,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
             var_types           simdBaseType = hwintrinsic->GetSimdBaseType();
             switch (intrinsicId)
             {
-                case NI_SSE42_LoadAndDuplicateToVector128:
+                case NI_X86Base_LoadAndDuplicateToVector128:
                 case NI_AVX_BroadcastScalarToVector128:
                 case NI_AVX_BroadcastScalarToVector256:
                 {
@@ -1103,13 +1130,13 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
                     }
                 }
 
-                case NI_SSE42_MoveAndDuplicate:
+                case NI_X86Base_MoveAndDuplicate:
                 case NI_AVX2_BroadcastScalarToVector128:
                 case NI_AVX2_BroadcastScalarToVector256:
                 case NI_AVX512_BroadcastScalarToVector512:
                 {
                     assert(hwintrinsic->isContained());
-                    if (intrinsicId == NI_SSE42_MoveAndDuplicate)
+                    if (intrinsicId == NI_X86Base_MoveAndDuplicate)
                     {
                         assert(simdBaseType == TYP_DOUBLE);
                     }
@@ -1386,6 +1413,32 @@ void CodeGen::inst_RV_TT_IV(
     {
         instOptions = AddEmbBroadcastMode(instOptions);
     }
+    else if ((instOptions == INS_OPTS_NONE) && !GetEmitter()->IsVexEncodableInstruction(ins))
+    {
+        // We may have opportunistically selected an EVEX only instruction
+        // that isn't actually required, so fallback to the VEX compatible
+        // encoding to potentially save on the number of bytes emitted.
+
+        switch (ins)
+        {
+            case INS_vextractf64x2:
+            {
+                ins = INS_vextractf32x4;
+                break;
+            }
+
+            case INS_vextracti64x2:
+            {
+                ins = INS_vextracti32x4;
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
+    }
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
     OperandDesc rmOpDesc = genOperandDesc(ins, rmOp);
@@ -1500,29 +1553,42 @@ void CodeGen::inst_RV_RV_TT(instruction ins,
     if (CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2))
     {
         instOptions = AddEmbBroadcastMode(instOptions);
+    }
+    else if ((instOptions == INS_OPTS_NONE) && !GetEmitter()->IsVexEncodableInstruction(ins))
+    {
+        // We may have opportunistically selected an EVEX only instruction
+        // that isn't actually required, so fallback to the VEX compatible
+        // encoding to potentially save on the number of bytes emitted.
 
-        if (emitter::IsBitwiseInstruction(ins) && varTypeIsLong(op2->AsHWIntrinsic()->GetSimdBaseType()))
+        switch (ins)
         {
-            switch (ins)
+            case INS_vpandq:
             {
-                case INS_pandd:
-                    ins = INS_vpandq;
-                    break;
+                ins = INS_pandd;
+                break;
+            }
 
-                case INS_pandnd:
-                    ins = INS_vpandnq;
-                    break;
+            case INS_vpandnq:
+            {
+                ins = INS_pandnd;
+                break;
+            }
 
-                case INS_pord:
-                    ins = INS_vporq;
-                    break;
+            case INS_vporq:
+            {
+                ins = INS_pord;
+                break;
+            }
 
-                case INS_pxord:
-                    ins = INS_vpxorq;
-                    break;
+            case INS_vpxorq:
+            {
+                ins = INS_pxord;
+                break;
+            }
 
-                default:
-                    unreached();
+            default:
+            {
+                break;
             }
         }
     }
@@ -1612,6 +1678,32 @@ void CodeGen::inst_RV_RV_TT_IV(instruction ins,
     if (CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2))
     {
         instOptions = AddEmbBroadcastMode(instOptions);
+    }
+    else if ((instOptions == INS_OPTS_NONE) && !GetEmitter()->IsVexEncodableInstruction(ins))
+    {
+        // We may have opportunistically selected an EVEX only instruction
+        // that isn't actually required, so fallback to the VEX compatible
+        // encoding to potentially save on the number of bytes emitted.
+
+        switch (ins)
+        {
+            case INS_vinsertf64x2:
+            {
+                ins = INS_vinsertf32x4;
+                break;
+            }
+
+            case INS_vinserti64x2:
+            {
+                ins = INS_vinserti32x4;
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
     }
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
@@ -1809,7 +1901,7 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
         // If we are running the altjit for AOT, then assume we can use the "BL" instruction.
         // This matches the usual behavior for AOT, since we normally do generate "BL".
         (!compiler->info.compMatchedVM && compiler->IsAot()) ||
-        (compiler->eeGetRelocTypeHint((void*)addr) == IMAGE_REL_BASED_THUMB_BRANCH24);
+        (compiler->eeGetRelocTypeHint((void*)addr) == CorInfoReloc::ARM32_THUMB_BRANCH24);
 }
 
 #endif // TARGET_ARM
@@ -1819,7 +1911,7 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
 {
     // On arm64, we always assume a call target is in range and generate a 28-bit relative
     // 'bl' instruction. If this isn't sufficient range, the VM will generate a jump stub when
-    // we call recordRelocation(). See the IMAGE_REL_ARM64_BRANCH26 case in jitinterface.cpp
+    // we call recordRelocation(). See the CorInfoReloc::ARM64_BRANCH26 case in jitinterface.cpp
     // (for JIT) or zapinfo.cpp (for AOT). If we cannot allocate a jump stub, it is fatal.
     return true;
 }
@@ -2004,6 +2096,25 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
  */
 instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*/)
 {
+    // TODO-Cleanup: split this function across target-specific files (e. g. emit<target>.cpp).
+
+#if defined(TARGET_WASM)
+    switch (srcType)
+    {
+        case TYP_INT:
+            return INS_i32_load;
+        case TYP_LONG:
+            return INS_i64_load;
+        case TYP_FLOAT:
+            return INS_f32_load;
+        case TYP_DOUBLE:
+            return INS_f64_load;
+        default:
+            NYI_WASM("ins_Load");
+            return INS_none;
+    }
+#endif // defined(TARGET_WASM)
+
     if (varTypeUsesIntReg(srcType))
     {
         instruction ins = INS_invalid;
@@ -2159,6 +2270,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
     }
 #else
     NYI("ins_Load");
+    return INS_none;
 #endif
 }
 
@@ -2171,6 +2283,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
  */
 instruction CodeGen::ins_Copy(var_types dstType)
 {
+    // TODO-Cleanup: split this function across target-specific files (e. g. emit<target>.cpp).
     assert(emitTypeActSz[dstType] != 0);
 
     if (varTypeUsesIntReg(dstType))
@@ -2236,6 +2349,7 @@ instruction CodeGen::ins_Copy(var_types dstType)
     }
 #else
     NYI("ins_Copy");
+    return INS_none;
 #endif
 }
 
@@ -2253,6 +2367,7 @@ instruction CodeGen::ins_Copy(var_types dstType)
 //
 instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
 {
+    // TODO-Cleanup: split this function across target-specific files (e. g. emit<target>.cpp).
     assert(srcReg != REG_NA);
 
     if (varTypeUsesIntReg(dstType))
@@ -2366,6 +2481,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
     }
 #else
     NYI("ins_Copy");
+    return INS_none;
 #endif
 }
 
@@ -2380,6 +2496,25 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
  */
 instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false*/)
 {
+    // TODO-Cleanup: split this function across target-specific files (e. g. emit<target>.cpp).
+
+#if defined(TARGET_WASM)
+    switch (dstType)
+    {
+        case TYP_INT:
+            return INS_i32_store;
+        case TYP_LONG:
+            return INS_i64_store;
+        case TYP_FLOAT:
+            return INS_f32_store;
+        case TYP_DOUBLE:
+            return INS_f64_store;
+        default:
+            NYI_WASM("ins_Store");
+            return INS_none;
+    }
+#endif // defined(TARGET_WASM)
+
     if (varTypeUsesIntReg(dstType))
     {
         instruction ins = INS_invalid;
@@ -2483,6 +2618,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
     }
 #else
     NYI("ins_Store");
+    return INS_none;
 #endif
 }
 
@@ -2881,6 +3017,8 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
     GetEmitter()->emitIns_R_R_I(INS_ori, size, reg, REG_R0, 0);
 #elif defined(TARGET_RISCV64)
     GetEmitter()->emitIns_R_R_I(INS_addi, size, reg, REG_R0, 0);
+#elif defined(TARGET_WASM)
+    NYI_WASM("instGen_Set_Reg_To_Zero");
 #else
 #error "Unknown TARGET"
 #endif

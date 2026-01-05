@@ -18,6 +18,7 @@
 #include "mdutil.h"
 #include "rwutil.h"
 #include "mdlog.h"
+#include "memorystreams.h"
 #include "importhelper.h"
 #include "filtermanager.h"
 #include "switches.h"
@@ -1815,10 +1816,6 @@ HRESULT RegMeta::_DefineTypeDef(        // S_OK or error.
     LPUTF8      szTypeDefUTF8;          // Full name in UTF8.
     ULONG       ulStringLen;            // Length of the TypeDef string.
     int         bSuccess;               // Return value for SplitPath().
-
-
-
-    _ASSERTE(IsTdAutoLayout(dwTypeDefFlags) || IsTdSequentialLayout(dwTypeDefFlags) || IsTdExplicitLayout(dwTypeDefFlags));
 
     _ASSERTE(ptd);
     _ASSERTE(TypeFromToken(tkExtends) == mdtTypeRef || TypeFromToken(tkExtends) == mdtTypeDef || TypeFromToken(tkExtends) == mdtTypeSpec

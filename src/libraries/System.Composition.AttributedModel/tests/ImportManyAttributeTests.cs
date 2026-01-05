@@ -17,7 +17,7 @@ namespace System.Composition.AttributeModel.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("ContractName")]
-        public void Ctor_ContractName(string contractName)
+        public void Ctor_ContractName(string? contractName)
         {
             var attribute = new ImportManyAttribute(contractName);
             Assert.Equal(contractName, attribute.ContractName);

@@ -195,7 +195,7 @@ namespace System.IO.Compression.Tests
             Stream source = await OpenEntryStream(async, e);
             byte[] buffer = new byte[s_bufferSize];
             int read = await source.ReadAsync(buffer, 0, buffer.Length);   // We don't want to inflate this large archive entirely
-                                                                // just making sure it read successfully
+                                                                           // just making sure it read successfully
             Assert.Equal(s_bufferSize, read);
             foreach (byte b in buffer)
             {
@@ -564,7 +564,7 @@ namespace System.IO.Compression.Tests
             byte[] buffer2 = new byte[1024];
             file.Seek(0, SeekOrigin.Begin);
 
-            while (await s.ReadAsync(buffer1, 0, buffer1.Length) != 0 )
+            while (await s.ReadAsync(buffer1, 0, buffer1.Length) != 0)
             {
                 await file.ReadAsync(buffer2, 0, buffer2.Length);
                 Assert.Equal(buffer1, buffer2);
@@ -644,9 +644,20 @@ namespace System.IO.Compression.Tests
         public static async Task ZipArchive_InvalidEntryTable(string zipname, bool async)
         {
             string filename = bad(zipname);
-            await using (ZipArchive archive = await CreateZipArchive(async, await StreamHelpers.CreateTempCopyStream(filename), ZipArchiveMode.Read))
+            using (var stream = await StreamHelpers.CreateTempCopyStream(filename))
             {
-                Assert.Throws<InvalidDataException>(() => archive.Entries[0]);
+                if (async)
+                {
+                    // as CreateAsync reads the entry table immediately, it throws immediately instead of on accessing .Entries
+                    await Assert.ThrowsAsync<InvalidDataException>(() => CreateZipArchive(async, stream, ZipArchiveMode.Read));
+                }
+                else
+                {
+                    await using (ZipArchive archive = await CreateZipArchive(async, stream, ZipArchiveMode.Read))
+                    {
+                        Assert.Throws<InvalidDataException>(() => archive.Entries[0]);
+                    }
+                }
             }
         }
 
@@ -820,7 +831,7 @@ namespace System.IO.Compression.Tests
         [MemberData(nameof(EmptyFiles))]
         public async Task ReadArchive_WithEmptyDeflatedFile(byte[] fileBytes, bool async)
         {
-            using (var testStream = new MemoryStream(fileBytes))
+            using (var testStream = new MemoryStream(fileBytes.ToArray()))
             {
                 const string ExpectedFileName = "xl/customProperty2.bin";
 
@@ -834,7 +845,7 @@ namespace System.IO.Compression.Tests
                 byte[] fileContent = testStream.ToArray();
 
                 // compression method should not have changed
-                Assert.Equal(firstEntryCompressionMethod, fileBytes[8]);
+                Assert.Equal(firstEntryCompressionMethod, fileContent[8]);
 
                 testStream.Seek(0, SeekOrigin.Begin);
                 // second attempt: open archive with zero-length file that is compressed (Deflate = 0x8)
@@ -1418,7 +1429,7 @@ namespace System.IO.Compression.Tests
             // for first.bin would normally be skipped (because it hasn't changed) but it needs to be rewritten
             // because the central directory headers will be rewritten with a valid value and the local file header
             // needs to match.
-            await using (ZipArchive updatedArchive = await ZipArchive.CreateAsync(updatedStream, ZipArchiveMode.Update, leaveOpen: true, entryNameEncoding:  null))
+            await using (ZipArchive updatedArchive = await ZipArchive.CreateAsync(updatedStream, ZipArchiveMode.Update, leaveOpen: true, entryNameEncoding: null))
             {
                 ZipArchiveEntry newEntry = updatedArchive.CreateEntry("second.bin", CompressionLevel.NoCompression);
 
@@ -1484,24 +1495,24 @@ namespace System.IO.Compression.Tests
             // Create mode
             using (ZipArchive archive = new ZipArchive(s, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding: Encoding.UTF8))
             {
-                using MemoryStream normalZipStream = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
-                normalZipStream.Position = 0;
+                using MemoryStream asyncZipStream = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+                asyncZipStream.Position = 0;
 
                 // Note this is not using NoAsyncCallsStream, so it can be opened in async mode
-                await using (ZipArchive normalZipArchive = await ZipArchive.CreateAsync(normalZipStream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null))
+                await using (ZipArchive asyncZipArchive = await ZipArchive.CreateAsync(asyncZipStream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null))
                 {
-                    var normalZipEntries = normalZipArchive.Entries;
+                    var asyncZipEntries = asyncZipArchive.Entries;
 
-                    foreach (ZipArchiveEntry normalEntry in normalZipEntries)
+                    foreach (ZipArchiveEntry asyncEntry in asyncZipEntries)
                     {
-                        ZipArchiveEntry newEntry = archive.CreateEntry(normalEntry.FullName);
+                        ZipArchiveEntry newEntry = archive.CreateEntry(asyncEntry.FullName);
                         using (Stream newEntryStream = newEntry.Open())
                         {
                             // Note the parent archive is not using NoAsyncCallsStream, so it can be opened in async mode
-                            await using (Stream normalEntryStream = await normalEntry.OpenAsync())
+                            await using (Stream asyncEntryStream = await asyncEntry.OpenAsync())
                             {
-                                // Note the parent archive is not using NoAsyncCallsStream, so it can be copied in async mode
-                                await normalEntryStream.CopyToAsync(newEntryStream);
+                                // The entry needs to be copied in sync mode as the destination archive does not support async writes
+                                asyncEntryStream.CopyTo(newEntryStream);
                             }
                         }
                     }
@@ -1515,11 +1526,7 @@ namespace System.IO.Compression.Tests
             {
                 _ = archive.Comment;
 
-                // Entries is sync only
-                s.IsRestrictionEnabled = false;
                 var entries = archive.Entries;
-                s.IsRestrictionEnabled = true;
-
                 foreach (var entry in entries)
                 {
                     _ = archive.GetEntry(entry.Name);
@@ -1550,11 +1557,7 @@ namespace System.IO.Compression.Tests
             // Update mode
             using (ZipArchive archive = new ZipArchive(s, ZipArchiveMode.Update, leaveOpen: false, entryNameEncoding: Encoding.UTF8))
             {
-                // Entries is sync only
-                s.IsRestrictionEnabled = false;
                 ZipArchiveEntry entryToDelete = archive.Entries[0];
-                s.IsRestrictionEnabled = true;
-
                 entryToDelete.Delete();
 
                 ZipArchiveEntry entry = archive.CreateEntry("mynewentry.txt");
@@ -1593,8 +1596,8 @@ namespace System.IO.Compression.Tests
                             // Note the parent archive is not using NoSyncCallsStream, so it can be opened in sync mode
                             using (Stream normalEntryStream = normalEntry.Open())
                             {
-                                // Note the parent archive is not using NoSyncCallsStream, so it can be copied in sync mode
-                                normalEntryStream.CopyTo(newEntryStream);
+                                // The entry needs to be copied in async mode as the destination archive does not support sync writes
+                                await normalEntryStream.CopyToAsync(newEntryStream);
                             }
                         }
                     }
@@ -1608,11 +1611,7 @@ namespace System.IO.Compression.Tests
             {
                 _ = archive.Comment;
 
-                // Entries is sync only
-                s.IsRestrictionEnabled = false;
                 var entries = archive.Entries;
-                s.IsRestrictionEnabled = true;
-
                 foreach (var entry in entries)
                 {
                     _ = archive.GetEntry(entry.Name);
@@ -1642,11 +1641,7 @@ namespace System.IO.Compression.Tests
 
             await using (ZipArchive archive = await ZipArchive.CreateAsync(s, ZipArchiveMode.Update, leaveOpen: false, entryNameEncoding: Encoding.UTF8))
             {
-                // Entries is sync only
-                s.IsRestrictionEnabled = false;
                 ZipArchiveEntry entryToDelete = archive.Entries[0];
-                s.IsRestrictionEnabled = true;
-
                 entryToDelete.Delete(); // Delete is async only
 
                 ZipArchiveEntry entry = archive.CreateEntry("mynewentry.txt");
@@ -1656,6 +1651,39 @@ namespace System.IO.Compression.Tests
                     await es.WriteAsync(buffer, 0, buffer.Length);
                     await es.WriteAsync(buffer.AsMemory());
                 }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ReadArchive_FrontTruncatedFile_Throws(bool async)
+        {
+            for (int i = 1; i < s_slightlyIncorrectZip64.Length - 1; i++)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(
+                    // The archive is truncated, so it should throw an exception
+                    () => CreateZipArchive(async, new MemoryStream(s_slightlyIncorrectZip64, i, s_slightlyIncorrectZip64.Length - i), ZipArchiveMode.Read));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ReadArchive_Zip64EocdLocatorInvalidOffset_Throws(bool async)
+        {
+            byte[] data = s_slightlyIncorrectZip64.ToArray();
+
+            foreach (long offset in new[] { -1, int.MaxValue - 1 })
+            {
+                // Find Zip64 EOCD locator record
+                int eocdlOffset = data.AsSpan().LastIndexOf(new byte[] { 0x50, 0x4b, 0x06, 0x07 });
+                Assert.True(eocdlOffset >= 0, "Zip64 EOCD locator not found in test data");
+
+                // skip 4B signature and 4B index of disk, then overwrite the 8B offset to start of central directory
+                BinaryPrimitives.WriteInt64LittleEndian(data.AsSpan(eocdlOffset + 8, 8), offset);
+
+                await Assert.ThrowsAsync<InvalidDataException>(
+                    // The archive is truncated, so it should throw an exception
+                    () => CreateZipArchive(async, new MemoryStream(data), ZipArchiveMode.Read));
             }
         }
 

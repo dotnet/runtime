@@ -89,9 +89,9 @@ public partial class ZipArchiveEntry
             }
 
             // if they start modifying it and the compression method is not "store", we should make sure it will get deflated
-            if (CompressionMethod != CompressionMethodValues.Stored)
+            if (CompressionMethod != ZipCompressionMethod.Stored)
             {
-                CompressionMethod = CompressionMethodValues.Deflate;
+                CompressionMethod = ZipCompressionMethod.Deflate;
             }
         }
 
@@ -172,9 +172,9 @@ public partial class ZipArchiveEntry
 
             for (int i = 0; i < _compressedBytes.Length - 1; i++)
             {
-                await ZipHelper.ReadBytesAsync(_archive.ArchiveStream, _compressedBytes[i], maxSingleBufferSize, cancellationToken).ConfigureAwait(false);
+                await _archive.ArchiveStream.ReadAtLeastAsync(_compressedBytes[i], maxSingleBufferSize, throwOnEndOfStream: true, cancellationToken).ConfigureAwait(false);
             }
-            await ZipHelper.ReadBytesAsync(_archive.ArchiveStream, _compressedBytes[_compressedBytes.Length - 1], (int)(_compressedSize % maxSingleBufferSize), cancellationToken).ConfigureAwait(false);
+            await _archive.ArchiveStream.ReadAtLeastAsync(_compressedBytes[_compressedBytes.Length - 1], (int)(_compressedSize % maxSingleBufferSize), throwOnEndOfStream: true, cancellationToken).ConfigureAwait(false);
         }
     }
 

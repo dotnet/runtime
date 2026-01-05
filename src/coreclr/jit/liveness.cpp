@@ -66,9 +66,10 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
 
         if (compRationalIRForm && (varDsc->lvType != TYP_STRUCT) && !varTypeIsMultiReg(varDsc))
         {
-            // If this is an enregisterable variable that is not marked doNotEnregister,
+            // If this is an enregisterable variable that is not marked doNotEnregister and not defined via address,
             // we should only see direct references (not ADDRs).
-            assert(varDsc->lvDoNotEnregister || tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
+            assert(varDsc->lvDoNotEnregister || varDsc->lvDefinedViaAddress ||
+                   tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
         }
 
         if (isUse && !VarSetOps::IsMember(this, fgCurDefSet, varDsc->lvVarIndex))
@@ -822,7 +823,7 @@ GenTreeLclVarCommon* Compiler::fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_
     }
 
     // TODO: we should generate the code for saving to/restoring
-    //       from the inlined N/Direct frame instead.
+    //       from the inlined PInvoke frame instead.
 
     /* Is this call to unmanaged code? */
     if (call->IsUnmanaged() && compMethodRequiresPInvokeFrame())
@@ -943,6 +944,8 @@ bool Compiler::fgComputeLifeTrackedLocalDef(VARSET_TP&           life,
     if (VarSetOps::IsMember(this, life, varIndex))
     {
         // The variable is live
+        node->gtFlags &= ~GTF_VAR_DEATH;
+
         if ((node->gtFlags & GTF_VAR_USEASG) == 0)
         {
             // Remove the variable from the live set if it is not in the keepalive set.
@@ -1500,6 +1503,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_RETURNTRAP:
             case GT_PUTARG_STK:
             case GT_IL_OFFSET:
+            case GT_RECORD_ASYNC_RESUME:
             case GT_KEEPALIVE:
             case GT_SWIFT_ERROR_RET:
             case GT_GCPOLL:

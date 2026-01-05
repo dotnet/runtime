@@ -21,12 +21,12 @@ SHash<TRAITS>::SHash()
     LIMITED_METHOD_CONTRACT;
 
 #ifndef __GNUC__ // these crash GCC
-    static_assert_no_msg(SHash<TRAITS>::s_growth_factor_numerator > SHash<TRAITS>::s_growth_factor_denominator);
-    static_assert_no_msg(SHash<TRAITS>::s_density_factor_numerator < SHash<TRAITS>::s_density_factor_denominator);
+    static_assert(SHash<TRAITS>::s_growth_factor_numerator > SHash<TRAITS>::s_growth_factor_denominator);
+    static_assert(SHash<TRAITS>::s_density_factor_numerator < SHash<TRAITS>::s_density_factor_denominator);
 #endif
 
-    static_assert_no_msg(TRAITS::s_supports_remove || !TRAITS::s_supports_autoremove);
-    static_assert_no_msg(!TRAITS::s_DestructPerEntryCleanupAction || !TRAITS::s_RemovePerEntryCleanupAction);
+    static_assert(TRAITS::s_supports_remove || !TRAITS::s_supports_autoremove);
+    static_assert(!TRAITS::s_DestructPerEntryCleanupAction || !TRAITS::s_RemovePerEntryCleanupAction);
 }
 
 template <typename TRAITS>

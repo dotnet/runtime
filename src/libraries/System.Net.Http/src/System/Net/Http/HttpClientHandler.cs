@@ -351,10 +351,10 @@ namespace System.Net.Http
         // Attributes are commented out due to https://github.com/dotnet/arcade/issues/7585
         // API compat will fail until this is fixed
         //
-        //[UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        //[UnsupportedOSPlatform("ios")]
-        //[UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
 #if TARGET_BROWSER || TARGET_WASI
@@ -372,12 +372,11 @@ namespace System.Net.Http
         }
 
         // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
-        private static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? s_dangerousAcceptAnyServerCertificateValidator;
         [UnsupportedOSPlatform("browser")]
         public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator =>
-            s_dangerousAcceptAnyServerCertificateValidator ??
-            Interlocked.CompareExchange(ref s_dangerousAcceptAnyServerCertificateValidator, delegate { return true; }, null) ??
-            s_dangerousAcceptAnyServerCertificateValidator;
+            field ??
+            Interlocked.CompareExchange(ref field, delegate { return true; }, null) ??
+            field;
 
         private void ThrowForModifiedManagedSslOptionsIfStarted()
         {

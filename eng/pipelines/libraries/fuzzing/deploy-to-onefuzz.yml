@@ -31,6 +31,7 @@ extends:
         - checkout: self
           clean: true
           fetchDepth: 1
+          fetchTags: false
           lfs: false
 
         - powershell: |
@@ -89,6 +90,14 @@ extends:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/Base64UrlFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send Base64UrlFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/Deflate64Fuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send Deflate64Fuzzer to OneFuzz
 
         - task: onefuzz-task@0
           inputs:

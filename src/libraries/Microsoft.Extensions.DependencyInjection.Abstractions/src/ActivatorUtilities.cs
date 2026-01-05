@@ -169,7 +169,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Type?[] argumentTypes;
             if (parameters.Length == 0)
             {
-                argumentTypes = Type.EmptyTypes;
+                argumentTypes = [];
             }
             else
             {

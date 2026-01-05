@@ -361,6 +361,11 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                 cur->SetFlags(BBF_REMOVED);
                 removedBlks++;
 
+                if (cur->KindIs(BBJ_RETURN))
+                {
+                    fgReturnCount--;
+                }
+
                 // Drop the block from the list.
                 //
                 // We rely on the fact that this does not clear out
@@ -1652,7 +1657,11 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         blockRange = &LIR::AsRange(block);
         switchTree = blockRange->LastNode();
 
+#ifdef TARGET_WASM
+        assert(switchTree->OperIs(GT_SWITCH));
+#else
         assert(switchTree->OperIs(GT_SWITCH_TABLE));
+#endif
     }
     else
     {
@@ -2538,11 +2547,11 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     if (fgIsUsingProfileWeights())
     {
         // Only rely upon the profile weight when all three of these blocks
-        // have either good profile weights or are rarelyRun
+        // have either good profile weights or are rarely run
         //
-        if (bJump->HasAnyFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY) &&
-            bDest->HasAnyFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY) &&
-            trueTarget->HasAnyFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY))
+        if ((bJump->hasProfileWeight() || bJump->isRunRarely()) &&
+            (bDest->hasProfileWeight() || bDest->isRunRarely()) &&
+            (trueTarget->hasProfileWeight() || trueTarget->isRunRarely()))
         {
             haveProfileWeights = true;
 
@@ -3132,7 +3141,6 @@ bool Compiler::fgExpandRarelyRunBlocks()
                 // Set the BBJ_CALLFINALLY block to the same weight as the BBJ_CALLFINALLYRET block and
                 // mark it rarely run.
                 bPrev->bbWeight = block->bbWeight;
-                bPrev->SetFlags(BBF_RUN_RARELY);
 #ifdef DEBUG
                 if (verbose)
                 {
@@ -3147,7 +3155,6 @@ bool Compiler::fgExpandRarelyRunBlocks()
                 // Set the BBJ_CALLFINALLYRET block to the same weight as the BBJ_CALLFINALLY block and
                 // mark it rarely run.
                 block->bbWeight = bPrev->bbWeight;
-                block->SetFlags(BBF_RUN_RARELY);
 #ifdef DEBUG
                 if (verbose)
                 {
@@ -5363,17 +5370,25 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         }
     };
 
-    ArrayStack<BasicBlock*> retBlocks(getAllocator(CMK_ArrayStack));
+    ArrayStack<BasicBlock*> retOrThrowBlocks(getAllocator(CMK_ArrayStack));
 
     // Visit each block
     //
     for (BasicBlock* const block : Blocks())
     {
         iterateTailMerge(block);
-
-        if (block->KindIs(BBJ_RETURN) && !block->isEmpty() && (block != genReturnBB))
+        if (block->isEmpty())
         {
-            // Avoid spitting a return away from a possible tail call
+            continue;
+        }
+
+        if (block->KindIs(BBJ_THROW))
+        {
+            retOrThrowBlocks.Push(block);
+        }
+        else if (block->KindIs(BBJ_RETURN) && (block != genReturnBB))
+        {
+            // Avoid splitting a return away from a possible tail call
             //
             if (!block->hasSingleStmt())
             {
@@ -5386,14 +5401,14 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 }
             }
 
-            retBlocks.Push(block);
+            retOrThrowBlocks.Push(block);
         }
     }
 
     predInfo.Reset();
-    for (int i = 0; i < retBlocks.Height(); i++)
+    for (int i = 0; i < retOrThrowBlocks.Height(); i++)
     {
-        predInfo.Push(PredInfo(retBlocks.Bottom(i), retBlocks.Bottom(i)->lastStmt()));
+        predInfo.Push(PredInfo(retOrThrowBlocks.Bottom(i), retOrThrowBlocks.Bottom(i)->lastStmt()));
     }
 
     tailMergePreds(nullptr);

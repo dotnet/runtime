@@ -108,11 +108,6 @@ public class AndroidAppBuilderTask : Task
 
     public bool ForceInterpreter { get; set; }
 
-    /// <summary>
-    /// Indicates whether we want to use invariant globalization mode.
-    /// </summary>
-    public bool InvariantGlobalization { get; set; }
-
     [Output]
     public string ApkBundlePath { get; set; } = ""!;
 
@@ -146,7 +141,6 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.NativeDependencies = NativeDependencies;
         apkBuilder.ExtraLinkerArguments = ExtraLinkerArguments;
         apkBuilder.RuntimeFlavor = RuntimeFlavor;
-        apkBuilder.InvariantGlobalization = InvariantGlobalization;
         (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(RuntimeIdentifier, MainLibraryFileName, RuntimeHeaders);
 
         return true;

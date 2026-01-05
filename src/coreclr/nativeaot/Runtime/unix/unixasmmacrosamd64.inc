@@ -243,15 +243,14 @@ C_FUNC(\Name):
 #define PTFF_SAVE_ALL_PRESERVED  0x000000F1   // NOTE: RBP is not included in this set!
 #define PTFF_SAVE_RSP            0x00008000
 #define PTFF_SAVE_RAX            0x00000100   // RAX is saved in hijack handler - in case it contains a GC ref
+#define PTFF_SAVE_RCX            0x00000200   // RCX is saved in hijack handler - in case it contains a GC ref
 #define PTFF_SAVE_RDX            0x00000400   // RDX is saved in hijack handler - in case it contains a GC ref
 #define PTFF_SAVE_ALL_SCRATCH    0x00007F00
-#define PTFF_THREAD_ABORT        0x00100000   // indicates that ThreadAbortException should be thrown when returning from the transition
-#define PTFF_THREAD_HIJACK       0x00200000   // indicates that this is a frame for a hijacked call
+#define PTFF_THREAD_HIJACK       0x00100000   // indicates that this is a frame for a hijacked call
 
 // These must match the TrapThreadsFlags enum
 #define TrapThreadsFlags_None            0
-#define TrapThreadsFlags_AbortInProgress 1
-#define TrapThreadsFlags_TrapThreads     2
+#define TrapThreadsFlags_TrapThreads     1
 
 .macro INLINE_GET_TLS_VAR Var
        .att_syntax

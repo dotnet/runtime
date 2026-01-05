@@ -18,24 +18,6 @@ dn_simdhash_assert_fail (const char* file, int line, const char* condition) {
 #endif
 }
 
-thread_local dn_simdhash_ptr_ptr_t *t_sharedStackMapLookup = nullptr;
-
-InterpreterStackMap* GetInterpreterStackMap(ICorJitInfo* jitInfo, CORINFO_CLASS_HANDLE classHandle)
-{
-    InterpreterStackMap* result = nullptr;
-    if (!t_sharedStackMapLookup)
-        t_sharedStackMapLookup = dn_simdhash_ptr_ptr_new(0, nullptr);
-    if (!t_sharedStackMapLookup)
-        NOMEM();
-
-    if (!dn_simdhash_ptr_ptr_try_get_value(t_sharedStackMapLookup, classHandle, (void **)&result))
-    {
-        result = new InterpreterStackMap(jitInfo, classHandle);
-        checkAddedNew(dn_simdhash_ptr_ptr_try_add(t_sharedStackMapLookup, classHandle, result));
-    }
-    return result;
-}
-
 void InterpreterStackMap::PopulateStackMap(ICorJitInfo* jitInfo, CORINFO_CLASS_HANDLE classHandle)
 {
     unsigned size = jitInfo->getClassSize(classHandle);
@@ -46,12 +28,12 @@ void InterpreterStackMap::PopulateStackMap(ICorJitInfo* jitInfo, CORINFO_CLASS_H
 
     uint8_t *gcPtrs = (uint8_t *)alloca(maxGcPtrs);
     unsigned numGcPtrs = jitInfo->getClassGClayout(classHandle, gcPtrs),
-        newCapacity = m_slotCount + numGcPtrs;
+        newCapacity = numGcPtrs;
 
     // Allocate enough space in case all the offsets in the buffer are GC pointers
     m_slots = (InterpreterStackMapSlot *)malloc(sizeof(InterpreterStackMapSlot) * newCapacity);
 
-    for (unsigned i = 0; i < numGcPtrs; i++) {
+    for (unsigned i = 0; m_slotCount < numGcPtrs; i++) {
         GcSlotFlags flags;
 
         switch (gcPtrs[i]) {
@@ -72,10 +54,4 @@ void InterpreterStackMap::PopulateStackMap(ICorJitInfo* jitInfo, CORINFO_CLASS_H
         unsigned slotOffset = (sizeof(void *) * i);
         m_slots[m_slotCount++] = { slotOffset, (unsigned)flags };
     }
-
-    // Shrink our allocation based on the number of slots we actually recorded
-    unsigned finalSize = sizeof(InterpreterStackMapSlot) * m_slotCount;
-    if (finalSize == 0)
-        finalSize = sizeof(InterpreterStackMapSlot);
-    m_slots = (InterpreterStackMapSlot *)realloc(m_slots, finalSize);
 }

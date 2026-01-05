@@ -5553,7 +5553,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
                     if (emitComp->info.compMatchedVM)
                     {
                         void* target = emitOffsetToPtr(dstOffs);
-                        emitRecordRelocation((void*)dst, target, IMAGE_REL_BASED_THUMB_BRANCH24);
+                        emitRecordRelocation((void*)dst, target, CorInfoReloc::ARM32_THUMB_BRANCH24);
                     }
                 }
             }
@@ -6476,7 +6476,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 callInstrSize = SafeCvtAssert<unsigned char>(emitOutput_Thumb2Instr(dst, code));
                 dst += callInstrSize;
                 if (emitComp->info.compMatchedVM)
-                    emitRecordRelocation((void*)(dst - 4), addr, IMAGE_REL_BASED_THUMB_BRANCH24);
+                    emitRecordRelocation((void*)(dst - 4), addr, CorInfoReloc::ARM32_THUMB_BRANCH24);
             }
             else
             {

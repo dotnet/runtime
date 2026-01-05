@@ -7,13 +7,13 @@
 .syntax unified
 .thumb
 
-// LPVOID __stdcall GetCurrentIP(void)//
+// void* GetCurrentIP(void)//
     LEAF_ENTRY GetCurrentIP, _TEXT
         mov     r0, lr
         bx      lr
     LEAF_END GetCurrentIP, _TEXT
 
-// LPVOID __stdcall GetCurrentSP(void)//
+// void* GetCurrentSP(void)//
     LEAF_ENTRY GetCurrentSP, _TEXT
         mov     r0, sp
         bx      lr
@@ -187,8 +187,8 @@ ThePreStubPatchLabel:
         LEAF_END ThePreStubPatch, _TEXT
 
 // ------------------------------------------------------------------
-// The call in ndirect import precode points to this function.
-        NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
+// The call in PInvokeImportPrecode points to this function.
+        NESTED_ENTRY PInvokeImportThunk, _TEXT, NoHandler
 
         PROLOG_PUSH "{r0-r4,r7,r8,lr}"                  // Spill general argument registers, return address and
         PROLOG_STACK_SAVE_OFFSET r7, #20
@@ -198,17 +198,17 @@ ThePreStubPatchLabel:
         CHECK_STACK_ALIGNMENT
 
         mov     r0, r12
-        bl      C_FUNC(NDirectImportWorker)
+        bl      C_FUNC(PInvokeImportWorker)
         mov     r12, r0
 
         EPILOG_VPOP {d0-d7}
         EPILOG_POP "{r0-r4,r7,r8,lr}"
 
-        // If we got back from NDirectImportWorker, the MD has been successfully
+        // If we got back from PInvokeImportWorker, the MD has been successfully
         // linked. Proceed to execute the original DLL call.
         bx r12
 
-        NESTED_END NDirectImportThunk, _TEXT
+        NESTED_END PInvokeImportThunk, _TEXT
 
 // ------------------------------------------------------------------
 // void ResolveWorkerAsmStub(r0, r1, r2, r3, r4:IndirectionCellAndFlags, r12:DispatchToken)

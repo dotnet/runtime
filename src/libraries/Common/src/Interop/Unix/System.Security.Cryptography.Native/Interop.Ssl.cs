@@ -57,7 +57,7 @@ internal static partial class Interop
         internal static partial bool SslSetTlsExtHostName(SafeSslHandle ssl, string host);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetServerName")]
-        internal static unsafe partial IntPtr SslGetServerName(IntPtr ssl);
+        internal static unsafe partial byte* SslGetServerName(IntPtr ssl);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetSession")]
         internal static unsafe partial int SslSetSession(SafeSslHandle ssl, IntPtr session);
@@ -171,7 +171,7 @@ internal static partial class Interop
         internal static partial bool SslGetCurrentCipherId(SafeSslHandle ssl, out int cipherId);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetOpenSslCipherSuiteName")]
-        private static partial IntPtr GetOpenSslCipherSuiteName(SafeSslHandle ssl, int cipherSuite, out int isTls12OrLower);
+        private static unsafe partial byte* GetOpenSslCipherSuiteName(SafeSslHandle ssl, int cipherSuite, out int isTls12OrLower);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetCiphers")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -214,13 +214,13 @@ internal static partial class Interop
         private static partial int Tls13SupportedImpl();
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionGetHostname")]
-        internal static partial IntPtr SessionGetHostname(IntPtr session);
+        internal static unsafe partial byte* SessionGetHostname(IntPtr session);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionFree")]
         internal static partial void SessionFree(IntPtr session);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionSetHostname")]
-        internal static partial int SessionSetHostname(IntPtr session, IntPtr name);
+        internal static unsafe partial int SessionSetHostname(IntPtr session, byte* name);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionGetData")]
         internal static partial IntPtr SslSessionGetData(IntPtr session);
@@ -328,9 +328,9 @@ internal static partial class Interop
             return true;
         }
 
-        internal static string? GetOpenSslCipherSuiteName(SafeSslHandle ssl, TlsCipherSuite cipherSuite, out bool isTls12OrLower)
+        internal static unsafe string? GetOpenSslCipherSuiteName(SafeSslHandle ssl, TlsCipherSuite cipherSuite, out bool isTls12OrLower)
         {
-            string? ret = Marshal.PtrToStringUTF8(GetOpenSslCipherSuiteName(ssl, (int)cipherSuite, out int isTls12OrLowerInt));
+            string? ret = Utf8StringMarshaller.ConvertToManaged(GetOpenSslCipherSuiteName(ssl, (int)cipherSuite, out int isTls12OrLowerInt));
             isTls12OrLower = isTls12OrLowerInt != 0;
             return ret;
         }

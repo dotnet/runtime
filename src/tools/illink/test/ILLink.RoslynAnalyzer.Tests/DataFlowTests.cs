@@ -143,6 +143,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task DependencyInjectionPattern()
+        {
+            return RunTest();
+        }
+
+        [Fact]
         public Task DynamicDependencyDataflow()
         {
             return RunTest(nameof(DynamicDependencyDataflow));
@@ -168,6 +174,18 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task ExtensionsDataFlow()
+        {
+            return RunTest();
+        }
+
+        [Fact]
+        public Task ExtensionMembersDataFlow()
+        {
+            return RunTest();
+        }
+
+        [Fact]
         public Task FeatureCheckDataFlow()
         {
             return RunTest();
@@ -183,6 +201,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         public Task FieldDataFlow()
         {
             return RunTest(nameof(FieldDataFlow));
+        }
+
+        [Fact]
+        public Task FieldKeyword()
+        {
+            return RunTest();
         }
 
         [Fact]
@@ -293,7 +317,6 @@ namespace ILLink.RoslynAnalyzer.Tests
         {
             return RunTest(nameof(LocalDataFlow));
         }
-
 
         [Fact]
         public Task ExceptionalDataFlow()

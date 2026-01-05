@@ -5,5 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\src\ILLink.Shared\DynamicallyAccessedMemberTypesEx.cs" Link="Support\DynamicallyAccessedMemberTypesEx.cs" />
+    <Compile Include="..\..\src\ILLink.Shared\RequiresDynamicCodeAttribute.cs" Link="Support\RequiresDynamicCodeAttribute.cs" />
+    <Compile Include="..\..\src\ILLink.Shared\RequiresUnreferencedCodeAttribute.cs" Link="Support\RequiresUnreferencedCodeAttribute.cs" />
   </ItemGroup>
 </Project>

@@ -144,7 +144,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (AllowCrossModuleInlines)
                 {
                     // CrossModuleInlineInfo format
-                    hashCode = VersionResilientHashCode.MethodHashCode(inlinee);
+                    hashCode = inlinee.GetHashCode();
                 }
                 else
                 {

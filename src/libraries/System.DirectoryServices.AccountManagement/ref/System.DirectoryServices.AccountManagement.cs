@@ -151,7 +151,7 @@ namespace System.DirectoryServices.AccountManagement
     public partial class MultipleMatchesException : System.DirectoryServices.AccountManagement.PrincipalException
     {
         public MultipleMatchesException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -162,7 +162,7 @@ namespace System.DirectoryServices.AccountManagement
     public partial class NoMatchingPrincipalException : System.DirectoryServices.AccountManagement.PrincipalException
     {
         public NoMatchingPrincipalException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -173,7 +173,7 @@ namespace System.DirectoryServices.AccountManagement
     public partial class PasswordException : System.DirectoryServices.AccountManagement.PrincipalException
     {
         public PasswordException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -276,7 +276,7 @@ namespace System.DirectoryServices.AccountManagement
     public abstract partial class PrincipalException : System.SystemException
     {
         private protected PrincipalException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -285,7 +285,7 @@ namespace System.DirectoryServices.AccountManagement
     public partial class PrincipalExistsException : System.DirectoryServices.AccountManagement.PrincipalException
     {
         public PrincipalExistsException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -296,7 +296,7 @@ namespace System.DirectoryServices.AccountManagement
     public partial class PrincipalOperationException : System.DirectoryServices.AccountManagement.PrincipalException
     {
         public PrincipalOperationException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -306,7 +306,7 @@ namespace System.DirectoryServices.AccountManagement
         public PrincipalOperationException(string message, System.Exception innerException, int errorCode) { }
         public PrincipalOperationException(string message, int errorCode) { }
         public int ErrorCode { get { throw null; } }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -334,7 +334,7 @@ namespace System.DirectoryServices.AccountManagement
     public partial class PrincipalServerDownException : System.DirectoryServices.AccountManagement.PrincipalException
     {
         public PrincipalServerDownException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -344,7 +344,7 @@ namespace System.DirectoryServices.AccountManagement
         public PrincipalServerDownException(string message, System.Exception innerException, int errorCode) { }
         public PrincipalServerDownException(string message, System.Exception innerException, int errorCode, string serverName) { }
         public PrincipalServerDownException(string message, int errorCode) { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif

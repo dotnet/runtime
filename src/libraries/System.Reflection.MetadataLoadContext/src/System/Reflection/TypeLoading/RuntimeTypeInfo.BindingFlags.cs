@@ -204,9 +204,7 @@ namespace System.Reflection.TypeLoading
             return true;
         }
 
-        private TypeComponentsCache Cache => _lazyCache ??= new TypeComponentsCache(this);
-
-        private volatile TypeComponentsCache? _lazyCache;
+        private TypeComponentsCache Cache => field ??= new TypeComponentsCache(this);
 
         private const int GenericParameterCountAny = -1;
     }

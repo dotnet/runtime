@@ -221,17 +221,8 @@ namespace System.Formats.Tar
                     return;
                 }
 
-                if (!dataStream.HasReachedEnd)
-                {
-                    // If the user did not advance the position, we need to make sure the position
-                    // pointer is located at the beginning of the next header.
-                    if (dataStream.Position < (_previouslyReadEntry._header._size - 1))
-                    {
-                        long bytesToSkip = _previouslyReadEntry._header._size - dataStream.Position;
-                        TarHelpers.AdvanceStream(_archiveStream, bytesToSkip);
-                        dataStream.HasReachedEnd = true; // Now the pointer is beyond the limit, so any read attempts should throw
-                    }
-                }
+                dataStream.AdvanceToEnd();
+
                 TarHelpers.SkipBlockAlignmentPadding(_archiveStream, _previouslyReadEntry._header._size);
             }
         }
@@ -263,17 +254,8 @@ namespace System.Formats.Tar
                     return;
                 }
 
-                if (!dataStream.HasReachedEnd)
-                {
-                    // If the user did not advance the position, we need to make sure the position
-                    // pointer is located at the beginning of the next header.
-                    if (dataStream.Position < (_previouslyReadEntry._header._size - 1))
-                    {
-                        long bytesToSkip = _previouslyReadEntry._header._size - dataStream.Position;
-                        await TarHelpers.AdvanceStreamAsync(_archiveStream, bytesToSkip, cancellationToken).ConfigureAwait(false);
-                        dataStream.HasReachedEnd = true; // Now the pointer is beyond the limit, so any read attempts should throw
-                    }
-                }
+                await dataStream.AdvanceToEndAsync(cancellationToken).ConfigureAwait(false);
+
                 await TarHelpers.SkipBlockAlignmentPaddingAsync(_archiveStream, _previouslyReadEntry._header._size, cancellationToken).ConfigureAwait(false);
             }
         }
