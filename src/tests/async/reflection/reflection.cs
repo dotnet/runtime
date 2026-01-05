@@ -247,7 +247,6 @@ public class Async2Reflection
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/122517", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void CurrentMethod()
     {
         // Note: async1 leaks implementation details here and returns "Void MoveNext()"

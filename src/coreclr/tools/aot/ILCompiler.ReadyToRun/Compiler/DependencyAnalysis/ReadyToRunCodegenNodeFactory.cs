@@ -1067,7 +1067,7 @@ namespace ILCompiler.DependencyAnalysis
             isHidden = false;
             if (node == Header)
             {
-                return new Utf8String("RTR_HEADER"u8.ToArray());
+                return new Utf8String("RTR_HEADER"u8);
             }
             return default;
         }

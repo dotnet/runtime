@@ -14,12 +14,6 @@ EXTERN_C void RedirectForThreadAbort();
 class Thread;
 class FaultingExceptionFrame;
 
-#define INSTALL_EXCEPTION_HANDLING_RECORD(record)
-#define UNINSTALL_EXCEPTION_HANDLING_RECORD(record)
-// On LOONGARCH, the COMPlusFrameHandler's work is done by our personality routine. ???
-//
-#define DECLARE_CPFH_EH_RECORD(pCurThread)
-
 //
 // Retrieves the redirected CONTEXT* from the stack frame of one of the
 // RedirectedHandledJITCaseForXXX_Stub's.
