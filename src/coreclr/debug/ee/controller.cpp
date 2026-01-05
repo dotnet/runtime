@@ -4,11 +4,9 @@
 // ****************************************************************************
 // File: controller.cpp
 //
-
-//
 // controller.cpp: Debugger execution control routines
-//
 // ****************************************************************************
+
 // Putting code & #includes, #defines, etc, before the stdafx.h will
 // cause the code,etc, to be silently ignored
 //
@@ -586,9 +584,7 @@ StackWalkAction ControllerStackInfo::WalkStack(FrameInfo *pInfo, void *data)
             {
                 i->m_returnFrame = *pInfo;
 
-#if defined(FEATURE_EH_FUNCLETS)
                 CopyREGDISPLAY(&(i->m_returnFrame.registers), &(pInfo->registers));
-#endif // FEATURE_EH_FUNCLETS
 
                 i->m_returnFound = true;
 
@@ -601,9 +597,7 @@ StackWalkAction ControllerStackInfo::WalkStack(FrameInfo *pInfo, void *data)
         {
             i->m_activeFrame = *pInfo;
 
-#if defined(FEATURE_EH_FUNCLETS)
             CopyREGDISPLAY(&(i->m_activeFrame.registers), &(pInfo->registers));
-#endif // FEATURE_EH_FUNCLETS
 
             i->m_activeFound = true;
 
@@ -5181,9 +5175,7 @@ DebuggerStepper::DebuggerStepper(Thread *thread,
     m_range(NULL),
     m_rangeCount(0),
     m_fp(LEAF_MOST_FRAME),
-#if defined(FEATURE_EH_FUNCLETS)
     m_fpParentMethod(LEAF_MOST_FRAME),
-#endif // FEATURE_EH_FUNCLETS
     m_fpException(LEAF_MOST_FRAME),
     m_fdException(0),
     m_cFuncEvalNesting(0)
@@ -5269,7 +5261,6 @@ bool DebuggerStepper::IsRangeAppropriate(ControllerStackInfo *info)
 
     const FrameInfo *realFrame;
 
-#if defined(FEATURE_EH_FUNCLETS)
     bool fActiveFrameIsFunclet = info->m_activeFrame.IsNonFilterFuncletFrame();
 
     if (fActiveFrameIsFunclet)
@@ -5277,7 +5268,6 @@ bool DebuggerStepper::IsRangeAppropriate(ControllerStackInfo *info)
         realFrame = &(info->GetReturnFrame());
     }
     else
-#endif // FEATURE_EH_FUNCLETS
     {
         realFrame = &(info->m_activeFrame);
     }
@@ -5293,7 +5283,6 @@ bool DebuggerStepper::IsRangeAppropriate(ControllerStackInfo *info)
         return true;
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
     // There are three scenarios which make this function more complicated with funclets.
     // 1)  We initiate a step in the parent method or a funclet but end up stepping into another funclet closer to the leaf.
     //      a)  start in the parent method
@@ -5312,7 +5301,6 @@ bool DebuggerStepper::IsRangeAppropriate(ControllerStackInfo *info)
         LOG((LF_CORDB,LL_INFO10000, "DS::IRA: (parent SP) returning TRUE\n"));
         return true;
     }
-#endif // FEATURE_EH_FUNCLETS
 
     LOG((LF_CORDB,LL_INFO10000, "DS::IRA: returning FALSE\n"));
     return false;
@@ -6071,7 +6059,6 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
 
                 if (walker.GetNextIP() != NULL)
                 {
-#ifdef FEATURE_EH_FUNCLETS
                     // There are 4 places we could be jumping:
                     // 1) to the beginning of the same method (recursive call)
                     // 2) somewhere in the same funclet, that isn't the method start
@@ -6083,7 +6070,6 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                     // wanted, option #3
                     fCallingIntoFunclet = IsAddrWithinMethodIncludingFunclet(ji, info->m_activeFrame.md, walker.GetNextIP()) &&
                         ((CORDB_ADDRESS)(SIZE_T)walker.GetNextIP() != ji->m_addrOfCode);
-#endif
                     // If we are stepping into a tail call that uses the StoreTailCallArgs
                     // we need to enable the method enter, otherwise it will behave like a resume
                     if (in && IsTailCall(walker.GetNextIP(), info, TailCallFunctionType::StoreTailCallArgs))
@@ -6261,9 +6247,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                 }
             }
 
-#ifdef FEATURE_EH_FUNCLETS
             fCallingIntoFunclet = IsAddrWithinMethodIncludingFunclet(ji, info->m_activeFrame.md, walker.GetNextIP());
-#endif
             if (in || fCallingIntoFunclet)
             {
                 LOG((LF_CORDB, LL_INFO10000, "DS::TS: WALK_CALL step in is true\n"));
@@ -6347,7 +6331,6 @@ bool DebuggerStepper::IsAddrWithinFrame(DebuggerJitInfo *dji,
         }
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
     // Also check whether the targetAddr and the currentAddr is in the same funclet.
     _ASSERTE(currentAddr != NULL);
     if (result)
@@ -6356,7 +6339,6 @@ bool DebuggerStepper::IsAddrWithinFrame(DebuggerJitInfo *dji,
         int targetFuncletIndex  = dji->GetFuncletIndex((CORDB_ADDRESS)targetAddr,  DebuggerJitInfo::GFIM_BYADDRESS);
         result = (currentFuncletIndex == targetFuncletIndex);
     }
-#endif // FEATURE_EH_FUNCLETS
 
     return result;
 }
@@ -6386,7 +6368,6 @@ bool DebuggerStepper::IsInterestingFrame(FrameInfo * pFrame)
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef FEATURE_EH_FUNCLETS
     // Ignore managed exception handling frames
     if (pFrame->md != NULL)
     {
@@ -6396,7 +6377,6 @@ bool DebuggerStepper::IsInterestingFrame(FrameInfo * pFrame)
             return false;
         }
     }
-#endif // FEATURE_EH_FUNCLETS
 
     return true;
 }
@@ -6411,7 +6391,6 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
 
     bool fReturningFromFinallyFunclet = false;
 
-#if defined(FEATURE_EH_FUNCLETS)
     // When we step out of a funclet, we should do one of two things, depending
     // on the original stepping intention:
     // 1) If we originally want to step out, then we should skip the parent method.
@@ -6488,7 +6467,6 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
             }
         }
     }
-#endif // FEATURE_EH_FUNCLETS
 
 #ifdef _DEBUG
     FramePointer dbgLastFP; // for debug, make sure we're making progress through the stack.
@@ -6795,14 +6773,12 @@ void DebuggerStepper::StepOut(FramePointer fp, StackTraceTicket ticket)
 
     m_stepIn = FALSE;
     m_fp = info.m_activeFrame.fp;
-#if defined(FEATURE_EH_FUNCLETS)
     // We need to remember the parent method frame pointer here so that we will recognize
     // the range of the stepper as being valid when we return to the parent method or stackalloc.
     if (info.HasReturnFrame(true))
     {
         m_fpParentMethod = info.GetReturnFrame(true).fp;
     }
-#endif // FEATURE_EH_FUNCLETS
 
     m_eMode = cStepOut;
 
@@ -7129,14 +7105,12 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
     else
     {
         m_fp = info.m_activeFrame.fp;
-#if defined(FEATURE_EH_FUNCLETS)
         // We need to remember the parent method frame pointer here so that we will recognize
         // the range of the stepper as being valid when we return to the parent method or stackalloc.
         if (info.HasReturnFrame(true))
         {
             m_fpParentMethod = info.GetReturnFrame(true).fp;
         }
-#endif // FEATURE_EH_FUNCLETS
     }
     m_eMode = m_stepIn ? cStepIn : cStepOver;
 
@@ -7870,11 +7844,7 @@ void DebuggerStepper::PrepareForSendEvent(StackTraceTicket ticket)
         csi.GetStackInfo(ticket, GetThread(), LEAF_MOST_FRAME, NULL);
 
         if (csi.m_targetFrameFound &&
-#if !defined(FEATURE_EH_FUNCLETS)
-            IsCloserToRoot(m_fpStepInto, csi.m_activeFrame.fp)
-#else
             IsCloserToRoot(m_fpStepInto, (csi.m_activeFrame.IsNonFilterFuncletFrame() ? csi.GetReturnFrame().fp : csi.m_activeFrame.fp))
-#endif // FEATURE_EH_FUNCLETS
            )
 
         {
@@ -8048,11 +8018,6 @@ bool DebuggerJMCStepper::TrapStepInHelper(
     bool fCallingIntoFunclet,
     bool fIsJump)
 {
-#ifndef FEATURE_EH_FUNCLETS
-    // There are no funclets on x86.
-    _ASSERTE(!fCallingIntoFunclet);
-#endif
-
     // If we are calling into a funclet, then we can't rely on the JMC probe to stop us because there are no
     // JMC probes in funclets.  Instead, we have to perform a traditional step-in here.
     if (fCallingIntoFunclet)
@@ -9229,13 +9194,6 @@ bool DebuggerContinuableExceptionBreakpoint::SendEvent(Thread *thread, bool fIpC
     {
         g_pDebugger->SendInterceptExceptionComplete(thread);
     }
-
-    // On WIN64, by the time we get here the DebuggerExState is gone already.
-    // ExInfos are cleaned up before we resume execution for a handled exception.
-#if !defined(FEATURE_EH_FUNCLETS)
-    thread->GetExceptionState()->GetDebuggerState()->SetDebuggerInterceptContext(NULL);
-#endif // !FEATURE_EH_FUNCLETS
-
 
     //
     // We delete this now because its no longer needed. We can call
