@@ -8,7 +8,7 @@ export function check(condition: unknown, message: string): asserts condition {
 }
 
 // calls to fastCheck will be inlined by rollup
-// so that the string formating or allocation of a closure would only happen in failure cases
+// so that the string formatting or allocation of a closure would only happen in failure cases
 // this is important for performance sensitive code paths
 export function fastCheck(condition: unknown, messageFactory: (() => string)): asserts condition {
     if (!condition) {
