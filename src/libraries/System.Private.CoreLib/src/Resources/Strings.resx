@@ -4176,13 +4176,13 @@
     <value>AssemblyName.GetAssemblyName() is not supported on this platform.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptions" xml:space="preserve">
-    <value>CompareOptions = {0} is not supported on Apple mobile platforms.</value>
+    <value>CompareOptions = {0} are not supported on Apple mobile platforms.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithMixedCompositions" xml:space="preserve">
     <value>Mixed compositions in string are not supported on Apple mobile platforms.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptionsForCulture" xml:space="preserve">
-    <value>CompareOptions = {0} is not supported for culture = {1} on Apple mobile platforms.</value>
+    <value>CompareOptions = {0} are not supported for culture = {1} on Apple mobile platforms.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithMatchLength" xml:space="preserve">
     <value>Match length calculation is not supported on Apple mobile platforms.</value>
