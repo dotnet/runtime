@@ -4703,15 +4703,14 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                             noway_assert(!"Unknown Half static property");
                     }
 
-                    GenTree* zeroVec =
-                        gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(0.0f), TYP_HALF, 16);
-                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, zeroVec, gtNewIconNode(halfBits, TYP_INT), opId, TYP_INT, 16);
+                    GenTree* zeroVec = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(0.0f), TYP_HALF, 16);
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, zeroVec, gtNewIconNode(halfBits, TYP_INT), opId,
+                                                       TYP_INT, 16);
                     retNode = gtNewSimdToScalarNode(TYP_HALF, retNode, TYP_HALF, 16);
                 }
 #endif
                 break;
             }
-
 
 #endif // FEATURE_HW_INTRINSICS
 
