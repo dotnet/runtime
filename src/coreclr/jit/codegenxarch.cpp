@@ -166,8 +166,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
         // Now go to where the finally funclet needs to return to.
         BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
-        if (nextBlock->NextIs(finallyContinuation) &&
-            !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
+        if (nextBlock->NextIs(finallyContinuation) && !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
         {
             // Fall-through.
             // TODO-XArch-CQ: Can we get rid of this instruction, and just have the call return directly
