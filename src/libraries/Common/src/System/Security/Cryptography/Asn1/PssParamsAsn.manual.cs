@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Asn1
                         HashAlgorithm.Algorithm));
             }
 
-#if NET10_0_OR_GREATER
+#if NET11_0_OR_GREATER
             return RSASignaturePadding.CreatePss(SaltLength);
 #else
             int saltSize = digestValueLength.GetValueOrDefault();

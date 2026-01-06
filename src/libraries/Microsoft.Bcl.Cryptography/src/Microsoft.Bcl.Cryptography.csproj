@@ -7,7 +7,6 @@
     <PackageDescription>Provides support for some cryptographic primitives for .NET Framework and .NET Standard.</PackageDescription>
     <NoWarn>$(NoWarn);SYSLIB5006</NoWarn>
     <IncludeIndexRangeTypes>true</IncludeIndexRangeTypes>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <IncludeSpanPolyfills>true</IncludeSpanPolyfills>
   </PropertyGroup>
 

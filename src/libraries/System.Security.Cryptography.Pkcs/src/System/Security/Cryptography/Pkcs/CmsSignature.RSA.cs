@@ -301,7 +301,7 @@ namespace System.Security.Cryptography.Pkcs
                SignaturePadding = RSASignaturePadding.Pss;
             }
 
-#if NET10_0_OR_GREATER
+#if NET11_0_OR_GREATER
             public RSAPssCmsSignature(int saltLength) : base(null, null)
             {
                 SignaturePadding = RSASignaturePadding.CreatePss(saltLength);

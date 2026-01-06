@@ -3,7 +3,7 @@
 
 using System.Security.Cryptography.Asn1;
 using Test.Cryptography;
-#if NET10_0_OR_GREATER
+#if NET11_0_OR_GREATER
 using System.Formats.Asn1;
 #endif
 

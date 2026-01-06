@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.Cose.Tests
             Assert.Throws<ArgumentNullException>("signaturePadding", () => new CoseSigner(RSA.Create(), null!, HashAlgorithmName.SHA256));
         }
 
-#if NET10_0_OR_GREATER
+#if NET11_0_OR_GREATER
         [Theory]
         [InlineData(0)]
         [InlineData(17)]

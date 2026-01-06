@@ -112,7 +112,7 @@ namespace System.Security.Cryptography.Cose
             ArgumentNullException.ThrowIfNull(key);
             ArgumentNullException.ThrowIfNull(signaturePadding);
 
-#if NET10_0_OR_GREATER
+#if NET11_0_OR_GREATER
             if (signaturePadding.Mode == RSASignaturePaddingMode.Pss)
             {
                 if (signaturePadding.PssSaltLength != RSASignaturePadding.PssSaltLengthIsHashLength)

@@ -271,7 +271,7 @@ namespace System.Security.Cryptography.Cose
 
             if (signaturePadding.Mode == RSASignaturePaddingMode.Pss)
             {
-#if NET10_0_OR_GREATER
+#if NET11_0_OR_GREATER
                 Debug.Assert(signaturePadding.PssSaltLength == RSASignaturePadding.PssSaltLengthIsHashLength);
 #endif
                 return hashAlgorithm.Name switch
