@@ -51,6 +51,7 @@
       <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_HOST_PATH=$(DOTNET_HOST_PATH)&quot;" />
       <_CoreClrBuildArg Condition="'$(HasCdacBuildTool)' == 'true'" Include="-cmakeargs &quot;-DCDAC_BUILD_TOOL_BINARY_PATH=$(RuntimeBinDir)cdac-build-tool\cdac-build-tool.dll&quot;" />
       <_CoreClrBuildArg Condition="'$(FeatureXplatEventSource)' == 'false'" Include="-cmakeargs &quot;-DFEATURE_EVENTSOURCE_XPLAT=0&quot;" />
+      <_CoreClrBuildArg Condition="'$(FeatureInterpreter)' == 'true'" Include="-cmakeargs &quot;-DFEATURE_INTERPRETER=1&quot;" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(CxxStandardLibrary)' != ''">

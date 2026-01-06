@@ -1710,7 +1710,7 @@ BAILOUT:
 // Arguments:
 //    tree - the node
 //
-void CodeGen::genCodeForNegNot(GenTree* tree)
+void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_NEG, GT_NOT));
 
@@ -4116,7 +4116,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_NOT:
         case GT_NEG:
-            genCodeForNegNot(treeNode);
+            genCodeForNegNot(treeNode->AsOp());
             break;
 
         case GT_BSWAP:
@@ -4402,6 +4402,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_RECORD_ASYNC_RESUME:
             genRecordAsyncResume(treeNode->AsVal());
+            break;
+
+        case GT_ASYNC_CONTINUATION:
+            genCodeForAsyncContinuation(treeNode);
+            break;
+
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
             break;
 
         default:

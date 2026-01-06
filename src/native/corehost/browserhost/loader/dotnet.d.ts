@@ -65,10 +65,6 @@ interface DotnetHostBuilder {
      */
     withConfig(config: LoaderConfig): DotnetHostBuilder;
     /**
-     * @param configSrc URL to the configuration file. ./dotnet.boot.js is a default config file location.
-     */
-    withConfigSrc(configSrc: string): DotnetHostBuilder;
-    /**
      * "command line" arguments for the Main() method.
      * @param args
      */
@@ -129,14 +125,21 @@ interface DotnetHostBuilder {
      */
     create(): Promise<RuntimeAPI>;
     /**
+     * Runs the Main() method of the application and keeps the runtime alive.
+     * You can provide "command line" arguments for the Main() method using
+     * - dotnet.withApplicationArguments("A", "B", "C")
+     * - dotnet.withApplicationArgumentsFromQuery()
+     */
+    runMain(): Promise<number>;
+    /**
      * Runs the Main() method of the application and exits the runtime.
      * You can provide "command line" arguments for the Main() method using
      * - dotnet.withApplicationArguments("A", "B", "C")
      * - dotnet.withApplicationArgumentsFromQuery()
      * Note: after the runtime exits, it would reject all further calls to the API.
-     * You can use runMain() if you want to keep the runtime alive.
+     * You can use run() if you want to keep the runtime alive.
      */
-    run(): Promise<number>;
+    runMainAndExit(): Promise<number>;
 }
 type LoaderConfig = {
     /**
@@ -773,10 +776,6 @@ declare global {
     function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
 }
 
-declare global {
-    function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
-    const dotnetSidecar: boolean | undefined;
-}
 declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
 export { GlobalizationMode, createDotnetRuntime as default, dotnet, exit };

@@ -61,6 +61,23 @@ regNumber MakeWasmReg(unsigned index, var_types type)
     return static_cast<regNumber>(regValue);
 }
 
+const char* WasmValueTypeName(WasmValueType type)
+{
+    // clang-format off
+    static const char* const WasmValueTypeNames[] = {
+        "Invalid",
+        "i32",
+        "i64",
+        "f32",
+        "f64",
+    };
+    static_assert(ArrLen(WasmValueTypeNames) == static_cast<unsigned>(WasmValueType::Count));
+    // clang-format on
+
+    assert(WasmValueType::Invalid <= type && type < WasmValueType::Count);
+    return WasmValueTypeNames[(unsigned)type];
+}
+
 //------------------------------------------------------------------------
 // UnpackWasmReg: Extract the WASM local's index and type out of a register
 //
@@ -81,11 +98,47 @@ unsigned UnpackWasmReg(regNumber reg, WasmValueType* pType)
     return regValue & ~WASM_REG_TYPE_MASK;
 }
 
+//------------------------------------------------------------------------
+// UnpackWasmReg: Extract the WASM local's index out of a register
+//
+// Arguments:
+//    reg   - The register number representing '(index, type)'
+//
+// Return Value:
+//    The index represented by 'reg'.
+//
+unsigned WasmRegToIndex(regNumber reg)
+{
+    return UnpackWasmReg(reg);
+}
+
 bool genIsValidReg(regNumber reg)
 {
     WasmValueType wasmType;
     UnpackWasmReg(reg, &wasmType);
     return (WasmValueType::Invalid < wasmType) && (wasmType < WasmValueType::Count);
+}
+
+// TODO-WASM: implement the following functions in terms of a "locals registry" that would hold information
+// about the registers.
+
+bool genIsValidIntReg(regNumber reg)
+{
+    WasmValueType type;
+    UnpackWasmReg(reg, &type);
+    return (type == WasmValueType::I32) || (type == WasmValueType::I64);
+}
+
+bool genIsValidIntOrFakeReg(regNumber reg)
+{
+    return genIsValidIntReg(reg);
+}
+
+bool genIsValidFloatReg(regNumber reg)
+{
+    WasmValueType type;
+    UnpackWasmReg(reg, &type);
+    return (type == WasmValueType::F32) || (type == WasmValueType::F64);
 }
 
 const char* getRegName(regNumber reg)

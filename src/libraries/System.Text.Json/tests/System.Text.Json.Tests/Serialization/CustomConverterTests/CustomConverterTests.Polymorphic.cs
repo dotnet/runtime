@@ -291,7 +291,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // Validate that the correct typeToConvert parameter is passed in all serialization contexts:
             // 1. Typed root value.
-            // 2. Untyped root value (where the reported regression occured).
+            // 2. Untyped root value (where the reported regression occurred).
             // 3. Nested values in POCOs, collections & dictionaries.
 
             DerivedClass result = JsonSerializer.Deserialize<DerivedClass>("{}", options);

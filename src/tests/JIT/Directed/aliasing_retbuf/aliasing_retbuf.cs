@@ -56,7 +56,7 @@ public unsafe class AliasingRetBuf
             failures |= 16;
         }
 
-        // This requires pinvoke marshalling which is not currently supported by the interpreter. See https://github.com/dotnet/runtime/issues/118965
+        // This requires pinvoke marshalling with calli which is not currently supported by the interpreter. See https://github.com/dotnet/runtime/issues/118965
         if (!TestLibrary.Utilities.IsCoreClrInterpreter)
         {
             f = new Foo { A = 3, B = 2, C = 1 };

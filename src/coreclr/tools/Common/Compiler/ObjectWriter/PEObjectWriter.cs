@@ -12,7 +12,10 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
 using System.Text;
+
 using ILCompiler.DependencyAnalysis;
+
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.ObjectWriter
@@ -80,7 +83,7 @@ namespace ILCompiler.ObjectWriter
 
         // Base relocation (.reloc) bookkeeping
         private readonly SortedDictionary<uint, List<ushort>> _baseRelocMap = new();
-        private Dictionary<string, SymbolDefinition> _definedSymbols = [];
+        private Dictionary<Utf8String, SymbolDefinition> _definedSymbols = [];
 
         private HashSet<string> _exportedSymbolNames = new();
         private long _coffHeaderOffset;
@@ -101,10 +104,10 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, int sectionIndex, Stream sectionStream)
+        private protected override void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream)
         {
             // COMDAT sections are not supported in PE files
-            base.CreateSection(section, comdatName: null, symbolName, sectionIndex, sectionStream);
+            base.CreateSection(section, comdatName: default, symbolName, sectionIndex, sectionStream);
 
             if (_requestedSectionAlignment != 0)
             {
@@ -339,7 +342,7 @@ namespace ILCompiler.ObjectWriter
             Reserved = 15,
         }
 
-        private protected override void EmitSymbolTable(IDictionary<string, SymbolDefinition> definedSymbols, SortedSet<string> undefinedSymbols)
+        private protected override void EmitSymbolTable(IDictionary<Utf8String, SymbolDefinition> definedSymbols, SortedSet<Utf8String> undefinedSymbols)
         {
             if (undefinedSymbols.Count > 0)
             {
@@ -347,7 +350,7 @@ namespace ILCompiler.ObjectWriter
             }
 
             // Grab the defined symbols to resolve relocs during emit.
-            _definedSymbols = new Dictionary<string, SymbolDefinition>(definedSymbols);
+            _definedSymbols = new Dictionary<Utf8String, SymbolDefinition>(definedSymbols);
         }
 
         private protected override void EmitSectionsAndLayout()
@@ -444,6 +447,20 @@ namespace ILCompiler.ObjectWriter
             foreach (SectionDefinition s in _sections)
             {
                 CoffSectionHeader h = s.Header;
+
+                // Skip calculating the layout for empty sections.
+                if (s.Stream.Length == 0 && !h.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData))
+                {
+                    if (recordFinalLayout)
+                    {
+                        // Although we omit the empty sections in EmitObjectFile, we add them to _sections in order to match indexes.
+                        // We assign zero VA/size to avoid wasting virtual address space and inflating the final PE file size.
+                        _outputSectionLayout.Add(new OutputSection(h.Name, 0, 0, 0));
+                    }
+
+                    continue;
+                }
+
                 h.SizeOfRawData = (uint)s.Stream.Length;
                 uint requestedAlignment = GetSectionAlignment(h);
                 uint rawAligned = h.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData)
@@ -500,8 +517,6 @@ namespace ILCompiler.ObjectWriter
                 if (recordFinalLayout)
                 {
                     // Use the stream length so we don't include any space that's appended just for alignment purposes.
-                    // To ensure that we match the section indexes in _sections, we don't skip empty sections here
-                    // even though we omit them in EmitObjectFile.
                     _outputSectionLayout.Add(new OutputSection(h.Name, h.VirtualAddress, h.PointerToRawData, (uint)s.Stream.Length));
                 }
                 firstSection = false;
@@ -547,10 +562,15 @@ namespace ILCompiler.ObjectWriter
                 return;
             }
 
-            List<string> exports = [.._exportedSymbolNames];
+            // Build sorted list of exports as Utf8String
+            List<Utf8String> exports = new(_exportedSymbolNames.Count);
+            foreach (var exportName in _exportedSymbolNames)
+            {
+                exports.Add(new Utf8String(exportName));
+            }
+            exports.Sort();
 
-            exports.Sort(StringComparer.Ordinal);
-            string moduleName = Path.GetFileName(_outputPath);
+            Utf8String moduleName = new Utf8String(Path.GetFileName(_outputPath));
             const int minOrdinal = 1;
 
             StringTableBuilder exportsStringTable = new();
@@ -561,10 +581,10 @@ namespace ILCompiler.ObjectWriter
                 exportsStringTable.ReserveString(exportName);
             }
 
-            string exportsStringTableSymbol = GenerateSymbolNameForReloc("exportsStringTable");
-            string addressTableSymbol = GenerateSymbolNameForReloc("addressTable");
-            string namePointerTableSymbol = GenerateSymbolNameForReloc("namePointerTable");
-            string ordinalPointerTableSymbol = GenerateSymbolNameForReloc("ordinalPointerTable");
+            Utf8String exportsStringTableSymbol = new Utf8String(GenerateSymbolNameForReloc("exportsStringTable"));
+            Utf8String addressTableSymbol = new Utf8String(GenerateSymbolNameForReloc("addressTable"));
+            Utf8String namePointerTableSymbol = new Utf8String(GenerateSymbolNameForReloc("namePointerTable"));
+            Utf8String ordinalPointerTableSymbol = new Utf8String(GenerateSymbolNameForReloc("ordinalPointerTable"));
 
             Debug.Assert(sectionWriter.Position == 0);
 
@@ -892,7 +912,9 @@ namespace ILCompiler.ObjectWriter
                             break;
                         }
                         case RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR:
-                        case RelocType.IMAGE_REL_BASED_RISCV64_PC:
+                        case RelocType.IMAGE_REL_BASED_RISCV64_CALL_PLT:
+                        case RelocType.IMAGE_REL_BASED_RISCV64_PCREL_I:
+                        case RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S:
                         {
                             if (addend != 0)
                             {

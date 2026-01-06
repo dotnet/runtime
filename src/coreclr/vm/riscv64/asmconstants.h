@@ -242,13 +242,13 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadLocalInfo__m_pThread == offsetof(ThreadLoc
 #endif
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpMethod__pCallStub == offsetof(InterpMethod, pCallStub))
 
-#define OFFSETOF__Thread__m_pInterpThreadContext 0xB30
+#define OFFSETOF__Thread__m_pInterpThreadContext 0xB28
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pInterpThreadContext == offsetof(Thread, m_pInterpThreadContext))
 
 #define OFFSETOF__InterpThreadContext__pStackPointer 0x10
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpThreadContext__pStackPointer == offsetof(InterpThreadContext, pStackPointer))
 
-#define OFFSETOF__CallStubHeader__Routines 0x10
+#define OFFSETOF__CallStubHeader__Routines 0x18
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CallStubHeader__Routines == offsetof(CallStubHeader, Routines))
 
 #define SIZEOF__TransitionBlock 0xC0
