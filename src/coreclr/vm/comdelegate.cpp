@@ -2045,6 +2045,10 @@ void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
     if (pMD->HasClassOrMethodInstantiation())
         EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_GenericMethod")));
 
+    // No async methods
+    if (pMD->IsAsyncMethod())
+        EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_AsyncMethod")));
+
     // Arguments - Scenarios involving UnmanagedCallersOnly are handled during the jit.
     bool unmanagedCallersOnlyRequiresMarshalling = false;
     if (PInvoke::MarshalingRequired(pMD, NULL, NULL, NULL, unmanagedCallersOnlyRequiresMarshalling))

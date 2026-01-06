@@ -150,7 +150,7 @@ namespace System.Threading
                             int newBits = oldBits + SBLK_LOCK_RECLEVEL_INC;
                             if ((newBits & SBLK_MASK_LOCK_RECLEVEL) != 0)
                             {
-                                if (Interlocked.CompareExchange(ref *pHeader, newBits, oldBits) == oldBits)
+                                if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)
                                 {
                                     return HeaderLockResult.Success;
                                 }
@@ -170,7 +170,7 @@ namespace System.Threading
                         else if ((oldBits & SBLK_MASK_LOCK_THREADID) == 0)
                         {
                             int newBits = oldBits | currentThreadID;
-                            if (Interlocked.CompareExchange(ref *pHeader, newBits, oldBits) == oldBits)
+                            if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)
                             {
                                 return HeaderLockResult.Success;
                             }
