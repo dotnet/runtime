@@ -72,7 +72,7 @@ bool MethodContextIterator::MoveNext()
         m_pos = _ftelli64(m_fp);
 #else
         m_pos = ftell(m_fp);
-#endif
+#endif // TARGET_WINDOWS
         // Load the current method context.
         m_methodContextNumber++;
 

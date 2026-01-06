@@ -130,7 +130,7 @@ MethodContextReader::MethodContextReader(
         this->fileSize = _ftelli64(this->fp);
 #else
         this->fileSize = ftell(this->fp);
-#endif
+#endif // TARGET_WINDOWS
         fseek(this->fp, 0, SEEK_SET);
     }
 
@@ -439,7 +439,7 @@ double MethodContextReader::Progress()
         int64_t pos = _ftelli64(this->fp);
 #else
         int64_t pos = ftell(this->fp);
-#endif
+#endif // TARGET_WINDOWS
         this->ReleaseLock();
         return (double)pos;
     }
@@ -553,7 +553,7 @@ void MethodContextReader::ReadExcludedMethods(std::string mchFileName)
     if (fpExclude != NULL)
     {
         char buffer[512];
-        memset(buffer, 0, sizeof(buffer));
+        char buffer[512] = {};
 
         while (fscanf(fpExclude, "%511s", buffer) > 0)
         {
@@ -569,7 +569,7 @@ void MethodContextReader::ReadExcludedMethods(std::string mchFileName)
             }
         }
 
-        LogInfo("Exclude file %s contains %d methods.", excludeFileName.c_str(), (int)excludedMethodsList.size());
+        LogInfo("Exclude file %s contains %zu methods.", excludeFileName.c_str(), excludedMethodsList.size());
     }
 }
 

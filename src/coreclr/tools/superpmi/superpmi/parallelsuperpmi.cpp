@@ -88,7 +88,7 @@ void ReadMCLToArray(char* mclFilename, std::vector<int>& MCL)
     size = _ftelli64(fp);
 #else
     size = ftell(fp);
-#endif
+#endif // TARGET_WINDOWS
     fseek(fp, 0, SEEK_SET);
 
     if (size > MAXMCLFILESIZE)
@@ -316,16 +316,16 @@ static void MergeWorkerCsvs(char* csvFilename, PerWorkerData* workerData, int wo
             continue;
         }
 
-        char buffer[512];
+        char buffer[512] = {};
         if (hasHeader)
         {
             // Skip the title line
-            fgets(buffer, 511, fpReader);
+            fgets(buffer, sizeof(buffer) - 1, fpReader);
         }
 
         while (!feof(fpReader))
         {
-            fgets(buffer, 511, fpReader);
+            fgets(buffer, sizeof(buffer) - 1, fpReader);
             fputs(buffer, fpReader);
         }
 

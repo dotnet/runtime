@@ -67,7 +67,8 @@ int verbTOC::DoWork(const char* nameOfInput)
         uint32_t sig;
         uint32_t count;
     } token;
-    token.sig    = *(const int*)"INDX"; // cuz Type Safety is for languages that have good IO facilities
+    const char sig[] = "INDX";
+    (void)memcpy(&token.sig , sig, sizeof(token.sig));
     token.count = savedCount;
     if ((written = fwrite(&token, sizeof(token), 1, fpOut)) <= 0 || written != sizeof(token))
     {
