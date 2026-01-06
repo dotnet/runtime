@@ -3958,7 +3958,9 @@ do                                                                      \
                         executionContext = CallWithSEHWrapper(
                             [] ()
                             {
-                                return CoreLibBinder::GetField(FIELD__EXECUTIONCONTEXT__DEFAULT_FLOW_SUPPRESSED)->GetStaticOBJECTREF();
+                                FieldDesc *pFd = CoreLibBinder::GetField(FIELD__EXECUTIONCONTEXT__DEFAULT_FLOW_SUPPRESSED);
+                                pFd->CheckRunClassInitThrowing();
+                                return pFd->GetStaticOBJECTREF();
                             }
                         );
                     }
