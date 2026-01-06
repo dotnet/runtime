@@ -163,7 +163,7 @@ namespace Internal.JitInterface
 
         public static void Startup(CORINFO_OS os)
         {
-            jitStartup(GetJitHost(JitConfigProvider.Instance.UnmanagedInstance));
+            jitStartup(GetJitHost(JitConfigProvider.UnmanagedInstance));
             JitSetOs(JitPointerAccessor.Get(), os);
         }
 
@@ -317,36 +317,6 @@ namespace Internal.JitInterface
             return null;
         }
 
-        private CorJitResult CompileWasmStub(out IntPtr exception, ref CORINFO_METHOD_INFO methodInfo, out uint codeSize)
-        {
-            byte[] stub =
-            [
-                0x00, // local variable count
-                0x41, // i32.const
-                0x0,  // uleb128 0
-                0x0F, // return
-                0x0B,  // end
-            ];
-            AllocMemArgs args = new AllocMemArgs
-            {
-                hotCodeSize = (uint)stub.Length,
-                coldCodeSize = (uint)0,
-                roDataSize = (uint)0,
-                xcptnsCount = _ehClauses != null ? (uint)_ehClauses.Length : 0,
-                flag = CorJitAllocMemFlag.CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN,
-            };
-            allocMem(ref args);
-
-            _code = stub;
-
-            codeSize = (uint)stub.Length;
-            exception = IntPtr.Zero;
-
-            _codeRelocs = new();
-
-            return CorJitResult.CORJIT_OK;
-        }
-
         private CompilationResult CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL)
         {
             // methodIL must not be null
@@ -369,17 +339,9 @@ namespace Internal.JitInterface
             IntPtr exception;
             IntPtr nativeEntry;
             uint codeSize;
-
-            TargetArchitecture architecture = _compilation.TypeSystemContext.Target.Architecture;
-            var result = architecture switch
-            {
-                // We currently do not have WASM codegen support, but for testing, we will return a stub
-                TargetArchitecture.Wasm32 => CompileWasmStub(out exception, ref methodInfo, out codeSize),
-                _ => JitCompileMethod(out exception,
+            var result = JitCompileMethod(out exception,
                     _jit, (IntPtr)(&_this), _unmanagedCallbacks,
-                    ref methodInfo, (uint)CorJitFlag.CORJIT_FLAG_CALL_GETJITFLAGS, out nativeEntry, out codeSize)
-            };
-
+                    ref methodInfo, (uint)CorJitFlag.CORJIT_FLAG_CALL_GETJITFLAGS, out nativeEntry, out codeSize);
             if (exception != IntPtr.Zero)
             {
                 if (_lastException != null)
@@ -1889,7 +1851,12 @@ namespace Internal.JitInterface
                     // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
                     // we cannot resolve to an Async variant in such case.
                     // return NULL, so that caller would re-resolve as a regular method call
-                    method = method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask()
+                    bool allowAsyncVariant = method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask();
+
+                    // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
+                    allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
+
+                    method = allowAsyncVariant
                         ? _compilation.TypeSystemContext.GetAsyncVariantMethod(method)
                         : null;
                 }
@@ -4315,6 +4282,11 @@ namespace Internal.JitInterface
                 if (this.MethodBeingCompiled.HasInstantiation || this.MethodBeingCompiled.OwningType.HasInstantiation) // No generics involved
                 {
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramGenericMethod, this.MethodBeingCompiled);
+                }
+
+                if (this.MethodBeingCompiled.IsAsync)
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramAsync, this.MethodBeingCompiled);
                 }
 
 #if READYTORUN

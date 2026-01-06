@@ -1,32 +1,33 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { } from "./cross-linked"; // ensure ambient symbols are declared
+import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 
 export function SystemJS_ScheduleTimer(shortestDueTimeMs: number): void {
-    if (DOTNET.lastScheduledTimerId) {
-        globalThis.clearTimeout(DOTNET.lastScheduledTimerId);
-        DOTNET.lastScheduledTimerId = undefined;
+    if (_ems_.DOTNET.lastScheduledTimerId) {
+        globalThis.clearTimeout(_ems_.DOTNET.lastScheduledTimerId);
+        _ems_.runtimeKeepalivePop();
+        _ems_.DOTNET.lastScheduledTimerId = undefined;
     }
-    DOTNET.lastScheduledTimerId = safeSetTimeout(SystemJS_ScheduleTimerTick, shortestDueTimeMs);
+    _ems_.DOTNET.lastScheduledTimerId = _ems_.safeSetTimeout(SystemJS_ScheduleTimerTick, shortestDueTimeMs);
 
     function SystemJS_ScheduleTimerTick(): void {
-        maybeExit();
-        _SystemJS_ExecuteTimerCallback();
+        _ems_.DOTNET.lastScheduledTimerId = undefined;
+        _ems_._SystemJS_ExecuteTimerCallback();
     }
 }
-SystemJS_ScheduleTimer["__deps"] = ["SystemJS_ExecuteTimerCallback"];
 
 export function SystemJS_ScheduleBackgroundJob(): void {
-    if (DOTNET.lastScheduledThreadPoolId) {
-        globalThis.clearTimeout(DOTNET.lastScheduledThreadPoolId);
-        DOTNET.lastScheduledThreadPoolId = undefined;
+    if (_ems_.DOTNET.lastScheduledThreadPoolId) {
+        globalThis.clearTimeout(_ems_.DOTNET.lastScheduledThreadPoolId);
+        _ems_.runtimeKeepalivePop();
+        _ems_.DOTNET.lastScheduledThreadPoolId = undefined;
     }
-    DOTNET.lastScheduledThreadPoolId = safeSetTimeout(SystemJS_ScheduleBackgroundJobTick, 0);
+    _ems_.DOTNET.lastScheduledThreadPoolId = _ems_.safeSetTimeout(SystemJS_ScheduleBackgroundJobTick, 0);
 
     function SystemJS_ScheduleBackgroundJobTick(): void {
-        maybeExit();
-        _SystemJS_ExecuteBackgroundJobCallback();
+        _ems_.DOTNET.lastScheduledThreadPoolId = undefined;
+        _ems_._SystemJS_ExecuteBackgroundJobCallback();
     }
 }
-SystemJS_ScheduleBackgroundJob["__deps"] = ["SystemJS_ExecuteBackgroundJobCallback"];
+

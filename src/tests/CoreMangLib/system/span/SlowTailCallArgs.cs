@@ -7,9 +7,11 @@ using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using Xunit;
 
-public static class Program
+public static class SlowTailCallArgs
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotNativeAot))]
+    [OuterLoop]
+    [SkipOnCoreClr("Incompatible with GC stress", RuntimeTestModes.AnyGCStress)]
     public static int TestEntryPoint()
     {
         bool allPassed = true;

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.ReadyToRun</AssemblyName>
@@ -45,6 +45,7 @@
     <Compile Include="..\..\Common\System\FormattingHelpers.cs" Link="Common\FormattingHelpers.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\ILProvider.cs" Link="IL\ILProvider.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\ILReader.cs" Link="IL\ILReader.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncThunks.cs" Link="IL\Stubs\AsyncThunks.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncResumptionStub.cs" Link="IL\Stubs\AsyncResumptionStub.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncResumptionStub.Sorting.cs" Link="IL\Stubs\AsyncResumptionStub.Sorting.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncResumptionStub.Mangling.cs" Link="IL\Stubs\AsyncResumptionStub.Mangling.cs" />
@@ -191,6 +192,7 @@
     <Compile Include="Compiler\Logger.cs" />
     <Compile Include="Compiler\ReadyToRunVisibilityRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunProfilingRootProvider.cs" />
+    <Compile Include="Compiler\ReadyToRunHardwareIntrinsicRootProvider.cs" />
     <Compile Include="ObjectWriter\MapFileBuilder.cs" />
     <Compile Include="CodeGen\ReadyToRunObjectWriter.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.ReadyToRun.cs" />
@@ -302,6 +304,7 @@
     <Compile Include="IBC\IBCProfileParser.cs" />
     <Compile Include="IL\Stubs\InstanceCalliHelperIntrinsics.cs" />
     <Compile Include="IL\Stubs\PInvokeILEmitter.cs" />
+    <Compile Include="IL\Stubs\ILStubReferences.cs" />
     <Compile Include="Interop\IL\Marshaller.ReadyToRun.cs" />
     <Compile Include="Compiler\PerfEventSource.cs" />
     <Compile Include="ObjectWriter\ProfileFileBuilder.cs" />

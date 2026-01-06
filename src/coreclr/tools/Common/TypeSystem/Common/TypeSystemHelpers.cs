@@ -160,10 +160,10 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Retrieves the namespace qualified name of a <see cref="DefType"/>.
         /// </summary>
-        public static string GetFullName(this DefType metadataType)
+        public static ReadOnlySpan<byte> GetFullName(this DefType metadataType)
         {
-            string ns = metadataType.GetNamespace();
-            return ns.Length > 0 ? string.Concat(ns, ".", metadataType.GetName()) : metadataType.GetName();
+            ReadOnlySpan<byte> ns = metadataType.Namespace;
+            return ns.Length > 0 ? ns.Append("."u8, metadataType.Name) : metadataType.Name;
         }
 
         /// <summary>

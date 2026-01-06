@@ -34,6 +34,7 @@ jobs:
     - checkout: self
       clean: true
       fetchDepth: 2
+      fetchTags: false
 
     - ${{ if ne(parameters.paths[0], '') }}:
       - ${{ each path in parameters.paths }}:

@@ -589,6 +589,9 @@ protected:
     void genReserveProlog(BasicBlock* block); // currently unused
     void genReserveEpilog(BasicBlock* block);
     void genFnProlog();
+#if defined(TARGET_WASM)
+    void genWasmLocals();
+#endif
     void genFnEpilog(BasicBlock* block);
 
     void genReserveFuncletProlog(BasicBlock* block);
@@ -1131,7 +1134,7 @@ protected:
     void genCodeForLclAddr(GenTreeLclFld* lclAddrNode);
     void genCodeForIndexAddr(GenTreeIndexAddr* tree);
     void genCodeForIndir(GenTreeIndir* tree);
-    void genCodeForNegNot(GenTree* tree);
+    void genCodeForNegNot(GenTreeOp* tree);
     void genCodeForBswap(GenTree* tree);
     bool genCanOmitNormalizationForBswap16(GenTree* tree);
     void genCodeForLclVar(GenTreeLclVar* tree);
@@ -1257,9 +1260,6 @@ protected:
 #endif // TARGET_ARM64
 
     void genEHCatchRet(BasicBlock* block);
-#if defined(FEATURE_EH_WINDOWS_X86)
-    void genEHFinallyOrFilterRet(BasicBlock* block);
-#endif // FEATURE_EH_WINDOWS_X86
 
     void genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode);
     void genMultiRegStoreToLocal(GenTreeLclVar* lclNode);
