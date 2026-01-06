@@ -312,12 +312,12 @@ namespace System.Collections.Tests
             int index = 0;
             Assert.All(ba.Cast<bool>(), bit => Assert.Equal(expected[index++], bit));
 
-            (int byteIndex, int bitOffeset) = Math.DivRem(length, BitsPerByte);
-            if (bitOffeset != 0)
+            (int byteIndex, int bitOffset) = Math.DivRem(length, BitsPerByte);
+            if (bitOffset != 0)
             {
                 Span<byte> bs = CollectionsMarshal.AsBytes(ba);
                 Assert.Equal(byteIndex + 1, bs.Length);
-                Assert.Equal(0, bs[byteIndex] >> bitOffeset);
+                Assert.Equal(0, bs[byteIndex] >> bitOffset);
             }
         }
 
