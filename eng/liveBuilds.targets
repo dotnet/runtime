@@ -203,6 +203,16 @@
 
       <ExcludeNativeLibrariesRuntimeFiles Condition="'$(RuntimeFlavor)' != 'Mono'"
                                           Include="$(LibrariesNativeArtifactsPath)System.Globalization.Native.dll;$(LibrariesNativeArtifactsPath)System.Globalization.Native.so;$(LibrariesNativeArtifactsPath)System.Globalization.Native.dylib" />
+
+      <!-- For Apple mobile with CoreCLR, these native libs are already installed to the CoreCLR shared framework.
+           Exclude them from LibrariesRuntimeFiles to avoid duplicate publish output files. -->
+      <ExcludeNativeLibrariesRuntimeFiles Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'"
+                                          Include="$(LibrariesNativeArtifactsPath)libSystem.Globalization.Native.a;
+                                                   $(LibrariesNativeArtifactsPath)libSystem.IO.Compression.Native.a;
+                                                   $(LibrariesNativeArtifactsPath)libSystem.Native.a;
+                                                   $(LibrariesNativeArtifactsPath)libbrotlicommon.a;
+                                                   $(LibrariesNativeArtifactsPath)libbrotlidec.a;
+                                                   $(LibrariesNativeArtifactsPath)libbrotlienc.a" />
       <LibrariesRuntimeFiles Include="
         $(LibrariesNativeArtifactsPath)*.dat;
         $(LibrariesNativeArtifactsPath)*.dll;

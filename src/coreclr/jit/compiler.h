@@ -2734,24 +2734,6 @@ public:
 // Exception handling functions
 //
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-
-    bool ehNeedsShadowSPslots()
-    {
-        return ((compHndBBtabCount > 0) || opts.compDbgEnC);
-    }
-
-    // 0 for methods with no EH
-    // 1 for methods with non-nested EH, or where only the try blocks are nested
-    // 2 for a method with a catch within a catch
-    // etc.
-    unsigned ehMaxHndNestingCount = 0;
-
-    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, EHblkDsc*> EHIDtoEHblkDscMap;
-    EHIDtoEHblkDscMap* m_EHIDtoEHblkDsc = nullptr;
-
-#endif // FEATURE_EH_WINDOWS_X86
-
     EHblkDsc* ehFindEHblkDscById(unsigned short ehID);
     bool ehTableFinalized = false;
     void FinalizeEH();
@@ -4049,11 +4031,6 @@ public:
 //-------------------------------------------------------------------------
 // All these frame offsets are inter-related and must be kept in sync
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    // This is used for the callable handlers
-    unsigned lvaShadowSPslotsVar = BAD_VAR_NUM; // Block-layout TYP_STRUCT variable for all the shadow SP slots
-#endif                            // FEATURE_EH_WINDOWS_X86
-
     int lvaCachedGenericContextArgOffs;
     int lvaCachedGenericContextArgOffset(); // For CORINFO_CALLCONV_PARAMTYPE and if generic context is passed as
                                             // THIS pointer
@@ -4668,9 +4645,6 @@ protected:
     GenTree* impImplicitR4orR8Cast(GenTree* tree, var_types dstTyp);
 
     void impImportLeave(BasicBlock* block);
-#if defined(FEATURE_EH_WINDOWS_X86)
-    void impImportLeaveEHRegions(BasicBlock* block);
-#endif
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
     GenTree* impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom);
     GenTree* impGetGenericTypeDefinition(GenTree* type);
@@ -5418,8 +5392,6 @@ public:
     BasicBlock* fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info, BasicBlock** insertAfter = nullptr);
 
     void fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum);
-
-    void fgCleanupContinuation(BasicBlock* continuation);
 
     PhaseStatus fgTailMergeThrows();
 
@@ -8504,30 +8476,6 @@ public:
         return false;
     }
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    bool eeIsNativeAotAbi = false;
-    bool UsesFunclets() const
-    {
-        return eeIsNativeAotAbi;
-    }
-
-    bool UsesCallFinallyThunks() const
-    {
-        // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
-        return UsesFunclets();
-    }
-#else
-    bool UsesFunclets() const
-    {
-        return true;
-    }
-
-    bool UsesCallFinallyThunks() const
-    {
-        return true;
-    }
-#endif
-
     bool generateCFIUnwindCodes()
     {
 #if defined(FEATURE_CFI_SUPPORT)
@@ -8754,24 +8702,16 @@ public:
     FuncInfoDsc*   compFuncInfos;
     unsigned short compCurrFuncIdx;
     unsigned short compFuncInfoCount;
-    FuncInfoDsc    compFuncInfoRoot;
 
     unsigned short compFuncCount()
     {
-        if (UsesFunclets())
-        {
-            assert(fgFuncletsCreated);
-            return compFuncInfoCount;
-        }
-        else
-        {
-            return 1;
-        }
+        assert(fgFuncletsCreated);
+        return compFuncInfoCount;
     }
 
     unsigned short funCurrentFuncIdx()
     {
-        return UsesFunclets() ? compCurrFuncIdx : 0;
+        return compCurrFuncIdx;
     }
 
     FuncInfoDsc* funCurrentFunc();
@@ -9388,6 +9328,13 @@ public:
             simdType = TYP_SIMD64;
         }
 #endif // TARGET_XARCH
+#if defined(TARGET_ARM64)
+        else if (size == SIZE_UNKNOWN)
+        {
+            assert(JitConfig.JitUseScalableVectorT());
+            simdType = TYP_SIMD;
+        }
+#endif
         else
         {
             noway_assert(!"Unexpected size for SIMD type");
@@ -10885,15 +10832,6 @@ public:
     unsigned       compHndBBtabAllocCount = 0;       // element count of allocated elements in EH data array
     unsigned short compEHID               = 0;       // unique ID for EH data array entries
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-
-    //-------------------------------------------------------------------------
-    //  Tracking of region covered by the monitor in synchronized methods
-    void* syncStartEmitCookie; // the emitter cookie for first instruction after the call to MON_ENTER
-    void* syncEndEmitCookie;   // the emitter cookie for first instruction after the call to MON_EXIT
-
-#endif // FEATURE_EH_WINDOWS_X86
-
     Phases      mostRecentlyActivePhase = PHASE_PRE_IMPORT;        // the most recently active phase
     PhaseChecks activePhaseChecks       = PhaseChecks::CHECK_NONE; // the currently active phase checks
     PhaseDumps  activePhaseDumps        = PhaseDumps::DUMP_ALL;    // the currently active phase dumps
@@ -11775,9 +11713,6 @@ public:
             case GT_START_NONGC:
             case GT_START_PREEMPTGC:
             case GT_PROF_HOOK:
-#if defined(FEATURE_EH_WINDOWS_X86)
-            case GT_END_LFIN:
-#endif // !FEATURE_EH_WINDOWS_X86
             case GT_PHI_ARG:
             case GT_JMPTABLE:
             case GT_PHYSREG:
