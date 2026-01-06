@@ -359,7 +359,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                 }
 
                 var (exitCode, stdErr) = Codesign.Run("-d", destinationFilePath);
-                Assert.Contains($"{Path.GetFullPath(destinationFilePath)}: code object is not signed at all");
+                Assert.Contains($"{Path.GetFullPath(destinationFilePath)}: code object is not signed at all", stdErr);
             }
         }
 
