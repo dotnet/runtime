@@ -7,9 +7,9 @@ import { Module, dotnetApi } from "./cross-module";
 import { getLoaderConfig, mergeLoaderConfig, validateLoaderConfig } from "./config";
 import { createRuntime } from "./run";
 import { exit } from "./exit";
+import { setLoadBootResourceCallback } from "./assets";
 
 let applicationArguments: string[] | undefined = [];
-export let loadBootResourceCallback: LoadBootResourceCallback | undefined = undefined;
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 export class HostBuilder implements DotnetHostBuilder {
@@ -89,7 +89,7 @@ export class HostBuilder implements DotnetHostBuilder {
         return this;
     }
     withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder {
-        loadBootResourceCallback = loadBootResource;
+        setLoadBootResourceCallback(loadBootResource);
         return this;
     }
 

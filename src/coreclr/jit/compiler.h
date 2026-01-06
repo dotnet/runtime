@@ -4066,6 +4066,7 @@ public:
     void lvaAssignVirtualFrameOffsetsToLocals();
     bool lvaParamHasLocalStackSpace(unsigned lclNum);
     int lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, int stkOffs);
+    int lvaAllocAsyncContexts(int stkOffs);
 #ifdef TARGET_AMD64
     // Returns true if compCalleeRegsPushed (including RBP if used as frame pointer) is even.
     bool lvaIsCalleeSavedIntRegCountEven();
@@ -10492,7 +10493,8 @@ public:
         // Do not stress tailcalls in IL stubs as the runtime creates several IL
         // stubs to implement the tailcall mechanism, which would then
         // recursively create more IL stubs.
-        return !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) &&
+        // Tailcalls are also not allowed out of async methods, so do not stress in those either.
+        return !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && !compIsAsync() &&
                (JitConfig.TailcallStress() != 0 || compStressCompile(STRESS_TAILCALL, 5));
 #else
         return false;
