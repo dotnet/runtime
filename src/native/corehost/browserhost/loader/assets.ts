@@ -243,7 +243,6 @@ async function loadResourceThrottle(asset: AssetEntryInternal): Promise<Response
         dotnetAssert.check(response, "Bad response in loadResourceThrottle");
 
         asset.buffer = await response.arrayBuffer();
-        ++downloadedAssetsCount;
         return response;
     } finally {
         --currentParallelDownloads;
