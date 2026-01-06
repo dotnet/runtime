@@ -557,6 +557,14 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     {
         delta_PSP -= TARGET_POINTER_SIZE;
     }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta_PSP -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta_PSP -= TARGET_POINTER_SIZE;
+    }
 
     funcletFrameSize = funcletFrameSize - delta_PSP;
     funcletFrameSize = roundUp((unsigned)funcletFrameSize, STACK_ALIGN);
@@ -3705,6 +3713,14 @@ int CodeGenInterface::genSPtoFPdelta() const
     {
         delta -= TARGET_POINTER_SIZE;
     }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta -= TARGET_POINTER_SIZE;
+    }
 
     assert(delta >= 0);
     return delta;
@@ -4402,6 +4418,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_RECORD_ASYNC_RESUME:
             genRecordAsyncResume(treeNode->AsVal());
+            break;
+
+        case GT_ASYNC_CONTINUATION:
+            genCodeForAsyncContinuation(treeNode);
+            break;
+
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
             break;
 
         default:
@@ -6111,6 +6135,16 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
             preservedAreaSize += 1; // bool for synchronized methods
         }
 
+        if (compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
+        }
+
+        if (compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
+        }
+
         // Used to signal both that the method is compiled for EnC, and also the size of the block at the top of the
         // frame
         gcInfoEncoder->SetSizeOfEditAndContinuePreservedArea(preservedAreaSize);
@@ -6756,6 +6790,14 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     {
         localFrameSize -= TARGET_POINTER_SIZE;
     }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
 
 #ifdef DEBUG
     if (compiler->opts.disAsm)
@@ -6819,6 +6861,14 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     int totalFrameSize = genTotalFrameSize();
     int localFrameSize = compiler->compLclFrameSize;
     if ((compiler->lvaMonAcquired != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
     {
         localFrameSize -= TARGET_POINTER_SIZE;
     }

@@ -3687,9 +3687,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
     //      saved EBP                       <-- EBP points here
     //      other callee-saved registers    // InfoHdrSmall.savedRegsCountExclFP specifies this size
     //      optional GS cookie              // InfoHdrSmall.security is 1 if this exists
-    // if FEATURE_EH_FUNCLETS
     //      issynchronized bool if it is a synchronized method
-    // endif // FEATURE_EH_FUNCLETS
     //      LocAllocSP slot
     //      -- lower addresses --
     //
@@ -4099,18 +4097,14 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |-----------------------| <---- EBP
  *      |Callee saved registers |
  *      |-----------------------|
- *      |   security object     |
+ *      |      MonAcquired      |
  *      |-----------------------|
  *      |     ParamTypeArg      |
-// If funclet support is disabled
  *      |-----------------------|
- *      |  Last-executed-filter |
+ *      |    Async contexts     |
  *      |-----------------------|
- *      |                       |
- *      ~      Shadow SPs       ~
- *      |                       |
+ *      |      GS cookie        |
  *      |-----------------------|
-// Endif funclet support is disabled
  *      |                       |
  *      ~      Variables        ~
  *      |                       |
@@ -4182,9 +4176,13 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      -------------------------
  *      | Callee saved Flt regs |
  *      |-----------------------|
- *      |   security object     |
+ *      |      MonAcquired      |
+ *      |-----------------------|
+ *      |     Async contexts    |
  *      |-----------------------|
  *      |     ParamTypeArg      |
+ *      |-----------------------|
+ *      |      GS cookie        |
  *      |-----------------------|
  *      |                       |
  *      |                       |
@@ -4223,9 +4221,11 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |-----------------------| <---- Virtual '0'
  *      |Callee saved registers |
  *      |-----------------------|
- *      ~ possible double align ~
+ *      |      MonAcquired      |
  *      |-----------------------|
- *      |   security object     |
+ *      |     Async contexts    |
+ *      |-----------------------|
+ *      ~ possible double align ~
  *      |-----------------------|
  *      |     ParamTypeArg      |
  *      |-----------------------|
@@ -4263,9 +4263,11 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |-----------------------| <---- Virtual '0'
  *      |Callee saved registers |
  *      |-----------------------|
- *      ~ possible double align ~
+ *      |      MonAcquired      |
  *      |-----------------------|
- *      |   security object     |
+ *      |     Async contexts    |
+ *      |-----------------------|
+ *      ~ possible double align ~
  *      |-----------------------|
  *      |     ParamTypeArg      |
  *      |-----------------------|
@@ -4311,7 +4313,9 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |Callee saved registers |
  *      |   except fp/lr        |
  *      |-----------------------|
- *      |   security object     |
+ *      |      MonAcquired      |
+ *      |-----------------------|
+ *      |     Async contexts    |
  *      |-----------------------|
  *      |     ParamTypeArg      |
  *      |-----------------------|
@@ -4352,7 +4356,9 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |Callee saved registers |
  *      |   except fp/lr        |
  *      |-----------------------|
- *      |   security object     |
+ *      |      MonAcquired      |
+ *      |-----------------------|
+ *      |     Async contexts    |
  *      |-----------------------|
  *      |     ParamTypeArg      |
  *      |-----------------------|
@@ -4398,7 +4404,9 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |-----------------------|
  *      |Callee saved registers |
  *      |-----------------------|
- *      |   security object     |
+ *      |      MonAcquired      |
+ *      |-----------------------|
+ *      |     Async contexts    |
  *      |-----------------------|
  *      |     ParamTypeArg      |
  *      |-----------------------|
@@ -4605,6 +4613,20 @@ void Compiler::lvaFixVirtualFrameOffsets()
             int offset = lvaTable[lvaMonAcquired].GetStackOffset() + delta;
             lvaTable[lvaMonAcquired].SetStackOffset(offset);
             delta += lvaLclStackHomeSize(lvaMonAcquired);
+        }
+
+        if ((lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !opts.IsOSR())
+        {
+            int offset = lvaTable[lvaAsyncExecutionContextVar].GetStackOffset() + delta;
+            lvaTable[lvaAsyncExecutionContextVar].SetStackOffset(offset);
+            delta += lvaLclStackHomeSize(lvaAsyncExecutionContextVar);
+        }
+
+        if ((lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !opts.IsOSR())
+        {
+            int offset = lvaTable[lvaAsyncSynchronizationContextVar].GetStackOffset() + delta;
+            lvaTable[lvaAsyncSynchronizationContextVar].SetStackOffset(offset);
+            delta += lvaLclStackHomeSize(lvaAsyncSynchronizationContextVar);
         }
 
         JITDUMP("--- delta bump %d for FP frame\n", delta);
@@ -5127,30 +5149,25 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
 #endif // TARGET_AMD64
 
-    if (lvaMonAcquired != BAD_VAR_NUM)
+    if (!opts.IsOSR())
     {
-        // For OSR we use the flag set up by the original method.
-        //
-        if (opts.IsOSR())
-        {
-            assert(info.compPatchpointInfo->HasMonitorAcquired());
-            int originalOffset = info.compPatchpointInfo->MonitorAcquiredOffset();
-            int offset         = originalFrameStkOffs + originalOffset;
-
-            JITDUMP(
-                "---OSR--- V%02u (on tier0 frame, monitor acquired) tier0 FP-rel offset %d tier0 frame offset %d new "
-                "virt offset %d\n",
-                lvaMonAcquired, originalOffset, originalFrameStkOffs, offset);
-
-            lvaTable[lvaMonAcquired].SetStackOffset(offset);
-        }
-        else
+        if (lvaMonAcquired != BAD_VAR_NUM)
         {
             // This var must go first, in what is called the 'frame header' for EnC so that it is
             // preserved when remapping occurs.  See vm\eetwain.cpp for detailed comment specifying frame
             // layout requirements for EnC to work.
             stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaMonAcquired, lvaLclStackHomeSize(lvaMonAcquired), stkOffs);
         }
+
+#ifndef JIT32_GCENCODER
+        // In this case the async contexts are part of the EnC frame header and the generic context is _not_.
+        // Preserving the generic context is handled as if it was a normal IL local.
+        //
+        // For jit32 the generic context is considered part of the EnC frame header too, and the async contexts
+        // come after it, so we allocate them later.
+        //
+        stkOffs = lvaAllocAsyncContexts(stkOffs);
+#endif
     }
 
     if (mustDoubleAlign)
@@ -5246,27 +5263,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    /* If we need space for slots for shadow SP, reserve it now */
-    if (!UsesFunclets() && ehNeedsShadowSPslots())
-    {
-        noway_assert(codeGen->isFramePointerUsed()); // else offsets of locals of frameless methods will be incorrect
-        if (!lvaReportParamTypeArg())
-        {
-#ifndef JIT32_GCENCODER
-            if (!lvaKeepAliveAndReportThis())
+#ifdef JIT32_GCENCODER
+    assert(!opts.IsOSR());
+    stkOffs = lvaAllocAsyncContexts(stkOffs);
 #endif
-            {
-                // In order to keep the gc info encoding smaller, the VM assumes that all methods with EH
-                // have also saved space for a ParamTypeArg, so we need to do that here
-                lvaIncrementFrameSize(TARGET_POINTER_SIZE);
-                stkOffs -= TARGET_POINTER_SIZE;
-            }
-        }
-        stkOffs =
-            lvaAllocLocalAndSetVirtualOffset(lvaShadowSPslotsVar, lvaLclStackHomeSize(lvaShadowSPslotsVar), stkOffs);
-    }
-#endif // FEATURE_EH_WINDOWS_X86
 
     if (compGSReorderStackLayout)
     {
@@ -5414,8 +5414,25 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 {
                     // Add frampointer-relative offset of this OSR live local in the original frame
                     // to the offset of original frame in our new frame.
-                    const int originalOffset = info.compPatchpointInfo->Offset(lclNum);
-                    const int offset         = originalFrameStkOffs + originalOffset;
+                    int originalOffset;
+                    if (lclNum == lvaMonAcquired)
+                    {
+                        originalOffset = info.compPatchpointInfo->MonitorAcquiredOffset();
+                    }
+                    else if (lclNum == lvaAsyncExecutionContextVar)
+                    {
+                        originalOffset = info.compPatchpointInfo->AsyncExecutionContextOffset();
+                    }
+                    else if (lclNum == lvaAsyncSynchronizationContextVar)
+                    {
+                        originalOffset = info.compPatchpointInfo->AsyncSynchronizationContextOffset();
+                    }
+                    else
+                    {
+                        assert(lclNum < info.compPatchpointInfo->NumberOfLocals());
+                        originalOffset = info.compPatchpointInfo->Offset(lclNum);
+                    }
+                    const int offset = originalFrameStkOffs + originalOffset;
 
                     JITDUMP(
                         "---OSR--- V%02u (on tier0 frame) tier0 FP-rel offset %d tier0 frame offset %d new virt offset "
@@ -5469,9 +5486,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             // These need to be located as the very first variables (highest memory address)
             // and so they have already been assigned an offset
             if (
-#if defined(FEATURE_EH_WINDOWS_X86)
-                lclNum == lvaShadowSPslotsVar ||
-#endif // FEATURE_EH_WINDOWS_X86
 #ifdef JIT32_GCENCODER
                 lclNum == lvaLocAllocSPvar ||
 #endif // JIT32_GCENCODER
@@ -5481,7 +5495,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 continue;
             }
 
-            if (lclNum == lvaMonAcquired)
+            if ((lclNum == lvaMonAcquired) || (lclNum == lvaAsyncExecutionContextVar) ||
+                (lclNum == lvaAsyncSynchronizationContextVar))
             {
                 continue;
             }
@@ -5920,6 +5935,43 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
         printf(", size=%d, stkOffs=%c0x%x\n", size, stkOffs < 0 ? '-' : '+', stkOffs < 0 ? -stkOffs : stkOffs);
     }
 #endif
+
+    return stkOffs;
+}
+
+//------------------------------------------------------------------------
+// lvaAllocAsyncContexts:
+//   Allocate stack space for the two async context locals, if present.
+//
+// Arguments:
+//   stkOffs - Current stack offset
+//
+// Return Value:
+//    New stack offset.
+//
+int Compiler::lvaAllocAsyncContexts(int stkOffs)
+{
+    if (lvaAsyncExecutionContextVar != BAD_VAR_NUM)
+    {
+        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaAsyncExecutionContextVar,
+                                                   lvaLclStackHomeSize(lvaAsyncExecutionContextVar), stkOffs);
+    }
+    else
+    {
+        // For x86 EnC the VM expects that we always allocate stack space
+        // for this local when contexts were saved.
+        assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
+    }
+
+    if (lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
+    {
+        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaAsyncSynchronizationContextVar,
+                                                   lvaLclStackHomeSize(lvaAsyncSynchronizationContextVar), stkOffs);
+    }
+    else
+    {
+        assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
+    }
 
     return stkOffs;
 }
