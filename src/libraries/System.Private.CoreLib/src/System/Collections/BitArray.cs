@@ -704,7 +704,8 @@ namespace System.Collections
                     TVector hi = TVector.LoadUnsafe(ref p, (nuint)(fromIndex -= TVector.ElementCount)) << shiftCount;
                     TVector lo = TVector.LoadUnsafe(ref p, (nuint)(fromIndex - 1)) >>> carryCount;
                     TVector result = hi | lo;
-                    result.StoreUnsafe(ref p, (nuint)(toIndex -= TVector.ElementCount));
+                    toIndex -= TVector.ElementCount;
+                    result.StoreUnsafe(ref p, (nuint)toIndex);
                 }
 
                 return toIndex;
