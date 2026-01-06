@@ -153,8 +153,7 @@ namespace System.Net.Http.Functional.Tests
     public sealed class PlatformHandler_IdnaProtocolTests : IdnaProtocolTests
     {
         public PlatformHandler_IdnaProtocolTests(ITestOutputHelper output) : base(output) { }
-        // WinHttp on Win7 does not support IDNA
-        protected override bool SupportsIdna => !PlatformDetection.IsWindows7;
+        protected override bool SupportsIdna => true;
     }
 
     public sealed class PlatformHandlerTest_Cookies : HttpClientHandlerTest_Cookies
@@ -322,8 +321,7 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion20.Value;
 
         public PlatformHandler_IdnaProtocol_Http2_Tests(ITestOutputHelper output) : base(output) { }
-        // WinHttp on Win7 does not support IDNA
-        protected override bool SupportsIdna => !PlatformDetection.IsWindows7;
+        protected override bool SupportsIdna => true;
     }
 
     public sealed class PlatformHandlerTest_Cookies_Http11_Http2 : HttpClientHandlerTest_Cookies_Http11

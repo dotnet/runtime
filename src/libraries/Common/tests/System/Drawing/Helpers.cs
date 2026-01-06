@@ -60,11 +60,6 @@ namespace System.Drawing
 
         public static bool GetGdiPlusIsAvailableNotWindows7()
         {
-            if (PlatformDetection.IsWindows7)
-            {
-                return false;
-            }
-
             return GetIsDrawingSupported();
         }
 

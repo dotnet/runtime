@@ -14,8 +14,7 @@ namespace System.Net.Tests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerWebSocketTests : IDisposable
     {
-        public static bool IsNotWindows7 { get; } = !PlatformDetection.IsWindows7;
-        public static bool IsNotWindows7AndIsWindowsImplementation => IsNotWindows7 && Helpers.IsWindowsImplementation;
+        public static bool IsNotWindows7AndIsWindowsImplementation => Helpers.IsWindowsImplementation;
         public static bool IsWindows8OrLater { get; } = PlatformDetection.IsWindows8xOrLater;
 
         private HttpListenerFactory Factory { get; }
@@ -36,7 +35,7 @@ namespace System.Net.Tests
             Client.Dispose();
         }
 
-        [ConditionalTheory(nameof(IsNotWindows7))]
+        [Theory]
         [InlineData(WebSocketMessageType.Text, false)]
         [InlineData(WebSocketMessageType.Binary, false)]
         [InlineData(WebSocketMessageType.Text, true)]
@@ -61,14 +60,14 @@ namespace System.Net.Tests
             Assert.Equal(Text, Encoding.ASCII.GetString(receivedBytes));
         }
 
-        [ConditionalFact(nameof(IsNotWindows7))]
+        [Fact]
         public async Task SendAsync_NoInnerBuffer_ThrowsArgumentNullException()
         {
             HttpListenerWebSocketContext context = await GetWebSocketContext();
             await AssertExtensions.ThrowsAsync<ArgumentNullException>("buffer.Array", () => context.WebSocket.SendAsync(new ArraySegment<byte>(), WebSocketMessageType.Text, false, new CancellationToken()));
         }
 
-        [ConditionalTheory(nameof(IsNotWindows7))]
+        [Theory]
         [InlineData(WebSocketMessageType.Close)]
         [InlineData(WebSocketMessageType.Text - 1)]
         public async Task SendAsync_InvalidMessageType_ThrowsArgumentNullException(WebSocketMessageType messageType)
@@ -86,7 +85,7 @@ namespace System.Net.Tests
             await Assert.ThrowsAsync<ObjectDisposedException>(() => context.WebSocket.SendAsync(new ArraySegment<byte>(new byte[10]), WebSocketMessageType.Text, false, new CancellationToken()));
         }
 
-        [ConditionalTheory(nameof(IsNotWindows7))]
+        [Theory]
         [InlineData(WebSocketMessageType.Text, false)]
         [InlineData(WebSocketMessageType.Binary, false)]
         [InlineData(WebSocketMessageType.Text, true)]
@@ -111,7 +110,7 @@ namespace System.Net.Tests
             Assert.Equal(Text, Encoding.ASCII.GetString(receivedBytes));
         }
 
-        [ConditionalTheory(nameof(IsNotWindows7))]
+        [Theory]
         [InlineData(300)]
         [InlineData(500)]
         [InlineData(1000)]
@@ -145,7 +144,7 @@ namespace System.Net.Tests
             Assert.Equal(sendString, msg);
         }
 
-        [ConditionalFact(nameof(IsNotWindows7))]
+        [Fact]
         public async Task ReceiveAsync_NoInnerBuffer_ThrowsArgumentNullException()
         {
             HttpListenerWebSocketContext context = await GetWebSocketContext();
@@ -306,7 +305,7 @@ namespace System.Net.Tests
             yield return new object[] { (WebSocketCloseStatus)1015, null, "closeStatus" };
         }
 
-        [ConditionalTheory(nameof(IsNotWindows7))]
+        [Theory]
         [MemberData(nameof(CloseStatus_Invalid_TestData))]
         public async Task CloseAsync_InvalidCloseStatus_ThrowsArgumentException(WebSocketCloseStatus status, string statusDescription, string paramName)
         {
@@ -350,7 +349,7 @@ namespace System.Net.Tests
             Assert.Equal(WebSocketState.Aborted, context.WebSocket.State);
         }
 
-        [ConditionalFact(nameof(IsNotWindows7))]
+        [Fact]
         public async Task Abort_CallAfterAborted_Nop()
         {
             HttpListenerWebSocketContext context = await GetWebSocketContext();

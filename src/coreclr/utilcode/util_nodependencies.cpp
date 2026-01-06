@@ -38,14 +38,10 @@ void InitRunningOnVersionStatus ()
     {
         gRunningOnStatus = RUNNING_ON_WIN8;
     }
-    else if(IsWindows7OrGreater())
-    {
-        gRunningOnStatus = RUNNING_ON_WIN7;
-    }
     else
     {
         // The current platform isn't supported. Display a message to this effect and exit.
-        minipal_log_print_error("Platform not supported: Windows 7 is the minimum supported version\n");
+        minipal_log_print_error("Platform not supported: Windows 8 is the minimum supported version\n");
         TerminateProcess(GetCurrentProcess(), NON_SUPPORTED_PLATFORM_TERMINATE_ERROR_CODE);
     }
 #endif // HOST_WINDOWS

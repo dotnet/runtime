@@ -27,8 +27,6 @@ namespace System.Net.Security.Tests
             _serverStream = new SslStream(serverNet, false, ServerCertCallback);
         }
 
-        public static bool IsNotWindows7 => !PlatformDetection.IsWindows7;
-
         protected abstract Task AuthenticateClientAsync(string targetHost, X509CertificateCollection clientCertificates, bool checkCertificateRevocation, SslProtocols? protocols = null);
         protected abstract Task AuthenticateServerAsync(X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation, SslProtocols? protocols = null);
 
@@ -108,7 +106,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsNotWindows7))]
+        [Theory]
 #pragma warning disable 0618
         [InlineData(null, SslProtocols.Ssl2)]
         [InlineData(SslProtocols.None, SslProtocols.Ssl2)]
@@ -161,7 +159,7 @@ namespace System.Net.Security.Tests
                     // In Windows 7 the Trusted Issuers List is sent within the Server Hello TLS record. This list is built
                     // by the server using certificates from the Trusted Root Authorities certificate store.
                     // The client side will use the Trusted Issuers List, if not empty, to filter proposed certificates.
-                    return PlatformDetection.IsWindows7 && !Capability.IsTrustedRootCertificateInstalled();
+                    return false;
                 default:
                     return false;
             }
