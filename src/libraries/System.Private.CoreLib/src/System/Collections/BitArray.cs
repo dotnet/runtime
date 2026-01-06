@@ -660,7 +660,8 @@ namespace System.Collections
 
                     while (fromIndex >= 5)
                     {
-                        uint lo = (Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref p, (uint)(fromIndex -= 4))) << shiftCount) & shiftMask;
+                        fromIndex -= 4;
+                        uint lo = (Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref p, (uint)fromIndex)) << shiftCount) & shiftMask;
                         uint hi = (Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref p, (uint)(fromIndex - 1))) >>> carryCount) & carryMask;
                         uint result = hi | lo;
                         toIndex -= 4;
