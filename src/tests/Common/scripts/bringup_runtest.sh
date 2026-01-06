@@ -444,7 +444,7 @@ function precompile_overlay_assemblies {
     if [[ "$doCrossgen" == 1 ]]; then
         local overlayDir=$CORE_ROOT
 
-        filesToPrecompile=$(find -L $overlayDir -iname \*.dll -not -iname \*-ms-win-\* -type f )
+        filesToPrecompile=$(find -L $overlayDir -iname \*.dll -type f )
         for fileToPrecompile in ${filesToPrecompile}
         do
             local filename=${fileToPrecompile}
