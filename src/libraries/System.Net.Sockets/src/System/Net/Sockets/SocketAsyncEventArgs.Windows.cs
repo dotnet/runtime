@@ -60,6 +60,7 @@ namespace System.Net.Sockets
 
         // SendPacketsElements property variables.
         private SafeFileHandle[]? _sendPacketsFileHandles;
+        private Dictionary<string, int>? _sendPacketsFilePathToHandleIndex;
 
         // Overlapped object related variables.
         private PreAllocatedOverlapped _preAllocatedOverlapped;
@@ -690,6 +691,7 @@ namespace System.Net.Sockets
                 // Loop through the elements attempting to open each files and get its handle.
                 int index = 0;
                 _sendPacketsFileHandles = new SafeFileHandle[sendPacketsElementsFileCount];
+                _sendPacketsFilePathToHandleIndex = new Dictionary<string, int>(sendPacketsElementsFileCount);
                 try
                 {
                     foreach (SendPacketsElement spe in sendPacketsElementsCopy)
@@ -699,6 +701,9 @@ namespace System.Net.Sockets
                             // Open the file and get its handle.
                             _sendPacketsFileHandles[index] =
                                 File.OpenHandle(spe.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+                            // Map file path to handle index for partitioned file elements
+                            _sendPacketsFilePathToHandleIndex[spe.FilePath] = index;
 
                             index++;
                         }
@@ -710,6 +715,7 @@ namespace System.Net.Sockets
                     for (int i = index - 1; i >= 0; i--)
                         _sendPacketsFileHandles[i].Dispose();
                     _sendPacketsFileHandles = null;
+                    _sendPacketsFilePathToHandleIndex = null;
                     throw;
                 }
 
@@ -1067,7 +1073,6 @@ namespace System.Net.Sockets
             // Fill in native descriptor.
             int bufferIndex = 0;
             int descriptorIndex = 0;
-            int fileIndex = 0;
             foreach (SendPacketsElement spe in sendPacketsElementsCopy)
             {
                 if (spe != null)
@@ -1086,7 +1091,8 @@ namespace System.Net.Sockets
                     }
                     else if (spe.FilePath != null)
                     {
-                        // This element is a file.
+                        // This element is a file. Look up the file handle index using the file path.
+                        int fileIndex = _sendPacketsFilePathToHandleIndex![spe.FilePath];
                         sendPacketsDescriptorPinned[descriptorIndex].fileHandle = _sendPacketsFileHandles![fileIndex].DangerousGetHandle();
                         sendPacketsDescriptorPinned[descriptorIndex].fileOffset = spe.OffsetLong;
                         sendPacketsDescriptorPinned[descriptorIndex].length = (uint)spe.Count;
@@ -1094,7 +1100,6 @@ namespace System.Net.Sockets
                             Interop.Winsock.TransmitPacketsElementFlags.File | (spe.EndOfPacket
                                 ? Interop.Winsock.TransmitPacketsElementFlags.EndOfPacket
                                 : 0);
-                        fileIndex++;
                         descriptorIndex++;
                     }
                     else if (spe.FileStream != null)
@@ -1311,6 +1316,9 @@ namespace System.Net.Sockets
 
                 _sendPacketsFileHandles = null;
             }
+
+            // Clear the file path to handle index mapping.
+            _sendPacketsFilePathToHandleIndex = null;
         }
 
         private static readonly unsafe IOCompletionCallback s_completionPortCallback = delegate (uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
