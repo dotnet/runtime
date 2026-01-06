@@ -2366,18 +2366,14 @@ void Thread::CoUninitialize()
 
     // Running threads might have performed a CoInitialize which must
     // now be balanced.
-    BOOL needsUninitialize = IsCoInitialized();
 
-    if (!IsAtProcessExit() && needsUninitialize)
+    if (!IsAtProcessExit() && IsCoInitialized())
     {
         GCX_PREEMP();
         CONTRACT_VIOLATION(ThrowsViolation);
 
-        if (IsCoInitialized())
-        {
-            BaseCoUninitialize();
-            ResetThreadState(TS_CoInitialized);
-        }
+        BaseCoUninitialize();
+        ResetThreadState(TS_CoInitialized);
     }
 }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -2564,18 +2560,13 @@ void Thread::CleanupCOMState()
     // now be balanced. However only the thread that called COInitialize can
     // call CoUninitialize.
 
-    BOOL needsUninitialize = IsCoInitialized();
-
-    if (needsUninitialize)
+    if (IsCoInitialized())
     {
         GCX_PREEMP();
         CONTRACT_VIOLATION(ThrowsViolation);
 
-        if (IsCoInitialized())
-        {
-            BaseCoUninitialize();
-            ResetCoInitialized();
-        }
+        BaseCoUninitialize();
+        ResetCoInitialized();
     }
 }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -3719,21 +3710,15 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
     // the thread.
     if (state == AS_Unknown)
     {
-        BOOL needUninitialize = (m_State & TS_CoInitialized);
-
-        if (needUninitialize)
+        if (m_State & TS_CoInitialized)
         {
             GCX_PREEMP();
 
-            // If we haven't CoInitialized the thread, then we don't have anything to do.
-            if (m_State & TS_CoInitialized)
-            {
-                // CoUninitialize the thread and reset the STA/MTA/CoInitialized state bits.
-                ::CoUninitialize();
+            // CoUninitialize the thread and reset the STA/MTA/CoInitialized state bits.
+            ::CoUninitialize();
 
-                ThreadState uninitialized = static_cast<ThreadState>(TS_InSTA | TS_InMTA | TS_CoInitialized);
-                ResetThreadState(uninitialized);
-            }
+            ThreadState uninitialized = static_cast<ThreadState>(TS_InSTA | TS_InMTA | TS_CoInitialized);
+            ResetThreadState(uninitialized);
         }
         return GetApartment();
     }
