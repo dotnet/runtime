@@ -19,10 +19,10 @@
  *  - each JS module to use exported symbols in ergonomic way
  */
 
-import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, LoggerType, AssertType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable, InternalExchangeSubscriber, BrowserUtilsExports, BrowserUtilsExportsTable, VoidPtr, CharPtr, NativePointer, DiagnosticsExports, DiagnosticsExportsTable } from "../types";
+import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, LoggerType, AssertType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable, InternalExchangeSubscriber, BrowserUtilsExports, BrowserUtilsExportsTable, DiagnosticsExports, DiagnosticsExportsTable } from "../types";
 import { InternalExchangeIndex } from "../types";
 
-let dotnetInternals: InternalExchange;
+export let dotnetInternals: InternalExchange;
 export let Module: DotnetModuleInternal;
 export let dotnetApi: RuntimeAPI;
 export const dotnetLogger: LoggerType = {} as LoggerType;
@@ -34,10 +34,6 @@ export const dotnetInteropJSExports: InteropJavaScriptExports = {} as any;
 export const dotnetNativeBrowserExports: NativeBrowserExports = {} as any;
 export const dotnetBrowserUtilsExports: BrowserUtilsExports = {} as any;
 export const dotnetDiagnosticsExports: DiagnosticsExports = {} as any;
-
-export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
-export const CharPtrNull: CharPtr = <CharPtr><any>0;
-export const NativePointerNull: NativePointer = <NativePointer><any>0;
 
 export function dotnetGetInternals(): InternalExchange {
     return dotnetInternals;
@@ -114,19 +110,20 @@ export function dotnetUpdateInternalsSubscriber() {
         };
         const assertLocal: AssertType = {
             check: table[4],
+            fastCheck: table[5],
         };
         const loaderExportsLocal: LoaderExports = {
-            resolveRunMainPromise: table[5],
-            rejectRunMainPromise: table[6],
-            getRunMainPromise: table[7],
-            createPromiseCompletionSource: table[8],
-            isControllablePromise: table[9],
-            getPromiseCompletionSource: table[10],
-            isExited: table[11],
-            isRuntimeRunning: table[12],
-            addOnExitListener: table[13],
-            abortStartup: table[14],
-            quitNow: table[15],
+            resolveRunMainPromise: table[6],
+            rejectRunMainPromise: table[7],
+            getRunMainPromise: table[8],
+            createPromiseCompletionSource: table[9],
+            isControllablePromise: table[10],
+            getPromiseCompletionSource: table[11],
+            isExited: table[12],
+            isRuntimeRunning: table[13],
+            addOnExitListener: table[14],
+            abortStartup: table[15],
+            quitNow: table[16],
         };
         Object.assign(dotnetLoaderExports, loaderExportsLocal);
         Object.assign(logger, loggerLocal);

@@ -18,7 +18,7 @@ namespace TestLibrary
 
         public static bool IsWindows => OperatingSystem.IsWindows();
 
-        public static bool IsBuiltInComEnabled => IsWindows
+        public static bool IsBuiltInComEnabled => IsWindows && !Utilities.IsCoreClrInterpreter
                                             && (AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool isEnabled)
                                                 ? isEnabled
                                                 : true);

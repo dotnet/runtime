@@ -3871,8 +3871,9 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
         _ASSERTE(!"Unexpected HRESULT returned from CoInitializeEx!");
     }
 
-    // WinRT sits on top of COM, so we need to make sure that it is initialized in the same threading mode
-    // as we just started COM itself with (or that we detected COM had already been started with).
+    // Since WinRT sits on top of COM we need to make sure that it is initialized
+    // in the same threading mode as we just started COM itself
+    // with (or that we detected COM had already been started with).
     if (!IsWinRTInitialized())
     {
         GCX_PREEMP();
