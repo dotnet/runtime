@@ -3719,11 +3719,7 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
     // the thread.
     if (state == AS_Unknown)
     {
-        BOOL needUninitialize = (m_State & TS_CoInitialized)
-#ifdef FEATURE_COMINTEROP
-            || IsWinRTInitialized()
-#endif // FEATURE_COMINTEROP
-            ;
+        BOOL needUninitialize = (m_State & TS_CoInitialized);
 
         if (needUninitialize)
         {
