@@ -5650,6 +5650,22 @@ void Compiler::generatePatchpointInfo()
                 patchpointInfo->MonitorAcquiredOffset());
     }
 
+    if (lvaAsyncExecutionContextVar != BAD_VAR_NUM)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lvaAsyncExecutionContextVar);
+        patchpointInfo->SetAsyncExecutionContextOffset(varDsc->GetStackOffset() + offsetAdjust);
+        JITDUMP("--OSR-- async execution context V%02u virtual offset is %d\n", lvaAsyncExecutionContextVar,
+                patchpointInfo->AsyncExecutionContextOffset());
+    }
+
+    if (lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lvaAsyncSynchronizationContextVar);
+        patchpointInfo->SetAsyncSynchronizationContextOffset(varDsc->GetStackOffset() + offsetAdjust);
+        JITDUMP("--OSR-- async synchronization context V%02u virtual offset is %d\n", lvaAsyncSynchronizationContextVar,
+                patchpointInfo->AsyncSynchronizationContextOffset());
+    }
+
 #if defined(TARGET_AMD64)
     // Record callee save registers.
     // Currently only needed for x64.
@@ -10372,7 +10388,8 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
         {
             // Sanity check for promoted fields of OSR locals.
             //
-            if (varNum >= info.compLocalsCount)
+            if ((varNum >= info.compLocalsCount) && (varNum != lvaMonAcquired) &&
+                (varNum != lvaAsyncExecutionContextVar) && (varNum != lvaAsyncSynchronizationContextVar))
             {
                 assert(varDsc->lvIsStructField);
                 assert(varDsc->lvParentLcl < info.compLocalsCount);

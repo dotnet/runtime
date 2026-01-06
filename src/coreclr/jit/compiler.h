@@ -4066,6 +4066,7 @@ public:
     void lvaAssignVirtualFrameOffsetsToLocals();
     bool lvaParamHasLocalStackSpace(unsigned lclNum);
     int lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, int stkOffs);
+    int lvaAllocAsyncContexts(int stkOffs);
 #ifdef TARGET_AMD64
     // Returns true if compCalleeRegsPushed (including RBP if used as frame pointer) is even.
     bool lvaIsCalleeSavedIntRegCountEven();

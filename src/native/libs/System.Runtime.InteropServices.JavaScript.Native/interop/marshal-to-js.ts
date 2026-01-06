@@ -263,7 +263,7 @@ export function endMarshalTaskToJs(args: JSMarshalerArguments, resConverter: Mar
     const promise = tryMarshalSyncTaskToJs(res, type, resConverter);
 
     // make sure we got the result
-    dotnetAssert.check(promise !== false, () => `Expected synchronous result, got: ${type}`);
+    dotnetAssert.fastCheck(promise !== false, () => `Expected synchronous result, got: ${type}`);
 
     return promise;
 }
@@ -286,7 +286,7 @@ function tryMarshalSyncTaskToJs(arg: JSMarshalerArgument, type: MarshalerType, r
             // when we arrived here from _marshalCsObjectToJs
             resConverter = csToJsMarshalers.get(elementType);
         }
-        dotnetAssert.check(resConverter, () => `Unknown subConverter for type ${elementType}. ${jsinteropDoc}`);
+        dotnetAssert.fastCheck(resConverter, () => `Unknown subConverter for type ${elementType}. ${jsinteropDoc}`);
 
         const val = resConverter(arg);
         return Promise.resolve(val);
@@ -309,13 +309,13 @@ function createTaskHolder(resConverter?: MarshalerToJs) {
                     // when we arrived here from _marshalCsObjectToJs
                     resConverter = csToJsMarshalers.get(type);
                 }
-                dotnetAssert.check(resConverter, () => `Unknown subConverter for type ${type}. ${jsinteropDoc}`);
+                dotnetAssert.fastCheck(resConverter, () => `Unknown subConverter for type ${type}. ${jsinteropDoc}`);
 
                 const jsValue = resConverter!(argInner);
                 pcs.resolve(jsValue);
             }
         } else {
-            dotnetAssert.check(false, () => `Unexpected type ${type}`);
+            dotnetAssert.fastCheck(false, () => `Unexpected type ${type}`);
         }
         releaseCSOwnedObject(jsHandle);
     });
@@ -369,7 +369,7 @@ function _marshalJsObjectToJs(arg: JSMarshalerArgument): any {
     }
     const jsHandle = getArgJsHandle(arg);
     const jsObj = getJSObjectFromJSHandle(jsHandle);
-    dotnetAssert.check(jsObj !== undefined, () => `JS object JSHandle ${jsHandle} was not found`);
+    dotnetAssert.fastCheck(jsObj !== undefined, () => `JS object JSHandle ${jsHandle} was not found`);
     return jsObj;
 }
 
@@ -412,7 +412,7 @@ function _marshalCsObjectToJs(arg: JSMarshalerArgument): any {
 
     // other types
     const converter = csToJsMarshalers.get(marshalerType);
-    dotnetAssert.check(converter, () => `Unknown converter for type ${marshalerType}. ${jsinteropDoc}`);
+    dotnetAssert.fastCheck(converter, () => `Unknown converter for type ${marshalerType}. ${jsinteropDoc}`);
     return converter(arg);
 }
 
@@ -427,7 +427,7 @@ function _marshalArrayToJs_impl(arg: JSMarshalerArgument, elementType: Marshaler
         return null;
     }
     const elementSize = arrayElementSize(elementType);
-    dotnetAssert.check(elementSize != -1, () => `Element type ${elementType} not supported`);
+    dotnetAssert.fastCheck(elementSize != -1, () => `Element type ${elementType} not supported`);
     const bufferPtr = getArgIntptr(arg);
     const length = getArgLength(arg);
     let result: Array<any> | TypedArray | null = null;
@@ -529,7 +529,7 @@ export function resolveOrRejectPromise(args: JSMarshalerArguments): void {
         const jsHandle = getArgJsHandle(argHandle);
 
         const holder = getJSObjectFromJSHandle(jsHandle) as TaskHolder;
-        dotnetAssert.check(holder, () => `Cannot find Promise for JSHandle ${jsHandle}`);
+        dotnetAssert.fastCheck(holder, () => `Cannot find Promise for JSHandle ${jsHandle}`);
 
         holder.resolveOrReject(type, jsHandle, argValue);
         /* TODO-WASM if (receiver_should_free) {

@@ -36,7 +36,7 @@ abstract class MemoryView implements IMemoryView {
     set(source: TypedArray, targetOffset?: number): void {
         dotnetAssert.check(!this.isDisposed, "ObjectDisposedException");
         const targetView = this._unsafe_create_view();
-        dotnetAssert.check(source && targetView && source.constructor === targetView.constructor, () => `Expected ${targetView.constructor}`);
+        dotnetAssert.fastCheck(source && targetView && source.constructor === targetView.constructor, () => `Expected ${targetView.constructor}`);
         targetView.set(source, targetOffset || 0 >>> 0);
         // TODO consider memory write barrier
     }
@@ -44,7 +44,7 @@ abstract class MemoryView implements IMemoryView {
     copyTo(target: TypedArray, sourceOffset?: number): void {
         dotnetAssert.check(!this.isDisposed, "ObjectDisposedException");
         const sourceView = this._unsafe_create_view();
-        dotnetAssert.check(target && sourceView && target.constructor === sourceView.constructor, () => `Expected ${sourceView.constructor}`);
+        dotnetAssert.fastCheck(target && sourceView && target.constructor === sourceView.constructor, () => `Expected ${sourceView.constructor}`);
         const trimmedSource = sourceView.subarray(sourceOffset || 0 >>> 0);
         // TODO consider memory read barrier
         target.set(trimmedSource);

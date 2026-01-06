@@ -8,9 +8,10 @@ import dts from "rollup-plugin-dts";
 import {
     externalDependencies, envConstants, banner, banner_dts,
     isDebug, staticLibDestination,
-    keep_classnames, keep_fnames, reserved
+    keep_classnames, keep_fnames, reserved,
+    inlinefastCheck,
 } from "./rollup.config.defines.js";
-import { terserPlugin, writeOnChangePlugin, consts, onwarn, alwaysLF, iife2fe, emsAmbient, sourcemapPathTransform } from "./rollup.config.plugins.js";
+import { terserPlugin, writeOnChangePlugin, consts, onwarn, alwaysLF, iife2fe, emsAmbient, regexReplace, sourcemapPathTransform } from "./rollup.config.plugins.js";
 import { promises as fs } from "fs";
 
 const dotnetDTS = {
@@ -189,6 +190,7 @@ function configure({ input, output, terser, external }) {
         external: external ? [...external, ...externalDependencies] : externalDependencies,
         plugins: [
             nodeResolve(),
+            regexReplace([...inlinefastCheck]),
             consts(envConstants),
             typescript({
                 tsconfig: "./tsconfig.json",

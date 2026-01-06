@@ -37,7 +37,7 @@ export function invokeJSImportST(functionHandle: JSFnHandle, args: JSMarshalerAr
     assertRuntimeRunning();
     args = fixupPointer(args, 0);
     const boundFn = jsImportWrapperByFnHandle[<any>functionHandle];
-    dotnetAssert.check(boundFn, () => `Imported function handle expected ${functionHandle}`);
+    dotnetAssert.fastCheck(boundFn, () => `Imported function handle expected ${functionHandle}`);
     boundFn(args);
 }
 
@@ -46,7 +46,7 @@ function bindJsImport(signature: JSFunctionSignature): Function {
     const mark = startMeasure();
 
     const version = getSignatureVersion(signature);
-    dotnetAssert.check(version === 2, () => `Signature version ${version} mismatch.`);
+    dotnetAssert.fastCheck(version === 2, () => `Signature version ${version} mismatch.`);
 
     const jsFunctionName = getSignatureFunctionName(signature)!;
     const jsModuleName = getSignatureModuleName(signature)!;
@@ -270,7 +270,7 @@ function lookupJsImport(functionName: string, jsModuleName: string | null): Func
     const parts = functionName.split(".");
     if (jsModuleName) {
         scope = importedModules.get(jsModuleName);
-        dotnetAssert.check(scope, () => `ES6 module ${jsModuleName} was not imported yet, please call JSHost.ImportAsync() first in order to invoke ${functionName}.`);
+        dotnetAssert.fastCheck(scope, () => `ES6 module ${jsModuleName} was not imported yet, please call JSHost.ImportAsync() first in order to invoke ${functionName}.`);
     } else if (parts[0] === "INTERNAL") {
         scope = dotnetApi.INTERNAL;
         parts.shift();
@@ -302,7 +302,7 @@ function lookupJsImport(functionName: string, jsModuleName: string | null): Func
 export function invokeJSFunction(functionJSHandle: JSHandle, args: JSMarshalerArguments): void {
     assertRuntimeRunning();
     const boundFn = getJSObjectFromJSHandle(functionJSHandle);
-    dotnetAssert.check(boundFn && typeof (boundFn) === "function" && boundFn[boundJsFunctionSymbol], () => `Bound function handle expected ${functionJSHandle}`);
+    dotnetAssert.fastCheck(boundFn && typeof (boundFn) === "function" && boundFn[boundJsFunctionSymbol], () => `Bound function handle expected ${functionJSHandle}`);
     args = fixupPointer(args, 0);
     boundFn(args);
 }

@@ -308,7 +308,7 @@ export function marshalExceptionToCs(arg: JSMarshalerArgument, value: any): void
         const gcHandle = assertNotDisposed(value);
         setGcHandle(arg, gcHandle);
     } else {
-        dotnetAssert.check(typeof value === "object" || typeof value === "string", () => `Value is not an Error ${typeof value}`);
+        dotnetAssert.fastCheck(typeof value === "object" || typeof value === "string", () => `Value is not an Error ${typeof value}`);
         setArgType(arg, MarshalerType.JSException);
         const message = value.toString();
         _marshalStringToCsImpl(arg, message);
@@ -331,8 +331,8 @@ export function marshalJsObjectToCs(arg: JSMarshalerArgument, value: any): void 
         setArgProxyContext(arg);
     } else {
         // if value was ManagedObject, it would be double proxied, but the C# signature requires that
-        dotnetAssert.check(value[jsOwnedGcHandleSymbol] === undefined, () => `JSObject proxy of ManagedObject proxy is not supported. ${jsinteropDoc}`);
-        dotnetAssert.check(typeof value === "function" || typeof value === "object", () => `JSObject proxy of ${typeof value} is not supported`);
+        dotnetAssert.fastCheck(value[jsOwnedGcHandleSymbol] === undefined, () => `JSObject proxy of ManagedObject proxy is not supported. ${jsinteropDoc}`);
+        dotnetAssert.fastCheck(typeof value === "function" || typeof value === "object", () => `JSObject proxy of ${typeof value} is not supported`);
 
         setArgType(arg, MarshalerType.JSObject);
         const jsHandle = getJsHandleFromJSObject(value)!;
@@ -425,7 +425,7 @@ export function marshalArrayToCsImpl(arg: JSMarshalerArgument, value: Array<any>
         setArgType(arg, MarshalerType.None);
     } else {
         const elementSize = arrayElementSize(elementType);
-        dotnetAssert.check(elementSize != -1, () => `Element type ${elementType} not supported`);
+        dotnetAssert.fastCheck(elementSize != -1, () => `Element type ${elementType} not supported`);
         const length = value.length;
         const bufferLength = elementSize * length;
         const bufferPtr = Module._malloc(bufferLength) as any;

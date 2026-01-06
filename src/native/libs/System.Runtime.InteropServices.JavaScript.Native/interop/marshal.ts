@@ -24,7 +24,7 @@ export function getMarshalerToCsByType(marshalerType: MarshalerType): MarshalerT
         return undefined;
     }
     const converter = jsToCsMarshalers.get(marshalerType);
-    dotnetAssert.check(converter && typeof converter === "function", () => `ERR30: Unknown converter for type ${marshalerType}`);
+    dotnetAssert.fastCheck(converter && typeof converter === "function", () => `ERR30: Unknown converter for type ${marshalerType}`);
     return converter;
 }
 
@@ -33,7 +33,7 @@ export function getMarshalerToJsByType(marshalerType: MarshalerType): MarshalerT
         return undefined;
     }
     const converter = csToJsMarshalers.get(marshalerType);
-    dotnetAssert.check(converter && typeof converter === "function", () => `ERR41: Unknown converter for type ${marshalerType}. ${jsinteropDoc}`);
+    dotnetAssert.fastCheck(converter && typeof converter === "function", () => `ERR41: Unknown converter for type ${marshalerType}. ${jsinteropDoc}`);
     return converter;
 }
 
@@ -232,7 +232,7 @@ export function getArgF64(arg: JSMarshalerArgument): number {
 
 export function setArgBool(arg: JSMarshalerArgument, value: boolean): void {
     dotnetAssert.check(arg, "Null arg");
-    dotnetAssert.check(typeof value === "boolean", () => `Value is not a Boolean: ${value} (${typeof (value)})`);
+    dotnetAssert.fastCheck(typeof value === "boolean", () => `Value is not a Boolean: ${value} (${typeof (value)})`);
     dotnetApi.setHeapB8(<any>arg, value);
 }
 
@@ -263,7 +263,7 @@ export function setArgIntptr(arg: JSMarshalerArgument, value: VoidPtr): void {
 
 export function setArgI52(arg: JSMarshalerArgument, value: number): void {
     dotnetAssert.check(arg, "Null arg");
-    dotnetAssert.check(Number.isSafeInteger(value), () => `Value is not an integer: ${value} (${typeof (value)})`);
+    dotnetAssert.fastCheck(Number.isSafeInteger(value), () => `Value is not an integer: ${value} (${typeof (value)})`);
     // we know that conversion to Int64 would be done on C# side
     dotnetApi.setHeapF64(<any>arg, value);
 }

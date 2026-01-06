@@ -33,7 +33,7 @@ export function bindCsFunction(methodHandle: CSFnHandle, assemblyName: string, n
     const mark = startMeasure();
     dotnetLogger.debug(() => `Binding [JSExport] ${namespaceName}.${shortClassName}:${methodName} from ${assemblyName} assembly`);
     const version = getSignatureVersion(signature);
-    dotnetAssert.check(version === 2, () => `Signature version ${version} mismatch.`);
+    dotnetAssert.fastCheck(version === 2, () => `Signature version ${version} mismatch.`);
 
 
     const argsCount = getSignatureArgumentCount(signature);
@@ -350,7 +350,7 @@ function walkExportsToSeFunction(assembly: string, namespace: string, classname:
                 newscope = {};
                 scope[part] = newscope;
             }
-            dotnetAssert.check(newscope, () => `${part} not found while looking up ${classname}`);
+            dotnetAssert.fastCheck(newscope, () => `${part} not found while looking up ${classname}`);
             scope = newscope;
         }
     }
