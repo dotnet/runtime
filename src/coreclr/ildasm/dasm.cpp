@@ -6649,9 +6649,6 @@ void DumpVtable(void* GUICookie)
     }
     printLine(GUICookie,szString);
 
-    sprintf_s(szString,SZSTRING_SIZE,"%s// Image base: 0x%zx",g_szAsmCodeIndent,(size_t)g_pPELoader->base());
-    printLine(GUICookie,COMMENT(szString));
-
     DumpEATEntriesWrapper(GUICookie, pNTHeader32, pOptHeader32, pNTHeader64, pOptHeader64);
 
     g_nVTableRef = 0;
