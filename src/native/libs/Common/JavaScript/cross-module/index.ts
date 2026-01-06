@@ -19,7 +19,7 @@
  *  - each JS module to use exported symbols in ergonomic way
  */
 
-import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, LoggerType, AssertType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable, InternalExchangeSubscriber, BrowserUtilsExports, BrowserUtilsExportsTable, VoidPtr, CharPtr, NativePointer } from "../types";
+import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, LoggerType, AssertType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable, InternalExchangeSubscriber, BrowserUtilsExports, BrowserUtilsExportsTable, VoidPtr, CharPtr, NativePointer, DiagnosticsExports, DiagnosticsExportsTable } from "../types";
 import { InternalExchangeIndex } from "../types";
 
 let dotnetInternals: InternalExchange;
@@ -33,6 +33,7 @@ export const dotnetBrowserHostExports: BrowserHostExports = {} as any;
 export const dotnetInteropJSExports: InteropJavaScriptExports = {} as any;
 export const dotnetNativeBrowserExports: NativeBrowserExports = {} as any;
 export const dotnetBrowserUtilsExports: BrowserUtilsExports = {} as any;
+export const dotnetDiagnosticsExports: DiagnosticsExports = {} as any;
 
 export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
 export const CharPtrNull: CharPtr = <CharPtr><any>0;
@@ -92,6 +93,9 @@ export function dotnetUpdateInternalsSubscriber() {
     if (Object.keys(dotnetNativeBrowserExports).length === 0 && dotnetInternals[InternalExchangeIndex.NativeBrowserExportsTable]) {
         nativeBrowserExportsFromTable(dotnetInternals[InternalExchangeIndex.NativeBrowserExportsTable], dotnetNativeBrowserExports);
     }
+    if (Object.keys(dotnetDiagnosticsExports).length === 0 && dotnetInternals[InternalExchangeIndex.DiagnosticsExportsTable]) {
+        diagnosticsExportsFromTable(dotnetInternals[InternalExchangeIndex.DiagnosticsExportsTable], dotnetDiagnosticsExports);
+    }
 
     // keep in sync with runtimeExportsToTable()
     function runtimeExportsFromTable(table: RuntimeExportsTable, runtime: RuntimeExports): void {
@@ -118,6 +122,11 @@ export function dotnetUpdateInternalsSubscriber() {
             createPromiseCompletionSource: table[8],
             isControllablePromise: table[9],
             getPromiseCompletionSource: table[10],
+            isExited: table[11],
+            isRuntimeRunning: table[12],
+            addOnExitListener: table[13],
+            abortStartup: table[14],
+            quitNow: table[15],
         };
         Object.assign(dotnetLoaderExports, loaderExportsLocal);
         Object.assign(logger, loggerLocal);
@@ -130,6 +139,7 @@ export function dotnetUpdateInternalsSubscriber() {
             registerDllBytes: table[0],
             installVfsFile: table[1],
             loadIcuData: table[2],
+            initializeCoreCLR: table[3],
         };
         Object.assign(native, nativeLocal);
     }
@@ -148,6 +158,14 @@ export function dotnetUpdateInternalsSubscriber() {
         Object.assign(interop, interopLocal);
     }
 
+    // keep in sync with nativeBrowserExportsToTable()
+    function diagnosticsExportsFromTable(table: DiagnosticsExportsTable, interop: DiagnosticsExports): void {
+        const interopLocal: DiagnosticsExports = {
+            symbolicateStackTrace: table[0],
+        };
+        Object.assign(interop, interopLocal);
+    }
+
     // keep in sync with nativeHelperExportsToTable()
     function nativeHelperExportsFromTable(table: BrowserUtilsExportsTable, interop: BrowserUtilsExports): void {
         const interopLocal: BrowserUtilsExports = {
@@ -156,6 +174,10 @@ export function dotnetUpdateInternalsSubscriber() {
             stringToUTF16Ptr: table[2],
             stringToUTF8Ptr: table[3],
             zeroRegion: table[4],
+            isSharedArrayBuffer: table[5],
+            abortTimers: table[6],
+            abortPosix: table[7],
+            getExitStatus: table[8],
         };
         Object.assign(interop, interopLocal);
     }

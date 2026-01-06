@@ -43,7 +43,6 @@ struct CallStubHeader
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE(target != 0);
         VolatileStore(&Routines[NumRoutines - 1], target);
     }
 
@@ -180,7 +179,7 @@ private:
         // The size of the routines array is three times the number of arguments plus one slot for the target method pointer.
         return sizeof(CallStubHeader) + ((numArgs + 1) * 3 + 1) * sizeof(PCODE);
     }
-    void ComputeCallStub(MetaSig &sig, PCODE *pRoutines);
+    void ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDesc *pMD);
 
     void TerminateCurrentRoutineIfNotOfNewType(RoutineType type, PCODE *pRoutines);
 };

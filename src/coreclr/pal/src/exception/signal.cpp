@@ -936,22 +936,20 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
             CONTEXTToNativeContext(&winContext, ucontext);
         }
     }
+
+    // Call the original handler when it is not ignored or default (terminate).
+    if (g_previous_activation.sa_flags & SA_SIGINFO)
+    {
+        _ASSERTE(g_previous_activation.sa_sigaction != NULL);
+        g_previous_activation.sa_sigaction(code, siginfo, context);
+    }
     else
     {
-        // Call the original handler when it is not ignored or default (terminate).
-        if (g_previous_activation.sa_flags & SA_SIGINFO)
+        if (g_previous_activation.sa_handler != SIG_IGN &&
+            g_previous_activation.sa_handler != SIG_DFL)
         {
-            _ASSERTE(g_previous_activation.sa_sigaction != NULL);
-            g_previous_activation.sa_sigaction(code, siginfo, context);
-        }
-        else
-        {
-            if (g_previous_activation.sa_handler != SIG_IGN &&
-                g_previous_activation.sa_handler != SIG_DFL)
-            {
-                _ASSERTE(g_previous_activation.sa_handler != NULL);
-                g_previous_activation.sa_handler(code);
-            }
+            _ASSERTE(g_previous_activation.sa_handler != NULL);
+            g_previous_activation.sa_handler(code);
         }
     }
 }

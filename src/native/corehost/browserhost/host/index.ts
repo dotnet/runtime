@@ -5,7 +5,9 @@ import type { InternalExchange, BrowserHostExports, RuntimeAPI, BrowserHostExpor
 import { InternalExchangeIndex } from "./types";
 import { } from "./cross-linked"; // ensure ambient symbols are declared
 
-import { runMain, runMainAndExit, registerDllBytes, installVfsFile, loadIcuData } from "./host";
+import GitHash from "consts:gitHash";
+
+import { runMain, runMainAndExit, registerDllBytes, installVfsFile, loadIcuData, initializeCoreCLR } from "./host";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
     if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
@@ -15,12 +17,16 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     };
     const runtimeApi = internals[InternalExchangeIndex.RuntimeAPI];
     if (typeof runtimeApi !== "object") throw new Error("Expected internals to have RuntimeAPI");
+    if (runtimeApi.runtimeBuildInfo.gitHash && runtimeApi.runtimeBuildInfo.gitHash !== GitHash) {
+        throw new Error(`Mismatched git hashes between loader and runtime. Loader: ${runtimeApi.runtimeBuildInfo.gitHash}, BrowserHost: ${GitHash}`);
+    }
     Object.assign(runtimeApi, runtimeApiLocal);
 
     internals[InternalExchangeIndex.BrowserHostExportsTable] = browserHostExportsToTable({
         registerDllBytes,
         installVfsFile,
-        loadIcuData
+        loadIcuData,
+        initializeCoreCLR,
     });
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
     function browserHostExportsToTable(map: BrowserHostExports): BrowserHostExportsTable {
@@ -29,6 +35,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
             map.registerDllBytes,
             map.installVfsFile,
             map.loadIcuData,
+            map.initializeCoreCLR,
         ];
     }
 }
