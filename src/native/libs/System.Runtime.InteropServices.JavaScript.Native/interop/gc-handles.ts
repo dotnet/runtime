@@ -17,6 +17,8 @@ export const importedJsFunctionSymbol = Symbol.for("wasm imported_js_function");
 export const proxyDebugSymbol = Symbol.for("wasm proxyDebug");
 export const promiseHolderSymbol = Symbol.for("wasm promise_holder");
 
+let forceDisposeProxiesInProgress = false;
+
 const useFinalizationRegistry = typeof globalThis.FinalizationRegistry === "function";
 let jsOwnedObjectRegistry: FinalizationRegistry<any>;
 
@@ -204,8 +206,6 @@ export function lookupJsOwnedObject(gcHandle: GCHandle): any {
     return null;
 }
 
-let forceDisposeProxiesInProgress = false;
-
 // when we arrive here from UninstallWebWorkerInterop, the C# will unregister the handles too.
 // when called from elsewhere, C# side could be unbalanced!!
 export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): void {
@@ -237,9 +237,9 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
                 }
             }
             if (!keepAlive) {
-                const promiseControl = dotnetLoaderExports.createPromiseCompletionSource(obj);
+                const promiseControl = dotnetLoaderExports.getPromiseCompletionSource(obj);
                 if (promiseControl) {
-                    promiseControl.reject(new Error("WebWorker which is origin of the Task is being terminated."));
+                    promiseControl.reject(new Error("Process is being terminated."));
                 }
                 if (typeof obj.dispose === "function") {
                     obj.dispose();
@@ -276,9 +276,9 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
                 }
             }
             if (!keepAlive) {
-                const promiseControl = dotnetLoaderExports.createPromiseCompletionSource(obj);
+                const promiseControl = dotnetLoaderExports.getPromiseCompletionSource(obj);
                 if (promiseControl) {
-                    promiseControl.reject(new Error("WebWorker which is origin of the Task is being terminated."));
+                    promiseControl.reject(new Error("Process is being terminated."));
                 }
                 if (typeof obj.dispose === "function") {
                     obj.dispose();

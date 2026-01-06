@@ -106,6 +106,7 @@ export function dotnetUpdateInternalsSubscriber() {
             resolveOrRejectPromise: table[3],
             cancelPromise: table[4],
             invokeJSFunction: table[5],
+            forceDisposeProxies: table[6],
         };
         Object.assign(runtime, runtimerLocal);
     }

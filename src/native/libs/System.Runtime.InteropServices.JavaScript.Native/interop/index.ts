@@ -11,7 +11,7 @@ import { bindJSImportST, dynamicImport, getDotnetInstance, getGlobalThis, getPro
 import { bindCsFunction, getAssemblyExports } from "./invoke-cs";
 import { initializeMarshalersToJs, resolveOrRejectPromise } from "./marshal-to-js";
 import { initializeMarshalersToCs } from "./marshal-to-cs";
-import { releaseCSOwnedObject } from "./gc-handles";
+import { forceDisposeProxies, releaseCSOwnedObject } from "./gc-handles";
 import { cancelPromise } from "./cancelable-promise";
 import { loadLazyAssembly, loadSatelliteAssemblies } from "./lazy";
 import { jsInteropState } from "./marshal";
@@ -50,6 +50,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         resolveOrRejectPromise,
         cancelPromise,
         invokeJSFunction,
+        forceDisposeProxies,
     });
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
 
@@ -67,6 +68,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
             map.resolveOrRejectPromise,
             map.cancelPromise,
             map.invokeJSFunction,
+            map.forceDisposeProxies,
         ];
     }
 }

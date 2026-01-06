@@ -12,7 +12,7 @@ import type { isSharedArrayBuffer, zeroRegion } from "../../../System.Native.Bro
 import type { stringToUTF16, stringToUTF16Ptr, stringToUTF8Ptr, utf16ToString } from "../../../System.Native.Browser/utils/strings";
 import type { abortPosix, abortTimers, getExitStatus } from "../../../System.Native.Browser/utils/host";
 import type { bindJSImportST, invokeJSFunction, invokeJSImportST } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/invoke-js";
-import type { releaseCSOwnedObject } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/gc-handles";
+import type { forceDisposeProxies, releaseCSOwnedObject } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/gc-handles";
 import type { resolveOrRejectPromise } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/marshal-to-js";
 import type { cancelPromise } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/cancelable-promise";
 
@@ -26,6 +26,7 @@ export type RuntimeExports = {
     resolveOrRejectPromise: typeof resolveOrRejectPromise,
     cancelPromise: typeof cancelPromise,
     invokeJSFunction: typeof invokeJSFunction,
+    forceDisposeProxies: typeof forceDisposeProxies,
 }
 
 export type RuntimeExportsTable = [
@@ -35,6 +36,7 @@ export type RuntimeExportsTable = [
     typeof resolveOrRejectPromise,
     typeof cancelPromise,
     typeof invokeJSFunction,
+    typeof forceDisposeProxies,
 ]
 
 export type LoggerType = {

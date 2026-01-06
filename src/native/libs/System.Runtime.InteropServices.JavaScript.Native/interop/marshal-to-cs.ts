@@ -265,7 +265,12 @@ function _marshalFunctionToCs(arg: JSMarshalerArgument, value: Function, _?: Mar
     };
     const boundFunctionHandle = getJsHandleFromJSObject(wrapper)!;
     if (BuildConfiguration === "Debug") {
-        wrapper[proxyDebugSymbol] = `Proxy of JS Function with JSHandle ${boundFunctionHandle}: ${value.toString()}`;
+        const anyValue = value as any;
+        if (anyValue[proxyDebugSymbol] === undefined) {
+            wrapper[proxyDebugSymbol] = `Proxy of JS Function with JSHandle ${boundFunctionHandle}`;
+        } else {
+            wrapper[proxyDebugSymbol] = anyValue[proxyDebugSymbol];
+        }
     }
     setJsHandle(arg, boundFunctionHandle);
     setArgType(arg, MarshalerType.Function);//TODO or action ?
