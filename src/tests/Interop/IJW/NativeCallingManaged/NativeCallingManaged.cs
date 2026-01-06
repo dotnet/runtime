@@ -15,7 +15,6 @@ namespace NativeCallingManaged
         [Fact]
         public static int TestEntryPoint()
         {
-            // Disable running on Windows 7 until IJW activation work is complete.
             if(Environment.OSVersion.Platform != PlatformID.Win32NT)
             {
                 return 100;
