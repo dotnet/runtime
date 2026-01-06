@@ -4248,6 +4248,24 @@ public:
     }
 } AsyncCallPeeps;
 
+void InterpCompiler::CheckForPInvokeThisCallWithNoArgs(CORINFO_SIG_INFO* sigInfo, CORINFO_METHOD_HANDLE methodHnd)
+{
+    if (sigInfo->numArgs == 0)
+    {
+        CorInfoCallConv callConv = (CorInfoCallConv)(sigInfo->callConv & IMAGE_CEE_CS_CALLCONV_MASK);
+        bool isPInvoke = methodHnd != NULL || (callConv != CORINFO_CALLCONV_DEFAULT && callConv != CORINFO_CALLCONV_VARARG);
+        if (isPInvoke)
+        {
+            bool suppressGCTransition = false;
+            CorInfoCallConvExtension unmanagedCallConv = m_compHnd->getUnmanagedCallConv(methodHnd, sigInfo, &suppressGCTransition);
+            if (callConvIsInstanceMethodCallConv(unmanagedCallConv))
+            {
+                BADCODE("thiscall with 0 arguments");
+            }
+        }
+    }
+}
+
 void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli)
 {
     uint32_t token = getU4LittleEndian(m_ip + 1);
@@ -4378,6 +4396,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         {
             BADCODE("Vararg methods are not supported in interpreted code");
         }
+
+        CheckForPInvokeThisCallWithNoArgs(&callInfo.sig, NULL);
 
         callIFunctionPointerVar = m_pStackPointer[-1].var;
         m_pStackPointer--;
@@ -4532,6 +4552,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             // Otherwise, we have to treat it as a marshaled pinvoke
             isMarshaledPInvoke = true;
         }
+    }
+
+    if (isPInvoke && !isMarshaledPInvoke)
+    {
+        CheckForPInvokeThisCallWithNoArgs(&callInfo.sig, callInfo.hMethod);
     }
 
     // Process sVars

@@ -947,6 +947,7 @@ private:
     void    EmitPushSyncObject();
     void    EmitCallsiteCallout(CorInfoIsAccessAllowedResult accessAllowed, CORINFO_HELPER_DESC* calloutDesc);
     void    EmitCanAccessCallout(CORINFO_RESOLVED_TOKEN *pResolvedToken);
+    void    CheckForPInvokeThisCallWithNoArgs(CORINFO_SIG_INFO* sigInfo, CORINFO_METHOD_HANDLE methodHnd);
 
     // Var Offset allocator
     TArray<InterpInst*, MemPoolAllocator> *m_pActiveCalls;
