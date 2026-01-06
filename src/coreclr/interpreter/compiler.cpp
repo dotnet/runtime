@@ -6399,6 +6399,7 @@ struct LdftnDelegateCtorPeepInfo
     CORINFO_RESOLVED_TOKEN newObjResolvedToken;
     bool isLdVirtFtn = false;
     DelegateCtorArgs ctorData;
+    CORINFO_METHOD_HANDLE alternateCtor = NULL;
 };
 
 bool InterpCompiler::IsLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -6432,15 +6433,13 @@ bool InterpCompiler::IsLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElemen
     bool hasSideEffects = false;
     m_compHnd->getNewHelper(peepInfo.newObjResolvedToken.hClass, &hasSideEffects);
 
-    CORINFO_METHOD_HANDLE alternateCtor = nullptr;
-    DelegateCtorArgs      ctorData;
-    ctorData.pMethod = m_methodInfo->ftn;
-    ctorData.pArg3   = nullptr;
-    ctorData.pArg4   = nullptr;
-    ctorData.pArg5   = nullptr;
+    peepInfo.ctorData.pMethod = m_methodInfo->ftn;
+    peepInfo.ctorData.pArg3   = nullptr;
+    peepInfo.ctorData.pArg4   = nullptr;
+    peepInfo.ctorData.pArg5   = nullptr;
 
-    alternateCtor = m_compHnd->GetDelegateCtor(peepInfo.newObjResolvedToken.hMethod, peepInfo.newObjResolvedToken.hClass, peepInfo.ldftnResolvedToken.hMethod, &ctorData);
-    if (alternateCtor == peepInfo.newObjResolvedToken.hMethod)
+    peepInfo.alternateCtor = m_compHnd->GetDelegateCtor(peepInfo.newObjResolvedToken.hMethod, peepInfo.newObjResolvedToken.hClass, peepInfo.ldftnResolvedToken.hMethod, &peepInfo.ctorData);
+    if (peepInfo.alternateCtor == peepInfo.newObjResolvedToken.hMethod)
     {
         return false;
     }
@@ -6526,7 +6525,7 @@ int InterpCompiler::ApplyLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElem
         m_pLastNewIns->data[1] = newObjData.dataItemIndex;
     }
 
-    m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
+    m_pLastNewIns->data[0] = GetDataItemIndex(peepInfo->alternateCtor);
     // Ensure that the dvar does not overlap with the svars; it is incorrect for it to overlap because
     //  the process of initializing the result may trample the args.
     m_pVars[newObjDVar].noCallArgs = true;
