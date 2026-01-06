@@ -1717,11 +1717,6 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
     if (Nullable::IsNullableType(pMeth->GetMethodTable()))
         COMPlusThrow(kNotSupportedException);
 
-    // Do not allow static methods with [UnmanagedCallersOnlyAttribute] to be a delegate target.
-    // A method marked UnmanagedCallersOnly is special and allowing it to be delegate target will destabilize the runtime.
-    if (pMeth->HasUnmanagedCallersOnlyAttribute())
-        COMPlusThrow(kNotSupportedException);
-
     MethodDesc* pDelegateInvoke = COMDelegate::FindDelegateInvokeMethod(pDelMT);
 
     UINT invokeArgCount = MethodDescToNumFixedArgs(pDelegateInvoke);
