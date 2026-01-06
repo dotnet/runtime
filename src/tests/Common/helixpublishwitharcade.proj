@@ -879,7 +879,7 @@
       <AppBundlePath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).app</AppBundlePath>
     </MergedPayloads>
     <!-- For tests where we aren't using the XHarness test runner, specify as such on the payload item. -->
-    <MergedPayloads Update="@(MergedPayloads)" Condition="Exists('$(MergedPayloadsRootDirectory)%(MergedPayloads.PayloadGroup)/%(MergedPayloads.PayloadGroup).XHarnessNoRunner')">
+    <MergedPayloads Update="@(MergedPayloads)" Condition="Exists('$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).XHarnessNoRunner')">
       <IncludesTestRunner>false</IncludesTestRunner>
       <ExpectedExitCode>100</ExpectedExitCode>
     </MergedPayloads>
