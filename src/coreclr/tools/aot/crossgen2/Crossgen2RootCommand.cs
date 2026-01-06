@@ -56,6 +56,10 @@ namespace ILCompiler
             new("--compositekeyfile") { Description = SR.CompositeKeyFile };
         public Option<bool> CompileNoMethods { get; } =
             new("--compile-no-methods") { Description = SR.CompileNoMethodsOption };
+        public Option<bool> OutNearInput { get; } =
+            new("--out-near-input") { Description = SR.OutNearInputOption };
+        public Option<bool> SingleFileCompilation { get; } =
+            new("--single-file-compilation") { Description = SR.SingleFileCompilationOption };
         public Option<bool> Partial { get; } =
             new("--partial") { Description = SR.PartialImageOption };
         public Option<bool> CompileBubbleGenerics { get; } =
@@ -172,6 +176,8 @@ namespace ILCompiler
             Options.Add(Composite);
             Options.Add(CompositeKeyFile);
             Options.Add(CompileNoMethods);
+            Options.Add(OutNearInput);
+            Options.Add(SingleFileCompilation);
             Options.Add(Partial);
             Options.Add(CompileBubbleGenerics);
             Options.Add(EmbedPgoData);

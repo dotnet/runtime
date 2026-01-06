@@ -36,12 +36,16 @@ namespace ILCompiler
         private ulong _imageBase;
 
         private readonly bool _inputBubble;
+        private readonly bool _singleFileCompilation;
+        private readonly bool _outNearInput;
         private readonly string _outputFilePath;
 
         public Program(Crossgen2RootCommand command)
         {
             _command = command;
             _inputBubble = Get(command.InputBubble);
+            _singleFileCompilation = Get(command.SingleFileCompilation);
+            _outNearInput = Get(command.OutNearInput);
             _outputFilePath = Get(command.OutputFilePath);
 
             if (Get(command.WaitForDebugger))
@@ -64,8 +68,11 @@ namespace ILCompiler
 
         public int Run()
         {
-            if (_outputFilePath == null)
+            if (_outputFilePath == null && !_outNearInput)
                 throw new CommandLineException(SR.MissingOutputFile);
+
+            if (_singleFileCompilation && !_outNearInput)
+                throw new CommandLineException(SR.MissingOutNearInput);
 
             var logger = new Logger(Console.Out, Get(_command.IsVerbose));
 
@@ -107,12 +114,15 @@ namespace ILCompiler
             }
             else
             {
-                foreach (var inputFile in inputFilePathsArg)
+                if (!_singleFileCompilation)
                 {
-                    if (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0)
+                    foreach (var inputFile in inputFilePathsArg)
                     {
-                        versionBubbleIncludesCoreLib = true;
-                        break;
+                        if (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0)
+                        {
+                            versionBubbleIncludesCoreLib = true;
+                            break;
+                        }
                     }
                 }
                 if (!versionBubbleIncludesCoreLib)
@@ -259,7 +269,50 @@ namespace ILCompiler
             _typeSystemContext.SetSystemModule((EcmaModule)_typeSystemContext.GetModuleForSimpleName(systemModuleName));
             ReadyToRunCompilerContext typeSystemContext = _typeSystemContext;
 
-            RunSingleCompilation(inputFilePaths, instructionSetSupport, compositeRootPath, unrootedInputFilePaths, versionBubbleModulesHash, typeSystemContext, logger);
+            if (_singleFileCompilation)
+            {
+                var singleCompilationInputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var inputFile in inputFilePaths)
+                {
+                    var singleCompilationVersionBubbleModulesHash = new HashSet<ModuleDesc>(versionBubbleModulesHash);
+
+                    singleCompilationInputFilePaths.Clear();
+                    singleCompilationInputFilePaths.Add(inputFile.Key, inputFile.Value);
+                    typeSystemContext.InputFilePaths = singleCompilationInputFilePaths;
+
+                    if (!_inputBubble)
+                    {
+                        bool singleCompilationVersionBubbleIncludesCoreLib = versionBubbleIncludesCoreLib || (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0);
+
+                        typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib,
+                            _typeSystemContext.InstructionSetSupport,
+                            _typeSystemContext);
+                        typeSystemContext.InputFilePaths = singleCompilationInputFilePaths;
+                        typeSystemContext.ReferenceFilePaths = referenceFilePaths;
+                        typeSystemContext.SetSystemModule((EcmaModule)typeSystemContext.GetModuleForSimpleName(systemModuleName));
+                    }
+
+                    RunSingleCompilation(singleCompilationInputFilePaths, instructionSetSupport, compositeRootPath, unrootedInputFilePaths, singleCompilationVersionBubbleModulesHash, typeSystemContext, logger);
+                }
+
+                // In case of inputbubble ni.dll are created as ni.dll.tmp in order to not interfere with crossgen2, move them all to ni.dll
+                // See https://github.com/dotnet/runtime/issues/55663#issuecomment-898161751 for more details
+                if (_inputBubble)
+                {
+                    foreach (var inputFile in inputFilePaths)
+                    {
+                        var tmpOutFile = inputFile.Value.Replace(".dll", ".ni.dll.tmp");
+                        var outFile = inputFile.Value.Replace(".dll", ".ni.dll");
+                        Console.WriteLine($@"Moving R2R PE file: {tmpOutFile} to {outFile}");
+                        System.IO.File.Move(tmpOutFile, outFile);
+                    }
+                }
+            }
+            else
+            {
+                RunSingleCompilation(inputFilePaths, instructionSetSupport, compositeRootPath, unrootedInputFilePaths, versionBubbleModulesHash, typeSystemContext, logger);
+            }
 
             return 0;
         }
@@ -273,7 +326,20 @@ namespace ILCompiler
             e.MoveNext();
             string inFilePath = e.Current.Value;
             string inputFileExtension = Path.GetExtension(inFilePath);
-            string outFile = _outputFilePath;
+            string nearOutFilePath = inputFileExtension switch
+            {
+                ".dll" => Path.ChangeExtension(inFilePath,
+                    _singleFileCompilation&& _inputBubble
+                        ? ".ni.dll.tmp"
+                        : ".ni.dll"),
+                ".exe" => Path.ChangeExtension(inFilePath,
+                    _singleFileCompilation && _inputBubble
+                        ? ".ni.exe.tmp"
+                        : ".ni.exe"),
+                _ => throw new CommandLineException(string.Format(SR.UnsupportedInputFileExtension, inputFileExtension))
+            };
+
+            string outFile = _outNearInput ? nearOutFilePath : _outputFilePath;
             string dgmlLogFileName = Get(_command.DgmlLogFileName);
 
             using (PerfEventSource.StartStopEvents.CompilationEvents())
