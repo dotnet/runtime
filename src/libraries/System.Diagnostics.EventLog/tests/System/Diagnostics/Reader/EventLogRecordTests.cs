@@ -14,8 +14,6 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void GetPropertyValues()
         {
-            if (false) // Null events in PowerShell log
-                return;
             var query = new EventLogQuery("Application", PathType.LogName, "*[System]") { ReverseDirection = true };
             var eventLog = new EventLogReader(query, Helpers.GetBookmark("Application", PathType.LogName));
             using (eventLog)
@@ -36,8 +34,6 @@ namespace System.Diagnostics.Tests
         [InlineData("Application")]
         public void FormatDescription(string log)
         {
-            if (false) // Null events in PowerShell log
-                return;
             var query = new EventLogQuery(log, PathType.LogName, "*[System]") { ReverseDirection = true };
             using (var eventLog = new EventLogReader(query, Helpers.GetBookmark(log, PathType.LogName)))
             {
@@ -54,8 +50,6 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void Properties()
         {
-            if (false) // Null events in PowerShell log
-                return;
             var query = new EventLogQuery("Application", PathType.LogName, "*[System]") { ReverseDirection = true };
             var eventLog = new EventLogReader(query, Helpers.GetBookmark("Application", PathType.LogName));
             using (eventLog)
@@ -74,8 +68,6 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void ToXml()
         {
-            if (false) // Null events in PowerShell log
-                return;
             var query = new EventLogQuery("Application", PathType.LogName, "*[System]") { ReverseDirection = true };
             var eventLog = new EventLogReader(query, Helpers.GetBookmark("Application", PathType.LogName));
             using (eventLog)
@@ -125,8 +117,6 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void EventLogRecord_CheckProperties_RemainSame()
         {
-            if (false) // Null events in PowerShell log
-                return;
 
             SecurityIdentifier userId;
             byte? version, level;
