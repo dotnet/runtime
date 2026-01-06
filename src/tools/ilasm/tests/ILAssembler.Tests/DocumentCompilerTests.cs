@@ -218,6 +218,21 @@ namespace ILAssembler.Tests
             Assert.Equal(DiagnosticSeverity.Error, error.Severity);
         }
 
+        [Fact]
+        public void ModuleNotFound_ReportsError()
+        {
+            // Referencing a module that doesn't exist
+            string source = """
+                .assembly extern System.Runtime { }
+                .typedef [.module NonExistentModule]SomeType as MyType
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.ModuleNotFound, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+        }
+
         private static PEReader CompileAndGetReader(string source, Options options)
         {
             var sourceText = new SourceText(source, "test.il");
