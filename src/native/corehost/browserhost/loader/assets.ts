@@ -1,21 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, InstantiateWasmSuccessCallback, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource } from "./types";
+import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, InstantiateWasmSuccessCallback, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource, LoadBootResourceCallback } from "./types";
 
 import { dotnetAssert, dotnetLogger, dotnetGetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module } from "./cross-module";
 import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_NODE } from "./per-module";
 import { createPromiseCompletionSource, delay } from "./promise-completion-source";
 import { locateFile, makeURLAbsoluteWithApplicationBase } from "./bootstrap";
 import { fetchLike } from "./polyfills";
-import { loadBootResourceCallback } from "./host-builder";
 import { loaderConfig } from "./config";
 
 let throttlingPCS: PromiseCompletionSource<void> | undefined;
-// in order to prevent net::ERR_INSUFFICIENT_RESOURCES if we start downloading too many files at same time
 let currentParallelDownloads = 0;
 let downloadedAssetsCount = 0;
 let totalAssetsToDownload = 0;
+let loadBootResourceCallback: LoadBootResourceCallback | undefined = undefined;
+
+export function setLoadBootResourceCallback(callback: LoadBootResourceCallback | undefined): void {
+    loadBootResourceCallback = callback;
+}
 
 export let wasmBinaryPromise: Promise<Response> | undefined = undefined;
 export const nativeModulePromiseController = createPromiseCompletionSource<EmscriptenModuleInternal>(() => {
@@ -224,6 +227,7 @@ async function loadResourceRetry(asset: AssetEntryInternal): Promise<Response> {
     }
 }
 
+// in order to prevent net::ERR_INSUFFICIENT_RESOURCES if we start downloading too many files at same time on a device with low resources
 async function loadResourceThrottle(asset: AssetEntryInternal): Promise<Response> {
     while (throttlingPCS) {
         await throttlingPCS.promise;

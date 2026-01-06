@@ -3,7 +3,6 @@
 
 import type { InternalExchange, BrowserUtilsExports, RuntimeAPI, BrowserUtilsExportsTable } from "./types";
 import { InternalExchangeIndex } from "../types";
-import { } from "./cross-module"; // ensure ambient symbols are declared
 
 import GitHash from "consts:gitHash";
 
@@ -72,4 +71,4 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
 }
 
 // see also `reserved` in `rollup.config.defines.js`
-export * as cross from "./cross-module";
+export * as _ems_ambient_ from "./cross-module";

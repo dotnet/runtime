@@ -3,7 +3,7 @@
 
 import type { InternalExchange, BrowserHostExports, RuntimeAPI, BrowserHostExportsTable } from "./types";
 import { InternalExchangeIndex } from "./types";
-import { } from "./cross-linked"; // ensure ambient symbols are declared
+import { _ems_ } from "../../../libs/Common/JavaScript/ems-ambient";
 
 import GitHash from "consts:gitHash";
 
@@ -29,7 +29,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         initializeCoreCLR,
         registerPdbBytes,
     });
-    dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
+    _ems_.dotnetUpdateInternals(internals, _ems_.dotnetUpdateInternalsSubscriber);
     function browserHostExportsToTable(map: BrowserHostExports): BrowserHostExportsTable {
         // keep in sync with browserHostExportsFromTable()
         return [
