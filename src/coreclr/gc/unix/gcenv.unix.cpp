@@ -543,8 +543,7 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
 {
 #ifdef TARGET_WASM
     return true;
-#endif // TARGET_WASM
-
+#else // !TARGET_WASM
     int st = EINVAL;
 
 #if defined(MADV_DONTDUMP) || defined(HAVE_MADV_FREE)
@@ -574,6 +573,7 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
 #endif // defined(HAVE_POSIX_MADVISE) && !defined(MADV_DONTDUMP)
 
     return (st == 0);
+#endif // !TARGET_WASM
 }
 
 // Check if the OS supports write watching
