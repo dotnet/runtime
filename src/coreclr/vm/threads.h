@@ -2102,8 +2102,8 @@ public:
     // SKIPFUNCLETS includes functionless frames but excludes all funclets and everything between funclets and their parent methods
     #define SKIPFUNCLETS                    0x0002
 
-    #define POPFRAMES                       0x0004
-
+    // UNUSED                               0x0004
+    
     #define QUICKUNWIND                     0x0008 // do not restore all registers during unwind
 
     #define HANDLESKIPPEDFRAMES             0x0010 // temporary to handle skipped frames for appdomain unload
