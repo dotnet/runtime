@@ -11435,6 +11435,37 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     }
                 }
 
+                // If the call we're inlining was flagged as part of an enumerator
+                // GDV, and we're replacing it with another call, flag that call instead.
+                //
+                // This handles cases like ReadOnlyArray where GetEnumerator is
+                // expressed via another GetEnumerator call.
+                //
+                if ((info.compRetType == TYP_REF) && hasImpEnumeratorGdvLocalMap())
+                {
+                    GenTree* const                     origCall      = impInlineInfo->iciCall;
+                    Compiler::NodeToUnsignedMap* const map           = getImpEnumeratorGdvLocalMap();
+                    unsigned                           enumeratorLcl = BAD_VAR_NUM;
+
+                    if (map->Lookup(origCall, &enumeratorLcl))
+                    {
+                        GenTree* returnValue = op2;
+                        if (returnValue->OperIs(GT_RET_EXPR))
+                        {
+                            returnValue = returnValue->AsRetExpr()->gtInlineCandidate;
+                        }
+
+                        if (returnValue->IsCall())
+                        {
+                            JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", dspTreeID(returnValue),
+                                    enumeratorLcl);
+
+                            map->Remove(origCall);
+                            map->Set(returnValue, enumeratorLcl);
+                        }
+                    }
+                }
+
                 if (fgNeedReturnSpillTemp())
                 {
                     assert(info.compRetNativeType != TYP_VOID &&
