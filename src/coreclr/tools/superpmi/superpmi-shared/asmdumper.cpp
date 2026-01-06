@@ -47,7 +47,43 @@ void ASMDumper::DumpToFile(FILE* fp, MethodContext* mc, CompileResult* cr)
     cr->applyRelocs(&rc, coldCodeBlock, coldCodeSize, orig_coldCodeBlock);
     cr->applyRelocs(&rc, roDataBlock, roDataSize, orig_roDataBlock);
 
+#ifdef USE_MSVCDIS
+
+#ifdef TARGET_AMD64
+    DIS* disasm = DIS::PdisNew(DIS::distX8664);
+#elif TARGET_X86
+    DIS* disasm = DIS::PdisNew(DIS::distX86);
+#endif
+    size_t offset = 0;
+    while (offset < hotCodeSize)
+    {
+        DIS::INSTRUCTION instr;
+        DIS::OPERAND     ops[3];
+
+        size_t instrSize = disasm->CbDisassemble(0, (void*)(hotCodeBlock + offset), 15);
+        if (instrSize == 0)
+        {
+            LogWarning("Zero sized instruction");
+            break;
+        }
+        disasm->FDecode(&instr, ops, 3);
+
+        WCHAR instrMnemonic[64]; // I never know how much to allocate...
+        disasm->CchFormatInstr(instrMnemonic, 64);
+        std::string instrMnemonicUtf8 = ConvertToUtf8(instrMnemonic);
+        fprintf(fp, "\r\n%p %s   ; ", (void*)((size_t)orig_hotCodeBlock + offset), instrMnemonicUtf8.c_str());
+        for (unsigned int i = 0; i < instrSize; i++)
+            fprintf(fp, "%02x ", *((BYTE*)(hotCodeBlock + offset + i)));
+        offset += instrSize;
+    }
+
+    delete disasm;
+
+#else // !USE_MSVCDIS
+
     fprintf(fp, ";; No disassembler available");
+
+#endif // !USE_MSVCDIS
 
     fflush(fp);
 }
