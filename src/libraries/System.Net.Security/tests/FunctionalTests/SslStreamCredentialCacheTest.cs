@@ -41,9 +41,6 @@ namespace System.Net.Security.Tests
                     // https://technet.microsoft.com/en-us/library/hh831771.aspx#BKMK_Changes2012R2
                     // Starting with Windows 8, the "Management of trusted issuers for client authentication" has changed:
                     // The behavior to send the Trusted Issuers List by default is off.
-                    //
-                    // by the server using certificates from the Trusted Root Authorities certificate store.
-                    // The client side will use the Trusted Issuers List, if not empty, to filter proposed certificates.
 
                     Assert.True(client.IsMutuallyAuthenticated);
                     Assert.True(server.IsMutuallyAuthenticated);
