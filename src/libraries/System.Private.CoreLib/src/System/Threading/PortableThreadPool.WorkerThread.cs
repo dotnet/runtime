@@ -150,8 +150,10 @@ namespace System.Threading
                     }
 
                     // We could not find more work in the queue and will try to stop being active.
-                    // One caveat - in overflow state we may have cleared a work request without asking for a worker.
-                    // Thus if there is uncleared overflow, one thread will be back for another round - without consuming a wake.
+                    // One caveat - in Saturated state we have seen a thread request but could not signal for a worker
+                    // to come and see to it. Thus in Saturated state, one thread will clear the state and will come
+                    // back for another try to clear the thread request and do Dispatch - without consuming a signal.
+                    // See `TryIncrementProcessingWork` for details about Saturated state.
                 } while (!TryRemoveWorkingWorker(threadPoolInstance));
             }
 
@@ -217,8 +219,9 @@ namespace System.Threading
 
             /// <summary>
             /// Tries to reduce the number of working workers by one.
-            /// If we are in a state of overflow, clears the overflow instead and returns false.
+            /// If we are in a Saturated state, clears the state instead and returns false.
             /// Returns true if number of active threads was actually reduced.
+            /// See `TryDecrementProcessingWork` for details about Saturated state.
             /// </summary>
             private static bool TryRemoveWorkingWorker(PortableThreadPool threadPoolInstance)
             {
@@ -238,9 +241,10 @@ namespace System.Threading
                 }
             }
 
-            /// In a state of overflow does nothing.
+            /// In Saturated state does nothing.
             /// Otherwise increments the active worker count and signals the semaphore.
-            /// Incrementing the count turns on the overflow state if the active thread limit is reached.
+            /// Incrementing the count turns on the Saturated state if the active thread limit is reached.
+            /// See `TryIncrementProcessingWork` for details about Saturated state.
             internal static void MaybeAddWorkingWorker(PortableThreadPool threadPoolInstance)
             {
                 ThreadCounts oldCounts, newCounts;

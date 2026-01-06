@@ -45,13 +45,13 @@ namespace System.Threading
             }
 
             // Returns "true" if adding NumProcessingWork has reached the limit.
-            // NOTE: it is possible to have overflow and NumProcessingWork under the limit
-            // at the same time if the limit has been changed afterwards. That is ok.
+            // Note: it is possible to be in Saturated state while NumProcessingWork is under
+            // the limit if the limit has been changed after the state was set. That is ok.
             // While changes in NumProcessingWork need to be matched with semaphore Wait/Signal,
-            // the redundantly set overflow is mostly harmless and should self-correct when
+            // the redundantly set Saturated is mostly harmless and should self-correct when
             // a worker that sees no work calls TryDecrementProcessingWork, possibly at a cost of
             // redundant check for work.
-            public bool IsOverflow
+            public bool IsSaturated
             {
                 get
                 {
@@ -61,8 +61,8 @@ namespace System.Threading
 
             /// <summary>
             /// Tries to increase the number of threads processing work items by one.
-            /// If at or above goal, returns false and sets overflow flag instead.
-            /// NOTE: only if "true" is returned the NumProcessingWork is incremented.
+            /// If at or above goal, returns false and sets Saturated flag instead.
+            /// Note: only if "true" is returned the NumProcessingWork is incremented.
             /// </summary>
             public bool TryIncrementProcessingWork()
             {
@@ -83,13 +83,13 @@ namespace System.Threading
 
             /// <summary>
             /// Tries to reduce the number of threads processing work items by one.
-            /// If in an overflow state, clears the overflow flag and returns false.
-            /// NOTE: only if "true" is returned the NumProcessingWork is decremented.
+            /// If in a Saturated state, clears the Saturated state and returns false.
+            /// Note: only if "true" is returned the NumProcessingWork is decremented.
             /// </summary>
             public bool TryDecrementProcessingWork()
             {
                 Debug.Assert(NumProcessingWork > 0);
-                if (IsOverflow)
+                if (IsSaturated)
                 {
                     _data &= ~(1ul << 63);
                     return false;
