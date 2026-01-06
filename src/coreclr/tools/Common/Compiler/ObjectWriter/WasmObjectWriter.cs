@@ -15,6 +15,7 @@ using Internal.Text;
 using Internal.TypeSystem;
 
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
+using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -23,7 +24,7 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     internal sealed class WasmObjectWriter : ObjectWriter
     {
-        protected override CodeDataLayoutMode LayoutMode => CodeDataLayoutMode.Separate;
+        protected override CodeDataLayout LayoutMode => CodeDataLayout.Separate;
 
         public WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
             : base(factory, options, outputInfoBuilder)
@@ -73,7 +74,7 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
-            int idx = _sectionNameToIndex[ObjectNodeSection.WasmExportSection.Name];
+            int idx = _sectionNameToIndex[new Utf8String(ObjectNodeSection.WasmExportSection.Name)];
             return _sections[idx];
         }
 
@@ -91,7 +92,7 @@ namespace ILCompiler.ObjectWriter
                 writer.EmitData(methodBody.Data);
             }
 
-            int idx = _sectionNameToIndex[name];
+            int idx = _sectionNameToIndex[new Utf8String(name)];
             return _sections[idx];
         }
 
@@ -145,7 +146,7 @@ namespace ILCompiler.ObjectWriter
                 encodedSize += segment.EncodeSize();
             }
 
-            return new WasmDataSection(segments, ObjectNodeSection.WasmDataSection.Name);
+            return new WasmDataSection(segments, new Utf8String(ObjectNodeSection.WasmDataSection.Name));
         }
 
         private List<WasmSection> _sections = new();
@@ -177,10 +178,10 @@ namespace ILCompiler.ObjectWriter
         private protected override void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream)
         {
             WasmSectionType sectionType = GetWasmSectionType(section);
-            WasmSection wasmSection = new WasmSection(sectionType, sectionStream, section.Name);
+            WasmSection wasmSection = new WasmSection(sectionType, sectionStream, new Utf8String(section.Name));
             Debug.Assert(_sections.Count == sectionIndex);
             _sections.Add(wasmSection);
-            _sectionNameToIndex.Add(section.Name, sectionIndex);
+            _sectionNameToIndex.Add(new Utf8String(section.Name), sectionIndex);
         }
 
         private protected override void EmitSectionsAndLayout()

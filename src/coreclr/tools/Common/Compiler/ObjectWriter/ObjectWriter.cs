@@ -15,12 +15,13 @@ using Internal.TypeSystem;
 using static ILCompiler.DependencyAnalysis.ObjectNode;
 using static ILCompiler.DependencyAnalysis.RelocType;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
+using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
 
 namespace ILCompiler.ObjectWriter
 {
     public abstract partial class ObjectWriter
     {
-        protected virtual CodeDataLayoutMode LayoutMode => CodeDataLayoutMode.Unified;
+        protected virtual CodeDataLayout LayoutMode => CodeDataLayout.Unified;
         private protected sealed record SymbolDefinition(int SectionIndex, long Value, int Size = 0, bool Global = false);
         protected sealed record SymbolicRelocation(long Offset, RelocType Type, Utf8String SymbolName, long Addend = 0);
         private sealed record BlockToRelocate(int SectionIndex, long Offset, byte[] Data, Relocation[] Relocations);
@@ -426,7 +427,7 @@ namespace ILCompiler.ObjectWriter
 #endif
 
                 // TODO-WASM: handle AssemblyStub case here
-                if (node is IMethodBodyNode methodNode && LayoutMode is CodeDataLayoutMode.Separate)
+                if (node is IMethodBodyNode methodNode && LayoutMode is CodeDataLayout.Separate)
                 {
                     RecordMethod((ISymbolDefinitionNode)node, methodNode.Method, nodeContents);
                 }
@@ -519,9 +520,9 @@ namespace ILCompiler.ObjectWriter
 
                 // Write the data if:
                 // 1. We are in unified code/data layout mode so separating code and data nodes doesn't matter, OR
-                // 2. We are writing non-text nodes
-                // Note that this has to be done last as not to advance the section writer position. 
-                if (LayoutMode == CodeDataLayoutMode.Unified || node.GetSection(_nodeFactory) != ObjectNodeSection.TextSection)
+                // 2. We are in separate code data layout mode but are writing data nodes
+                // Note that this has to be done last as not to advance the section writer position.
+                if (LayoutMode == CodeDataLayout.Unified || node.GetSection(_nodeFactory) != ObjectNodeSection.TextSection)
                 {
                     sectionWriter.EmitData(nodeContents.Data);
                 }
@@ -635,7 +636,7 @@ namespace ILCompiler.ObjectWriter
 
         private protected virtual void RecordMethod(ISymbolDefinitionNode node, MethodDesc desc, ObjectData methodData)
         {
-            if (LayoutMode != CodeDataLayoutMode.Separate)
+            if (LayoutMode != CodeDataLayout.Separate)
             {
                 throw new InvalidOperationException($"RecordMethod() must only be called on platforms with separated code and data, arch = {_nodeFactory.Target.Architecture}");
             }
