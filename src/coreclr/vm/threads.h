@@ -627,7 +627,7 @@ public:
         TSNC_DebuggerSleepWaitJoin      = 0x04000000, // Indicates to the debugger that this thread is in a sleep wait or join state
                                                       // This almost mirrors the TS_Interruptible state however that flag can change
                                                       // during GC-preemptive mode whereas this one cannot.
-
+        // unused                       = 0x08000000,
         TSNC_TSLTakenForStartup         = 0x10000000, // The ThreadStoreLock (TSL) is held by another mechanism during
                                                       // thread startup so can be skipped.
 
