@@ -132,7 +132,7 @@ export async function fetchPdb(asset: AssemblyAsset): Promise<void> {
         asset.resolvedUrl = locateFile(assetInternal.name);
     }
     assetInternal.behavior = "pdb";
-    assetInternal.isOptional == assetInternal.isOptional || loaderConfig.ignorePdbLoadErrors;
+    assetInternal.isOptional = assetInternal.isOptional || loaderConfig.ignorePdbLoadErrors;
     const bytes = await fetchBytes(assetInternal);
     await nativeModulePromiseController.promise;
 
