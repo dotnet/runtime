@@ -10,7 +10,6 @@ using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-using FluentAssertions;
 using Microsoft.NET.HostModel.MachO.CodeSign;
 using Microsoft.NET.HostModel.MachO;
 using Microsoft.DotNet.Cli.Build.Framework;
@@ -54,16 +53,11 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
 
                 byte[] binaryPathBlob = Encoding.UTF8.GetBytes(appBinaryFilePath);
                 byte[] result = File.ReadAllBytes(destinationFilePath);
-                result
+                Assert.Equal(binaryPathBlob, result
                     .Skip(WindowsFileHeader.Length)
-                    .Take(binaryPathBlob.Length)
-                    .Should()
-                    .BeEquivalentTo(binaryPathBlob);
+                    .Take(binaryPathBlob.Length));
 
-                BitConverter
-                    .ToUInt16(result, SubsystemOffset)
-                    .Should()
-                    .Be((ushort)Subsystem.WindowsCui);
+                Assert.Equal((ushort)Subsystem.WindowsCui, BitConverter.ToUInt16(result, SubsystemOffset));
             }
         }
 
@@ -86,7 +80,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                         destinationFilePath,
                         appBinaryFilePath));
 
-                File.Exists(destinationFilePath).Should().BeFalse();
+                Assert.False(File.Exists(destinationFilePath));
             }
         }
 
@@ -105,7 +99,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                         destinationFilePath,
                         appBinaryFilePath));
 
-                File.Exists(destinationFilePath).Should().BeFalse();
+                Assert.False(File.Exists(destinationFilePath));
             }
         }
 
@@ -129,7 +123,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                         "app.dll",
                         dotNetSearchOptions: options));
 
-                File.Exists(destinationFilePath).Should().BeFalse();
+                Assert.False(File.Exists(destinationFilePath));
             }
         }
 
@@ -153,7 +147,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                         "app.dll",
                         dotNetSearchOptions: options));
 
-                File.Exists(destinationFilePath).Should().BeFalse();
+                Assert.False(File.Exists(destinationFilePath));
             }
         }
 
@@ -172,10 +166,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                     appBinaryFilePath,
                     windowsGraphicalUserInterface: true);
 
-                BitConverter
-                   .ToUInt16(File.ReadAllBytes(destinationFilePath), SubsystemOffset)
-                   .Should()
-                   .Be((ushort)Subsystem.WindowsGui);
+                Assert.Equal((ushort)Subsystem.WindowsGui, BitConverter.ToUInt16(File.ReadAllBytes(destinationFilePath), SubsystemOffset));
 
                 Assert.Equal((ushort)Subsystem.WindowsGui, PEUtils.GetWindowsGraphicalUserInterfaceBit(destinationFilePath));
             }
@@ -202,7 +193,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                         appBinaryFilePath,
                         windowsGraphicalUserInterface: true));
 
-                File.Exists(destinationFilePath).Should().BeFalse();
+                Assert.False(File.Exists(destinationFilePath));
             }
         }
 
@@ -227,7 +218,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                         appBinaryFilePath,
                         windowsGraphicalUserInterface: true));
 
-                File.Exists(destinationFilePath).Should().BeFalse();
+                Assert.False(File.Exists(destinationFilePath));
             }
         }
 
@@ -256,9 +247,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
 
             // assert that the generated app has executable permissions
             // despite different permissions on the template binary.
-            File.GetUnixFileMode(destinationFilePath)
-                .Should()
-                .Be(expectedPermissions);
+            Assert.Equal(expectedPermissions, File.GetUnixFileMode(destinationFilePath));
         }
 
         [Theory]
@@ -282,7 +271,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                    enableMacOSCodeSign: true);
 
                 // Validate that there is a signature present in the apphost Mach file
-                SigningTests.IsSigned(destinationFilePath).Should().BeTrue();
+                Assert.True(SigningTests.IsSigned(destinationFilePath));
             }
         }
 
@@ -345,7 +334,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                    enableMacOSCodeSign: true);
 
                 // Validate that there is a signature present in the apphost Mach file
-                SigningTests.IsSigned(destinationFilePath).Should().BeTrue();
+                Assert.True(SigningTests.IsSigned(destinationFilePath));
             }
         }
 
@@ -370,7 +359,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                 }
 
                 var (exitCode, stdErr) = Codesign.Run("-d", destinationFilePath);
-                stdErr.Should().Contain($"{Path.GetFullPath(destinationFilePath)}: code object is not signed at all");
+                Assert.Contains($"{Path.GetFullPath(destinationFilePath)}: code object is not signed at all");
             }
         }
 
