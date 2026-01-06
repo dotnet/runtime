@@ -34,7 +34,6 @@ namespace System.Diagnostics.Tests
         [InlineData("Microsoft-Windows-PowerShell/Operational", true)]
         public void ReadEventPsh(string logName, bool useQuery)
         {
-
             ReadEvent(logName, useQuery);
         }
 
