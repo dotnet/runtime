@@ -117,7 +117,6 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void EventLogRecord_CheckProperties_RemainSame()
         {
-
             SecurityIdentifier userId;
             byte? version, level;
             short? opcode;
