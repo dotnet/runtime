@@ -426,8 +426,8 @@ namespace System.Formats.Tar.Tests
         {
             // Regression test for https://github.com/dotnet/runtime/issues/89203 (async version)
             // Disposing the entry's DataStream should not prevent advancing to the next entry.
-            using var archive = new MemoryStream();
-            await using (var writer = new TarWriter(archive, leaveOpen: true))
+            await using MemoryStream archive = new MemoryStream();
+            await using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
             {
                 var entry1 = new PaxTarEntry(TarEntryType.RegularFile, "file1.txt");
                 entry1.DataStream = new MemoryStream(new byte[] { 1, 2, 3, 4, 5 });
@@ -439,8 +439,8 @@ namespace System.Formats.Tar.Tests
             }
 
             archive.Position = 0;
-            using var unseekable = new WrappedStream(archive, archive.CanRead, archive.CanWrite, canSeek: false);
-            await using var reader = new TarReader(unseekable);
+            using WrappedStream unseekable = new WrappedStream(archive, archive.CanRead, archive.CanWrite, canSeek: false);
+            await using TarReader reader = new TarReader(unseekable);
 
             TarEntry entry = await reader.GetNextEntryAsync(copyData: false);
             Assert.NotNull(entry);
