@@ -90,17 +90,34 @@ export function iife2fe() {
             if (name.endsWith(".map")) return;
             const asset = bundle[name];
             const code = asset.code;
-            //throw new Error("iife2fe " + code);
             asset.code = code
+                // spaces are there to preserve source mappings
                 .replace(/}\({}\);/, "}    ;") // }({}); -> }    ;
                 .replace(/}\)\({}\);/, "})     ;"); // })({}); -> })     ;
         }
     };
 }
 
+// Drop _ems_ symbol from emscripten libraries
+export function emsAmbient() {
+    return {
+        name: "emsAmbient",
+        generateBundle: (options, bundle) => {
+            const name = Object.keys(bundle)[0];
+            if (name.endsWith(".map")) return;
+            const asset = bundle[name];
+            const code = asset.code;
+            //throw new Error("iife2fe " + code);
+            asset.code = code
+                .replace(/_ems_\./g, "");
+        }
+    };
+}
+
+
 // force always unix line ending
 export const alwaysLF = () => ({
-    name: "writeOnChange",
+    name: "alwaysLF",
     generateBundle: (options, bundle) => {
         const name = Object.keys(bundle)[0];
         const asset = bundle[name];
@@ -147,18 +164,6 @@ function checkFileExists(file) {
 }
 
 export function onwarn(warning) {
-    if (warning.code === "CIRCULAR_DEPENDENCY") {
-        return;
-    }
-
-    if (warning.code === "UNRESOLVED_IMPORT" && warning.exporter === "process") {
-        return;
-    }
-
-    if (warning.code === "PLUGIN_WARNING" && warning.message.indexOf("sourcemap") !== -1) {
-        return;
-    }
-
     // eslint-disable-next-line no-console
     console.warn(`(!) ${warning.toString()} ${warning.code}`);
 }
