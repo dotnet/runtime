@@ -176,7 +176,7 @@ function loadResource(asset: AssetEntryInternal): Promise<Response> {
         // `response.arrayBuffer()` can't be called twice.
         return loadResourceFetch(asset);
     }
-    if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE || asset.resolvedUrl && asset.resolvedUrl.indexOf("file://") != -1) {
+    if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE || asset.resolvedUrl && asset.resolvedUrl.indexOf("file://") !== -1) {
         // no need to retry or throttle local file access
         return loadResourceFetch(asset);
     }
