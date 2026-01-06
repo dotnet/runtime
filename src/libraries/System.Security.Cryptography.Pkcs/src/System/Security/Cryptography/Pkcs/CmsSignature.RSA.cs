@@ -362,7 +362,7 @@ namespace System.Security.Cryptography.Pkcs
                 {
                     signatureAlgorithm = Oids.RsaPss;
 
-#if NET10_0_OR_GREATER
+#if NET11_0_OR_GREATER
                     if (SignaturePadding.PssSaltLength != RSASignaturePadding.PssSaltLengthIsHashLength)
                     {
                         signatureParameters = GetSignaturePaddingForCustomPssSaltLength(certificate, hashAlgorithmName);
@@ -404,7 +404,7 @@ namespace System.Security.Cryptography.Pkcs
                 return result;
             }
 
-#if NET10_0_OR_GREATER
+#if NET11_0_OR_GREATER
             private byte[] GetSignaturePaddingForCustomPssSaltLength(X509Certificate2 certificate, HashAlgorithmName hashAlgorithmName)
             {
                 string digestOid = PkcsHelpers.GetOidFromHashAlgorithm(hashAlgorithmName);

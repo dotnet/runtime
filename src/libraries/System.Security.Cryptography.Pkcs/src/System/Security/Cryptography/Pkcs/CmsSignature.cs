@@ -94,7 +94,7 @@ namespace System.Security.Cryptography.Pkcs
                         }
                         else if (rsaSignaturePadding.Mode == RSASignaturePaddingMode.Pss)
                         {
-#if NET10_0_OR_GREATER
+#if NET11_0_OR_GREATER
                             if (rsaSignaturePadding.PssSaltLength != RSASignaturePadding.PssSaltLengthIsHashLength)
                             {
                                 return new RSAPssCmsSignature(rsaSignaturePadding.PssSaltLength);
