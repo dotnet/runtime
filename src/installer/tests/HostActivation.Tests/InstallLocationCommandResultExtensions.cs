@@ -16,12 +16,12 @@ namespace HostActivation.Tests
     {
         private static bool IsRunningInWoW64(string rid) => OperatingSystem.IsWindows() && Environment.Is64BitOperatingSystem && rid.Equals("win-x86");
 
-        public static CommandResultAssertions HaveUsedDotNetRootInstallLocation(this CommandResultAssertions assertion, string installLocation, string rid)
+        public static void AssertUsedDotNetRootInstallLocation(this CommandResult result, string installLocation, string rid)
         {
-            return assertion.HaveUsedDotNetRootInstallLocation(installLocation, rid, null);
+            result.AssertUsedDotNetRootInstallLocation(installLocation, rid, null);
         }
 
-        public static CommandResultAssertions HaveUsedDotNetRootInstallLocation(this CommandResultAssertions assertion,
+        public static void AssertUsedDotNetRootInstallLocation(this CommandResult result,
             string installLocation,
             string rid,
             string arch)
@@ -33,37 +33,37 @@ namespace HostActivation.Tests
             string expectedEnvironmentVariable = !string.IsNullOrEmpty(arch) ? $"DOTNET_ROOT_{arch.ToUpper()}" :
                 IsRunningInWoW64(rid) ? "DOTNET_ROOT(x86)" : "DOTNET_ROOT";
 
-            return assertion.HaveStdErrContaining($"Using environment variable {expectedEnvironmentVariable}=[{installLocation}] as runtime location.");
+            Assert.Contains($"Using environment variable {expectedEnvironmentVariable}=[{installLocation}] as runtime location.", result.StdErr);
         }
 
-        public static CommandResultAssertions HaveUsedRegisteredInstallLocation(this CommandResultAssertions assertion, string installLocation)
+        public static void AssertUsedRegisteredInstallLocation(this CommandResult result, string installLocation)
         {
-            return assertion.HaveStdErrContaining($"Found registered install location '{installLocation}'.");
+            Assert.Contains($"Found registered install location '{installLocation}'.", result.StdErr);
         }
 
-        public static CommandResultAssertions HaveUsedGlobalInstallLocation(this CommandResultAssertions assertion, string installLocation)
+        public static void AssertUsedGlobalInstallLocation(this CommandResult result, string installLocation)
         {
-            return assertion.HaveStdErrContaining($"Using global install location [{installLocation}]");
+            Assert.Contains($"Using global install location [{installLocation}]", result.StdErr);
         }
 
-        public static CommandResultAssertions HaveUsedAppLocalInstallLocation(this CommandResultAssertions assertion, string installLocation)
+        public static void AssertUsedAppLocalInstallLocation(this CommandResult result, string installLocation)
         {
-            return assertion.HaveStdErrContaining($"Using app-local location [{installLocation}]");
+            Assert.Contains($"Using app-local location [{installLocation}]", result.StdErr);
         }
 
-        public static CommandResultAssertions HaveUsedAppRelativeInstallLocation(this CommandResultAssertions assertion, string installLocation)
+        public static void AssertUsedAppRelativeInstallLocation(this CommandResult result, string installLocation)
         {
-            return assertion.HaveStdErrContaining($"Using app-relative location [{installLocation}]");
+            Assert.Contains($"Using app-relative location [{installLocation}]", result.StdErr);
         }
 
-        public static CommandResultAssertions HaveLookedForDefaultInstallLocation(this CommandResultAssertions assertion, string installLocationPath)
+        public static void AssertLookedForDefaultInstallLocation(this CommandResult result, string installLocationPath)
         {
-            return assertion.HaveStdErrContaining($"Looking for install_location file in '{Path.Combine(installLocationPath, "install_location")}'.");
+            Assert.Contains($"Looking for install_location file in '{Path.Combine(installLocationPath, "install_location")}'.", result.StdErr);
         }
 
-        public static CommandResultAssertions HaveLookedForArchitectureSpecificInstallLocation(this CommandResultAssertions assertion, string installLocationPath, string architecture)
+        public static void AssertLookedForArchitectureSpecificInstallLocation(this CommandResult result, string installLocationPath, string architecture)
         {
-            return assertion.HaveStdErrContaining($"Looking for architecture-specific install_location file in '{Path.Combine(installLocationPath, "install_location_" + architecture.ToLowerInvariant())}'.");
+            Assert.Contains($"Looking for architecture-specific install_location file in '{Path.Combine(installLocationPath, "install_location_" + architecture.ToLowerInvariant())}'.", result.StdErr);
         }
     }
 }
