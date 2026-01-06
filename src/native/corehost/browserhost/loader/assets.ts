@@ -234,7 +234,7 @@ async function loadResourceThrottle(asset: AssetEntryInternal): Promise<Response
     }
     try {
         ++currentParallelDownloads;
-        if (currentParallelDownloads == loaderConfig.maxParallelDownloads) {
+        if (currentParallelDownloads === loaderConfig.maxParallelDownloads) {
             dotnetLogger.debug("Throttling further parallel downloads");
             throttlingPCS = createPromiseCompletionSource<void>();
         }

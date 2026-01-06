@@ -8,6 +8,7 @@ const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map()
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function registerPdbBytes(bytes: Uint8Array, asset: { name: string, virtualPath: string }) {
+    // WASM-TODO: https://github.com/dotnet/runtime/issues/122921
     throw new Error("Not implemented");
 }
 
