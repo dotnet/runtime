@@ -19,7 +19,7 @@
         const exports = {};
         libBrowserHost(exports);
 
-        let commonDeps = ["$libBrowserHostFn", "$DOTNET", "$DOTNET_INTEROP", "$ENV", "$FS", "$NODEFS", "wasm_load_icu_data"];
+        let commonDeps = ["$libBrowserHostFn", "$DOTNET", "$DOTNET_INTEROP", "$ENV", "$FS", "$NODEFS", "wasm_load_icu_data", "BrowserHost_InitializeCoreCLR", "BrowserHost_ExecuteAssembly"];
         const lib = {
             $BROWSER_HOST: {
                 selfInitialize: () => {

@@ -192,11 +192,11 @@ namespace System.Runtime.InteropServices
             RuntimeAssembly? startingAssembly;
             if (AppContext.GetData("System.Runtime.InteropServices.TypeMappingEntryAssembly") is string entryAssemblyName)
             {
-                startingAssembly = Assembly.Load(entryAssemblyName) as RuntimeAssembly;
+                startingAssembly = (RuntimeAssembly?)Assembly.Load(entryAssemblyName);
             }
             else
             {
-                startingAssembly = Assembly.GetEntryAssembly() as RuntimeAssembly;
+                startingAssembly = (RuntimeAssembly?)Assembly.GetEntryAssembly();
             }
 
             if (startingAssembly is null)

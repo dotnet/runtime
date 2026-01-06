@@ -3687,9 +3687,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
     //      saved EBP                       <-- EBP points here
     //      other callee-saved registers    // InfoHdrSmall.savedRegsCountExclFP specifies this size
     //      optional GS cookie              // InfoHdrSmall.security is 1 if this exists
-    // if FEATURE_EH_FUNCLETS
     //      issynchronized bool if it is a synchronized method
-    // endif // FEATURE_EH_FUNCLETS
     //      LocAllocSP slot
     //      -- lower addresses --
     //
@@ -5246,28 +5244,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    /* If we need space for slots for shadow SP, reserve it now */
-    if (!UsesFunclets() && ehNeedsShadowSPslots())
-    {
-        noway_assert(codeGen->isFramePointerUsed()); // else offsets of locals of frameless methods will be incorrect
-        if (!lvaReportParamTypeArg())
-        {
-#ifndef JIT32_GCENCODER
-            if (!lvaKeepAliveAndReportThis())
-#endif
-            {
-                // In order to keep the gc info encoding smaller, the VM assumes that all methods with EH
-                // have also saved space for a ParamTypeArg, so we need to do that here
-                lvaIncrementFrameSize(TARGET_POINTER_SIZE);
-                stkOffs -= TARGET_POINTER_SIZE;
-            }
-        }
-        stkOffs =
-            lvaAllocLocalAndSetVirtualOffset(lvaShadowSPslotsVar, lvaLclStackHomeSize(lvaShadowSPslotsVar), stkOffs);
-    }
-#endif // FEATURE_EH_WINDOWS_X86
-
     if (compGSReorderStackLayout)
     {
         assert(getNeedsGSSecurityCookie());
@@ -5469,9 +5445,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             // These need to be located as the very first variables (highest memory address)
             // and so they have already been assigned an offset
             if (
-#if defined(FEATURE_EH_WINDOWS_X86)
-                lclNum == lvaShadowSPslotsVar ||
-#endif // FEATURE_EH_WINDOWS_X86
 #ifdef JIT32_GCENCODER
                 lclNum == lvaLocAllocSPvar ||
 #endif // JIT32_GCENCODER

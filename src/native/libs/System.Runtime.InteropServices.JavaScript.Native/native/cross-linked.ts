@@ -3,3 +3,6 @@
 
 import { } from "../../Common/JavaScript/cross-linked";
 
+declare global {
+    export const DOTNET_INTEROP: any;
+}
