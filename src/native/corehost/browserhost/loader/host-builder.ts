@@ -5,11 +5,11 @@ import type { DotnetHostBuilder, LoaderConfig, RuntimeAPI, LoadBootResourceCallb
 
 import { Module, dotnetApi } from "./cross-module";
 import { getLoaderConfig, mergeLoaderConfig, validateLoaderConfig } from "./config";
-import { createRuntime } from "./bootstrap";
+import { createRuntime } from "./run";
 import { exit } from "./exit";
 
 let applicationArguments: string[] | undefined = [];
-let loadBootResourceCallback: LoadBootResourceCallback | undefined = undefined;
+export let loadBootResourceCallback: LoadBootResourceCallback | undefined = undefined;
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 export class HostBuilder implements DotnetHostBuilder {
@@ -102,7 +102,7 @@ export class HostBuilder implements DotnetHostBuilder {
     async download(): Promise<void> {
         try {
             validateLoaderConfig();
-            return createRuntime(true, loadBootResourceCallback);
+            return createRuntime(true);
         } catch (err) {
             exit(1, err);
             throw err;
@@ -112,7 +112,7 @@ export class HostBuilder implements DotnetHostBuilder {
     async create(): Promise<RuntimeAPI> {
         try {
             validateLoaderConfig();
-            await createRuntime(false, loadBootResourceCallback);
+            await createRuntime(false);
             this.dotnetApi = dotnetApi;
             return this.dotnetApi;
         } catch (err) {
@@ -121,7 +121,28 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    async run(): Promise<number> {
+    /**
+     * @deprecated use runMain() or runMainAndExit() instead.
+     */
+    run(): Promise<number> {
+        return this.runMain();
+    }
+
+    async runMain(): Promise<number> {
+        try {
+            if (!this.dotnetApi) {
+                await this.create();
+            }
+            validateLoaderConfig();
+            const config = getLoaderConfig();
+            return this.dotnetApi!.runMain(config.mainAssemblyName, applicationArguments);
+        } catch (err) {
+            exit(1, err);
+            throw err;
+        }
+    }
+
+    async runMainAndExit(): Promise<number> {
         try {
             if (!this.dotnetApi) {
                 await this.create();

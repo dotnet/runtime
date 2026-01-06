@@ -9,6 +9,9 @@
 .assembly extern xunit.core {}
 
 .assembly extern mscorlib { }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
+
 .assembly calli_excep { }
 .namespace JitTest
 {

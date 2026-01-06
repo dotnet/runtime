@@ -1169,7 +1169,7 @@ GenTree* Compiler::impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags*
 //    for full enregistration, e.g. TYP_SIMD16. If the size of the struct is already known
 //    call structSizeMightRepresentSIMDType to determine if this api needs to be called.
 //
-var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoType* pSimdBaseJitType)
+var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* pSimdBaseJitType)
 {
     assert(structHnd != NO_CLASS_HANDLE);
 
@@ -1186,14 +1186,14 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoTyp
         if (structSizeMightRepresentSIMDType(originalSize))
         {
             unsigned int sizeBytes;
-            CorInfoType  simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
-            if (simdBaseJitType != CORINFO_TYPE_UNDEF)
+            var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
+            if (simdBaseType != TYP_UNDEF)
             {
-                assert(sizeBytes == originalSize);
+                assert(sizeBytes == originalSize || sizeBytes == SIZE_UNKNOWN);
                 structType = getSIMDTypeForSize(sizeBytes);
                 if (pSimdBaseJitType != nullptr)
                 {
-                    *pSimdBaseJitType = simdBaseJitType;
+                    *pSimdBaseJitType = simdBaseType;
                 }
                 // Also indicate that we use floating point registers.
                 compFloatingPointUsed = true;
@@ -3396,6 +3396,15 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     // Spill any special side effects
     impSpillSpecialSideEff();
 
+    // In async methods, if the value to box contains an async call, we need to spill it
+    // before popping it from the stack. This is because we will later create a byref
+    // destination (box temp + offset) for storing the value, and we cannot have a
+    // byref live across an async call.
+    if (gtTreeContainsAsyncCall(impStackTop().val))
+    {
+        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("async box with call"));
+    }
+
     // Get get the expression to box from the stack.
     GenTree*   op1       = nullptr;
     GenTree*   op2       = nullptr;
@@ -4441,15 +4450,6 @@ bool Compiler::impIsImplicitTailCallCandidate(
         return false;
     }
 
-    // We cannot tailcall ValueTask returning methods as we need to preserve
-    // the Continuation instance for ValueTaskSource handling (the BCL needs
-    // to look at continuation.Next). We cannot easily differentiate between
-    // ValueTask and Task here, so we just disable it more generally.
-    if ((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0)
-    {
-        return false;
-    }
-
 #if !FEATURE_TAILCALL_OPT_SHARED_RETURN
     // the block containing call is marked as BBJ_RETURN
     // We allow shared ret tail call optimization on recursive calls even under
@@ -4583,305 +4583,8 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op)
 //   After this function, the BBJ_LEAVE block has been converted to a different type.
 //
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-
-void Compiler::impImportLeaveEHRegions(BasicBlock* block)
-{
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nBefore import CEE_LEAVE:\n");
-        fgDispBasicBlocks();
-        fgDispHandlerTab();
-    }
-#endif // DEBUG
-
-    unsigned const    blkAddr     = block->bbCodeOffs;
-    BasicBlock* const leaveTarget = block->GetTarget();
-    unsigned const    jmpAddr     = leaveTarget->bbCodeOffs;
-
-    // LEAVE clears the stack, spill side effects, and set stack to 0
-
-    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("impImportLeave"));
-    stackState.esStackDepth = 0;
-
-    assert(block->KindIs(BBJ_LEAVE));
-    assert(fgBBs == (BasicBlock**)0xCDCD || fgLookupBB(jmpAddr) != NULL); // should be a BB boundary
-
-    BasicBlock* step         = DUMMY_INIT(NULL);
-    unsigned    encFinallies = 0; // Number of enclosing finallies.
-    GenTree*    endCatches   = NULL;
-    Statement*  endLFinStmt  = NULL; // The statement tree to indicate the end of locally-invoked finally.
-
-    unsigned  XTnum;
-    EHblkDsc* HBtab;
-
-    for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
-    {
-        // Grab the handler offsets
-
-        IL_OFFSET tryBeg = HBtab->ebdTryBegOffs();
-        IL_OFFSET tryEnd = HBtab->ebdTryEndOffs();
-        IL_OFFSET hndBeg = HBtab->ebdHndBegOffs();
-        IL_OFFSET hndEnd = HBtab->ebdHndEndOffs();
-
-        // Is this a catch-handler we are CEE_LEAVE'ing out of? If so, we need to call CORINFO_HELP_ENDCATCH.
-
-        if (jitIsBetween(blkAddr, hndBeg, hndEnd) && !jitIsBetween(jmpAddr, hndBeg, hndEnd))
-        {
-            // Can't CEE_LEAVE out of a finally/fault handler
-            if (HBtab->HasFinallyOrFaultHandler())
-            {
-                BADCODE("leave out of fault/finally block");
-            }
-
-            // Create the call to CORINFO_HELP_ENDCATCH
-            GenTree* endCatch = gtNewHelperCallNode(CORINFO_HELP_ENDCATCH, TYP_VOID);
-
-            // Make a list of all the currently pending endCatches
-            if (endCatches)
-            {
-                endCatches = gtNewOperNode(GT_COMMA, TYP_VOID, endCatches, endCatch);
-            }
-            else
-            {
-                endCatches = endCatch;
-            }
-
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("impImportLeave - " FMT_BB " jumping out of catch handler EH#%u, adding call to "
-                       "CORINFO_HELP_ENDCATCH\n",
-                       block->bbNum, XTnum);
-            }
-#endif
-        }
-        else if (HBtab->HasFinallyHandler() && jitIsBetween(blkAddr, tryBeg, tryEnd) &&
-                 !jitIsBetween(jmpAddr, tryBeg, tryEnd))
-        {
-            // This is a finally-protected try we are jumping out of.
-            //
-            // If there are any pending endCatches, and we have already jumped out of a finally-protected try,
-            // then the endCatches have to be put in a block in an outer try for async exceptions to work correctly.
-            // Else, just append to the original block.
-
-            BasicBlock* callBlock;
-
-            // If we have finallies, we better have an endLFin tree, and vice-versa.
-            assert(!encFinallies == !endLFinStmt);
-
-            if (encFinallies == 0)
-            {
-                assert(step == DUMMY_INIT(NULL));
-                callBlock = block;
-
-                // callBlock calls the finally handler
-                assert(callBlock->HasInitializedTarget());
-                fgRedirectEdge(callBlock->TargetEdgeRef(), HBtab->ebdHndBeg);
-                callBlock->SetKind(BBJ_CALLFINALLY);
-
-                if (endCatches)
-                {
-                    impAppendTree(endCatches, CHECK_SPILL_NONE, impCurStmtDI);
-                }
-
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("impImportLeave - jumping out of a finally-protected try, convert block to BBJ_CALLFINALLY "
-                           "block %s\n",
-                           callBlock->dspToString());
-                }
-#endif
-            }
-            else
-            {
-                assert(step != DUMMY_INIT(NULL));
-
-                // Calling the finally block.
-
-                // callBlock calls the finally handler
-                callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, XTnum + 1, 0, step);
-
-                {
-                    FlowEdge* const newEdge = fgAddRefPred(HBtab->ebdHndBeg, callBlock);
-                    callBlock->SetTargetEdge(newEdge);
-                }
-
-                // step's jump target shouldn't be set yet
-                assert(!step->HasInitializedTarget());
-
-                {
-                    // the previous call to a finally returns to this call (to the next finally in the chain)
-                    FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
-                    step->SetTargetEdge(newEdge);
-                }
-
-                // The new block will inherit this block's weight.
-                callBlock->inheritWeight(block);
-
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("impImportLeave - jumping out of a finally-protected try, new BBJ_CALLFINALLY block %s\n",
-                           callBlock->dspToString());
-                }
-#endif
-
-                Statement* lastStmt;
-
-                if (endCatches)
-                {
-                    lastStmt = gtNewStmt(endCatches);
-                    endLFinStmt->SetNextStmt(lastStmt);
-                    lastStmt->SetPrevStmt(endLFinStmt);
-                }
-                else
-                {
-                    lastStmt = endLFinStmt;
-                }
-
-                // note that this sets BBF_IMPORTED on the block
-                impEndTreeList(callBlock, endLFinStmt, lastStmt);
-            }
-
-            // callBlock should be set up at this point
-            assert(callBlock->TargetIs(HBtab->ebdHndBeg));
-
-            // Note: we don't know the jump target yet
-            step = fgNewBBafter(BBJ_CALLFINALLYRET, callBlock, true);
-            // The new block will inherit this block's weight.
-            step->inheritWeight(block);
-            step->SetFlags(BBF_IMPORTED);
-
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("impImportLeave - jumping out of a finally-protected try, created step (BBJ_CALLFINALLYRET) "
-                       "block %s\n",
-                       step->dspToString());
-            }
-#endif
-
-            // We now record the EH region ID on GT_END_LFIN instead of the finally nesting depth,
-            // as the later can change as we optimize the code.
-            //
-            unsigned const ehID = compHndBBtab[XTnum].ebdID;
-            assert(ehID <= impInlineRoot()->compEHID);
-
-            GenTree* const endLFin = new (this, GT_END_LFIN) GenTreeVal(GT_END_LFIN, TYP_VOID, ehID);
-            endLFinStmt            = gtNewStmt(endLFin);
-            endCatches             = NULL;
-
-            encFinallies++;
-        }
-    }
-
-    // Append any remaining endCatches, if any.
-
-    assert(!encFinallies == !endLFinStmt);
-
-    if (encFinallies == 0)
-    {
-        assert(step == DUMMY_INIT(NULL));
-        block->SetKind(BBJ_ALWAYS); // convert the BBJ_LEAVE to a BBJ_ALWAYS
-
-        if (endCatches)
-        {
-            impAppendTree(endCatches, CHECK_SPILL_NONE, impCurStmtDI);
-        }
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("impImportLeave - no enclosing finally-protected try blocks; convert CEE_LEAVE block to BBJ_ALWAYS "
-                   "block %s\n",
-                   block->dspToString());
-        }
-#endif
-    }
-    else
-    {
-        // If leaveTarget is the start of another try block, we want to make sure that
-        // we do not insert finalStep into that try block. Hence, we find the enclosing
-        // try block.
-        unsigned tryIndex = bbFindInnermostCommonTryRegion(step, leaveTarget);
-
-        // Insert a new BB either in the try region indicated by tryIndex or
-        // the handler region indicated by leaveTarget->bbHndIndex,
-        // depending on which is the inner region.
-        BasicBlock* finalStep = fgNewBBinRegion(BBJ_ALWAYS, tryIndex, leaveTarget->bbHndIndex, step);
-        finalStep->SetFlags(BBF_KEEP_BBJ_ALWAYS);
-
-        // step's jump target shouldn't be set yet
-        assert(!step->HasInitializedTarget());
-
-        {
-            FlowEdge* const newEdge = fgAddRefPred(finalStep, step);
-            step->SetTargetEdge(newEdge);
-        }
-
-        // The new block will inherit this block's weight.
-        finalStep->inheritWeight(block);
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("impImportLeave - finalStep block required (encFinallies(%d) > 0), new block %s\n", encFinallies,
-                   finalStep->dspToString());
-        }
-#endif
-
-        Statement* lastStmt;
-
-        if (endCatches)
-        {
-            lastStmt = gtNewStmt(endCatches);
-            endLFinStmt->SetNextStmt(lastStmt);
-            lastStmt->SetPrevStmt(endLFinStmt);
-        }
-        else
-        {
-            lastStmt = endLFinStmt;
-        }
-
-        impEndTreeList(finalStep, endLFinStmt, lastStmt);
-
-        // this is the ultimate destination of the LEAVE
-        {
-            FlowEdge* const newEdge = fgAddRefPred(leaveTarget, finalStep);
-            finalStep->SetTargetEdge(newEdge);
-        }
-
-        // Queue up the jump target for importing
-
-        impImportBlockPending(leaveTarget);
-    }
-
-#ifdef DEBUG
-    fgVerifyHandlerTab();
-
-    if (verbose)
-    {
-        printf("\nAfter import CEE_LEAVE:\n");
-        fgDispBasicBlocks();
-        fgDispHandlerTab();
-    }
-#endif // DEBUG
-}
-
-#endif // FEATURE_EH_WINDOWS_X86
-
 void Compiler::impImportLeave(BasicBlock* block)
 {
-#if defined(FEATURE_EH_WINDOWS_X86)
-    if (!UsesFunclets())
-    {
-        return impImportLeaveEHRegions(block);
-    }
-#endif
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -5007,7 +4710,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
             BasicBlock* callBlock;
 
-            if (step == nullptr && UsesCallFinallyThunks())
+            if (step == nullptr)
             {
                 // Put the call to the finally in the enclosing region.
                 unsigned callFinallyTryIndex =
@@ -5040,24 +4743,6 @@ void Compiler::impImportLeave(BasicBlock* block)
                 }
 #endif
             }
-            else if (step == nullptr) // && !UsesCallFinallyThunks()
-            {
-                callBlock = block;
-
-                // callBlock calls the finally handler
-                assert(callBlock->HasInitializedTarget());
-                fgRedirectEdge(callBlock->TargetEdgeRef(), HBtab->ebdHndBeg);
-                callBlock->SetKind(BBJ_CALLFINALLY);
-
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("impImportLeave - jumping out of a finally-protected try (EH#%u), convert block " FMT_BB
-                           " to BBJ_CALLFINALLY block\n",
-                           XTnum, callBlock->bbNum);
-                }
-#endif
-            }
             else
             {
                 // Calling the finally block. We already have a step block that is either the call-to-finally from a
@@ -5079,7 +4764,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 assert(step->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET, BBJ_EHCATCHRET));
                 assert((step == block) || !step->HasInitializedTarget());
 
-                if (UsesCallFinallyThunks() && step->KindIs(BBJ_EHCATCHRET))
+                if (step->KindIs(BBJ_EHCATCHRET))
                 {
                     // Need to create another step block in the 'try' region that will actually branch to the
                     // call-to-finally thunk.
@@ -5114,20 +4799,10 @@ void Compiler::impImportLeave(BasicBlock* block)
                 unsigned callFinallyTryIndex;
                 unsigned callFinallyHndIndex;
 
-                if (UsesCallFinallyThunks())
-                {
-                    callFinallyTryIndex = (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-                                              ? 0
-                                              : HBtab->ebdEnclosingTryIndex + 1;
-                    callFinallyHndIndex = (HBtab->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-                                              ? 0
-                                              : HBtab->ebdEnclosingHndIndex + 1;
-                }
-                else
-                {
-                    callFinallyTryIndex = XTnum + 1;
-                    callFinallyHndIndex = 0; // don't care
-                }
+                callFinallyTryIndex =
+                    (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : HBtab->ebdEnclosingTryIndex + 1;
+                callFinallyHndIndex =
+                    (HBtab->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : HBtab->ebdEnclosingHndIndex + 1;
 
                 assert(step->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET, BBJ_EHCATCHRET));
                 assert((step == block) || !step->HasInitializedTarget());
@@ -5364,7 +5039,7 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
     // work around this we will duplicate B0 (call it B0Dup) before resetting. B0Dup is marked as BBJ_CALLFINALLY and
     // only serves to pair up with B1 (BBJ_ALWAYS) that got orphaned. Now during orphan block deletion B0Dup and B1
     // will be treated as pair and handled correctly.
-    if (UsesFunclets() && block->KindIs(BBJ_CALLFINALLY))
+    if (block->KindIs(BBJ_CALLFINALLY))
     {
         BasicBlock* dupBlock = BasicBlock::New(this);
         dupBlock->CopyFlags(block);
@@ -9772,11 +9447,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("value for stsfld with typeinit"));
                         }
-                        else if (compIsAsync() && op1->TypeIs(TYP_BYREF))
+                        else if (op1->TypeIs(TYP_BYREF) && gtTreeContainsAsyncCall(impStackTop().val))
                         {
-                            // TODO-Async: We really only need to spill if
-                            // there is a possibility of an async call in op2.
-                            impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("byref address in async method"));
+                            // Spill if we have a byref address and the value to store contains
+                            // an async call. This avoids keeping the byref live across an await.
+                            impSpillSideEffects(true,
+                                                CHECK_SPILL_ALL DEBUGARG("byref address with async call in value"));
                         }
                         break;
 
@@ -10489,16 +10165,26 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 GenTree* boxPayloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
                                 GenTree* boxPayloadAddress =
                                     gtNewOperNode(GT_ADD, TYP_BYREF, cloneOperand, boxPayloadOffset);
-                                GenTree* nullcheck = gtNewNullCheck(op1);
-                                // Add an ordering dependency between the null
-                                // check and forming the byref; the JIT assumes
-                                // in many places that the only legal null
-                                // byref is literally 0, and since the byref
-                                // leaks out here, we need to ensure it is
-                                // nullchecked.
-                                nullcheck->SetHasOrderingSideEffect();
-                                boxPayloadAddress->SetHasOrderingSideEffect();
-                                GenTree* result = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
+
+                                GenTree* result;
+                                if (fgAddrCouldBeNull(op1))
+                                {
+                                    GenTree* nullcheck = gtNewNullCheck(op1);
+                                    // Add an ordering dependency between the null
+                                    // check and forming the byref; the JIT assumes
+                                    // in many places that the only legal null
+                                    // byref is literally 0, and since the byref
+                                    // leaks out here, we need to ensure it is
+                                    // nullchecked.
+                                    nullcheck->SetHasOrderingSideEffect();
+                                    boxPayloadAddress->SetHasOrderingSideEffect();
+                                    result = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
+                                }
+                                else
+                                {
+                                    // We don't need a nullcheck if this is e.g. a preinitialized value
+                                    result = boxPayloadAddress;
+                                }
                                 impPushOnStack(result, tiRetVal);
                                 break;
                             }
@@ -13527,6 +13213,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         {
             case WellKnownArg::RetBuffer:
             case WellKnownArg::AsyncContinuation:
+            case WellKnownArg::AsyncExecutionContext:
+            case WellKnownArg::AsyncSynchronizationContext:
                 // These do not appear in the table of inline arg info; do not include them
                 continue;
             case WellKnownArg::InstParam:

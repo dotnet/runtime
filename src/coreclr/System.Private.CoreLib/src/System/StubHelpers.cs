@@ -1299,24 +1299,6 @@ namespace System.StubHelpers
         }
     }
 
-    // Keeps an object instance alive across the full Managed->Native call.
-    // This ensures that users don't have to call GC.KeepAlive after passing a struct or class
-    // that has a delegate field to native code.
-    internal sealed class KeepAliveCleanupWorkListElement : CleanupWorkListElement
-    {
-        public KeepAliveCleanupWorkListElement(object obj)
-        {
-            m_obj = obj;
-        }
-
-        private readonly object m_obj;
-
-        protected override void DestroyCore()
-        {
-            GC.KeepAlive(m_obj);
-        }
-    }
-
     // Aggregates SafeHandle and the "owned" bit which indicates whether the SafeHandle
     // has been successfully AddRef'ed. This allows us to do realiable cleanup (Release)
     // if and only if it is needed.
@@ -1367,12 +1349,6 @@ namespace System.StubHelpers
             return element.AddRef();
         }
 
-        internal static void KeepAliveViaCleanupList(ref CleanupWorkListElement? pCleanupWorkList, object obj)
-        {
-            KeepAliveCleanupWorkListElement element = new KeepAliveCleanupWorkListElement(obj);
-            CleanupWorkListElement.AddToCleanupList(ref pCleanupWorkList, element);
-        }
-
         internal static void DestroyCleanupList(ref CleanupWorkListElement? pCleanupWorkList)
         {
             if (pCleanupWorkList != null)
@@ -1390,14 +1366,18 @@ namespace System.StubHelpers
         }
 
 #if FEATURE_COMINTEROP
-        internal static Exception GetCOMHRExceptionObject(int hr, IntPtr pCPCMD, IntPtr pUnk)
+        internal static unsafe Exception GetCOMHRExceptionObject(int hr, IntPtr pCPCMD, IntPtr pUnk)
         {
-            RuntimeMethodHandle handle = RuntimeMethodHandle.FromIntPtr(pCPCMD);
-            RuntimeType declaringType = RuntimeMethodHandle.GetDeclaringType(handle.GetMethodInfo());
+            Debug.Assert(pCPCMD != IntPtr.Zero);
+            MethodTable* interfaceType = GetComInterfaceFromMethodDesc(pCPCMD);
+            RuntimeType declaringType = RuntimeTypeHandle.GetRuntimeType(interfaceType);
             Exception ex = Marshal.GetExceptionForHR(hr, declaringType.GUID, pUnk)!;
             ex.InternalPreserveStackTrace();
             return ex;
         }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe MethodTable* GetComInterfaceFromMethodDesc(IntPtr pCPCMD);
 #endif // FEATURE_COMINTEROP
 
         [ThreadStatic]
@@ -1560,21 +1540,6 @@ namespace System.StubHelpers
             }
         }
 
-        internal static unsafe void LayoutDestroyNativeInternal(object obj, byte* pNative)
-        {
-            MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
-
-            delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> structMarshalStub;
-            nuint size;
-            bool success = Marshal.TryGetStructMarshalStub((IntPtr)pMT, &structMarshalStub, &size);
-            Debug.Assert(success);
-
-            if (structMarshalStub != null)
-            {
-                structMarshalStub(ref obj.GetRawData(), pNative, MarshalOperation.Cleanup, ref Unsafe.NullRef<CleanupWorkListElement?>());
-            }
-        }
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToManagedVaList")]
         internal static partial void MarshalToManagedVaList(IntPtr va_list, IntPtr pArgIterator);
 
@@ -1610,9 +1575,6 @@ namespace System.StubHelpers
 
         [Intrinsic]
         internal static IntPtr NextCallReturnAddress() => throw new UnreachableException(); // Unconditionally expanded intrinsic
-
-        [Intrinsic]
-        internal static Continuation? AsyncCallContinuation() => throw new UnreachableException(); // Unconditionally expanded intrinsic
     }  // class StubHelpers
 
 #if FEATURE_COMINTEROP
