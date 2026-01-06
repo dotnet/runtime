@@ -84,7 +84,8 @@ function logExitCode(exitCode: number): void {
     if (config.forwardConsole) {
         teardownProxyConsole(message);
     } else if (message) {
-        dotnetLogger.info(message);
+        // eslint-disable-next-line no-console
+        console.log(message);
     }
 }
 
