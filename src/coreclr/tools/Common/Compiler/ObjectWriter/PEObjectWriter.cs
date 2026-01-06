@@ -108,13 +108,6 @@ namespace ILCompiler.ObjectWriter
                 return ObjectNodeSection.TextSection;
             }
 
-            // RISC-V has a limited addressing range (±2GB) for relocs.
-            // Don't merge rdata into text to avoid relocation overflow.
-            if (_nodeFactory.Target.Architecture == TargetArchitecture.RiscV64)
-            {
-                return section;
-            }
-
             // We want to reduce the number of sections in the PE files we emit,
             // so merge the read-only data section into the .text section.
             if (section == ObjectNodeSection.ReadOnlyDataSection)
@@ -933,7 +926,7 @@ namespace ILCompiler.ObjectWriter
                                 throw new NotSupportedException();
                             }
                             int sourcePageRVA = (int)(relocOffset & ~0xFFF);
-                            long delta = (symbolImageOffset - sourcePageRVA >> 12) & 0x1f_ffff;
+                            long delta = ((long)symbolImageOffset - sourcePageRVA >> 12) & 0x1f_ffff;
                             Relocation.WriteValue(reloc.Type, pData, delta);
                             break;
                         }
@@ -951,7 +944,7 @@ namespace ILCompiler.ObjectWriter
                             {
                                 throw new NotSupportedException();
                             }
-                            long delta = (symbolImageOffset - (relocOffset & ~0xfff) + ((symbolImageOffset & 0x800) << 1));
+                            long delta = ((long)symbolImageOffset - (long)(relocOffset & ~0xfff) + ((long)(symbolImageOffset & 0x800) << 1));
                             Relocation.WriteValue(reloc.Type, pData, delta);
                             break;
                         }
@@ -964,7 +957,7 @@ namespace ILCompiler.ObjectWriter
                             {
                                 throw new NotSupportedException();
                             }
-                            long delta = symbolImageOffset - relocOffset;
+                            long delta = (long)symbolImageOffset - (long)relocOffset;
                             Relocation.WriteValue(reloc.Type, pData, delta);
                             break;
                         }
