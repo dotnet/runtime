@@ -21,7 +21,6 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(InternationalHostNames))]
         public async Task InternationalUrl_UsesIdnaEncoding_Success(string hostname)
         {
-
             Uri uri = new Uri($"http://{hostname}/");
 
             await LoopbackServer.CreateServerAsync(async (server, serverUrl) =>
