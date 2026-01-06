@@ -26,21 +26,6 @@
 #define PAL_ENDTRY
 #define PAL_EXCEPT_FILTER(x)
 #define PAL_TRY(x, y, z)
-#define _EXCEPTION_HANDLER_DECL(funcname)                                                               \
-    EXCEPTION_DISPOSITION __cdecl funcname(EXCEPTION_RECORD *pExceptionRecord,                          \
-                                           struct _EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame,    \
-                                           CONTEXT *pContext,                                           \
-                                           DISPATCHER_CONTEXT *pDispatcherContext)
-
-#define EXCEPTION_HANDLER_DECL(funcname) \
-    extern "C"  _EXCEPTION_HANDLER_DECL(funcname)
-
-#define EXCEPTION_HANDLER_IMPL(funcname) \
-    _EXCEPTION_HANDLER_DECL(funcname)
-
-#define EXCEPTION_HANDLER_FWD(funcname) \
-    funcname(pExceptionRecord, pEstablisherFrame, pContext, pDispatcherContext)
-
 
 // DAC
 #define GVAL_ADDR(g) (&(g))

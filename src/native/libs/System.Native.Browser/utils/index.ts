@@ -5,6 +5,8 @@ import type { InternalExchange, BrowserUtilsExports, RuntimeAPI, BrowserUtilsExp
 import { InternalExchangeIndex } from "../types";
 import { } from "./cross-module"; // ensure ambient symbols are declared
 
+import GitHash from "consts:gitHash";
+
 import {
     setHeapB32, setHeapB8, setHeapU8, setHeapU16, setHeapU32, setHeapI8, setHeapI16, setHeapI32, setHeapI52, setHeapU52, setHeapI64Big, setHeapF32, setHeapF64,
     getHeapB32, getHeapB8, getHeapU8, getHeapU16, getHeapU32, getHeapI8, getHeapI16, getHeapI32, getHeapI52, getHeapU52, getHeapI64Big, getHeapF32, getHeapF64,
@@ -20,9 +22,15 @@ import { registerRuntime } from "./runtime-list";
 import { registerCDAC } from "./cdac";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
-    initPolyfills();
+    if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
     const runtimeApi = internals[InternalExchangeIndex.RuntimeAPI];
     if (typeof runtimeApi !== "object") throw new Error("Expected internals to have RuntimeAPI");
+
+    if (runtimeApi.runtimeBuildInfo.gitHash && runtimeApi.runtimeBuildInfo.gitHash !== GitHash) {
+        throw new Error(`Mismatched git hashes between loader and runtime. Loader: ${runtimeApi.runtimeBuildInfo.gitHash}, BrowserUtils: ${GitHash}`);
+    }
+
+    initPolyfills();
     registerRuntime(runtimeApi);
     registerCDAC(runtimeApi);
 
