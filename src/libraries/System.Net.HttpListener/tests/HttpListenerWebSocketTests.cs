@@ -361,7 +361,7 @@ namespace System.Net.Tests
             Assert.Equal(WebSocketState.Aborted, context.WebSocket.State);
         }
 
-        [ConditionalFact(nameof(IsWindows8OrLater))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public async Task ReceiveAsync_ReadBuffer_WithWindowsAuthScheme_Success()
         {
             HttpListenerFactory factory = new HttpListenerFactory(authenticationSchemes: AuthenticationSchemes.IntegratedWindowsAuthentication);
