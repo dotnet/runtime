@@ -359,7 +359,7 @@ namespace System
         public static bool SupportsTls12 => s_supportsTls12.Value;
         public static bool SupportsTls13 => s_supportsTls13.Value;
         public static bool SendsCAListByDefault => s_sendsCAListByDefault.Value;
-        public static bool SupportsSendingCustomCANamesInTls => UsesAppleCrypto || IsOpenSslSupported || (PlatformDetection.IsWindows8xOrLater && SendsCAListByDefault);
+        public static bool SupportsSendingCustomCANamesInTls => UsesAppleCrypto || IsOpenSslSupported || (PlatformDetection.IsWindows && SendsCAListByDefault);
         public static bool SupportsSha3 => s_supportsSha3.Value;
         public static bool DoesNotSupportSha3 => !s_supportsSha3.Value;
 

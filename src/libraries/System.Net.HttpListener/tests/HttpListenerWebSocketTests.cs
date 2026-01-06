@@ -14,8 +14,6 @@ namespace System.Net.Tests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerWebSocketTests : IDisposable
     {
-        public static bool IsNotWindows7AndIsWindowsImplementation => Helpers.IsWindowsImplementation;
-        public static bool IsWindows8OrLater { get; } = PlatformDetection.IsWindows8xOrLater;
 
         private HttpListenerFactory Factory { get; }
         private HttpListener Listener { get; }
@@ -169,7 +167,7 @@ namespace System.Net.Tests
             yield return new object[] { WebSocketCloseStatus.MandatoryExtension, "StatusDescription", WebSocketCloseStatus.MandatoryExtension };
         }
 
-        [ConditionalTheory(nameof(IsNotWindows7AndIsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/22015", TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/22015", TestPlatforms.AnyUnix)]
         [MemberData(nameof(CloseStatus_Valid_TestData))]
         public async Task CloseOutputAsync_HandshakeStartedFromClient_Success(WebSocketCloseStatus status, string statusDescription, WebSocketCloseStatus expectedCloseStatus)
         {
@@ -232,7 +230,7 @@ namespace System.Net.Tests
             await context.WebSocket.CloseOutputAsync(WebSocketCloseStatus.Empty, null, new CancellationToken());
         }
 
-        [ConditionalTheory(nameof(IsNotWindows7AndIsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/22015", TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/22015", TestPlatforms.AnyUnix)]
         [MemberData(nameof(CloseStatus_Valid_TestData))]
         public async Task CloseAsync_HandshakeStartedFromClient_Success(WebSocketCloseStatus status, string statusDescription, WebSocketCloseStatus expectedCloseStatus)
         {

@@ -15,7 +15,7 @@ namespace System.Net.Http.Functional.Tests
 
     public abstract class IdnaProtocolTests : HttpClientHandlerTestBase
     {
-        protected abstract bool SupportsIdna { get; }
+        protected virtual bool SupportsIdna => true;
 
         public IdnaProtocolTests(ITestOutputHelper output) : base(output) { }
 
