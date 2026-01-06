@@ -3717,7 +3717,8 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             callTarget->SetUnusedValue();
         }
 
-        callTarget = resolve;
+        // The call target validation is done by the resolve helper.
+        return;
     }
 
     if (callTarget == nullptr)

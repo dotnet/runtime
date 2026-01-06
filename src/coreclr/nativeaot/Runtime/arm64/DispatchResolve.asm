@@ -7,8 +7,10 @@
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
+    EXTERN __guard_check_icall_fptr
+
     EXTERN RhpCidResolve
-    EXTERN RhpUniversalTransitionReturnResult
+    EXTERN RhpUniversalTransitionReturnValidatedCodeAddress
 
     NESTED_ENTRY RhpResolveInterfaceMethodFast, _TEXT
 
@@ -29,8 +31,9 @@
         ldr     x15, [x14]
         cmp     x15, x12
         bne     RhpResolveInterfaceMethodFast_Polymorphic
+        PREPARE_EXTERNAL_VAR_INDIRECT x12, __guard_check_icall_fptr
         ldur    x15, [x14, #8]
-        ret
+        br      x12
 
 RhpResolveInterfaceMethodFast_Polymorphic
         ldr     w13, [x13, #OFFSETOF__InterfaceDispatchCache__m_cEntries]
@@ -45,13 +48,14 @@ RhpResolveInterfaceMethodFast_NextEntry
         cmp     x15, x12
         bne     RhpResolveInterfaceMethodFast_NextEntry
 
+        PREPARE_EXTERNAL_VAR_INDIRECT x12, __guard_check_icall_fptr
         ldur    x15, [x14, #8]
-        ret
+        br      x12
 
 RhpResolveInterfaceMethodFast_SlowPath
         ldr     xip0, =RhpCidResolve
         mov     xip1, x11
-        b       RhpUniversalTransitionReturnResult
+        b       RhpUniversalTransitionReturnValidatedCodeAddress
 
     NESTED_END RhpResolveInterfaceMethodFast
 
