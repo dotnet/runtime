@@ -1,13 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// EEConfig.CPP
-//
 
+// EEConfig.CPP
 //
 // Fetched configuration data from the registry (should we Jit, run GC checks ...)
 //
-//
-
 
 #include "common.h"
 #include "eeconfig.h"
@@ -185,7 +182,7 @@ HRESULT EEConfig::Init()
     m_fInteropValidatePinnedObjects = false;
     m_fInteropLogArguments = false;
 
-#if defined(_DEBUG) && defined(FEATURE_EH_FUNCLETS)
+#if defined(_DEBUG)
     fSuppressLockViolationsOnReentryFromOS = false;
 #endif
 
@@ -653,7 +650,7 @@ HRESULT EEConfig::sync()
     m_fInteropValidatePinnedObjects = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_InteropValidatePinnedObjects) != 0);
     m_fInteropLogArguments = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InteropLogArguments) != 0);
 
-#if defined(_DEBUG) && defined(FEATURE_EH_FUNCLETS)
+#if defined(_DEBUG)
     fSuppressLockViolationsOnReentryFromOS = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuppressLockViolationsOnReentryFromOS) != 0);
 #endif
 

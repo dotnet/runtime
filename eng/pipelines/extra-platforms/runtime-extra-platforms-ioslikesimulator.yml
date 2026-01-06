@@ -24,8 +24,8 @@ jobs:
     isiOSLikeSimulatorOnlyBuild: ${{ parameters.isiOSLikeSimulatorOnlyBuild }}
     platforms:
     - iossimulator_x64
-    - tvossimulator_x64
     - iossimulator_arm64
+    - tvossimulator_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
@@ -58,8 +58,8 @@ jobs:
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
       - iossimulator_x64
-      - tvossimulator_x64
       - iossimulator_arm64
+      - tvossimulator_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -86,7 +86,6 @@ jobs:
           parameters:
             creator: dotnet-bot
             testBuildArgs: /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildTestsOnHelix=true
-            compileOnHelix: true
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
@@ -103,8 +102,8 @@ jobs:
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
       - iossimulator_x64
-      - tvossimulator_x64
       - iossimulator_arm64
+      - tvossimulator_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -126,6 +125,7 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
           parameters:
             testGroup: innerloop
+            useNativeAOTRuntime: true
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
@@ -135,7 +135,51 @@ jobs:
             buildAllTestsAsStandalone: true
 
 #
-# Build the whole product using CoreCLR and run functional tests
+# Build the whole product using CoreCLR R2R and run runtime tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: coreclr
+    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+    isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
+    platforms:
+      - iossimulator_x64
+      - iossimulator_arm64
+      - tvossimulator_arm64
+    variables:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
+        - name: _HelixSource
+          value: pr/dotnet/runtime/$(Build.SourceBranch)
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+        - name: _HelixSource
+          value: ci/dotnet/runtime/$(Build.SourceBranch)
+      - name: timeoutPerTestInMinutes
+        value: 60
+      - name: timeoutPerTestCollectionInMinutes
+        value: 180
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_CoreCLR_RuntimeTests
+      buildArgs: -s clr+libs -c $(_BuildConfig)
+      timeoutInMinutes: 240
+      # extra steps, run tests
+      extraVariablesTemplates:
+        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+          parameters:
+            testGroup: innerloop
+      postBuildSteps:
+        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          parameters:
+            creator: dotnet-bot
+            testBuildArgs: tree baseservices /p:DevTeamProvisioning=- /p:RunAOTCompilation=false /p:UseMonoRuntime=false /p:MonoForceInterpreter=false /p:UseNativeAOTRuntime=false /p:BuildTestsOnHelix=false
+            testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=false
+
+#
+# Build the whole product using CoreCLR R2R and run library tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -146,7 +190,9 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeSimulatorOnlyBuild: ${{ parameters.isiOSLikeSimulatorOnlyBuild }}
     platforms:
+      - iossimulator_x64
       - iossimulator_arm64
+      - tvossimulator_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
@@ -158,7 +204,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_CoreCLR_Smoke
-      buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=false /p:UseMonoRuntime=false /p:MonoForceInterpreter=false /p:RunSmokeTestsOnly=true
+      buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=false /p:UseMonoRuntime=false /p:MonoForceInterpreter=false /p:BuildTestsOnHelix=false /p:UseNativeAOTRuntime=false /p:RunSmokeTestsOnly=true
       timeoutInMinutes: 120
       # extra steps, run tests
       postBuildSteps:

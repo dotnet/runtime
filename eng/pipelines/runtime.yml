@@ -112,12 +112,16 @@ extends:
           - browser_wasm_win
           jobParameters:
             nameSuffix: AllSubsets_CoreCLR
-            buildArgs: -s clr+libs+packs -c $(_BuildConfig) -lc Release
+            buildArgs: -s clr+libs+libs.tests+packs -c $(_BuildConfig) -lc Release /p:TestAssemblies=false /p:TestWasmBuildTests=true /p:ArchiveTests=true /p:InstallWorkloadForTesting=false
             timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
                 parameters:
                   testBuildArgs: test JIT/interpreter/Interpreter.csproj
+              - template: /eng/pipelines/common/wasm-post-build-steps.yml
+                parameters:
+                  publishArtifactsForWorkload: true
+                  publishWBT: true
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
@@ -130,6 +134,15 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
+      # Browser Wasm.Build.Tests
+      - template: /eng/pipelines/common/templates/browser-wasm-coreclr-build-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm
+            - browser_wasm_win
+          alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+
       #
       # Build CoreCLR and Libraries with Libraries tests
       # For running libraries tests and installer tests
@@ -141,7 +154,7 @@ extends:
           platforms:
           - linux_x64
           - linux_musl_x64
-          - osx_x64
+          - osx_arm64
           - windows_x64
           jobParameters:
             nameSuffix: CoreCLR_Libraries
@@ -214,7 +227,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
-          - osx_arm64
+          - osx_x64
           jobParameters:
             nameSuffix: CoreCLR_Libraries
             buildArgs: -s clr+libs -c $(_BuildConfig)
@@ -245,7 +258,7 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
           - linux_arm64
-          - osx_x64
+          - osx_arm64
           jobParameters:
             nameSuffix: Libraries_CheckedCoreCLR
             buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:ArchiveTests=true
@@ -353,7 +366,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
-          - osx_arm64
+          - osx_x64
           jobParameters:
             nameSuffix: Libraries_CheckedCoreCLR
             buildArgs: -s clr+libs -c $(_BuildConfig) -rc Checked
@@ -376,7 +389,8 @@ extends:
                   configOverride: Checked
             condition: >-
               or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr_AppleSilicon.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -792,7 +806,7 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           runtimeFlavor: mono
           platforms:
-          - tvossimulator_x64
+          - tvossimulator_arm64
           - linux_x64
           - linux_arm
           - linux_arm64
@@ -1021,7 +1035,7 @@ extends:
           runtimeFlavor: mono
           platforms:
             - ios_arm64
-            - tvos_arm64
+            # - tvos_arm64 TODO: Enable when Helix queue upgrade is finished https://github.com/dotnet/runtime/issues/122452
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1067,6 +1081,7 @@ extends:
           runtimeFlavor: coreclr
           platforms:
             - ios_arm64
+            # - tvos_arm64 TODO: Enable when Helix queue upgrade is finished https://github.com/dotnet/runtime/issues/122452
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1111,7 +1126,7 @@ extends:
           runtimeFlavor: coreclr
           platforms:
             - ios_arm64
-            - tvos_arm64
+            # - tvos_arm64 TODO: Enable when Helix queue upgrade is finished https://github.com/dotnet/runtime/issues/122452
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1123,6 +1138,7 @@ extends:
             nameSuffix: AllSubsets_NativeAOT_Smoke
             buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
             timeoutInMinutes: 180
+            useNativeAOTRuntime: true
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -1336,7 +1352,7 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
             - windows_x86
-            - osx_arm64
+            - osx_x64
           helixQueuesTemplate: /eng/pipelines/installer/helix-queues-setup.yml
           jobParameters:
             nameSuffix: Installer_Build_And_Test
@@ -1367,7 +1383,7 @@ extends:
           buildConfig: release
           platforms:
             - windows_x64
-            - osx_x64
+            - osx_arm64
             - linux_x64
           helixQueuesTemplate: /eng/pipelines/installer/helix-queues-setup.yml
           jobParameters:
@@ -1591,7 +1607,7 @@ extends:
           jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
           buildConfig: checked
           platforms:
-          - osx_x64
+          - osx_arm64
           - linux_x64
           - linux_arm64
           - windows_x64
@@ -1614,7 +1630,7 @@ extends:
           jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
           buildConfig: checked
           platforms:
-          - osx_arm64
+          - osx_x64
           helixQueueGroup: pr
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
@@ -1625,7 +1641,8 @@ extends:
             unifiedBuildConfigOverride: ${{ variables.debugOnPrReleaseOnRolling }}
             condition: >-
               or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr_AppleSilicon.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -1661,7 +1678,7 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
           - windows_x64
-          - osx_x64
+          - osx_arm64
           - linux_x64
           - linux_musl_x64
           helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
@@ -1686,7 +1703,7 @@ extends:
       # | linux-arm64      | Debug   | Release |
       # | windows-x86      | Debug   | Release |
       # | linux-musl-x64   | Debug   | Release |
-      # | OSX-x64          | Debug   | Release |
+      # | osx-arm64        | Debug   | Release |
       # | linux-musl-arm   | Release | Release |
       # | linux-musl-arm64 | Release | Release |
       # | linux-x64        | Release | Release |
@@ -1749,7 +1766,7 @@ extends:
           jobTemplate: /eng/pipelines/libraries/run-test-job.yml
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
-          - osx_x64
+          - osx_arm64
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           helixQueueGroup: libraries
           jobParameters:

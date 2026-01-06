@@ -36,6 +36,8 @@ namespace System
         public static bool IsNativeAot => IsNotMonoRuntime && !IsReflectionEmitSupported;
         public static bool IsNotNativeAot => !IsNativeAot;
         public static bool IsCoreCLR => IsNotMonoRuntime && IsNotNativeAot;
+        public static bool IsCoreClrInterpreter => GetIsRunningOnCoreClrInterpreter();
+        public static bool IsNotCoreClrInterpreter => !IsCoreClrInterpreter;
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
@@ -185,7 +187,6 @@ namespace System
 
         public static bool IsAsyncFileIOSupported => !IsBrowser && !IsWasi;
 
-        public static bool IsLineNumbersSupported => !IsNativeAot;
         public static bool IsILOffsetsSupported => !IsNativeAot;
 
         public static bool IsInContainer => GetIsInContainer();
@@ -208,6 +209,8 @@ namespace System
 
         public static bool SupportsSsl3 => GetSsl3Support();
         public static bool SupportsSsl2 => IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater;
+
+        public static bool SupportsDirtyAccessViolations => !PlatformDetection.IsMonoRuntime && !PlatformDetection.IsCoreClrInterpreter && !PlatformDetection.IsWasm;
 
 #if NET
         public static bool IsReflectionEmitSupported => RuntimeFeature.IsDynamicCodeSupported;
@@ -725,6 +728,26 @@ namespace System
 #else
             return false;
 #endif
+        }
+
+        private static string GetEnvironmentVariableValue(string name, string defaultValue = "0") =>
+            Environment.GetEnvironmentVariable("DOTNET_" + name) ?? Environment.GetEnvironmentVariable("COMPlus_" + name) ?? defaultValue;
+
+        private static bool GetIsRunningOnCoreClrInterpreter()
+        {
+            if (IsCoreCLR)
+            {
+#if NET
+                if (RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled)
+                    return true;
+#endif
+                if (!string.IsNullOrWhiteSpace(GetEnvironmentVariableValue("Interpreter", "")))
+                    return true;
+                if (int.TryParse(GetEnvironmentVariableValue("InterpMode", "0"), out int mode) && (mode > 0))
+                    return true;
+            }
+
+            return false;
         }
 
         private static bool IsEnvironmentVariableTrue(string variableName)
