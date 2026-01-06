@@ -14,10 +14,6 @@
 #include "utilcode.h"
 #include "ex.h"
 
-#ifdef HOST_WINDOWS
-#include <versionhelpers.h>
-#endif
-
 #if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(_DEBUG)
 
 #ifndef HOST_64BIT
