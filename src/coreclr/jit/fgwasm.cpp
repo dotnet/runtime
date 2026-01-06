@@ -632,12 +632,28 @@ public:
                         transferBlock = m_comp->fgSplitEdge(pred, header);
                     }
 
-                    GenTree* const   targetIndex     = m_comp->gtNewIconNode(headerNumber);
-                    GenTree* const   storeControlVar = m_comp->gtNewStoreLclVarNode(controlVarNum, targetIndex);
-                    Statement* const assignStmt      = m_comp->fgNewStmtNearEnd(transferBlock, storeControlVar);
+                    GenTree* const targetIndex     = m_comp->gtNewIconNode(headerNumber);
+                    GenTree* const storeControlVar = m_comp->gtNewStoreLclVarNode(controlVarNum, targetIndex);
 
-                    m_comp->gtSetStmtInfo(assignStmt);
-                    m_comp->fgSetStmtSeq(assignStmt);
+                    if (transferBlock->IsLIR())
+                    {
+                        LIR::Range range = LIR::SeqTree(m_comp, storeControlVar);
+
+                        if (transferBlock->isEmpty())
+                        {
+                            LIR::AsRange(transferBlock).InsertAtEnd(std::move(range));
+                        }
+                        else
+                        {
+                            LIR::InsertBeforeTerminator(transferBlock, std::move(range));
+                        }
+                    }
+                    else
+                    {
+                        Statement* const assignStmt = m_comp->fgNewStmtNearEnd(transferBlock, storeControlVar);
+                        m_comp->gtSetStmtInfo(assignStmt);
+                        m_comp->fgSetStmtSeq(assignStmt);
+                    }
 
                     m_comp->fgReplaceJumpTarget(transferBlock, header, dispatcher);
                 }
@@ -675,12 +691,23 @@ public:
                 new (m_comp, CMK_BasicBlock) BBswtDesc(succs, numHeaders, cases, numHeaders, true);
             dispatcher->SetSwitch(swtDesc);
 
-            GenTree* const   controlVar = m_comp->gtNewLclvNode(controlVarNum, TYP_INT);
-            GenTree* const   switchNode = m_comp->gtNewOperNode(GT_SWITCH, TYP_VOID, controlVar);
-            Statement* const switchStmt = m_comp->fgNewStmtAtEnd(dispatcher, switchNode);
+            GenTree* const controlVar = m_comp->gtNewLclvNode(controlVarNum, TYP_INT);
+            GenTree* const switchNode = m_comp->gtNewOperNode(GT_SWITCH, TYP_VOID, controlVar);
 
-            m_comp->gtSetStmtInfo(switchStmt);
-            m_comp->fgSetStmtSeq(switchStmt);
+            assert(dispatcher->isEmpty());
+
+            if (dispatcher->IsLIR())
+            {
+                LIR::Range range = LIR::SeqTree(m_comp, switchNode);
+                LIR::AsRange(dispatcher).InsertAtEnd(std::move(range));
+            }
+            else
+            {
+                Statement* const switchStmt = m_comp->fgNewStmtAtEnd(dispatcher, switchNode);
+
+                m_comp->gtSetStmtInfo(switchStmt);
+                m_comp->fgSetStmtSeq(switchStmt);
+            }
         }
 
         // Handle nested Sccs
