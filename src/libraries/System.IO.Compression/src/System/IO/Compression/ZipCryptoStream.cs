@@ -10,6 +10,8 @@ namespace System.IO.Compression
 {
     internal sealed class ZipCryptoStream : Stream
     {
+        internal const int KeySize = 12; // 3 * sizeof(uint)
+
         private readonly bool _encrypting;
         private readonly Stream _base;
         private readonly bool _leaveOpen;
@@ -35,11 +37,15 @@ namespace System.IO.Compression
             return table;
         }
 
-        // Decryption constructor
-        public ZipCryptoStream(Stream baseStream, ReadOnlyMemory<char> password, byte expectedCheckByte)
+        // Decryption constructor using persisted key bytes.
+        public ZipCryptoStream(Stream baseStream, byte[] keyBytes, byte expectedCheckByte)
         {
             _base = baseStream ?? throw new ArgumentNullException(nameof(baseStream));
-            InitKeysFromBytes(password.Span);
+            ArgumentNullException.ThrowIfNull(keyBytes);
+            if (keyBytes.Length != KeySize)
+                throw new ArgumentException($"Key bytes must be exactly {KeySize} bytes.", nameof(keyBytes));
+
+            InitKeysFromKeyBytes(keyBytes);
             _encrypting = false;
             ValidateHeader(expectedCheckByte); // reads & consumes 12 bytes
         }
@@ -57,6 +63,73 @@ namespace System.IO.Compression
             _verifierLow2Bytes = passwordVerifierLow2Bytes;
             _crc32ForHeader = crc32;
             InitKeysFromBytes(password.Span);
+        }
+
+        // Encryption constructor using persisted key bytes.
+        public ZipCryptoStream(Stream baseStream,
+                               byte[] keyBytes,
+                               ushort passwordVerifierLow2Bytes,
+                               uint? crc32 = null,
+                               bool leaveOpen = false)
+        {
+            _base = baseStream ?? throw new ArgumentNullException(nameof(baseStream));
+            ArgumentNullException.ThrowIfNull(keyBytes);
+            if (keyBytes.Length != KeySize)
+                throw new ArgumentException($"Key bytes must be exactly {KeySize} bytes.", nameof(keyBytes));
+
+            _encrypting = true;
+            _leaveOpen = leaveOpen;
+            _verifierLow2Bytes = passwordVerifierLow2Bytes;
+            _crc32ForHeader = crc32;
+            InitKeysFromKeyBytes(keyBytes);
+        }
+
+        // Creates the persisted key bytes from a password.
+        // The returned byte array contains the 3 ZipCrypto keys (key0, key1, key2)
+        // serialized as 12 bytes in little-endian format.
+        public static byte[] CreateKey(ReadOnlyMemory<char> password)
+        {
+            // Initialize keys with standard ZipCrypto initial values
+            uint key0 = 305419896;
+            uint key1 = 591751049;
+            uint key2 = 878082192;
+
+            // ZipCrypto uses raw bytes; ASCII is the most interoperable
+            var bytes = password.Span.ToArray();
+            foreach (byte b in bytes)
+            {
+                key0 = Crc32Update(key0, b);
+                key1 += (key0 & 0xFF);
+                key1 = key1 * 134775813 + 1;
+                key2 = Crc32Update(key2, (byte)(key1 >> 24));
+            }
+
+            // Serialize the 3 keys to bytes in little-endian format
+            byte[] keyBytes = new byte[KeySize];
+            BinaryPrimitives.WriteUInt32LittleEndian(keyBytes.AsSpan(0, 4), key0);
+            BinaryPrimitives.WriteUInt32LittleEndian(keyBytes.AsSpan(4, 4), key1);
+            BinaryPrimitives.WriteUInt32LittleEndian(keyBytes.AsSpan(8, 4), key2);
+
+            return keyBytes;
+        }
+
+        // Gets the current key state as a 12-byte array.
+        // This can be used to persist keys after header validation for update mode.
+        internal byte[] GetKeyBytes()
+        {
+            byte[] keyBytes = new byte[KeySize];
+            BinaryPrimitives.WriteUInt32LittleEndian(keyBytes.AsSpan(0, 4), _key0);
+            BinaryPrimitives.WriteUInt32LittleEndian(keyBytes.AsSpan(4, 4), _key1);
+            BinaryPrimitives.WriteUInt32LittleEndian(keyBytes.AsSpan(8, 4), _key2);
+            return keyBytes;
+        }
+
+        // Initializes keys from persisted key bytes.
+        private void InitKeysFromKeyBytes(byte[] keyBytes)
+        {
+            _key0 = BinaryPrimitives.ReadUInt32LittleEndian(keyBytes.AsSpan(0, 4));
+            _key1 = BinaryPrimitives.ReadUInt32LittleEndian(keyBytes.AsSpan(4, 4));
+            _key2 = BinaryPrimitives.ReadUInt32LittleEndian(keyBytes.AsSpan(8, 4));
         }
 
         private byte[] CalculateHeader()

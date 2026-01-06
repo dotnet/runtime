@@ -40,16 +40,105 @@ namespace System.IO.Compression
         private readonly byte[] _keystreamBuffer = new byte[KeystreamBufferSize];
         private int _keystreamOffset = KeystreamBufferSize; // Start depleted to force initial generation
 
+        public static int GetKeyMaterialSize(int keySizeBits)
+        {
+            int keySizeBytes = keySizeBits / 8;
+            // Total = encryption key + HMAC key (same size) + 2-byte password verifier
+            return keySizeBytes + keySizeBytes + 2;
+        }
 
-        public WinZipAesStream(Stream baseStream, ReadOnlyMemory<char> password, bool encrypting, int keySizeBits = 256, long totalStreamSize = -1, bool leaveOpen = false)
+        public static int GetSaltSize(int keySizeBits) => keySizeBits / 16;
+
+        //A byte array containing salt + derived key material
+        public static byte[] CreateKey(ReadOnlyMemory<char> password, byte[]? salt, int keySizeBits)
+        {
+            int saltSize = GetSaltSize(keySizeBits);
+            int keySizeBytes = keySizeBits / 8;
+            int totalKeySize = keySizeBytes + keySizeBytes + 2; // encryption key + HMAC key + verifier
+
+            // Generate or validate salt
+            byte[] saltBytes;
+            if (salt == null)
+            {
+                saltBytes = new byte[saltSize];
+                RandomNumberGenerator.Fill(saltBytes);
+            }
+            else
+            {
+                if (salt.Length != saltSize)
+                    throw new ArgumentException($"Salt must be {saltSize} bytes for AES-{keySizeBits}.", nameof(salt));
+                saltBytes = salt;
+            }
+
+            // Derive keys using PBKDF2
+            int maxPasswordByteCount = Encoding.UTF8.GetMaxByteCount(password.Length);
+            Span<byte> passwordBytes = stackalloc byte[maxPasswordByteCount];
+            int actualByteCount = Encoding.UTF8.GetBytes(password.Span, passwordBytes);
+            Span<byte> passwordSpan = passwordBytes[..actualByteCount];
+
+            Span<byte> derivedKey = stackalloc byte[totalKeySize];
+
+            try
+            {
+                Rfc2898DeriveBytes.Pbkdf2(
+                    passwordSpan,
+                    saltBytes,
+                    derivedKey,
+                    1000,
+                    HashAlgorithmName.SHA1);
+
+                // Format: [salt][encryption key][HMAC key][password verifier]
+                byte[] result = new byte[saltSize + totalKeySize];
+                saltBytes.CopyTo(result, 0);
+                derivedKey.CopyTo(result.AsSpan(saltSize));
+
+                return result;
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(passwordBytes);
+                CryptographicOperations.ZeroMemory(derivedKey);
+            }
+        }
+
+        // Parses persisted key material into its components.
+        private static void ParseKeyMaterial(byte[] keyMaterial, int keySizeBits,
+            out byte[] salt, out byte[] encryptionKey, out byte[] hmacKey, out byte[] passwordVerifier)
+        {
+            int saltSize = GetSaltSize(keySizeBits);
+            int keySizeBytes = keySizeBits / 8;
+            int expectedSize = saltSize + keySizeBytes + keySizeBytes + 2;
+
+            Debug.Assert(keyMaterial.Length == expectedSize, "Key material length does not match expected size.");
+            int offset = 0;
+
+            salt = new byte[saltSize];
+            Array.Copy(keyMaterial, offset, salt, 0, saltSize);
+            offset += saltSize;
+
+            encryptionKey = new byte[keySizeBytes];
+            Array.Copy(keyMaterial, offset, encryptionKey, 0, keySizeBytes);
+            offset += keySizeBytes;
+
+            hmacKey = new byte[keySizeBytes];
+            Array.Copy(keyMaterial, offset, hmacKey, 0, keySizeBytes);
+            offset += keySizeBytes;
+
+            passwordVerifier = new byte[2];
+            Array.Copy(keyMaterial, offset, passwordVerifier, 0, 2);
+        }
+
+        public WinZipAesStream(Stream baseStream, byte[] keyMaterial, bool encrypting, int keySizeBits = 256, long totalStreamSize = -1, bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(baseStream);
+            ArgumentNullException.ThrowIfNull(keyMaterial);
 
             _baseStream = baseStream;
             _encrypting = encrypting;
             _keySizeBits = keySizeBits;
             _totalStreamSize = totalStreamSize;
             _leaveOpen = leaveOpen;
+
 #pragma warning disable CA1416 // HMACSHA1 is available on all platforms
             _aes = Aes.Create();
 #pragma warning restore CA1416
@@ -58,6 +147,9 @@ namespace System.IO.Compression
 
             Array.Clear(_counterBlock, 0, 16);
             _counterBlock[0] = 1;
+
+            // Parse the persisted key material
+            ParseKeyMaterial(keyMaterial, keySizeBits, out _salt!, out _key!, out _hmacKey!, out _passwordVerifier!);
 
             if (_totalStreamSize > 0)
             {
@@ -76,14 +168,7 @@ namespace System.IO.Compression
 
             if (_encrypting)
             {
-                // 8 for AES-128, 12 for AES-192, 16 for AES-256
-                int saltSize = _keySizeBits / 16;
-                _salt = new byte[saltSize];
-                RandomNumberGenerator.Fill(_salt);
-
-                DeriveKeysFromPassword(password, _salt);
-
-                Debug.Assert(_hmacKey is not null, "HMAC key should be derived");
+                Debug.Assert(_hmacKey is not null, "HMAC key should be parsed");
 #pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms - required by WinZip AES spec
                 _hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.SHA1, _hmacKey!);
 #pragma warning restore CA5350
@@ -106,8 +191,70 @@ namespace System.IO.Compression
                     throw new InvalidDataException(SR.InvalidWinZipSize);
                 }
 
-                ReadHeader(password);
+                // Read and validate header using persisted key material
+                ReadHeaderWithKeyMaterial();
             }
+        }
+
+        // Returns key material: [salt][encryption key][HMAC key][password verifier]
+        internal byte[] GetKeyMaterial()
+        {
+            Debug.Assert(_salt != null && _key != null && _hmacKey != null && _passwordVerifier != null,
+                "Keys should be initialized before getting key material");
+
+            int saltSize = GetSaltSize(_keySizeBits);
+            int keySizeBytes = _keySizeBits / 8;
+            int totalSize = saltSize + keySizeBytes + keySizeBytes + 2;
+
+            byte[] result = new byte[totalSize];
+            int offset = 0;
+
+            _salt!.CopyTo(result, offset);
+            offset += saltSize;
+
+            _key!.CopyTo(result, offset);
+            offset += keySizeBytes;
+
+            _hmacKey!.CopyTo(result, offset);
+            offset += keySizeBytes;
+
+            _passwordVerifier!.CopyTo(result, offset);
+
+            return result;
+        }
+
+        // Reads the header and validates against persisted key material.
+        private void ReadHeaderWithKeyMaterial()
+        {
+            if (_headerRead) return;
+
+            // Salt size depends on AES strength
+            int saltSize = _keySizeBits / 16;
+            byte[] fileSalt = new byte[saltSize];
+            _baseStream.ReadExactly(fileSalt);
+
+            // Read the 2-byte password verifier from stream
+            byte[] verifier = new byte[2];
+            _baseStream.ReadExactly(verifier);
+
+            // Verify the salt matches
+            Debug.Assert(fileSalt.AsSpan().SequenceEqual(_salt!), "Salt mismatch - key material does not match this entry.");
+
+            // Verify the password verifier
+            if (!verifier.AsSpan().SequenceEqual(_passwordVerifier!))
+            {
+                throw new InvalidDataException(SR.InvalidPassword);
+            }
+
+#pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms - required by WinZip AES spec
+            _hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.SHA1, _hmacKey!);
+#pragma warning restore CA5350
+            InitCipher();
+
+            Array.Clear(_counterBlock, 0, 16);
+            _counterBlock[0] = 1;
+
+            _headerRead = true;
         }
         private void DeriveKeysFromPassword(ReadOnlyMemory<char> password, byte[] salt)
         {

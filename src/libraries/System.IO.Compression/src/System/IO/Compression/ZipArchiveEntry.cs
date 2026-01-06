@@ -51,6 +51,11 @@ namespace System.IO.Compression
         private readonly CompressionLevel _compressionLevel;
         private ZipCompressionMethod _headerCompressionMethod;
         private ushort? _aeVersion;
+        // Cached derived key material for encrypted entries to avoid repeated PBKDF2 derivation.
+        // For WinZip AES: contains [salt][encryption key][HMAC key][password verifier]
+        // For ZipCrypto: contains [key0][key1][key2] as 12 bytes
+        // Invalidated when encryption parameters change (new salt needed)
+        private byte[]? _derivedEncryptionKeyMaterial;
 
         // Initializes a ZipArchiveEntry instance for an existing archive entry.
         internal ZipArchiveEntry(ZipArchive archive, ZipCentralDirectoryFileHeader cd)
@@ -886,6 +891,73 @@ namespace System.IO.Compression
             return _encryptionMethod is EncryptionMethod.Aes128 or EncryptionMethod.Aes192 or EncryptionMethod.Aes256;
         }
 
+        private void InvalidateKeyMaterialCache()
+        {
+            _derivedEncryptionKeyMaterial = null;
+        }
+
+        private int GetAesKeySizeBits()
+        {
+            return _encryptionMethod switch
+            {
+                EncryptionMethod.Aes128 => 128,
+                EncryptionMethod.Aes192 => 192,
+                EncryptionMethod.Aes256 => 256,
+                _ => 256 // Default to AES-256
+            };
+        }
+
+        // Creates the appropriate decryption stream for an encrypted entry.
+        // Uses cached key material if available; otherwise derives keys from password and caches them.
+        private Stream CreateDecryptionStream(Stream compressedStream, ReadOnlyMemory<char> password)
+        {
+            if (IsZipCryptoEncrypted())
+            {
+                byte expectedCheckByte = CalculateZipCryptoCheckByte();
+
+                if (_derivedEncryptionKeyMaterial is null)
+                {
+                    if (password.IsEmpty)
+                        throw new InvalidDataException(SR.PasswordRequired);
+
+                    _derivedEncryptionKeyMaterial = ZipCryptoStream.CreateKey(password);
+                }
+
+                return new ZipCryptoStream(compressedStream, _derivedEncryptionKeyMaterial, expectedCheckByte);
+            }
+            else if (_headerCompressionMethod == ZipCompressionMethod.Aes)
+            {
+                int keySizeBits = GetAesKeySizeBits();
+
+                if (_derivedEncryptionKeyMaterial is null)
+                {
+                    if (password.IsEmpty)
+                        throw new InvalidDataException(SR.PasswordRequired);
+
+                    // Read salt from stream to derive keys
+                    int saltSize = WinZipAesStream.GetSaltSize(keySizeBits);
+                    byte[] salt = new byte[saltSize];
+                    compressedStream.ReadExactly(salt);
+
+                    // Seek back so WinZipAesStream can read the header (salt + password verifier)
+                    compressedStream.Seek(-saltSize, SeekOrigin.Current);
+
+                    // Derive and cache key material
+                    _derivedEncryptionKeyMaterial = WinZipAesStream.CreateKey(password, salt, keySizeBits);
+                }
+
+                return new WinZipAesStream(
+                    baseStream: compressedStream,
+                    keyMaterial: _derivedEncryptionKeyMaterial,
+                    encrypting: false,
+                    keySizeBits: keySizeBits,
+                    totalStreamSize: _compressedSize);
+            }
+
+            // Not encrypted - return as-is
+            return compressedStream;
+        }
+
         private Stream GetDataDecompressor(Stream compressedStreamToRead)
         {
             Stream? uncompressedStream;
@@ -924,35 +996,16 @@ namespace System.IO.Compression
         private Stream OpenInReadModeGetDataCompressor(long offsetOfCompressedData, ReadOnlyMemory<char> password = default)
         {
             Stream compressedStream = new SubReadStream(_archive.ArchiveStream, offsetOfCompressedData, _compressedSize);
-            Stream streamToDecompress = compressedStream;
+            Stream streamToDecompress;
 
-            if (IsZipCryptoEncrypted())
+            if (IsEncrypted)
             {
-                if (password.IsEmpty)
-                    throw new InvalidDataException(SR.PasswordRequired);
-
-                byte expectedCheckByte = CalculateZipCryptoCheckByte();
-                streamToDecompress = new ZipCryptoStream(compressedStream, password, expectedCheckByte);
+                // Use the shared helper that handles key caching
+                streamToDecompress = CreateDecryptionStream(compressedStream, password);
             }
-            else if (_headerCompressionMethod == ZipCompressionMethod.Aes)
+            else
             {
-                if (password.IsEmpty)
-                    throw new InvalidDataException(SR.PasswordRequired);
-
-                int keySizeBits = _encryptionMethod switch
-                {
-                    EncryptionMethod.Aes128 => 128,
-                    EncryptionMethod.Aes192 => 192,
-                    EncryptionMethod.Aes256 => 256,
-                    _ => 256 // default for aes
-                };
-
-                streamToDecompress = new WinZipAesStream(
-                    baseStream: compressedStream,
-                    password: password,
-                    encrypting: false,
-                    keySizeBits: keySizeBits,
-                    totalStreamSize: _compressedSize);
+                streamToDecompress = compressedStream;
             }
 
             // Get decompressed stream
@@ -966,7 +1019,6 @@ namespace System.IO.Compression
 
             return decompressedStream;
         }
-
         private WrappedStream OpenInWriteMode(string? password = null, EncryptionMethod encryptionMethod = EncryptionMethod.None)
         {
             if (_everOpenedForWrite)
@@ -988,12 +1040,12 @@ namespace System.IO.Compression
 
                 Encryption = encryptionMethod;
 
-                // For ZipCrypto with streaming (bit 3 set), verifier = DOS time low word
+                byte[] keyMaterial = ZipCryptoStream.CreateKey(password.AsMemory());
                 ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
 
                 targetStream = new ZipCryptoStream(
                     baseStream: _archive.ArchiveStream,
-                    password: password.AsMemory(),
+                    keyBytes: keyMaterial,
                     passwordVerifierLow2Bytes: verifierLow2Bytes,
                     crc32: null,
                     leaveOpen: true);
@@ -1005,8 +1057,7 @@ namespace System.IO.Compression
 
                 Encryption = encryptionMethod;
 
-                // use switch to calculate keysizebits based on encryption strength
-                int keysizebits = encryptionMethod switch
+                int keySizeBits = encryptionMethod switch
                 {
                     EncryptionMethod.Aes128 => 128,
                     EncryptionMethod.Aes192 => 192,
@@ -1014,18 +1065,22 @@ namespace System.IO.Compression
                     _ => 256 // Default to AES-256
                 };
 
-                // targetstream should be new winzipaesstream for wrting, ae2
+                // Derive key material from password with new random salt
+                byte[] keyMaterial = WinZipAesStream.CreateKey(password.AsMemory(), salt: null, keySizeBits);
+
                 targetStream = new WinZipAesStream(
-                       baseStream: _archive.ArchiveStream,
-                       password: password.AsMemory(),
-                       encrypting: true,
-                       keySizeBits: keysizebits,
-                       leaveOpen: true);
+                    baseStream: _archive.ArchiveStream,
+                    keyMaterial: keyMaterial,
+                    encrypting: true,
+                    keySizeBits: keySizeBits,
+                    leaveOpen: true);
             }
+
+            bool isAesEncryption = encryptionMethod is EncryptionMethod.Aes256 or EncryptionMethod.Aes192 or EncryptionMethod.Aes128;
 
             CheckSumAndSizeWriteStream crcSizeStream = GetDataCompressor(
                 targetStream,
-                encryptionMethod is EncryptionMethod.Aes256 or EncryptionMethod.Aes192 or EncryptionMethod.Aes128 ? false : true,
+                leaveBackingStreamOpen: !isAesEncryption,
                 (object? o, EventArgs e) =>
                 {
                     // release the archive stream
@@ -1033,13 +1088,12 @@ namespace System.IO.Compression
                     entry._archive.ReleaseArchiveStream(entry);
                     entry._outstandingWriteStream = null;
                 },
-                encryptionMethod != EncryptionMethod.None ? _archive.ArchiveStream : null);
+                streamForPosition: encryptionMethod != EncryptionMethod.None ? _archive.ArchiveStream : null);
 
             _outstandingWriteStream = new DirectToArchiveWriterStream(crcSizeStream, this, encryptionMethod);
 
             return new WrappedStream(baseStream: _outstandingWriteStream, closeBaseStream: true);
         }
-
         private WrappedStream OpenInUpdateMode()
         {
             if (_currentlyOpenForWrite)

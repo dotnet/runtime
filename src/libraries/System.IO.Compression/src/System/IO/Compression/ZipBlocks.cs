@@ -693,12 +693,12 @@ namespace System.IO.Compression
             // Skip file name
             stream.Seek(nameLength, SeekOrigin.Current);
 
+            // Calculate end of extra fields
+            long extraEnd = stream.Position + extraLength;
+
             // Parse extra fields if present
             if (extraLength > 0)
             {
-                long extraStart = stream.Position;
-                long extraEnd = extraStart + extraLength;
-
                 while (stream.Position < extraEnd)
                 {
                     ushort headerId = reader.ReadUInt16();
@@ -722,6 +722,9 @@ namespace System.IO.Compression
                     }
                 }
             }
+
+            // Ensure we're positioned at the end of extra fields (where data begins)
+            stream.Seek(extraEnd, SeekOrigin.Begin);
 
             return true;
         }
