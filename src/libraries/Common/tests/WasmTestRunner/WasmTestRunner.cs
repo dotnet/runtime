@@ -3,11 +3,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XHarness.TestRunners.Common;
 using Microsoft.DotNet.XHarness.TestRunners.Xunit;
-using System.Runtime.CompilerServices;
 
 public class WasmTestRunner : WasmApplicationEntryPoint
 {
@@ -28,6 +30,13 @@ public class WasmTestRunner : WasmApplicationEntryPoint
     public static Task<int> Main(string[] args)
     {
         return MainAsync(args);
+    }
+
+    protected override IEnumerable<TestAssemblyInfo> GetTestAssemblies()
+    {
+        AssemblyName an = new AssemblyName(Path.GetFileNameWithoutExtension(TestAssembly));
+        Assembly assembly = Assembly.Load(an);
+        return new[] { new TestAssemblyInfo(assembly, TestAssembly) };
     }
 #endif
 

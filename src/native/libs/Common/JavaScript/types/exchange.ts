@@ -11,13 +11,30 @@ import type { createPromiseCompletionSource, getPromiseCompletionSource, isContr
 import type { isSharedArrayBuffer, zeroRegion } from "../../../System.Native.Browser/utils/memory";
 import type { stringToUTF16, stringToUTF16Ptr, stringToUTF8Ptr, utf16ToString } from "../../../System.Native.Browser/utils/strings";
 import type { abortPosix, abortTimers, getExitStatus } from "../../../System.Native.Browser/utils/host";
+import type { bindJSImportST, invokeJSFunction, invokeJSImportST } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/invoke-js";
+import type { releaseCSOwnedObject } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/gc-handles";
+import type { resolveOrRejectPromise } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/marshal-to-js";
+import type { cancelPromise } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/cancelable-promise";
 
 import type { symbolicateStackTrace } from "../../../System.Native.Browser/diagnostics/symbolicate";
+import type { EmsAmbientSymbolsType } from "../types";
 
 export type RuntimeExports = {
+    bindJSImportST: typeof bindJSImportST,
+    invokeJSImportST: typeof invokeJSImportST,
+    releaseCSOwnedObject: typeof releaseCSOwnedObject,
+    resolveOrRejectPromise: typeof resolveOrRejectPromise,
+    cancelPromise: typeof cancelPromise,
+    invokeJSFunction: typeof invokeJSFunction,
 }
 
 export type RuntimeExportsTable = [
+    typeof bindJSImportST,
+    typeof invokeJSImportST,
+    typeof releaseCSOwnedObject,
+    typeof resolveOrRejectPromise,
+    typeof cancelPromise,
+    typeof invokeJSFunction,
 ]
 
 export type LoggerType = {
@@ -79,9 +96,21 @@ export type BrowserHostExportsTable = [
 ]
 
 export type InteropJavaScriptExports = {
+    SystemInteropJS_GetManagedStackTrace: EmsAmbientSymbolsType["_SystemInteropJS_GetManagedStackTrace"],
+    SystemInteropJS_CallDelegate: EmsAmbientSymbolsType["_SystemInteropJS_CallDelegate"],
+    SystemInteropJS_CompleteTask: EmsAmbientSymbolsType["_SystemInteropJS_CompleteTask"],
+    SystemInteropJS_ReleaseJSOwnedObjectByGCHandle: EmsAmbientSymbolsType["_SystemInteropJS_ReleaseJSOwnedObjectByGCHandle"],
+    SystemInteropJS_BindAssemblyExports: EmsAmbientSymbolsType["_SystemInteropJS_BindAssemblyExports"],
+    SystemInteropJS_CallJSExport: EmsAmbientSymbolsType["_SystemInteropJS_CallJSExport"],
 }
 
 export type InteropJavaScriptExportsTable = [
+    EmsAmbientSymbolsType["_SystemInteropJS_GetManagedStackTrace"],
+    EmsAmbientSymbolsType["_SystemInteropJS_CallDelegate"],
+    EmsAmbientSymbolsType["_SystemInteropJS_CompleteTask"],
+    EmsAmbientSymbolsType["_SystemInteropJS_ReleaseJSOwnedObjectByGCHandle"],
+    EmsAmbientSymbolsType["_SystemInteropJS_BindAssemblyExports"],
+    EmsAmbientSymbolsType["_SystemInteropJS_CallJSExport"],
 ]
 
 export type NativeBrowserExports = {

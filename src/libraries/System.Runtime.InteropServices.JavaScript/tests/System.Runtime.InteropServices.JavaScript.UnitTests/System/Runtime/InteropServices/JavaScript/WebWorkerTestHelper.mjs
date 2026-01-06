@@ -16,7 +16,7 @@ export async function setup() {
             console.error(getDotnetRuntime);
             throw new Error("runtime is null or undefined");
         }
-        dllExports = await runtime.getAssemblyExports("System.Runtime.InteropServices.JavaScript.Tests.dll");
+        dllExports = await runtime.getAssemblyExports("System.Runtime.InteropServices.JavaScript.Tests");
         if (!dllExports) {
             throw new Error("dllExports is null or undefined");
         }
