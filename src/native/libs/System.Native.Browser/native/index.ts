@@ -4,6 +4,7 @@
 import type { InternalExchange, NativeBrowserExports, NativeBrowserExportsTable } from "../types";
 import { InternalExchangeIndex } from "../types";
 
+import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 import GitHash from "consts:gitHash";
 
 export { SystemJS_RandomBytes } from "./crypto";
@@ -18,13 +19,13 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     const runtimeApi = internals[InternalExchangeIndex.RuntimeAPI];
     if (typeof runtimeApi !== "object") throw new Error("Expected internals to have RuntimeAPI");
 
-    if (runtimeApi.runtimeBuildInfo.gitHash && runtimeApi.runtimeBuildInfo.gitHash !== DOTNET.gitHash) {
-        throw new Error(`Mismatched git hashes between loader and runtime. Loader: ${runtimeApi.runtimeBuildInfo.gitHash}, DOTNET: ${DOTNET.gitHash}`);
+    if (runtimeApi.runtimeBuildInfo.gitHash && runtimeApi.runtimeBuildInfo.gitHash !== _ems_.DOTNET.gitHash) {
+        throw new Error(`Mismatched git hashes between loader and runtime. Loader: ${runtimeApi.runtimeBuildInfo.gitHash}, DOTNET: ${_ems_.DOTNET.gitHash}`);
     }
 
     internals[InternalExchangeIndex.NativeBrowserExportsTable] = nativeBrowserExportsToTable({
     });
-    dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
+    _ems_.dotnetUpdateInternals(internals, _ems_.dotnetUpdateInternalsSubscriber);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     function nativeBrowserExportsToTable(map: NativeBrowserExports): NativeBrowserExportsTable {
