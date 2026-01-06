@@ -36,7 +36,7 @@ namespace System.Security.Cryptography.X509Certificates
                 using (SafeCertStoreHandle extraStoreHandle = ConvertStoreToSafeHandle(extraStore))
                 {
                     Interop.Crypt32.CERT_CHAIN_PARA chainPara = default;
-                    chainPara.cbSize = Marshal.SizeOf<Interop.Crypt32.CERT_CHAIN_PARA>();
+                    chainPara.cbSize = sizeof(Interop.Crypt32.CERT_CHAIN_PARA);
 
                     int applicationPolicyCount;
                     using (SafeHandle applicationPolicyOids = applicationPolicy!.ToLpstrArray(out applicationPolicyCount))
@@ -88,12 +88,15 @@ namespace System.Security.Cryptography.X509Certificates
             if (trustMode == X509ChainTrustMode.CustomRootTrust)
             {
                 // Need to get a valid SafeCertStoreHandle otherwise the default stores will be trusted
-                using (SafeCertStoreHandle customTrustStoreHandle = ConvertStoreToSafeHandle(customTrustStore, true))
+                unsafe
                 {
-                    Interop.Crypt32.CERT_CHAIN_ENGINE_CONFIG customChainEngine = default;
-                    customChainEngine.cbSize = Marshal.SizeOf<Interop.Crypt32.CERT_CHAIN_ENGINE_CONFIG>();
-                    customChainEngine.hExclusiveRoot = customTrustStoreHandle.DangerousGetHandle();
-                    chainEngineHandle = Interop.crypt32.CertCreateCertificateChainEngine(ref customChainEngine);
+                    using (SafeCertStoreHandle customTrustStoreHandle = ConvertStoreToSafeHandle(customTrustStore, true))
+                    {
+                        Interop.Crypt32.CERT_CHAIN_ENGINE_CONFIG customChainEngine = default;
+                        customChainEngine.cbSize = sizeof(Interop.Crypt32.CERT_CHAIN_ENGINE_CONFIG);
+                        customChainEngine.hExclusiveRoot = customTrustStoreHandle.DangerousGetHandle();
+                        chainEngineHandle = Interop.crypt32.CertCreateCertificateChainEngine(ref customChainEngine);
+                    }
                 }
             }
             else

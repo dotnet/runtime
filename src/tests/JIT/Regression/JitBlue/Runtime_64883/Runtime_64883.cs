@@ -10,6 +10,9 @@
 // 
 //     File: D:\a\_work\1\s\src\coreclr\jit\lir.cpp Line: 1397
 // 
+
+namespace Runtime_64883;
+
 using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -18,7 +21,9 @@ using Xunit;
 public class Runtime_64883
 {
     public static uint s_29;
+    [OuterLoop]
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void TestEntryPoint()
     {
         // This needs an ALC because the "static access" helper is different in ALCs.

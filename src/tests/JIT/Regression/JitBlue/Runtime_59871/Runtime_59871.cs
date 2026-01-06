@@ -2,6 +2,9 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
+
+namespace Runtime_59871;
+
 public class Runtime_59871
 {
     LargeStruct _large;

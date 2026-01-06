@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Threading;
@@ -224,22 +225,52 @@ namespace System.Runtime.CompilerServices
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(method));
         }
 
-        /// <summary>
-        /// Allocate memory that is associated with the <paramref name="type"/> and
-        /// will be freed if and when the <see cref="System.Type"/> is unloaded.
-        /// </summary>
-        /// <param name="type">Type associated with the allocated memory.</param>
-        /// <param name="size">Amount of memory in bytes to allocate.</param>
-        /// <returns>The allocated memory</returns>
+        /// <summary>Allocates memory that's associated with the <paramref name="type" /> and is freed if and when the <see cref="Type" /> is unloaded.</summary>
+        /// <param name="type">The type associated with the allocated memory.</param>
+        /// <param name="size">The amount of memory to allocate, in bytes.</param>
+        /// <returns>The allocated memory.</returns>
+        /// <exception cref="ArgumentException"><paramref name="type" /> must be a type provided by the runtime.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="size" /> is negative.</exception>
         public static unsafe IntPtr AllocateTypeAssociatedMemory(Type type, int size)
         {
             if (type is not RuntimeType)
+            {
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
+            }
 
             ArgumentOutOfRangeException.ThrowIfNegative(size);
 
             // We don't support unloading; the memory will never be freed.
             return (IntPtr)NativeMemory.AllocZeroed((uint)size);
+        }
+
+        /// <summary>Allocates aligned memory that's associated with the <paramref name="type" /> and is freed if and when the <see cref="Type" /> is unloaded.</summary>
+        /// <param name="type">The type associated with the allocated memory.</param>
+        /// <param name="size">The amount of memory to allocate, in bytes.</param>
+        /// <param name="alignment">The alignment, in bytes, of the memory to allocate. This must be a power of <c>2</c>.</param>
+        /// <returns>The allocated aligned memory.</returns>
+        /// <exception cref="ArgumentException"><paramref name="type" /> must be a type provided by the runtime.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="size" /> is negative.</exception>
+        /// <exception cref="ArgumentException"><paramref name="alignment" /> is not a power of <c>2</c>.</exception>
+        public static unsafe IntPtr AllocateTypeAssociatedMemory(Type type, int size, int alignment)
+        {
+            if (type is not RuntimeType)
+            {
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
+            }
+
+            ArgumentOutOfRangeException.ThrowIfNegative(size);
+
+            if (!BitOperations.IsPow2(alignment))
+            {
+                // The C standard doesn't define what a valid alignment is, however Windows and POSIX implementation requires a power of 2
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_AlignmentMustBePow2);
+            }
+
+            // We don't support unloading; the memory will never be freed.
+            void* result = NativeMemory.AlignedAlloc((uint)size, (uint)alignment);
+            NativeMemory.Clear(result, (uint)size);
+            return (IntPtr)result;
         }
 
         public static void PrepareDelegate(Delegate d)

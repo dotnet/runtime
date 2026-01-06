@@ -110,10 +110,7 @@ namespace System.Data.Odbc
             }
 
             // remove reference to this from the live datareader
-            if (liveReader != null)
-            {
-                liveReader.Command = null;
-            }
+            liveReader?.Command = null;
 
             _transaction = null;
 
@@ -510,10 +507,7 @@ namespace System.Data.Odbc
 
         internal void CloseFromConnection()
         {
-            if (null != _parameterCollection)
-            {
-                _parameterCollection.RebindCollection = true;
-            }
+            _parameterCollection?.RebindCollection = true;
             DisposeDataReader();
             CloseCommandWrapper();
             _isPrepared = false;

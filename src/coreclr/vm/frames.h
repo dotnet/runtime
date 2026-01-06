@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// FRAMES.H
 
+// FRAMES.H
 
 //
 // These C++ classes expose activation frames to the rest of the EE.
@@ -565,9 +565,7 @@ private:
 #ifdef HOST_64BIT
     friend Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame);
 #endif
-#ifdef FEATURE_EH_FUNCLETS
     friend struct ExInfo;
-#endif
 #if defined(DACCESS_COMPILE)
     friend class DacDbiInterfaceImpl;
 #endif // DACCESS_COMPILE
@@ -591,9 +589,9 @@ protected:
 #endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-#if !defined(TARGET_X86) || defined(TARGET_UNIX)
+#if (!defined(TARGET_X86) || defined(TARGET_UNIX)) && !defined(TARGET_WASM)
     static void UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP);
-#endif // !TARGET_X86 || TARGET_UNIX
+#endif // (!TARGET_X86 || TARGET_UNIX) && !TARGET_WASM
 #endif // DACCESS_COMPILE
 
 #if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
@@ -898,27 +896,15 @@ public:
 // TransitionFrames for exceptions
 //-----------------------------------------------------------------------
 
-// The define USE_FEF controls how this class is used.  Look for occurrences
-//  of USE_FEF.
 typedef DPTR(class FaultingExceptionFrame) PTR_FaultingExceptionFrame;
 
 class FaultingExceptionFrame : public Frame
 {
     friend class CheckAsmOffsets;
 
-#ifndef FEATURE_EH_FUNCLETS
-#ifdef TARGET_X86
-    DWORD                   m_Esp;
-    CalleeSavedRegisters    m_regs;
-    TADDR                   m_ReturnAddress;
-#else  // TARGET_X86
-    #error "Unsupported architecture"
-#endif // TARGET_X86
-#else // FEATURE_EH_FUNCLETS
     BOOL                    m_fFilterExecuted;  // Flag for FirstCallToHandler
     TADDR                   m_ReturnAddress;
     T_CONTEXT               m_ctx;
-#endif // !FEATURE_EH_FUNCLETS
 
 #ifdef TARGET_AMD64
     TADDR                   m_SSP;
@@ -949,26 +935,9 @@ public:
     unsigned GetFrameAttribs_Impl()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-#ifdef FEATURE_EH_FUNCLETS
         return FRAME_ATTR_EXCEPTION | (!!(m_ctx.ContextFlags & CONTEXT_EXCEPTION_ACTIVE) ? FRAME_ATTR_FAULTED : 0);
-#else
-        return FRAME_ATTR_EXCEPTION | FRAME_ATTR_FAULTED;
-#endif
     }
 
-#ifndef FEATURE_EH_FUNCLETS
-    CalleeSavedRegisters *GetCalleeSavedRegisters()
-    {
-#ifdef TARGET_X86
-        LIMITED_METHOD_DAC_CONTRACT;
-        return &m_regs;
-#else
-        PORTABILITY_ASSERT("GetCalleeSavedRegisters");
-#endif // TARGET_X86
-    }
-#endif // FEATURE_EH_FUNCLETS
-
-#ifdef FEATURE_EH_FUNCLETS
     T_CONTEXT *GetExceptionContext ()
     {
         LIMITED_METHOD_CONTRACT;
@@ -980,7 +949,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return &m_fFilterExecuted;
     }
-#endif // FEATURE_EH_FUNCLETS
 
 #ifdef TARGET_AMD64
     void SetSSP(TADDR value)
@@ -1002,9 +970,7 @@ public:
 template<>
 struct cdac_data<FaultingExceptionFrame>
 {
-#ifdef FEATURE_EH_FUNCLETS
     static constexpr size_t TargetContext = offsetof(FaultingExceptionFrame, m_ctx);
-#endif // FEATURE_EH_FUNCLETS
 };
 
 typedef DPTR(class SoftwareExceptionFrame) PTR_SoftwareExceptionFrame;
@@ -1012,9 +978,7 @@ typedef DPTR(class SoftwareExceptionFrame) PTR_SoftwareExceptionFrame;
 class SoftwareExceptionFrame : public Frame
 {
     TADDR                           m_ReturnAddress;
-#if !defined(TARGET_X86) || defined(FEATURE_EH_FUNCLETS)
     T_KNONVOLATILE_CONTEXT_POINTERS m_ContextPointers;
-#endif
     // This T_CONTEXT field needs to be the last field in the class because it is a
     // different size between Linux (pal.h) and the Windows cross-DAC (winnt.h).
     T_CONTEXT                       m_Context;
@@ -1917,12 +1881,33 @@ public:
         return m_Next;
     }
 
+    PTR_VOID GetOSStackLocation()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+#ifdef FEATURE_INTERPRETER
+        return m_osStackLocation;
+#else
+        return dac_cast<PTR_VOID>(this);
+#endif
+    }
+
+#ifdef FEATURE_INTERPRETER
+    void SetOSStackLocation(PTR_VOID osStackLocation)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        m_osStackLocation = osStackLocation;
+    }
+#endif
+
 private:
     PTR_GCFrame   m_Next;
     PTR_Thread    m_pCurThread;
     PTR_OBJECTREF m_pObjRefs;
     UINT          m_numObjRefs;
     BOOL          m_MaybeInterior;
+#ifdef FEATURE_INTERPRETER
+    PTR_VOID      m_osStackLocation;
+#endif
 };
 
 //-----------------------------------------------------------------------------
@@ -2124,11 +2109,7 @@ struct ReversePInvokeFrame
     Thread* currentThread;
     MethodDesc* pMD;
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-#ifndef FEATURE_EH_FUNCLETS
-    FrameHandlerExRecord record;
-#else
     EXCEPTION_REGISTRATION_RECORD m_ExReg;
-#endif
 #endif
 };
 
@@ -2211,9 +2192,9 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-#if !defined(TARGET_X86) || defined(TARGET_UNIX)
+#if (!defined(TARGET_X86) || defined(TARGET_UNIX)) && !defined(TARGET_WASM)
     void UpdateFloatingPointRegisters(const PREGDISPLAY pRD);
-#endif // !TARGET_X86 || TARGET_UNIX
+#endif // (!TARGET_X86 || TARGET_UNIX) && !TARGET_WASM
 #endif // DACCESS_COMPILE
 
 #ifdef FEATURE_INTERPRETER
@@ -2457,6 +2438,7 @@ public:
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
         , m_SSP(0)
 #endif
+        , m_continuation(NULL)
     {
         WRAPPER_NO_CONTRACT;
         Push();
@@ -2507,6 +2489,7 @@ public:
     }
 #endif // HOST_AMD64 && HOST_WINDOWS
 
+#ifndef TARGET_WASM
     void SetInterpExecMethodSP(TADDR sp)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2518,6 +2501,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_SP;
     }
+#endif // TARGET_WASM
 
     void SetIsFaulting(bool isFaulting)
     {
@@ -2525,6 +2509,28 @@ public:
         m_isFaulting = isFaulting;
     }
 
+    void GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
+    {
+        fn(dac_cast<PTR_PTR_Object>(dac_cast<TADDR>(&m_continuation)), sc, 0);
+    }
+
+    void SetContinuation(OBJECTREF continuation)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_continuation = OBJECTREFToObject(continuation);
+    }
+
+    OBJECTREF GetContinuation()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return ObjectToOBJECTREF(m_continuation);
+    }
+
+    PTR_PTR_Object GetContinuationPtr()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return dac_cast<PTR_PTR_Object>(dac_cast<TADDR>(&m_continuation));
+    }
 private:
     // The last known topmost interpreter frame in the InterpExecMethod belonging to
     // this InterpreterFrame.
@@ -2535,7 +2541,10 @@ private:
     // Saved SSP of the InterpExecMethod for resuming after catch into interpreter frames.
     TADDR m_SSP;
 #endif // HOST_AMD64 && HOST_WINDOWS
+#ifndef TARGET_WASM
     TADDR m_SP;
+#endif // TARGET_WASM
+    PTR_Object m_continuation;
 };
 
 #endif // FEATURE_INTERPRETER

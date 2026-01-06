@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b75250;
+
 using System;
 using Xunit;
 public class testout1
@@ -39,6 +42,7 @@ public class testout1
         return retval;
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

@@ -19,7 +19,6 @@
 #endif
 
 #include "corpriv.h"
-#include "../../dlls/mscorrc/resource.h"
 #include <limits.h>
 
 
@@ -1646,7 +1645,7 @@ HRESULT Cordb::CreateProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
                 break;
 
             default:
-                __assume(0);
+                UNREACHABLE();
         }
 
     #endif // FEATURE_INTEROP_DEBUGGING

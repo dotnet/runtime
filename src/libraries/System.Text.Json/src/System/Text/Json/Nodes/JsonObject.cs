@@ -296,10 +296,7 @@ namespace System.Text.Json.Nodes
         {
             Debug.Assert(_dictionary != null, "Cannot have detachable nodes without a materialized dictionary.");
 
-            if (item != null)
-            {
-                item.Parent = null;
-            }
+            item?.Parent = null;
         }
 
         private KeyValuePair<string, JsonNode?>? FindValue(JsonNode? value)

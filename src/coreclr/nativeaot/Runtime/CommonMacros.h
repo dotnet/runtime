@@ -37,33 +37,7 @@
 
 #endif // _MSC_VER
 
-#ifndef offsetof
-#define offsetof(s,m)   (uintptr_t)( (intptr_t)&reinterpret_cast<const volatile char&>((((s *)0)->m)) )
-#endif // offsetof
-
-#ifdef __GNUC__
-#ifdef HOST_64BIT
-#define __int64     long
-#else // HOST_64BIT
-#define __int64     long long
-#endif // HOST_64BIT
-#endif // __GNUC__
-
-#ifndef FORCEINLINE
-#define FORCEINLINE __forceinline
-#endif
-
-#ifdef __GNUC__
-#define __forceinline __attribute__((always_inline)) inline
-#endif // __GNUC__
-
-#ifndef NOINLINE
-#ifdef _MSC_VER
-#define NOINLINE __declspec(noinline)
-#else
-#define NOINLINE __attribute__((noinline))
-#endif
-#endif
+#include <stddef.h>
 
 #ifndef __GCENV_BASE_INCLUDED__
 
@@ -89,7 +63,7 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 #ifndef DACCESS_COMPILE
 
 #ifndef ZeroMemory
-#define ZeroMemory(_dst, _size) memset((_dst), 0, (_size))
+#define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
 #endif
 
 #endif // !DACCESS_COMPILE
@@ -97,45 +71,17 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 //-------------------------------------------------------------------------------------------------
 // Platform-specific defines
 
-#if defined(HOST_AMD64)
+#ifdef HOST_64BIT
 
 #define LOG2_PTRSIZE 3
 #define POINTER_SIZE 8
 
-#elif defined(HOST_X86)
+#else // HOST_64BIT
 
 #define LOG2_PTRSIZE 2
 #define POINTER_SIZE 4
 
-#elif defined(HOST_ARM)
-
-#define LOG2_PTRSIZE 2
-#define POINTER_SIZE 4
-
-#elif defined(HOST_ARM64)
-
-#define LOG2_PTRSIZE 3
-#define POINTER_SIZE 8
-
-#elif defined (HOST_WASM)
-
-#define LOG2_PTRSIZE 2
-#define POINTER_SIZE 4
-
-#elif defined(HOST_LOONGARCH64) || defined (HOST_RISCV64)
-
-#define LOG2_PTRSIZE 3
-#define POINTER_SIZE 8
-
-#else
-#error Unsupported target architecture
-#endif
-
-#ifndef __GCENV_BASE_INCLUDED__
-
-#define OS_PAGE_SIZE    PalOsPageSize()
-
-#endif // __GCENV_BASE_INCLUDED__
+#endif // HOST_64BIT
 
 #if defined(TARGET_ARM)
 #define THUMB_CODE 1
@@ -312,8 +258,6 @@ typedef int32_t FC_BOOL_ARG;
 #define NOT_IN_DAC(x)
 #endif
 
-#define INLINE inline
-
 enum STARTUP_TIMELINE_EVENT_ID
 {
     PROCESS_ATTACH_BEGIN = 0,
@@ -330,34 +274,5 @@ extern uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
 #else // PROFILE_STARTUP
 #define STARTUP_TIMELINE_EVENT(eventid)
 #endif // PROFILE_STARTUP
-
-// PAL Numbers
-// Used to ensure cross-compiler compatibility when declaring large
-// integer constants. 64-bit integer constants should be wrapped in the
-// declarations listed here.
-//
-// Each of the #defines here is wrapped to avoid conflicts with pal.h.
-
-#if defined(_MSC_VER)
-
-// MSVC's way of declaring large integer constants
-// If you define these in one step, without the _HELPER macros, you
-// get extra whitespace when composing these with other concatenating macros.
-#ifndef I64
-#define I64_HELPER(x) x ## i64
-#define I64(x)        I64_HELPER(x)
-#endif
-
-#else
-
-// GCC's way of declaring large integer constants
-// If you define these in one step, without the _HELPER macros, you
-// get extra whitespace when composing these with other concatenating macros.
-#ifndef I64
-#define I64_HELPER(x) x ## LL
-#define I64(x)        I64_HELPER(x)
-#endif
-
-#endif
 
 #endif // __COMMONMACROS_H__

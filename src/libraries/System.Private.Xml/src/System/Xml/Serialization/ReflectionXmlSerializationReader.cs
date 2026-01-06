@@ -880,6 +880,16 @@ namespace System.Xml.Serialization
                     Reader.Skip();
                     value = default(DateTimeOffset);
                 }
+                else if (element.Mapping.TypeDesc!.Type == typeof(DateOnly) && Reader.IsEmptyElement)
+                {
+                    Reader.Skip();
+                    value = default(DateOnly);
+                }
+                else if (element.Mapping.TypeDesc!.Type == typeof(TimeOnly) && Reader.IsEmptyElement)
+                {
+                    Reader.Skip();
+                    value = default(TimeOnly);
+                }
                 else
                 {
                     if (element.Mapping.TypeDesc == QnameTypeDesc)

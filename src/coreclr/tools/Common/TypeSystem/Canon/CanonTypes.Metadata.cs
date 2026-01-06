@@ -17,8 +17,6 @@ namespace Internal.TypeSystem
             return Array.Empty<MethodImplRecord>();
         }
 
-        public override MetadataType MetadataBaseType => (MetadataType)BaseType;
-
         public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
 
         public override bool IsAbstract => false;
@@ -47,7 +45,7 @@ namespace Internal.TypeSystem
             return default(ClassLayoutMetadata);
         }
 
-        public override MetadataType GetNestedType(string name)
+        public override MetadataType GetNestedType(ReadOnlySpan<byte> name)
         {
             return null;
         }

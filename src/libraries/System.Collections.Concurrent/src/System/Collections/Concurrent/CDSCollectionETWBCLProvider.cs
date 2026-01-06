@@ -19,15 +19,12 @@ namespace System.Collections.Concurrent
         Name = "System.Collections.Concurrent.ConcurrentCollectionsEventSource",
         Guid = "35167F8E-49B2-4b96-AB86-435B59336B5E"
         )]
-    internal sealed class CDSCollectionETWBCLProvider : EventSource
+    internal sealed partial class CDSCollectionETWBCLProvider : EventSource
     {
         /// <summary>
         /// Defines the singleton instance for the collection ETW provider.
-        /// The collection provider GUID is {35167F8E-49B2-4b96-AB86-435B59336B5E}.
         /// </summary>
         public static readonly CDSCollectionETWBCLProvider Log = new CDSCollectionETWBCLProvider();
-        /// <summary>Prevent external instantiation.  All logging should go through the Log instance.</summary>
-        private CDSCollectionETWBCLProvider() { }
 
         /// <summary>Enabled for all keywords.</summary>
         private const EventKeywords ALL_KEYWORDS = (EventKeywords)(-1);

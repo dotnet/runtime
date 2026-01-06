@@ -7,7 +7,7 @@ import { isSharedArrayBuffer, localHeapViewU8 } from "./memory";
 const batchedQuotaMax = 65536;
 let warnOnce = true;
 
-export function mono_wasm_browser_entropy (bufferPtr: number, bufferLength: number): number {
+export function SystemJS_RandomBytes (bufferPtr: number, bufferLength: number): number {
     if (!globalThis.crypto || !globalThis.crypto.getRandomValues) {
         if (warnOnce) {
             mono_log_warn("This engine doesn't support crypto.getRandomValues. Please use a modern version or provide polyfill for 'globalThis.crypto.getRandomValues'.");
@@ -16,6 +16,7 @@ export function mono_wasm_browser_entropy (bufferPtr: number, bufferLength: numb
         return -1;
     }
 
+    bufferPtr = bufferPtr >>> 0;
     const memoryView = localHeapViewU8();
     const targetView = memoryView.subarray(bufferPtr, bufferPtr + bufferLength);
 

@@ -245,10 +245,7 @@ namespace System.Xml
 
             _rawWriter = writer as XmlRawWriter;
             _predefinedNamespaces = writer as IXmlNamespaceResolver;
-            if (_rawWriter != null)
-            {
-                _rawWriter.NamespaceResolver = new NamespaceResolverProxy(this);
-            }
+            _rawWriter?.NamespaceResolver = new NamespaceResolverProxy(this);
 
             _checkCharacters = settings.CheckCharacters;
             _omitDuplNamespaces = (settings.NamespaceHandling & NamespaceHandling.OmitDuplicates) != 0;

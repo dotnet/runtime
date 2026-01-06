@@ -29,7 +29,6 @@
     <Compile Include="ZipArchive\zip_ReadTests.cs" />
     <Compile Include="ZipArchive\zip_UpdateTests.cs" />
     <Compile Include="ZipArchive\zip_UpdateTests.Comments.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs" Link="Common\System\IO\PathFeatures.cs" />
     <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs" Link="Common\System\IO\CallTrackingStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\CRC.cs" Link="Common\System\IO\Compression\CRC.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\CompressionStreamTestBase.cs" Link="Common\System\IO\Compression\CompressionStreamTestBase.cs" />

@@ -30,6 +30,7 @@
 NativeCodeVersion::NativeCodeVersion(PTR_MethodDesc pMethod) : m_pMethodDesc(pMethod) {}
 BOOL NativeCodeVersion::IsDefaultVersion() const { return TRUE; }
 PCODE NativeCodeVersion::GetNativeCode() const { return m_pMethodDesc->GetNativeCode(); }
+ReJITID NativeCodeVersion::GetILCodeVersionId() const { return 0; }
 
 #ifndef DACCESS_COMPILE
 BOOL NativeCodeVersion::SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected) { return m_pMethodDesc->SetNativeCodeInterlocked(pCode, pExpected); }
@@ -320,7 +321,7 @@ MethodDescVersioningState* NativeCodeVersion::GetMethodDescVersioningState()
     CodeVersionManager* pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
     return pCodeVersionManager->GetMethodDescVersioningState(pMethodDesc);
 }
-#endif
+#endif // !DACCESS_COMPILE
 
 bool NativeCodeVersion::IsFinalTier() const
 {
@@ -917,11 +918,41 @@ PTR_COR_ILMETHOD ILCodeVersion::GetIL() const
     if(pIL == NULL)
     {
         PTR_Module pModule = GetModule();
-        PTR_MethodDesc pMethodDesc = dac_cast<PTR_MethodDesc>(pModule->LookupMethodDef(GetMethodDef()));
-        if (pMethodDesc != NULL && pMethodDesc->MayHaveILHeader())
+        // Always pickup overrides like reflection emit, EnC, etc. irrespective of RVA.
+        // Profilers can attach dynamic IL to methods with zero RVA.
+        mdMethodDef methodDef = GetMethodDef();
+        TADDR pIL = pModule->GetDynamicIL(methodDef);
+        if (pIL == (TADDR)NULL)
         {
-            pIL = dac_cast<PTR_COR_ILMETHOD>(pMethodDesc->GetILHeader());
+            DWORD rva;
+            DWORD dwImplFlags;
+            if (methodDef & 0x00FFFFFF)
+            {
+                if (FAILED(pModule->GetMDImport()->GetMethodImplProps(methodDef, &rva, &dwImplFlags)))
+                {   // Class loader already asked for MethodImpls, so this should always succeed (unless there's a
+                    // bug or a new code path)
+                    _ASSERTE(!"If this ever fires, then this method should return HRESULT");
+                    rva = 0;
+                }
+
+                // RVA points to IL header only when the code type is IL
+                if (!IsMiIL(dwImplFlags))
+                {
+                    rva = 0;
+                }
+            }
+            else
+            {
+                rva = 0;
+            }
+            pIL = pModule->GetIL(rva);
         }
+
+#ifdef DACCESS_COMPILE
+        return (pIL != (TADDR)NULL) ? dac_cast<PTR_COR_ILMETHOD>(DacGetIlMethod(pIL)) : NULL;
+#else // !DACCESS_COMPILE
+        return PTR_COR_ILMETHOD(pIL);
+#endif // !DACCESS_COMPILE
     }
 
     return pIL;
@@ -1707,7 +1738,7 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
             break;
         }
 
-        if (!pMethodDesc->IsPointingToPrestub())
+        if (!pMethodDesc->ShouldCallPrestub())
         {
             *doFullBackpatchRef = true;
             return (PCODE)NULL;
@@ -1949,7 +1980,11 @@ HRESULT CodeVersionManager::PublishNativeCodeVersion(MethodDesc* pMethod, Native
                 pMethod,
                 nativeCodeVersion.GetVersionId()));
 
-        #ifdef FEATURE_TIERED_COMPILATION
+#ifdef FEATURE_INTERPRETER
+            // When we hit the Precode that should fixup any issues with an unset interpreter code pointer. This is notably most important in ReJIT scenarios
+            pMethod->ClearInterpreterCodePointer();
+#endif
+#ifdef FEATURE_TIERED_COMPILATION
             bool wasSet = CallCountingManager::SetCodeEntryPoint(nativeCodeVersion, pCode, false, nullptr);
             _ASSERTE(wasSet);
         #else
