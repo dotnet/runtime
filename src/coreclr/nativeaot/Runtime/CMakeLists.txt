@@ -5,6 +5,7 @@ set(COMMON_RUNTIME_SOURCES
     rhassert.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
     CachedInterfaceDispatch_Aot.cpp
+    ${RUNTIME_DIR}/MiscNativeHelpers.cpp
     Crst.cpp
     DebugHeader.cpp
     MethodTable.cpp
@@ -57,7 +58,7 @@ set(COMMON_RUNTIME_SOURCES
 
 if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     list(APPEND COMMON_RUNTIME_SOURCES
-        ${RUNTIME_DIR}/asyncsafethreadmap.cpp
+        ${RUNTIME_DIR}/SignalSafeThreadMap.cpp
     )
 endif()
 

@@ -19,10 +19,10 @@
  *  - each JS module to use exported symbols in ergonomic way
  */
 
-import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, LoggerType, AssertType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable, InternalExchangeSubscriber, BrowserUtilsExports, BrowserUtilsExportsTable, VoidPtr, CharPtr, NativePointer, DiagnosticsExports, DiagnosticsExportsTable } from "../types";
+import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, LoggerType, AssertType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable, InternalExchangeSubscriber, BrowserUtilsExports, BrowserUtilsExportsTable, DiagnosticsExports, DiagnosticsExportsTable } from "../types";
 import { InternalExchangeIndex } from "../types";
 
-let dotnetInternals: InternalExchange;
+export let dotnetInternals: InternalExchange;
 export let Module: DotnetModuleInternal;
 export let dotnetApi: RuntimeAPI;
 export const dotnetLogger: LoggerType = {} as LoggerType;
@@ -34,10 +34,6 @@ export const dotnetInteropJSExports: InteropJavaScriptExports = {} as any;
 export const dotnetNativeBrowserExports: NativeBrowserExports = {} as any;
 export const dotnetBrowserUtilsExports: BrowserUtilsExports = {} as any;
 export const dotnetDiagnosticsExports: DiagnosticsExports = {} as any;
-
-export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
-export const CharPtrNull: CharPtr = <CharPtr><any>0;
-export const NativePointerNull: NativePointer = <NativePointer><any>0;
 
 export function dotnetGetInternals(): InternalExchange {
     return dotnetInternals;

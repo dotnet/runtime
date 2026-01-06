@@ -206,7 +206,7 @@ Done: ;
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE Array_CreateInstanceMDArray(EnregisteredTypeHandle typeHandle, UINT32 dwNumArgs, INT32* pArgList, QCall::ObjectHandleOnStack retArray)
+extern "C" void QCALLTYPE Array_Ctor(MethodTable* pArrayMT, UINT32 dwNumArgs, INT32* pArgList, QCall::ObjectHandleOnStack retArray)
 {
     QCALL_CONTRACT;
 
@@ -214,11 +214,10 @@ extern "C" void QCALLTYPE Array_CreateInstanceMDArray(EnregisteredTypeHandle typ
 
     GCX_COOP();
 
-    TypeHandle typeHnd = TypeHandle::FromPtr(typeHandle);
-    _ASSERTE(typeHnd.IsFullyLoaded());
-    _ASSERTE(typeHnd.GetMethodTable()->IsArray());
+    _ASSERTE(pArrayMT->IsFullyLoaded());
+    _ASSERTE(pArrayMT->IsArray());
 
-    retArray.Set(AllocateArrayEx(typeHnd, pArgList, dwNumArgs));
+    retArray.Set(AllocateArrayEx(pArrayMT, pArgList, dwNumArgs));
 
     END_QCALL;
 }

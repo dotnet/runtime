@@ -82,9 +82,6 @@ public:
     static FCDECL3(VOID, BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount);
 };
 
-extern "C" void QCALLTYPE Buffer_Clear(void *dst, size_t length);
-extern "C" void QCALLTYPE Buffer_MemMove(void *dst, void *src, size_t length);
-
 const UINT MEM_PRESSURE_COUNT = 4;
 
 struct GCGenerationInfo
@@ -256,10 +253,6 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
 // Returns the number of logical processors that can be used by managed code
 extern "C" INT32 QCALLTYPE Environment_GetProcessorCount();
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-extern "C" void QCALLTYPE X86BaseCpuId(int cpuInfo[4], int functionId, int subFunctionId);
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
-
 extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString);
 
 extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString);
@@ -288,8 +281,6 @@ public:
         static FCDECL2(INT32, ExchangeAdd32, INT32 *location, INT32 value);
         static FCDECL2_IV(INT64, ExchangeAdd64, INT64 *location, INT64 value);
 };
-
-extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide();
 
 class MethodTableNative {
 public:
