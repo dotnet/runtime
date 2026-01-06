@@ -46,7 +46,9 @@ namespace ILAssembler.Tests
                 """;
 
             var diagnostics = CompileAndGetDiagnostics(source, new Options());
-            Assert.Contains(diagnostics, d => d.Id == DiagnosticIds.TypeNotFound && d.Severity == DiagnosticSeverity.Error);
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.TypeNotFound, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
         }
 
         [Theory]
@@ -130,7 +132,90 @@ namespace ILAssembler.Tests
                 """;
 
             var diagnostics = CompileAndGetDiagnostics(source, new Options());
-            Assert.Contains(diagnostics, d => d.Id == DiagnosticIds.TypedefNotFound && d.Severity == DiagnosticSeverity.Error);
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.TypedefNotFound, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+        }
+
+        [Fact]
+        public void MultipleTypeNotFound_ReportsMultipleErrors()
+        {
+            // Multiple references to non-existent types should each report an error
+            string source = """
+                .class public auto ansi beforefieldinit Test extends NonExistentBase implements NonExistentInterface
+                {
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Equal(2, diagnostics.Length);
+            Assert.All(diagnostics, d =>
+            {
+                Assert.Equal(DiagnosticIds.TypeNotFound, d.Id);
+                Assert.Equal(DiagnosticSeverity.Error, d.Severity);
+            });
+        }
+
+        [Fact]
+        public void ThisOutsideClass_ReportsError()
+        {
+            // Using .this outside of a class definition should report an error
+            // Test at module level where there's no class context
+            string source = """
+                .assembly extern System.Runtime { }
+                .typedef class .this as MyThis
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.ThisOutsideClass, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+        }
+
+        [Fact]
+        public void BaseOutsideClass_ReportsError()
+        {
+            // Using .base outside of a class definition should report an error
+            string source = """
+                .assembly extern System.Runtime { }
+                .typedef class .base as MyBase
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.BaseOutsideClass, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+        }
+
+        [Fact]
+        public void NesterOutsideNestedClass_ReportsError()
+        {
+            // Using .nester outside of a nested class should report an error
+            string source = """
+                .assembly extern System.Runtime { }
+                .typedef class .nester as MyNester
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.NesterOutsideNestedClass, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+        }
+
+        [Fact]
+        public void TypeParameterOutsideType_ReportsError()
+        {
+            // Using a named type parameter reference outside of a generic type should report an error
+            // Note: !0 (by index) is allowed for compat, but !T (by name) requires a type context
+            string source = """
+                .assembly extern System.Runtime { }
+                .typedef !T as MyTypeParam
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.TypeParameterOutsideType, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
         }
 
         private static PEReader CompileAndGetReader(string source, Options options)
