@@ -191,7 +191,7 @@ extern "C" BOOL QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int thr
 {
     QCALL_CONTRACT;
 
-    BOOL ret = TRUE;
+    BOOL result = TRUE;
 
     BEGIN_QCALL;
 
@@ -268,13 +268,13 @@ extern "C" BOOL QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int thr
     {
         GCX_COOP();
 
-        ret = FALSE;
+        result = FALSE;
         exception.Set(pNewThread->GetExceptionDuringStartup());
     }
 
     END_QCALL;
 
-    return ret;
+    return result;
 }
 
 extern "C" void QCALLTYPE ThreadNative_SetPriority(QCall::ObjectHandleOnStack thread, INT32 iPriority)
