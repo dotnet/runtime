@@ -39,7 +39,7 @@ export function teardownProxyConsole(message?: string) {
             if (message && originalConsoleMethods) {
                 originalConsoleMethods.log(message);
             }
-        } else if (consoleWebSocket.bufferedAmount == 0 || counter == 0) {
+        } else if (consoleWebSocket.bufferedAmount === 0 || counter === 0) {
             if (message) {
                 // tell xharness WasmTestMessagesProcessor we are done.
                 // note this sends last few bytes into the same WS

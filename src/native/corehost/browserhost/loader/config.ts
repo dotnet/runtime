@@ -78,6 +78,7 @@ function defaultConfig(target: LoaderConfigInternal) {
     if (target.debugLevel === undefined) target.debugLevel = 0;
     if (target.diagnosticTracing === undefined) target.diagnosticTracing = false;
     if (target.virtualWorkingDirectory === undefined) target.virtualWorkingDirectory = "/";
+    if (target.maxParallelDownloads === undefined) target.maxParallelDownloads = 16;
     normalizeConfig(target);
 }
 

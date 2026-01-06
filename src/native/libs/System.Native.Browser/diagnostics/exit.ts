@@ -53,7 +53,7 @@ function onExit(exitCode: number, reason: any, silent: boolean): boolean {
 function logExitReason(exit_code: number, reason: any) {
     if (exit_code !== 0 && reason) {
         const exitStatus = isExitStatus(reason);
-        if (typeof reason == "string") {
+        if (typeof reason === "string") {
             dotnetLogger.error(reason);
         } else {
             if (reason.stack === undefined && !exitStatus) {

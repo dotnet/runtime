@@ -68,7 +68,7 @@ export class HostBuilder implements DotnetHostBuilder {
             throw new Error("Missing window to the query parameters from");
         }
 
-        if (typeof globalThis.URLSearchParams == "undefined") {
+        if (typeof globalThis.URLSearchParams === "undefined") {
             throw new Error("URLSearchParams is supported");
         }
 
