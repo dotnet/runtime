@@ -3,7 +3,7 @@ import { GlobalizationMode } from "./types";
 import { ENVIRONMENT_IS_WEB } from "./per-module";
 
 export function getIcuResourceName(): string | null {
-    if (loaderConfig.resources?.icu && loaderConfig.globalizationMode != GlobalizationMode.Invariant) {
+    if (loaderConfig.resources?.icu && loaderConfig.globalizationMode !== GlobalizationMode.Invariant) {
         const culture = loaderConfig.applicationCulture || (ENVIRONMENT_IS_WEB ? (globalThis.navigator && globalThis.navigator.languages && globalThis.navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale);
         if (!loaderConfig.applicationCulture) {
             loaderConfig.applicationCulture = culture;
