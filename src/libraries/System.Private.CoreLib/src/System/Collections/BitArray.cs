@@ -701,7 +701,8 @@ namespace System.Collections
 
                 while (fromIndex >= TVector.ElementCount + 1)
                 {
-                    TVector hi = TVector.LoadUnsafe(ref p, (nuint)(fromIndex -= TVector.ElementCount)) << shiftCount;
+                    fromIndex -= TVector.ElementCount;
+                    TVector hi = TVector.LoadUnsafe(ref p, (nuint)fromIndex) << shiftCount;
                     TVector lo = TVector.LoadUnsafe(ref p, (nuint)(fromIndex - 1)) >>> carryCount;
                     TVector result = hi | lo;
                     toIndex -= TVector.ElementCount;
