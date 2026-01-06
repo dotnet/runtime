@@ -950,7 +950,7 @@ namespace System.Net.Sockets
                 int count = Interlocked.Increment(ref _count);
                 bool shouldComplete = false;
 
-                if (socketError == SocketError.Success)
+                if (socketError == SocketError.Success && exception == null)
                 {
                     shouldComplete = !Finished();
                     if (shouldComplete)
