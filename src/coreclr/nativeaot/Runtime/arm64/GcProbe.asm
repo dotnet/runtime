@@ -14,7 +14,7 @@
             field OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs
             field 10 * 8 ; x19..x28
 m_CallersSP field 8      ; SP at routine entry
-            field 2  * 8 ; x0..x1
+            field 3  * 8 ; x0..x2
             field 8      ; alignment padding
             field 4  * 16; q0..q3
 PROBE_FRAME_SIZE    field 0
@@ -49,12 +49,13 @@ PROBE_FRAME_SIZE    field 0
 
         ;; Save the integer return registers
         PROLOG_NOP stp         x0, x1,   [sp, #0x78]
+        PROLOG_NOP str         x2,       [sp, #0x88]
 
-        ;; Slot at [sp, #0x88] is alignment padding
+        ;; Slot at [sp, #0x90] is alignment padding
 
         ;; Save the FP/HFA/HVA return registers
-        PROLOG_NOP stp         q0, q1,   [sp, #0x90]
-        PROLOG_NOP stp         q2, q3,   [sp, #0xB0]
+        PROLOG_NOP stp         q0, q1,   [sp, #0x98]
+        PROLOG_NOP stp         q2, q3,   [sp, #0xB8]
 
         ;; Perform the rest of the PInvokeTransitionFrame initialization.
         ;;   str         $threadReg,[sp, #OFFSETOF__PInvokeTransitionFrame__m_pThread]       ; Thread * (unused by stackwalker)
@@ -80,10 +81,11 @@ PROBE_FRAME_SIZE    field 0
 
         ;; Restore the integer return registers
         PROLOG_NOP ldp          x0, x1,   [sp, #0x78]
+        PROLOG_NOP ldr          x2,       [sp, #0x88]
 
         ; Restore the FP/HFA/HVA return registers
-        EPILOG_NOP ldp          q0, q1,   [sp, #0x90]
-        EPILOG_NOP ldp          q2, q3,   [sp, #0xB0]
+        EPILOG_NOP ldp          q0, q1,   [sp, #0x98]
+        EPILOG_NOP ldp          q2, q3,   [sp, #0xB8]
 
         ;; Restore callee saved registers
         EPILOG_RESTORE_REG_PAIR x19, x20, #0x20
@@ -103,26 +105,35 @@ PROBE_FRAME_SIZE    field 0
 ;;  All registers correct for return to the original return address.
 ;;
 ;; Register state on exit:
-;;  x2: thread pointer
-;;  x3: trashed
+;;  x9: thread pointer
+;;  x0, x1, x2: preserved
+;;  x3, x10: trashed
 ;;
     MACRO
         FixupHijackedCallstack
 
-        ;; x2 <- GetThread(), TRASHES x3
-        INLINE_GETTHREAD x2, x3
+        ;; Preserve return value registers (x0, x1, x2) since they may contain return values/async continuation
+        stp         x0, x1, [sp, #-32]!
+        stp         x2, x3, [sp, #16]
+
+        ;; x9 <- GetThread(), TRASHES x10
+        INLINE_GETTHREAD x9, x10
 
         ;;
         ;; Fix the stack by restoring the original return address
         ;;
-        ldr         lr, [x2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+        ldr         lr, [x9, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 
         ;;
         ;; Clear hijack state
         ;;
         ASSERT OFFSETOF__Thread__m_pvHijackedReturnAddress == (OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation + 8)
         ;; Clear m_ppvHijackedReturnAddressLocation and m_pvHijackedReturnAddress
-        stp         xzr, xzr, [x2, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+        stp         xzr, xzr, [x9, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+
+        ;; Restore return value registers
+        ldp         x2, x3, [sp, #16]
+        ldp         x0, x1, [sp], #32
     MEND
 
     MACRO
@@ -154,7 +165,7 @@ PROBE_FRAME_SIZE    field 0
         ret
 
 WaitForGC
-        mov         x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1)
+        mov         x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1 + PTFF_SAVE_X2)
         movk        x12, #PTFF_THREAD_HIJACK_HI, lsl #32
         b           RhpWaitForGC
     NESTED_END RhpGcProbeHijackWrapper
@@ -162,9 +173,9 @@ WaitForGC
     EXTERN RhpThrowHwEx
 
     NESTED_ENTRY RhpWaitForGC
-        PUSH_PROBE_FRAME x2, x3, x12
+        PUSH_PROBE_FRAME x9, x3, x12
 
-        ldr         x0, [x2, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
+        ldr         x0, [x9, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
         bl          RhpWaitForGC2
 
         POP_PROBE_FRAME
@@ -194,7 +205,7 @@ WaitForGC
 ;;
     LEAF_ENTRY RhpGcStressHijack
         FixupHijackedCallstack
-        orr         x12, x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1)
+        mov         x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1 + PTFF_SAVE_X2)
         b           RhpGcStressProbe
     LEAF_END RhpGcStressHijack
 ;;
@@ -205,15 +216,16 @@ WaitForGC
 ;; Register state on entry:
 ;;  x0: hijacked function return value
 ;;  x1: hijacked function return value
-;;  x2: thread pointer
+;;  x2: hijacked function async continuation value
+;;  x9: thread pointer
 ;;  w12: register bitmask
 ;;
 ;; Register state on exit:
-;;  Scratch registers, except for x0, have been trashed
+;;  Scratch registers, except for x0, x1, x2, have been trashed
 ;;  All other registers restored as they were when the hijack was first reached.
 ;;
     NESTED_ENTRY RhpGcStressProbe
-        PUSH_PROBE_FRAME x2, x3, x12
+        PUSH_PROBE_FRAME x9, x3, x12
 
         bl          RhpStressGc
 
