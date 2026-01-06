@@ -14,14 +14,13 @@
 
 //*****************************************************************************
 // Enum to track which version of the OS we are running
-// Note that Win7 is the minimum supported platform. Any code using
+// Note that Win8 is the minimum supported platform. Any code using
 // utilcode (which includes the CLR's execution engine) will fail to start
-// on a pre-Win7 platform. This is enforced by InitRunningOnVersionStatus.
+// on a pre-Win8 platform. This is enforced by InitRunningOnVersionStatus.
 //*****************************************************************************
 typedef enum {
     RUNNING_ON_STATUS_UNINITED = 0,
-    RUNNING_ON_WIN7            = 1,
-    RUNNING_ON_WIN8            = 2
+    RUNNING_ON_WIN8            = 1
 } RunningOnStatusEnum;
 
 extern RunningOnStatusEnum gRunningOnStatus;
