@@ -5929,9 +5929,8 @@ GenTree* Lowering::LowerAsyncContinuation(GenTree* asyncCont)
         node = node->gtPrev;
         noway_assert((node != nullptr) && "Ran out of nodes while looking for call before async continuation");
 
-        if (node->IsCall())
+        if (node->IsCall() && node->AsCall()->IsAsync())
         {
-            assert(node->AsCall()->IsAsync());
             BlockRange().Remove(asyncCont);
             BlockRange().InsertAfter(node, asyncCont);
             break;
