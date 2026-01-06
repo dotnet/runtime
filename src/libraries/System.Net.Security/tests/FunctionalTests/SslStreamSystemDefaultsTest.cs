@@ -151,11 +151,6 @@ namespace System.Net.Security.Tests
                 case SslPolicyErrors.RemoteCertificateChainErrors:
                 case SslPolicyErrors.RemoteCertificateNameMismatch:
                     return true;
-                case SslPolicyErrors.RemoteCertificateNotAvailable:
-                    // https://technet.microsoft.com/en-us/library/hh831771.aspx#BKMK_Changes2012R2
-                    // Starting with Windows 8, the "Management of trusted issuers for client authentication" has changed:
-                    // The behavior to send the Trusted Issuers List by default is off.
-                    return false;
                 default:
                     return false;
             }
