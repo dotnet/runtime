@@ -33,7 +33,7 @@
 static_assert((THUNK_SIZE % 4) == 0, "Thunk stubs size not aligned correctly. This will cause runtime failures.");
 
 // 32 K or OS page
-#define THUNKS_MAP_SIZE (max(0x8000, OS_PAGE_SIZE))
+#define THUNKS_MAP_SIZE (max((size_t)0x8000, OS_PAGE_SIZE))
 
 #ifdef TARGET_ARM
 //*****************************************************************************
@@ -63,13 +63,13 @@ FCIMPL0(int, RhpGetNumThunkBlocksPerMapping)
 {
     ASSERT_MSG((THUNKS_MAP_SIZE % OS_PAGE_SIZE) == 0, "Thunks map size should be in multiples of pages");
 
-    return THUNKS_MAP_SIZE / OS_PAGE_SIZE;
+    return (int)(THUNKS_MAP_SIZE / OS_PAGE_SIZE);
 }
 FCIMPLEND
 
 FCIMPL0(int, RhpGetNumThunksPerBlock)
 {
-    return min(
+    return (int)min(
         OS_PAGE_SIZE / THUNK_SIZE,                              // Number of thunks that can fit in a page
         (OS_PAGE_SIZE - POINTER_SIZE) / (POINTER_SIZE * 2)      // Number of pointer pairs, minus the jump stub cell, that can fit in a page
     );
@@ -96,22 +96,24 @@ FCIMPLEND
 
 FCIMPL0(int, RhpGetThunkBlockSize)
 {
-    return OS_PAGE_SIZE;
+    return (int)OS_PAGE_SIZE;
 }
 FCIMPLEND
 
 EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 {
+    size_t thunksMapSize = THUNKS_MAP_SIZE;
+
 #ifdef WIN32
 
-    void * pNewMapping = PalVirtualAlloc(THUNKS_MAP_SIZE * 2, PAGE_READWRITE);
+    void * pNewMapping = PalVirtualAlloc(thunksMapSize * 2, PAGE_READWRITE);
     if (pNewMapping == NULL)
     {
         return E_OUTOFMEMORY;
     }
 
     void * pThunksSection = pNewMapping;
-    void * pDataSection = (uint8_t*)pNewMapping + THUNKS_MAP_SIZE;
+    void * pDataSection = (uint8_t*)pNewMapping + thunksMapSize;
 
 #else
 
@@ -120,17 +122,17 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
     // reduce it to RW for the data section. For the stubs section we need to increase to RWX to generate the stubs
     // instructions. After this we go back to RX for the stubs section before the stubs are used and should not be
     // changed anymore.
-    void * pNewMapping = PalVirtualAlloc(THUNKS_MAP_SIZE * 2, PAGE_EXECUTE_READ);
+    void * pNewMapping = PalVirtualAlloc(thunksMapSize * 2, PAGE_EXECUTE_READ);
     if (pNewMapping == NULL)
     {
         return E_OUTOFMEMORY;
     }
 
     void * pThunksSection = pNewMapping;
-    void * pDataSection = (uint8_t*)pNewMapping + THUNKS_MAP_SIZE;
+    void * pDataSection = (uint8_t*)pNewMapping + thunksMapSize;
 
-    if (!PalVirtualProtect(pDataSection, THUNKS_MAP_SIZE, PAGE_READWRITE) ||
-        !PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READWRITE))
+    if (!PalVirtualProtect(pDataSection, thunksMapSize, PAGE_READWRITE) ||
+        !PalVirtualProtect(pThunksSection, thunksMapSize, PAGE_EXECUTE_READWRITE))
     {
         PalVirtualFree(pNewMapping, THUNKS_MAP_SIZE * 2);
         return E_FAIL;
@@ -172,7 +174,7 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 
             *((uint32_t*)pCurrentThunkAddress) = 0x00a2ff41;
             pCurrentThunkAddress += 3;
-            *((uint32_t*)pCurrentThunkAddress) = OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2);
+            *((uint32_t*)pCurrentThunkAddress) = (uint32_t)(OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2));
             pCurrentThunkAddress += 4;
 
             // nops for alignment
@@ -231,7 +233,7 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
             *((uint32_t*)pCurrentThunkAddress) = 0x10000010 | (((delta & 0x03) << 29) | (((delta & 0x1FFFFC) >> 2) << 5));
             pCurrentThunkAddress += 4;
 
-            *((uint32_t*)pCurrentThunkAddress) = 0xF9400211 | (((OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2)) / 8) << 10);
+            *((uint32_t*)pCurrentThunkAddress) = 0xF9400211 | (((uint32_t)((OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2)) / 8) << 10));
             pCurrentThunkAddress += 4;
 
             *((uint32_t*)pCurrentThunkAddress) = 0xD61F0220;
@@ -307,14 +309,14 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
     #error "Unknown OS"
 #endif
 #else
-    if (!PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READ))
+    if (!PalVirtualProtect(pThunksSection, thunksMapSize, PAGE_EXECUTE_READ))
     {
-        PalVirtualFree(pNewMapping, THUNKS_MAP_SIZE * 2);
+        PalVirtualFree(pNewMapping, thunksMapSize * 2);
         return E_FAIL;
     }
 #endif
 
-    PalFlushInstructionCache(pThunksSection, THUNKS_MAP_SIZE);
+    PalFlushInstructionCache(pThunksSection, thunksMapSize);
 
     *ppThunksSection = pThunksSection;
     return S_OK;

@@ -416,10 +416,6 @@ private:
     AppDomain *m_pDomain;
 };
 
-#ifndef FEATURE_EH_FUNCLETS
-EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
-#endif // FEATURE_EH_FUNCLETS
-
 extern "C" void TheUMEntryPrestub(void);
 extern "C" PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunk);
 

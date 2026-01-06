@@ -48,6 +48,13 @@
       "defaultValue": "net11.0",
       "replaces": "netX.0",
       "displayName": "framework"
+    },
+    "UseMonoRuntime": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "true",
+      "description": "Whether to use the Mono runtime for WebAssembly.",
+      "displayName": "Use Mono Runtime"
     }
   }
 }
