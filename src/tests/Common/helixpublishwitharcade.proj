@@ -878,19 +878,13 @@
       <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(ApkFileName).apk</ApkPath>
       <AppBundlePath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).app</AppBundlePath>
     </MergedPayloads>
+    <!-- For tests where we aren't using the XHarness test runner, specify as such on the payload item. -->
+    <MergedPayloads Update="@(MergedPayloads)" Condition="Exists('$(MergedPayloadsRootDirectory)%(MergedPayloads.PayloadGroup)/%(MergedPayloads.PayloadGroup).XHarnessNoRunner')">
+      <IncludesTestRunner>false</IncludesTestRunner>
+      <ExpectedExitCode>100</ExpectedExitCode>
+    </MergedPayloads>
   </ItemGroup>
 
-  <Target Name="MarkMergedPayloadsWithoutXHarnessRunner"
-          BeforeTargets="PrepareMergedStressHelixWorkItems;PrepareMergedHelixWorkItems"
-          Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">
-    <ItemGroup>
-      <!-- For tests where we aren't using the XHarness test runner, specify as such on the payload item. -->
-      <MergedPayloads Update="@(MergedPayloads)" Condition="Exists('$(MergedPayloadsRootDirectory)%(MergedPayloads.PayloadGroup)/%(MergedPayloads.PayloadGroup).XHarnessNoRunner')">
-        <IncludesTestRunner>false</IncludesTestRunner>
-        <ExpectedExitCode>100</ExpectedExitCode>
-      </MergedPayloads>
-    </ItemGroup>
-  </Target>
   <PropertyGroup>
     <!-- Enable stress work item striping on GCstress only -->
     <StripeMergedStressWorkItems Condition="$(Scenario.Contains('gcstress'))">true</StripeMergedStressWorkItems>
@@ -1022,7 +1016,7 @@
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
       <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
     </HelixWorkItem>
-
+    
     <XHarnessApkToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAndroid)' == 'true'">
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
       <CustomCommands>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
