@@ -110,19 +110,20 @@ export function dotnetUpdateInternalsSubscriber() {
         };
         const assertLocal: AssertType = {
             check: table[4],
+            fastCheck: table[5],
         };
         const loaderExportsLocal: LoaderExports = {
-            resolveRunMainPromise: table[5],
-            rejectRunMainPromise: table[6],
-            getRunMainPromise: table[7],
-            createPromiseCompletionSource: table[8],
-            isControllablePromise: table[9],
-            getPromiseCompletionSource: table[10],
-            isExited: table[11],
-            isRuntimeRunning: table[12],
-            addOnExitListener: table[13],
-            abortStartup: table[14],
-            quitNow: table[15],
+            resolveRunMainPromise: table[6],
+            rejectRunMainPromise: table[7],
+            getRunMainPromise: table[8],
+            createPromiseCompletionSource: table[9],
+            isControllablePromise: table[10],
+            getPromiseCompletionSource: table[11],
+            isExited: table[12],
+            isRuntimeRunning: table[13],
+            addOnExitListener: table[14],
+            abortStartup: table[15],
+            quitNow: table[16],
         };
         Object.assign(dotnetLoaderExports, loaderExportsLocal);
         Object.assign(logger, loggerLocal);

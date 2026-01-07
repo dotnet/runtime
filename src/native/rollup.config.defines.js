@@ -52,3 +52,15 @@ export const envConstants = {
     gitHash,
     isContinuousIntegrationBuild,
 };
+
+/* eslint-disable quotes */
+export const inlinefastCheck = [
+    {
+        pattern: 'dotnetAssert\\.fastCheck\\(([^,]*), \\(\\) => *`([^`]*)`\\);',
+        replacement: (match) => `if (!(${match[1]})) throw new Error(\`Assert failed: ${match[2]}\`); // inlined fastCheck`
+    },
+    {
+        pattern: 'dotnetAssert\\.fastCheck\\(([^,]*), \\(\\) => *"([^"]*)"\\);',
+        replacement: (match) => `if (!(${match[1]})) throw new Error(\`Assert failed: ${match[2]}\`); // inlined fastCheck`
+    },
+];
