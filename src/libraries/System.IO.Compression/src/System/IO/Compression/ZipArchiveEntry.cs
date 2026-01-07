@@ -383,7 +383,16 @@ namespace System.IO.Compression
         /// </summary>
         /// <param name="access">The file access mode for the returned stream.</param>
         /// <returns>A <see cref="Stream"/> that represents the contents of the entry with the specified access capabilities.</returns>
-        /// <exception cref="ArgumentException">The requested access is not compatible with the archive's open mode.</exception>
+        /// <remarks>
+        /// <para>The allowed <paramref name="access"/> values depend on the <see cref="ZipArchiveMode"/>:</para>
+        /// <list type="bullet">
+        /// <item><description><see cref="ZipArchiveMode.Read"/>: Only <see cref="FileAccess.Read"/> is allowed.</description></item>
+        /// <item><description><see cref="ZipArchiveMode.Create"/>: <see cref="FileAccess.Write"/> and <see cref="FileAccess.ReadWrite"/> are allowed (both write-only).</description></item>
+        /// <item><description><see cref="ZipArchiveMode.Update"/>: All values are allowed. <see cref="FileAccess.Read"/> reads directly from the archive. <see cref="FileAccess.Write"/> discards existing content and provides an empty writable stream. <see cref="FileAccess.ReadWrite"/> loads existing content into memory (equivalent to <see cref="Open()"/>).</description></item>
+        /// </list>
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="access"/> is not a valid <see cref="FileAccess"/> value.</exception>
+        /// <exception cref="InvalidOperationException">The requested access is not compatible with the archive's open mode.</exception>
         /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
         /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
         /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
