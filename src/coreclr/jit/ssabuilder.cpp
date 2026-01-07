@@ -446,20 +446,20 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
                 LclVarDsc* fieldVarDsc = m_pCompiler->lvaGetDesc(fieldLclNum);
                 if (m_pCompiler->lvaInSsa(fieldLclNum))
                 {
-                    ssize_t  fieldStoreOffset;
-                    unsigned fieldStoreSize;
-                    unsigned ssaNum = SsaConfig::RESERVED_SSA_NUM;
+                    ssize_t   fieldStoreOffset;
+                    ValueSize fieldStoreSize;
+                    unsigned  ssaNum = SsaConfig::RESERVED_SSA_NUM;
 
                     // Fast-path the common case of an "entire" store.
                     if (def.IsEntire)
                     {
                         ssaNum = RenamePushDef(defNode, block, fieldLclNum, /* defIsFull */ true);
                     }
-                    else if (m_pCompiler->gtStoreDefinesField(fieldVarDsc, def.Offset, def.Size.GetSize(),
-                                                              &fieldStoreOffset, &fieldStoreSize))
+                    else if (m_pCompiler->gtStoreDefinesField(fieldVarDsc, def.Offset, def.Size, &fieldStoreOffset,
+                                                              &fieldStoreSize))
                     {
                         ssaNum = RenamePushDef(defNode, block, fieldLclNum,
-                                               ValueNumStore::LoadStoreIsEntire(genTypeSize(fieldVarDsc),
+                                               ValueNumStore::LoadStoreIsEntire(fieldVarDsc->lvValueSize(),
                                                                                 fieldStoreOffset, fieldStoreSize));
                     }
 

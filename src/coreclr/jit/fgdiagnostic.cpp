@@ -4291,14 +4291,14 @@ public:
                     LclVarDsc* const fieldVarDsc = m_compiler->lvaGetDesc(fieldLclNum);
                     unsigned const   fieldSsaNum = def.Def->GetSsaNum(m_compiler, index);
 
-                    ssize_t  fieldStoreOffset;
-                    unsigned fieldStoreSize;
-                    if (m_compiler->gtStoreDefinesField(fieldVarDsc, def.Offset, def.Size.GetSize(), &fieldStoreOffset,
+                    ssize_t   fieldStoreOffset;
+                    ValueSize fieldStoreSize;
+                    if (m_compiler->gtStoreDefinesField(fieldVarDsc, def.Offset, def.Size, &fieldStoreOffset,
                                                         &fieldStoreSize))
                     {
                         ProcessDef(def.Def, fieldLclNum, fieldSsaNum);
 
-                        if (!ValueNumStore::LoadStoreIsEntire(genTypeSize(fieldVarDsc), fieldStoreOffset,
+                        if (!ValueNumStore::LoadStoreIsEntire(fieldVarDsc->lvValueSize(), fieldStoreOffset,
                                                               fieldStoreSize))
                         {
                             assert(isUse);

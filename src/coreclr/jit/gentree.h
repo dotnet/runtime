@@ -637,52 +637,100 @@ inline GenTreeDebugFlags& operator &=(GenTreeDebugFlags& a, GenTreeDebugFlags b)
 
 // clang-format on
 
-// A ValueSize represents the size of a type or structure for the purposes of
-// handling the value with the possibility that the size might be unknown. Used
-// primarily for value numbering of TYP_SIMD/TYP_MASK on ARM64, where the sizes
-// of these types are not known at compile time.
+//------------------------------------------------------------------------
+// ValueSize:  A representation of the size of a variable, that allows for
+//     symbolic representations of sizes that may be unknown to the compiler
+//     at the time of compilation, such as the length of a hardware vector
+//     on ARM64.
 class ValueSize
 {
 private:
-    static const unsigned UnknownSize = UINT32_MAX;
-    unsigned              m_size;
-
-    ValueSize()
-        : m_size(UnknownSize)
+    enum class Kind : unsigned
     {
+        Exact,  // Value has size known at compile time
+        Vector, // Value represents the platform vector length (Vector<T>/TYP_SIMD)
+        Mask,   // Value represents the platform mask length (TYP_MASK)
+    };
+
+    Kind m_kind;
+    // The size field is used when the kind is Exact, otherwise the size field is zero.
+    unsigned m_size;
+
+    explicit ValueSize(Kind kind, unsigned size)
+        : m_kind(kind)
+        , m_size(size)
+    {
+    }
+
+    bool Is(Kind kind) const
+    {
+        return (m_kind == kind);
     }
 
 public:
+    ValueSize()
+        : m_kind(Kind::Exact)
+        , m_size(0)
+    {
+    }
+
     explicit ValueSize(unsigned size)
-        : m_size(size)
+        : m_kind(Kind::Exact)
+        , m_size(size)
     {
-        assert(size != UnknownSize);
     }
 
-    // Produce a sentinel value for a size that is unknown at compile time.
-    static ValueSize Unknown()
+    static ValueSize Vector()
     {
-        return ValueSize();
+        return ValueSize(Kind::Vector, 0);
+    }
+    static ValueSize Mask()
+    {
+        return ValueSize(Kind::Mask, 0);
+    }
+    static ValueSize FromJitType(var_types type);
+
+    bool IsVector() const
+    {
+        return Is(Kind::Vector);
+    }
+    bool IsMask() const
+    {
+        return Is(Kind::Mask);
     }
 
-    bool IsUnknown() const
+    bool IsExact() const
     {
-        return (m_size == UnknownSize);
+        return Is(Kind::Exact);
     }
 
-    unsigned GetSize() const
+    bool IsNull() const
     {
-        assert(!IsUnknown());
+        return IsExact() && (m_size == 0);
+    }
+
+    unsigned GetExact() const
+    {
+        assert(IsExact());
         return m_size;
     }
 
-    // Comparisons between ValueSize returns true when both values have known
-    // sizes and these sizes are equal. All other cases return false.
-    // Type information is needed to determine whether two unknown ValueSizes
-    // are equivalent.
     bool operator==(const ValueSize& other) const
     {
-        return (m_size == other.m_size) && !IsUnknown() && !other.IsUnknown();
+        if (m_kind == Kind::Exact)
+        {
+            return (m_size == other.m_size);
+        }
+        else
+        {
+            assert(m_size == 0 && other.m_size == 0);
+            return (m_kind == other.m_kind);
+        }
+    }
+
+    bool operator!=(const ValueSize& other) const
+    {
+        return !operator==(other);
     }
 };
 
@@ -7918,7 +7966,8 @@ struct GenTreeIndir : public GenTreeOp
     unsigned Scale();
     ssize_t  Offset();
 
-    unsigned Size() const;
+    unsigned  Size() const;
+    ValueSize ValueSize() const;
 
     GenTreeIndir(genTreeOps oper, var_types type, GenTree* addr, GenTree* data)
         : GenTreeOp(oper, type, addr, data)

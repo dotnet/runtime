@@ -3809,27 +3809,27 @@ unsigned ValueNumStore::DecodePhysicalSelector(ValueNum selector, unsigned* pSiz
 // Return Value:
 //    Value number corresponding to the given field handle.
 //
-ValueNum ValueNumStore::VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_types* pFieldType, unsigned* pSize)
+ValueNum ValueNumStore::VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_types* pFieldType, ValueSize* pSize)
 {
-    CORINFO_CLASS_HANDLE structHnd = NO_CLASS_HANDLE;
-    ValueNum             fldHndVN  = VNForHandle(ssize_t(fieldHnd), GTF_ICON_FIELD_HDL);
-    var_types            fieldType = m_pComp->eeGetFieldType(fieldHnd, &structHnd);
-    unsigned             size      = 0;
+    CORINFO_CLASS_HANDLE structHnd  = NO_CLASS_HANDLE;
+    ValueNum             fldHndVN   = VNForHandle(ssize_t(fieldHnd), GTF_ICON_FIELD_HDL);
+    var_types            fieldType  = m_pComp->eeGetFieldType(fieldHnd, &structHnd);
+    unsigned             structSize = 0;
 
     if (fieldType == TYP_STRUCT)
     {
-        size = m_pComp->info.compCompHnd->getClassSize(structHnd);
+        structSize = m_pComp->info.compCompHnd->getClassSize(structHnd);
 
         // We have to normalize here since there is no CorInfoType for vectors...
-        if (m_pComp->structSizeMightRepresentSIMDType(size))
+        if (m_pComp->structSizeMightRepresentSIMDType(structSize))
         {
             fieldType = m_pComp->impNormStructType(structHnd);
         }
     }
-    else
-    {
-        size = genTypeSize(fieldType);
-    }
+
+    *pFieldType = fieldType;
+    *pSize      = (fieldType == TYP_STRUCT) ? ValueSize(structSize) : ValueSize::FromJitType(fieldType);
+    assert(!pSize->IsNull());
 
 #ifdef DEBUG
     if (m_pComp->verbose)
@@ -3839,16 +3839,13 @@ ValueNum ValueNumStore::VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_ty
 
         printf("    VNForHandle(%s) is " FMT_VN ", fieldType is %s", fldName, fldHndVN, varTypeName(fieldType));
 
-        if (size != 0)
+        if (fieldType == TYP_STRUCT)
         {
-            printf(", size = %u", size);
+            printf(", size = %u", structSize);
         }
         printf("\n");
     }
 #endif
-
-    *pFieldType = fieldType;
-    *pSize      = size;
 
     return fldHndVN;
 }
@@ -5875,30 +5872,38 @@ ValueNumPair ValueNumStore::VNPairForExpr(BasicBlock* block, var_types type)
 //
 ValueNum ValueNumStore::VNForLoad(ValueNumKind vnk,
                                   ValueNum     locationValue,
-                                  unsigned     locationSize,
+                                  ValueSize    locationSize,
                                   var_types    loadType,
                                   ssize_t      offset,
-                                  unsigned     loadSize)
+                                  ValueSize    loadSize)
 {
-    assert((loadSize > 0));
-
     unsigned loadOffset = static_cast<unsigned>(offset);
-
-    if ((offset < 0) || (locationSize < (loadOffset + loadSize)))
-    {
-        JITDUMP("    *** VNForLoad: out-of-bounds load!\n");
-        return VNForExpr(m_pComp->compCurBB, loadType);
-    }
 
     ValueNum loadValue;
     if (LoadStoreIsEntire(locationSize, loadOffset, loadSize))
     {
         loadValue = locationValue;
     }
+    else if (locationSize.IsExact() && loadSize.IsExact())
+    {
+        assert(!loadSize.IsNull() && !locationSize.IsNull());
+        unsigned loadExactSize = loadSize.GetExact();
+
+        if ((offset < 0) || (locationSize.GetExact() < (loadOffset + loadExactSize)))
+        {
+            JITDUMP("    *** VNForLoad: out-of-bounds load!\n");
+            return VNForExpr(m_pComp->compCurBB, loadType);
+        }
+
+        JITDUMP("  VNForLoad:\n");
+        loadValue = VNForMapPhysicalSelect(vnk, loadType, locationValue, loadOffset, loadExactSize);
+    }
     else
     {
-        JITDUMP("  VNForLoad:\n");
-        loadValue = VNForMapPhysicalSelect(vnk, loadType, locationValue, loadOffset, loadSize);
+        // TODO-SVE: This is conservative, we may be able to select better value numbers for loads
+        // that we can prove are within the bounds of the minimum size of a vector/mask.
+        JITDUMP("    *** VNForLoad: out-of-bounds load, due to unknown load size\n");
+        return VNForExpr(m_pComp->compCurBB, loadType);
     }
 
     // Unlike with stores, loads we always normalize (to have the property that the tree's type
@@ -5914,7 +5919,7 @@ ValueNum ValueNumStore::VNForLoad(ValueNumKind vnk,
 // VNPairForLoad: VNForLoad applied to a ValueNumPair.
 //
 ValueNumPair ValueNumStore::VNPairForLoad(
-    ValueNumPair locationValue, unsigned locationSize, var_types loadType, ssize_t offset, unsigned loadSize)
+    ValueNumPair locationValue, ValueSize locationSize, var_types loadType, ssize_t offset, ValueSize loadSize)
 {
     ValueNum liberalVN = VNForLoad(VNK_Liberal, locationValue.GetLiberal(), locationSize, loadType, offset, loadSize);
     ValueNum conservVN =
@@ -5942,33 +5947,45 @@ ValueNumPair ValueNumStore::VNPairForLoad(
 //    Does not handle "entire" (whole/identity) stores.
 //
 ValueNum ValueNumStore::VNForStore(
-    ValueNum locationValue, unsigned locationSize, ssize_t offset, unsigned storeSize, ValueNum value)
+    ValueNum locationValue, ValueSize locationSize, ssize_t offset, ValueSize storeSize, ValueNum value)
 {
-    assert(storeSize > 0);
-
     // The caller is expected to handle identity stores, applying the appropriate normalization policy.
     assert(!LoadStoreIsEntire(locationSize, offset, storeSize));
 
-    unsigned storeOffset = static_cast<unsigned>(offset);
+#ifdef TARGET_ARM64
+    if (!locationSize.IsExact() || !storeSize.IsExact())
+    {
+        // TODO-SVE: This is conservative, we may be able to select better value numbers for stores
+        // that we can prove are within the bounds of the minimum size of a vector/mask.
+        assert(locationSize.IsVector() || storeSize.IsVector());
+        JITDUMP("    *** VNForStore: location or store size is unknown\n");
+        return VNForExpr(m_pComp->compCurBB, TYP_SIMD);
+    }
+#endif
 
-    if ((offset < 0) || (locationSize < (storeOffset + storeSize)))
+    assert(storeSize.GetExact() > 0);
+    unsigned exactLocationSize = locationSize.GetExact();
+    unsigned exactStoreSize    = storeSize.GetExact();
+    unsigned storeOffset       = static_cast<unsigned>(offset);
+
+    if ((offset < 0) || (exactLocationSize < (storeOffset + exactStoreSize)))
     {
         JITDUMP("    *** VNForStore: out-of-bounds store -- location size is %u, offset is %zd, store size is %u\n",
-                locationSize, offset, storeSize);
+                exactLocationSize, offset, exactStoreSize);
         // Some callers will need to invalidate parenting maps, so force explicit
         // handling of this case instead of returning a "new, unique" VN.
         return NoVN;
     }
 
     JITDUMP("  VNForStore:\n");
-    return VNForMapPhysicalStore(locationValue, storeOffset, storeSize, value);
+    return VNForMapPhysicalStore(locationValue, storeOffset, exactStoreSize, value);
 }
 
 //------------------------------------------------------------------------
 // VNPairForStore: VNForStore applied to a ValueNumPair.
 //
 ValueNumPair ValueNumStore::VNPairForStore(
-    ValueNumPair locationValue, unsigned locationSize, ssize_t offset, unsigned storeSize, ValueNumPair value)
+    ValueNumPair locationValue, ValueSize locationSize, ssize_t offset, ValueSize storeSize, ValueNumPair value)
 {
     ValueNum liberalVN = VNForStore(locationValue.GetLiberal(), locationSize, offset, storeSize, value.GetLiberal());
     ValueNum conservVN;
@@ -6006,15 +6023,16 @@ ValueNumPair ValueNumStore::VNPairForStore(
 //    same size are treated as equal (intentionally so -- this is good from
 //    CQ, TP and simplicity standpoints).
 //
-ValueNum ValueNumStore::VNForLoadStoreBitCast(ValueNum value, var_types indType, unsigned indSize)
+ValueNum ValueNumStore::VNForLoadStoreBitCast(ValueNum value, var_types indType, ValueSize indSize)
 {
     var_types typeOfValue = TypeOfVN(value);
 
     if (typeOfValue != indType)
     {
-        assert((typeOfValue == TYP_STRUCT) || (indType == TYP_STRUCT) || (genTypeSize(indType) == indSize));
+        assert((typeOfValue == TYP_STRUCT) || (indType == TYP_STRUCT) ||
+               (indSize.IsExact() && (genTypeSize(indType) == indSize.GetExact())));
 
-        value = VNForBitCast(value, indType, indSize);
+        value = VNForBitCast(value, indType, indSize.GetExact());
 
         JITDUMP("    VNForLoadStoreBitcast returns ");
         JITDUMPEXEC(m_pComp->vnPrint(value, 1));
@@ -6029,7 +6047,7 @@ ValueNum ValueNumStore::VNForLoadStoreBitCast(ValueNum value, var_types indType,
 //------------------------------------------------------------------------
 // VNPairForLoadStoreBitCast: VNForLoadStoreBitCast applied to a ValueNumPair.
 //
-ValueNumPair ValueNumStore::VNPairForLoadStoreBitCast(ValueNumPair value, var_types indType, unsigned indSize)
+ValueNumPair ValueNumStore::VNPairForLoadStoreBitCast(ValueNumPair value, var_types indType, ValueSize indSize)
 {
     ValueNum liberalVN = VNForLoadStoreBitCast(value.GetLiberal(), indType, indSize);
     ValueNum conservVN;
@@ -6152,14 +6170,14 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, FieldSeq* fldSeq, ssize_t offs
 void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
                                        GenTreeLclVarCommon* lclDefNode,
                                        ssize_t              offset,
-                                       unsigned             storeSize,
+                                       ValueSize            storeSize,
                                        ValueNumPair         value,
                                        bool                 normalize)
 {
     // Should not have been recorded as updating the GC heap.
     assert(!GetMemorySsaMap(GcHeap)->Lookup(storeNode));
 
-    auto processDef = [=](unsigned defLclNum, unsigned defSsaNum, ssize_t defOffset, unsigned defSize,
+    auto processDef = [=](unsigned defLclNum, unsigned defSsaNum, ssize_t defOffset, ValueSize defSize,
                           ValueNumPair defValue) {
         LclVarDsc* defVarDsc = lvaGetDesc(defLclNum);
 
@@ -6168,7 +6186,7 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
             ValueSize lclSize = defVarDsc->lvValueSize();
 
             ValueNumPair newLclValue;
-            if (vnStore->LoadStoreIsEntire(lclSize.GetSize(), defOffset, defSize))
+            if (vnStore->LoadStoreIsEntire(lclSize, defOffset, defSize))
             {
                 newLclValue = defValue;
             }
@@ -6177,7 +6195,8 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
                 assert((lclDefNode->gtFlags & GTF_VAR_USEASG) != 0);
                 unsigned     oldDefSsaNum = defVarDsc->GetPerSsaData(defSsaNum)->GetUseDefSsaNum();
                 ValueNumPair oldLclValue  = defVarDsc->GetPerSsaData(oldDefSsaNum)->m_vnPair;
-                newLclValue = vnStore->VNPairForStore(oldLclValue, lclSize.GetSize(), defOffset, defSize, defValue);
+                assert(oldLclValue.BothDefined() && defValue.BothDefined());
+                newLclValue = vnStore->VNPairForStore(oldLclValue, lclSize, defOffset, defSize, defValue);
             }
 
             // Any out-of-bounds stores should have made the local address-exposed.
@@ -6186,7 +6205,7 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
             if (normalize)
             {
                 // We normalize types stored in local locations because things outside VN itself look at them.
-                newLclValue = vnStore->VNPairForLoadStoreBitCast(newLclValue, defVarDsc->TypeGet(), lclSize.GetSize());
+                newLclValue = vnStore->VNPairForLoadStoreBitCast(newLclValue, defVarDsc->TypeGet(), lclSize);
                 assert((genActualType(vnStore->TypeOfVN(newLclValue.GetLiberal())) == genActualType(defVarDsc)));
             }
 
@@ -6218,13 +6237,13 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
             unsigned   fieldLclNum = varDsc->lvFieldLclStart + index;
             LclVarDsc* fieldVarDsc = lvaGetDesc(fieldLclNum);
 
-            ssize_t  fieldStoreOffset;
-            unsigned fieldStoreSize;
+            ssize_t   fieldStoreOffset;
+            ValueSize fieldStoreSize;
             if (gtStoreDefinesField(fieldVarDsc, offset, storeSize, &fieldStoreOffset, &fieldStoreSize))
             {
                 // TYP_STRUCT can represent the general case where the value could be of any size.
                 var_types fieldStoreType = TYP_STRUCT;
-                if (vnStore->LoadStoreIsEntire(genTypeSize(fieldVarDsc), fieldStoreOffset, fieldStoreSize))
+                if (vnStore->LoadStoreIsEntire(fieldVarDsc->lvValueSize(), fieldStoreOffset, fieldStoreSize))
                 {
                     // Avoid redundant bitcasts for the common case of a full definition.
                     fieldStoreType = fieldVarDsc->TypeGet();
@@ -6285,9 +6304,11 @@ void Compiler::fgValueNumberArrayElemLoad(GenTree* loadTree, VNFuncApp* addrFunc
     ValueNum wholeElem = vnStore->VNForMapSelect(VNK_Liberal, elemType, hAtArrTypeAtArr, inxVN);
     JITDUMP("  GcHeap[elemTypeEq][array][index: " FMT_VN "] is " FMT_VN "\n", inxVN, wholeElem);
 
-    unsigned  elemSize = (elemType == TYP_STRUCT) ? info.compCompHnd->getClassSize(elemTypeEq) : genTypeSize(elemType);
-    var_types loadType = loadTree->TypeGet();
-    unsigned  loadSize = loadTree->AsIndir()->Size();
+    ValueSize elemSize = (elemType == TYP_STRUCT) ? ValueSize(info.compCompHnd->getClassSize(elemTypeEq))
+                                                  : ValueSize::FromJitType(elemType);
+
+    var_types loadType    = loadTree->TypeGet();
+    ValueSize loadSize    = loadTree->AsIndir()->ValueSize();
     ValueNum  loadValueVN = vnStore->VNForLoad(VNK_Liberal, wholeElem, elemSize, loadType, offset, loadSize);
 
     loadTree->gtVNPair.SetLiberal(loadValueVN);
@@ -6316,7 +6337,7 @@ void Compiler::fgValueNumberArrayElemLoad(GenTree* loadTree, VNFuncApp* addrFunc
 //    storeSize - The number of bytes being stored
 //    value     - (VN of) the value being stored
 //
-void Compiler::fgValueNumberArrayElemStore(GenTree* storeNode, VNFuncApp* addrFunc, unsigned storeSize, ValueNum value)
+void Compiler::fgValueNumberArrayElemStore(GenTree* storeNode, VNFuncApp* addrFunc, ValueSize storeSize, ValueNum value)
 {
     assert(addrFunc->m_func == VNF_PtrToArrElem);
 
@@ -6337,7 +6358,8 @@ void Compiler::fgValueNumberArrayElemStore(GenTree* storeNode, VNFuncApp* addrFu
     ValueNum hAtArrTypeAtArr = vnStore->VNForMapSelect(VNK_Liberal, TYP_MEM, hAtArrType, arrVN);
     JITDUMP("  GcHeap[elemTypeEq][array: " FMT_VN "] is " FMT_VN "\n", arrVN, hAtArrTypeAtArr);
 
-    unsigned elemSize = (elemType == TYP_STRUCT) ? info.compCompHnd->getClassSize(elemTypeEq) : genTypeSize(elemType);
+    ValueSize elemSize = (elemType == TYP_STRUCT) ? ValueSize(info.compCompHnd->getClassSize(elemTypeEq))
+                                                  : ValueSize::FromJitType(elemType);
 
     // This is the value that should be stored at "arr[inx]".
     ValueNum newWholeElem = ValueNumStore::NoVN;
@@ -6397,7 +6419,7 @@ void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, Fiel
     //  2) "Simple" static:                   heap[field][offset + load size].
     //
     var_types fieldType;
-    unsigned  fieldSize;
+    ValueSize fieldSize;
     ValueNum  fieldSelectorVN = vnStore->VNForFieldSelector(fieldSeq->GetFieldHandle(), &fieldType, &fieldSize);
 
     ValueNum fieldMapVN           = ValueNumStore::NoVN;
@@ -6416,9 +6438,10 @@ void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, Fiel
     ValueNum fieldValueVN = vnStore->VNForMapSelect(VNK_Liberal, fieldType, fieldMapVN, fieldValueSelectorVN);
 
     // Finally, account for the struct fields and type mismatches.
-    var_types loadType    = loadTree->TypeGet();
-    unsigned  loadSize    = loadTree->OperIsBlk() ? loadTree->AsBlk()->Size() : genTypeSize(loadTree);
-    ValueNum  loadValueVN = vnStore->VNForLoad(VNK_Liberal, fieldValueVN, fieldSize, loadType, offset, loadSize);
+    var_types loadType = loadTree->TypeGet();
+    ValueSize loadSize =
+        loadTree->OperIsBlk() ? ValueSize(loadTree->AsBlk()->Size()) : ValueSize::FromJitType(loadTree->TypeGet());
+    ValueNum loadValueVN = vnStore->VNForLoad(VNK_Liberal, fieldValueVN, fieldSize, loadType, offset, loadSize);
 
     loadTree->gtVNPair.SetLiberal(loadValueVN);
     loadTree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, loadType));
@@ -6437,7 +6460,7 @@ void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, Fiel
 //    value     - The value being stored
 //
 void Compiler::fgValueNumberFieldStore(
-    GenTree* storeNode, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset, unsigned storeSize, ValueNum value)
+    GenTree* storeNode, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset, ValueSize storeSize, ValueNum value)
 {
     noway_assert(fieldSeq != nullptr);
 
@@ -6445,7 +6468,7 @@ void Compiler::fgValueNumberFieldStore(
     //  1) Instance field / "complex" static: heap[field][baseAddr][offset + load size] = value.
     //  2) "Simple" static:                   heap[field][offset + load size]           = value.
     //
-    unsigned  fieldSize;
+    ValueSize fieldSize;
     var_types fieldType;
     ValueNum  fieldSelectorVN = vnStore->VNForFieldSelector(fieldSeq->GetFieldHandle(), &fieldType, &fieldSize);
 
@@ -12116,7 +12139,7 @@ void Compiler::fgValueNumberStore(GenTree* store)
         case GT_STORE_LCL_VAR:
         {
             GenTreeLclVarCommon* lcl = store->AsLclVarCommon();
-            fgValueNumberLocalStore(store, lcl, 0, lvaLclValueSize(lcl->GetLclNum()).GetSize(), valueVNPair,
+            fgValueNumberLocalStore(store, lcl, 0, lvaLclValueSize(lcl->GetLclNum()), valueVNPair,
                                     /* normalize */ false);
         }
         break;
@@ -12124,7 +12147,7 @@ void Compiler::fgValueNumberStore(GenTree* store)
         case GT_STORE_LCL_FLD:
         {
             GenTreeLclFld* lclFld = store->AsLclFld();
-            fgValueNumberLocalStore(store, lclFld, lclFld->GetLclOffs(), lclFld->GetSize(), valueVNPair);
+            fgValueNumberLocalStore(store, lclFld, lclFld->GetLclOffs(), lclFld->GetValueSize(), valueVNPair);
         }
         break;
 
@@ -12144,7 +12167,7 @@ void Compiler::fgValueNumberStore(GenTree* store)
 
             GenTreeLclVarCommon* lclVarTree = nullptr;
             ssize_t              offset     = 0;
-            unsigned             storeSize  = store->AsIndir()->Size();
+            ValueSize            storeSize  = store->AsIndir()->ValueSize();
             GenTree*             baseAddr   = nullptr;
             FieldSeq*            fldSeq     = nullptr;
 
@@ -12609,9 +12632,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 if (lclFld->HasSsaName())
                 {
                     ValueNumPair lclVarValue = varDsc->GetPerSsaData(lclFld->GetSsaNum())->m_vnPair;
-                    lclFld->gtVNPair =
-                        vnStore->VNPairForLoad(lclVarValue, lvaLclValueSize(lclNum).GetSize(), lclFld->TypeGet(),
-                                               lclFld->GetLclOffs(), lclFld->GetSize());
+                    lclFld->gtVNPair = vnStore->VNPairForLoad(lclVarValue, lvaLclValueSize(lclNum), lclFld->TypeGet(),
+                                                              lclFld->GetLclOffs(), lclFld->GetValueSize());
                 }
                 else if (varDsc->IsAddressExposed())
                 {
@@ -12791,7 +12813,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             {
                 var_types loadType = tree->TypeGet();
                 ssize_t   offset   = 0;
-                unsigned  loadSize = tree->AsIndir()->Size();
                 VNFuncApp funcApp{VNF_COUNT};
 
                 if (fgValueNumberConstLoad(tree->AsIndir()))
@@ -14027,7 +14048,7 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
         ValueNumPair storeValue;
         storeValue.SetBoth(vnStore->VNForExpr(compCurBB, lvaGetDesc(def.Def->AsLclVarCommon())->TypeGet()));
 
-        fgValueNumberLocalStore(call, def.Def, def.Offset, def.Size.GetSize(), storeValue);
+        fgValueNumberLocalStore(call, def.Def, def.Offset, def.Size, storeValue);
         return GenTree::VisitResult::Continue;
     };
 
@@ -15528,5 +15549,23 @@ void ValueNumStore::PeelOffsetsI32(ValueNum* vn, int* offset)
         {
             break;
         }
+    }
+}
+
+ValueSize ValueSize::FromJitType(var_types type)
+{
+    assert(genTypeSize(type) != 0);
+    switch (type)
+    {
+#ifdef TARGET_ARM64
+        case TYP_SIMD:
+            return ValueSize::Vector();
+            // TODO-SVE: Implement scalable mask
+            // case TYP_MASK:
+            //     return ValueSize::Mask();
+#endif
+        default:
+            assert(genTypeSize(type) != SIZE_UNKNOWN);
+            return ValueSize(genTypeSize(type));
     }
 }
