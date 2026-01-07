@@ -51,17 +51,13 @@ stack_walk_callback (
 	UINT_PTR control_pc = (UINT_PTR)frame->GetRegisterSet ()->ControlPC;
 	
 	if (!frame->IsFrameless() && frame->GetFrame()->GetFrameIdentifier() == FrameIdentifier::PrestubMethodFrame) {
-		// At the PrestubMethodFrame, the ControlPC is not valid. Instead use the address of the Prestub.
-		control_pc = 0;
+		// At the PrestubMethodFrame, the ControlPC is not valid. Since the eventpipe stackwalk is actually only based on the ip, skip this frame.
+		return SWA_CONTINUE;
 	}
 	if (control_pc == 0) {
 #ifdef DEBUG
 		if (ep_stack_contents_get_length (stack_contents) == 0) {
 			// This happens for pinvoke stubs on the top of the stack.
-		}
-		else if (!frame->IsFrameless() && frame->GetFrame()->GetFrameIdentifier() == FrameIdentifier::PrestubMethodFrame) {
-			// This happens for PrestubMethodFrame when we have interpreter frames on the stack
-			// In non-interpreter scenarios the control_pc is not set to anything meaningful, but reporting it doesn't seem to cause problems.
 		}
 		else {
 			EP_ASSERT (!"Unexpected null ControlPC in stack walk callback");
