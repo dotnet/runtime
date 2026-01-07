@@ -625,6 +625,7 @@ PalCreateDumpInitialize()
         struct stat fileData;
         if (stat(program, &fileData) == -1 || !S_ISREG(fileData.st_mode))
         {
+            free(program);
             return true;
         }
         g_szCreateDumpPath = program;
