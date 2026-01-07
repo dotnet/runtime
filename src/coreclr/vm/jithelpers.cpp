@@ -54,9 +54,6 @@
 #include "pgo_formatprocessing.h"
 #include "patchpointinfo.h"
 
-#ifndef FEATURE_EH_FUNCLETS
-#include "excep.h"
-#endif
 #include "exinfo.h"
 #include "arraynative.inl"
 
@@ -794,31 +791,11 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 
     FC_CAN_TRIGGER_GC();
 
-#ifdef FEATURE_EH_FUNCLETS
     if (oref == 0)
         DispatchManagedException(kNullReferenceException);
 
     NormalizeThrownObject(&oref);
     DispatchManagedException(oref, exceptionFrame.GetContext());
-#elif defined(TARGET_X86)
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-#if defined(_DEBUG) && defined(TARGET_X86)
-    g_ExceptionEIP = (PVOID)transitionBlock->m_ReturnAddress;
-#endif // defined(_DEBUG) && defined(TARGET_X86)
-
-    if (oref == 0)
-        COMPlusThrow(kNullReferenceException);
-
-    NormalizeThrownObject(&oref);
-    RaiseTheExceptionInternalOnly(oref, FALSE);
-
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-#else // FEATURE_EH_FUNCLETS
-    PORTABILITY_ASSERT("IL_Throw");
-#endif // FEATURE_EH_FUNCLETS
 
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
@@ -848,29 +825,7 @@ HCIMPL0(void, IL_Rethrow)
 
     FC_CAN_TRIGGER_GC();
 
-#ifdef FEATURE_EH_FUNCLETS
     DispatchRethrownManagedException(exceptionFrame.GetContext());
-#elif defined(TARGET_X86)
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-    OBJECTREF throwable = GetThread()->GetThrowable();
-    if (throwable != NULL)
-    {
-        RaiseTheExceptionInternalOnly(throwable, TRUE);
-    }
-    else
-    {
-        // This can only be the result of bad IL (or some internal EE failure).
-        _ASSERTE(!"No throwable on rethrow");
-        RealCOMPlusThrow(kInvalidProgramException, (UINT)IDS_EE_RETHROW_NOT_ALLOWED);
-    }
-
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-#else // FEATURE_EH_FUNCLETS
-    PORTABILITY_ASSERT("IL_Rethrow");
-#endif // FEATURE_EH_FUNCLETS
 
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
@@ -904,23 +859,7 @@ HCIMPL1(void, IL_ThrowExact, Object* obj)
 
     FC_CAN_TRIGGER_GC();
 
-#ifdef FEATURE_EH_FUNCLETS
     DispatchManagedException(oref, exceptionFrame.GetContext());
-#elif defined(TARGET_X86)
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-#if defined(_DEBUG) && defined(TARGET_X86)
-    g_ExceptionEIP = (PVOID)transitionBlock->m_ReturnAddress;
-#endif // defined(_DEBUG) && defined(TARGET_X86)
-
-    RaiseTheExceptionInternalOnly(oref, FALSE);
-
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-#else // FEATURE_EH_FUNCLETS
-    PORTABILITY_ASSERT("IL_ThrowExact");
-#endif // FEATURE_EH_FUNCLETS
 
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
@@ -2265,10 +2204,6 @@ Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame)
 EXTERN_C void JIT_PInvokeBegin(InlinedCallFrame* pFrame);
 EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame);
 
-#ifndef FEATURE_EH_FUNCLETS
-EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
-#endif
-
 #ifdef DEBUGGING_SUPPORTED
 void DebuggerTraceCall(void* returnAddr, void* thunkDataMaybe)
 {
@@ -2378,14 +2313,8 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
     }
 
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-#ifndef FEATURE_EH_FUNCLETS
-    frame->record.m_pEntryFrame = frame->currentThread->GetFrame();
-    frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
-    INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
-#else
     frame->m_ExReg.Handler = (PEXCEPTION_ROUTINE)ProcessCLRException;
     INSTALL_SEH_RECORD(&frame->m_ExReg);
-#endif
 #endif
 }
 HCIMPLEND_RAW
@@ -2416,14 +2345,8 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
     }
 
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-#ifndef FEATURE_EH_FUNCLETS
-    frame->record.m_pEntryFrame = frame->currentThread->GetFrame();
-    frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
-    INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
-#else
     frame->m_ExReg.Handler = (PEXCEPTION_ROUTINE)ProcessCLRException;
     INSTALL_SEH_RECORD(&frame->m_ExReg);
-#endif
 #endif
 }
 HCIMPLEND_RAW
@@ -2439,11 +2362,7 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* f
     frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
 
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-#ifndef FEATURE_EH_FUNCLETS
-    UNINSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
-#else
     UNINSTALL_SEH_RECORD(&frame->m_ExReg);
-#endif
 #endif
 
 #ifdef PROFILING_SUPPORTED
@@ -2466,11 +2385,7 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
     frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
 
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-#ifndef FEATURE_EH_FUNCLETS
-    UNINSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
-#else
     UNINSTALL_SEH_RECORD(&frame->m_ExReg);
-#endif
 #endif
 }
 HCIMPLEND_RAW

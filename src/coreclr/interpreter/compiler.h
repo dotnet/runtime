@@ -645,6 +645,8 @@ private:
 
     InterpreterRetryData *m_pRetryData;
     const uint8_t* m_ip;
+
+    CORINFO_RESOLVED_TOKEN* m_pConstrainedToken = NULL;
     uint8_t* m_pILCode;
     int32_t m_ILCodeSizeFromILHeader;
     int32_t m_ILCodeSize; // This can differ from the size of the header if we add instructions for synchronized methods
@@ -907,6 +909,9 @@ private:
     bool    IsTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
     int     ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
+    bool    IsLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
     enum class ContinuationContextHandling : uint8_t
     {
         ContinueOnCapturedContext,
@@ -947,6 +952,9 @@ private:
     void    EmitPushSyncObject();
     void    EmitCallsiteCallout(CorInfoIsAccessAllowedResult accessAllowed, CORINFO_HELPER_DESC* calloutDesc);
     void    EmitCanAccessCallout(CORINFO_RESOLVED_TOKEN *pResolvedToken);
+    void    EmitLdftn(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isLdvirtftn);
+    void    EmitDup();
+    void    EmitLoadPointer(intptr_t value);
 
     // Var Offset allocator
     TArray<InterpInst*, MemPoolAllocator> *m_pActiveCalls;

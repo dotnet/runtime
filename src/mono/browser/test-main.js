@@ -119,7 +119,7 @@ function initRunArgs(runArgs) {
     runArgs.debugging = runArgs.debugging === undefined ? false : runArgs.debugging;
     runArgs.configSrc = runArgs.configSrc === undefined ? './_framework/dotnet.boot.js' : runArgs.configSrc;
     // default'ing to true for tests, unless debugging
-    runArgs.forwardConsole = runArgs.forwardConsole === undefined ? !runArgs.debugging : runArgs.forwardConsole;
+    runArgs.forwardConsole = runArgs.forwardConsole === undefined ? (isFirefox && !runArgs.debugging) : runArgs.forwardConsole;
     runArgs.interpreterPgo = runArgs.interpreterPgo === undefined ? false : runArgs.interpreterPgo;
 
     return runArgs;
