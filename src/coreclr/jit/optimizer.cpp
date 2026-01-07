@@ -3817,15 +3817,6 @@ bool Compiler::optIsProfitableToHoistTree(GenTree*              tree,
         return false;
     }
 
-#if defined(TARGET_RISCV64)
-    // Avoid hoisting a loop-invariant CNS_INT into a local variable if it is expected
-    // to increase callee-saved register pressure in small loops.
-    if (tree->OperIs(GT_CNS_INT) && (availRegCount <= CNT_CALLEE_ENREG))
-    {
-        return false;
-    }
-#endif
-
     // When loopVarCount >= availRegCount we believe that all of the
     // available registers will get used to hold LclVars inside the loop.
     // This pessimistically assumes that each loopVar has a conflicting
