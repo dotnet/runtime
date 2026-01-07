@@ -11,6 +11,8 @@
 
 bool MCList::processArgAsMCL(char* input, std::vector<int>& list)
 {
+    std::vector<int> l;
+
     // If it contains only '0-9', '-', ',' try to see it as a range list, else try to load as a file
     bool isRangeList = true;
 
@@ -51,12 +53,12 @@ bool MCList::processArgAsMCL(char* input, std::vector<int>& list)
                 {
                     inRange = false;
                     for (unsigned int i = rangeStart + 1; i <= scratch; i++)
-                        list.push_back(i);
+                        l.push_back(i);
                 }
                 else
                 {
                     rangeStart = scratch;
-                    list.push_back(scratch);
+                    l.push_back(scratch);
                 }
             }
             if (*head == '-')
@@ -68,7 +70,7 @@ bool MCList::processArgAsMCL(char* input, std::vector<int>& list)
             return false;
         }
 
-        if (list.empty())
+        if (l.empty())
         {
             LogError("Didn't find a list!");
             return false;
@@ -82,28 +84,30 @@ bool MCList::processArgAsMCL(char* input, std::vector<int>& list)
         if (lastdot != nullptr && _stricmp(lastdot, ".mcl") == 0)
         {
             // Read MCLFile
-            if (!getLineData(input, list))
+            if (!getLineData(input, l))
                 return false;
-            if (list.size() >= 0)
+            if (l.size() >= 0)
                 goto checkMCL;
         }
         return false;
     }
 
 checkMCL: // check that mcl list is increasing only
-    if (list[0] != 1)
+    if (l[0] != 1)
     {
         LogError("MCL list needs to start from 1!");
         return false;
     }
-    for (size_t i = 1; i < list.size(); i++)
+    for (size_t i = 1; i < l.size(); i++)
     {
-        if (list[i - 1] >= list[i])
+        if (l[i - 1] >= l[i])
         {
-            LogError("MCL list must be increasing.. found %d -> %d", list[i - 1], list[i]);
+            LogError("MCL list must be increasing.. found %d -> %d", l[i - 1], l[i]);
             return false;
         }
     }
+
+    list = std::move(l);
     return true;
 }
 
@@ -119,9 +123,10 @@ bool MCList::getLineData(const char* nameOfInput, std::vector<int>& indexes)
     }
 
     int value;
+    std::vector<int> l;
     while (fscanf(fp, "%d", &value) > 0)
     {
-        indexes.push_back(value);
+        l.push_back(value);
     }
 
     if (fclose(fp) != 0)
@@ -130,6 +135,7 @@ bool MCList::getLineData(const char* nameOfInput, std::vector<int>& indexes)
         return false;
     }
 
+    indexes = std::move(l);
     return true;
 }
 
