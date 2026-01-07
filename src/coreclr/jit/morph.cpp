@@ -14546,8 +14546,9 @@ GenTreeQmark* Compiler::fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst /* = N
 // fgExpandQmarkStmt: expand a qmark into control flow
 //
 // Arguments:
-//   block - block containing the qmark
-//   stmt  - statement containing the qmark
+//   block           - block containing the qmark
+//   stmt            - statement containing the qmark
+//   onlyEarlyQmarks - if true, only expand qmarks that are marked for early expansion
 //
 // Returns:
 //   true if the expansion introduced a throwing block
@@ -14602,7 +14603,7 @@ GenTreeQmark* Compiler::fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst /* = N
 //  If the qmark assigns to a variable, then create tmps for "then"
 //  and "else" results and assign the temp to the variable as a writeback step.
 //
-bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
+bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt, bool onlyEarlyQmarks)
 {
     bool     introducedThrow = false;
     GenTree* expr            = stmt->GetRootNode();
@@ -14611,6 +14612,11 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     GenTree*      dst   = nullptr;
     GenTreeQmark* qmark = fgGetTopLevelQmark(expr, &dst);
     if (qmark == nullptr)
+    {
+        return false;
+    }
+
+    if (onlyEarlyQmarks && !qmark->IsEarlyExpandableQmark())
     {
         return false;
     }
@@ -14792,6 +14798,14 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         }
         else
         {
+            // There is no good reason to keep root COMMAs when we can split them into separate statements.
+            while (trueExpr->OperIs(GT_COMMA))
+            {
+                Statement* trueStmt = fgNewStmtFromTree(trueExpr->gtGetOp1(), stmt->GetDebugInfo());
+                trueExpr            = trueExpr->gtGetOp2();
+                fgInsertStmtAtEnd(thenBlock, trueStmt);
+            }
+
             if (dst != nullptr)
             {
                 trueExpr = dst->OperIs(GT_STORE_LCL_FLD) ? gtNewStoreLclFldNode(dstLclNum, dst->TypeGet(),
@@ -14815,6 +14829,14 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         }
         else
         {
+            // There is no good reason to keep root COMMAs when we can split them into separate statements.
+            while (falseExpr->OperIs(GT_COMMA))
+            {
+                Statement* falseStmt = fgNewStmtFromTree(falseExpr->gtGetOp1(), stmt->GetDebugInfo());
+                falseExpr            = falseExpr->gtGetOp2();
+                fgInsertStmtAtEnd(elseBlock, falseStmt);
+            }
+
             if (dst != nullptr)
             {
                 falseExpr =
@@ -14838,33 +14860,47 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     return introducedThrow;
 }
 
-/*****************************************************************************
- *
- *  Expand GT_QMARK nodes from the flow graph into basic blocks.
- *
- */
-
-void Compiler::fgExpandQmarkNodes()
+//------------------------------------------------------------------------
+// fgExpandQmarkNodes: expand all QMARK nodes into control flow.
+//
+// Arguments:
+//    early - whether this is the early expansion phase. Late expansion
+//            happens too late for some optimizations, e.g. object stack-alloc.
+//
+// Returns:
+//    Suitable phase status.
+//
+PhaseStatus Compiler::fgExpandQmarkNodes(bool early)
 {
+    if (early && ((optMethodFlags & OMF_HAS_EARLY_QMARKS) == 0))
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    if (!compQmarkUsed)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     bool introducedThrows = false;
 
-    if (compQmarkUsed)
+    for (BasicBlock* const block : Blocks())
     {
-        for (BasicBlock* const block : Blocks())
+        for (Statement* const stmt : block->Statements())
         {
-            for (Statement* const stmt : block->Statements())
-            {
-                GenTree* expr = stmt->GetRootNode();
-#ifdef DEBUG
-                fgPreExpandQmarkChecks(expr);
-#endif
-                introducedThrows |= fgExpandQmarkStmt(block, stmt);
-            }
+            GenTree* expr = stmt->GetRootNode();
+            INDEBUG(fgPreExpandQmarkChecks(expr));
+            introducedThrows |= fgExpandQmarkStmt(block, stmt, early);
         }
-#ifdef DEBUG
-        fgPostExpandQmarkChecks();
-#endif
     }
+
+#ifdef DEBUG
+    if (!early)
+    {
+        fgPostExpandQmarkChecks();
+    }
+#endif
+
     compQmarkRationalized = true;
 
     // TODO: if qmark expansion created throw blocks, try and merge them
@@ -14873,6 +14909,8 @@ void Compiler::fgExpandQmarkNodes()
     {
         JITDUMP("Qmark expansion created new throw blocks\n");
     }
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------
