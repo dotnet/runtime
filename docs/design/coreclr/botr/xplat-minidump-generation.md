@@ -116,6 +116,18 @@ As of .NET 5.0, the following subset of the core pattern (see [core](https://man
     %h  Hostname return by gethostname().
     %t  Time of dump, expressed as seconds since the Epoch, 1970-01-01 00:00:00 +0000 (UTC).
 
+**Using a custom createdump tool**
+
+In scenarios where the runtime does not ship with the createdump tool, you can specify a custom path using the `DOTNET_DbgCreateDumpToolPath` environment variable:
+
+```bash
+export DOTNET_DbgEnableMiniDump=1
+export DOTNET_DbgCreateDumpToolPath=/path/to/custom/createdump
+./myapp
+```
+
+This allows you to "bring your own" dump generation tool. The specified path must point to an existing executable file.
+
 # Testing #
 
 The test plan is to modify the SOS tests in the (still) private debuggertests repo to trigger and use the core minidumps generated. Debugging managed core dumps on Linux is not supported by _mdbg_ at this time until we have a ELF core dump reader so only the SOS tests (which use _lldb_ on Linux) will be modified.
