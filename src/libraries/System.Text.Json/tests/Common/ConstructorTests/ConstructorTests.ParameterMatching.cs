@@ -1841,5 +1841,83 @@ namespace System.Text.Json.Serialization.Tests
         {
             public required string? Bar { get; set; }
         }
+
+        [Fact]
+        public async Task DeserializeType_WithInParameters()
+        {
+            string json = @"{""DateTime"":""2020-12-15T00:00:00"",""TimeSpan"":""01:02:03""}";
+            TypeWith_InParameters result = await Serializer.DeserializeWrapper<TypeWith_InParameters>(json);
+            Assert.Equal(new DateTime(2020, 12, 15), result.DateTime);
+            Assert.Equal(new TimeSpan(1, 2, 3), result.TimeSpan);
+        }
+
+        public class TypeWith_InParameters
+        {
+            public TypeWith_InParameters(in DateTime dateTime, in TimeSpan timeSpan)
+            {
+                DateTime = dateTime;
+                TimeSpan = timeSpan;
+            }
+
+            public DateTime DateTime { get; set; }
+            public TimeSpan TimeSpan { get; set; }
+        }
+
+        [Fact]
+        public async Task DeserializeType_WithMixedByRefParameters()
+        {
+            string json = @"{""Value1"":42,""Value2"":""hello"",""Value3"":3.14,""Value4"":true}";
+            TypeWith_MixedByRefParameters result = await Serializer.DeserializeWrapper<TypeWith_MixedByRefParameters>(json);
+            Assert.Equal(42, result.Value1);
+            Assert.Equal("hello", result.Value2);
+            Assert.Equal(3.14, result.Value3);
+            Assert.True(result.Value4);
+        }
+
+        public class TypeWith_MixedByRefParameters
+        {
+            public TypeWith_MixedByRefParameters(in int value1, string value2, in double value3, bool value4)
+            {
+                Value1 = value1;
+                Value2 = value2;
+                Value3 = value3;
+                Value4 = value4;
+            }
+
+            public int Value1 { get; set; }
+            public string Value2 { get; set; }
+            public double Value3 { get; set; }
+            public bool Value4 { get; set; }
+        }
+
+        [Fact]
+        public async Task DeserializeType_WithLargeInParameters()
+        {
+            string json = @"{""A"":1,""B"":2,""C"":3,""D"":4,""E"":5}";
+            TypeWith_LargeInParameters result = await Serializer.DeserializeWrapper<TypeWith_LargeInParameters>(json);
+            Assert.Equal(1, result.A);
+            Assert.Equal(2, result.B);
+            Assert.Equal(3, result.C);
+            Assert.Equal(4, result.D);
+            Assert.Equal(5, result.E);
+        }
+
+        public class TypeWith_LargeInParameters
+        {
+            public TypeWith_LargeInParameters(in int a, in int b, in int c, in int d, in int e)
+            {
+                A = a;
+                B = b;
+                C = c;
+                D = d;
+                E = e;
+            }
+
+            public int A { get; set; }
+            public int B { get; set; }
+            public int C { get; set; }
+            public int D { get; set; }
+            public int E { get; set; }
+        }
     }
 }
