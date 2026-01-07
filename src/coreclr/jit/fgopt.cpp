@@ -4776,6 +4776,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
         fgVerifyHandlerTab();
         // Make sure that the predecessor lists are accurate
         fgDebugCheckBBlist();
+        fgDebugCheckUpdate();
     }
 #endif // DEBUG
 

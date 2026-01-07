@@ -6308,6 +6308,7 @@ public:
 
     static fgWalkPreFn fgStress64RsltMulCB;
     void               fgStress64RsltMul();
+    void               fgDebugCheckUpdate();
 
     void fgDebugCheckBBNumIncreasing();
     void fgDebugCheckBBlist(bool checkBBNum = false, bool checkBBRefs = true);
