@@ -61,6 +61,7 @@ Environment variables supported:
 - `DOTNET_DbgEnableMiniDump`: if set to "1", enables this core dump generation. The default is NOT to generate a dump.
 - `DOTNET_DbgMiniDumpType`: See below. Default is "2" MiniDumpWithPrivateReadWriteMemory.
 - `DOTNET_DbgMiniDumpName`: if set, use as the template to create the dump path and file name. See "Dump name formatting" for how the dump name can be formatted. The default is _/tmp/coredump.%p_.
+- `DOTNET_DbgCreateDumpToolPath`: if set, specifies the full path to the createdump tool. This allows you to use a custom or external createdump binary instead of the one that ships with the runtime. The path must point to an existing regular file. This is useful in scenarios where createdump is not shipped with the runtime and you need to "bring your own" dump generation tool.
 - `DOTNET_CreateDumpDiagnostics`: if set to "1", enables the _createdump_ utilities diagnostic messages (TRACE macro).
 - `DOTNET_CreateDumpVerboseDiagnostics`: if set to "1", enables the _createdump_ utilities verbose diagnostic messages (TRACE_VERBOSE macro).
 - `DOTNET_CreateDumpLogToFile`: if set, it is the path of the file to write the _createdump_ diagnostic messages.
