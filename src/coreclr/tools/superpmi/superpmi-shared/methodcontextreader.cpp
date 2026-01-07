@@ -512,7 +512,11 @@ MethodContextBuffer MethodContextReader::GetSpecificMethodContext(unsigned int m
     {
         return MethodContextBuffer(-2);
     }
+#if TARGET_WINDOWS
+    if (_fseeki64(this->fp, (long)pos, SEEK_SET) == 0)
+#else
     if (fseek(this->fp, (long)pos, SEEK_SET) == 0)
+#endif
     {
         // ReadMethodContext will release the lock, but we already acquired it
         MethodContextBuffer mcb = this->ReadMethodContext(false);
