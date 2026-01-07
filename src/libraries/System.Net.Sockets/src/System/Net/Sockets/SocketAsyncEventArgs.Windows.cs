@@ -1097,6 +1097,7 @@ namespace System.Net.Sockets
                         // If partitioning happened, look up the file handle index from the parallel array.
                         // Otherwise, use the incrementing fileIndex.
                         int handleIndex = _sendPacketsElementsFileHandleIndices?[elementIndex] ?? fileIndex;
+                        Debug.Assert(handleIndex >= 0, "File element should have a valid handle index.");
                         sendPacketsDescriptorPinned[descriptorIndex].fileHandle = _sendPacketsFileHandles![handleIndex].DangerousGetHandle();
                         sendPacketsDescriptorPinned[descriptorIndex].fileOffset = spe.OffsetLong;
                         sendPacketsDescriptorPinned[descriptorIndex].length = (uint)spe.Count;
