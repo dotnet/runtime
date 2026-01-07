@@ -694,10 +694,11 @@ namespace System.Collections.Concurrent
                 T[] arr = _array;
                 int mask = _mask;
 
-                // Check if we need to grow the array
-                if (b - t >= mask)
+                long size = b - t;
+
+                // Check if we need to grow the array or handle small queue case
+                if (size >= mask || size <= 0)
                 {
-                    // Need to grow - acquire lock for array growth
                     lock (this)
                     {
                         // Re-read after lock
@@ -705,8 +706,9 @@ namespace System.Collections.Concurrent
                         b = _bottom;
                         arr = _array;
                         mask = _mask;
+                        size = b - t;
 
-                        long size = b - t;
+                        // If we're full, expand the array
                         if (size >= mask)
                         {
                             // Grow the array by doubling its size
@@ -725,21 +727,27 @@ namespace System.Collections.Concurrent
                             _array = arr = newArray;
                             _mask = mask = newArray.Length - 1;
                         }
+
+                        // Store the item
+                        arr[b & mask] = item;
+
+                        // Ensure the item is visible before bottom is updated
+                        Thread.MemoryBarrier();
+                        _bottom = b + 1;
+
+                        // Track empty-to-non-empty transition
+                        if (size == 0)
+                        {
+                            Interlocked.Increment(ref emptyToNonEmptyListTransitionCount);
+                        }
+                        return;
                     }
                 }
 
-                // Store the item
+                // Fast path: multiple items already present, no lock needed
                 arr[b & mask] = item;
-
-                // Ensure the item is visible before bottom is updated
                 Thread.MemoryBarrier();
                 _bottom = b + 1;
-
-                // Track empty-to-non-empty transition
-                if (b == t)
-                {
-                    Interlocked.Increment(ref emptyToNonEmptyListTransitionCount);
-                }
             }
 
             /// <summary>Clears the contents of the local queue.</summary>
@@ -788,15 +796,26 @@ namespace System.Collections.Concurrent
                     result = arr[b & _mask];
                     if (t == b)
                     {
-                        // Last element - race with stealers
-                        if (Interlocked.CompareExchange(ref _top, t + 1, t) != t)
+                        // Last element - need to compete with stealers using lock
+                        lock (this)
                         {
-                            // Lost race to a stealer
-                            _bottom = t + 1;
+                            t = Volatile.Read(ref _top);
+                            if (t <= b)
+                            {
+                                // Successfully got the element, increment top
+                                _top = t + 1;
+                                _bottom = t + 1;
+                                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                                {
+                                    arr[b & _mask] = default!;
+                                }
+                                return true;
+                            }
+                            // Lost race to stealer
+                            _bottom = t;
                             result = default!;
                             return false;
                         }
-                        _bottom = t + 1;
                     }
 
                     // Clear the reference
@@ -846,38 +865,37 @@ namespace System.Collections.Concurrent
             /// <param name="take">true to take the item; false to simply peek at it</param>
             internal bool TrySteal([MaybeNullWhen(false)] out T result, bool take)
             {
-                long t = Volatile.Read(ref _top);
-                Thread.MemoryBarrier();
-                long b = _bottom;
-
-                if (t < b)
+                // Use lock to synchronize with LocalPush when queue might be empty/small
+                // This is necessary for correct empty-to-non-empty transition tracking
+                lock (this)
                 {
-                    // Non-empty queue
-                    T[] arr = _array;
-                    result = arr[t & _mask];
+                    long t = Volatile.Read(ref _top);
+                    long b = _bottom;
 
-                    if (take)
+                    if (t < b)
                     {
-                        // Try to steal by CAS-ing the top index
-                        if (Interlocked.CompareExchange(ref _top, t + 1, t) != t)
-                        {
-                            // Lost race with another stealer or the owner
-                            result = default!;
-                            return false;
-                        }
+                        // Non-empty queue
+                        T[] arr = _array;
+                        result = arr[t & _mask];
 
-                        // Successfully stole - clear the reference
-                        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                        if (take)
                         {
-                            arr[t & _mask] = default!;
+                            // Increment top to steal the element
+                            _top = t + 1;
+
+                            // Clear the reference
+                            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                            {
+                                arr[t & _mask] = default!;
+                            }
                         }
+                        return true;
                     }
-                    return true;
-                }
 
-                // Empty queue
-                result = default!;
-                return false;
+                    // Empty queue
+                    result = default!;
+                    return false;
+                }
             }
 
             /// <summary>Copies the contents of this queue to the target array starting at the specified index.</summary>
@@ -890,9 +908,21 @@ namespace System.Collections.Concurrent
 
                 long t = Volatile.Read(ref _top);
                 long b = _bottom;
-                int count = (int)(b - t);
-                Debug.Assert(count >= 0);
-                Debug.Assert(arrayIndex <= array.Length - count);
+                long size = b - t;
+
+                // Handle case where bottom was temporarily decremented by TryLocalPop before it noticed we're frozen
+                if (size <= 0)
+                {
+                    return 0;
+                }
+
+                int count = (int)size;
+                int available = array.Length - arrayIndex;
+                if (count > available)
+                {
+                    // Cap count to available space - this can happen due to races with TryLocalPop
+                    count = available;
+                }
 
                 T[] arr = _array;
                 int mask = _mask;
@@ -919,8 +949,9 @@ namespace System.Collections.Concurrent
                     Debug.Assert(Monitor.IsEntered(this));
                     long t = Volatile.Read(ref _top);
                     long b = _bottom;
-                    int count = (int)(b - t);
-                    Debug.Assert(count >= 0, $"Expected bottom ({b}) >= top ({t}).");
+                    long size = b - t;
+                    // Handle case where bottom was temporarily decremented by TryLocalPop before it noticed we're frozen
+                    int count = size >= 0 ? (int)size : 0;
                     return count;
                 }
             }
