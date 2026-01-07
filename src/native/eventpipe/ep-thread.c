@@ -32,7 +32,7 @@ ep_thread_alloc (void)
 	ep_raise_error_if_nok (instance != NULL);
 
 	instance->os_thread_id = ep_rt_thread_id_t_to_uint64_t (ep_rt_current_thread_get_id ());
-	memset (instance->session_state, 0, sizeof (instance->session_state));
+	memset ((void *)instance->session_state, 0, sizeof (instance->session_state));
 
 	instance->writing_event_in_progress = UINT32_MAX;
 	instance->unregistered = 0;
