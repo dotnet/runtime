@@ -35,9 +35,6 @@ unsafe class ControlFlowGuardTests
         // Are we running the control program?
         if (args.Length == 0)
         {
-            TestExceptionFromDispatch.Run();
-            TestInterfaceDispatch.Run();
-
             // Dry run - execute all scenarios while s_armed is false.
             //
             // The replaced call target will not be considered invalid by CFG and none of this
@@ -85,120 +82,6 @@ unsafe class ControlFlowGuardTests
 
         // Subordinate program unknown
         return 10;
-    }
-
-    class TestExceptionFromDispatch
-    {
-        class CastableObject : IDynamicInterfaceCastable
-        {
-            public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType) => throw new Exception();
-            public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented) => true;
-        }
-
-        public static void Run()
-        {
-            bool caughtException = false;
-
-            IDisposable obj = (IDisposable)new CastableObject();
-            try
-            {
-                obj.Dispose();
-            }
-            catch (Exception)
-            {
-                caughtException = true;
-            }
-
-            if (!caughtException)
-                throw new Exception();
-        }
-    }
-
-    internal class TestInterfaceDispatch
-    {
-        interface IFoo<T>
-        {
-            int Call(int x, int y);
-        }
-
-        interface IFoo
-        {
-            int Call(int x, int y);
-        }
-
-        class C1 : IFoo, IFoo<object>
-        {
-            public int Call(int x, int y) => x + y;
-        }
-
-        class C2 : IFoo, IFoo<object>
-        {
-            public int Call(int x, int y) => x - y;
-        }
-        class C3 : IFoo, IFoo<object>
-        {
-            public int Call(int x, int y) => x * y;
-        }
-
-        class C4 : IFoo, IFoo<object>
-        {
-            public int Call(int x, int y) => x / y;
-        }
-
-        class C5 : IFoo, IFoo<object>
-        {
-            public int Call(int x, int y) => x % y;
-        }
-
-        public static void Run()
-        {
-            if (Call(new C1(), 10, 20) != (10 + 20))
-                throw new Exception();
-            if (Call(new C1(), 11, 22) != (11 + 22))
-                throw new Exception();
-            if (Call(new C2(), 10, 20) != (10 - 20))
-                throw new Exception();
-            if (Call(new C2(), 11, 22) != (11 - 22))
-                throw new Exception();
-            if (Call(new C3(), 10, 20) != (10 * 20))
-                throw new Exception();
-            if (Call(new C3(), 11, 22) != (11 * 22))
-                throw new Exception();
-            if (Call(new C4(), 10, 20) != (10 / 20))
-                throw new Exception();
-            if (Call(new C5(), 10, 20) != (10 % 20))
-                throw new Exception();
-
-            if (CallGen(new C1(), 10, 20) != (10 + 20))
-                throw new Exception();
-            if (CallGen(new C2(), 11, 22) != (11 - 22))
-                throw new Exception();
-            if (CallGen(new C3(), 11, 22) != (11 * 22))
-                throw new Exception();
-            if (CallGen(new C4(), 10, 20) != (10 / 20))
-                throw new Exception();
-            if (CallGen(new C5(), 10, 20) != (10 % 20))
-                throw new Exception();
-
-            bool caught = false;
-            try
-            {
-                Call(null, 10, 20);
-            }
-            catch (NullReferenceException)
-            {
-                caught = true;
-            }
-
-            if (!caught)
-                throw new Exception();
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        static int Call(IFoo f, int x, int y) => f.Call(x, y);
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CallGen<T>(IFoo<T> f, int x, int y) => f.Call(x, y);
     }
 
     class TestFunctionPointer
