@@ -868,7 +868,8 @@ namespace System.IO.Compression
             Changes |= ZipArchive.ChangeState.StoredData;
             _currentlyOpenForWrite = true;
 
-            // Create a fresh empty MemoryStream, discarding any previously loaded data
+            // Dispose any previously loaded data and create a fresh empty MemoryStream
+            _storedUncompressedData?.Dispose();
             _storedUncompressedData = new MemoryStream();
 
             // Return a stream wrapper. The stream is writable and seekable (like MemoryStream),
