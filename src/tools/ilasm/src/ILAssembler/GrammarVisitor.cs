@@ -89,12 +89,38 @@ namespace ILAssembler
         private readonly Dictionary<string, List<Blob>> _mappedFieldDataReferenceFixups = new();
         private readonly BlobBuilder _manifestResources = new();
 
+        // Typedef aliases - maps alias name to the resolved entity
+        private readonly Dictionary<string, TypedefEntry> _typedefs = new();
+
         public GrammarVisitor(IReadOnlyDictionary<string, SourceText> documents, Options options, Func<string, byte[]> resourceLocator)
         {
             _documents = documents;
             _options = options;
             _resourceLocator = resourceLocator;
         }
+
+        /// <summary>
+        /// Represents a typedef alias entry.
+        /// </summary>
+        private abstract record TypedefEntry
+        {
+            public sealed record Type(EntityRegistry.TypeEntity Entity) : TypedefEntry;
+            public sealed record TypeBlob(BlobBuilder Blob) : TypedefEntry;
+            public sealed record Member(EntityRegistry.EntityBase Entity) : TypedefEntry;
+            public sealed record CustomAttribute(EntityRegistry.EntityBase Constructor, BlobBuilder Value) : TypedefEntry;
+        }
+
+        private void ReportDiagnostic(DiagnosticSeverity severity, string id, string message, Antlr4.Runtime.ParserRuleContext context)
+        {
+            var location = Location.From(context.Start, _documents);
+            _diagnostics.Add(new Diagnostic(id, severity, message, location));
+        }
+
+        private void ReportError(string id, string message, Antlr4.Runtime.ParserRuleContext context)
+            => ReportDiagnostic(DiagnosticSeverity.Error, id, message, context);
+
+        private void ReportWarning(string id, string message, Antlr4.Runtime.ParserRuleContext context)
+            => ReportDiagnostic(DiagnosticSeverity.Warning, id, message, context);
 
         public (ImmutableArray<Diagnostic> Diagnostics, PEBuilder? Image) BuildImage()
         {
@@ -694,7 +720,7 @@ namespace ILAssembler
             {
                 if (_currentTypeDefinition.Count == 0)
                 {
-                    // TODO: Report diagnostic.
+                    ReportError(DiagnosticIds.ThisOutsideClass, DiagnosticMessageTemplates.ThisOutsideClass, context);
                     return new(new EntityRegistry.FakeTypeEntity(default(TypeDefinitionHandle)));
                 }
                 var thisType = _currentTypeDefinition.Peek();
@@ -704,13 +730,13 @@ namespace ILAssembler
             {
                 if (_currentTypeDefinition.Count == 0)
                 {
-                    // TODO: Report diagnostic.
+                    ReportError(DiagnosticIds.BaseOutsideClass, DiagnosticMessageTemplates.BaseOutsideClass, context);
                     return new(new EntityRegistry.FakeTypeEntity(default(TypeDefinitionHandle)));
                 }
                 var baseType = _currentTypeDefinition.Peek().BaseType;
                 if (baseType is null)
                 {
-                    // TODO: Report diagnostic.
+                    ReportError(DiagnosticIds.NoBaseType, DiagnosticMessageTemplates.NoBaseType, context);
                     return new(new EntityRegistry.FakeTypeEntity(default(TypeDefinitionHandle)));
                 }
                 return new(baseType);
@@ -719,7 +745,7 @@ namespace ILAssembler
             {
                 if (_currentTypeDefinition.Count < 2)
                 {
-                    // TODO: Report diagnostic.
+                    ReportError(DiagnosticIds.NesterOutsideNestedClass, DiagnosticMessageTemplates.NesterOutsideNestedClass, context);
                     return new(new EntityRegistry.FakeTypeEntity(default(TypeDefinitionHandle)));
                 }
                 var nesterType = _currentTypeDefinition.Peek().ContainingType!;
@@ -732,10 +758,11 @@ namespace ILAssembler
                 {
                     if (context.MODULE() is not null)
                     {
-                        resolutionContext = _entityRegistry.FindModuleReference(VisitDottedName(dottedAssemblyOrModuleName).Value);
+                        string moduleName = VisitDottedName(dottedAssemblyOrModuleName).Value;
+                        resolutionContext = _entityRegistry.FindModuleReference(moduleName);
                         if (resolutionContext is null)
                         {
-                            // TODO: Report diagnostic
+                            ReportError(DiagnosticIds.ModuleNotFound, string.Format(DiagnosticMessageTemplates.ModuleNotFound, moduleName), context);
                             return new(new EntityRegistry.FakeTypeEntity(default(TypeDefinitionHandle)));
                         }
                     }
@@ -790,7 +817,7 @@ namespace ILAssembler
 
                         if (typeDef is null)
                         {
-                            // TODO: Report diagnostic for missing type name
+                            ReportError(DiagnosticIds.TypeNotFound, string.Format(DiagnosticMessageTemplates.TypeNotFound, containingType.DottedName), context);
                             return new EntityRegistry.FakeTypeEntity(default(TypeDefinitionHandle));
                         }
                     }
@@ -863,7 +890,7 @@ namespace ILAssembler
             StringBuilder builder = new();
             foreach (var item in context.QSTRING())
             {
-                builder.Append(item.Symbol.Text);
+                builder.Append(StringHelpers.ParseQuotedString(item.Symbol.Text));
             }
             return new(builder.ToString());
         }
@@ -874,9 +901,16 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitCustomAttrDecl(CILParser.CustomAttrDeclContext context) => VisitCustomAttrDecl(context);
         public GrammarResult.Literal<EntityRegistry.CustomAttributeEntity?> VisitCustomAttrDecl(CILParser.CustomAttrDeclContext context)
         {
-            if (context.dottedName() is {})
+            if (context.dottedName() is { } dottedName)
             {
-                // TODO: typedef
+                // This is a typedef reference for a custom attribute
+                string alias = VisitDottedName(dottedName).Value;
+                var resolved = TryResolveTypedefAsCustomAttribute(alias);
+                if (resolved is not null)
+                {
+                    return new(_entityRegistry.CreateCustomAttribute(resolved.Value.Constructor, resolved.Value.Value));
+                }
+                // Typedef not found - could report diagnostic here
                 return new(null);
             }
             if (context.customDescrWithOwner() is {} descrWithOwner)
@@ -1358,7 +1392,7 @@ namespace ILAssembler
                     string dottedName = VisitDottedName(context.dottedName()).Value;
                     if (_currentMethod is null)
                     {
-                        // TODO: Report diagnostic
+                        ReportError(DiagnosticIds.MethodTypeParameterOutsideMethod, string.Format(DiagnosticMessageTemplates.MethodTypeParameterOutsideMethod, dottedName), context);
                         blob.WriteByte((byte)SignatureTypeCode.GenericMethodParameter);
                         blob.WriteCompressedInteger(0);
                     }
@@ -1384,7 +1418,7 @@ namespace ILAssembler
                             // This seems like a scenario that doesn't need to be brought forward.
                             // Instead, we'll just emit a reference to "generic method parameter" 0 and report an error.
 
-                            // TODO: Report diagnostic
+                            ReportError(DiagnosticIds.GenericParameterNotFound, string.Format(DiagnosticMessageTemplates.GenericParameterNotFound, dottedName), context);
                             blob.WriteCompressedInteger(0);
                         }
                     }
@@ -1404,7 +1438,7 @@ namespace ILAssembler
                     string dottedName = VisitDottedName(context.dottedName()).Value;
                     if (_currentTypeDefinition.Count == 0)
                     {
-                        // TODO: Report diagnostic
+                        ReportError(DiagnosticIds.TypeParameterOutsideType, string.Format(DiagnosticMessageTemplates.TypeParameterOutsideType, dottedName), context);
                         blob.WriteByte((byte)SignatureTypeCode.GenericTypeParameter);
                         blob.WriteCompressedInteger(0);
                     }
@@ -1430,7 +1464,7 @@ namespace ILAssembler
                             // This seems like a scenario that doesn't need to be brought forward.
                             // Instead, we'll just emit a reference to "generic method parameter" 0 and report an error.
 
-                            // TODO: Report diagnostic
+                            ReportError(DiagnosticIds.GenericParameterNotFound, string.Format(DiagnosticMessageTemplates.GenericParameterNotFound, dottedName), context);
                             blob.WriteCompressedInteger(0);
                         }
                     }
@@ -1458,8 +1492,18 @@ namespace ILAssembler
             }
             else if (context.dottedName() is CILParser.DottedNameContext dottedName)
             {
-                // TODO: typedef
-                throw new NotImplementedException();
+                // Typedef reference - resolve and write the type blob
+                string alias = VisitDottedName(dottedName).Value;
+                var resolved = TryResolveTypedefAsTypeBlob(alias);
+                if (resolved is not null)
+                {
+                    // Copy the content to avoid modifying the stored blob
+                    resolved.WriteContentTo(blob);
+                }
+                else
+                {
+                    ReportError(DiagnosticIds.TypedefNotFound, string.Format(DiagnosticMessageTemplates.TypedefNotFound, alias), context);
+                }
             }
             else
             {
@@ -1567,7 +1611,7 @@ namespace ILAssembler
                     var entity = VisitMdtoken(mdToken).Value;
                     if (entity is null)
                     {
-                        // TODO: Report diagnostic
+                        ReportError(DiagnosticIds.InvalidMetadataToken, DiagnosticMessageTemplates.InvalidMetadataToken, declarations[i]);
                     }
                     implementationEntity = ResolveBetterEntity(entity);
                     continue;
@@ -1575,18 +1619,20 @@ namespace ILAssembler
                 string kind = declarations[i].GetText();
                 if (kind == ".file")
                 {
-                    implementationEntity = _entityRegistry.FindFile(VisitDottedName(declarations[i].dottedName()).Value);
+                    string fileName = VisitDottedName(declarations[i].dottedName()).Value;
+                    implementationEntity = _entityRegistry.FindFile(fileName);
                     if (implementationEntity is null)
                     {
-                        // TODO: Report diagnostic
+                        ReportError(DiagnosticIds.FileNotFound, string.Format(DiagnosticMessageTemplates.FileNotFound, fileName), declarations[i]);
                     }
                 }
                 else if (kind == ".assembly")
                 {
-                    implementationEntity = _entityRegistry.FindAssemblyReference(VisitDottedName(declarations[i].dottedName()).Value);
+                    string assemblyName = VisitDottedName(declarations[i].dottedName()).Value;
+                    implementationEntity = _entityRegistry.FindAssemblyReference(assemblyName);
                     if (implementationEntity is null)
                     {
-                        // TODO: Report diagnostic
+                        ReportError(DiagnosticIds.AssemblyNotFound, string.Format(DiagnosticMessageTemplates.AssemblyNotFound, assemblyName), declarations[i]);
                     }
                 }
                 else if (kind == ".class")
@@ -1601,7 +1647,7 @@ namespace ILAssembler
                         var containing = ResolveExportedType(declarations[i].slashedName());
                         if (containing is null)
                         {
-                            // TODO: Report diagnostic
+                            ReportError(DiagnosticIds.ExportedTypeNotFound, string.Format(DiagnosticMessageTemplates.ExportedTypeNotFound, declarations[i].slashedName().GetText()), declarations[i]);
                         }
                         else
                         {
@@ -1656,7 +1702,7 @@ namespace ILAssembler
 
                     if (exportedType is null)
                     {
-                        // TODO: Report diagnostic for missing type name
+                        ReportError(DiagnosticIds.ExportedTypeNotFound, string.Format(DiagnosticMessageTemplates.ExportedTypeNotFound, containingType.DottedName), slashedName);
                         return null;
                     }
                 }
@@ -1755,7 +1801,7 @@ namespace ILAssembler
             var fieldAttrs = context.fieldAttr().Select(VisitFieldAttr).Aggregate((FieldAttributes)0, (a, b) => a | b);
             var fieldType = VisitType(context.type()).Value;
             var marshalBlobs = context.marshalBlob();
-            var marshalBlob = VisitMarshalBlob(marshalBlobs[marshalBlobs.Length - 1]).Value;
+            var marshalBlob = marshalBlobs.Length > 0 ? VisitMarshalBlob(marshalBlobs[marshalBlobs.Length - 1]).Value : null;
             var name = VisitDottedName(context.dottedName()).Value;
             var rvaOffset = VisitAtOpt(context.atOpt()).Value;
             _ = VisitInitOpt(context.initOpt());
@@ -1784,8 +1830,15 @@ namespace ILAssembler
         {
             if (context.type() is not CILParser.TypeContext type)
             {
-                // TODO: typedef
-                throw new NotImplementedException();
+                // This is a typedef reference for a field member
+                string alias = VisitDottedName(context.dottedName()).Value;
+                var resolved = TryResolveTypedefAsMember(alias);
+                if (resolved is not null)
+                {
+                    return new(resolved);
+                }
+                ReportError(DiagnosticIds.TypedefNotFound, string.Format(DiagnosticMessageTemplates.TypedefNotFound, alias), context);
+                return new(_entityRegistry.CreateLazilyRecordedMemberReference(_entityRegistry.ModuleType, alias, new BlobBuilder()));
             }
 
             var fieldTypeSig = VisitType(type).Value;
@@ -2227,13 +2280,19 @@ namespace ILAssembler
                         else if (argument is CILParser.BytesContext bytesContext)
                         {
                             var bytes = VisitBytes(bytesContext).Value.ToArray();
-                            value = bytes switch
+                            if (bytes.Length >= 8)
                             {
-                                { Length: >= 8 } => BitConverter.ToDouble(bytes, 0),
-                                { Length: >= 4 } => BitConverter.ToSingle(bytes, 0),
-                                // TODO: Report diagnostic on too-short byte array
-                                _ => 0.0d
-                            };
+                                value = BitConverter.ToDouble(bytes, 0);
+                            }
+                            else if (bytes.Length >= 4)
+                            {
+                                value = BitConverter.ToSingle(bytes, 0);
+                            }
+                            else
+                            {
+                                ReportError(DiagnosticIds.ByteArrayTooShort, DiagnosticMessageTemplates.ByteArrayTooShort, bytesContext);
+                                value = 0.0d;
+                            }
                         }
                         else
                         {
@@ -2391,7 +2450,7 @@ namespace ILAssembler
                                 }
                                 else
                                 {
-                                    // TODO: Report diagnostic
+                                    ReportError(DiagnosticIds.ArgumentNotFound, string.Format(DiagnosticMessageTemplates.ArgumentNotFound, varName), context);
                                 }
                             }
                             else
@@ -2406,7 +2465,7 @@ namespace ILAssembler
                                 }
                                 if (index is null)
                                 {
-                                    // TODO: diagnostic
+                                    ReportError(DiagnosticIds.LocalNotFound, string.Format(DiagnosticMessageTemplates.LocalNotFound, varName), context);
                                 }
                             }
 
@@ -2577,10 +2636,11 @@ namespace ILAssembler
                 string kind = decl.GetChild(0).GetText();
                 if (kind == ".file" && implementation is not EntityRegistry.AssemblyReferenceEntity)
                 {
-                    var file = _entityRegistry.FindFile(VisitDottedName(decl.dottedName()).Value);
+                    string fileName = VisitDottedName(decl.dottedName()).Value;
+                    var file = _entityRegistry.FindFile(fileName);
                     if (file is null)
                     {
-                        // TODO: Report diagnostic
+                        ReportError(DiagnosticIds.FileNotFound, string.Format(DiagnosticMessageTemplates.FileNotFound, fileName), decl);
                     }
                     else
                     {
@@ -2590,10 +2650,11 @@ namespace ILAssembler
                 }
                 else if (kind == ".assembly")
                 {
-                    var asm = _entityRegistry.FindAssemblyReference(VisitDottedName(decl.dottedName()).Value);
+                    string assemblyName = VisitDottedName(decl.dottedName()).Value;
+                    var asm = _entityRegistry.FindAssemblyReference(assemblyName);
                     if (asm is null)
                     {
-                        // TODO: Report diagnostic
+                        ReportError(DiagnosticIds.AssemblyNotFound, string.Format(DiagnosticMessageTemplates.AssemblyNotFound, assemblyName), decl);
                     }
                     else
                     {
@@ -3068,10 +3129,17 @@ namespace ILAssembler
             {
                 return new(VisitMdtoken(token).Value);
             }
-            if (context.dottedName() is CILParser.DottedNameContext)
+            if (context.dottedName() is CILParser.DottedNameContext dottedName)
             {
-                // TODO: typedef
-                throw new NotImplementedException();
+                // This is a typedef reference for a method member
+                string alias = VisitDottedName(dottedName).Value;
+                var resolved = TryResolveTypedefAsMember(alias);
+                if (resolved is not null)
+                {
+                    return new(resolved);
+                }
+                ReportError(DiagnosticIds.TypedefNotFound, string.Format(DiagnosticMessageTemplates.TypedefNotFound, alias), context);
+                return new(_entityRegistry.CreateLazilyRecordedMemberReference(_entityRegistry.ModuleType, alias, new BlobBuilder()));
             }
             BlobBuilder methodRefSignature = new();
             byte callConv = VisitCallConv(context.callConv()).Value;
@@ -3221,8 +3289,10 @@ namespace ILAssembler
             var blob = new BlobBuilder(5);
             if (context.dottedName() is CILParser.DottedNameContext typedef)
             {
-                _ = typedef;
-                // TODO: typedef
+                // Native type typedefs are not yet fully supported
+                // For now, report an error and return empty blob
+                string alias = VisitDottedName(typedef).Value;
+                ReportError(DiagnosticIds.TypedefNotFound, string.Format(DiagnosticMessageTemplates.TypedefNotFound, alias), context);
                 return new(blob);
             }
 
@@ -3787,10 +3857,12 @@ namespace ILAssembler
                 blob.WriteByte((byte)VisitSimpleType(simpleType).Value);
                 return new(blob);
             }
-            if (context.dottedName() is CILParser.DottedNameContext)
+            if (context.dottedName() is CILParser.DottedNameContext dottedName)
             {
-                // TODO: typedef
-                throw new NotImplementedException();
+                // Serialization type typedefs are not yet fully supported
+                string alias = VisitDottedName(dottedName).Value;
+                ReportError(DiagnosticIds.TypedefNotFound, string.Format(DiagnosticMessageTemplates.TypedefNotFound, alias), context);
+                return new(new BlobBuilder(1));
             }
             if (context.TYPE() is not null)
             {
@@ -4177,7 +4249,113 @@ namespace ILAssembler
             return new(blob);
         }
 
-        public GrammarResult VisitTypedefDecl(CILParser.TypedefDeclContext context) => throw new NotImplementedException();
+        public GrammarResult VisitTypedefDecl(CILParser.TypedefDeclContext context)
+        {
+            string alias = VisitDottedName(context.dottedName()).Value;
+
+            if (context.type() is CILParser.TypeContext type)
+            {
+                // .typedef type as alias
+                // This creates an alias for a complete type signature (blob)
+                var typeBlob = VisitType(type).Value;
+                // Create a copy of the blob to avoid issues with linked BlobBuilders
+                var copy = new BlobBuilder(typeBlob.Count);
+                typeBlob.WriteContentTo(copy);
+                _typedefs[alias] = new TypedefEntry.TypeBlob(copy);
+            }
+            else if (context.className() is CILParser.ClassNameContext className)
+            {
+                // .typedef className as alias
+                var typeEntity = VisitClassName(className).Value;
+                _typedefs[alias] = new TypedefEntry.Type(typeEntity);
+            }
+            else if (context.memberRef() is CILParser.MemberRefContext memberRef)
+            {
+                // .typedef memberRef as alias
+                var member = VisitMemberRef(memberRef).Value;
+                _typedefs[alias] = new TypedefEntry.Member(member);
+            }
+            else if (context.customDescr() is CILParser.CustomDescrContext customDescr)
+            {
+                // .typedef customDescr as alias
+                var attr = VisitCustomDescr(customDescr).Value;
+                if (attr is not null)
+                {
+                    _typedefs[alias] = new TypedefEntry.CustomAttribute(attr.Constructor, attr.Value);
+                }
+            }
+            else if (context.customDescrWithOwner() is CILParser.CustomDescrWithOwnerContext customDescrWithOwner)
+            {
+                // .typedef customDescrWithOwner as alias
+                var attr = VisitCustomDescrWithOwner(customDescrWithOwner).Value;
+                if (attr is not null)
+                {
+                    _typedefs[alias] = new TypedefEntry.CustomAttribute(attr.Constructor, attr.Value);
+                }
+            }
+
+            return GrammarResult.SentinelValue.Result;
+        }
+
+        /// <summary>
+        /// Tries to resolve a typedef alias to a type entity.
+        /// </summary>
+        private EntityRegistry.TypeEntity? TryResolveTypedefAsType(string alias)
+        {
+            if (_typedefs.TryGetValue(alias, out var entry) && entry is TypedefEntry.Type typeEntry)
+            {
+                return typeEntry.Entity;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Tries to resolve a typedef alias to a type blob (complete type signature).
+        /// </summary>
+        private BlobBuilder? TryResolveTypedefAsTypeBlob(string alias)
+        {
+            if (_typedefs.TryGetValue(alias, out var entry))
+            {
+                if (entry is TypedefEntry.TypeBlob blobEntry)
+                {
+                    return blobEntry.Blob;
+                }
+                if (entry is TypedefEntry.Type typeEntry)
+                {
+                    // Encode the type entity as a CLASS reference for the blob
+                    var blob = new BlobBuilder(5);
+                    blob.WriteByte((byte)SignatureTypeKind.Class);
+                    blob.WriteTypeEntity(typeEntry.Entity);
+                    return blob;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Tries to resolve a typedef alias to a member reference.
+        /// </summary>
+        private EntityRegistry.EntityBase? TryResolveTypedefAsMember(string alias)
+        {
+            if (_typedefs.TryGetValue(alias, out var entry) && entry is TypedefEntry.Member memberEntry)
+            {
+                return memberEntry.Entity;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Tries to resolve a typedef alias to a custom attribute.
+        /// </summary>
+        private (EntityRegistry.EntityBase Constructor, BlobBuilder Value)? TryResolveTypedefAsCustomAttribute(string alias)
+        {
+            if (_typedefs.TryGetValue(alias, out var entry) && entry is TypedefEntry.CustomAttribute attrEntry)
+            {
+                return (attrEntry.Constructor, attrEntry.Value);
+            }
+            return null;
+        }
+
         public GrammarResult VisitTypelist(CILParser.TypelistContext context)
         {
             foreach (var name in context.className())
