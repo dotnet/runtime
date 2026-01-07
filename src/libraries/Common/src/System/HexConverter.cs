@@ -218,7 +218,7 @@ namespace System
 
         public static string ToString(ReadOnlySpan<byte> bytes, Casing casing = Casing.Upper)
         {
-#if NETFRAMEWORK || NETSTANDARD2_0
+#if NETFRAMEWORK || NETSTANDARD
             Span<char> result = (bytes.Length > 16) ?
                 new char[bytes.Length * 2].AsSpan() :
                 stackalloc char[bytes.Length * 2];
