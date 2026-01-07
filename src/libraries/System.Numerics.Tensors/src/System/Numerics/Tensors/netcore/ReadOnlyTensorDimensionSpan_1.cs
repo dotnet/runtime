@@ -3,7 +3,7 @@
 
 using System.Runtime.CompilerServices;
 
-#if NET9_0_OR_GREATER
+#if NET
 using System.Collections;
 using System.Collections.Generic;
 #endif
@@ -61,7 +61,7 @@ namespace System.Numerics.Tensors
 
         /// <summary>Enumerates the spans of a tensor dimension span.</summary>
         public ref struct Enumerator
-#if NET9_0_OR_GREATER
+#if NET
             : IEnumerator<ReadOnlyTensorSpan<T>>
 #endif
         {
@@ -96,7 +96,7 @@ namespace System.Numerics.Tensors
                 _index = -1;
             }
 
-#if NET9_0_OR_GREATER
+#if NET
             //
             // IDisposable
             //

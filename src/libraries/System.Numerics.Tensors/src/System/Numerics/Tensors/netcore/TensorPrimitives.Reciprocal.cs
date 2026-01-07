@@ -123,7 +123,7 @@ namespace System.Numerics.Tensors
 
             public static Vector128<T> Invoke(Vector128<T> x)
             {
-#if NET9_0_OR_GREATER
+#if NET
                 if (Avx512F.VL.IsSupported)
                 {
                     if (typeof(T) == typeof(float)) return Avx512F.VL.Reciprocal14(x.AsSingle()).As<float, T>();
@@ -151,7 +151,7 @@ namespace System.Numerics.Tensors
 
             public static Vector256<T> Invoke(Vector256<T> x)
             {
-#if NET9_0_OR_GREATER
+#if NET
                 if (Avx512F.VL.IsSupported)
                 {
                     if (typeof(T) == typeof(float)) return Avx512F.VL.Reciprocal14(x.AsSingle()).As<float, T>();
@@ -169,7 +169,7 @@ namespace System.Numerics.Tensors
 
             public static Vector512<T> Invoke(Vector512<T> x)
             {
-#if NET9_0_OR_GREATER
+#if NET
                 if (Avx512F.IsSupported)
                 {
                     if (typeof(T) == typeof(float)) return Avx512F.Reciprocal14(x.AsSingle()).As<float, T>();
@@ -189,7 +189,7 @@ namespace System.Numerics.Tensors
 
             public static Vector128<T> Invoke(Vector128<T> x)
             {
-#if NET9_0_OR_GREATER
+#if NET
                 if (Avx512F.VL.IsSupported)
                 {
                     if (typeof(T) == typeof(float)) return Avx512F.VL.ReciprocalSqrt14(x.AsSingle()).As<float, T>();
@@ -217,7 +217,7 @@ namespace System.Numerics.Tensors
 
             public static Vector256<T> Invoke(Vector256<T> x)
             {
-#if NET9_0_OR_GREATER
+#if NET
                 if (Avx512F.VL.IsSupported)
                 {
                     if (typeof(T) == typeof(float)) return Avx512F.VL.ReciprocalSqrt14(x.AsSingle()).As<float, T>();
@@ -235,7 +235,7 @@ namespace System.Numerics.Tensors
 
             public static Vector512<T> Invoke(Vector512<T> x)
             {
-#if NET9_0_OR_GREATER
+#if NET
                 if (Avx512F.IsSupported)
                 {
                     if (typeof(T) == typeof(float)) return Avx512F.ReciprocalSqrt14(x.AsSingle()).As<float, T>();

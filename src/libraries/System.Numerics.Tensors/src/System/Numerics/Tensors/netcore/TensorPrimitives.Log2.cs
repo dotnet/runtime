@@ -50,7 +50,7 @@ namespace System.Numerics.Tensors
 
             public static Vector128<T> Invoke(Vector128<T> x)
             {
-#if NET9_0_OR_GREATER
+#if NET
                 if (typeof(T) == typeof(double))
                 {
                     return Vector128.Log2(x.AsDouble()).As<double, T>();
@@ -75,7 +75,7 @@ namespace System.Numerics.Tensors
 
             public static Vector256<T> Invoke(Vector256<T> x)
             {
-#if NET9_0_OR_GREATER
+#if NET
                 if (typeof(T) == typeof(double))
                 {
                     return Vector256.Log2(x.AsDouble()).As<double, T>();
@@ -100,7 +100,7 @@ namespace System.Numerics.Tensors
 
             public static Vector512<T> Invoke(Vector512<T> x)
             {
-#if NET9_0_OR_GREATER
+#if NET
                 if (typeof(T) == typeof(double))
                 {
                     return Vector512.Log2(x.AsDouble()).As<double, T>();
@@ -124,7 +124,7 @@ namespace System.Numerics.Tensors
             }
         }
 
-#if !NET9_0_OR_GREATER
+#if !NET
         /// <summary>double.Log2(x)</summary>
         private readonly struct Log2OperatorDouble : IUnaryOperator<double, double>
         {

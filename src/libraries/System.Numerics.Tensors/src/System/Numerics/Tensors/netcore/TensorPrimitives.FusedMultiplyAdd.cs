@@ -123,7 +123,7 @@ namespace System.Numerics.Tensors
 
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> z)
             {
-#if NET9_0_OR_GREATER
+#if NET
                 if (typeof(T) == typeof(double))
                 {
                     return Vector128.FusedMultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
@@ -176,7 +176,7 @@ namespace System.Numerics.Tensors
 
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y, Vector256<T> z)
             {
-#if NET9_0_OR_GREATER
+#if NET
                 if (typeof(T) == typeof(double))
                 {
                     return Vector256.FusedMultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
@@ -201,7 +201,7 @@ namespace System.Numerics.Tensors
 
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y, Vector512<T> z)
             {
-#if NET9_0_OR_GREATER
+#if NET
                 if (typeof(T) == typeof(double))
                 {
                     return Vector512.FusedMultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();

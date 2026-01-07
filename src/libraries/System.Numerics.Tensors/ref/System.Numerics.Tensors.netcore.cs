@@ -70,7 +70,7 @@ namespace System.Numerics.Tensors
     }
     public partial interface IReadOnlyTensor<TSelf, T> : System.Numerics.Tensors.IReadOnlyTensor
         where TSelf : System.Numerics.Tensors.IReadOnlyTensor<TSelf, T>
-#if NET9_0_OR_GREATER
+#if NET
         , allows ref struct
 #endif
     {
@@ -107,7 +107,7 @@ namespace System.Numerics.Tensors
     }
     public partial interface ITensor<TSelf, T> : System.Numerics.Tensors.IReadOnlyTensor, System.Numerics.Tensors.IReadOnlyTensor<TSelf, T>, System.Numerics.Tensors.ITensor
         where TSelf : System.Numerics.Tensors.ITensor<TSelf, T>
-#if NET9_0_OR_GREATER
+#if NET
         , allows ref struct
 #endif
     {

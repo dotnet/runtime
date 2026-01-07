@@ -49,7 +49,7 @@ namespace System.Numerics.Tensors
 
             public static bool Invoke(T x) => T.IsNormal(x);
 
-#if NET10_0_OR_GREATER
+#if NET
             public static Vector128<T> Invoke(Vector128<T> x) => Vector128.IsNormal(x);
 
             public static Vector256<T> Invoke(Vector256<T> x) => Vector256.IsNormal(x);

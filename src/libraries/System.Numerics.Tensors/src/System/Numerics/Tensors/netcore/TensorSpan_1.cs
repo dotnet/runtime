@@ -22,7 +22,7 @@ namespace System.Numerics.Tensors
     [DebuggerTypeProxy(typeof(TensorSpanDebugView<>))]
     [DebuggerDisplay("{ToString(),raw}")]
     public readonly ref struct TensorSpan<T>
-#if NET9_0_OR_GREATER
+#if NET
         : ITensor<TensorSpan<T>, T>
 #endif
     {
@@ -378,7 +378,7 @@ namespace System.Numerics.Tensors
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.TryGetSpan(ReadOnlySpan{NIndex}, int, out ReadOnlySpan{T})" />
         public bool TryGetSpan(scoped ReadOnlySpan<NIndex> startIndexes, int length, out ReadOnlySpan<T> span) => AsReadOnlyTensorSpan().TryGetSpan(startIndexes, length, out span);
 
-#if NET9_0_OR_GREATER
+#if NET
         //
         // IReadOnlyTensor
         //

@@ -158,7 +158,7 @@ namespace System.Numerics.Tensors
 
                 ref T xRef = ref MemoryMarshal.GetReference(x);
                 Vector512<T> resultIndex =
-#if NET9_0_OR_GREATER
+#if NET
                     sizeof(T) == sizeof(long) ? Vector512<long>.Indices.As<long, T>() :
                     sizeof(T) == sizeof(int) ? Vector512<int>.Indices.As<int, T>() :
                     sizeof(T) == sizeof(short) ? Vector512<short>.Indices.As<short, T>() :
@@ -249,7 +249,7 @@ namespace System.Numerics.Tensors
 
                 ref T xRef = ref MemoryMarshal.GetReference(x);
                 Vector256<T> resultIndex =
-#if NET9_0_OR_GREATER
+#if NET
                     sizeof(T) == sizeof(long) ? Vector256<long>.Indices.As<long, T>() :
                     sizeof(T) == sizeof(int) ? Vector256<int>.Indices.As<int, T>() :
                     sizeof(T) == sizeof(short) ? Vector256<short>.Indices.As<short, T>() :
@@ -340,7 +340,7 @@ namespace System.Numerics.Tensors
 
                 ref T xRef = ref MemoryMarshal.GetReference(x);
                 Vector128<T> resultIndex =
-#if NET9_0_OR_GREATER
+#if NET
                     sizeof(T) == sizeof(long) ? Vector128<long>.Indices.As<long, T>() :
                     sizeof(T) == sizeof(int) ? Vector128<int>.Indices.As<int, T>() :
                     sizeof(T) == sizeof(short) ? Vector128<short>.Indices.As<short, T>() :

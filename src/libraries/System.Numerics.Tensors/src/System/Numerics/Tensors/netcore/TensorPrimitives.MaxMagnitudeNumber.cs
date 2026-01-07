@@ -111,7 +111,7 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
             {
-#if NET9_0_OR_GREATER
+#if NET
                 return Vector128.MaxMagnitudeNumber(x, y);
 #else
                 if ((typeof(T) == typeof(byte))
@@ -153,7 +153,7 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
             {
-#if NET9_0_OR_GREATER
+#if NET
                 return Vector256.MaxMagnitudeNumber(x, y);
 #else
                 if ((typeof(T) == typeof(byte))
@@ -195,7 +195,7 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
             {
-#if NET9_0_OR_GREATER
+#if NET
                 return Vector512.MaxMagnitudeNumber(x, y);
 #else
                 if ((typeof(T) == typeof(byte))

@@ -54,7 +54,7 @@ namespace System.Numerics.Tensors
 
             public static bool Invoke(T x) => T.IsPositiveInfinity(x);
 
-#if NET10_0_OR_GREATER
+#if NET
             public static Vector128<T> Invoke(Vector128<T> x) => Vector128.IsPositiveInfinity(x);
             public static Vector256<T> Invoke(Vector256<T> x) => Vector256.IsPositiveInfinity(x);
             public static Vector512<T> Invoke(Vector512<T> x) => Vector512.IsPositiveInfinity(x);

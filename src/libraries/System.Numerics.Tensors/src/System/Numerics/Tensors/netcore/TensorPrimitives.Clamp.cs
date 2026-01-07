@@ -219,7 +219,7 @@ namespace System.Numerics.Tensors
 
             public static T Invoke(T x, T min, T max) => T.Clamp(x, min, max);
 
-#if NET9_0_OR_GREATER
+#if NET
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> min, Vector128<T> max) => Vector128.Clamp(x, min, max);
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> min, Vector256<T> max) => Vector256.Clamp(x, min, max);
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> min, Vector512<T> max) => Vector512.Clamp(x, min, max);
@@ -267,7 +267,7 @@ namespace System.Numerics.Tensors
 
             public static T Invoke(T min, T max, T x) => T.Clamp(x, min, max);
 
-#if NET9_0_OR_GREATER
+#if NET
             public static Vector128<T> Invoke(Vector128<T> min, Vector128<T> max, Vector128<T> x) => Vector128.Clamp(x, min, max);
             public static Vector256<T> Invoke(Vector256<T> min, Vector256<T> max, Vector256<T> x) => Vector256.Clamp(x, min, max);
             public static Vector512<T> Invoke(Vector512<T> min, Vector512<T> max, Vector512<T> x) => Vector512.Clamp(x, min, max);
@@ -316,7 +316,7 @@ namespace System.Numerics.Tensors
             public static T Invoke(T max, T x, T min) => T.Clamp(x, min, max);
 
 
-#if NET9_0_OR_GREATER
+#if NET
             public static Vector128<T> Invoke(Vector128<T> max, Vector128<T> x, Vector128<T> min) => Vector128.Clamp(x, min, max);
             public static Vector256<T> Invoke(Vector256<T> max, Vector256<T> x, Vector256<T> min) => Vector256.Clamp(x, min, max);
             public static Vector512<T> Invoke(Vector512<T> max, Vector512<T> x, Vector512<T> min) => Vector512.Clamp(x, min, max);

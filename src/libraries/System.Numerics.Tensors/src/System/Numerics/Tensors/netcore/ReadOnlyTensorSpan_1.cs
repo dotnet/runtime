@@ -22,7 +22,7 @@ namespace System.Numerics.Tensors
     [DebuggerTypeProxy(typeof(TensorSpanDebugView<>))]
     [DebuggerDisplay("{ToString(),raw}")]
     public readonly ref struct ReadOnlyTensorSpan<T>
-#if NET9_0_OR_GREATER
+#if NET
         : IReadOnlyTensor<ReadOnlyTensorSpan<T>, T>
 #endif
     {
@@ -501,7 +501,7 @@ namespace System.Numerics.Tensors
             return true;
         }
 
-#if NET9_0_OR_GREATER
+#if NET
         //
         // IReadOnlyTensor
         //

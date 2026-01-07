@@ -108,7 +108,7 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
             {
-#if !NET9_0_OR_GREATER
+#if !NET
                 if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
                 {
                     return Vector128.ConditionalSelect(
@@ -125,7 +125,7 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
             {
-#if !NET9_0_OR_GREATER
+#if !NET
                 if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
                 {
                     return Vector256.ConditionalSelect(
@@ -142,7 +142,7 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
             {
-#if !NET9_0_OR_GREATER
+#if !NET
                 if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
                 {
                     return Vector512.ConditionalSelect(
@@ -165,7 +165,7 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<T> IsNaN<T>(Vector128<T> vector)
         {
-#if NET9_0_OR_GREATER
+#if NET
             return Vector128.IsNaN(vector);
 #else
             if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
@@ -180,7 +180,7 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<T> IsNaN<T>(Vector256<T> vector)
         {
-#if NET9_0_OR_GREATER
+#if NET
             return Vector256.IsNaN(vector);
 #else
             if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
@@ -195,7 +195,7 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector512<T> IsNaN<T>(Vector512<T> vector)
         {
-#if NET9_0_OR_GREATER
+#if NET
             return Vector512.IsNaN(vector);
 #else
             if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
@@ -210,7 +210,7 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<T> IsNegative<T>(Vector128<T> vector)
         {
-#if NET9_0_OR_GREATER
+#if NET
             return Vector128.IsNegative(vector);
 #else
             if ((typeof(T) == typeof(byte))
@@ -240,7 +240,7 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<T> IsNegative<T>(Vector256<T> vector)
         {
-#if NET9_0_OR_GREATER
+#if NET
             return Vector256.IsNegative(vector);
 #else
             if ((typeof(T) == typeof(byte))
@@ -270,7 +270,7 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector512<T> IsNegative<T>(Vector512<T> vector)
         {
-#if NET9_0_OR_GREATER
+#if NET
             return Vector512.IsNegative(vector);
 #else
             if ((typeof(T) == typeof(byte))
@@ -300,7 +300,7 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<T> IsPositive<T>(Vector128<T> vector)
         {
-#if NET9_0_OR_GREATER
+#if NET
             return Vector128.IsPositive(vector);
 #else
             if ((typeof(T) == typeof(byte))
@@ -330,7 +330,7 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<T> IsPositive<T>(Vector256<T> vector)
         {
-#if NET9_0_OR_GREATER
+#if NET
             return Vector256.IsPositive(vector);
 #else
             if ((typeof(T) == typeof(byte))
@@ -360,7 +360,7 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector512<T> IsPositive<T>(Vector512<T> vector)
         {
-#if NET9_0_OR_GREATER
+#if NET
             return Vector512.IsPositive(vector);
 #else
             if ((typeof(T) == typeof(byte))

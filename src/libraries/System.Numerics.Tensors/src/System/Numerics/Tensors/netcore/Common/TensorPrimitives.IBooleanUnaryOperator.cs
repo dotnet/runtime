@@ -36,7 +36,7 @@ namespace System.Numerics.Tensors
 
             public static bool ShouldEarlyExit(bool result) => result;
 
-#if NET10_0_OR_GREATER
+#if NET
             public static bool ShouldEarlyExit(Vector128<T> result) => Vector128.AnyWhereAllBitsSet(result);
             public static bool ShouldEarlyExit(Vector256<T> result) => Vector256.AnyWhereAllBitsSet(result);
             public static bool ShouldEarlyExit(Vector512<T> result) => Vector512.AnyWhereAllBitsSet(result);

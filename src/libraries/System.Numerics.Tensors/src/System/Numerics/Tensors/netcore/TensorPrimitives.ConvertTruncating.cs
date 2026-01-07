@@ -104,7 +104,7 @@ namespace System.Numerics.Tensors
         private readonly struct ConvertSingleToInt32 : IUnaryOperator<float, int>
         {
             public static bool Vectorizable =>
-#if NET9_0_OR_GREATER
+#if NET
                 true; // .NET 9+ includes https://github.com/dotnet/runtime/pull/97529
 #else
                 false;
@@ -120,7 +120,7 @@ namespace System.Numerics.Tensors
         private readonly struct ConvertSingleToUInt32 : IUnaryOperator<float, uint>
         {
             public static bool Vectorizable =>
-#if NET9_0_OR_GREATER
+#if NET
                 true; // .NET 9+ includes https://github.com/dotnet/runtime/pull/97529
 #else
                 false;
@@ -136,7 +136,7 @@ namespace System.Numerics.Tensors
         private readonly struct ConvertDoubleToUInt64 : IUnaryOperator<double, ulong>
         {
             public static bool Vectorizable =>
-#if NET9_0_OR_GREATER
+#if NET
                 true; // .NET 9+ includes https://github.com/dotnet/runtime/pull/97529
 #else
                 false;
@@ -152,7 +152,7 @@ namespace System.Numerics.Tensors
         private readonly struct ConvertDoubleToInt64 : IUnaryOperator<double, long>
         {
             public static bool Vectorizable =>
-#if NET9_0_OR_GREATER
+#if NET
                 true; // .NET 9+ includes https://github.com/dotnet/runtime/pull/97529
 #else
                 false;

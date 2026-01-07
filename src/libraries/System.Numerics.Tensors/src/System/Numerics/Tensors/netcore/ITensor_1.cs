@@ -10,7 +10,7 @@ namespace System.Numerics.Tensors
     /// <typeparam name="T">The element type.</typeparam>
     public interface ITensor<TSelf, T> : ITensor, IReadOnlyTensor<TSelf, T>
         where TSelf : ITensor<TSelf, T>
-#if NET9_0_OR_GREATER
+#if NET
         , allows ref struct
 #endif
     {
