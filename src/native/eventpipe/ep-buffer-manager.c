@@ -114,7 +114,8 @@ EventPipeBuffer *
 buffer_manager_advance_to_non_empty_buffer (
 	EventPipeBufferManager *buffer_manager,
 	EventPipeThreadSessionState *thread_session_state,
-	ep_timestamp_t before_timestamp);
+	ep_timestamp_t before_timestamp,
+	bool *thread_session_state_exhausted);
 
 // Detaches this buffer from an active writer thread and marks it read-only so that the reader
 // thread can use it.
@@ -123,6 +124,12 @@ void
 buffer_manager_convert_buffer_to_read_only (
 	EventPipeBufferManager *buffer_manager,
 	EventPipeBuffer *new_read_buffer);
+
+static
+void
+buffer_manager_remove_and_delete_thread_session_state (
+	EventPipeBufferManager *buffer_manager,
+	EventPipeThreadSessionState *thread_session_state);
 
 /*
  * EventPipeBufferList.
@@ -598,7 +605,8 @@ buffer_manager_move_next_event_any_thread (
 	EventPipeBuffer *buffer;
 	EventPipeEventInstance *next_event;
 	DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThreadSessionState *, thread_session_state, &cached_thread_session_state_list) {
-		buffer = buffer_manager_advance_to_non_empty_buffer (buffer_manager, thread_session_state, stop_timestamp);
+		bool thread_session_state_exhausted = false;
+		buffer = buffer_manager_advance_to_non_empty_buffer (buffer_manager, thread_session_state, stop_timestamp, &thread_session_state_exhausted);
 		if (buffer) {
 			// Peek the next event out of the buffer.
 			next_event = ep_buffer_get_current_read_event (buffer);
@@ -610,7 +618,19 @@ buffer_manager_move_next_event_any_thread (
 				oldest_timestamp = ep_event_instance_get_timestamp (buffer_manager->current_event);
 			}
 		}
+		if (thread_session_state_exhausted) {
+			EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section2)
+				buffer_manager_remove_and_delete_thread_session_state (buffer_manager, thread_session_state);
+			EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section2)
+		}
 	} DN_VECTOR_PTR_FOREACH_END;
+
+	// The current event will be read, so update the last read sequence number for that thread session state.
+	if (buffer_manager->current_event != NULL)
+	{
+		uint32_t sequence_number = ep_buffer_get_current_sequence_number (buffer_manager->current_buffer);
+		ep_thread_session_state_set_last_read_sequence_number (buffer_manager->current_thread_session_state, sequence_number);
+	}
 
 ep_on_exit:
 	ep_buffer_manager_requires_lock_not_held (buffer_manager);
@@ -639,7 +659,9 @@ buffer_manager_move_next_event_same_thread (
 	ep_buffer_move_next_read_event (buffer_manager->current_buffer);
 
 	// Find the first buffer in the list, if any, which has an event in it
-	buffer_manager->current_buffer = buffer_manager_advance_to_non_empty_buffer (buffer_manager, buffer_manager->current_thread_session_state, stop_timestamp);
+	EventPipeThreadSessionState *current_thread_session_state = buffer_manager->current_thread_session_state;
+	bool thread_session_state_exhausted = false;
+	buffer_manager->current_buffer = buffer_manager_advance_to_non_empty_buffer (buffer_manager, current_thread_session_state, stop_timestamp, &thread_session_state_exhausted);
 
 	if (buffer_manager->current_buffer) {
 		// get the event from that buffer
@@ -655,6 +677,9 @@ buffer_manager_move_next_event_same_thread (
 			buffer_manager->current_event = next_event;
 			EP_ASSERT (buffer_manager->current_buffer != NULL);
 			EP_ASSERT (buffer_manager->current_thread_session_state != NULL);
+			// The current event will be read, so update the last read sequence number for that thread session state.
+			uint32_t sequence_number = ep_buffer_get_current_sequence_number (buffer_manager->current_buffer);
+			ep_thread_session_state_set_last_read_sequence_number (current_thread_session_state, sequence_number);
 		}
 	} else {
 		// no more buffers prior to before_timestamp
@@ -662,6 +687,18 @@ buffer_manager_move_next_event_same_thread (
 		EP_ASSERT (buffer_manager->current_buffer == NULL);
 		buffer_manager->current_thread_session_state = NULL;
 	}
+
+	if (thread_session_state_exhausted) {
+		EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
+			buffer_manager_remove_and_delete_thread_session_state (buffer_manager, current_thread_session_state);
+		EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section1)
+	}
+
+ep_on_exit:
+	return;
+
+ep_on_error:
+	ep_exit_error_handler ();
 }
 
 static
@@ -669,7 +706,8 @@ EventPipeBuffer *
 buffer_manager_advance_to_non_empty_buffer (
 	EventPipeBufferManager *buffer_manager,
 	EventPipeThreadSessionState *thread_session_state,
-	ep_timestamp_t before_timestamp)
+	ep_timestamp_t before_timestamp,
+	bool *thread_session_state_exhausted)
 {
 	EP_ASSERT (buffer_manager != NULL);
 	EP_ASSERT (thread_session_state != NULL);
@@ -680,6 +718,8 @@ buffer_manager_advance_to_non_empty_buffer (
 	EP_ASSERT (buffer_list != NULL);
 	EventPipeBuffer *current_buffer = buffer_list->head_buffer;
 	EP_ASSERT (current_buffer != NULL);
+	*thread_session_state_exhausted = false;
+	bool done = false;
 	while (!done) {
 		buffer_manager_convert_buffer_to_read_only (buffer_manager, current_buffer);
 		if (ep_buffer_get_current_read_event (current_buffer) != NULL) {
@@ -694,6 +734,10 @@ buffer_manager_advance_to_non_empty_buffer (
 
 				// get the next buffer
 				current_buffer = buffer_list->head_buffer;
+
+				if (!current_buffer && (ep_rt_volatile_load_uint32_t_without_barrier (ep_thread_get_unregistered_ref (ep_thread_session_state_get_thread (thread_session_state))) > 0))
+					*thread_session_state_exhausted = true;
+
 				if (!current_buffer || ep_buffer_get_creation_timestamp (current_buffer) >= before_timestamp) {
 					// no more buffers in the list before this timestamp, we're done
 					current_buffer = NULL;
@@ -1136,8 +1180,6 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 
 			uint64_t capture_thread_id = ep_thread_get_os_thread_id (ep_buffer_get_writer_thread (buffer_manager->current_buffer));
 
-			EventPipeThreadSessionState *current_thread_session_state = buffer_manager->current_thread_session_state;
-
 			// loop across events on this thread
 			bool events_written_for_thread = false;
 
@@ -1153,7 +1195,6 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 				buffer_manager_move_next_event_same_thread (buffer_manager, current_timestamp_boundary);
 			}
 
-			ep_thread_session_state_set_last_read_sequence_number (current_thread_session_state, sequence_number);
 			// Have we written events in any sequence point?
 			*events_written = events_written_for_thread || *events_written;
 		}
@@ -1171,8 +1212,7 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 		// through the events we may have observed that a higher numbered event was recorded. If so we
 		// should adjust the sequence numbers upwards to ensure the data in the stream is consistent.
 		EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section2)
-			for (dn_list_it_t it = dn_list_begin (buffer_manager->thread_session_state_list); !dn_list_it_end (it); ) {
-				EventPipeThreadSessionState *session_state = *dn_list_it_data_t (it, EventPipeThreadSessionState *);
+			DN_LIST_FOREACH_BEGIN (EventPipeThreadSessionState *, session_state, buffer_manager->thread_session_state_list) {
 				EventPipeThread *thread = ep_thread_session_state_get_thread (session_state);
 				dn_umap_it_t found = dn_umap_ptr_uint32_find (ep_sequence_point_get_thread_sequence_numbers (sequence_point), thread);
 				uint32_t thread_sequence_number = !dn_umap_it_end (found) ? dn_umap_it_value_uint32_t (found) : 0;
@@ -1186,23 +1226,7 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 					if (dn_umap_it_end (found))
 						ep_thread_addref (thread);
 				}
-
-				it = dn_list_it_next (it);
-
-				// if a session_state was exhausted during this sequence point, mark it for deletion
-				if (ep_thread_session_state_get_buffer_list (session_state)->head_buffer == NULL) {
-					// We don't hold the thread lock here, so it technically races with a thread getting unregistered. This is okay,
-					// because we will either not have passed the above if statement (there were events still in the buffers) or we
-					// will catch it at the next sequence point.
-					EventPipeThread* thread = ep_thread_session_state_get_thread (session_state);
-					EventPipeSession* session = ep_thread_session_state_get_session (session_state);
-					if (ep_rt_volatile_load_uint32_t_without_barrier (ep_thread_get_unregistered_ref (thread)) > 0) {
-						dn_vector_ptr_push_back (&session_states_to_delete, session_state);
-						dn_list_remove (buffer_manager->thread_session_state_list, session_state);
-						ep_thread_set_session_state(thread, session, NULL);
-					}
-				}
-			}
+			} DN_LIST_FOREACH_END;
 		EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section2)
 
 		// emit the sequence point into the file
@@ -1212,34 +1236,6 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 		EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section3)
 			buffer_manager_dequeue_sequence_point (buffer_manager);
 		EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section3)
-	}
-
-	// There are sequence points created during this flush and we've marked session states for deletion.
-	// We need to remove these from the internal maps of the subsequent Sequence Points
-	if (dn_vector_ptr_size (&session_states_to_delete) > 0) {
-		EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section4)
-			if (buffer_manager_try_peek_sequence_point (buffer_manager, &sequence_point)) {
-				DN_LIST_FOREACH_BEGIN (EventPipeSequencePoint *, current_sequence_point, buffer_manager->sequence_points) {
-					// foreach (session_state in session_states_to_delete)
-					DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThreadSessionState *, thread_session_state, &session_states_to_delete) {
-						EventPipeThread *thread = ep_thread_session_state_get_thread (thread_session_state);
-						dn_umap_it_t found = dn_umap_ptr_uint32_find (ep_sequence_point_get_thread_sequence_numbers (current_sequence_point), thread);
-						if (!dn_umap_it_end (found)) {
-							dn_umap_erase (found);
-							// every entry of this map was holding an extra ref to the thread (see: ep-event-instance.{h|c})
-							ep_thread_release (thread);
-						}
-					} DN_VECTOR_PTR_FOREACH_END;
-				} DN_LIST_FOREACH_END;
-			}
-
-			// foreach (thread_session_state in session_states_to_delete)
-			DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThreadSessionState *, thread_session_state, &session_states_to_delete) {
-				EP_ASSERT (thread_session_state != NULL);
-				ep_thread_session_state_free (thread_session_state);
-			} DN_VECTOR_PTR_FOREACH_END;
-
-		EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section4)
 	}
 
 ep_on_exit:
@@ -1322,6 +1318,53 @@ ep_buffer_manager_ensure_consistency (EventPipeBufferManager *buffer_manager)
 	return true;
 }
 #endif
+
+// While deleting a thread session state, this is the last chance to update sequence points
+// mapped thread sequence numbers. The current sequence point needs to have the latest read
+// sequence number, where as future sequence points can drop the thread entry.
+static
+void
+buffer_manager_remove_and_delete_thread_session_state (
+	EventPipeBufferManager *buffer_manager,
+	EventPipeThreadSessionState *thread_session_state)
+{
+	EP_ASSERT (buffer_manager != NULL);
+	EP_ASSERT (thread_session_state != NULL);
+
+	ep_buffer_manager_requires_lock_held (buffer_manager);
+
+	EventPipeSequencePoint *current_sequence_point = NULL;
+	if (buffer_manager_try_peek_sequence_point (buffer_manager, &current_sequence_point)) {
+		DN_LIST_FOREACH_BEGIN (EventPipeSequencePoint *, sequence_point, buffer_manager->sequence_points) {
+			EventPipeThread *thread = ep_thread_session_state_get_thread (thread_session_state);
+			dn_umap_t *thread_sequence_numbers = ep_sequence_point_get_thread_sequence_numbers (sequence_point);
+			dn_umap_it_t found = dn_umap_ptr_uint32_find (thread_sequence_numbers, thread);
+			if (current_sequence_point != sequence_point) {
+				if (!dn_umap_it_end (found)) {
+					ep_thread_release (thread);
+					dn_umap_erase_key (thread_sequence_numbers, thread);
+				}
+				continue;
+			}
+
+			uint32_t thread_sequence_number = !dn_umap_it_end (found) ? dn_umap_it_value_uint32_t (found) : 0;
+			// Sequence numbers can overflow so we can't use a direct last_read > sequence_number comparison
+			// If a thread is able to drop more than 0x80000000 events in between sequence points then we will
+			// miscategorize it, but that seems unlikely.
+			uint32_t sequence_number = ep_thread_session_state_get_last_read_sequence_number (thread_session_state);
+			uint32_t last_read_delta = sequence_number - thread_sequence_number;
+			if (0 < last_read_delta && last_read_delta < 0x80000000) {
+				dn_umap_ptr_uint32_insert_or_assign (thread_sequence_numbers, thread, sequence_number);
+				if (dn_umap_it_end (found))
+					ep_thread_addref (thread);
+			}
+		} DN_LIST_FOREACH_END;
+	}
+
+	dn_list_remove (buffer_manager->thread_session_state_list, thread_session_state);
+	ep_thread_set_session_state (ep_thread_session_state_get_thread (thread_session_state), ep_thread_session_state_get_session (thread_session_state), NULL);
+	ep_thread_session_state_free (thread_session_state);
+}
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */

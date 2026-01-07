@@ -119,6 +119,17 @@ ep_thread_unregister (EventPipeThread *thread)
 
 	ep_return_false_if_nok (thread != NULL);
 
+	for (uint32_t i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; ++i) {
+		EventPipeThreadSessionState *thread_session_state = (EventPipeThreadSessionState *)ep_rt_volatile_load_ptr ((volatile void **)(&thread->session_state [i]));
+		if (thread_session_state == NULL)
+			continue;
+
+		EventPipeBufferManager *buffer_manager = ep_session_get_buffer_manager (thread_session_state->session);
+		EP_ASSERT (buffer_manager != NULL);
+
+		ep_rt_wait_event_set (&buffer_manager->rt_wait_event);
+	}
+
 	bool found = false;
 	EP_SPIN_LOCK_ENTER (&_ep_threads_lock, section1)
 		// Remove ourselves from the global list

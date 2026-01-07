@@ -38,9 +38,8 @@ struct _EventPipeThread_Internal {
 	// Writing a non-NULL pointer into the slot only occurs on the OS thread associated with this EventPipeThread object when
 	// trying to write the first event into a session.
 	// Writing a NULL pointer into the slot could occur on either:
-	// 1. The thread owning this EventPipeThread when it unregisters (currently this doesn't happen, but it should in the future).
-	// 2. The session event flushing thread when is has finished flushing all the events for a thread that already exited.
-	// 3. The thread which calls ep_disable() to disable the session.
+	// 1. The session event flushing thread when is has finished flushing all the events for a thread that already exited.
+	// 2. The thread which calls ep_disable() to disable the session.
 	// 
 	// Reading from this slot can either be done by taking the buffer manager lock, or by doing a volatile read of the pointer. The volatile
 	// read should only occur when running on the OS thread associated with this EventPipeThread object. When reading under the lock the
@@ -301,7 +300,6 @@ struct _EventPipeThreadSessionState {
 };
 #endif
 
-EP_DEFINE_GETTER_REF(EventPipeThreadSessionState *, thread_session_state, EventPipeThreadHolder *, thread_holder)
 EP_DEFINE_GETTER(EventPipeThreadSessionState *, thread_session_state, EventPipeBufferList *, buffer_list)
 EP_DEFINE_GETTER(EventPipeThreadSessionState *, thread_session_state, EventPipeSession *, session)
 EP_DEFINE_GETTER(EventPipeThreadSessionState *, thread_session_state, uint32_t, last_read_sequence_number);
