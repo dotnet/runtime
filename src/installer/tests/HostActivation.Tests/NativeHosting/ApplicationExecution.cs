@@ -36,8 +36,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
                 .Execute()
                 .Should().Pass()
-                .And.InitializeContextForApp(app.AppDll)
-                .And.ExecuteApplication(sharedState.NativeHostPath, app.AppDll);
+                 .InitializeContextForApp(app.AppDll)
+                 .ExecuteApplication(sharedState.NativeHostPath, app.AppDll);
         }
 
         [Fact]
@@ -56,8 +56,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .DisableDumps() // Expected to throw an exception
                 .Execute()
                 .Should().Fail()
-                .And.InitializeContextForApp(app.AppDll)
-                .And.ExecuteApplicationWithException(sharedState.NativeHostPath, app.AppDll);
+                 .InitializeContextForApp(app.AppDll)
+                 .ExecuteApplicationWithException(sharedState.NativeHostPath, app.AppDll);
         }
 
         public class SharedTestState : SharedTestStateBase

@@ -40,11 +40,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                .And.InitializeContextForApp(app.AppDll)
-                .And.ExecuteSelfContained(selfContained: false)
-                .And.ExecuteInDefaultContext(component.AssemblyName)
-                .And.ExecuteWithLocation(component.AssemblyName, loadAssemblyBytes ? string.Empty : component.AppDll)
-                .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1);
+                 .InitializeContextForApp(app.AppDll)
+                 .ExecuteSelfContained(selfContained: false)
+                 .ExecuteInDefaultContext(component.AssemblyName)
+                 .ExecuteWithLocation(component.AssemblyName, loadAssemblyBytes ? string.Empty : component.AppDll)
+                 .ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1);
         }
 
         [Fact]
@@ -76,10 +76,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                .And.InitializeContextForConfig(component.RuntimeConfigJson)
-                .And.ExecuteInDefaultContext(component.AssemblyName)
-                .And.ExecuteWithLocation(component.AssemblyName, loadAssemblyBytes ? string.Empty : component.AppDll)
-                .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1);
+                 .InitializeContextForConfig(component.RuntimeConfigJson)
+                 .ExecuteInDefaultContext(component.AssemblyName)
+                 .ExecuteWithLocation(component.AssemblyName, loadAssemblyBytes ? string.Empty : component.AppDll)
+                 .ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1);
         }
 
         [Fact]
@@ -111,11 +111,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                .And.InitializeContextForApp(app.AppDll)
-                .And.ExecuteSelfContained(selfContained: true)
-                .And.ExecuteInDefaultContext(component.AssemblyName)
-                .And.ExecuteWithLocation(component.AssemblyName, loadAssemblyBytes ? string.Empty : component.AppDll)
-                .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1);
+                 .InitializeContextForApp(app.AppDll)
+                 .ExecuteSelfContained(selfContained: true)
+                 .ExecuteInDefaultContext(component.AssemblyName)
+                 .ExecuteWithLocation(component.AssemblyName, loadAssemblyBytes ? string.Empty : component.AppDll)
+                 .ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1);
         }
 
         [Fact]

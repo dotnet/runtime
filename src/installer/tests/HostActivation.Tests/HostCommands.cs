@@ -39,11 +39,11 @@ namespace HostActivation.Tests
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining(expectedSdksOutput)
-                .And.HaveStdOutContaining(expectedRuntimesOutput)
-                .And.HaveStdOutMatching($@"Architecture:\s*{HostTestContext.BuildArchitecture}")
+                 .HaveStdOutContaining(expectedSdksOutput)
+                 .HaveStdOutContaining(expectedRuntimesOutput)
+                 .HaveStdOutMatching($@"Architecture:\s*{HostTestContext.BuildArchitecture}")
                 // If an SDK exists, we rely on it to print the RID. The host should not print it again.
-                .And.NotHaveStdOutMatching($@"RID:\s*{HostTestContext.BuildRID}");
+                 .NotHaveStdOutMatching($@"RID:\s*{HostTestContext.BuildRID}");
         }
 
         [Fact]
@@ -63,10 +63,10 @@ namespace HostActivation.Tests
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining(expectedSdksOutput)
-                .And.HaveStdOutContaining(expectedRuntimesOutput)
-                .And.HaveStdOutMatching($@"Architecture:\s*{HostTestContext.BuildArchitecture}")
-                .And.HaveStdOutMatching($@"RID:\s*{HostTestContext.BuildRID}");
+                 .HaveStdOutContaining(expectedSdksOutput)
+                 .HaveStdOutContaining(expectedRuntimesOutput)
+                 .HaveStdOutMatching($@"Architecture:\s*{HostTestContext.BuildArchitecture}")
+                 .HaveStdOutMatching($@"RID:\s*{HostTestContext.BuildRID}");
         }
 
         [Fact]
@@ -81,7 +81,7 @@ namespace HostActivation.Tests
                 .CaptureStdOut(Encoding.UTF8)
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutMatching($@"DOTNET_ROOT.*{installLocation}");
+                 .HaveStdOutMatching($@"DOTNET_ROOT.*{installLocation}");
         }
 
         [Fact]
@@ -126,9 +126,9 @@ namespace HostActivation.Tests
 
             var result = command.Execute();
             result.Should().Pass()
-                .And.HaveStdOutContaining("Environment variables:")
-                .And.HaveStdOutMatching($@"{Constants.DotnetRoot.EnvironmentVariable}\s*\[{dotnetRootNoArch}\]")
-                .And.NotHaveStdOutContaining(otherEnvVar);
+                 .HaveStdOutContaining("Environment variables:")
+                 .HaveStdOutMatching($@"{Constants.DotnetRoot.EnvironmentVariable}\s*\[{dotnetRootNoArch}\]")
+                 .NotHaveStdOutContaining(otherEnvVar);
 
             foreach ((string architecture, string path) in dotnetRootEnvVars)
             {
@@ -164,9 +164,9 @@ namespace HostActivation.Tests
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Environment variables:")
-                .And.NotHaveStdOutContaining(comPlusEnvVar)
-                .And.HaveStdOutContaining("Detected COMPlus_* environment variable(s). Consider transitioning to DOTNET_* equivalent.");
+                 .HaveStdOutContaining("Environment variables:")
+                 .NotHaveStdOutContaining(comPlusEnvVar)
+                 .HaveStdOutContaining("Detected COMPlus_* environment variable(s). Consider transitioning to DOTNET_* equivalent.");
         }
 
         [Fact]
@@ -180,9 +180,9 @@ namespace HostActivation.Tests
                     .CaptureStdOut().CaptureStdErr()
                     .Execute()
                     .Should().Pass()
-                    .And.HaveStdOutContaining($"Invalid [{globalJsonPath}]")
-                    .And.HaveStdOutContaining("JSON parsing exception:")
-                    .And.NotHaveStdErr();
+                     .HaveStdOutContaining($"Invalid [{globalJsonPath}]")
+                     .HaveStdOutContaining("JSON parsing exception:")
+                     .NotHaveStdErr();
             }
         }
 
@@ -201,10 +201,10 @@ namespace HostActivation.Tests
                     .CaptureStdOut().CaptureStdErr()
                     .Execute()
                     .Should().Pass()
-                    .And.HaveStdOutContaining($"Invalid [{globalJsonPath}]")
-                    .And.HaveStdOutContaining($"Version '{version}' is not valid for the 'sdk/version' value")
-                    .And.HaveStdOutContaining($"Invalid global.json is ignored for SDK resolution")
-                    .And.NotHaveStdErr();
+                     .HaveStdOutContaining($"Invalid [{globalJsonPath}]")
+                     .HaveStdOutContaining($"Version '{version}' is not valid for the 'sdk/version' value")
+                     .HaveStdOutContaining($"Invalid global.json is ignored for SDK resolution")
+                     .NotHaveStdErr();
             }
         }
 
@@ -221,10 +221,10 @@ namespace HostActivation.Tests
                     .CaptureStdOut().CaptureStdErr()
                     .Execute()
                     .Should().Pass()
-                    .And.HaveStdOutContaining($"Invalid [{globalJsonPath}]")
-                    .And.HaveStdOutContaining($"Version '{version}' is not valid for the 'sdk/version' value. SDK feature bands start at 1 - for example, {Version.Parse(version).ToString(2)}.100")
-                    .And.NotHaveStdOutContaining($"Invalid global.json is ignored for SDK resolution")
-                    .And.NotHaveStdErr();
+                     .HaveStdOutContaining($"Invalid [{globalJsonPath}]")
+                     .HaveStdOutContaining($"Version '{version}' is not valid for the 'sdk/version' value. SDK feature bands start at 1 - for example, {Version.Parse(version).ToString(2)}.100")
+                     .NotHaveStdOutContaining($"Invalid global.json is ignored for SDK resolution")
+                     .NotHaveStdErr();
             }
         }
 
@@ -238,7 +238,7 @@ namespace HostActivation.Tests
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOut(expectedOutput);
+                 .HaveStdOut(expectedOutput);
         }
 
         [Fact]
@@ -254,7 +254,7 @@ namespace HostActivation.Tests
                 .EnvironmentVariable(Constants.DisableRuntimeVersions.EnvironmentVariable, disabledVersion)
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOut(expectedOutput);
+                 .HaveStdOut(expectedOutput);
         }
 
         [Theory]
@@ -280,7 +280,7 @@ namespace HostActivation.Tests
                         .CaptureStdOut()
                         .Execute()
                         .Should().Pass()
-                        .And.HaveStdOut(expectedOutput);
+                         .HaveStdOut(expectedOutput);
                 }
             }
         }
@@ -299,7 +299,7 @@ namespace HostActivation.Tests
                     .CaptureStdOut()
                     .Execute()
                     .Should().Pass()
-                    .And.HaveStdOut(string.Empty);
+                     .HaveStdOut(string.Empty);
             }
         }
 
@@ -310,7 +310,7 @@ namespace HostActivation.Tests
                 .CaptureStdOut()
                 .Execute()
                 .Should().Fail()
-                .And.ExitWith(Constants.ErrorCode.InvalidArgFailure);
+                 .ExitWith(Constants.ErrorCode.InvalidArgFailure);
         }
 
         [Fact]
@@ -323,7 +323,7 @@ namespace HostActivation.Tests
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOut(expectedOutput);
+                 .HaveStdOut(expectedOutput);
         }
 
         [Theory]
@@ -349,7 +349,7 @@ namespace HostActivation.Tests
                         .CaptureStdOut()
                         .Execute()
                         .Should().Pass()
-                        .And.HaveStdOut(expectedOutput);
+                         .HaveStdOut(expectedOutput);
                 }
             }
         }
@@ -368,7 +368,7 @@ namespace HostActivation.Tests
                     .CaptureStdOut()
                     .Execute()
                     .Should().Pass()
-                    .And.HaveStdOut(string.Empty);
+                     .HaveStdOut(string.Empty);
             }
         }
 
@@ -379,7 +379,7 @@ namespace HostActivation.Tests
                 .CaptureStdOut()
                 .Execute()
                 .Should().Fail()
-                .And.ExitWith(Constants.ErrorCode.InvalidArgFailure);
+                 .ExitWith(Constants.ErrorCode.InvalidArgFailure);
         }
 
         private static string GetListRuntimesOutput(string installLocation, string[] versions, string prefix = "")

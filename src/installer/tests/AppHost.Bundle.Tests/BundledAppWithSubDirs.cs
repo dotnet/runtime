@@ -37,7 +37,7 @@ namespace AppHost.Bundle.Tests
             }
 
             return result.Should().Pass()
-                .And.HaveStdOutContaining("Wow! We now say hello to the big world and you.");
+                 .HaveStdOutContaining("Wow! We now say hello to the big world and you.");
         }
 
         private static void DeleteExtractionDirectory(CommandResult result)
@@ -70,13 +70,13 @@ namespace AppHost.Bundle.Tests
             // Run the bundled app
             bool shouldExtract = options.HasFlag(BundleOptions.BundleAllContent);
             RunTheApp(singleFile, selfContained: false, deleteApp: !shouldExtract)
-                .And.CreateExtraction(shouldExtract);
+                 .CreateExtraction(shouldExtract);
 
             if (shouldExtract)
             {
                 // Run the bundled app again (reuse extracted files)
                 RunTheApp(singleFile, selfContained: false)
-                    .And.ReuseExtraction();
+                     .ReuseExtraction();
             }
         }
 
@@ -92,13 +92,13 @@ namespace AppHost.Bundle.Tests
             // Run the bundled app
             bool shouldExtract = options.HasFlag(BundleOptions.BundleAllContent);
             RunTheApp(singleFile, selfContained: true, deleteApp: !shouldExtract)
-                .And.CreateExtraction(shouldExtract);
+                 .CreateExtraction(shouldExtract);
 
             if (shouldExtract)
             {
                 // Run the bundled app again (reuse extracted files)
                 RunTheApp(singleFile, selfContained: true)
-                    .And.ReuseExtraction();
+                     .ReuseExtraction();
             }
         }
 

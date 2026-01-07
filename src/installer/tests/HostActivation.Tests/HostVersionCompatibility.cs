@@ -42,8 +42,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdErrContaining($"--- Invoked apphost [version: {HostTestContext.MicrosoftNETCoreAppVersion}");
+                 .HaveStdOutContaining("Hello World")
+                 .HaveStdErrContaining($"--- Invoked apphost [version: {HostTestContext.MicrosoftNETCoreAppVersion}");
 
             // Use the newer apphost and hostFxr
             // This emulates the case when:
@@ -54,8 +54,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdErrContaining($"--- Invoked apphost [version: {HostTestContext.MicrosoftNETCoreAppVersion}");
+                 .HaveStdOutContaining("Hello World")
+                 .HaveStdErrContaining($"--- Invoked apphost [version: {HostTestContext.MicrosoftNETCoreAppVersion}");
         }
 
         [Fact]
@@ -84,8 +84,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable("COREHOST_TRACE", "1") // Old host, so we need to use the old variable name
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdErrContaining($"--- Invoked apphost [version: {previousVersion}");
+                 .HaveStdOutContaining("Hello World")
+                 .HaveStdErrContaining($"--- Invoked apphost [version: {previousVersion}");
 
             // Use the older apphost and hostfxr
             // This emulates the case when:
@@ -100,8 +100,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .EnvironmentVariable("COREHOST_TRACE", "1") // Old host, so we need to use the old variable name
                     .Execute()
                     .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World")
-                    .And.HaveStdErrContaining($"--- Invoked apphost [version: {previousVersion}");
+                     .HaveStdOutContaining("Hello World")
+                     .HaveStdErrContaining($"--- Invoked apphost [version: {previousVersion}");
             }
         }
 

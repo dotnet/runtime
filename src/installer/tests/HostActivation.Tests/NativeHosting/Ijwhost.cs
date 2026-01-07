@@ -45,13 +45,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 if (no_runtimeconfig)
                 {
                     result.Should().Fail()
-                        .And.HaveStdErrContaining($"Expected active runtime context because runtimeconfig.json [{app.RuntimeConfigJson}] does not exist.");
+                         .HaveStdErrContaining($"Expected active runtime context because runtimeconfig.json [{app.RuntimeConfigJson}] does not exist.");
                 }
                 else
                 {
                     result.Should().Pass()
-                        .And.HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class")
-                        .And.HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"Default\" System.Runtime.Loader.DefaultAssemblyLoadContext");
+                         .HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class")
+                         .HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"Default\" System.Runtime.Loader.DefaultAssemblyLoadContext");
                 }
             }
         }
@@ -78,7 +78,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .Execute();
 
                 result.Should().Pass()
-                    .And.HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class");
+                     .HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class");
 
                 if (load_isolated)  // Assembly should be loaded in an isolated context
                 {
@@ -110,11 +110,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .WorkingDirectory(cwd.Location)
                     .Execute()
                     .Should().Pass()
-                    .And.HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class")
-                    .And.HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"Default\" System.Runtime.Loader.DefaultAssemblyLoadContext")
-                    .And.ResolveHostFxr(HostTestContext.BuiltDotNet)
-                    .And.ResolveHostPolicy(HostTestContext.BuiltDotNet)
-                    .And.ResolveCoreClr(HostTestContext.BuiltDotNet);
+                     .HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class")
+                     .HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"Default\" System.Runtime.Loader.DefaultAssemblyLoadContext")
+                     .ResolveHostFxr(HostTestContext.BuiltDotNet)
+                     .ResolveHostPolicy(HostTestContext.BuiltDotNet)
+                     .ResolveCoreClr(HostTestContext.BuiltDotNet);
             }
         }
 
@@ -140,8 +140,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .Execute();
 
                 result.Should().Pass()
-                    .And.HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class")
-                    .And.HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"Default\" System.Runtime.Loader.DefaultAssemblyLoadContext");
+                     .HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class")
+                     .HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"Default\" System.Runtime.Loader.DefaultAssemblyLoadContext");
             }
         }
 
@@ -163,9 +163,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                .And.HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class")
-                .And.HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"Default\" System.Runtime.Loader.DefaultAssemblyLoadContext")
-                .And.ExecuteSelfContained(selfContained);
+                 .HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class")
+                 .HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"Default\" System.Runtime.Loader.DefaultAssemblyLoadContext")
+                 .ExecuteSelfContained(selfContained);
         }
 
         public class SharedTestState : SharedTestStateBase

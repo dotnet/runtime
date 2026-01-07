@@ -39,7 +39,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
                         .WithFramework(MicrosoftNETCoreApp, "5.0.0")))
                 .Should().Pass()
-                .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3");
+                 .HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3");
         }
 
         // Verifies that invalid values is checked in all settings locations
@@ -56,7 +56,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                         .WithFramework(MicrosoftNETCoreApp, "4.0.0"))
                     .With(RollForwardSetting(settingLocation, "InvalidValue")))
                 .Should().Fail()
-                .And.DidNotRecognizeRollForwardValue("InvalidValue");
+                 .DidNotRecognizeRollForwardValue("InvalidValue");
         }
 
         // Verifies that the value ignores casing on command line
@@ -128,7 +128,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                             .WithFramework(MicrosoftNETCoreApp, "5.1.3"))
                         .With(RollForwardSetting(settingLocation, value)))
                     .Should().Pass()
-                    .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3");
+                     .HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3");
             }
         }
 

@@ -110,8 +110,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     .WithFramework(MicrosoftNETCoreApp, "9999.9.9"),
                 multiLevelLookup: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining(expectedOutput)
-                .And.HaveStdErrContaining("https://aka.ms/dotnet/app-launch-failed");
+                 .HaveStdErrContaining(expectedOutput)
+                 .HaveStdErrContaining("https://aka.ms/dotnet/app-launch-failed");
         }
 
         private CommandResult RunTest(Func<RuntimeConfig, RuntimeConfig> runtimeConfig, bool? multiLevelLookup, [CallerMemberName] string caller = "")

@@ -169,7 +169,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         public static CommandResultAssertions HaveUsedAdditionalProbingPath(this CommandResultAssertions assertion, string path)
         {
             return assertion.HaveStdErrContaining($"Additional probe dir: {path}")
-                .And.HaveStdErrContaining($"probe type=lookup dir=[{path}]");
+                 .HaveStdErrContaining($"probe type=lookup dir=[{path}]");
         }
 
         public static CommandResultAssertions HaveReadRidGraph(this CommandResultAssertions assertion, bool readRidGraph)
@@ -177,8 +177,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             string ridGraphMsg = "RID fallback graph =";
             string hostRidsMsg = "Host RID list =";
             return readRidGraph
-                ? assertion.HaveStdErrContaining(ridGraphMsg).And.NotHaveStdErrContaining(hostRidsMsg)
-                : assertion.HaveStdErrContaining(hostRidsMsg).And.NotHaveStdErrContaining(ridGraphMsg);
+                ? assertion.HaveStdErrContaining(ridGraphMsg) .NotHaveStdErrContaining(hostRidsMsg)
+                : assertion.HaveStdErrContaining(hostRidsMsg) .NotHaveStdErrContaining(ridGraphMsg);
         }
 
         public static CommandResultAssertions HaveUsedFallbackRid(this CommandResultAssertions assertion, bool usedFallbackRid)

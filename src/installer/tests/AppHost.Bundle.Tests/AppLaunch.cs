@@ -30,7 +30,7 @@ namespace AppHost.Bundle.Tests
                 .DotNetRoot(selfContained ? null : HostTestContext.BuiltDotNet.BinPath)
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World!");
+                 .HaveStdOutContaining("Hello World!");
         }
 
         private string MakeUniversalBinary(string path, Architecture architecture)
@@ -131,8 +131,8 @@ namespace AppHost.Bundle.Tests
                 .MultilevelLookup(false)
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
+                 .HaveStdOutContaining("Hello World")
+                 .HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
         }
 
         [Theory]
@@ -173,9 +173,9 @@ namespace AppHost.Bundle.Tests
                     .DotNetRoot(dotnet.BinPath)
                     .Execute()
                     .Should().Fail()
-                    .And.HaveStdErrContaining("You must install or update .NET to run this application.")
-                    .And.HaveStdErrContaining("App host version:")
-                    .And.HaveStdErrContaining("apphost_version=");
+                     .HaveStdErrContaining("You must install or update .NET to run this application.")
+                     .HaveStdErrContaining("App host version:")
+                     .HaveStdErrContaining("apphost_version=");
             }
         }
 
@@ -207,9 +207,9 @@ namespace AppHost.Bundle.Tests
                 command
                     .WaitForExit()
                     .Should().Fail()
-                    .And.HaveStdErrContaining("Bundle header version compatibility check failed.")
-                    .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(singleFile)}' - error code: 0x{expectedErrorCode}")
-                    .And.HaveStdErrContaining("apphost_version=");
+                     .HaveStdErrContaining("Bundle header version compatibility check failed.")
+                     .HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(singleFile)}' - error code: 0x{expectedErrorCode}")
+                     .HaveStdErrContaining("apphost_version=");
             }
         }
 

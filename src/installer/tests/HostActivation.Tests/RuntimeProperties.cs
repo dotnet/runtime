@@ -28,8 +28,8 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdErrContaining($"Property {SharedTestState.AppTestPropertyName} = {SharedTestState.AppTestPropertyValue}")
-                .And.HaveStdOutContaining($"AppContext.GetData({SharedTestState.AppTestPropertyName}) = {SharedTestState.AppTestPropertyValue}");
+                 .HaveStdErrContaining($"Property {SharedTestState.AppTestPropertyName} = {SharedTestState.AppTestPropertyValue}")
+                 .HaveStdOutContaining($"AppContext.GetData({SharedTestState.AppTestPropertyName}) = {SharedTestState.AppTestPropertyValue}");
         }
 
         [Fact]
@@ -39,8 +39,8 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdErrContaining($"Property {SharedTestState.FrameworkTestPropertyName} = {SharedTestState.FrameworkTestPropertyValue}")
-                .And.HaveStdOutContaining($"AppContext.GetData({SharedTestState.FrameworkTestPropertyName}) = {SharedTestState.FrameworkTestPropertyValue}");
+                 .HaveStdErrContaining($"Property {SharedTestState.FrameworkTestPropertyName} = {SharedTestState.FrameworkTestPropertyValue}")
+                 .HaveStdOutContaining($"AppContext.GetData({SharedTestState.FrameworkTestPropertyName}) = {SharedTestState.FrameworkTestPropertyValue}");
         }
 
         [Fact]
@@ -55,8 +55,8 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdErrContaining($"Property {SharedTestState.FrameworkTestPropertyName} = {SharedTestState.AppTestPropertyValue}")
-                .And.HaveStdOutContaining($"AppContext.GetData({SharedTestState.FrameworkTestPropertyName}) = {SharedTestState.AppTestPropertyValue}");
+                 .HaveStdErrContaining($"Property {SharedTestState.FrameworkTestPropertyName} = {SharedTestState.AppTestPropertyValue}")
+                 .HaveStdOutContaining($"AppContext.GetData({SharedTestState.FrameworkTestPropertyName}) = {SharedTestState.AppTestPropertyValue}");
         }
 
         [Fact]
@@ -67,7 +67,7 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdErrContaining($"Property {SharedTestState.HostFxrPathPropertyName} = {dotnet.GreatestVersionHostFxrFilePath}");
+                 .HaveStdErrContaining($"Property {SharedTestState.HostFxrPathPropertyName} = {dotnet.GreatestVersionHostFxrFilePath}");
         }
 
         [Fact]
@@ -77,7 +77,7 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining($"Property '{SharedTestState.HostFxrPathPropertyName}' was not found.");
+                 .HaveStdOutContaining($"Property '{SharedTestState.HostFxrPathPropertyName}' was not found.");
         }
 
         [Fact]
@@ -94,7 +94,7 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Fail()
-                .And.HaveStdErrContaining($"Duplicate runtime property found: {name}");
+                 .HaveStdErrContaining($"Duplicate runtime property found: {name}");
         }
 
         [Fact]
@@ -110,8 +110,8 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdErrContaining($"Property {SharedTestState.AppTestPropertyName} = {SharedTestState.AppTestPropertyValue}")
-                .And.HaveStdOutContaining($"AppContext.GetData({SharedTestState.AppTestPropertyName}) = {SharedTestState.AppTestPropertyValue}");
+                 .HaveStdErrContaining($"Property {SharedTestState.AppTestPropertyName} = {SharedTestState.AppTestPropertyValue}")
+                 .HaveStdOutContaining($"AppContext.GetData({SharedTestState.AppTestPropertyName}) = {SharedTestState.AppTestPropertyValue}");
         }
 
         public class SharedTestState : IDisposable

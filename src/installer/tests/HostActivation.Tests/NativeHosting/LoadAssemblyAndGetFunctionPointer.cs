@@ -48,8 +48,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             if (validPath && validType && validMethod)
             {
                 result.Should().Pass()
-                    .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1)
-                    .And.ExecuteInIsolatedContext(component.AssemblyName);
+                     .ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1)
+                     .ExecuteInIsolatedContext(component.AssemblyName);
             }
             else
             {
@@ -84,8 +84,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             if (validPath && validType && validMethod)
             {
                 result.Should().Pass()
-                    .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1)
-                    .And.ExecuteInIsolatedContext(component.AssemblyName);
+                     .ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1)
+                     .ExecuteInIsolatedContext(component.AssemblyName);
             }
             else
             {
@@ -111,9 +111,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                .And.InitializeContextForApp(app.AppDll)
-                .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1)
-                .And.ExecuteInIsolatedContext(component.AssemblyName);
+                 .InitializeContextForApp(app.AppDll)
+                 .ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1)
+                 .ExecuteInIsolatedContext(component.AssemblyName);
         }
 
         [Theory]
@@ -154,14 +154,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                .And.InitializeContextForConfig(component.RuntimeConfigJson)
-                .And.ExecuteInIsolatedContext(component.AssemblyName);
+                 .InitializeContextForConfig(component.RuntimeConfigJson)
+                 .ExecuteInIsolatedContext(component.AssemblyName);
 
             for (int i = 1; i <= callCount; ++i)
             {
                 result.Should()
                     .ExecuteFunctionPointer(comp1Name, i * 2 - 1, i)
-                    .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint2, i * 2, i);
+                     .ExecuteFunctionPointer(sharedState.ComponentEntryPoint2, i * 2, i);
             }
         }
 
@@ -199,14 +199,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                .And.InitializeContextForConfig(component.RuntimeConfigJson)
-                .And.ExecuteInIsolatedContext(component.AssemblyName);
+                 .InitializeContextForConfig(component.RuntimeConfigJson)
+                 .ExecuteInIsolatedContext(component.AssemblyName);
 
             for (int i = 1; i <= callCount; ++i)
             {
                 result.Should()
                     .ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, i, i)
-                    .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint2, i, i);
+                     .ExecuteFunctionPointer(sharedState.ComponentEntryPoint2, i, i);
             }
         }
 
@@ -229,8 +229,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .DisableDumps() // Expected to throw an exception
                 .Execute()
                 .Should().Fail()
-                .And.InitializeContextForConfig(component.RuntimeConfigJson)
-                .And.ExecuteFunctionPointerWithException(entryPoint, 1);
+                 .InitializeContextForConfig(component.RuntimeConfigJson)
+                 .ExecuteFunctionPointerWithException(entryPoint, 1);
         }
 
         [Fact]
@@ -257,10 +257,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .WorkingDirectory(cwd.Location)
                     .Execute()
                     .Should().Pass()
-                    .And.InitializeContextForConfig(component.RuntimeConfigJson)
-                    .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1)
-                    .And.ResolveHostPolicy(HostTestContext.BuiltDotNet)
-                    .And.ResolveCoreClr(HostTestContext.BuiltDotNet);
+                     .InitializeContextForConfig(component.RuntimeConfigJson)
+                     .ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1)
+                     .ResolveHostPolicy(HostTestContext.BuiltDotNet)
+                     .ResolveCoreClr(HostTestContext.BuiltDotNet);
             }
         }
 

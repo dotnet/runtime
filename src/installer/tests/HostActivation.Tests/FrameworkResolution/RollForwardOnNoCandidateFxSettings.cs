@@ -39,7 +39,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
                         .WithFramework(MicrosoftNETCoreApp, "5.0.0")))
                 .Should().Pass()
-                .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3");
+                 .HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3");
         }
 
         // Verifies that it works in all supported locations

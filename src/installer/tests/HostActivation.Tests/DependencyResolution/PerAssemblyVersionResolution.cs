@@ -115,8 +115,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .EnableTracingAndCaptureOutputs()
                 .Execute(caller)
                 .Should().Pass()
-                .And.HaveResolvedAssembly(expectedTestAssemblyPath)
-                .And.HaveUsedFrameworkProbe(SharedState.DotNetWithNetCoreApp.GreatestVersionSharedFxPath, level: 1);
+                 .HaveResolvedAssembly(expectedTestAssemblyPath)
+                 .HaveUsedFrameworkProbe(SharedState.DotNetWithNetCoreApp.GreatestVersionSharedFxPath, level: 1);
         }
     }
 
@@ -154,9 +154,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     .EnableTracingAndCaptureOutputs()
                     .Execute(caller)
                     .Should().Pass()
-                    .And.HaveUsedAdditionalDeps(additionalDependency.DepsJson)
-                    .And.HaveResolvedAssembly(expectedTestAssemblyPath)
-                    .And.HaveUsedFrameworkProbe(SharedState.DotNetWithNetCoreApp.GreatestVersionSharedFxPath, level: 1);
+                     .HaveUsedAdditionalDeps(additionalDependency.DepsJson)
+                     .HaveResolvedAssembly(expectedTestAssemblyPath)
+                     .HaveUsedFrameworkProbe(SharedState.DotNetWithNetCoreApp.GreatestVersionSharedFxPath, level: 1);
             }
         }
     }
@@ -183,8 +183,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             SharedState.RunComponentResolutionTest(component, caller: caller)
                 .Should().Pass()
-                .And.HaveSuccessfullyResolvedComponentDependencies()
-                .And.HaveResolvedComponentDependencyAssembly($"{component.AppDll};{expectedTestAssemblyPath}");
+                 .HaveSuccessfullyResolvedComponentDependencies()
+                 .HaveResolvedComponentDependencyAssembly($"{component.AppDll};{expectedTestAssemblyPath}");
         }
     }
 }

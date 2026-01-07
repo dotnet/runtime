@@ -44,14 +44,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             if (isValid)
             {
                 result.Should().Pass()
-                    .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
+                     .HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }
             else
             {
                 result.Should().Fail()
-                    .And.ExitWith(1)
-                    .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
-                    .And.HaveStdErrContaining($"The required library {HostFxrName} could not be found");
+                     .ExitWith(1)
+                     .HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
+                     .HaveStdErrContaining($"The required library {HostFxrName} could not be found");
             }
         }
 
@@ -77,14 +77,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             if (isValid)
             {
                 result.Should().Pass()
-                    .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
+                     .HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }
             else
             {
                 result.Should().Fail()
-                    .And.ExitWith(1)
-                    .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
-                    .And.HaveStdErrContaining($"[{Path.Combine(dotNetRoot, "host", "fxr")}] does not exist");
+                     .ExitWith(1)
+                     .HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
+                     .HaveStdErrContaining($"[{Path.Combine(dotNetRoot, "host", "fxr")}] does not exist");
             }
         }
 
@@ -137,14 +137,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             if (isValid)
             {
                 result.Should().Pass()
-                    .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
+                     .HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }
             else
             {
                 result.Should().Fail()
-                    .And.ExitWith(1)
-                    .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
-                    .And.HaveStdErrContaining($"The required library {HostFxrName} could not be found");
+                     .ExitWith(1)
+                     .HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
+                     .HaveStdErrContaining($"The required library {HostFxrName} could not be found");
             }
         }
 
@@ -167,7 +167,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining($"hostfxr_path: {(useDotNetRoot ? sharedState.HostFxrPath : hostFxrPath)}".ToLower());
+                 .HaveStdOutContaining($"hostfxr_path: {(useDotNetRoot ? sharedState.HostFxrPath : hostFxrPath)}".ToLower());
         }
 
         [Fact]
@@ -177,8 +177,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining($"hostfxr_path: {sharedState.ProductHostFxrPath}".ToLower())
-                .And.HaveStdErrContaining($"Found previously loaded library {HostFxrName}");
+                 .HaveStdOutContaining($"hostfxr_path: {sharedState.ProductHostFxrPath}".ToLower())
+                 .HaveStdErrContaining($"Found previously loaded library {HostFxrName}");
         }
 
         [Theory]
@@ -221,27 +221,27 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
                 if (shouldUseArchSpecificInstallLocation)
                 {
-                    result.Should().HaveLookedForArchitectureSpecificInstallLocation(
+                    result.Should().AssertLookedForArchitectureSpecificInstallLocation(
                         registeredInstallLocationOverride.PathValueOverride,
                         HostTestContext.BuildArchitecture);
                 }
                 else
                 {
-                    result.Should().HaveLookedForDefaultInstallLocation(registeredInstallLocationOverride.PathValueOverride);
+                    result.Should().AssertLookedForDefaultInstallLocation(registeredInstallLocationOverride.PathValueOverride);
                 }
 
                 if (shouldPass)
                 {
                     result.Should().Pass()
-                        .And.HaveUsedRegisteredInstallLocation(installLocation)
-                        .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
+                         .HaveUsedRegisteredInstallLocation(installLocation)
+                         .HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
                 }
                 else
                 {
                     result.Should().Fail()
-                        .And.ExitWith(1)
-                        .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
-                        .And.HaveStdErrContaining($"The required library {HostFxrName} could not be found");
+                         .ExitWith(1)
+                         .HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
+                         .HaveStdErrContaining($"The required library {HostFxrName} could not be found");
                 }
             }
         }
@@ -268,11 +268,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .Execute();
 
                 result.Should().Pass()
-                    .And.HaveLookedForArchitectureSpecificInstallLocation(
+                     .AssertLookedForArchitectureSpecificInstallLocation(
                         registeredInstallLocationOverride.PathValueOverride,
                         HostTestContext.BuildArchitecture)
-                    .And.HaveUsedRegisteredInstallLocation(installLocation)
-                    .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
+                     .HaveUsedRegisteredInstallLocation(installLocation)
+                     .HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }
         }
 
@@ -298,11 +298,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .Execute();
 
                 result.Should().Pass()
-                    .And.HaveLookedForArchitectureSpecificInstallLocation(
+                     .AssertLookedForArchitectureSpecificInstallLocation(
                         registeredInstallLocationOverride.PathValueOverride,
                         HostTestContext.BuildArchitecture)
-                    .And.HaveUsedRegisteredInstallLocation(installLocation)
-                    .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
+                     .HaveUsedRegisteredInstallLocation(installLocation)
+                     .HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }
         }
 
@@ -314,8 +314,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .DotNetRoot(null)
                 .Execute()
                 .Should().Fail()
-                .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.InvalidArgFailure.ToString("x")}")
-                .And.HaveStdErrContaining("Invalid size for get_hostfxr_parameters");
+                 .HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.InvalidArgFailure.ToString("x")}")
+                 .HaveStdErrContaining("Invalid size for get_hostfxr_parameters");
         }
 
         [Fact]
@@ -329,8 +329,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Fail()
-                .And.FileExists(traceFilePath)
-                .And.FileContains(traceFilePath, "Tracing enabled");
+                 .FileExists(traceFilePath)
+                 .FileContains(traceFilePath, "Tracing enabled");
 
             FileUtils.DeleteFileIfPossible(traceFilePath);
         }

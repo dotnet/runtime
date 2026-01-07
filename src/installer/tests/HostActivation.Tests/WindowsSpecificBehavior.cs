@@ -28,7 +28,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Reported OS version is newer or equal to the true OS version - no shims.");
+                 .HaveStdOutContaining("Reported OS version is newer or equal to the true OS version - no shims.");
         }
 
         [Fact]
@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .DotNetRoot(HostTestContext.BuiltDotNet.BinPath)
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Reported OS version is lower than the true OS version - shims in use.");
+                 .HaveStdOutContaining("Reported OS version is lower than the true OS version - shims in use.");
         }
 
         // Long paths must also be enabled via a machine-wide setting. Only run the test if it is enabled.
@@ -64,7 +64,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("CreateDirectoryW with long path succeeded");
+                 .HaveStdOutContaining("CreateDirectoryW with long path succeeded");
         }
 
         public class SharedTestState : IDisposable
