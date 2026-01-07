@@ -3095,122 +3095,53 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static sbyte UnsignedShift(sbyte op1, sbyte op2, bool rounding = false, bool saturating = false) => (sbyte)UnsignedShift((byte)op1, op2, rounding, saturating);
 
-        private static (sbyte val, bool ovf) AddOvf(sbyte op1, sbyte op2)
-        {
-            sbyte result = (sbyte)(op1 + op2);
-
-            bool ovf = false;
-
-            if ((op1 > 0) && (op2 > 0))
-            {
-                ovf = (result < 0);
-            }
-            else if ((op1 < 0) && (op2 < 0))
-            {
-                ovf = (result > 0);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (sbyte val, bool ovf) AddOvf(sbyte op1, byte op2)
-        {
-            sbyte result = (sbyte)(op1 + (sbyte)op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (byte val, bool ovf) AddOvf(byte op1, sbyte op2)
-        {
-            byte result = (byte)(op1 + (byte)op2);
-
-            bool ovf;
-
-            if (op2 < 0)
-            {
-                ovf = (result > op1);
-            }
-            else
-            {
-                ovf = (result < op1);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (byte val, bool ovf) AddOvf(byte op1, byte op2)
-        {
-            byte result = (byte)(op1 + op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (sbyte val, bool ovf) SubtractOvf(sbyte op1, sbyte op2)
-        {
-            sbyte result = (sbyte)(op1 - op2);
-
-            bool ovf;
-
-            if (op2 < 0)
-            {
-                ovf = (result < op1);
-            }
-            else
-            {
-                ovf = (result > op1);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (byte val, bool ovf) SubtractOvf(byte op1, byte op2)
-        {
-            byte result = (byte)(op1 - op2);
-
-            bool ovf = (op1 < op2);
-
-            return (result, ovf);
-        }
-
         public static sbyte AbsSaturate(sbyte op1) => op1 < 0 ? NegateSaturate(op1) : op1;
 
-        public static sbyte AddSaturate(sbyte op1, sbyte op2)
+        private static (T1 val, bool ovf) AddOvf<T1, T2>(T1 op1, T2 op2)
+            where T1 : IBinaryInteger<T1>, IMinMaxValue<T1>
+            where T2 : IBinaryInteger<T2>
         {
-            int result = op1 + op2;
-            if (result > sbyte.MaxValue)
-            {
-                return sbyte.MaxValue;
-            }
-            else if (result < sbyte.MinValue)
-            {
-                return sbyte.MinValue;
-            }
-            else
-            {
-                return (sbyte)result;
-            }
+            BigInteger a = BigInteger.CreateChecked(op1);
+            BigInteger b = BigInteger.CreateChecked(op2);
+            BigInteger min = BigInteger.CreateChecked(T1.MinValue);
+            BigInteger max = BigInteger.CreateChecked(T1.MaxValue);
+
+            BigInteger sum = a + b;
+
+            bool ovf = sum < min || sum > max;
+            return (T1.CreateTruncating(sum), ovf);
         }
 
-        public static sbyte AddSaturate(sbyte op1, byte op2)
+        private static (T1 val, bool ovf) SubtractOvf<T1, T2>(T1 op1, T2 op2)
+            where T1 : IBinaryInteger<T1>, IMinMaxValue<T1>
+            where T2 : IBinaryInteger<T2>
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? sbyte.MaxValue : result;
+            BigInteger a = BigInteger.CreateChecked(op1);
+            BigInteger b = BigInteger.CreateChecked(op2);
+            BigInteger min = BigInteger.CreateChecked(T1.MinValue);
+            BigInteger max = BigInteger.CreateChecked(T1.MaxValue);
+
+            BigInteger diff = a - b;
+
+            bool ovf = diff < min || diff > max;
+            return (T1.CreateTruncating(diff), ovf);
         }
 
-        public static byte AddSaturate(byte op1, sbyte op2)
+        public static T1 AddSaturate<T1, T2>(T1 op1, T2 op2)
+            where T1 : IBinaryInteger<T1>, IMinMaxValue<T1>
+            where T2 : IBinaryInteger<T2>
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result < op1 ? byte.MaxValue : byte.MinValue) : result;
-        }
+            BigInteger a = BigInteger.CreateChecked(op1);
+            BigInteger b = BigInteger.CreateChecked(op2);
+            BigInteger sum = a + b;
 
-        public static byte AddSaturate(byte op1, byte op2)
-        {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? byte.MaxValue : result;
+            BigInteger min = BigInteger.CreateChecked(T1.MinValue);
+            BigInteger max = BigInteger.CreateChecked(T1.MaxValue);
+
+            if (sum < min) return T1.MinValue;
+            if (sum > max) return T1.MaxValue;
+
+            return T1.CreateChecked(sum);
         }
 
         public static sbyte[] AddSaturateRotateComplex(sbyte[] op1, sbyte[] op2, byte rot)
@@ -3271,16 +3202,21 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte NegateSaturate(sbyte op1) => SubtractSaturate((sbyte)0, op1);
 
-        public static sbyte SubtractSaturate(sbyte op1, sbyte op2)
+        public static T1 SubtractSaturate<T1, T2>(T1 op1, T2 op2)
+            where T1 : IBinaryInteger<T1>, IMinMaxValue<T1>
+            where T2 : IBinaryInteger<T2>
         {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? (result > 0 ? sbyte.MinValue : sbyte.MaxValue) : result;
-        }
+            BigInteger a = BigInteger.CreateChecked(op1);
+            BigInteger b = BigInteger.CreateChecked(op2);
+            BigInteger diff = a - b;
 
-        public static byte SubtractSaturate(byte op1, byte op2)
-        {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? byte.MinValue : result;
+            BigInteger min = BigInteger.CreateChecked(T1.MinValue);
+            BigInteger max = BigInteger.CreateChecked(T1.MaxValue);
+
+            if (diff < min) return T1.MinValue;
+            if (diff > max) return T1.MaxValue;
+
+            return T1.CreateChecked(diff);
         }
 
         public static short ShiftArithmetic(short op1, short op2) => SignedShift(op1, op2);
@@ -3430,112 +3366,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static short UnsignedShift(short op1, short op2, bool rounding = false, bool saturating = false) => (short)UnsignedShift((ushort)op1, op2, rounding, saturating);
 
-        private static (short val, bool ovf) AddOvf(short op1, short op2)
-        {
-            short result = (short)(op1 + op2);
-
-            bool ovf = false;
-
-            if ((op1 > 0) && (op2 > 0))
-            {
-                ovf = (result < 0);
-            }
-            else if ((op1 < 0) && (op2 < 0))
-            {
-                ovf = (result > 0);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (short val, bool ovf) AddOvf(short op1, ushort op2)
-        {
-            short result = (short)(op1 + (short)op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (ushort val, bool ovf) AddOvf(ushort op1, short op2)
-        {
-            ushort result = (ushort)(op1 + (ushort)op2);
-
-            bool ovf;
-
-            if (op2 < 0)
-            {
-                ovf = (result > op1);
-            }
-            else
-            {
-                ovf = (result < op1);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (ushort val, bool ovf) AddOvf(ushort op1, ushort op2)
-        {
-            ushort result = (ushort)(op1 + op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (short val, bool ovf) SubtractOvf(short op1, short op2)
-        {
-            short result = (short)(op1 - op2);
-
-            bool ovf;
-
-            if (op2 < 0)
-            {
-                ovf = (result < op1);
-            }
-            else
-            {
-                ovf = (result > op1);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (ushort val, bool ovf) SubtractOvf(ushort op1, ushort op2)
-        {
-            ushort result = (ushort)(op1 - op2);
-
-            bool ovf = (op1 < op2);
-
-            return (result, ovf);
-        }
-
         public static short AbsSaturate(short op1) => op1 < 0 ? NegateSaturate(op1) : op1;
-
-        public static short AddSaturate(short op1, short op2)
-        {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result > 0 ? short.MinValue : short.MaxValue) : result;
-        }
-
-        public static short AddSaturate(short op1, ushort op2)
-        {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? short.MaxValue : result;
-        }
-
-        public static ushort AddSaturate(ushort op1, short op2)
-        {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result < op1 ? ushort.MaxValue : ushort.MinValue) : result;
-        }
-
-        public static ushort AddSaturate(ushort op1, ushort op2)
-        {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? ushort.MaxValue : result;
-        }
 
         public static short[] AddSaturateRotateComplex(short[] op1, short[] op2, byte rot)
         {
@@ -3560,18 +3391,6 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static short NegateSaturate(short op1) => SubtractSaturate((short)0, op1);
-
-        public static short SubtractSaturate(short op1, short op2)
-        {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? (result > 0 ? short.MinValue : short.MaxValue) : result;
-        }
-
-        public static ushort SubtractSaturate(ushort op1, ushort op2)
-        {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? ushort.MinValue : result;
-        }
 
         public static int ShiftArithmetic(int op1, int op2) => SignedShift(op1, op2);
 
@@ -3720,112 +3539,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static int UnsignedShift(int op1, int op2, bool rounding = false, bool saturating = false) => (int)UnsignedShift((uint)op1, op2, rounding, saturating);
 
-        private static (int val, bool ovf) AddOvf(int op1, int op2)
-        {
-            int result = (int)(op1 + op2);
-
-            bool ovf = false;
-
-            if ((op1 > 0) && (op2 > 0))
-            {
-                ovf = (result < 0);
-            }
-            else if ((op1 < 0) && (op2 < 0))
-            {
-                ovf = (result > 0);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (int val, bool ovf) AddOvf(int op1, uint op2)
-        {
-            int result = (int)(op1 + (int)op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (uint val, bool ovf) AddOvf(uint op1, int op2)
-        {
-            uint result = (uint)(op1 + (uint)op2);
-
-            bool ovf;
-
-            if (op2 < 0)
-            {
-                ovf = (result > op1);
-            }
-            else
-            {
-                ovf = (result < op1);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (uint val, bool ovf) AddOvf(uint op1, uint op2)
-        {
-            uint result = (uint)(op1 + op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (int val, bool ovf) SubtractOvf(int op1, int op2)
-        {
-            int result = (int)(op1 - op2);
-
-            bool ovf;
-
-            if (op2 < 0)
-            {
-                ovf = (result < op1);
-            }
-            else
-            {
-                ovf = (result > op1);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (uint val, bool ovf) SubtractOvf(uint op1, uint op2)
-        {
-            uint result = (uint)(op1 - op2);
-
-            bool ovf = (op1 < op2);
-
-            return (result, ovf);
-        }
-
         public static int AbsSaturate(int op1) => op1 < 0 ? NegateSaturate(op1) : op1;
-
-        public static int AddSaturate(int op1, int op2)
-        {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result > 0 ? int.MinValue : int.MaxValue) : result;
-        }
-
-        public static int AddSaturate(int op1, uint op2)
-        {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? int.MaxValue : result;
-        }
-
-        public static uint AddSaturate(uint op1, int op2)
-        {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result < op1 ? uint.MaxValue : uint.MinValue) : result;
-        }
-
-        public static uint AddSaturate(uint op1, uint op2)
-        {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? uint.MaxValue : result;
-        }
 
         public static int[] AddSaturateRotateComplex(int[] op1, int[] op2, byte rot)
         {
@@ -3850,18 +3564,6 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static int NegateSaturate(int op1) => SubtractSaturate((int)0, op1);
-
-        public static int SubtractSaturate(int op1, int op2)
-        {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? (result > 0 ? int.MinValue : int.MaxValue) : result;
-        }
-
-        public static uint SubtractSaturate(uint op1, uint op2)
-        {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? uint.MinValue : result;
-        }
 
         public static long ShiftArithmetic(long op1, long op2) => SignedShift(op1, op2);
 
@@ -4010,112 +3712,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static long UnsignedShift(long op1, long op2, bool rounding = false, bool saturating = false) => (long)UnsignedShift((ulong)op1, op2, rounding, saturating);
 
-        private static (long val, bool ovf) AddOvf(long op1, long op2)
-        {
-            long result = (long)(op1 + op2);
-
-            bool ovf = false;
-
-            if ((op1 > 0) && (op2 > 0))
-            {
-                ovf = (result < 0);
-            }
-            else if ((op1 < 0) && (op2 < 0))
-            {
-                ovf = (result > 0);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (long val, bool ovf) AddOvf(long op1, ulong op2)
-        {
-            long result = (long)(op1 + (long)op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (ulong val, bool ovf) AddOvf(ulong op1, long op2)
-        {
-            ulong result = (ulong)(op1 + (ulong)op2);
-
-            bool ovf;
-
-            if (op2 < 0)
-            {
-                ovf = (result > op1);
-            }
-            else
-            {
-                ovf = (result < op1);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (ulong val, bool ovf) AddOvf(ulong op1, ulong op2)
-        {
-            ulong result = (ulong)(op1 + op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (long val, bool ovf) SubtractOvf(long op1, long op2)
-        {
-            long result = (long)(op1 - op2);
-
-            bool ovf;
-
-            if (op2 < 0)
-            {
-                ovf = (result < op1);
-            }
-            else
-            {
-                ovf = (result > op1);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (ulong val, bool ovf) SubtractOvf(ulong op1, ulong op2)
-        {
-            ulong result = (ulong)(op1 - op2);
-
-            bool ovf = (op1 < op2);
-
-            return (result, ovf);
-        }
-
         public static long AbsSaturate(long op1) => op1 < 0 ? NegateSaturate(op1) : op1;
-
-        public static long AddSaturate(long op1, long op2)
-        {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result > 0 ? long.MinValue : long.MaxValue) : result;
-        }
-
-        public static long AddSaturate(long op1, ulong op2)
-        {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? long.MaxValue : result;
-        }
-
-        public static ulong AddSaturate(ulong op1, long op2)
-        {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result < op1 ? ulong.MaxValue : ulong.MinValue) : result;
-        }
-
-        public static ulong AddSaturate(ulong op1, ulong op2)
-        {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? ulong.MaxValue : result;
-        }
 
         public static long[] AddSaturateRotateComplex(long[] op1, long[] op2, byte rot)
         {
@@ -4140,19 +3737,6 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static long NegateSaturate(long op1) => SubtractSaturate((long)0, op1);
-
-        public static long SubtractSaturate(long op1, long op2)
-        {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? (result > 0 ? long.MinValue : long.MaxValue) : result;
-        }
-
-        public static ulong SubtractSaturate(ulong op1, ulong op2)
-        {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? ulong.MinValue : result;
-        }
-
 
         private static (sbyte val, bool ovf) ShiftOvf(sbyte value, int shift)
         {
