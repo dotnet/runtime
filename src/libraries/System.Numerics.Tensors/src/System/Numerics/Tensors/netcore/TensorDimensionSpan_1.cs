@@ -63,8 +63,7 @@ namespace System.Numerics.Tensors
         public Enumerator GetEnumerator() => new Enumerator(this);
 
         /// <summary>Enumerates the spans of a tensor dimension span.</summary>
-        public ref struct Enumerator
-            : IEnumerator<TensorSpan<T>>
+        public ref struct Enumerator : IEnumerator<TensorSpan<T>>
         {
             private readonly TensorDimensionSpan<T> _span;
             private nint _index;

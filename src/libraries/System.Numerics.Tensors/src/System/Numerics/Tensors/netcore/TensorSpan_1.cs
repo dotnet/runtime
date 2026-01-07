@@ -21,8 +21,7 @@ namespace System.Numerics.Tensors
     /// <typeparam name="T">The type of the elements within the tensor span.</typeparam>
     [DebuggerTypeProxy(typeof(TensorSpanDebugView<>))]
     [DebuggerDisplay("{ToString(),raw}")]
-    public readonly ref struct TensorSpan<T>
-        : ITensor<TensorSpan<T>, T>
+    public readonly ref struct TensorSpan<T> : ITensor<TensorSpan<T>, T>
     {
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.Empty" />
         public static TensorSpan<T> Empty => default;
