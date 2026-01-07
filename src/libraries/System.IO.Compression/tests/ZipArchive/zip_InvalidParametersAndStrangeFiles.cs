@@ -2404,54 +2404,36 @@ namespace System.IO.Compression.Tests
             await DisposeZipArchive(async, archive);
         }
 
-        [Theory]
-        [MemberData(nameof(Get_Booleans_Data))]
-        public static async Task OpenWithFileAccess_ReadMode_InvalidAccess_Throws(bool async)
+        public static IEnumerable<object[]> OpenWithFileAccess_InvalidAccess_Throws_Data()
         {
-            using MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
-            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
-
-            ZipArchiveEntry entry = archive.GetEntry("first.txt");
-            Assert.NotNull(entry);
-
-            // Test with invalid FileAccess values
-            Assert.Throws<ArgumentException>("access", () => entry.Open((FileAccess)0));
-            Assert.Throws<ArgumentException>("access", () => entry.Open((FileAccess)4));
-
-            await DisposeZipArchive(async, archive);
+            foreach (bool async in new[] { true, false })
+            {
+                yield return new object[] { async, ZipArchiveMode.Read };
+                yield return new object[] { async, ZipArchiveMode.Create };
+                yield return new object[] { async, ZipArchiveMode.Update };
+            }
         }
 
         [Theory]
-        [MemberData(nameof(Get_Booleans_Data))]
-        public static async Task OpenWithFileAccess_CreateMode_InvalidAccess_Throws(bool async)
+        [MemberData(nameof(OpenWithFileAccess_InvalidAccess_Throws_Data))]
+        public static async Task OpenWithFileAccess_InvalidAccess_Throws(bool async, ZipArchiveMode mode)
         {
-            using var ms = new MemoryStream();
-            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
+            MemoryStream ms = mode == ZipArchiveMode.Create
+                ? new MemoryStream()
+                : await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
 
-            ZipArchiveEntry entry = archive.CreateEntry("test.txt");
+            ZipArchive archive = await CreateZipArchive(async, ms, mode, leaveOpen: true);
 
-            // Test with invalid FileAccess values
-            Assert.Throws<ArgumentException>("access", () => entry.Open((FileAccess)0));
-            Assert.Throws<ArgumentException>("access", () => entry.Open((FileAccess)4));
-
-            await DisposeZipArchive(async, archive);
-        }
-
-        [Theory]
-        [MemberData(nameof(Get_Booleans_Data))]
-        public static async Task OpenWithFileAccess_UpdateMode_InvalidAccess_Throws(bool async)
-        {
-            using MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
-            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update);
-
-            ZipArchiveEntry entry = archive.GetEntry("first.txt");
+            ZipArchiveEntry entry = mode == ZipArchiveMode.Create
+                ? archive.CreateEntry("test.txt")
+                : archive.GetEntry("first.txt");
             Assert.NotNull(entry);
 
-            // Test with invalid FileAccess values
-            Assert.Throws<ArgumentException>("access", () => entry.Open((FileAccess)0));
-            Assert.Throws<ArgumentException>("access", () => entry.Open((FileAccess)4));
+            Assert.Throws<ArgumentOutOfRangeException>("access", () => entry.Open((FileAccess)0));
+            Assert.Throws<ArgumentOutOfRangeException>("access", () => entry.Open((FileAccess)4));
 
             await DisposeZipArchive(async, archive);
+            ms.Dispose();
         }
 
         [Theory]
