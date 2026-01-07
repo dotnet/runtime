@@ -20,7 +20,7 @@ namespace AppHost.Bundle.Tests
             sharedTestState = fixture;
         }
 
-        private FluentAssertions.AndConstraint<CommandResultAssertions> RunTheApp(string path, bool selfContained, bool deleteApp = true)
+        private CommandResultAssertions RunTheApp(string path, bool selfContained, bool deleteApp = true)
         {
             CommandResult result = Command.Create(path)
                 .EnableTracingAndCaptureOutputs()
@@ -140,7 +140,7 @@ namespace AppHost.Bundle.Tests
 
     public static class BundledAppResultExtensions
     {
-        public static FluentAssertions.AndConstraint<CommandResultAssertions> CreateExtraction(this CommandResultAssertions assertion, bool shouldExtract)
+        public static CommandResultAssertions CreateExtraction(this CommandResultAssertions assertion, bool shouldExtract)
         {
             string message = "Starting new extraction of application bundle";
             return shouldExtract
@@ -148,7 +148,7 @@ namespace AppHost.Bundle.Tests
                 : assertion.NotHaveStdErrContaining(message);
         }
 
-        public static FluentAssertions.AndConstraint<CommandResultAssertions> ReuseExtraction(this CommandResultAssertions assertion)
+        public static CommandResultAssertions ReuseExtraction(this CommandResultAssertions assertion)
         {
             return assertion.HaveStdErrContaining("Reusing existing extraction of application bundle");
         }

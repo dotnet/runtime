@@ -41,7 +41,6 @@ namespace AppHost.Bundle.Tests
                 .Execute()
                 .Should()
                 .Pass()
-                .And
                 .HaveStdOutContaining("SharedLibrary.SharedType.Value = SharedLibrary");
 
             // Verify that the test DLL is loaded from the servicing location when being serviced
@@ -54,7 +53,6 @@ namespace AppHost.Bundle.Tests
                 .Execute()
                 .Should()
                 .Pass()
-                .And
                 .HaveStdOutContaining("SharedLibrary.SharedType.Value = ServicedLibrary");
         }
 

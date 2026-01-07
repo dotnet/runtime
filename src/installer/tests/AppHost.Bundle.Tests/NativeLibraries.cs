@@ -149,7 +149,7 @@ namespace AppHost.Bundle.Tests
 
     public static class NativeLibrariesResultExtensions
     {
-        public static FluentAssertions.AndConstraint<CommandResultAssertions> CallPInvoke(this CommandResultAssertions assertion, DllImportSearchPath? flags, bool success)
+        public static CommandResultAssertions CallPInvoke(this CommandResultAssertions assertion, DllImportSearchPath? flags, bool success)
         {
             var constraint = assertion.HaveStdOutContaining($"Loading {NativeLibraries.GetLibraryName(flags)} via P/Invoke (flags: {(flags.HasValue ? flags : "default")}) {(success ? "succeeded" : "failed")}");
             if (!success)
@@ -158,7 +158,7 @@ namespace AppHost.Bundle.Tests
             return constraint;
         }
 
-        public static FluentAssertions.AndConstraint<CommandResultAssertions> TryLoadLibrary(this CommandResultAssertions assertion, DllImportSearchPath? flags, bool success)
+        public static CommandResultAssertions TryLoadLibrary(this CommandResultAssertions assertion, DllImportSearchPath? flags, bool success)
         {
             return assertion.HaveStdOutContaining($"Loading {NativeLibraries.GetLibraryName(flags)} via NativeLibrary API (flags: {(flags.HasValue ? flags : "default")}) {(success ? "succeeded" : "failed")}");
         }
