@@ -363,17 +363,11 @@ namespace ILAssembler
 
             foreach (ExportedTypeEntity exportedType in GetSeenEntities(TableIndex.ExportedType))
             {
-                // Skip exported types with unresolved implementation (error already reported)
-                if (exportedType.Implementation is null)
-                {
-                    continue;
-                }
-
                 builder.AddExportedType(
                     exportedType.Attributes,
-                    builder.GetOrAddString(exportedType.Name),
                     builder.GetOrAddString(exportedType.Namespace),
-                    exportedType.Implementation.Handle,
+                    builder.GetOrAddString(exportedType.Name),
+                    exportedType.Implementation?.Handle ?? default,
                     exportedType.TypeDefinitionId);
             }
 
