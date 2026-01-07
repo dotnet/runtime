@@ -2078,7 +2078,9 @@ namespace System.Text.RegularExpressions
                 // Emit the switch
                 Switch(switchTable);
 
-                // Fall-through means no case matched (shouldn't happen due to bounds check, but emit anyway)
+                // Fall-through after switch should never happen because the bounds check above
+                // ensures the value is within [0, range) and the switch table has entries for all values.
+                // This branch is just a safety net.
                 BrFar(noMatchLabel);
 
                 // Emit the code for each branch
@@ -2087,9 +2089,10 @@ namespace System.Text.RegularExpressions
                     MarkLabel(branchLabels[i]);
                     sliceStaticPos = startingTextSpanPos;
 
-                    // This is only ever used for atomic alternations, so failures should jump to
-                    // the original done label. Set it before emitting the child so that any
-                    // failing matches inside will jump to the right place.
+                    // This is used for atomic alternations and non-atomic alternations where no
+                    // branch can backtrack. Failures should jump to the original done label.
+                    // Set it before emitting the child so that any failing matches inside will
+                    // jump to the right place.
                     doneLabel = originalDoneLabel;
 
                     RegexNode child = node.Child(i);
