@@ -471,12 +471,7 @@ namespace Microsoft.Win32.SafeHandles
                 return true; // LOCK_SH is always OK when reading
             }
 
-            if (!Interop.Sys.FileSystemSupportsLocking(this))
-            {
-                return false;
-            }
-
-            return true;
+            return Interop.Sys.FileSystemSupportsLocking(this);
         }
 
         private void FStatCheckIO(string path, ref Interop.Sys.FileStatus status, ref bool statusHasValue)
