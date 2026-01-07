@@ -1578,9 +1578,9 @@ static uint32_t FileSystemNameSupportsLocking(const char* fileSystemName)
 uint32_t SystemNative_FileSystemSupportsLocking(intptr_t fd)
 {
     // This method returns false when we identify the file system to be nfs (#44546), samba/cifs (#53182).
-#if defined(TARGET_WASI)
-    return 0; // WASI doesn't support locking.
-#elif HAVE_STATFS_FSTYPENAME || defined(TARGET_LINUX)
+#if defined(TARGET_WASI) || defined(TARGET_WASM)
+    return 0; // WASI/WASM doesn't support locking.
+#elif HAVE_STATFS_FSTYPENAME || defined(TARGET_LINUX) || defined(TARGET_ANDROID)
     int statfsRes;
     struct statfs statfsArgs;
     // for our needs (get file system type) statfs is always enough and there is no need to use statfs64
@@ -1590,7 +1590,7 @@ uint32_t SystemNative_FileSystemSupportsLocking(intptr_t fd)
 
 #if HAVE_STATFS_FSTYPENAME
     return FileSystemNameSupportsLocking(statfsArgs.f_fstypename);
-#elif defined(TARGET_LINUX)
+#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
     unsigned int f_type = (unsigned int)statfsArgs.f_type;
     if (f_type == 0x6969 ||     // NFS_SUPER_MAGIC
         f_type == 0xFF534D42 || // CIFS_SUPER_MAGIC
