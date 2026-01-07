@@ -4128,6 +4128,22 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
 
     // The allocation block must dominate all T appearances, save for the final T use.
     //
+    // If we have an empty static case, we generalized slightly, and allow T appearances
+    // to be dominated by the allocation block's (unique) pred.
+    //
+    BasicBlock* domCheckBlock     = allocBlock;
+    const char* domCheckBlockName = "alloc";
+    if ((info->m_allocTree->gtFlags & GTF_ALLOCOBJ_EMPTY_STATIC) != 0)
+    {
+        BasicBlock* const uniquePred = domCheckBlock->GetUniquePred(comp);
+
+        if (uniquePred != nullptr)
+        {
+            domCheckBlock     = uniquePred;
+            domCheckBlockName = "alloc-pred";
+        }
+    }
+
     for (unsigned lclNum : EnumeratorVarMap::KeyIteration(info->m_appearanceMap))
     {
         EnumeratorVar* ev = nullptr;
@@ -4146,10 +4162,10 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
                 continue;
             }
 
-            if (!comp->m_domTree->Dominates(allocBlock, a->m_block))
+            if (!comp->m_domTree->Dominates(domCheckBlock, a->m_block))
             {
-                JITDUMP("Alloc temp V%02u %s in " FMT_BB " not dominated by alloc " FMT_BB "\n", a->m_lclNum,
-                        a->m_isDef ? "def" : "use", a->m_block->bbNum, allocBlock->bbNum);
+                JITDUMP("Alloc temp V%02u %s in " FMT_BB " not dominated by %s " FMT_BB "\n", a->m_lclNum,
+                        a->m_isDef ? "def" : "use", a->m_block->bbNum, domCheckBlockName, domCheckBlock->bbNum);
                 return false;
             }
         }

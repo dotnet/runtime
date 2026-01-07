@@ -137,7 +137,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         shlwapi.lib
         shell32.lib
         bcrypt.lib
-        RuntimeObject.lib
     )
 
     # additional requirements for System.IO.Compression.Native
