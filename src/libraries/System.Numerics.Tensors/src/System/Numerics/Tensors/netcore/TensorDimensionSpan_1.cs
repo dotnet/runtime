@@ -64,9 +64,7 @@ namespace System.Numerics.Tensors
 
         /// <summary>Enumerates the spans of a tensor dimension span.</summary>
         public ref struct Enumerator
-#if NET
             : IEnumerator<TensorSpan<T>>
-#endif
         {
             private readonly TensorDimensionSpan<T> _span;
             private nint _index;
@@ -99,7 +97,6 @@ namespace System.Numerics.Tensors
                 _index = -1;
             }
 
-#if NET
             //
             // IDisposable
             //
@@ -111,7 +108,6 @@ namespace System.Numerics.Tensors
             //
 
             readonly object? IEnumerator.Current => throw new NotSupportedException();
-#endif
         }
     }
 }

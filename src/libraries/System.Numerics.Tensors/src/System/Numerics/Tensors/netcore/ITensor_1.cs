@@ -10,9 +10,7 @@ namespace System.Numerics.Tensors
     /// <typeparam name="T">The element type.</typeparam>
     public interface ITensor<TSelf, T> : ITensor, IReadOnlyTensor<TSelf, T>
         where TSelf : ITensor<TSelf, T>
-#if NET
         , allows ref struct
-#endif
     {
         // TODO: Determine if we can implement `IEqualityOperators<TSelf, T, bool>`.
         // It looks like C#/.NET currently hits limitations here as it believes TSelf and T could be the same type

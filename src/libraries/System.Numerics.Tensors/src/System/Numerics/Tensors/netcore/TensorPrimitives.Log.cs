@@ -104,7 +104,6 @@ namespace System.Numerics.Tensors
 
             public static Vector128<T> Invoke(Vector128<T> x)
             {
-#if NET
                 if (typeof(T) == typeof(double))
                 {
                     return Vector128.Log(x.AsDouble()).As<double, T>();
@@ -114,22 +113,10 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(float));
                     return Vector128.Log(x.AsSingle()).As<float, T>();
                 }
-#else
-                if (typeof(T) == typeof(double))
-                {
-                    return LogOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
-                }
-                else
-                {
-                    Debug.Assert(typeof(T) == typeof(float));
-                    return LogOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
-                }
-#endif
             }
 
             public static Vector256<T> Invoke(Vector256<T> x)
             {
-#if NET
                 if (typeof(T) == typeof(double))
                 {
                     return Vector256.Log(x.AsDouble()).As<double, T>();
@@ -139,22 +126,10 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(float));
                     return Vector256.Log(x.AsSingle()).As<float, T>();
                 }
-#else
-                if (typeof(T) == typeof(double))
-                {
-                    return LogOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
-                }
-                else
-                {
-                    Debug.Assert(typeof(T) == typeof(float));
-                    return LogOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
-                }
-#endif
             }
 
             public static Vector512<T> Invoke(Vector512<T> x)
             {
-#if NET
                 if (typeof(T) == typeof(double))
                 {
                     return Vector512.Log(x.AsDouble()).As<double, T>();
@@ -164,17 +139,6 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(float));
                     return Vector512.Log(x.AsSingle()).As<float, T>();
                 }
-#else
-                if (typeof(T) == typeof(double))
-                {
-                    return LogOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
-                }
-                else
-                {
-                    Debug.Assert(typeof(T) == typeof(float));
-                    return LogOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
-                }
-#endif
             }
         }
 

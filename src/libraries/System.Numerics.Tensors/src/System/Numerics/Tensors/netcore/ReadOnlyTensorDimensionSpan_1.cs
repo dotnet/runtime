@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
-
-#if NET
 using System.Collections;
 using System.Collections.Generic;
-#endif
 
 namespace System.Numerics.Tensors
 {
@@ -61,9 +58,7 @@ namespace System.Numerics.Tensors
 
         /// <summary>Enumerates the spans of a tensor dimension span.</summary>
         public ref struct Enumerator
-#if NET
             : IEnumerator<ReadOnlyTensorSpan<T>>
-#endif
         {
             private readonly ReadOnlyTensorDimensionSpan<T> _span;
             private nint _index;
@@ -96,7 +91,6 @@ namespace System.Numerics.Tensors
                 _index = -1;
             }
 
-#if NET
             //
             // IDisposable
             //
@@ -108,7 +102,6 @@ namespace System.Numerics.Tensors
             //
 
             readonly object? IEnumerator.Current => throw new NotSupportedException();
-#endif
         }
     }
 }

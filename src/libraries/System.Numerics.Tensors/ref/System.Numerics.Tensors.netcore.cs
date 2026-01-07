@@ -70,9 +70,7 @@ namespace System.Numerics.Tensors
     }
     public partial interface IReadOnlyTensor<TSelf, T> : System.Numerics.Tensors.IReadOnlyTensor
         where TSelf : System.Numerics.Tensors.IReadOnlyTensor<TSelf, T>
-#if NET
         , allows ref struct
-#endif
     {
         static abstract TSelf Empty { get; }
         new ref readonly T this[params scoped System.ReadOnlySpan<System.Buffers.NIndex> indexes] { get; }
@@ -107,9 +105,7 @@ namespace System.Numerics.Tensors
     }
     public partial interface ITensor<TSelf, T> : System.Numerics.Tensors.IReadOnlyTensor, System.Numerics.Tensors.IReadOnlyTensor<TSelf, T>, System.Numerics.Tensors.ITensor
         where TSelf : System.Numerics.Tensors.ITensor<TSelf, T>
-#if NET
         , allows ref struct
-#endif
     {
         new ref T this[params scoped System.ReadOnlySpan<System.Buffers.NIndex> indexes] { get; }
         new TSelf this[params scoped System.ReadOnlySpan<System.Buffers.NRange> ranges] { get; set; }

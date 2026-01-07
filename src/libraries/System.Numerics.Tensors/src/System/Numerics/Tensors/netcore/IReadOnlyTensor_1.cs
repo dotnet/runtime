@@ -10,9 +10,7 @@ namespace System.Numerics.Tensors
     /// <typeparam name="T">The element type.</typeparam>
     public interface IReadOnlyTensor<TSelf, T> : IReadOnlyTensor
         where TSelf : IReadOnlyTensor<TSelf, T>
-#if NET
         , allows ref struct
-#endif
     {
         /// <summary>Gets an empty tensor.</summary>
         static abstract TSelf Empty { get; }
