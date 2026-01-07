@@ -907,5 +907,69 @@ namespace System.Collections.Tests
         }
 
         #endregion
+
+        #region UnionWith
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void HashSet_Generic_UnionWith_EmptySetWithHashSetSameComparer_CopiesData(int count)
+        {
+            HashSet<T> source = (HashSet<T>)GenericISetFactory(count);
+            HashSet<T> destination = new HashSet<T>(source.Comparer);
+
+            destination.UnionWith(source);
+
+            Assert.Equal(source.Count, destination.Count);
+            Assert.True(source.SetEquals(destination));
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void HashSet_Generic_UnionWith_EmptySetWithSparselyFilledHashSet_CopiesData(int count)
+        {
+            HashSet<T> source = (HashSet<T>)CreateEnumerable(EnumerableType.HashSet, null, count, 0, 0);
+            List<T> sourceElements = source.ToList();
+
+            foreach (int i in NonSquares(count))
+                source.Remove(sourceElements[i]);
+
+            HashSet<T> destination = new HashSet<T>(source.Comparer);
+
+            destination.UnionWith(source);
+
+            Assert.Equal(source.Count, destination.Count);
+            Assert.True(source.SetEquals(destination));
+        }
+
+        [Fact]
+        public void HashSet_Generic_UnionWith_EmptySetWithEmptyHashSet()
+        {
+            HashSet<T> source = new HashSet<T>();
+            HashSet<T> destination = new HashSet<T>();
+
+            destination.UnionWith(source);
+
+            Assert.Equal(0, destination.Count);
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void HashSet_Generic_UnionWith_NonEmptySet_DoesNotCopyButAddsElements(int count)
+        {
+            if (count > 0)
+            {
+                HashSet<T> source = (HashSet<T>)GenericISetFactory(count);
+                HashSet<T> destination = (HashSet<T>)GenericISetFactory(1);
+                T existingItem = destination.First();
+
+                destination.UnionWith(source);
+
+                Assert.True(destination.Count >= source.Count);
+                Assert.True(source.IsSubsetOf(destination));
+                Assert.True(destination.Contains(existingItem));
+            }
+        }
+
+        #endregion
     }
 }
