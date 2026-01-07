@@ -70,6 +70,10 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 #include <procfs.h>
 #endif
 
+#if defined(TARGET_LINUX)
+#include <linux/magic.h>
+#endif
+
 #ifdef __linux__
 #include <sys/utsname.h>
 
@@ -1560,26 +1564,27 @@ static int16_t ConvertLockType(int16_t managedLockType)
     }
 }
 
-#if !HAVE_NON_LEGACY_STATFS || defined(TARGET_APPLE) || defined(TARGET_FREEBSD)
-// Maps OS file system names to values from the managed UnixFileSystemTypes enum.
-// UnixFileSystemTypes only includes values .NET wants to handle specifically.
-static uint32_t MapFileSystemNameToEnum(const char* fileSystemName)
+#if HAVE_STATFS_FSTYPENAME || HAVE_STATVFS_BASETYPE
+static uint32_t FileSystemNameSupportsLocking(const char* fileSystemName)
 {
-    uint32_t result = 0;
-
-    if (strcmp(fileSystemName, "nfs") == 0) result = 0x6969;
-    else if (strcmp(fileSystemName, "cifs") == 0) result = 0xFF534D42;
-    else if (strcmp(fileSystemName, "smb") == 0) result = 0x517B;
-    else if (strcmp(fileSystemName, "smb2") == 0) result = 0xFE534D42;
-
-    return result;
+    if (strcmp(fileSystemName, "nfs") == 0 ||
+        strcmp(fileSystemName, "cifs") == 0 ||
+        strcmp(fileSystemName, "smb") == 0 ||
+        strcmp(fileSystemName, "smb2") == 0)
+    {
+        return 0;
+    }
+    return 1;
 }
 #endif
 #endif /* TARGET_WASI */
 
-uint32_t SystemNative_GetFileSystemType(intptr_t fd)
+uint32_t SystemNative_FileSystemSupportsLocking(intptr_t fd)
 {
-#if HAVE_STATFS_VFS || HAVE_STATFS_MOUNT
+    // This method returns false when we identify the file system to be nfs (#44546), samba/cifs (#53182).
+#if defined(TARGET_WASI)
+    return 0; // WASI doesn't support locking.
+#elif HAVE_STATFS_FSTYPENAME || defined(TARGET_LINUX)
     int statfsRes;
     struct statfs statfsArgs;
     // for our needs (get file system type) statfs is always enough and there is no need to use statfs64
@@ -1587,27 +1592,25 @@ uint32_t SystemNative_GetFileSystemType(intptr_t fd)
     while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
     if (statfsRes == -1) return 0;
 
-#if defined(TARGET_APPLE) || defined(TARGET_FREEBSD)
-    // * On OSX-like systems, f_type is version-specific. Don't use it, just map the name.
-    // * Specifically, on FreeBSD with ZFS, f_type may return a value like 0xDE when emulating
-    //   FreeBSD on macOS (e.g., FreeBSD-x64 on macOS ARM64). Therefore, we use f_fstypename to
-    //   get the correct filesystem type.
-    return MapFileSystemNameToEnum(statfsArgs.f_fstypename);
-#else
-    // On Linux, f_type is signed. This causes some filesystem types to be represented as
-    // negative numbers on 32-bit platforms. We cast to uint32_t to make them positive.
-    uint32_t result = (uint32_t)statfsArgs.f_type;
-    return result;
+#if HAVE_STATFS_FSTYPENAME
+    return FileSystemNameSupportsLocking(statfsArgs.f_fstypename);
+#elif defined(TARGET_LINUX)
+    if (statfsArgs.f_type == NFS_SUPER_MAGIC ||
+        statfsArgs.f_type == CIFS_SUPER_MAGIC ||
+        statfsArgs.f_type == SMB_SUPER_MAGIC ||
+        statfsArgs.f_type == SMB2_SUPER_MAGIC)
+    {
+        return 0;
+    }
+    return 1;
 #endif
-#elif defined(TARGET_WASI)
-    return EINTR;
-#elif !HAVE_NON_LEGACY_STATFS
+#elif HAVE_STATVFS_BASETYPE
     int statfsRes;
     struct statvfs statfsArgs;
     while ((statfsRes = fstatvfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
     if (statfsRes == -1) return 0;
 
-    return MapFileSystemNameToEnum(statfsArgs.f_basetype);
+    return FileSystemNameSupportsLocking(statfsArgs.f_basetype);
 #else
     #error "Platform doesn't support fstatfs or fstatvfs"
 #endif
