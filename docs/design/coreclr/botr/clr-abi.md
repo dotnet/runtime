@@ -707,11 +707,11 @@ For managed methods compiled to Web Assembly (hereafter "managed code") the CLR 
 
 Managed code uses the same linear stack as C code. The stack grows down.
 
-## Incoming argumenent ABI
+## Incoming argument ABI
 
 The linear stack pointer is the first argument to all methods. At a native->managed transition it is the value of the `$__stack_pointer` global. This global is not updated within managed code, but is updated at managed->native boundaries. Within the method the stack pointer always points at the bottom (lowest address) of the stack; generally this is a fixed offset from the value the stack pointer held on entry, except in methods that can do dynamic allocation.
 
-A frame pointer, if used, points at the bottom of the "fixed" portion of the stack to facilitate use of Wasm addressing modes, which only allow postive offsets.
+A frame pointer, if used, points at the bottom of the "fixed" portion of the stack to facilitate use of Wasm addressing modes, which only allow positive offsets.
 
 Structs are generally passed by-reference, unless they happen to exactly contain a single primitive field (or be a struct exactly containing such a struct). The linear stack provides the backing storage for the by-reference structs.
 
@@ -758,7 +758,7 @@ dup
 load CellIndex (from pe)
 call_indirect <tableIndex> <sigIndex>  (sig is: int32 (sp) arg0... argN-1 int32 (pe))
 ```
-Because the `pe` arg must be passed to the portable entrypoint, all method signatures must reflect the extra final argument (even though it will be unused). Thus for example aa managed method like `int F(int x)` will have a Wasm signature `(func (param int32 int32 int32) (result int32))`.
+Because the `pe` arg must be passed to the portable entrypoint, all method signatures must reflect the extra final argument (even though it will be unused). Thus for example a managed method like `int F(int x)` will have a Wasm signature `(func (param int32 int32 int32) (result int32))`.
 
 Alternatively we may choose to pass the `pe` via a Wasm global.
 
@@ -815,7 +815,7 @@ dup
 load CellIndex (from pe)
 call_indirect <tableIndex> <sigIndex>  (sig is: int32 (sp) int32 int32 (pe) : returns int32)
 
-;; uppdate virtual IP for call to x with live gc refs [can be optimized out]
+;; update virtual IP for call to x with live gc refs [can be optimized out]
 local.get sp
 i32.const virtual-ip-for-call-to-x (gc info : a and b slots live)
 i32.store offset=(virtual-ip offset)
@@ -830,11 +830,11 @@ Notes:
 * As an optimization, we can avoid updating the virtual IP when the GC/EH info it refers to is unchanged from the last update.
 * We may want to un-nest calls, relying on a Wasm local instead of the Wasm stack to convey nested call results to the parent call.
 * As an optimization, we will try and minimize storing gc refs to the linear stack (eg if the value already there hasn't changed from the last update).
-* As an optimization, we may try and have some gc refs primarly live on the linear stack, and not be held in Wasm locals.
+* As an optimization, we may try and have some gc refs primarily live on the linear stack, and not be held in Wasm locals.
 
 ## Tail Calls
 
-For tail calls the only differences are the use of the `return_call_indirect` in the call, and passing the the original `sp` value to the callee:
+For tail calls the only differences are the use of the `return_call_indirect` in the call, and passing the original `sp` value to the callee:
 ```
 local.get sp
 i32.const <frameSize>
