@@ -556,7 +556,6 @@ void MethodContextReader::ReadExcludedMethods(std::string mchFileName)
     FILE* fpExclude = OpenFile(excludeFileName.c_str());
     if (fpExclude != NULL)
     {
-        char buffer[512];
         char buffer[512] = {};
 
         while (fscanf(fpExclude, "%511s", buffer) > 0)
