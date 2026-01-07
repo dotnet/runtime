@@ -1678,6 +1678,19 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.Parent is not null);
                 bool isAtomic = analysis.IsAtomicByAncestor(node);
 
+                // If no child branch overlaps with another child branch, we can emit more streamlined code
+                // that avoids checking unnecessary branches, e.g. with abc|def|ghi if the next character in
+                // the input is 'a', we needn't try the def or ghi branches.  A simple, relatively common case
+                // of this is if every branch begins with a specific, unique character, in which case
+                // the whole alternation can be treated as a simple switch, so we special-case that. However,
+                // we can't goto _into_ switch cases, which means we can't use this approach if there's any
+                // possibility of backtracking into the alternation.
+                if ((node.Options & RegexOptions.RightToLeft) == 0 &&
+                    TryEmitAlternationAsSwitch(node, childCount, isAtomic))
+                {
+                    return;
+                }
+
                 // Label to jump to when any branch completes successfully.
                 Label matchLabel = DefineLabel();
 
@@ -1864,6 +1877,292 @@ namespace System.Text.RegularExpressions
                 // Successfully completed the alternate.
                 MarkLabel(matchLabel);
                 Debug.Assert(sliceStaticPos == 0);
+            }
+
+            // Tries to emit an alternation as a switch on the first character of each branch.
+            // Returns true if the optimization was applied, false otherwise.
+            bool TryEmitAlternationAsSwitch(RegexNode node, int childCount, bool isAtomic)
+            {
+                // Determine whether we can use switched branches.
+                // We can't use switched branches if there's any possibility of backtracking into the alternation.
+                bool canUseSwitchedBranches = isAtomic;
+                if (!canUseSwitchedBranches)
+                {
+                    canUseSwitchedBranches = true;
+                    for (int i = 0; i < childCount; i++)
+                    {
+                        if (analysis.MayBacktrack(node.Child(i)))
+                        {
+                            canUseSwitchedBranches = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (!canUseSwitchedBranches)
+                {
+                    return false;
+                }
+
+                // Detect whether every branch begins with one or more unique characters.
+                const int SetCharsSize = 64; // arbitrary limit; we want it to be large enough to handle ignore-case of common sets, like hex, the latin alphabet, etc.
+                Span<char> setChars = stackalloc char[SetCharsSize];
+                var seenChars = new HashSet<char>();
+
+                // Iterate through every branch, seeing if we can easily find a starting One, Multi, or small Set.
+                // If we can, extract its starting char (or multiple in the case of a set), validate that all such
+                // starting characters are unique relative to all the branches.
+                for (int i = 0; i < childCount && canUseSwitchedBranches; i++)
+                {
+                    // Look for the guaranteed starting node that's a one, multi, set,
+                    // or loop of one of those with at least one minimum iteration. We need to exclude notones.
+                    if (node.Child(i).FindStartingLiteralNode(allowZeroWidth: false) is not RegexNode startingLiteralNode ||
+                        startingLiteralNode.IsNotoneFamily)
+                    {
+                        canUseSwitchedBranches = false;
+                        break;
+                    }
+
+                    // If it's a One or a Multi, get the first character and add it to the set.
+                    // If it was already in the set, we can't apply this optimization.
+                    if (startingLiteralNode.IsOneFamily || startingLiteralNode.Kind is RegexNodeKind.Multi)
+                    {
+                        if (!seenChars.Add(startingLiteralNode.FirstCharOfOneOrMulti()))
+                        {
+                            canUseSwitchedBranches = false;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        // The branch begins with a set.  Make sure it's a set of only a few characters
+                        // and get them.  If we can't, we can't apply this optimization.
+                        Debug.Assert(startingLiteralNode.IsSetFamily);
+                        int numChars;
+                        if (RegexCharClass.IsNegated(startingLiteralNode.Str!) ||
+                            (numChars = RegexCharClass.GetSetChars(startingLiteralNode.Str!, setChars)) == 0)
+                        {
+                            canUseSwitchedBranches = false;
+                            break;
+                        }
+
+                        // Check to make sure each of the chars is unique relative to all other branches examined.
+                        foreach (char c in setChars.Slice(0, numChars))
+                        {
+                            if (!seenChars.Add(c))
+                            {
+                                canUseSwitchedBranches = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (!canUseSwitchedBranches)
+                {
+                    return false;
+                }
+
+                // Apply the Roslyn switch heuristic: emit an IL switch only if
+                // count_of_values >= 7 AND count_of_values / (max_value - min_value + 1) >= 0.5
+                int count = seenChars.Count;
+                if (count < 7)
+                {
+                    return false;
+                }
+
+                int minValue = int.MaxValue;
+                int maxValue = int.MinValue;
+                foreach (char c in seenChars)
+                {
+                    if (c < minValue) minValue = c;
+                    if (c > maxValue) maxValue = c;
+                }
+
+                int range = maxValue - minValue + 1;
+                if ((double)count / range < 0.5)
+                {
+                    return false;
+                }
+
+                // Emit switched branches using an IL switch instruction.
+                EmitSwitchedBranches(node, childCount, seenChars, minValue, range);
+                return true;
+            }
+
+            // Emits the code for a switch-based alternation of non-overlapping branches.
+            void EmitSwitchedBranches(RegexNode node, int childCount, HashSet<char> seenChars, int minValue, int range)
+            {
+                const int SetCharsSize = 64;
+                Span<char> setChars = stackalloc char[SetCharsSize];
+
+                Label originalDoneLabel = doneLabel;
+                Label matchLabel = DefineLabel();
+                int startingTextSpanPos = sliceStaticPos;
+
+                // We need at least 1 remaining character in the span, for the char to switch on.
+                EmitSpanLengthCheck(1);
+
+                // Build a map from character value to branch index
+                var charToBranchIndex = new Dictionary<char, int>();
+                for (int i = 0; i < childCount; i++)
+                {
+                    RegexNode child = node.Child(i);
+                    RegexNode? startingLiteralNode = child.FindStartingLiteralNode(allowZeroWidth: false);
+                    Debug.Assert(startingLiteralNode is not null, "Unexpectedly couldn't find the branch starting node.");
+
+                    if (startingLiteralNode.IsSetFamily)
+                    {
+                        int numChars = RegexCharClass.GetSetChars(startingLiteralNode.Str!, setChars);
+                        Debug.Assert(numChars != 0);
+                        foreach (char c in setChars.Slice(0, numChars))
+                        {
+                            charToBranchIndex[c] = i;
+                        }
+                    }
+                    else
+                    {
+                        charToBranchIndex[startingLiteralNode.FirstCharOfOneOrMulti()] = i;
+                    }
+                }
+
+                // Create labels for each branch
+                var branchLabels = new Label[childCount];
+                for (int i = 0; i < childCount; i++)
+                {
+                    branchLabels[i] = DefineLabel();
+                }
+
+                // Create a label for the case when no branch matches
+                Label noMatchLabel = DefineLabel();
+
+                // Build the switch table: an array of labels indexed by (charValue - minValue)
+                var switchTable = new Label[range];
+                for (int i = 0; i < range; i++)
+                {
+                    char c = (char)(minValue + i);
+                    if (charToBranchIndex.TryGetValue(c, out int branchIndex))
+                    {
+                        switchTable[i] = branchLabels[branchIndex];
+                    }
+                    else
+                    {
+                        switchTable[i] = noMatchLabel;
+                    }
+                }
+
+                // Load the first character of the slice, subtract minValue, and switch
+                // slice[sliceStaticPos]
+                Ldloca(slice);
+                Ldc(sliceStaticPos);
+                Call(SpanGetItemMethod);
+                LdindU2();
+
+                // Subtract minValue to get 0-based index
+                if (minValue != 0)
+                {
+                    Ldc(minValue);
+                    Sub();
+                }
+
+                // Bounds check: if the value is outside the range, jump to noMatch
+                // if ((uint)(ch - minValue) >= range) goto noMatchLabel;
+                Dup();
+                Ldc(range);
+                Label boundsCheckPassed = DefineLabel();
+                BltUnFar(boundsCheckPassed);
+                Pop(); // Pop the duplicated value before jumping to noMatch
+                BrFar(noMatchLabel);
+                MarkLabel(boundsCheckPassed);
+
+                // Emit the switch
+                Switch(switchTable);
+
+                // Fall-through means no case matched (shouldn't happen due to bounds check, but emit anyway)
+                BrFar(noMatchLabel);
+
+                // Emit the code for each branch
+                for (int i = 0; i < childCount; i++)
+                {
+                    MarkLabel(branchLabels[i]);
+                    sliceStaticPos = startingTextSpanPos;
+
+                    // This is only ever used for atomic alternations, so failures should jump to
+                    // the original done label. Set it before emitting the child so that any
+                    // failing matches inside will jump to the right place.
+                    doneLabel = originalDoneLabel;
+
+                    RegexNode child = node.Child(i);
+                    RegexNode? startingLiteralNode = child.FindStartingLiteralNode(allowZeroWidth: false);
+                    Debug.Assert(startingLiteralNode is not null, "Unexpectedly couldn't find the branch starting node.");
+
+                    // Emit the code for the branch, without the first character that was already matched in the switch.
+                    switch (child.Kind)
+                    {
+                        case RegexNodeKind.One:
+                        case RegexNodeKind.Set:
+                            // The character was handled entirely by the switch. No additional matching is needed.
+                            sliceStaticPos++;
+                            break;
+
+                        case RegexNodeKind.Multi:
+                            // First character was handled by the switch. Emit matching code for the remainder of the multi string.
+                            sliceStaticPos++;
+                            EmitNode(CreateSlicedMulti(child));
+                            break;
+
+                        case RegexNodeKind.Concatenate when child.Child(0) == startingLiteralNode && (startingLiteralNode.Kind is RegexNodeKind.One or RegexNodeKind.Set or RegexNodeKind.Multi):
+                            // This is a concatenation where its first node is the starting literal we found and that starting literal
+                            // is one of the nodes above that we know how to handle completely. This is a common
+                            // enough case that we want to special-case it to avoid duplicating the processing for that character
+                            // unnecessarily. First slice off the first character that was already handled. If that child is a multi, temporarily
+                            // replace it with a node that doesn't have the already-matched first character; otherwise, replace it with an empty node
+                            // that'll be ignored when rendered. Then emit the new tree, and subsequently restore the original child.
+                            sliceStaticPos++;
+                            RegexNode originalFirst = child.Child(0);
+                            child.ReplaceChild(0,
+                                child.Child(0).Kind is RegexNodeKind.Multi ?
+                                    CreateSlicedMulti(child.Child(0)) :
+                                    new RegexNode(RegexNodeKind.Empty, child.Options));
+                            try
+                            {
+                                EmitNode(child);
+                            }
+                            finally
+                            {
+                                child.ReplaceChild(0, originalFirst);
+                            }
+                            break;
+
+                        default:
+                            EmitNode(child);
+                            break;
+                    }
+
+                    // If we get here in the generated code, the branch completed successfully.
+                    // Before jumping to the end, we need to zero out sliceStaticPos, so that no
+                    // matter what the value is after the branch, whatever follows the alternate
+                    // will see the same sliceStaticPos.
+                    TransferSliceStaticPosToPos();
+                    BrFar(matchLabel);
+                }
+
+                // No match case - jump to the original done label
+                MarkLabel(noMatchLabel);
+                BrFar(originalDoneLabel);
+
+                // Successfully completed the alternate.
+                MarkLabel(matchLabel);
+                Debug.Assert(sliceStaticPos == 0);
+
+                // Creates a new Multi node with the first character sliced off
+                static RegexNode CreateSlicedMulti(RegexNode multi)
+                {
+                    Debug.Assert(multi.Kind is RegexNodeKind.Multi, $"Expected a Multi node, got {multi.Kind}");
+                    return multi.Str!.Length == 2 ?
+                        new(RegexNodeKind.One, multi.Options, multi.Str[1]) :
+                        new(RegexNodeKind.Multi, multi.Options, multi.Str.Substring(1));
+                }
             }
 
             // Emits the code to handle a backreference.
