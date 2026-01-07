@@ -9,6 +9,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
@@ -109,6 +110,7 @@ namespace System.Threading
         /// <param name="target">The variable that need to be initialized</param>
         /// <param name="valueFactory">The delegate that will be executed to initialize the target</param>
         /// <returns>The initialized variable</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static T EnsureInitializedCore<T>([NotNull] ref T? target, Func<T> valueFactory) where T : class
         {
             T value = valueFactory() ?? throw new InvalidOperationException(SR.Lazy_StaticInit_InvalidOperation);
