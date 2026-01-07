@@ -70,10 +70,6 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 #include <procfs.h>
 #endif
 
-#if defined(TARGET_LINUX)
-#include <linux/magic.h>
-#endif
-
 #ifdef __linux__
 #include <sys/utsname.h>
 
@@ -1595,10 +1591,10 @@ uint32_t SystemNative_FileSystemSupportsLocking(intptr_t fd)
 #if HAVE_STATFS_FSTYPENAME
     return FileSystemNameSupportsLocking(statfsArgs.f_fstypename);
 #elif defined(TARGET_LINUX)
-    if (statfsArgs.f_type == NFS_SUPER_MAGIC ||
-        statfsArgs.f_type == CIFS_SUPER_MAGIC ||
-        statfsArgs.f_type == SMB_SUPER_MAGIC ||
-        statfsArgs.f_type == SMB2_SUPER_MAGIC)
+    if (statfsArgs.f_type == 0x6969 ||     // NFS_SUPER_MAGIC
+        statfsArgs.f_type == 0xFF534D42 || // CIFS_SUPER_MAGIC
+        statfsArgs.f_type == 0x517B ||     // SMB_SUPER_MAGIC
+        statfsArgs.f_type == 0xFE534D42)   // SMB2_SUPER_MAGIC
     {
         return 0;
     }
