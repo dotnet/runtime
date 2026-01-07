@@ -6308,7 +6308,6 @@ public:
 
     static fgWalkPreFn fgStress64RsltMulCB;
     void               fgStress64RsltMul();
-    void               fgDebugCheckUpdate();
 
     void fgDebugCheckBBNumIncreasing();
     void fgDebugCheckBBlist(bool checkBBNum = false, bool checkBBRefs = true);
@@ -10441,7 +10440,6 @@ public:
         /*  don't care about performance at all */                                              \
                                                                                                 \
         STRESS_MODE(FORCE_INLINE) /* Treat every method as AggressiveInlining */                \
-        STRESS_MODE(CHK_FLOW_UPDATE)                                                            \
         STRESS_MODE(EMITTER)                                                                    \
         STRESS_MODE(CHK_REIMPORT)                                                               \
         STRESS_MODE(GENERIC_CHECK)                                                              \
