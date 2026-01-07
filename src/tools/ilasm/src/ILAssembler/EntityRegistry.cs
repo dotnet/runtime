@@ -611,14 +611,14 @@ namespace ILAssembler
                     builder.AppendFormat("{0}.{1}", typeRef.Namespace, typeRef.Name);
                     if (resolutionContext is AssemblyReferenceEntity asmRef)
                     {
-                        var assemblyName = new AssemblyName(asmRef.Name)
-                        {
-                            Version = asmRef.Version,
-                            CultureName = string.IsNullOrEmpty(asmRef.Culture) ? string.Empty : asmRef.Culture
-                        };
-                        assemblyName.SetPublicKeyToken(asmRef.PublicKeyOrToken?.ToArray());
+                        var assemblyNameInfo = new AssemblyNameInfo(
+                            asmRef.Name,
+                            asmRef.Version,
+                            string.IsNullOrEmpty(asmRef.Culture) ? null : asmRef.Culture,
+                            asmRef.PublicKeyOrToken is null ? AssemblyNameFlags.None : AssemblyNameFlags.PublicKey,
+                            asmRef.PublicKeyOrToken?.ToImmutableArray() ?? []);
                         builder.Append(", ");
-                        builder.Append(assemblyName.FullName);
+                        builder.Append(assemblyNameInfo.FullName);
                     }
                     typeRef.ReflectionNotation = builder.ToString();
                 });
