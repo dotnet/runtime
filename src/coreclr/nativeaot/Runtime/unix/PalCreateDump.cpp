@@ -629,6 +629,7 @@ PalCreateDumpInitialize()
         }
         strncat(program, DumpGeneratorName, programLen);
 
+        // Check if the createdump binary exists
         struct stat fileData;
         bool fileExists = (stat(program, &fileData) != -1 && S_ISREG(fileData.st_mode));
         
