@@ -3354,7 +3354,7 @@ inline bool Compiler::fgIsBigOffset(size_t offset)
 }
 
 //------------------------------------------------------------------------
-// IsValidLclAddr: Can the given local address be represented as "LCL_FLD_ADDR"?
+// IsValidLclAddr: Can the given local address be represented as "LCL_ADDR"?
 //
 // Local address nodes cannot point beyond the local and can only store
 // 16 bits worth of offset.
@@ -3364,14 +3364,14 @@ inline bool Compiler::fgIsBigOffset(size_t offset)
 //    offset - The address' offset
 //
 // Return Value:
-//    Whether "LCL_FLD_ADDR<lclNum> [+offset]" would be valid IR.
+//    Whether "LCL_ADDR<lclNum> [+offset]" would be valid IR.
 //
 inline bool Compiler::IsValidLclAddr(unsigned lclNum, unsigned offset)
 {
 #ifdef TARGET_ARM64
-    if (varTypeHasUnknownSize(lvaGetDesc(lclNum)))
+    if (lvaIsUnknownSizeLocal(lclNum))
     {
-        return false;
+        return (offset == 0);
     }
 #endif
     return (offset < UINT16_MAX) && (offset < lvaLclExactSize(lclNum));
