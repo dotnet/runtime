@@ -8523,61 +8523,29 @@ void Lowering::LowerShift(GenTreeOp* shift)
     ContainCheckShiftRotate(shift);
 
 #ifdef TARGET_ARM64
-    GenTree* op1 = shift->gtGetOp1();
-    GenTree* op2 = shift->gtGetOp2();
-
-    if (comp->opts.OptimizationEnabled() && op1->OperIs(GT_CAST) && op2->IsCnsIntOrI())
+    // Try to recognize ubfiz/sbfiz idiom in LSH(CAST(X), CNS) tree
+    if (comp->opts.OptimizationEnabled() && shift->OperIs(GT_LSH) && shift->gtGetOp1()->OperIs(GT_CAST) &&
+        shift->gtGetOp2()->IsCnsIntOrI() && !shift->isContained())
     {
-        // Try to recognize ubfiz/sbfiz idiom in LSH(CAST(X), CNS) tree
-        if (shift->OperIs(GT_LSH) && !shift->isContained())
+        GenTreeIntCon* cns  = shift->gtGetOp2()->AsIntCon();
+        GenTreeCast*   cast = shift->gtGetOp1()->AsCast();
+
+        if (!cast->isContained() && !cast->IsRegOptional() && !cast->gtOverflow() &&
+            // Smaller CastOp is most likely an IND(X) node which is lowered to a zero-extend load
+            cast->CastOp()->TypeIs(TYP_LONG, TYP_INT))
         {
-            GenTreeIntCon* cns  = op2->AsIntCon();
-            GenTreeCast*   cast = op1->AsCast();
+            // Cast is either "TYP_LONG <- TYP_INT" or "TYP_INT <- %SMALL_INT% <- TYP_INT" (signed or unsigned)
+            unsigned dstBits = genTypeSize(cast) * BITS_PER_BYTE;
+            unsigned srcBits = varTypeIsSmall(cast->CastToType()) ? genTypeSize(cast->CastToType()) * BITS_PER_BYTE
+                                                                  : genTypeSize(cast->CastOp()) * BITS_PER_BYTE;
 
-            if (!cast->isContained() && !cast->IsRegOptional() && !cast->gtOverflow() &&
-                // Smaller CastOp is most likely an IND(X) node which is lowered to a zero-extend load
-                cast->CastOp()->TypeIs(TYP_LONG, TYP_INT))
+            // It has to be an upcast and CNS must be in [1..srcBits) range
+            if ((srcBits < dstBits) && (cns->IconValue() > 0) && (cns->IconValue() < srcBits))
             {
-                // Cast is either "TYP_LONG <- TYP_INT" or "TYP_INT <- %SMALL_INT% <- TYP_INT" (signed or unsigned)
-                unsigned dstBits = genTypeSize(cast) * BITS_PER_BYTE;
-                unsigned srcBits = varTypeIsSmall(cast->CastToType()) ? genTypeSize(cast->CastToType()) * BITS_PER_BYTE
-                                                                      : genTypeSize(cast->CastOp()) * BITS_PER_BYTE;
-
-                // It has to be an upcast and CNS must be in [1..srcBits) range
-                if ((srcBits < dstBits) && (cns->IconValue() > 0) && (cns->IconValue() < srcBits))
-                {
-                    JITDUMP("Recognized ubfix/sbfix pattern in LSH(CAST, CNS). Changing op to GT_BFIZ");
-                    shift->ChangeOper(GT_BFIZ);
-                    cast->CastOp()->ClearContained(); // Uncontain any memory operands.
-                    MakeSrcContained(shift, cast);
-                }
-            }
-        }
-
-        // Try to recognize right shift with a CAST node that is equivilent to mov #0
-        if (shift->OperIs(GT_RSH, GT_RSZ))
-        {
-            GenTreeCast*   cast = op1->AsCast();
-            GenTreeIntCon* cns  = op2->AsIntCon();
-
-            if (!cast->isContained() && !cast->IsRegOptional() && !cast->gtOverflow() &&
-                cast->CastOp()->TypeIs(TYP_INT) && varTypeIsUnsigned(cast->CastToType()))
-            {
-                unsigned srcBits = genTypeSize(cast->CastToType()) * BITS_PER_BYTE;
-                if (cns->IconValue() >= srcBits)
-                {
-                    GenTree* zero = comp->gtNewIconNode(0, TYP_INT);
-                    LIR::Use use;
-                    if (BlockRange().TryGetUse(shift, &use))
-                    {
-                        use.ReplaceWith(zero);
-                    }
-                    BlockRange().InsertBefore(shift, zero);
-                    BlockRange().Remove(op1->gtGetOp1());
-                    BlockRange().Remove(op1);
-                    BlockRange().Remove(op2);
-                    BlockRange().Remove(shift);
-                }
+                JITDUMP("Recognized ubfix/sbfix pattern in LSH(CAST, CNS). Changing op to GT_BFIZ");
+                shift->ChangeOper(GT_BFIZ);
+                cast->CastOp()->ClearContained(); // Uncontain any memory operands.
+                MakeSrcContained(shift, cast);
             }
         }
     }

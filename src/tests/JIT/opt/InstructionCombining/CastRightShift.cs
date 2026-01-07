@@ -184,8 +184,7 @@ namespace TestCastRightShift
         [MethodImpl(MethodImplOptions.NoInlining)]
         static long CastASR8_byte_long(int x)
         {
-            //ARM64-FULL-LINE: mov {{w[0-9]+}}, wzr
-            //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: mov {{x[0-9]+}}, xzr
             return (byte)x >> 8;
         }
 
@@ -291,8 +290,7 @@ namespace TestCastRightShift
         [MethodImpl(MethodImplOptions.NoInlining)]
         static long CastASR16_ushort_long(int x)
         {
-            //ARM64-FULL-LINE: mov {{w[0-9]+}}, wzr
-            //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: mov {{x[0-9]+}}, xzr
             return (ushort)x >> 16;
         }
 
