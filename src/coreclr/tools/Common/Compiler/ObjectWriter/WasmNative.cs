@@ -199,14 +199,8 @@ namespace ILCompiler.ObjectWriter
         {
             if (kind == WasmExprKind.I32Const)
             {
-                try
-                {
-                    int _ = checked((int)value);
-                }
-                catch (OverflowException)
-                {
-                    throw new ArgumentOutOfRangeException($"{nameof(WasmConstExpr)}: {value} out of range for ${kind}");
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, int.MaxValue);
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, int.MinValue);
             }
 
             _kind = kind;
