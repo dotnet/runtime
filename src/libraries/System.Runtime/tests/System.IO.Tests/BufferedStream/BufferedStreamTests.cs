@@ -111,7 +111,7 @@ namespace System.IO.Tests
             }
             catch (OutOfMemoryException)
             {
-                return;
+                throw new SkipTestException("Not enough memory");
             }
 
             var writableStream = new WriteOnlyStream();
