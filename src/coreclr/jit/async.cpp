@@ -628,7 +628,16 @@ PhaseStatus Compiler::TransformAsync()
     assert(compIsAsync());
 
     AsyncTransformation transformation(this);
-    return transformation.Run();
+    PhaseStatus         result = transformation.Run();
+
+    if (gsShadowVarInfoCount > 0)
+    {
+        JITDUMP("Copying parameters to shadowing vars for GS cookie check\n");
+        gsParamsToShadowsAsync();
+        result = PhaseStatus::MODIFIED_EVERYTHING;
+    }
+
+    return result;
 }
 
 //------------------------------------------------------------------------

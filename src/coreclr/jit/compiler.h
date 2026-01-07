@@ -11247,15 +11247,19 @@ public:
 #endif
     };
 
-    GSCookie*           gsGlobalSecurityCookieAddr; // Address of global cookie for unsafe buffer checks
-    GSCookie            gsGlobalSecurityCookieVal;  // Value of global cookie if addr is NULL
-    ShadowParamVarInfo* gsShadowVarInfo = nullptr;  // Table used by shadow param analysis code
+    GSCookie*           gsGlobalSecurityCookieAddr;     // Address of global cookie for unsafe buffer checks
+    GSCookie            gsGlobalSecurityCookieVal;      // Value of global cookie if addr is NULL
+    ShadowParamVarInfo* gsShadowVarInfo      = nullptr; // Table used by shadow param analysis code
+    unsigned            gsShadowVarInfoCount = 0;
 
     PhaseStatus gsPhase();
     void        gsGSChecksInitCookie();   // Grabs cookie variable
     void        gsCopyShadowParams();     // Identify vulnerable params and create dhadow copies
     bool        gsFindVulnerableParams(); // Shadow param analysis code
-    void        gsParamsToShadows();      // Insert copy code and replave param uses by shadow
+    void        gsParamsToShadows();      // Insert copy code and replace param uses by shadow
+    void        gsParamsToShadowsAsync(); // Insert copy code and replace param uses by shadow for async methods
+    void        gsCreateShadowingLocals();
+    void        gsRewriteTreeForShadowParam(GenTree* tree);
 
     static fgWalkPreFn gsMarkPtrsAndAssignGroups; // Shadow param analysis tree-walk
     static fgWalkPreFn gsReplaceShadowParams;     // Shadow param replacement tree-walk
