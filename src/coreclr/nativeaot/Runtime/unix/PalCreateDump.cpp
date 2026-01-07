@@ -61,6 +61,8 @@ char* g_szCreateDumpPath = nullptr;
 char* g_ppidarg  = nullptr;
 bool g_warnCreateDumpMissing = false;
 
+const char* g_createDumpMissingMessage = "DOTNET_DbgEnableMiniDump is set and the createdump binary does not exist\n";
+
 const size_t MaxUnsigned32BitDecString = STRING_LENGTH("4294967295");
 const size_t MaxUnsigned64BitDecString = STRING_LENGTH("18446744073709551615");
 
@@ -134,7 +136,7 @@ BuildCreateDumpCommandLine(
     {
         if (g_warnCreateDumpMissing)
         {
-            fprintf(stderr, "DOTNET_DbgEnableMiniDump is set and the createdump binary does not exist\n");
+            fprintf(stderr, "%s", g_createDumpMissingMessage);
         }
         return false;
     }
@@ -473,7 +475,7 @@ PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, void*
     else if (g_warnCreateDumpMissing)
     {
         // DOTNET_DbgEnableMiniDump was set but createdump binary was not found
-        fprintf(stderr, "DOTNET_DbgEnableMiniDump is set and the createdump binary does not exist\n");
+        fprintf(stderr, "%s", g_createDumpMissingMessage);
     }
 #endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
 }
