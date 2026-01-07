@@ -16,6 +16,7 @@ namespace HostActivation.Tests
     {
         private static bool IsRunningInWoW64(string rid) => OperatingSystem.IsWindows() && Environment.Is64BitOperatingSystem && rid.Equals("win-x86");
 
+        // Methods for CommandResult (used in InstallLocation.cs with imperative style)
         public static void AssertUsedDotNetRootInstallLocation(this CommandResult result, string installLocation, string rid)
         {
             result.AssertUsedDotNetRootInstallLocation(installLocation, rid, null);
@@ -64,6 +65,57 @@ namespace HostActivation.Tests
         public static void AssertLookedForArchitectureSpecificInstallLocation(this CommandResult result, string installLocationPath, string architecture)
         {
             Assert.Contains($"Looking for architecture-specific install_location file in '{Path.Combine(installLocationPath, "install_location_" + architecture.ToLowerInvariant())}'.", result.StdErr);
+        }
+
+        // Methods for CommandResultAssertions (used in other files with fluent style)
+        public static CommandResultAssertions HaveUsedDotNetRootInstallLocation(this CommandResultAssertions assertion, string installLocation, string rid)
+        {
+            return assertion.HaveUsedDotNetRootInstallLocation(installLocation, rid, null);
+        }
+
+        public static CommandResultAssertions HaveUsedDotNetRootInstallLocation(this CommandResultAssertions assertion,
+            string installLocation,
+            string rid,
+            string arch)
+        {
+            // If no arch is passed and we are on Windows, we need the used RID for determining whether or not we are running on WoW64.
+            if (string.IsNullOrEmpty(arch))
+                Assert.NotNull(rid);
+
+            string expectedEnvironmentVariable = !string.IsNullOrEmpty(arch) ? $"DOTNET_ROOT_{arch.ToUpper()}" :
+                IsRunningInWoW64(rid) ? "DOTNET_ROOT(x86)" : "DOTNET_ROOT";
+
+            return assertion.HaveStdErrContaining($"Using environment variable {expectedEnvironmentVariable}=[{installLocation}] as runtime location.");
+        }
+
+        public static CommandResultAssertions HaveUsedRegisteredInstallLocation(this CommandResultAssertions assertion, string installLocation)
+        {
+            return assertion.HaveStdErrContaining($"Found registered install location '{installLocation}'.");
+        }
+
+        public static CommandResultAssertions HaveUsedGlobalInstallLocation(this CommandResultAssertions assertion, string installLocation)
+        {
+            return assertion.HaveStdErrContaining($"Using global install location [{installLocation}]");
+        }
+
+        public static CommandResultAssertions HaveUsedAppLocalInstallLocation(this CommandResultAssertions assertion, string installLocation)
+        {
+            return assertion.HaveStdErrContaining($"Using app-local location [{installLocation}]");
+        }
+
+        public static CommandResultAssertions HaveUsedAppRelativeInstallLocation(this CommandResultAssertions assertion, string installLocation)
+        {
+            return assertion.HaveStdErrContaining($"Using app-relative location [{installLocation}]");
+        }
+
+        public static CommandResultAssertions HaveLookedForDefaultInstallLocation(this CommandResultAssertions assertion, string installLocationPath)
+        {
+            return assertion.HaveStdErrContaining($"Looking for install_location file in '{Path.Combine(installLocationPath, "install_location")}'.");
+        }
+
+        public static CommandResultAssertions HaveLookedForArchitectureSpecificInstallLocation(this CommandResultAssertions assertion, string installLocationPath, string architecture)
+        {
+            return assertion.HaveStdErrContaining($"Looking for architecture-specific install_location file in '{Path.Combine(installLocationPath, "install_location_" + architecture.ToLowerInvariant())}'.");
         }
     }
 }

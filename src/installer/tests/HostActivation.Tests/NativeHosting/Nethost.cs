@@ -221,13 +221,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
                 if (shouldUseArchSpecificInstallLocation)
                 {
-                    result.Should().AssertLookedForArchitectureSpecificInstallLocation(
+                    result.Should().HaveLookedForArchitectureSpecificInstallLocation(
                         registeredInstallLocationOverride.PathValueOverride,
                         HostTestContext.BuildArchitecture);
                 }
                 else
                 {
-                    result.Should().AssertLookedForDefaultInstallLocation(registeredInstallLocationOverride.PathValueOverride);
+                    result.Should().HaveLookedForDefaultInstallLocation(registeredInstallLocationOverride.PathValueOverride);
                 }
 
                 if (shouldPass)
@@ -268,7 +268,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .Execute();
 
                 result.Should().Pass()
-                     .AssertLookedForArchitectureSpecificInstallLocation(
+                     .HaveLookedForArchitectureSpecificInstallLocation(
                         registeredInstallLocationOverride.PathValueOverride,
                         HostTestContext.BuildArchitecture)
                      .HaveUsedRegisteredInstallLocation(installLocation)
@@ -298,7 +298,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .Execute();
 
                 result.Should().Pass()
-                     .AssertLookedForArchitectureSpecificInstallLocation(
+                     .HaveLookedForArchitectureSpecificInstallLocation(
                         registeredInstallLocationOverride.PathValueOverride,
                         HostTestContext.BuildArchitecture)
                      .HaveUsedRegisteredInstallLocation(installLocation)
