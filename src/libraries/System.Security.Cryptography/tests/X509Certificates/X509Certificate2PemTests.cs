@@ -856,6 +856,41 @@ MII
             AssertKeysMatch(PrivateKeyWithSigningKeyUsage, cert.GetECDsaPrivateKey);
         }
 
+        [Fact]
+        public static void CreateFromEncryptedPem_CanImportECCAnyPublicKeyWithSigningKeyUsage()
+        {
+            const string PrivateKeyWithSigningKeyUsage =
+                """
+                -----BEGIN ENCRYPTED PRIVATE KEY-----
+                MIHIMBsGCiqGSIb3DQEMAQMwDQQIAcfnWs/6zc4CAQEEgajAD5o82qPGlBdrlKds
+                sbRD8IZLyPdXf6zqx7nJi23AzJ9scmFcFLlPEUclVAxiAOc2Z0XX4Ibq1B5KG+nZ
+                b/MzxqTUVn4pCf6C8i8Cm/YEndgbA3+220K+btUB8jW0UKudCa48EagHkscJag6M
+                RrvFmAK4JBlv/QHRx/TGxwsCYmnTmJKzZ7KrObid5cXdm8kqqxvfgjigDy7lNdzU
+                YoHsCUjWhEjdmbA=
+                -----END ENCRYPTED PRIVATE KEY-----
+                """;
+
+            const string AnyKeyUsageCertificate =
+                """
+                -----BEGIN CERTIFICATE-----
+                MIIBHzCBxqADAgECAghjN3R7a8h36TAKBggqhkjOPQQDAjAWMRQwEgYDVQQDEwtl
+                eGFtcGxlLmNvbTAeFw0yNjAxMDcxODExMzFaFw0yNzAxMDcxODExMzFaMBYxFDAS
+                BgNVBAMTC2V4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEeybq
+                p51w8CAD3rKIi/cKx6JKTR9Z7dGzt53gPpCS6fpqDJMC4revxduxoZ60MhZWFESL
+                rq3coMOQVWjZAAz8rjAKBggqhkjOPQQDAgNIADBFAiBm07dRWT23lsfefred+Kzh
+                ZO9CxVEnV0nBQPkJH8GlrAIhAMnIN8RgUmGeXHNdq4yBoLlEaQcVzMquERBkZ0AG
+                dmo9
+                -----END CERTIFICATE-----
+                """;
+
+            using X509Certificate2 cert = X509Certificate2.CreateFromEncryptedPem(
+                AnyKeyUsageCertificate,
+                PrivateKeyWithSigningKeyUsage,
+                "PLACEHOLDER");
+
+            AssertKeysMatch(PrivateKeyWithSigningKeyUsage, cert.GetECDsaPrivateKey, "PLACEHOLDER");
+        }
+
         private static void AssertKeysMatch<T>(string keyPem, Func<T> keyLoader, string password = null) where T : IDisposable
         {
             IDisposable key = keyLoader();

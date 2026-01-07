@@ -1466,18 +1466,7 @@ namespace System.Security.Cryptography.X509Certificates
                             password,
                             static (keyPem, password) => CreateAndImportEncrypted(keyPem, password, DSA.Create),
                             certificate.CopyWithPrivateKey),
-                    Oids.EcPublicKey when IsECDiffieHellman(certificate) =>
-                        ExtractKeyFromEncryptedPem<ECDiffieHellman>(
-                            keyPem,
-                            password,
-                            static (keyPem, password) => CreateAndImportEncrypted(keyPem, password, ECDiffieHellman.Create),
-                            certificate.CopyWithPrivateKey),
-                    Oids.EcPublicKey when IsECDsa(certificate) =>
-                        ExtractKeyFromEncryptedPem<ECDsa>(
-                            keyPem,
-                            password,
-                            static (keyPem, password) => CreateAndImportEncrypted(keyPem, password, ECDsa.Create),
-                            certificate.CopyWithPrivateKey),
+                    Oids.EcPublicKey => ExtractKeyFromEncryptedECPem(certificate, keyPem, password),
                     Oids.MlKem512 or Oids.MlKem768 or Oids.MlKem1024 =>
                         ExtractKeyFromEncryptedPem<MLKem>(
                             keyPem,
@@ -2008,6 +1997,77 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [UnsupportedOSPlatform("browser")]
+        private static X509Certificate2 ExtractKeyFromEncryptedECPem(
+            X509Certificate2 certificate,
+            ReadOnlySpan<char> keyPem,
+            ReadOnlySpan<char> password)
+        {
+            Debug.Assert(certificate.GetKeyAlgorithm() == Oids.EcPublicKey);
+
+            foreach ((ReadOnlySpan<char> contents, PemFields fields) in PemEnumerator.Utf16(keyPem))
+            {
+                ReadOnlySpan<char> label = contents[fields.Label];
+
+                if (!label.SequenceEqual(PemLabels.EncryptedPkcs8PrivateKey))
+                {
+                    continue;
+                }
+
+                byte[] base64Buffer = CryptoPool.Rent(fields.DecodedDataLength);
+                byte[]? decryptedBuffer = null;
+                int base64ClearSize = CryptoPool.ClearAll;
+                int decryptBufferClearSize = CryptoPool.ClearAll;
+
+                try
+                {
+                    bool result = Convert.TryFromBase64Chars(contents[fields.Base64Data], base64Buffer, out int base64Written);
+
+                    if (!result || base64Written != fields.DecodedDataLength)
+                    {
+                        Debug.Fail("Preallocated buffer and validated data decoding failed.");
+                        break;
+                    }
+
+                    base64ClearSize = base64Written;
+                    ReadOnlyMemory<byte> epkiData = base64Buffer.AsMemory(0, base64Written);
+                    EncryptedPrivateKeyInfoAsn epki = EncryptedPrivateKeyInfoAsn.Decode(epkiData, AsnEncodingRules.BER);
+                    decryptedBuffer = CryptoPool.Rent(epki.EncryptedData.Length);
+
+                    int decryptedBytes = PasswordBasedEncryption.Decrypt(
+                        epki.EncryptionAlgorithm,
+                        password,
+                        default,
+                        epki.EncryptedData.Span,
+                        decryptedBuffer);
+
+                    X509Certificate2? loaded = ExtractKeyFromECPrivateKeyInfo(certificate, decryptedBuffer.AsMemory(0, decryptedBytes));
+
+                    if (loaded is null)
+                    {
+                        break;
+                    }
+
+                    return loaded;
+                }
+                catch (CryptographicException ce)
+                {
+                    throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ce);
+                }
+                finally
+                {
+                    CryptoPool.Return(base64Buffer, base64ClearSize);
+
+                    if (decryptedBuffer is not null)
+                    {
+                        CryptoPool.Return(decryptedBuffer, decryptBufferClearSize);
+                    }
+                }
+            }
+
+            throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey);
+        }
+
+        [UnsupportedOSPlatform("browser")]
         private static X509Certificate2 ExtractKeyFromECPem(X509Certificate2 certificate, ReadOnlySpan<char> keyPem)
         {
             Debug.Assert(certificate.GetKeyAlgorithm() == Oids.EcPublicKey);
@@ -2056,14 +2116,14 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     bool result = Convert.TryFromBase64Chars(contents[fields.Base64Data], base64Buffer, out int base64Written);
 
-                    if (!result || base64Written != base64Buffer.Length)
+                    if (!result || base64Written != fields.DecodedDataLength)
                     {
                         Debug.Fail("Preallocated buffer and validated data decoding failed.");
                         break;
                     }
 
                     clearSize = base64Written;
-                    X509Certificate2? loaded = ExtractKeyFromECPrivateKeyInfo(certificate, base64Buffer);
+                    X509Certificate2? loaded = ExtractKeyFromECPrivateKeyInfo(certificate, base64Buffer.AsMemory(0, base64Written));
 
                     if (loaded is null)
                     {
