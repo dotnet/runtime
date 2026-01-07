@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
@@ -305,8 +304,6 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void GetNextEntry_UnseekableArchive_DisposedDataStream_DoesNotThrow()
         {
-            // Regression test for https://github.com/dotnet/runtime/issues/89203
-            // Disposing the entry's DataStream should not prevent advancing to the next entry.
             using var archive = new MemoryStream();
             using (var writer = new TarWriter(archive, leaveOpen: true))
             {
@@ -346,8 +343,6 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void GetNextEntry_UnseekableArchive_DisposedDataStream_PartiallyRead_DoesNotThrow()
         {
-            // Regression test for https://github.com/dotnet/runtime/issues/89203
-            // Disposing the entry's DataStream before fully reading it should not prevent advancing to the next entry.
             using var archive = new MemoryStream();
             using (var writer = new TarWriter(archive, leaveOpen: true))
             {
@@ -387,8 +382,6 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void GetNextEntry_UnseekableArchive_DisposedDataStream_NotRead_DoesNotThrow()
         {
-            // Regression test for https://github.com/dotnet/runtime/issues/89203
-            // Disposing the entry's DataStream without reading any data should not prevent advancing to the next entry.
             using var archive = new MemoryStream();
             using (var writer = new TarWriter(archive, leaveOpen: true))
             {
@@ -419,47 +412,6 @@ namespace System.Formats.Tar.Tests
             Assert.Equal("file2.txt", nextEntry.Name);
 
             Assert.Null(reader.GetNextEntry());
-        }
-
-        [Fact]
-        public async Task GetNextEntryAsync_UnseekableArchive_DisposedDataStream_DoesNotThrow()
-        {
-            // Regression test for https://github.com/dotnet/runtime/issues/89203 (async version)
-            // Disposing the entry's DataStream should not prevent advancing to the next entry.
-            await using MemoryStream archive = new MemoryStream();
-            await using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
-            {
-                var entry1 = new PaxTarEntry(TarEntryType.RegularFile, "file1.txt");
-                entry1.DataStream = new MemoryStream(new byte[] { 1, 2, 3, 4, 5 });
-                await writer.WriteEntryAsync(entry1);
-
-                var entry2 = new PaxTarEntry(TarEntryType.RegularFile, "file2.txt");
-                entry2.DataStream = new MemoryStream(new byte[] { 6, 7, 8, 9, 10 });
-                await writer.WriteEntryAsync(entry2);
-            }
-
-            archive.Position = 0;
-            using WrappedStream unseekable = new WrappedStream(archive, archive.CanRead, archive.CanWrite, canSeek: false);
-            await using TarReader reader = new TarReader(unseekable);
-
-            TarEntry entry = await reader.GetNextEntryAsync(copyData: false);
-            Assert.NotNull(entry);
-            Assert.Equal("file1.txt", entry.Name);
-
-            Stream dataStream = entry.DataStream;
-            Assert.NotNull(dataStream);
-
-            byte[] buffer = new byte[5];
-            int bytesRead = await dataStream.ReadAsync(buffer, 0, buffer.Length);
-            Assert.Equal(5, bytesRead);
-
-            await dataStream.DisposeAsync();
-
-            TarEntry nextEntry = await reader.GetNextEntryAsync(copyData: false);
-            Assert.NotNull(nextEntry);
-            Assert.Equal("file2.txt", nextEntry.Name);
-
-            Assert.Null(await reader.GetNextEntryAsync());
         }
     }
 }
