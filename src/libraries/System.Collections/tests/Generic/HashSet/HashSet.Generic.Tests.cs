@@ -910,19 +910,22 @@ namespace System.Collections.Tests
 
         #region UnionWith
 
+        public static IEnumerable<object[]> UnionWith_HashSet_TestData()
+        {
+            foreach (int count in new[] { 0, 1, 75 })
+            {
+                foreach (bool destinationEmpty in new[] { true, false })
+                {
+                    foreach (bool sourceSparseFilled in new[] { true, false })
+                    {
+                        yield return new object[] { count, destinationEmpty, sourceSparseFilled };
+                    }
+                }
+            }
+        }
+
         [Theory]
-        [InlineData(0, true, true)]
-        [InlineData(0, true, false)]
-        [InlineData(0, false, true)]
-        [InlineData(0, false, false)]
-        [InlineData(1, true, true)]
-        [InlineData(1, true, false)]
-        [InlineData(1, false, true)]
-        [InlineData(1, false, false)]
-        [InlineData(75, true, true)]
-        [InlineData(75, true, false)]
-        [InlineData(75, false, true)]
-        [InlineData(75, false, false)]
+        [MemberData(nameof(UnionWith_HashSet_TestData))]
         public void HashSet_Generic_UnionWith_HashSet(int count, bool destinationEmpty, bool sourceSparseFilled)
         {
             HashSet<T> source = (HashSet<T>)CreateEnumerable(EnumerableType.HashSet, null, count, 0, 0);
