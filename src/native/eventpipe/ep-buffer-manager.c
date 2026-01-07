@@ -378,6 +378,8 @@ buffer_manager_init_sequence_point_thread_list (
 	ep_buffer_manager_requires_lock_held (buffer_manager);
 
 	DN_LIST_FOREACH_BEGIN (EventPipeThreadSessionState *, thread_session_state, buffer_manager->thread_session_state_list) {
+		EventPipeThread *thread = ep_thread_session_state_get_thread (thread_session_state);
+
 		// The sequence number captured here is not guaranteed to be the most recent sequence number, nor
 		// is it guaranteed to match the number of events we would observe in the thread's write buffer
 		// memory. This is only used as a lower bound on the number of events the thread has attempted to
@@ -388,8 +390,8 @@ buffer_manager_init_sequence_point_thread_list (
 		// underflow.
 		uint32_t sequence_number = ep_thread_session_state_get_volatile_sequence_number (thread_session_state) - 1;
 
-		dn_umap_ptr_uint32_insert (ep_sequence_point_get_thread_sequence_numbers (sequence_point), thread_session_state, sequence_number);
-		ep_thread_addref (ep_thread_holder_get_thread (ep_thread_session_state_get_thread_holder_ref (thread_session_state)));
+		dn_umap_ptr_uint32_insert (ep_sequence_point_get_thread_sequence_numbers (sequence_point), thread, sequence_number);
+		ep_thread_addref (thread);
 	} DN_LIST_FOREACH_END;
 
 	// This needs to come after querying the thread sequence numbers to ensure that any recorded
@@ -1171,7 +1173,8 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 		EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section2)
 			for (dn_list_it_t it = dn_list_begin (buffer_manager->thread_session_state_list); !dn_list_it_end (it); ) {
 				EventPipeThreadSessionState *session_state = *dn_list_it_data_t (it, EventPipeThreadSessionState *);
-				dn_umap_it_t found = dn_umap_ptr_uint32_find (ep_sequence_point_get_thread_sequence_numbers (sequence_point), session_state);
+				EventPipeThread *thread = ep_thread_session_state_get_thread (session_state);
+				dn_umap_it_t found = dn_umap_ptr_uint32_find (ep_sequence_point_get_thread_sequence_numbers (sequence_point), thread);
 				uint32_t thread_sequence_number = !dn_umap_it_end (found) ? dn_umap_it_value_uint32_t (found) : 0;
 				uint32_t last_read_sequence_number = ep_thread_session_state_get_last_read_sequence_number (session_state);
 				// Sequence numbers can overflow so we can't use a direct last_read > sequence_number comparison
@@ -1179,9 +1182,9 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 				// miscategorize it, but that seems unlikely.
 				uint32_t last_read_delta = last_read_sequence_number - thread_sequence_number;
 				if (0 < last_read_delta && last_read_delta < 0x80000000) {
-					dn_umap_ptr_uint32_insert_or_assign (ep_sequence_point_get_thread_sequence_numbers (sequence_point), session_state, last_read_sequence_number);
+					dn_umap_ptr_uint32_insert_or_assign (ep_sequence_point_get_thread_sequence_numbers (sequence_point), thread, last_read_sequence_number);
 					if (dn_umap_it_end (found))
-						ep_thread_addref (ep_thread_holder_get_thread (ep_thread_session_state_get_thread_holder_ref (session_state)));
+						ep_thread_addref (thread);
 				}
 
 				it = dn_list_it_next (it);
@@ -1219,11 +1222,12 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 				DN_LIST_FOREACH_BEGIN (EventPipeSequencePoint *, current_sequence_point, buffer_manager->sequence_points) {
 					// foreach (session_state in session_states_to_delete)
 					DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThreadSessionState *, thread_session_state, &session_states_to_delete) {
-						dn_umap_it_t found = dn_umap_ptr_uint32_find (ep_sequence_point_get_thread_sequence_numbers (current_sequence_point), thread_session_state);
+						EventPipeThread *thread = ep_thread_session_state_get_thread (thread_session_state);
+						dn_umap_it_t found = dn_umap_ptr_uint32_find (ep_sequence_point_get_thread_sequence_numbers (current_sequence_point), thread);
 						if (!dn_umap_it_end (found)) {
 							dn_umap_erase (found);
 							// every entry of this map was holding an extra ref to the thread (see: ep-event-instance.{h|c})
-							ep_thread_release (ep_thread_session_state_get_thread (thread_session_state));
+							ep_thread_release (thread);
 						}
 					} DN_VECTOR_PTR_FOREACH_END;
 				} DN_LIST_FOREACH_END;
