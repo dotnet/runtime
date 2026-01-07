@@ -15,7 +15,6 @@ namespace System.Drawing
         public const string IsDrawingSupported = nameof(Helpers) + "." + nameof(GetIsDrawingSupported);
         public const string IsWindowsOrAtLeastLibgdiplus6 = nameof(Helpers) + "." + nameof(GetIsWindowsOrAtLeastLibgdiplus6);
         public const string RecentGdiplusIsAvailable = IsWindowsOrAtLeastLibgdiplus6;
-        public const string GdiPlusIsAvailableNotWindows7 = nameof(Helpers) + "." + nameof(GetGdiPlusIsAvailableNotWindows7);
         public const string AnyInstalledPrinters = nameof(Helpers) + "." + nameof(IsAnyInstalledPrinters);
         public const string WindowsRS3OrEarlier = nameof(Helpers) + "." + nameof(IsWindowsRS3OrEarlier);
         public const string IsWindows = nameof(Helpers) + "." + nameof(GetIsWindows);
@@ -57,16 +56,6 @@ namespace System.Drawing
         public static bool IsNotUnix => PlatformDetection.IsWindows;
 
         public static bool IsWindowsRS3OrEarlier => !PlatformDetection.IsWindows10Version1803OrGreater;
-
-        public static bool GetGdiPlusIsAvailableNotWindows7()
-        {
-            if (PlatformDetection.IsWindows7)
-            {
-                return false;
-            }
-
-            return GetIsDrawingSupported();
-        }
 
         public static bool IsAnyInstalledPrinters()
         {
