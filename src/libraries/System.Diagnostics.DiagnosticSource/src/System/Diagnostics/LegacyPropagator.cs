@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Net;
 
 namespace System.Diagnostics
 {
@@ -169,8 +168,8 @@ namespace System.Diagnostics
 
                     // Insert in reverse order for asp.net compatibility.
                     baggageList.Insert(0, new KeyValuePair<string, string?>(
-                                                WebUtility.UrlDecode(baggageString.Substring(keyStart, keyEnd - keyStart)).Trim(s_trimmingSpaceCharacters),
-                                                WebUtility.UrlDecode(baggageString.Substring(valueStart, currentIndex - valueStart)).Trim(s_trimmingSpaceCharacters)));
+                                                Uri.UnescapeDataString(baggageString.Substring(keyStart, keyEnd - keyStart)).Trim(s_trimmingSpaceCharacters),
+                                                Uri.UnescapeDataString(baggageString.Substring(valueStart, currentIndex - valueStart)).Trim(s_trimmingSpaceCharacters)));
                 }
 
                 // Skip to end of values

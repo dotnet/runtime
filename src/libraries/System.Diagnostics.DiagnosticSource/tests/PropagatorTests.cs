@@ -4,7 +4,6 @@
 using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Reflection;
 using Xunit;
 
@@ -462,7 +461,7 @@ namespace System.Diagnostics.Tests
                 string key = trimSpaces ? list[i].Key.Trim() : list[i].Key;
                 string value = trimSpaces ? list[i].Value.Trim() : list[i].Value;
 
-                formattedBaggage += (formattedBaggage.Length > 0 ? ", " : "") + WebUtility.UrlEncode(key) + "=" + WebUtility.UrlEncode(value);
+                formattedBaggage += (formattedBaggage.Length > 0 ? ", " : "") + Uri.EscapeDataString(key) + "=" + Uri.EscapeDataString(value);
             }
 
             return formattedBaggage;
@@ -530,7 +529,7 @@ namespace System.Diagnostics.Tests
                     return null; // Invalid format
                 }
 
-                list.Add(new KeyValuePair<string, string>(WebUtility.UrlDecode(baggageItem[0]).Trim(), WebUtility.UrlDecode(baggageItem[1]).Trim()));
+                list.Add(new KeyValuePair<string, string>(Uri.UnescapeDataString(baggageItem[0]).Trim(), Uri.UnescapeDataString(baggageItem[1]).Trim()));
             }
 
             return list;
@@ -542,6 +541,61 @@ namespace System.Diagnostics.Tests
             Assert.Same(DistributedContextPropagator.CreateDefaultPropagator(), DistributedContextPropagator.CreateDefaultPropagator());
             Assert.Same(DistributedContextPropagator.CreateNoOutputPropagator(), DistributedContextPropagator.CreateNoOutputPropagator());
             Assert.Same(DistributedContextPropagator.CreatePassThroughPropagator(), DistributedContextPropagator.CreatePassThroughPropagator());
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("\"HelixAPI.Pages.Account.AccountController.SignIn (HelixAPI)\"")]
+        [InlineData("value with spaces")]
+        [InlineData("value+with+plus")]
+        [InlineData("value=with=equals")]
+        [InlineData("value&with&ampersand")]
+        [InlineData("value%with%percent")]
+        [InlineData("日本語テスト")]
+        public void TestBaggageWithSpecialCharacters(string baggageValue)
+        {
+            RemoteExecutor.Invoke((value) =>
+            {
+                DistributedContextPropagator propagator = DistributedContextPropagator.CreatePreW3CPropagator();
+
+                using Activity a = CreateW3CActivity(
+                    "SpecialCharTest",
+                    "state=1",
+                    new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("test", value) });
+
+                string? injectedBaggage = null;
+                propagator.Inject(a, null, (object carrier, string fieldName, string fieldValue) =>
+                {
+                    if (fieldName == CorrelationContext)
+                    {
+                        injectedBaggage = fieldValue;
+                    }
+                });
+
+                Assert.NotNull(injectedBaggage);
+                Assert.Contains("test=", injectedBaggage);
+
+                IEnumerable<KeyValuePair<string, string?>>? extractedBaggage = propagator.ExtractBaggage(null, (object carrier, string fieldName, out string? fieldValue, out IEnumerable<string>? fieldValues) =>
+                {
+                    fieldValues = null;
+                    fieldValue = null;
+
+                    if (fieldName == Baggage)
+                    {
+                        return;
+                    }
+
+                    if (fieldName == CorrelationContext)
+                    {
+                        fieldValue = injectedBaggage;
+                    }
+                });
+
+                Assert.NotNull(extractedBaggage);
+                var baggageList = extractedBaggage.ToList();
+                Assert.Single(baggageList);
+                Assert.Equal("test", baggageList[0].Key);
+                Assert.Equal(value, baggageList[0].Value);
+            }, baggageValue).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

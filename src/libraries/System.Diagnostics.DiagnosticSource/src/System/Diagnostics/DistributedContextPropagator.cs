@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net;
 using System.Text;
 
 namespace System.Diagnostics
@@ -133,7 +132,7 @@ namespace System.Diagnostics
                     do
                     {
                         KeyValuePair<string, string?> item = e.Current;
-                        baggageList.Append(WebUtility.UrlEncode(item.Key)).Append('=').Append(WebUtility.UrlEncode(item.Value)).Append(CommaWithSpace);
+                        baggageList.Append(Uri.EscapeDataString(item.Key)).Append('=').Append(Uri.EscapeDataString(item.Value ?? string.Empty)).Append(CommaWithSpace);
                     } while (e.MoveNext());
 
                     setter(carrier, CorrelationContext, baggageList.ToString(0, baggageList.Length - 2));
