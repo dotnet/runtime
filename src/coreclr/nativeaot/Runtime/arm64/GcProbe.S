@@ -4,11 +4,10 @@
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
 
-#define PROBE_FRAME_SIZE 0xD8  // 4 * 8  for fixed part of PInvokeTransitionFrame (fp, lr, m_pThread, m_Flags) +
+#define PROBE_FRAME_SIZE 0xD0  // 4 * 8  for fixed part of PInvokeTransitionFrame (fp, lr, m_pThread, m_Flags) +
                                // 10 * 8 for callee saved registers +
                                // 1 * 8  for caller SP +
                                // 3 * 8  for int returns (x0, x1, x2) +
-                               // 1 * 8  for alignment padding +
                                // 4 * 16 for FP/HFA/HVA returns
 
 // See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves return registers
@@ -42,11 +41,9 @@
     stp         x0, x1,   [sp, #0x78]
     str         x2,       [sp, #0x88]
 
-    // Slot at [sp, #0x90] is alignment padding
-
     // Save the FP/HFA/HVA return registers
-    stp         q0, q1,   [sp, #0x98]
-    stp         q2, q3,   [sp, #0xB8]
+    stp         q0, q1,   [sp, #0x90]
+    stp         q2, q3,   [sp, #0xB0]
 
     // Perform the rest of the PInvokeTransitionFrame initialization.
     //   str         \threadReg,[sp, #OFFSETOF__PInvokeTransitionFrame__m_pThread]       // Thread * (unused by stackwalker)
@@ -73,8 +70,8 @@
     ldr          x2,       [sp, #0x88]
 
     // Restore the FP/HFA/HVA return registers
-    ldp          q0, q1,   [sp, #0x98]
-    ldp          q2, q3,   [sp, #0xB8]
+    ldp         q0, q1,   [sp, #0x90]
+    ldp         q2, q3,   [sp, #0xB0]
 
     // Restore callee saved registers
     EPILOG_RESTORE_REG_PAIR x19, x20, 0x20

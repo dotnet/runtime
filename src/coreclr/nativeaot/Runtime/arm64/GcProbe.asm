@@ -50,11 +50,9 @@ PROBE_FRAME_SIZE    field 0
         PROLOG_NOP stp         x0, x1,   [sp, #0x78]
         PROLOG_NOP str         x2,       [sp, #0x88]
 
-        ;; Slot at [sp, #0x90] is alignment padding
-
         ;; Save the FP/HFA/HVA return registers
-        PROLOG_NOP stp         q0, q1,   [sp, #0x98]
-        PROLOG_NOP stp         q2, q3,   [sp, #0xB8]
+        PROLOG_NOP stp         q0, q1,   [sp, #0x90]
+        PROLOG_NOP stp         q2, q3,   [sp, #0xB0]
 
         ;; Perform the rest of the PInvokeTransitionFrame initialization.
         ;;   str         $threadReg,[sp, #OFFSETOF__PInvokeTransitionFrame__m_pThread]       ; Thread * (unused by stackwalker)
@@ -83,8 +81,8 @@ PROBE_FRAME_SIZE    field 0
         PROLOG_NOP ldr          x2,       [sp, #0x88]
 
         ; Restore the FP/HFA/HVA return registers
-        EPILOG_NOP ldp          q0, q1,   [sp, #0x98]
-        EPILOG_NOP ldp          q2, q3,   [sp, #0xB8]
+        EPILOG_NOP ldp          q0, q1,   [sp, #0x90]
+        EPILOG_NOP ldp          q2, q3,   [sp, #0xB0]
 
         ;; Restore callee saved registers
         EPILOG_RESTORE_REG_PAIR x19, x20, #0x20
