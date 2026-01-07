@@ -9,6 +9,7 @@ using System.IO;
 using System.Net;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
+using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates.Asn1;
 using System.Text;
 using Internal.Cryptography;
@@ -24,9 +25,8 @@ namespace System.Security.Cryptography.X509Certificates
         private volatile PublicKey? _lazyPublicKey;
         private volatile AsymmetricAlgorithm? _lazyPrivateKey;
         private volatile X509ExtensionCollection? _lazyExtensions;
-        private static readonly string[] s_EcPublicKeyPrivateKeyLabels = { PemLabels.EcPrivateKey, PemLabels.Pkcs8PrivateKey };
-        private static readonly string[] s_RsaPublicKeyPrivateKeyLabels = { PemLabels.RsaPrivateKey, PemLabels.Pkcs8PrivateKey };
-        private static readonly string[] s_DsaPublicKeyPrivateKeyLabels = { PemLabels.Pkcs8PrivateKey };
+        private static readonly string[] s_RsaPublicKeyPrivateKeyLabels = [PemLabels.RsaPrivateKey, PemLabels.Pkcs8PrivateKey];
+        private static readonly string[] s_DsaPublicKeyPrivateKeyLabels = [PemLabels.Pkcs8PrivateKey];
 
         public override void Reset()
         {
@@ -1378,18 +1378,7 @@ namespace System.Security.Cryptography.X509Certificates
                         s_DsaPublicKeyPrivateKeyLabels,
                         static keyPem => CreateAndImport(keyPem, DSA.Create),
                         certificate.CopyWithPrivateKey),
-                    Oids.EcPublicKey when IsECDiffieHellman(certificate) =>
-                        ExtractKeyFromPem<ECDiffieHellman>(
-                            keyPem,
-                            s_EcPublicKeyPrivateKeyLabels,
-                            static keyPem => CreateAndImport(keyPem, ECDiffieHellman.Create),
-                            certificate.CopyWithPrivateKey),
-                    Oids.EcPublicKey when IsECDsa(certificate) =>
-                        ExtractKeyFromPem<ECDsa>(
-                            keyPem,
-                            s_EcPublicKeyPrivateKeyLabels,
-                            static keyPem => CreateAndImport(keyPem, ECDsa.Create),
-                            certificate.CopyWithPrivateKey),
+                    Oids.EcPublicKey => ExtractKeyFromECPem(certificate, keyPem),
                     Oids.MlKem512 or Oids.MlKem768 or Oids.MlKem1024 =>
                         ExtractKeyFromPem<MLKem>(
                             keyPem,
@@ -1929,22 +1918,30 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     if (label.SequenceEqual(eligibleLabel))
                     {
-                        using (TAlg key = factory(contents[fields.Location]))
-                        {
-                            try
-                            {
-                                return import(key);
-                            }
-                            catch (ArgumentException ae)
-                            {
-                                throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ae);
-                            }
-                        }
+                        return ExtractKeyFromPem(contents[fields.Location], factory, import);
                     }
                 }
             }
 
             throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey);
+        }
+
+        private static X509Certificate2 ExtractKeyFromPem<TAlg>(
+            ReadOnlySpan<char> keyPem,
+            Func<ReadOnlySpan<char>, TAlg> factory,
+            Func<TAlg, X509Certificate2> import) where TAlg : IDisposable
+        {
+            using (TAlg key = factory(keyPem))
+            {
+                try
+                {
+                    return import(key);
+                }
+                catch (ArgumentException ae)
+                {
+                    throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ae);
+                }
+            }
         }
 
         private static X509Certificate2 ExtractKeyFromEncryptedPem<TAlg>(
@@ -2001,13 +1998,160 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     // keyAgreement is mandatory for id-ecPublicKey certificates
                     // when used with ECDH.
-                    return ((ext.KeyUsages & X509KeyUsageFlags.KeyAgreement) != 0);
+                    return (ext.KeyUsages & X509KeyUsageFlags.KeyAgreement) != 0;
                 }
             }
 
             // If the key usage extension is not present in the certificate it is
             // considered valid for all usages, so we can use it for ECDH.
             return true;
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        private static X509Certificate2 ExtractKeyFromECPem(X509Certificate2 certificate, ReadOnlySpan<char> keyPem)
+        {
+            Debug.Assert(certificate.GetKeyAlgorithm() == Oids.EcPublicKey);
+
+            foreach ((ReadOnlySpan<char> contents, PemFields fields) in PemEnumerator.Utf16(keyPem))
+            {
+                ReadOnlySpan<char> label = contents[fields.Label];
+
+                if (label.SequenceEqual(PemLabels.EcPrivateKey))
+                {
+                    // EC PRIVATE KEYs do not have a key usage, so usage is determined by the certificate.
+
+                    // If we can load it is EC-DH, we should prefer that over EC-DH. ECC keys that are "both" prefer
+                    // to be imported as EC-DH. Importing it as EC-DSA would restrict it to EC-DSA, even if the key
+                    // and certificate are valid for EC-DH. Other platforms don't have such restrictions.
+                    X509Certificate2? loaded = LoadECAlgorithm(contents[fields.Location], certificate);
+
+                    if (loaded is not null)
+                    {
+                        return loaded;
+                    }
+
+                    // If we got here, then the key is neither EC-DH or EC-DSA eligible, but we had a matching PEM
+                    // label. Break out and throw.
+                    break;
+                }
+
+                if (!label.SequenceEqual(PemLabels.Pkcs8PrivateKey))
+                {
+                    continue;
+                }
+
+                byte[] base64Buffer = new byte[fields.DecodedDataLength];
+                X509KeyUsageFlags? usages;
+
+                using (PinAndClear.Track(base64Buffer))
+                {
+                    try
+                    {
+                        bool result = Convert.TryFromBase64Chars(contents[fields.Base64Data], base64Buffer, out int base64Written);
+
+                        if (!result || base64Written != base64Buffer.Length)
+                        {
+                            Debug.Fail("Preallocated buffer and validated data decoding failed.");
+                            break;
+                        }
+
+                        // We need to peek in to the PKCS#8 key to see if it has a key usages extension. Windows CNG
+                        // can export key usages on PKCS#8 keys restricting the key.
+                        PrivateKeyInfoAsn keyInfo = PrivateKeyInfoAsn.Decode(base64Buffer, AsnEncodingRules.DER);
+
+                        // We are not going to perform any validate on the PrivateKeyInfo here. We just need a hint
+                        // what algorithm to use. The actual algorithm will do whatever validation on the key as needed.
+
+                        usages = GetKeyUsageFlags(ref keyInfo);
+                    }
+                    catch (CryptographicException ce)
+                    {
+                        throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ce);
+                    }
+
+                    const X509KeyUsageFlags EcdsaKeyUsageFlags =
+                        X509KeyUsageFlags.DigitalSignature |
+                        X509KeyUsageFlags.NonRepudiation |
+                        X509KeyUsageFlags.KeyCertSign |
+                        X509KeyUsageFlags.CrlSign;
+
+                    // If we have no key usages, or the key does not require loading it as EC-DSA, load it through
+                    // the common EC loader.
+                    if (usages is null || (usages & EcdsaKeyUsageFlags) == 0)
+                    {
+                        X509Certificate2? cert = LoadECAlgorithm(contents[fields.Location], certificate);
+
+                        if (cert is not null)
+                        {
+                            return cert;
+                        }
+
+                        // Certificate is not valid for either EC-DH or EC-DSA, fall out and fail.
+                        break;
+                    }
+
+                    // Key usage mandates EC-DSA, but the cerificate itself is not valid for EC-DSA.
+                    if (!IsECDsa(certificate))
+                    {
+                        throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey);
+                    }
+
+                    return ExtractKeyFromPem(
+                        contents[fields.Location],
+                        static keyPem => CreateAndImport(keyPem, ECDsa.Create),
+                        certificate.CopyWithPrivateKey);
+                }
+            }
+
+            throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey);
+
+            static X509KeyUsageFlags? GetKeyUsageFlags(ref readonly PrivateKeyInfoAsn keyInfo)
+            {
+                if (keyInfo.Attributes is null)
+                {
+                    return null;
+                }
+
+                foreach (AttributeAsn attr in keyInfo.Attributes)
+                {
+                    if (attr.AttrType != Oids.KeyUsage)
+                    {
+                        continue;
+                    }
+
+                    if (attr.AttrValues is [ReadOnlyMemory<byte> attrValue])
+                    {
+                        X509KeyUsageExtension.DecodeX509KeyUsageExtension(attrValue.Span, out X509KeyUsageFlags usages);
+                        return usages;
+                    }
+
+                    // If the attribute has no value or too many values, consider it malformed.
+                    throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey);
+                }
+
+                return null;
+            }
+
+            static X509Certificate2? LoadECAlgorithm(ReadOnlySpan<char> keyPem, X509Certificate2 certificate)
+            {
+                if (IsECDiffieHellman(certificate))
+                {
+                    return ExtractKeyFromPem(
+                        keyPem,
+                        static keyPem => CreateAndImport(keyPem, ECDiffieHellman.Create),
+                        certificate.CopyWithPrivateKey);
+                }
+
+                if (IsECDsa(certificate))
+                {
+                    return ExtractKeyFromPem(
+                        keyPem,
+                        static keyPem => CreateAndImport(keyPem, ECDsa.Create),
+                        certificate.CopyWithPrivateKey);
+                }
+
+                return null;
+            }
         }
     }
 }
