@@ -167,7 +167,7 @@ namespace System.Diagnostics
                     baggageList ??= new List<KeyValuePair<string, string?>>();
 
                     // Insert in reverse order for asp.net compatibility.
-#if NET9_0_OR_GREATER
+#if NET
                     baggageList.Insert(0, new KeyValuePair<string, string?>(
                                                 Uri.UnescapeDataString(baggageString.AsSpan(keyStart, keyEnd - keyStart)).Trim(s_trimmingSpaceCharacters),
                                                 Uri.UnescapeDataString(baggageString.AsSpan(valueStart, currentIndex - valueStart)).Trim(s_trimmingSpaceCharacters)));
