@@ -1591,10 +1591,11 @@ uint32_t SystemNative_FileSystemSupportsLocking(intptr_t fd)
 #if HAVE_STATFS_FSTYPENAME
     return FileSystemNameSupportsLocking(statfsArgs.f_fstypename);
 #elif defined(TARGET_LINUX)
-    if (statfsArgs.f_type == 0x6969 ||     // NFS_SUPER_MAGIC
-        statfsArgs.f_type == 0xFF534D42 || // CIFS_SUPER_MAGIC
-        statfsArgs.f_type == 0x517B ||     // SMB_SUPER_MAGIC
-        statfsArgs.f_type == 0xFE534D42)   // SMB2_SUPER_MAGIC
+    unsigned int f_type = (unsigned int)statfsArgs.f_type;
+    if (f_type == 0x6969 ||     // NFS_SUPER_MAGIC
+        f_type == 0xFF534D42 || // CIFS_SUPER_MAGIC
+        f_type == 0x517B ||     // SMB_SUPER_MAGIC
+        f_type == 0xFE534D42)   // SMB2_SUPER_MAGIC
     {
         return 0;
     }
