@@ -15,7 +15,6 @@
             field 10 * 8 ; x19..x28
 m_CallersSP field 8      ; SP at routine entry
             field 3  * 8 ; x0..x2
-            field 8      ; alignment padding
             field 4  * 16; q0..q3
 PROBE_FRAME_SIZE    field 0
 
