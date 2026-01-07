@@ -635,14 +635,63 @@ inline GenTreeDebugFlags& operator &=(GenTreeDebugFlags& a, GenTreeDebugFlags b)
 
 // clang-format on
 
+// A ValueSize represents the size of a type or structure for the purposes of
+// handling the value with the possibility that the size might be unknown. Used
+// primarily for value numbering of TYP_SIMD/TYP_MASK on ARM64, where the sizes
+// of these types are not known at compile time.
+class ValueSize
+{
+private:
+    static const unsigned UnknownSize = UINT32_MAX;
+    unsigned              m_size;
+
+    ValueSize()
+        : m_size(UnknownSize)
+    {
+    }
+
+public:
+    explicit ValueSize(unsigned size)
+        : m_size(size)
+    {
+        assert(size != UnknownSize);
+    }
+
+    // Produce a sentinel value for a size that is unknown at compile time.
+    static ValueSize Unknown()
+    {
+        return ValueSize();
+    }
+
+    bool IsUnknown() const
+    {
+        return (m_size == UnknownSize);
+    }
+
+    unsigned GetSize() const
+    {
+        assert(!IsUnknown());
+        return m_size;
+    }
+
+    // Comparisons between ValueSize returns true when both values have known
+    // sizes and these sizes are equal. All other cases return false.
+    // Type information is needed to determine whether two unknown ValueSizes
+    // are equivalent.
+    bool operator==(const ValueSize& other) const
+    {
+        return (m_size == other.m_size) && !IsUnknown() && !other.IsUnknown();
+    }
+};
+
 struct LocalDef
 {
     GenTreeLclVarCommon* Def;
     bool                 IsEntire;
     ssize_t              Offset;
-    unsigned             Size;
+    ValueSize            Size;
 
-    LocalDef(GenTreeLclVarCommon* def, bool isEntire, ssize_t offset, unsigned size)
+    LocalDef(GenTreeLclVarCommon* def, bool isEntire, ssize_t offset, ValueSize size)
         : Def(def)
         , IsEntire(isEntire)
         , Offset(offset)
@@ -3950,7 +3999,8 @@ public:
         m_layout = layout;
     }
 
-    unsigned GetSize() const;
+    unsigned  GetSize() const;
+    ValueSize GetValueSize() const;
 
 #ifdef TARGET_ARM
     bool IsOffsetMisaligned() const;

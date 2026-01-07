@@ -4678,13 +4678,13 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
 {
     if (OperIs(GT_STORE_LCL_VAR))
     {
-        unsigned size = comp->lvaLclSymbolicSize(AsLclVarCommon()->GetLclNum());
+        ValueSize size = comp->lvaLclValueSize(AsLclVarCommon()->GetLclNum());
         return visitor(LocalDef(AsLclVarCommon(), /* isEntire */ true, 0, size));
     }
     if (OperIs(GT_STORE_LCL_FLD))
     {
         GenTreeLclFld* fld = AsLclFld();
-        return visitor(LocalDef(fld, !fld->IsPartialLclFld(comp), fld->GetLclOffs(), fld->GetSize()));
+        return visitor(LocalDef(fld, !fld->IsPartialLclFld(comp), fld->GetLclOffs(), ValueSize(fld->GetSize())));
     }
     if (OperIs(GT_CALL))
     {
@@ -4696,7 +4696,7 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
 
             bool isEntire = storeSize == comp->lvaLclExactSize(lclAddr->GetLclNum());
 
-            return visitor(LocalDef(lclAddr, isEntire, lclAddr->GetLclOffs(), storeSize));
+            return visitor(LocalDef(lclAddr, isEntire, lclAddr->GetLclOffs(), ValueSize(storeSize)));
         }
     }
 

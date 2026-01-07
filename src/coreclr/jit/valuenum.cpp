@@ -6165,10 +6165,10 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
 
         if (defSsaNum != SsaConfig::RESERVED_SSA_NUM)
         {
-            unsigned lclSize = lvaLclSymbolicSize(defLclNum);
+            ValueSize lclSize = defVarDsc->lvValueSize();
 
             ValueNumPair newLclValue;
-            if (vnStore->LoadStoreIsEntire(lclSize, defOffset, defSize))
+            if (vnStore->LoadStoreIsEntire(lclSize.GetSize(), defOffset, defSize))
             {
                 newLclValue = defValue;
             }
@@ -6177,7 +6177,7 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
                 assert((lclDefNode->gtFlags & GTF_VAR_USEASG) != 0);
                 unsigned     oldDefSsaNum = defVarDsc->GetPerSsaData(defSsaNum)->GetUseDefSsaNum();
                 ValueNumPair oldLclValue  = defVarDsc->GetPerSsaData(oldDefSsaNum)->m_vnPair;
-                newLclValue               = vnStore->VNPairForStore(oldLclValue, lclSize, defOffset, defSize, defValue);
+                newLclValue = vnStore->VNPairForStore(oldLclValue, lclSize.GetSize(), defOffset, defSize, defValue);
             }
 
             // Any out-of-bounds stores should have made the local address-exposed.
@@ -6186,7 +6186,7 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
             if (normalize)
             {
                 // We normalize types stored in local locations because things outside VN itself look at them.
-                newLclValue = vnStore->VNPairForLoadStoreBitCast(newLclValue, defVarDsc->TypeGet(), lclSize);
+                newLclValue = vnStore->VNPairForLoadStoreBitCast(newLclValue, defVarDsc->TypeGet(), lclSize.GetSize());
                 assert((genActualType(vnStore->TypeOfVN(newLclValue.GetLiberal())) == genActualType(defVarDsc)));
             }
 
@@ -12116,7 +12116,7 @@ void Compiler::fgValueNumberStore(GenTree* store)
         case GT_STORE_LCL_VAR:
         {
             GenTreeLclVarCommon* lcl = store->AsLclVarCommon();
-            fgValueNumberLocalStore(store, lcl, 0, lvaLclSymbolicSize(lcl->GetLclNum()), valueVNPair,
+            fgValueNumberLocalStore(store, lcl, 0, lvaLclValueSize(lcl->GetLclNum()).GetSize(), valueVNPair,
                                     /* normalize */ false);
         }
         break;
@@ -12609,8 +12609,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 if (lclFld->HasSsaName())
                 {
                     ValueNumPair lclVarValue = varDsc->GetPerSsaData(lclFld->GetSsaNum())->m_vnPair;
-                    lclFld->gtVNPair = vnStore->VNPairForLoad(lclVarValue, lvaLclExactSize(lclNum), lclFld->TypeGet(),
-                                                              lclFld->GetLclOffs(), lclFld->GetSize());
+                    lclFld->gtVNPair =
+                        vnStore->VNPairForLoad(lclVarValue, lvaLclValueSize(lclNum).GetSize(), lclFld->TypeGet(),
+                                               lclFld->GetLclOffs(), lclFld->GetSize());
                 }
                 else if (varDsc->IsAddressExposed())
                 {
@@ -14026,7 +14027,7 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
         ValueNumPair storeValue;
         storeValue.SetBoth(vnStore->VNForExpr(compCurBB, lvaGetDesc(def.Def->AsLclVarCommon())->TypeGet()));
 
-        fgValueNumberLocalStore(call, def.Def, def.Offset, def.Size, storeValue);
+        fgValueNumberLocalStore(call, def.Def, def.Offset, def.Size.GetSize(), storeValue);
         return GenTree::VisitResult::Continue;
     };
 
