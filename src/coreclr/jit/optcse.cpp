@@ -1794,16 +1794,6 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         {
             return false;
         }
-
-#if defined(TARGET_RISCV64)
-        // Don't apply constant CSE on the operands of FIELD_LIST, as it prevents constant folding
-        // when lowering GT_CALL with a GT_FIELD_LIST operand, which results in generating bloated code.
-        GenTree* parent = tree->gtGetParent(nullptr);
-        if ((parent != nullptr) && parent->OperIs(GT_FIELD_LIST))
-        {
-            return false;
-        }
-#endif
     }
 
     // Don't allow non-SIMD struct CSEs under a return; we don't fully
