@@ -1042,7 +1042,7 @@ int32_t SystemNative_MAdvise(void* address, uint64_t length, int32_t advice)
             (void)address, (void)length, (void)advice;
             errno = ENOTSUP;
             return -1;
-#endif // MADV_DONTFORK && !TARGET_WASI && !TARGET_WASM
+#endif // MADV_DONTFORK && !TARGET_WASM
         default:
             break; // fall through to error
     }
