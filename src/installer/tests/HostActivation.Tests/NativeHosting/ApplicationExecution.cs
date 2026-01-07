@@ -86,24 +86,24 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
     internal static class ApplicationExecutionResultExtensions
     {
-        public static FluentAssertions.AndConstraint<CommandResultAssertions> ExecuteApplication(this CommandResultAssertions assertion, string hostPath, string appPath)
+        public static CommandResultAssertions ExecuteApplication(this CommandResultAssertions assertion, string hostPath, string appPath)
         {
             return assertion.HaveStdErrContaining($"Launch host: {hostPath}, app: {appPath}")
-                .And.HaveStdOutContaining("Hello World!");
+                .HaveStdOutContaining("Hello World!");
         }
 
-        public static FluentAssertions.AndConstraint<CommandResultAssertions> ExecuteApplicationWithException(this CommandResultAssertions assertion, string hostPath, string appPath)
+        public static CommandResultAssertions ExecuteApplicationWithException(this CommandResultAssertions assertion, string hostPath, string appPath)
         {
             var constraint = assertion.ExecuteApplication(hostPath, appPath);
             if (OperatingSystem.IsWindows())
             {
-                return constraint.And.HaveStdOutContaining($"hostfxr_run_app threw exception: 0x{Constants.ErrorCode.COMPlusException.ToString("x")}");
+                return constraint.HaveStdOutContaining($"hostfxr_run_app threw exception: 0x{Constants.ErrorCode.COMPlusException.ToString("x")}");
             }
             else
             {
                 // Exception is unhandled by native host on non-Windows systems
-                return constraint.And.ExitWith(Constants.ErrorCode.SIGABRT)
-                    .And.HaveStdErrContaining("Unhandled exception. System.Exception: Goodbye World!");
+                return constraint.ExitWith(Constants.ErrorCode.SIGABRT)
+                    .HaveStdErrContaining("Unhandled exception. System.Exception: Goodbye World!");
             }
         }
     }

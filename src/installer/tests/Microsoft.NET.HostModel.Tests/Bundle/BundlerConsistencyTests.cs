@@ -93,8 +93,8 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             bundler.GenerateBundle(fileSpecs);
 
             // Exact duplicates are not duplicated in the bundle
-            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/app.repeat.dll")).Single().Type.Should().Be(FileType.Assembly);
-            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/system.repeat.dll")).Single().Type.Should().Be(FileType.Assembly);
+            Assert.Equal(FileType.Assembly, bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/app.repeat.dll")).Single().Type);
+            Assert.Equal(FileType.Assembly, bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/system.repeat.dll")).Single().Type);
         }
 
         [Fact]
@@ -127,10 +127,9 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             };
 
             Bundler bundler = CreateBundlerInstance();
-            Assert.Throws<ArgumentException>(() => bundler.GenerateBundle(fileSpecs))
-                .Message
-                    .Should().Contain("rel/app.repeat")
-                     .Contain(sharedTestState.App.AppDll);
+            var exception = Assert.Throws<ArgumentException>(() => bundler.GenerateBundle(fileSpecs));
+            Assert.Contains("rel/app.repeat", exception.Message);
+            Assert.Contains(sharedTestState.App.AppDll, exception.Message);
         }
 
         [Fact]
@@ -151,9 +150,9 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             Bundler bundler = CreateBundlerInstance();
             var bundlePath = bundler.GenerateBundle(fileSpecs);
 
-            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("中文/app.dll")).Single().Type.Should().Be(FileType.Assembly);
-            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/中文.dll")).Single().Type.Should().Be(FileType.Assembly);
-            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("中文")).Single().Type.Should().Be(FileType.Assembly);
+            Assert.Equal(FileType.Assembly, bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("中文/app.dll")).Single().Type);
+            Assert.Equal(FileType.Assembly, bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/中文.dll")).Single().Type);
+            Assert.Equal(FileType.Assembly, bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("中文")).Single().Type);
         }
 
         [Fact]
@@ -170,8 +169,8 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             Bundler bundler = CreateBundlerInstance();
             bundler.GenerateBundle(fileSpecs);
 
-            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/app.repeat.dll")).Single().Type.Should().Be(FileType.Assembly);
-            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/app.Repeat.dll")).Single().Type.Should().Be(FileType.Assembly);
+            Assert.Equal(FileType.Assembly, bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/app.repeat.dll")).Single().Type);
+            Assert.Equal(FileType.Assembly, bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/app.Repeat.dll")).Single().Type);
         }
 
         private (string bundleFileName, string bundleId) CreateSampleBundle(bool bundleMultipleFiles)
@@ -197,10 +196,8 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             var secondBundle = CreateSampleBundle(true);
             byte[] secondBundleContent = File.ReadAllBytes(secondBundle.bundleFileName);
 
-            firstBundle.bundleId.Should().BeEquivalentTo(secondBundle.bundleId,
-                "Deterministic/Reproducible build should produce identical bundle id for identical inputs");
-            firstBundleContent.Should().BeEquivalentTo(secondBundleContent,
-                "Deterministic/Reproducible build should produce identical binary for identical inputs");
+            Assert.Equal(firstBundle.bundleId, secondBundle.bundleId);
+            Assert.Equal(firstBundleContent, secondBundleContent);
         }
 
         [Fact]
@@ -228,12 +225,11 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             };
 
             Bundler bundler = CreateBundlerInstance();
-            Assert.Throws<ArgumentException>(() => bundler.GenerateBundle(fileSpecs))
-                .Message
-                    .Should().Contain("rel/system.repeat.dll")
-                     .NotContain("rel/app.repeat.dll")
-                     .Contain(appPath)
-                     .Contain(systemLibPath);
+            var exception = Assert.Throws<ArgumentException>(() => bundler.GenerateBundle(fileSpecs));
+            Assert.Contains("rel/system.repeat.dll", exception.Message);
+            Assert.DoesNotContain("rel/app.repeat.dll", exception.Message);
+            Assert.Contains(appPath, exception.Message);
+            Assert.Contains(systemLibPath, exception.Message);
         }
 
         [Fact]
@@ -262,10 +258,10 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
                 bundler.GenerateBundle(fileSpecs);
 
 
-                bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals(depsJsonName)).Single().Type.Should().Be(FileType.DepsJson);
-                bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals(runtimeConfigName)).Single().Type.Should().Be(FileType.RuntimeConfigJson);
-                bundleDir.Should().NotHaveFile(depsJsonName);
-                bundleDir.Should().NotHaveFile(runtimeConfigName);
+                Assert.Equal(FileType.DepsJson, bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals(depsJsonName)).Single().Type);
+                Assert.Equal(FileType.RuntimeConfigJson, bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals(runtimeConfigName)).Single().Type);
+                Assert.Null(bundleDir.EnumerateFiles(depsJsonName, SearchOption.TopDirectoryOnly).SingleOrDefault());
+                Assert.Null(bundleDir.EnumerateFiles(runtimeConfigName, SearchOption.TopDirectoryOnly).SingleOrDefault());
             }
         }
 
@@ -305,13 +301,13 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             Assert.False(bundler.BundleManifest.Contains(devJsonName));
 
             // Symbols should only be bundled if option is explicitly set
-            bundler.BundleManifest.Contains(appSymbolName).Should().Be(options.HasFlag(BundleOptions.BundleSymbolFiles));
+            Assert.Equal(options.HasFlag(BundleOptions.BundleSymbolFiles), bundler.BundleManifest.Contains(appSymbolName));
 
             // Native libararies should only be bundled if option is explicitly set
-            bundler.BundleManifest.Contains(Binaries.CoreClr.FileName).Should().Be(options.HasFlag(BundleOptions.BundleNativeBinaries));
+            Assert.Equal(options.HasFlag(BundleOptions.BundleNativeBinaries), bundler.BundleManifest.Contains(Binaries.CoreClr.FileName));
 
             // Other files should only be bundled if option is explicitly set
-            bundler.BundleManifest.Contains(otherContentName).Should().Be(options.HasFlag(BundleOptions.BundleOtherFiles));
+            Assert.Equal(options.HasFlag(BundleOptions.BundleOtherFiles), bundler.BundleManifest.Contains(otherContentName));
         }
 
         [Fact]

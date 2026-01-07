@@ -812,19 +812,19 @@ namespace HostActivation.Tests
 
     public static class HostApisCommandResultExtensions
     {
-        public static AndConstraint<CommandResultAssertions> ReturnStatusCode(this CommandResultAssertions assertion, string apiName, int statusCode)
+        public static CommandResultAssertions ReturnStatusCode(this CommandResultAssertions assertion, string apiName, int statusCode)
         {
             return statusCode == Constants.ErrorCode.Success
                 ? assertion.HaveStdOutContaining($"{apiName}:Success")
                 : assertion.HaveStdOutContaining($"{apiName}:Fail[0x{statusCode:x}]");
         }
 
-        public static AndConstraint<CommandResultAssertions> ReturnResolvedFramework(this CommandResultAssertions assertion, string name, string version, string path)
+        public static CommandResultAssertions ReturnResolvedFramework(this CommandResultAssertions assertion, string name, string version, string path)
         {
             string api = ApiNames.hostfxr_resolve_frameworks_for_runtime_config;
             return assertion.HaveStdOutContaining($"{api} resolved_framework: name={name}, version={version}, path=[{path}]");
         }
-        public static AndConstraint<CommandResultAssertions> ReturnUnresolvedFramework(this CommandResultAssertions assertion, string name, string version, string path = "")
+        public static CommandResultAssertions ReturnUnresolvedFramework(this CommandResultAssertions assertion, string name, string version, string path = "")
         {
             string api = ApiNames.hostfxr_resolve_frameworks_for_runtime_config;
             return assertion.HaveStdOutContaining($"{api} unresolved_framework: name={name}, requested_version={version}, path=[{path}]")
