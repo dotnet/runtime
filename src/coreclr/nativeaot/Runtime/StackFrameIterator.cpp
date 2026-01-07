@@ -34,7 +34,7 @@
 #if !defined(FEATURE_PORTABLE_HELPERS) // @TODO: these are (currently) only implemented in assembly helpers
 EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionTailCall;
 #if (defined(HOST_AMD64) || defined(HOST_ARM64)) && defined(HOST_WINDOWS)
-EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionReturnValidatedCodeAddress;
+EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionReturnResult;
 #endif
 
 EXTERN_C CODE_LOCATION RhpCallCatchFunclet2;
@@ -2235,7 +2235,7 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
         return InUniversalTransitionThunk;
     }
 #if (defined(HOST_AMD64) || defined(HOST_ARM64)) && defined(HOST_WINDOWS)
-    if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransitionReturnValidatedCodeAddress))
+    if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransitionReturnResult))
     {
         return InUniversalTransitionThunk;
     }

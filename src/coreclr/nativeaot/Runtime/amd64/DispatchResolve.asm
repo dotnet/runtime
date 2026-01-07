@@ -7,9 +7,7 @@ include AsmMacros.inc
 ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
 EXTERN RhpCidResolve : PROC
-EXTERN RhpUniversalTransitionReturnValidatedCodeAddress : PROC
-
-EXTERN __guard_check_icall_fptr : QWORD
+EXTERN RhpUniversalTransitionReturnResult : PROC
 
 ;; Fast version of RhpResolveInterfaceMethod
 LEAF_ENTRY RhpResolveInterfaceMethodFast, _TEXT
@@ -31,7 +29,7 @@ LEAF_ENTRY RhpResolveInterfaceMethodFast, _TEXT
         cmp     qword ptr [r10], rax
         jne     RhpResolveInterfaceMethodFast_Polymorphic
         mov     rax, qword ptr [r10 + 8]
-        jmp     [__guard_check_icall_fptr]
+        ret
 
       RhpResolveInterfaceMethodFast_Polymorphic:
         ;; load the count of cache entries into edx
@@ -49,14 +47,14 @@ LEAF_ENTRY RhpResolveInterfaceMethodFast, _TEXT
 
         mov     rax, qword ptr [r10 + 8]
         pop     rdx
-        jmp     [__guard_check_icall_fptr]
+        ret
 
       RhpResolveInterfaceMethodFast_SlowPath_Pop:
         pop     rdx
       RhpResolveInterfaceMethodFast_SlowPath:
         ;; r11 contains indirection cell address
         lea     r10, RhpCidResolve
-        jmp     RhpUniversalTransitionReturnValidatedCodeAddress
+        jmp     RhpUniversalTransitionReturnResult
 
 LEAF_END RhpResolveInterfaceMethodFast, _TEXT
 

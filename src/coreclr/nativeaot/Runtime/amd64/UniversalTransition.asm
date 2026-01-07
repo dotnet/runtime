@@ -3,8 +3,6 @@
 
 include AsmMacros.inc
 
-EXTERN __guard_check_icall_fptr : QWORD
-
 ifdef _DEBUG
 TRASH_SAVED_ARGUMENT_REGISTERS equ 1
 else
@@ -153,6 +151,6 @@ NESTED_END Rhp&FunctionName, _TEXT
         endm
 
         UNIVERSAL_TRANSITION UniversalTransitionTailCall, TAILJMP_RAX
-        UNIVERSAL_TRANSITION UniversalTransitionReturnValidatedCodeAddress, jmp [__guard_check_icall_fptr]
+        UNIVERSAL_TRANSITION UniversalTransitionReturnResult, ret
 
 end

@@ -3,8 +3,6 @@
 
 #include "AsmMacros.h"
 
-    EXTERN __guard_check_icall_fptr
-
 #ifdef _DEBUG
 #define TRASH_SAVED_ARGUMENT_REGISTERS
 #endif
@@ -91,7 +89,7 @@
     TEXTAREA
 
     MACRO
-        UNIVERSAL_TRANSITION $FunctionName, $ReturnValidatedCodeAddress
+        UNIVERSAL_TRANSITION $FunctionName, $ReturnResult
 
     NESTED_ENTRY Rhp$FunctionName
 
@@ -124,15 +122,9 @@
 
     ALTERNATE_ENTRY ReturnFrom$FunctionName
 
-        IF $ReturnValidatedCodeAddress == 0
         ;; Move the result (the target address) to x12 so it doesn't get overridden when we restore the
         ;; argument registers.
         mov         x12, x0
-        ELSE
-        ;; Move the result (the target address) to x15 where it is expected by the validator
-        mov         x15, x0
-        PREPARE_EXTERNAL_VAR_INDIRECT x12, __guard_check_icall_fptr
-        ENDIF
 
         ;; Restore floating point registers
         ldp         q0, q1, [sp, #(FLOAT_ARG_OFFSET       )]
@@ -150,14 +142,20 @@
         ;; Restore FP and LR registers, and free the allocated stack block
         EPILOG_RESTORE_REG_PAIR   fp, lr, #STACK_SIZE!
 
+        IF $ReturnResult == 0
         ;; Tailcall to the target address.
         EPILOG_NOP br x12
+        ELSE
+        ;; Return target address
+        EPILOG_NOP mov x15, x12
+        ret
+        ENDIF
 
     NESTED_END Rhp$FunctionName
 
     MEND
 
     UNIVERSAL_TRANSITION UniversalTransitionTailCall, 0
-    UNIVERSAL_TRANSITION UniversalTransitionReturnValidatedCodeAddress, 1
+    UNIVERSAL_TRANSITION UniversalTransitionReturnResult, 1
 
     END
