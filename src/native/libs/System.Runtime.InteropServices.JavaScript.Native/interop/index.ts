@@ -41,6 +41,18 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         bindCsFunction,
         loadSatelliteAssemblies,
         loadLazyAssembly,
+
+        // WASM-TODO: get rid of mono hacks https://github.com/dotnet/runtime/issues/122939
+        mono_wasm_gc_lock: () => { /* no-op */ },
+        mono_wasm_gc_unlock: () => { /* no-op */ },
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        monoStringToStringUnsafe: (strPtr: number) => {
+            throw new Error("Not implemented: monoStringToStringUnsafe");
+        },
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        monoObjectAsBoolOrNullUnsafe: (objPtr: number) => {
+            throw new Error("Not implemented: monoObjectAsBoolOrNullUnsafe");
+        }
     });
 
     internals[InternalExchangeIndex.RuntimeExportsTable] = runtimeExportsToTable({
