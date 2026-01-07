@@ -824,6 +824,36 @@ MII
                 X509Certificate2.CreateFromPem(certContents));
         }
 
+        [Fact]
+        public static void CreateFromPem_CanImportECCAnyPublicKeyWithSigningKeyUsage()
+        {
+            const string PrivateKeyWithSigningKeyUsage =
+                """
+                -----BEGIN PRIVATE KEY-----
+                MIGiAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQghew4zS1/h2J+PJLX
+                SY2U8qo0pBbNaFXm5f3GzsTCIxigCgYIKoZIzj0DAQehRANCAAT83cB14Y8zLLxo
+                bliw/JsBoy7oyKD0zVMgRbieDBZEn/5UpHv2Xv6W0dE3mEG6goF3s8GT+pf4JUT2
+                EfthzGhnoA0wCwYDVR0PMQQDAgCA
+                -----END PRIVATE KEY-----
+                """;
+
+            const string AnyKeyUsageCertificate =
+                """
+                -----BEGIN CERTIFICATE-----
+                MIIBITCBx6ADAgECAgkA1dyp2OqNXw0wCgYIKoZIzj0EAwIwFjEUMBIGA1UEAxML
+                ZXhhbXBsZS5jb20wHhcNMjYwMTA2MTg1ODUxWhcNMjcwMTA2MTg1ODUxWjAWMRQw
+                EgYDVQQDEwtleGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABPzd
+                wHXhjzMsvGhuWLD8mwGjLujIoPTNUyBFuJ4MFkSf/lSke/Ze/pbR0TeYQbqCgXez
+                wZP6l/glRPYR+2HMaGcwCgYIKoZIzj0EAwIDSQAwRgIhAPxduNwHwIafwVcfegnp
+                ocZs707jXBeVg1oxCZz5HwMeAiEAoFbL7kOyha8n0g2kkVaXNa0lWD62FZ1Jl+m9
+                bFYUxF4=
+                -----END CERTIFICATE-----
+                """;
+
+            using X509Certificate2 cert = X509Certificate2.CreateFromPem(AnyKeyUsageCertificate, PrivateKeyWithSigningKeyUsage);
+            AssertKeysMatch(PrivateKeyWithSigningKeyUsage, cert.GetECDsaPrivateKey);
+        }
+
         private static void AssertKeysMatch<T>(string keyPem, Func<T> keyLoader, string password = null) where T : IDisposable
         {
             IDisposable key = keyLoader();
@@ -890,7 +920,8 @@ MII
                         Assert.True(dsaPem.VerifyData(data, dsaSignature, HashAlgorithmName.SHA1));
                         break;
                     case (ECDiffieHellman ecdh, ECDiffieHellman ecdhPem):
-                        ECCurve curve = ecdh.KeySize switch {
+                        ECCurve curve = ecdh.KeySize switch
+                        {
                             256 => ECCurve.NamedCurves.nistP256,
                             384 => ECCurve.NamedCurves.nistP384,
                             521 => ECCurve.NamedCurves.nistP521,
