@@ -878,10 +878,12 @@
       <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(ApkFileName).apk</ApkPath>
       <AppBundlePath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).app</AppBundlePath>
     </MergedPayloads>
+    <MergedPayloads Update="@(MergedPayloads)">
+      <ExpectedExitCode Condition="Exists('%(PayloadDirectory)/ExpectedExitCode.txt')">$([System.IO.File]::ReadAllText('%(PayloadDirectory)/ExpectedExitCode.txt').Trim())</ExpectedExitCode>
+    </MergedPayloads>
     <!-- For tests where we aren't using the XHarness test runner, specify as such on the payload item. -->
-    <MergedPayloads Update="@(MergedPayloads)" Condition="Exists('$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).XHarnessNoRunner')">
-      <IncludesTestRunner>false</IncludesTestRunner>
-      <ExpectedExitCode>100</ExpectedExitCode>
+    <MergedPayloads Update="@(MergedPayloads)">
+      <IncludesTestRunner>$([System.IO.File]::Exists('$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).XHarnessNoRunner'))</IncludesTestRunner>
     </MergedPayloads>
   </ItemGroup>
 
@@ -1027,10 +1029,6 @@
       <AndroidPackageName>net.dot.%(ApkFileName)</AndroidPackageName>
       <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
-    </XHarnessApkToTest>
-
-    <XHarnessApkToTest Update="@(XHarnessApkToTest)" Condition="'$(TargetsAndroid)' == 'true'">
-      <ExpectedExitCode Condition="Exists('%(PayloadDirectory)/ExpectedExitCode.txt')">$([System.IO.File]::ReadAllText('%(PayloadDirectory)/ExpectedExitCode.txt').Trim())</ExpectedExitCode>
     </XHarnessApkToTest>
 
     <XHarnessAppBundleToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAppleMobile)' == 'true'">
