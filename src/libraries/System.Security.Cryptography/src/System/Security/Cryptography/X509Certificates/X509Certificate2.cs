@@ -2049,33 +2049,36 @@ namespace System.Security.Cryptography.X509Certificates
                     continue;
                 }
 
-                byte[] base64Buffer = new byte[fields.DecodedDataLength];
+                byte[] base64Buffer = CryptoPool.Rent(fields.DecodedDataLength);
+                int clearSize = CryptoPool.ClearAll;
 
-                using (PinAndClear.Track(base64Buffer))
+                try
                 {
-                    try
+                    bool result = Convert.TryFromBase64Chars(contents[fields.Base64Data], base64Buffer, out int base64Written);
+
+                    if (!result || base64Written != base64Buffer.Length)
                     {
-                        bool result = Convert.TryFromBase64Chars(contents[fields.Base64Data], base64Buffer, out int base64Written);
-
-                        if (!result || base64Written != base64Buffer.Length)
-                        {
-                            Debug.Fail("Preallocated buffer and validated data decoding failed.");
-                            break;
-                        }
-
-                        X509Certificate2? loaded = ExtractKeyFromECPrivateKeyInfo(certificate, base64Buffer);
-
-                        if (loaded is null)
-                        {
-                            break;
-                        }
-
-                        return loaded;
+                        Debug.Fail("Preallocated buffer and validated data decoding failed.");
+                        break;
                     }
-                    catch (CryptographicException ce)
+
+                    clearSize = base64Written;
+                    X509Certificate2? loaded = ExtractKeyFromECPrivateKeyInfo(certificate, base64Buffer);
+
+                    if (loaded is null)
                     {
-                        throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ce);
+                        break;
                     }
+
+                    return loaded;
+                }
+                catch (CryptographicException ce)
+                {
+                    throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ce);
+                }
+                finally
+                {
+                    CryptoPool.Return(base64Buffer, clearSize);
                 }
             }
 
