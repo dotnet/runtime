@@ -134,6 +134,14 @@ BuildCreateDumpCommandLine(
         return false;
     }
 
+    // Check if the createdump binary actually exists before trying to use it
+    struct stat fileData;
+    if (stat(g_szCreateDumpPath, &fileData) == -1 || !S_ISREG(fileData.st_mode))
+    {
+        fprintf(stderr, "DOTNET_DbgEnableMiniDump is set and the createdump binary does not exist: %s\n", g_szCreateDumpPath);
+        return false;
+    }
+
     int argc = 0;
     argv[argc++] = g_szCreateDumpPath;
 
@@ -622,11 +630,10 @@ PalCreateDumpInitialize()
         strncat(program, DumpGeneratorName, programLen);
 
         struct stat fileData;
-        if (stat(program, &fileData) == -1 || !S_ISREG(fileData.st_mode))
-        {
-            fprintf(stderr, "DOTNET_DbgEnableMiniDump is set and the createdump binary does not exist: %s\n", program);
-            return true;
-        }
+        bool fileExists = (stat(program, &fileData) != -1 && S_ISREG(fileData.st_mode));
+        
+        // Store the path regardless of whether the file exists, so we can provide a helpful
+        // error message later if someone tries to create a dump
         g_szCreateDumpPath = program;
 
         // Format the app pid for the createdump command line
@@ -636,9 +643,13 @@ PalCreateDumpInitialize()
             return false;
         }
 
-        if (!BuildCreateDumpCommandLine(g_argvCreateDump, dumpName, logFilePath, dumpType, flags))
+        // Only build the command line if the createdump binary actually exists
+        if (fileExists)
         {
-            return false;
+            if (!BuildCreateDumpCommandLine(g_argvCreateDump, dumpName, logFilePath, dumpType, flags))
+            {
+                return false;
+            }
         }
     }
 #endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
