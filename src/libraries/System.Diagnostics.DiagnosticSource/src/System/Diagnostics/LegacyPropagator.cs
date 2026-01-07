@@ -167,9 +167,15 @@ namespace System.Diagnostics
                     baggageList ??= new List<KeyValuePair<string, string?>>();
 
                     // Insert in reverse order for asp.net compatibility.
+#if NET9_0_OR_GREATER
+                    baggageList.Insert(0, new KeyValuePair<string, string?>(
+                                                Uri.UnescapeDataString(baggageString.AsSpan(keyStart, keyEnd - keyStart)).Trim(s_trimmingSpaceCharacters),
+                                                Uri.UnescapeDataString(baggageString.AsSpan(valueStart, currentIndex - valueStart)).Trim(s_trimmingSpaceCharacters)));
+#else
                     baggageList.Insert(0, new KeyValuePair<string, string?>(
                                                 Uri.UnescapeDataString(baggageString.Substring(keyStart, keyEnd - keyStart)).Trim(s_trimmingSpaceCharacters),
                                                 Uri.UnescapeDataString(baggageString.Substring(valueStart, currentIndex - valueStart)).Trim(s_trimmingSpaceCharacters)));
+#endif
                 }
 
                 // Skip to end of values
