@@ -399,12 +399,12 @@ namespace System.IO.Compression
             {
                 case ZipArchiveMode.Read:
                     if (access != FileAccess.Read)
-                        throw new ArgumentException(SR.CannotBeWrittenInReadMode, nameof(access));
+                        throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
                     return OpenInReadMode(checkOpenable: true);
 
                 case ZipArchiveMode.Create:
                     if (access == FileAccess.Read)
-                        throw new ArgumentException(SR.CannotBeReadInCreateMode, nameof(access));
+                        throw new InvalidOperationException(SR.CannotBeReadInCreateMode);
                     return OpenInWriteMode();
 
                 case ZipArchiveMode.Update:
