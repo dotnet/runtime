@@ -617,18 +617,6 @@ namespace System.Collections.Concurrent
             {
                 Monitor.Enter(queue, ref queue._frozen);
             }
-            Interlocked.MemoryBarrier(); // prevent reads of _currentOp from moving before writes to _frozen
-
-            // Finally, wait for all unsynchronized operations on each queue to be done.
-            for (WorkStealingQueue? queue = head; queue != null; queue = queue._nextQueue)
-            {
-                if (queue._currentOp != Operation.None)
-                {
-                    SpinWait spinner = default;
-                    do { spinner.SpinOnce(); }
-                    while (queue._currentOp != Operation.None);
-                }
-            }
         }
 
         /// <summary>"Unfreezes" a bag frozen with <see cref="FreezeBag(ref bool)"/>.</summary>
@@ -658,27 +646,14 @@ namespace System.Collections.Concurrent
         {
             /// <summary>Initial size of the queue's array.</summary>
             private const int InitialSize = 32;
-            /// <summary>Starting index for the head and tail indices.</summary>
-            private const int StartIndex =
-#if DEBUG
-                int.MaxValue; // in debug builds, start at the end so we exercise the index reset logic
-#else
-                0;
-#endif
-            /// <summary>Head index from which to steal.  This and'd with the <see cref="_mask"/> is the index into <see cref="_array"/>.</summary>
-            private volatile int _headIndex = StartIndex;
-            /// <summary>Tail index at which local pushes/pops happen. This and'd with the <see cref="_mask"/> is the index into <see cref="_array"/>.</summary>
-            private volatile int _tailIndex = StartIndex;
+            /// <summary>Top index (steal end). Modified by stealers via CAS.</summary>
+            private long _top;
+            /// <summary>Bottom index (push/pop end). Modified only by owner.</summary>
+            private long _bottom;
             /// <summary>The array storing the queue's data.</summary>
             private volatile T[] _array = new T[InitialSize];
-            /// <summary>Mask and'd with <see cref="_headIndex"/> and <see cref="_tailIndex"/> to get an index into <see cref="_array"/>.</summary>
+            /// <summary>Mask and'd with indices to get an index into <see cref="_array"/>.</summary>
             private volatile int _mask = InitialSize - 1;
-            /// <summary>Numbers of elements in the queue from the local perspective; needs to be combined with <see cref="_stealCount"/> to get an actual Count.</summary>
-            private int _addTakeCount;
-            /// <summary>Number of steals; needs to be combined with <see cref="_addTakeCount"/> to get an actual Count.</summary>
-            private int _stealCount;
-            /// <summary>The current queue operation. Used to quiesce before performing operations from one thread onto another.</summary>
-            internal volatile Operation _currentOp;
             /// <summary>true if this queue's lock is held as part of a global freeze.</summary>
             internal bool _frozen;
             /// <summary>Next queue in the <see cref="ConcurrentBag{T}"/>'s set of thread-local queues.</summary>
@@ -699,12 +674,9 @@ namespace System.Collections.Concurrent
             {
                 get
                 {
-                    // _tailIndex can be decremented even while the bag is frozen, as the decrement in TryLocalPop happens prior
-                    // to the check for _frozen.  But that's ok, as if _tailIndex is being decremented such that _headIndex becomes
-                    // >= _tailIndex, then the queue is about to be empty.  This does mean, though, that while holding the lock,
-                    // it is possible to observe Count == 1 but IsEmpty == true.  As such, we simply need to avoid doing any operation
-                    // while the bag is frozen that requires those values to be consistent.
-                    return _headIndex - _tailIndex >= 0;
+                    long b = _bottom;
+                    long t = Volatile.Read(ref _top);
+                    return t >= b;
                 }
             }
 
@@ -716,119 +688,57 @@ namespace System.Collections.Concurrent
             internal void LocalPush(T item, ref long emptyToNonEmptyListTransitionCount)
             {
                 Debug.Assert(Environment.CurrentManagedThreadId == _ownerThreadId);
-                bool lockTaken = false;
-                try
+
+                long b = _bottom;
+                long t = Volatile.Read(ref _top);
+                T[] arr = _array;
+                int mask = _mask;
+
+                // Check if we need to grow the array
+                if (b - t >= mask)
                 {
-                    // Full fence to ensure subsequent reads don't get reordered before this
-                    Interlocked.Exchange(ref _currentOp, Operation.Add);
-                    int tail = _tailIndex;
-
-                    // Rare corner case (at most once every 2 billion pushes on this thread):
-                    // We're going to increment the tail; if we'll overflow, then we need to reset our counts
-                    if (tail == int.MaxValue)
+                    // Need to grow - acquire lock for array growth
+                    lock (this)
                     {
-                        _currentOp = Operation.None; // set back to None temporarily to avoid a deadlock
-                        lock (this)
+                        // Re-read after lock
+                        t = Volatile.Read(ref _top);
+                        b = _bottom;
+                        arr = _array;
+                        mask = _mask;
+
+                        long size = b - t;
+                        if (size >= mask)
                         {
-                            Debug.Assert(_tailIndex == tail, "No other thread should be changing _tailIndex");
-
-                            // Rather than resetting to zero, we'll just mask off the bits we don't care about.
-                            // This way we don't need to rearrange the items already in the queue; they'll be found
-                            // correctly exactly where they are.  One subtlety here is that we need to make sure that
-                            // if head is currently < tail, it remains that way.  This happens to just fall out from
-                            // the bit-masking, because we only do this if tail == int.MaxValue, meaning that all
-                            // bits are set, so all of the bits we're keeping will also be set.  Thus it's impossible
-                            // for the head to end up > than the tail, since you can't set any more bits than all of them.
-                            _headIndex &= _mask;
-                            _tailIndex = tail &= _mask;
-                            Debug.Assert(_headIndex - _tailIndex <= 0);
-
-                            Interlocked.Exchange(ref _currentOp, Operation.Add); // ensure subsequent reads aren't reordered before this
-                        }
-                    }
-
-                    // We'd like to take the fast path that doesn't require locking, if possible. It's not possible if:
-                    // - another thread is currently requesting that the whole bag synchronize, e.g. a ToArray operation
-                    // - if there are fewer than two spaces available.  One space is necessary for obvious reasons:
-                    //   to store the element we're trying to push.  The other is necessary due to synchronization with steals.
-                    //   A stealing thread first increments _headIndex to reserve the slot at its old value, and then tries to
-                    //   read from that slot.  We could potentially have a race condition whereby _headIndex is incremented just
-                    //   before this check, in which case we could overwrite the element being stolen as that slot would appear
-                    //   to be empty.  Thus, we only allow the fast path if there are two empty slots.
-                    // - if there <= 1 elements in the list.  We need to be able to successfully track transitions from
-                    //   empty to non-empty in a way that other threads can check, and we can only do that tracking
-                    //   correctly if we synchronize with steals when it's possible a steal could take the last item
-                    //   in the list just as we're adding.  It's possible at this point that there's currently an active steal
-                    //   operation happening but that it hasn't yet incremented the head index, such that we could read a smaller
-                    //   than accurate by 1 value for the head.  However, only one steal could possibly be doing so, as steals
-                    //   take the lock, and another steal couldn't then increment the header further because it'll see that
-                    //   there's currently an add operation in progress and wait until the add completes.
-                    int head = _headIndex; // read after _currentOp set to Add
-                    if (!_frozen && (head - (tail - 1) < 0) && (tail - (head + _mask) < 0))
-                    {
-                        _array[tail & _mask] = item;
-                        _tailIndex = tail + 1;
-                    }
-                    else
-                    {
-                        // We need to contend with foreign operations (e.g. steals, enumeration, etc.), so we lock.
-                        _currentOp = Operation.None; // set back to None to avoid a deadlock
-                        Monitor.Enter(this, ref lockTaken);
-
-                        head = _headIndex;
-                        int count = tail - head; // this count is stable, as we're holding the lock
-
-                        // If we're full, expand the array.
-                        if (count >= _mask)
-                        {
-                            // Expand the queue by doubling its size.
-                            var newArray = new T[_array.Length << 1];
-                            int headIdx = head & _mask;
-                            if (headIdx == 0)
+                            // Grow the array by doubling its size
+                            var newArray = new T[arr.Length << 1];
+                            for (long i = t; i < b; i++)
                             {
-                                Array.Copy(_array, newArray, _array.Length);
-                            }
-                            else
-                            {
-                                Array.Copy(_array, headIdx, newArray, 0, _array.Length - headIdx);
-                                Array.Copy(_array, 0, newArray, _array.Length - headIdx, headIdx);
+                                newArray[i & (newArray.Length - 1)] = arr[i & mask];
                             }
 
-                            // Reset the field values
-                            _array = newArray;
-                            _headIndex = 0;
-                            _tailIndex = tail = count;
-                            _mask = (_mask << 1) | 1;
+                            // Clear old array
+                            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                            {
+                                Array.Clear(arr);
+                            }
+
+                            _array = arr = newArray;
+                            _mask = mask = newArray.Length - 1;
                         }
-
-                        // Add the element
-                        _array[tail & _mask] = item;
-                        _tailIndex = tail + 1;
-
-                        // Now that the item has been added, if we were at 0 (now at 1) item,
-                        // increase the empty to non-empty transition count.
-                        if (count == 0)
-                        {
-                            // We just transitioned from empty to non-empty, so increment the transition count.
-                            Interlocked.Increment(ref emptyToNonEmptyListTransitionCount);
-                        }
-
-                        // Update the count to avoid overflow.  We can trust _stealCount here,
-                        // as we're inside the lock and it's only manipulated there.
-                        _addTakeCount -= _stealCount;
-                        _stealCount = 0;
                     }
-
-                    // Increment the count from the add/take perspective
-                    checked { _addTakeCount++; }
                 }
-                finally
+
+                // Store the item
+                arr[b & mask] = item;
+
+                // Ensure the item is visible before bottom is updated
+                Thread.MemoryBarrier();
+                _bottom = b + 1;
+
+                // Track empty-to-non-empty transition
+                if (b == t)
                 {
-                    _currentOp = Operation.None;
-                    if (lockTaken)
-                    {
-                        Monitor.Exit(this);
-                    }
+                    Interlocked.Increment(ref emptyToNonEmptyListTransitionCount);
                 }
             }
 
@@ -838,12 +748,24 @@ namespace System.Collections.Concurrent
                 Debug.Assert(Environment.CurrentManagedThreadId == _ownerThreadId);
                 lock (this) // synchronize with steals
                 {
+                    long t = Volatile.Read(ref _top);
+                    long b = _bottom;
+
                     // If the queue isn't empty, reset the state to clear out all items.
-                    if (_headIndex - _tailIndex < 0)
+                    if (t < b)
                     {
-                        _headIndex = _tailIndex = StartIndex;
-                        _addTakeCount = _stealCount = 0;
-                        Array.Clear(_array);
+                        // Clear the references
+                        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                        {
+                            T[] arr = _array;
+                            int mask = _mask;
+                            for (long i = t; i < b; i++)
+                            {
+                                arr[i & mask] = default!;
+                            }
+                        }
+
+                        _bottom = t;
                     }
                 }
             }
@@ -854,72 +776,41 @@ namespace System.Collections.Concurrent
             {
                 Debug.Assert(Environment.CurrentManagedThreadId == _ownerThreadId);
 
-                int tail = _tailIndex;
-                if (_headIndex - tail >= 0)
-                {
-                    result = default(T);
-                    return false;
-                }
+                long b = _bottom - 1;
+                T[] arr = _array;
+                _bottom = b;
+                Thread.MemoryBarrier();
+                long t = Volatile.Read(ref _top);
 
-                bool lockTaken = false;
-                try
+                if (t <= b)
                 {
-                    // Decrement the tail using a full fence to ensure subsequent reads don't reorder before this.
-                    // If the read of _headIndex moved before this write to _tailIndex, we could erroneously end up
-                    // popping an element that's concurrently being stolen, leading to the same element being
-                    // dequeued from the bag twice.
-                    _currentOp = Operation.Take;
-                    Interlocked.Exchange(ref _tailIndex, --tail);
-
-                    // If there is no interaction with a steal, we can head down the fast path.
-                    // Note that we use _headIndex < tail rather than _headIndex <= tail to account
-                    // for stealing peeks, which don't increment _headIndex, and which could observe
-                    // the written default(T) in a race condition to peek at the element.
-                    if (!_frozen && (_headIndex - tail < 0))
+                    // Non-empty queue
+                    result = arr[b & _mask];
+                    if (t == b)
                     {
-                        int idx = tail & _mask;
-                        result = _array[idx];
-                        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                        // Last element - race with stealers
+                        if (Interlocked.CompareExchange(ref _top, t + 1, t) != t)
                         {
-                            _array[idx] = default(T)!;
-                        }
-                        _addTakeCount--;
-                        return true;
-                    }
-                    else
-                    {
-                        // Interaction with steals: 0 or 1 elements left.
-                        _currentOp = Operation.None; // set back to None to avoid a deadlock
-                        Monitor.Enter(this, ref lockTaken);
-                        if (_headIndex - tail <= 0)
-                        {
-                            // Element still available. Take it.
-                            int idx = tail & _mask;
-                            result = _array[idx];
-                            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                            {
-                                _array[idx] = default(T)!;
-                            }
-                            _addTakeCount--;
-                            return true;
-                        }
-                        else
-                        {
-                            // We encountered a race condition and the element was stolen, restore the tail.
-                            _tailIndex = tail + 1;
-                            result = default(T);
+                            // Lost race to a stealer
+                            _bottom = t + 1;
+                            result = default!;
                             return false;
                         }
+                        _bottom = t + 1;
                     }
-                }
-                finally
-                {
-                    _currentOp = Operation.None;
-                    if (lockTaken)
+
+                    // Clear the reference
+                    if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                     {
-                        Monitor.Exit(this);
+                        arr[b & _mask] = default!;
                     }
+                    return true;
                 }
+
+                // Empty queue
+                _bottom = t;
+                result = default!;
+                return false;
             }
 
             /// <summary>Peek an item from the tail of the queue.</summary>
@@ -929,29 +820,24 @@ namespace System.Collections.Concurrent
             {
                 Debug.Assert(Environment.CurrentManagedThreadId == _ownerThreadId);
 
-                int tail = _tailIndex;
-                if (_headIndex - tail < 0)
+                long b = _bottom;
+                long t = Volatile.Read(ref _top);
+                if (t < b)
                 {
-                    // It is possible to enable lock-free peeks, following the same general approach
-                    // that's used in TryLocalPop.  However, peeks are more complicated as we can't
-                    // do the same kind of index reservation that's done in TryLocalPop; doing so could
-                    // end up making a steal think that no item is available, even when one is. To do
-                    // it correctly, then, we'd need to add spinning to TrySteal in case of a concurrent
-                    // peek happening. With a lock, the common case (no contention with steals) will
-                    // effectively only incur two interlocked operations (entering/exiting the lock) instead
-                    // of one (setting Peek as the _currentOp).  Combined with Peeks on a bag being rare,
-                    // for now we'll use the simpler/safer code.
+                    // Use lock to safely peek at the element
                     lock (this)
                     {
-                        if (_headIndex - tail < 0)
+                        b = _bottom;
+                        t = Volatile.Read(ref _top);
+                        if (t < b)
                         {
-                            result = _array[(tail - 1) & _mask];
+                            result = _array[(b - 1) & _mask];
                             return true;
                         }
                     }
                 }
 
-                result = default(T);
+                result = default!;
                 return false;
             }
 
@@ -960,58 +846,37 @@ namespace System.Collections.Concurrent
             /// <param name="take">true to take the item; false to simply peek at it</param>
             internal bool TrySteal([MaybeNullWhen(false)] out T result, bool take)
             {
-                lock (this)
+                long t = Volatile.Read(ref _top);
+                Thread.MemoryBarrier();
+                long b = _bottom;
+
+                if (t < b)
                 {
-                    int head = _headIndex; // _headIndex is only manipulated under the lock
+                    // Non-empty queue
+                    T[] arr = _array;
+                    result = arr[t & _mask];
+
                     if (take)
                     {
-                        // If there are <= 2 items in the list, we need to ensure no add operation
-                        // is in progress, as add operations need to accurately count transitions
-                        // from empty to non-empty, and they can only do that if there are no concurrent
-                        // steal operations happening at the time.
-                        if ((head - (_tailIndex - 2) >= 0) && _currentOp == Operation.Add)
+                        // Try to steal by CAS-ing the top index
+                        if (Interlocked.CompareExchange(ref _top, t + 1, t) != t)
                         {
-                            SpinWait spinner = default;
-                            do
-                            {
-                                spinner.SpinOnce();
-                            }
-                            while (_currentOp == Operation.Add);
+                            // Lost race with another stealer or the owner
+                            result = default!;
+                            return false;
                         }
 
-                        // Increment head to tentatively take an element: a full fence is used to ensure the read
-                        // of _tailIndex doesn't move earlier, as otherwise we could potentially end up stealing
-                        // the same element that's being popped locally.
-                        Interlocked.Exchange(ref _headIndex, unchecked(head + 1));
-
-                        // If there's an element to steal, do it.
-                        if (head < _tailIndex)
+                        // Successfully stole - clear the reference
+                        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                         {
-                            int idx = head & _mask;
-                            result = _array[idx];
-                            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                            {
-                                _array[idx] = default(T)!;
-                            }
-                            _stealCount++;
-                            return true;
-                        }
-                        else
-                        {
-                            // We contended with the local thread and lost the race, so restore the head.
-                            _headIndex = head;
+                            arr[t & _mask] = default!;
                         }
                     }
-                    else if (head < _tailIndex)
-                    {
-                        // Peek, if there's an element available
-                        result = _array[head & _mask];
-                        return true;
-                    }
+                    return true;
                 }
 
-                // The queue was empty.
-                result = default(T);
+                // Empty queue
+                result = default!;
                 return false;
             }
 
@@ -1023,20 +888,20 @@ namespace System.Collections.Concurrent
                 Debug.Assert(array != null);
                 Debug.Assert(arrayIndex >= 0 && arrayIndex <= array.Length);
 
-                int headIndex = _headIndex;
-                int count = DangerousCount;
-                Debug.Assert(
-                    count == (_tailIndex - _headIndex) ||
-                    count == (_tailIndex + 1 - _headIndex),
-                    "Count should be the same as tail - head, but allowing for the possibility that " +
-                    "a peek decremented _tailIndex before seeing that a freeze was happening.");
+                long t = Volatile.Read(ref _top);
+                long b = _bottom;
+                int count = (int)(b - t);
+                Debug.Assert(count >= 0);
                 Debug.Assert(arrayIndex <= array.Length - count);
+
+                T[] arr = _array;
+                int mask = _mask;
 
                 // Copy from this queue's array to the destination array, but in reverse
                 // order to match the ordering of desktop.
                 for (int i = arrayIndex + count - 1; i >= arrayIndex; i--)
                 {
-                    array[i] = _array[headIndex++ & _mask];
+                    array[i] = arr[t++ & mask];
                 }
 
                 return count;
@@ -1052,21 +917,13 @@ namespace System.Collections.Concurrent
                 get
                 {
                     Debug.Assert(Monitor.IsEntered(this));
-                    int stealCount = _stealCount;
-                    int addTakeCount = _addTakeCount;
-                    int count = addTakeCount - stealCount;
-                    Debug.Assert(count >= 0, $"Expected _addTakeCount ({addTakeCount}) >= _stealCount ({stealCount}).");
+                    long t = Volatile.Read(ref _top);
+                    long b = _bottom;
+                    int count = (int)(b - t);
+                    Debug.Assert(count >= 0, $"Expected bottom ({b}) >= top ({t}).");
                     return count;
                 }
             }
         }
-
-        /// <summary>Lock-free operations performed on a queue.</summary>
-        internal enum Operation
-        {
-            None,
-            Add,
-            Take
-        };
     }
 }
