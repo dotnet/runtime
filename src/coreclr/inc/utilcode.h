@@ -496,7 +496,14 @@ void    SplitPathInterior(
     _Out_opt_ LPCWSTR *pwszExt,      _Out_opt_ size_t *pcchExt);
 
 
-#include "ostype.h"
+#ifdef HOST_64BIT
+inline BOOL RunningInWow64()
+{
+    return FALSE;
+}
+#else
+BOOL RunningInWow64();
+#endif
 
 //
 // Allocate free memory within the range [pMinAddr..pMaxAddr] using
