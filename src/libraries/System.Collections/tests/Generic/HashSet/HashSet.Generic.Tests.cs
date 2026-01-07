@@ -911,63 +911,40 @@ namespace System.Collections.Tests
         #region UnionWith
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
-        public void HashSet_Generic_UnionWith_EmptySetWithHashSetSameComparer_CopiesData(int count)
-        {
-            HashSet<T> source = (HashSet<T>)GenericISetFactory(count);
-            HashSet<T> destination = new HashSet<T>(source.Comparer);
-
-            destination.UnionWith(source);
-
-            Assert.Equal(source.Count, destination.Count);
-            Assert.True(source.SetEquals(destination));
-        }
-
-        [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
-        public void HashSet_Generic_UnionWith_EmptySetWithSparselyFilledHashSet_CopiesData(int count)
+        [InlineData(0, true, true)]
+        [InlineData(0, true, false)]
+        [InlineData(0, false, true)]
+        [InlineData(0, false, false)]
+        [InlineData(1, true, true)]
+        [InlineData(1, true, false)]
+        [InlineData(1, false, true)]
+        [InlineData(1, false, false)]
+        [InlineData(75, true, true)]
+        [InlineData(75, true, false)]
+        [InlineData(75, false, true)]
+        [InlineData(75, false, false)]
+        public void HashSet_Generic_UnionWith_HashSet(int count, bool destinationEmpty, bool sourceSparseFilled)
         {
             HashSet<T> source = (HashSet<T>)CreateEnumerable(EnumerableType.HashSet, null, count, 0, 0);
-            List<T> sourceElements = source.ToList();
 
-            foreach (int i in NonSquares(count))
-                source.Remove(sourceElements[i]);
-
-            HashSet<T> destination = new HashSet<T>(source.Comparer);
-
-            destination.UnionWith(source);
-
-            Assert.Equal(source.Count, destination.Count);
-            Assert.True(source.SetEquals(destination));
-        }
-
-        [Fact]
-        public void HashSet_Generic_UnionWith_EmptySetWithEmptyHashSet()
-        {
-            HashSet<T> source = new HashSet<T>();
-            HashSet<T> destination = new HashSet<T>();
-
-            destination.UnionWith(source);
-
-            Assert.Equal(0, destination.Count);
-        }
-
-        [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
-        public void HashSet_Generic_UnionWith_NonEmptySet_DoesNotCopyButAddsElements(int count)
-        {
-            if (count > 0)
+            if (sourceSparseFilled)
             {
-                HashSet<T> source = (HashSet<T>)GenericISetFactory(count);
-                HashSet<T> destination = (HashSet<T>)GenericISetFactory(1);
-                T existingItem = destination.First();
-
-                destination.UnionWith(source);
-
-                Assert.True(destination.Count >= source.Count);
-                Assert.True(source.IsSubsetOf(destination));
-                Assert.True(destination.Contains(existingItem));
+                List<T> sourceElements = source.ToList();
+                foreach (int i in NonSquares(count))
+                    source.Remove(sourceElements[i]);
             }
+
+            HashSet<T> destination = destinationEmpty
+                ? new HashSet<T>(source.Comparer)
+                : (HashSet<T>)GenericISetFactory(1);
+
+            HashSet<T> expected = new HashSet<T>(destination, source.Comparer);
+            foreach (T item in source)
+                expected.Add(item);
+
+            destination.UnionWith(source);
+
+            Assert.True(expected.SetEquals(destination));
         }
 
         #endregion
