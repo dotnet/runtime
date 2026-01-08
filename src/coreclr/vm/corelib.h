@@ -984,6 +984,9 @@ DEFINE_FIELD_U(_executionContext,         ThreadBaseObject,   m_ExecutionContext
 DEFINE_CLASS_U(Threading,             ExecutionContext,            ExecutionContextObject)
 DEFINE_FIELD_U(m_isFlowSuppressed,    ExecutionContextObject,      m_isFlowSuppressed)
 
+DEFINE_CLASS(EXECUTIONCONTEXT,        Threading,                   ExecutionContext)
+DEFINE_FIELD(EXECUTIONCONTEXT,        DEFAULT_FLOW_SUPPRESSED,     DefaultFlowSuppressed)
+
 DEFINE_CLASS(DIRECTONTHREADLOCALDATA, Threading, Thread+DirectOnThreadLocalData)
 
 DEFINE_CLASS(THREAD,                Threading,              Thread)

@@ -1099,7 +1099,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     // loader, but it's not important to the test.
 
                     if (OperatingSystem.IsWindows() &&
-                        !PlatformDetection.IsWindows8xOrLater)
+                        !PlatformDetection.IsWindows)
                     {
                         followup = null;
                     }
@@ -1206,7 +1206,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     // loader, but it's not important to the test.
 
                     if (OperatingSystem.IsWindows() &&
-                        !PlatformDetection.IsWindows8xOrLater)
+                        !PlatformDetection.IsWindows)
                     {
                         followup = null;
                     }
