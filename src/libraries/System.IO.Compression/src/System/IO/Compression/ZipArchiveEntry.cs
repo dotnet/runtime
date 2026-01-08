@@ -419,13 +419,16 @@ namespace System.IO.Compression
                 case ZipArchiveMode.Update:
                 default:
                     Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
-                    return access switch
+                    switch (access)
                     {
-                        FileAccess.Read => OpenInReadMode(checkOpenable: true),
-                        FileAccess.Write => OpenInUpdateMode(loadExistingContent: false),
-                        FileAccess.ReadWrite => OpenInUpdateMode(loadExistingContent: true),
-                        _ => throw new UnreachableException()
-                    };
+                        case FileAccess.Read:
+                            return OpenInReadMode(checkOpenable: true);
+                        case FileAccess.Write:
+                            return OpenInUpdateMode(loadExistingContent: false);
+                        case FileAccess.ReadWrite:
+                        default:
+                            return OpenInUpdateMode(loadExistingContent: true);
+                    }
             }
         }
 

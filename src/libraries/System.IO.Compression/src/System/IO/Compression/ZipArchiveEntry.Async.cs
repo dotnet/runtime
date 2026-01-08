@@ -80,13 +80,16 @@ public partial class ZipArchiveEntry
             case ZipArchiveMode.Update:
             default:
                 Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
-                return access switch
+                switch (access)
                 {
-                    FileAccess.Read => await OpenInReadModeAsync(checkOpenable: true, cancellationToken).ConfigureAwait(false),
-                    FileAccess.Write => await OpenInUpdateModeAsync(loadExistingContent: false, cancellationToken).ConfigureAwait(false),
-                    FileAccess.ReadWrite => await OpenInUpdateModeAsync(loadExistingContent: true, cancellationToken).ConfigureAwait(false),
-                    _ => throw new UnreachableException()
-                };
+                    case FileAccess.Read:
+                        return await OpenInReadModeAsync(checkOpenable: true, cancellationToken).ConfigureAwait(false);
+                    case FileAccess.Write:
+                        return await OpenInUpdateModeAsync(loadExistingContent: false, cancellationToken).ConfigureAwait(false);
+                    case FileAccess.ReadWrite:
+                    default:
+                        return await OpenInUpdateModeAsync(loadExistingContent: true, cancellationToken).ConfigureAwait(false);
+                }
         }
     }
 
