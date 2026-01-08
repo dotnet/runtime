@@ -5164,9 +5164,40 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             case GT_CNS_LNG:
             case GT_CNS_INT:
-                costEx = 1;
-                costSz = 4;
+            {
+                GenTreeIntConCommon* con            = tree->AsIntConCommon();
+                bool                 iconNeedsReloc = con->ImmedValNeedsReloc(this);
+                bool                 addrNeedsReloc = con->AddrNeedsReloc(this);
+                ssize_t              imm            = static_cast<ssize_t>(con->LngValue());
+                emitAttr             size           = EA_SIZE(emitActualTypeSize(tree));
+
+                if (iconNeedsReloc || addrNeedsReloc)
+                {
+                    // auipc + addi
+                    costSz = 8;
+                    costEx = 2;
+                }
+                else
+                {
+                    int instructionCount = GetEmitter()->emitLoadImmediate<false>(size, REG_NA, imm);
+
+                    assert(instructionCount != 0);
+
+                    if (instructionCount == -1)
+                    {
+                        // Cannot emit code in a 5 instruction sequence
+                        // Create a 8-byte constant(8) and load it with auipc(4) + ld(4)
+                        costSz = 16;
+                        costEx = 1 + IND_COST_EX;
+                    }
+                    else
+                    {
+                        costSz = 4 * instructionCount;
+                        costEx = instructionCount;
+                    }
+                }
                 goto COMMON_CNS;
+            }
 #elif defined(TARGET_WASM)
             case GT_CNS_STR:
                 costEx = IND_COST_EX + 2;
@@ -6751,9 +6782,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_START_NONGC:
         case GT_START_PREEMPTGC:
         case GT_PROF_HOOK:
-#if defined(FEATURE_EH_WINDOWS_X86)
-        case GT_END_LFIN:
-#endif // FEATURE_EH_WINDOWS_X86
         case GT_PHI_ARG:
         case GT_JMPTABLE:
         case GT_PHYSREG:
@@ -9622,9 +9650,6 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                 copy = new (this, oper) GenTree(oper, tree->gtType);
                 goto DONE;
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-            case GT_END_LFIN:
-#endif // FEATURE_EH_WINDOWS_X86
             case GT_JMP:
             case GT_RECORD_ASYNC_RESUME:
             case GT_ASYNC_RESUME_INFO:
@@ -10396,9 +10421,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_START_NONGC:
         case GT_START_PREEMPTGC:
         case GT_PROF_HOOK:
-#if defined(FEATURE_EH_WINDOWS_X86)
-        case GT_END_LFIN:
-#endif // FEATURE_EH_WINDOWS_X86
         case GT_PHI_ARG:
         case GT_JMPTABLE:
         case GT_PHYSREG:
@@ -11906,12 +11928,6 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
                 ilName = "OutArgs";
             }
 #endif // FEATURE_FIXED_OUT_ARGS
-#if defined(FEATURE_EH_WINDOWS_X86)
-            else if (lclNum == lvaShadowSPslotsVar)
-            {
-                ilName = "EHSlots";
-            }
-#endif // FEATURE_EH_WINDOWS_X86
 #ifdef JIT32_GCENCODER
             else if (lclNum == lvaLocAllocSPvar)
             {
@@ -12447,12 +12463,6 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                                                 buffer, sizeof(buffer)));
         }
         break;
-
-#if defined(FEATURE_EH_WINDOWS_X86)
-        case GT_END_LFIN:
-            printf(" ehID=%d", tree->AsVal()->gtVal1);
-            break;
-#endif // FEATURE_EH_WINDOWS_X86
 
             // Vanilla leaves. No qualifying information available. So do nothing
 

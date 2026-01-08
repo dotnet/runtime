@@ -106,11 +106,9 @@
     <Compile Include="Internal\Runtime\FrozenObjectHeapManager.cs" />
     <Compile Include="Internal\Runtime\ThreadStatics.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.Extensions.cs" />
-    <Compile Include="Internal\Runtime\CompilerHelpers\ArrayHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\InteropHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\LdTokenHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.cs" />
-    <Compile Include="Internal\Runtime\CompilerHelpers\TypedReferenceHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\IntrinsicSupport\ComparerHelpers.cs" />
@@ -211,7 +209,6 @@
     <Compile Include="System\Runtime\InteropServices\MemoryMarshal.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\TrackerObjectManager.NativeAot.cs" Condition="'$(FeatureComWrappers)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\ObjectiveCMarshal.NativeAot.cs" Condition="'$(FeatureObjCMarshal)' == 'true'" />
-    <Compile Include="System\Runtime\Intrinsics\X86\X86Base.NativeAot.cs" Condition="'$(SupportsX86Intrinsics)' == 'true'" />
     <Compile Include="System\Runtime\JitInfo.NativeAot.cs" />
     <Compile Include="System\Runtime\Loader\AssemblyLoadContext.NativeAot.cs" />
     <Compile Include="System\String.NativeAot.cs" />

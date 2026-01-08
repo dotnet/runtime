@@ -502,6 +502,8 @@ enum GenTreeFlags : unsigned
     GTF_BOX_CLONED              = 0x40000000, // GT_BOX -- this box and its operand has been cloned, cannot assume it to be single-use anymore
     GTF_BOX_VALUE               = 0x80000000, // GT_BOX -- "box" is on a value type
 
+    GTF_QMARK_EARLY_EXPAND      = 0x01000000, // GT_QMARK -- early expansion of the QMARK node is required
+
     GTF_ARR_ADDR_NONNULL        = 0x80000000, // GT_ARR_ADDR -- this array's address is not null
 
 #define HANDLE_KIND_INDEX_SHIFT 24
@@ -5611,7 +5613,7 @@ struct GenTreeCall final : public GenTree
             return WellKnownArg::VirtualStubCell;
         }
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64) || defined(TARGET_WASM)
         // For ARM architectures, we always use an indirection cell for R2R calls.
         if (IsR2RRelativeIndir() && !IsDelegateInvoke())
         {
@@ -5935,6 +5937,16 @@ struct GenTreeQmark : public GenTreeOp
     {
         assert(thenLikelihood <= 100);
         gtThenLikelihood = thenLikelihood;
+    }
+
+    bool IsEarlyExpandableQmark() const
+    {
+        return gtFlags & GTF_QMARK_EARLY_EXPAND;
+    }
+
+    void SetEarlyExpandableQmark()
+    {
+        gtFlags |= GTF_QMARK_EARLY_EXPAND;
     }
 
 #if DEBUGGABLE_GENTREE
