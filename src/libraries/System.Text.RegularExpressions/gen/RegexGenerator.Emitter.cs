@@ -1992,9 +1992,11 @@ namespace System.Text.RegularExpressions.Generator
                                     break;
                             }
 
-                            // This is only ever used for atomic alternations, so we can simply reset the doneLabel
-                            // after emitting the child, as nothing will backtrack here (and we need to reset it
-                            // so that all branches see the original).
+                            // This is only ever used for alternations where no branch may backtrack
+                            // (whether due to being atomic or simply because nothing in the branch
+                            // can backtrack), so we can simply reset the doneLabel after emitting the
+                            // child, as nothing will backtrack here (and we need to reset it so that
+                            // all branches see the original).
                             doneLabel = originalDoneLabel;
 
                             // If we get here in the generated code, the branch completed successfully.
