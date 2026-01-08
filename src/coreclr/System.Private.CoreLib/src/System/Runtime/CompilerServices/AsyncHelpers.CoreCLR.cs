@@ -539,7 +539,7 @@ namespace System.Runtime.CompilerServices
 #else
                     {
                         IntPtr ip = (IntPtr)continuation.ResumeInfo->DiagnosticIP;
-                        AppendExceptionStackFrame(ex, ip, 0);
+                        Exception.AppendExceptionStackFrame(ex, ip, 0);
                     }
 #endif
                     if (continuation == null || (continuation.Flags & ContinuationFlags.HasException) != 0)
