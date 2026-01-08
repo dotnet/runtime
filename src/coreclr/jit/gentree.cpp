@@ -23078,14 +23078,11 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(var_types type,
 
             case TYP_HALF:
             {
-                // todo-half: this is only to create zero constant half nodes for use in instrincis, anything
-                // else will not work
-                float cnsVal = static_cast<float>(op1->AsDblCon()->DconValue());
-                assert(cnsVal == 0.0f); // Only 0.0 is supported for half constants currently
+                float16_t cnsVal = FloatingPointUtils::convertDoubleToFloat16(op1->AsDblCon()->DconValue());
 
-                for (unsigned i = 0; i < (simdSize / 4); i++)
+                for (unsigned i = 0; i < (simdSize / 2); i++)
                 {
-                    vecCon->gtSimdVal.f32[i] = cnsVal;
+                    vecCon->gtSimdVal.f16[i] = cnsVal;
                 }
                 break;
             }
