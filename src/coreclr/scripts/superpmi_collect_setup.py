@@ -472,7 +472,7 @@ def main(main_args):
             if arch == "arm64": # public osx_arm64
                 helix_queue = "osx.26.arm64.open"
             else: # public osx_x64
-                helix_queue = "OSX.26.Amd64.Open"
+                helix_queue = "OSX.15.Amd64.Open"
     else:
         if platform_name == "windows":
             if arch == "arm64": # internal windows_arm64
@@ -490,7 +490,7 @@ def main(main_args):
             if arch == "arm64": # internal osx_arm64
                 helix_queue = "OSX.26.ARM64"
             else: # internal osx_x64
-                helix_queue = "OSX.26.Amd64"
+                helix_queue = "OSX.15.Amd64"
 
     # Copy the superpmi scripts
 
