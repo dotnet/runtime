@@ -6895,7 +6895,7 @@ struct GenTreeVecCon : public GenTree
             {
                 if (arg->IsCnsFltOrDbl())
                 {
-                    simdVal.f16[argIdx] = static_cast<uint16_t>(arg->AsDblCon()->DconValue());
+                    simdVal.f16[argIdx] = FloatingPointUtils::convertDoubleToFloat16(arg->AsDblCon()->DconValue());
                     return true;
                 }
                 else
