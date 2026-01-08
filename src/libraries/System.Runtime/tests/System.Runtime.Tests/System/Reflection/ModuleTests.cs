@@ -81,7 +81,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]
+         [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void FullyQualifiedName()
         {
 #if SINGLE_FILE_TEST_RUNNER
@@ -100,7 +100,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]
+         [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Name()
         {
 #if SINGLE_FILE_TEST_RUNNER
