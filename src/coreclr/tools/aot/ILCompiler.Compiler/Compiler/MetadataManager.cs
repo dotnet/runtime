@@ -778,10 +778,8 @@ namespace ILCompiler
                     flags |= StackTraceRecordFlags.IsHidden;
                 if ((stackVisibility & MethodStackTraceVisibilityFlags.HasLineNumbers) != 0)
                     flags |= StackTraceRecordFlags.HasLineNumbers;
-                if ((stackVisibility & MethodStackTraceVisibilityFlags.RuntimeAsync) != 0)
-                    flags |= StackTraceRecordFlags.RuntimeAsync;
 
-                if ((stackVisibility & (MethodStackTraceVisibilityFlags.HasMetadata | MethodStackTraceVisibilityFlags.RuntimeAsync)) != 0)
+                if ((stackVisibility & MethodStackTraceVisibilityFlags.HasMetadata) != 0)
                 {
                     StackTraceRecordData record = CreateStackTraceRecord(transform, method, flags);
 
@@ -791,11 +789,6 @@ namespace ILCompiler
                     writer.AdditionalRootRecords.Add(record.MethodName);
                     writer.AdditionalRootRecords.Add(record.MethodSignature);
                     writer.AdditionalRootRecords.Add(record.MethodInstantiationArgumentCollection);
-                    // hide the resumption stubs
-                    if ((flags & StackTraceRecordFlags.RuntimeAsync) != 0)
-                    {
-                        stackTraceRecords.Add(new StackTraceRecordData(method, null, null, null, null, StackTraceRecordFlags.IsHidden));
-                    }
                 }
                 else if ((stackVisibility & MethodStackTraceVisibilityFlags.IsHidden) != 0)
                 {
@@ -937,11 +930,7 @@ namespace ILCompiler
         protected StackTraceRecordData CreateStackTraceRecord(Metadata.MetadataTransform transform, MethodDesc method, StackTraceRecordFlags flags)
         {
             // In the metadata, we only represent the generic definition
-            if ((flags & StackTraceRecordFlags.RuntimeAsync) != 0)
-            {
-                method = ((ILCompiler.AsyncResumptionStub)method).TargetMethod;
-            }
-            MethodDesc methodToGenerateMetadataFor =  method.GetTypicalMethodDefinition();
+            MethodDesc methodToGenerateMetadataFor = method.GetTypicalMethodDefinition();
 
             ConstantStringValue name = (ConstantStringValue)methodToGenerateMetadataFor.GetName();
             MetadataRecord signature = transform.HandleMethodSignature(methodToGenerateMetadataFor.Signature);
@@ -1360,7 +1349,6 @@ namespace ILCompiler
         None = 0,
         IsHidden = 1,
         HasLineNumbers = 2,
-        RuntimeAsync = 4,
     }
 
     public readonly struct StackTraceRecordData

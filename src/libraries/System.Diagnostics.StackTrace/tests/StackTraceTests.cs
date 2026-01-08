@@ -31,6 +31,181 @@ namespace System.Diagnostics
             }
         }
     }
+
+    public static class V1Methods
+    {
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
+        public static async Task Test0(Func<int, Task> method)
+        {
+#line 1 "Program.cs"
+            await Test1(method);
+            await Task.Yield();
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
+        public static async Task Test1(Func<int, Task> method)
+        {
+            try
+            {
+#line 2 "Program.cs"
+                await method(3);
+            }
+            catch (Exception ex) when (ex.Message.Contains("404"))
+            {
+                Console.WriteLine($"Caught exception in Test1 with: {ex}");
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
+        public static async Task Test2(int i)
+        {
+            throw new NullReferenceException("Exception from Test2");
+        }
+    }
+
+    public class V2Methods
+    {
+        // v2 -> v1 -> v2 -> v1
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        public static async Task Foo()
+        {
+            await Task.Yield();
+            try
+            {
+#line 1 "Program.cs"
+                await V1Methods.Test0(Foo1);
+            }
+            catch (NotImplementedException)
+            {
+                throw;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        private static async Task<int> Foo1(int i)
+        {
+            await Task.Yield();
+            try
+            {
+#line 2 "Program.cs"
+                await Foo2(i);
+                return i * 2;
+            }
+            catch (NotImplementedException)
+            {
+                throw;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        private static async Task<int> Foo2(int i)
+        {
+            try
+            {
+                await Task.Yield();
+                await V1Methods.Test2(i);
+            }
+            finally
+            {
+#line 3 "Program.cs"
+                throw new NotImplementedException("Not Found from Foo2");
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        public static async Task Bar(int i)
+        {
+            if (i == 0)
+#line 4 "Program.cs"
+                throw new Exception("Exception from Bar");
+#line 5 "Program.cs"
+            await Bar(i - 1);
+        }
+
+        // also v2 v1 chaining but this time we don't have finally
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        public static async Task Quux()
+        {
+            await Task.Yield();
+            try
+            {
+#line 6 "Program.cs"
+                await V1Methods.Test0(Quux1);
+            }
+            catch (NotImplementedException)
+            {
+                throw;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        private static async Task<int> Quux1(int i)
+        {
+            try
+            {
+                await Task.Yield();
+#line 7 "Program.cs"
+                throw new NotImplementedException("Not Found from Quux1");
+            }
+            catch (NotImplementedException)
+            {
+                throw;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        public static async Task<int> Quuux()
+        {
+            var task = Quuux2();
+            await Task.Yield();
+#line 8 "Program.cs"
+            return await task;
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        private static async Task<int> Quuux2()
+        {
+            await Task.Yield();
+#line 9 "Program.cs"
+            throw new Exception("Exception from Quuux2");
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        public static async Task Bux()
+        {
+            await Task.Yield();
+            try
+            {
+#line 10 "Program.cs"
+                Baz().Wait();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        public static async Task Baz()
+        {
+            if (Random.Shared.Next(1) == 100) await Task.Yield();
+#line 11 "Program.cs"
+            throw new Exception("Exception from Baz method.");
+        }
+    }
 }
 
 namespace System.Diagnostics.Tests
@@ -411,87 +586,67 @@ namespace System.Diagnostics.Tests
         {
             { "Foo", new[] {
                 @"Not Found from Foo2",
-                @"Program\.Foo2\(Int32.*Program\.cs:line 3",
-                @"Program\.Foo1\(Int32.*Program\.cs:line 2",
+                @"V2Methods\.Foo2\(Int32.*Program\.cs:line 3",
+                @"V2Methods\.Foo1\(Int32.*Program\.cs:line 2",
                 @"V1Methods\.Test1\(Func`2.*Program\.cs:line 2",
                 @"V1Methods\.Test0\(Func`2.*Program\.cs:line 1",
-                @"Program\.Foo\(\).*Program\.cs:line 1"
+                @"V2Methods\.Foo\(\).*Program\.cs:line 1"
             }},
             { "Bar", new[] {
                 @"Exception from Bar",
-                @"Program\.Bar\(Int32.*Program\.cs:line 4",
-                @"Program\.Bar\(Int32.*Program\.cs:line 5"
-            }},
-            { "Baz", new[] {
-                @"Exception from Baz",
-                @"Program\.Baz\(\).*Program\.cs:line 6"
-            }},
-            { "Qux", new[] {
-                @"Exception from Qux",
-                @"Program\.Qux\(Int32.*Program\.cs:line 7"
+                @"V2Methods\.Bar\(Int32.*Program\.cs:line 4",
+                @"V2Methods\.Bar\(Int32.*Program\.cs:line 5"
             }},
             {"Quux", new[] {
                 @"Not Found from Quux1",
-                @"Program\.Quux1\(Int32.*Program\.cs:line 9",
+                @"V2Methods\.Quux1\(Int32.*Program\.cs:line 7",
                 @"V1Methods\.Test1\(Func`2.*Program\.cs:line 2",
                 @"V1Methods\.Test0\(Func`2.*Program\.cs:line 1",
-                @"Program\.Quux\(\).*Program\.cs:line 8"
+                @"V2Methods\.Quux\(\).*Program\.cs:line 6"
             }},
             { "Quuux", new[] {
                 @"Exception from Quuux2",
-                @"Program\.Quuux2\(\).*Program\.cs:line 11",
-                @"Program\.Quuux\(\).*Program\.cs:line 10"
-            }}
+                @"V2Methods\.Quuux2\(\).*Program\.cs:line 9",
+                @"V2Methods\.Quuux\(\).*Program\.cs:line 8"
+            }},
+            {"Bux", new[] {
+                @"Exception from Baz method.",
+                @"V2Methods\.Baz\(\).*Program\.cs:line 11",
+                @"V2Methods\.Bux\(\).*Program\.cs:line 10"
+            }},
         };
 
         public static IEnumerable<object[]> Ctor_Async_TestData()
         {
-            yield return new object[] { "Foo", null, MethodExceptionStrings["Foo"] };
-            yield return new object[] { "Bar", 3, MethodExceptionStrings["Bar"] };
-            yield return new object[] { "Baz", null, MethodExceptionStrings["Baz"] };
-            yield return new object[] { "Qux", 0, MethodExceptionStrings["Qux"] };
-            yield return new object[] { "Quux", null, MethodExceptionStrings["Quux"] };
-            yield return new object[] { "Quuux", null, MethodExceptionStrings["Quuux"] };
+            yield return new object[] { () => V2Methods.Foo(), MethodExceptionStrings["Foo"] };
+            yield return new object[] { () => V2Methods.Bar(3), MethodExceptionStrings["Bar"] };
+            yield return new object[] { () => V2Methods.Quux(), MethodExceptionStrings["Quux"] };
+            yield return new object[] { () => V2Methods.Quuux(), MethodExceptionStrings["Quuux"] };
+            yield return new object[] { () => V2Methods.Bux(), MethodExceptionStrings["Bux"] };
         }
 
-        public static class RuntimeAsyncAndRemoteExecutor
-        {
-            public static bool IsSupported => RemoteExecutor.IsSupported && PlatformDetection.IsRuntimeAsyncSupported;
-        }
-
-        [ConditionalTheory(typeof(RuntimeAsyncAndRemoteExecutor), nameof(RuntimeAsyncAndRemoteExecutor.IsSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
         [MemberData(nameof(Ctor_Async_TestData))]
-        public void ToString_Async(string methodName, object arg1, string[] expectedPatterns)
+        public async Task ToString_Async(Func<Task> asyncMethod, string[] expectedPatterns)
         {
-            string AssemblyName = "AsyncAssembly.dll";
-            string SourceTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, AssemblyName);
-            RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.StartInfo.EnvironmentVariables["DOTNET_RuntimeAsync"] = "1";
-            string joinedPatterns = string.Join("|", expectedPatterns);
-            string arg1String = arg1?.ToString() ?? "null";
-            Func<string, string, string, string, Task> method = async (asmPath, methodName, arg1String, joinedPatterns) =>
+            Exception? caughtException = null;
+            try
             {
-                var asm = Assembly.LoadFrom(asmPath);
-                try
-                {
-                    object arg1 = arg1String == "null" ? null : int.Parse(arg1String, CultureInfo.InvariantCulture);
-                    var result = asm.GetType("Program").GetMethod(methodName).Invoke(null, arg1 == null ? null : new[] { arg1 });
-                    if (result is Task task)
-                    {
-                        await task;
-                    }
-                }
-                catch (Exception e)
-                {
-                    string exceptionString = e.ToString();
-                    string[] patterns = joinedPatterns.Split('|');
-                    foreach (string pattern in patterns)
-                    {
-                        Assert.Matches(pattern, exceptionString);
-                    }
-                }
-            };
-            RemoteExecutor.Invoke(method, SourceTestAssemblyPath, methodName, arg1String, joinedPatterns, options).Dispose();
+                await asyncMethod();
+            }
+            catch (Exception ex)
+            {
+                caughtException = ex;
+            }
+
+            Assert.NotNull(caughtException);
+
+            string exceptionText = caughtException.ToString();
+
+            foreach (string pattern in expectedPatterns)
+            {
+                Assert.Matches(pattern, exceptionText);
+            }
         }
 
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]

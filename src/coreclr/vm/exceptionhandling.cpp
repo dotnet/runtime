@@ -1586,7 +1586,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
     {
         newExceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
         newExceptionRecord.ExceptionFlags = EXCEPTION_NONCONTINUABLE | EXCEPTION_SOFTWARE_ORIGINATE;
-        newExceptionRecord.ExceptionAddress = (void *)(void (*)(OBJECTREF))&DispatchManagedException;
+        newExceptionRecord.ExceptionAddress = (void *)(void (*)(OBJECTREF, ExKind))&DispatchManagedException;
         newExceptionRecord.NumberParameters = MarkAsThrownByUs(newExceptionRecord.ExceptionInformation, hr);
         newExceptionRecord.ExceptionRecord = NULL;
     }
@@ -1643,7 +1643,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
     UNREACHABLE();
 }
 
-VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable)
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, ExKind exKind /*= ExKind::None*/)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -1652,7 +1652,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable)
     CONTEXT exceptionContext;
     ClrCaptureContext(&exceptionContext);
 
-    DispatchManagedException(throwable, &exceptionContext);
+    DispatchManagedException(throwable, &exceptionContext, NULL, exKind);
     UNREACHABLE();
 }
 

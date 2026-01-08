@@ -87,11 +87,6 @@ namespace System.Runtime.CompilerServices
         ContinueOnCapturedTaskScheduler = 64,
     }
 
-    internal enum RhEHFrameType
-    {
-        RH_EH_RUNTIME_ASYNC_FRAME = 4,
-    }
-
     // Keep in sync with CORINFO_AsyncResumeInfo in corinfo.h
     internal unsafe struct ResumeInfo
     {
@@ -540,25 +535,10 @@ namespace System.Runtime.CompilerServices
 #if !NATIVEAOT
                         AddContinuationToExInternal(continuation.ResumeInfo->DiagnosticIP, ex);
 #else
-        {
-                    IntPtr ip = (IntPtr)continuation.ResumeInfo->DiagnosticIP;
-                    int flags = (int)RhEHFrameType.RH_EH_RUNTIME_ASYNC_FRAME;
-                    IntPtr pAppendStackFrame = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(ip,
-                        ClassLibFunctionId.AppendExceptionStackFrame);
-
-                    if (pAppendStackFrame != IntPtr.Zero)
                     {
-                        try
-                        {
-                            ((delegate*<object, IntPtr, int, void>)pAppendStackFrame)(ex, ip, flags);
-                        }
-                        catch
-                        {
-                            // disallow all exceptions leaking out of callbacks
-                        }
+                        IntPtr ip = (IntPtr)continuation.ResumeInfo->DiagnosticIP;
+                        AppendExceptionStackFrame(ex, ip, 0);
                     }
-        }
-
 #endif
                     if (continuation == null || (continuation.Flags & ContinuationFlags.HasException) != 0)
                         return continuation;

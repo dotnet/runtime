@@ -40,17 +40,14 @@ namespace ILCompiler
             MethodStackTraceVisibilityFlags result = _flags;
 
             if (method.HasCustomAttribute("System.Diagnostics", "StackTraceHiddenAttribute")
-                || (method.OwningType is MetadataType mdType && mdType.HasCustomAttribute("System.Diagnostics", "StackTraceHiddenAttribute")))
+                || (method.OwningType is MetadataType mdType && mdType.HasCustomAttribute("System.Diagnostics", "StackTraceHiddenAttribute"))
+                || (method is ILCompiler.AsyncResumptionStub)
+                || method.IsAsyncThunk()) // hide async thunks
             {
                 result |= MethodStackTraceVisibilityFlags.IsHidden;
             }
 
-            if (method is ILCompiler.AsyncResumptionStub asyncStub && asyncStub.TargetMethod.IsAsyncVariant())
-            {
-                result |= MethodStackTraceVisibilityFlags.RuntimeAsync;
-            }
-
-            return method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod
+            return (method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod || (method.IsAsync && method.IsAsyncCall()))
                 ? result | MethodStackTraceVisibilityFlags.HasMetadata
                 : result;
         }
@@ -62,6 +59,5 @@ namespace ILCompiler
         HasMetadata = 0x1,
         IsHidden = 0x2,
         HasLineNumbers = 0x4,
-        RuntimeAsync = 0x8,
     }
 }
