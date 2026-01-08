@@ -74,6 +74,8 @@ bool StartProcess(char* commandLine, HANDLE hStdOutput, HANDLE hStdError, HANDLE
 
 void ReadMCLToArray(char* mclFilename, std::vector<int>& MCL)
 {
+    std::vector<int> l;
+
     FILE*   fp = fopen(mclFilename, "r");
     int64_t size;
 
@@ -100,15 +102,16 @@ void ReadMCLToArray(char* mclFilename, std::vector<int>& MCL)
     int value;
     while (fscanf(fp, "%d", &value) > 0)
     {
-        MCL.push_back(value);
+        l.push_back(value);
     }
+    MCL = std::move(l);
 
 Cleanup:
     if (fp != NULL)
         fclose(fp);
 }
 
-bool WriteArrayToMCL(char* mclFilename, std::vector<int>& MCL)
+bool WriteArrayToMCL(char* mclFilename, const std::vector<int>& MCL)
 {
     FILE* fpMCLFile = fopen(mclFilename, "w");
     bool result = true;
