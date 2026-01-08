@@ -2040,6 +2040,7 @@ namespace System.Security.Cryptography.X509Certificates
                         epki.EncryptedData.Span,
                         decryptedBuffer);
 
+                    decryptBufferClearSize = decryptedBytes;
                     X509Certificate2? loaded = ExtractKeyFromECPrivateKeyInfo(certificate, decryptedBuffer.AsMemory(0, decryptedBytes));
 
                     if (loaded is null)
@@ -2080,7 +2081,7 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     // EC PRIVATE KEYs do not have a key usage, so usage is determined by the certificate.
 
-                    // If we can load it is EC-DH, we should prefer that over EC-DH. ECC keys that are "both" prefer
+                    // If we can load it is EC-DH, we should prefer that over EC-DSA. ECC keys that are "both" prefer
                     // to be imported as EC-DH. Importing it as EC-DSA would restrict it to EC-DSA, even if the key
                     // and certificate are valid for EC-DH. Other platforms don't have such restrictions.
                     if (IsECDiffieHellman(certificate))
@@ -2150,7 +2151,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509Certificate2 certificate,
             ReadOnlyMemory<byte> privateKeyInfo)
         {
-            // We are not going to perform any validate on the PrivateKeyInfo here. We just need a hint
+            // We are not going to perform any validation on the PrivateKeyInfo here. We just need a hint
             // what algorithm to use. The actual algorithm will do whatever validation on the key as needed.
             PrivateKeyInfoAsn privateKeyInfoAsn = PrivateKeyInfoAsn.Decode(privateKeyInfo, AsnEncodingRules.BER);
 
@@ -2170,7 +2171,6 @@ namespace System.Security.Cryptography.X509Certificates
             // it will work for EC-DSA, too) or as EC-DH explicitly.
             if ((usages is null || (usages & ~EcdsaKeyUsageFlags) != 0) && IsECDiffieHellman(certificate))
             {
-                // TODO: We need to handle both. What happens if the key has both keyAggreement and digitalSignature?
                 using (ECDiffieHellman ecdh = ECDiffieHellman.Create())
                 {
                     ecdh.ImportPkcs8PrivateKey(privateKeyInfo.Span, out int pkcs8Read);
