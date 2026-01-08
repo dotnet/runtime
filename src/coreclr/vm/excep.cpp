@@ -2137,7 +2137,15 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
     GCPROTECT_END();
 }
 
-VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *exceptionObj)
+#ifdef TARGET_WASM
+EXCEPTION_DISPOSITION SetTargetFrame(PAL_SEHException& ex, UINT_PTR targetSP)
+{
+    ex.TargetFrameSp = targetSP;
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+#endif // TARGET_WASM
+
+VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *exceptionObj, UINT_PTR targetSP)
 {
     CONTRACTL
     {
@@ -2147,8 +2155,31 @@ VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *
     }
     CONTRACTL_END;
 
-    OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
-    RealCOMPlusThrowWorker(throwable);
+    // On WASM, the exception needs to keep propagating until it reaches the target frame. On other platforms,
+    // this is ensured by unwinding stack up to the target frame before propagating the exception. This
+    // difference is due to the fact that on WASM we don't have native stack unwinding support.
+#ifdef TARGET_WASM
+    struct Param
+    {
+        Object *exceptionObj;
+        UINT_PTR targetSP;
+    } param = { exceptionObj, targetSP };
+
+    PAL_TRY(Param *, pParam, &param)
+    {
+        OBJECTREF throwable = ObjectToOBJECTREF(pParam->exceptionObj);
+#else
+        OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
+#endif // TARGET_WASM
+        RealCOMPlusThrowWorker(throwable);
+#ifdef TARGET_WASM
+    }
+    PAL_EXCEPT(SetTargetFrame(ex, __param->targetSP))
+    {
+    }
+    PAL_ENDTRY
+#endif // TARGET_WASM
+    UNREACHABLE();
 }
 
 // this function finds the managed callback to get a resource

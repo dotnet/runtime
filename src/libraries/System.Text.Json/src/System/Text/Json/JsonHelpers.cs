@@ -195,7 +195,7 @@ namespace System.Text.Json
             ReadOnlySpan<byte> utf8Key,
             [MaybeNullWhen(false)] out TValue result)
         {
-#if NET9_0_OR_GREATER
+#if NET
             Debug.Assert(dictionary.Comparer is IAlternateEqualityComparer<ReadOnlySpan<char>, string>);
 
             Dictionary<string, TValue>.AlternateLookup<ReadOnlySpan<char>> spanLookup =

@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { check, error, info, warn, debug } from "../../../../corehost/browserhost/loader/logging";
+import type { check, error, info, warn, debug, fastCheck } from "../../../../corehost/browserhost/loader/logging";
 import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise, abortStartup } from "../../../../corehost/browserhost/loader/run";
 import type { addOnExitListener, isExited, isRuntimeRunning, quitNow } from "../../../../corehost/browserhost/loader/exit";
 
-import type { installVfsFile, registerDllBytes, loadIcuData, initializeCoreCLR } from "../../../../corehost/browserhost/host/host";
+import type { installVfsFile, registerDllBytes, loadIcuData, initializeCoreCLR, registerPdbBytes } from "../../../../corehost/browserhost/host/host";
 import type { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "../../../../corehost/browserhost/loader/promise-completion-source";
 
 import type { isSharedArrayBuffer, zeroRegion } from "../../../System.Native.Browser/utils/memory";
@@ -29,6 +29,7 @@ export type LoggerType = {
 
 export type AssertType = {
     check: typeof check,
+    fastCheck: typeof fastCheck,
 }
 
 export type LoaderExports = {
@@ -51,6 +52,7 @@ export type LoaderExportsTable = [
     typeof warn,
     typeof error,
     typeof check,
+    typeof fastCheck,
     typeof resolveRunMainPromise,
     typeof rejectRunMainPromise,
     typeof getRunMainPromise,
@@ -69,6 +71,7 @@ export type BrowserHostExports = {
     installVfsFile: typeof installVfsFile
     loadIcuData: typeof loadIcuData
     initializeCoreCLR: typeof initializeCoreCLR
+    registerPdbBytes: typeof registerPdbBytes
 }
 
 export type BrowserHostExportsTable = [
@@ -76,6 +79,7 @@ export type BrowserHostExportsTable = [
     typeof installVfsFile,
     typeof loadIcuData,
     typeof initializeCoreCLR,
+    typeof registerPdbBytes,
 ]
 
 export type InteropJavaScriptExports = {

@@ -3,7 +3,8 @@
 
 import type { InternalExchange, BrowserUtilsExports, RuntimeAPI, BrowserUtilsExportsTable } from "./types";
 import { InternalExchangeIndex } from "../types";
-import { } from "./cross-module"; // ensure ambient symbols are declared
+
+import GitHash from "consts:gitHash";
 
 import {
     setHeapB32, setHeapB8, setHeapU8, setHeapU16, setHeapU32, setHeapI8, setHeapI16, setHeapI32, setHeapI52, setHeapU52, setHeapI64Big, setHeapF32, setHeapF64,
@@ -20,9 +21,15 @@ import { registerRuntime } from "./runtime-list";
 import { registerCDAC } from "./cdac";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
-    initPolyfills();
+    if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
     const runtimeApi = internals[InternalExchangeIndex.RuntimeAPI];
     if (typeof runtimeApi !== "object") throw new Error("Expected internals to have RuntimeAPI");
+
+    if (runtimeApi.runtimeBuildInfo.gitHash && runtimeApi.runtimeBuildInfo.gitHash !== GitHash) {
+        throw new Error(`Mismatched git hashes between loader and runtime. Loader: ${runtimeApi.runtimeBuildInfo.gitHash}, BrowserUtils: ${GitHash}`);
+    }
+
+    initPolyfills();
     registerRuntime(runtimeApi);
     registerCDAC(runtimeApi);
 
@@ -64,4 +71,4 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
 }
 
 // see also `reserved` in `rollup.config.defines.js`
-export * as cross from "./cross-module";
+export * as _ems_ambient_ from "./cross-module";
