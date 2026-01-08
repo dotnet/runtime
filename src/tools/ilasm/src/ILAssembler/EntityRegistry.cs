@@ -177,15 +177,15 @@ namespace ILAssembler
                     builder.GetOrAddString(type.Namespace),
                     builder.GetOrAddString(type.Name),
                     type.BaseType is null ? default : type.BaseType.Handle,
-                    (FieldDefinitionHandle)GetHandleForList(type.Fields, GetSeenEntities(TableIndex.TypeDef), type => ((TypeDefinitionEntity)type).Fields, i, TableIndex.Field),
-                    (MethodDefinitionHandle)GetHandleForList(type.Methods, GetSeenEntities(TableIndex.TypeDef), type => ((TypeDefinitionEntity)type).Methods, i, TableIndex.MethodDef));
+                    GetFieldHandleForList(type.Fields, GetSeenEntities(TableIndex.TypeDef), type => ((TypeDefinitionEntity)type).Fields, i),
+                    GetMethodHandleForList(type.Methods, GetSeenEntities(TableIndex.TypeDef), type => ((TypeDefinitionEntity)type).Methods, i));
 
                 builder.AddEventMap(
                     (TypeDefinitionHandle)type.Handle,
-                    (EventDefinitionHandle)GetHandleForList(type.Events, GetSeenEntities(TableIndex.TypeDef), type => ((TypeDefinitionEntity)type).Events, i, TableIndex.Event));
+                    GetEventHandleForList(type.Events, GetSeenEntities(TableIndex.TypeDef), type => ((TypeDefinitionEntity)type).Events, i));
                 builder.AddPropertyMap(
                     (TypeDefinitionHandle)type.Handle,
-                    (PropertyDefinitionHandle)GetHandleForList(type.Properties, GetSeenEntities(TableIndex.TypeDef), type => ((TypeDefinitionEntity)type).Properties, i, TableIndex.Property));
+                    GetPropertyHandleForList(type.Properties, GetSeenEntities(TableIndex.TypeDef), type => ((TypeDefinitionEntity)type).Properties, i));
 
                 if (type.PackingSize is not null || type.ClassSize is not null)
                 {
@@ -241,7 +241,7 @@ namespace ILAssembler
                     builder.GetOrAddString(methodDef.Name),
                     builder.GetOrAddBlob(methodDef.MethodSignature!),
                     rva,
-                    (ParameterHandle)GetHandleForList(methodDef.Parameters, GetSeenEntities(TableIndex.MethodDef), method => ((MethodDefinitionEntity)method).Parameters, i, TableIndex.Param));
+                    GetParameterHandleForList(methodDef.Parameters, GetSeenEntities(TableIndex.MethodDef), method => ((MethodDefinitionEntity)method).Parameters, i));
 
                 if (methodDef.MethodImportInformation is not null)
                 {
@@ -385,6 +385,36 @@ namespace ILAssembler
                 builder.AddMethodSpecification(methodSpec.Parent.Handle, builder.GetOrAddBlob(methodSpec.Signature));
             }
 
+            static FieldDefinitionHandle GetFieldHandleForList(IReadOnlyList<EntityBase> list, IReadOnlyList<EntityBase> listOwner, Func<EntityBase, IReadOnlyList<EntityBase>> getList, int ownerIndex)
+            {
+                var handle = GetHandleForList(list, listOwner, getList, ownerIndex, TableIndex.Field);
+                return handle.IsNil ? default : (FieldDefinitionHandle)handle;
+            }
+
+            static MethodDefinitionHandle GetMethodHandleForList(IReadOnlyList<EntityBase> list, IReadOnlyList<EntityBase> listOwner, Func<EntityBase, IReadOnlyList<EntityBase>> getList, int ownerIndex)
+            {
+                var handle = GetHandleForList(list, listOwner, getList, ownerIndex, TableIndex.MethodDef);
+                return handle.IsNil ? default : (MethodDefinitionHandle)handle;
+            }
+
+            static PropertyDefinitionHandle GetPropertyHandleForList(IReadOnlyList<EntityBase> list, IReadOnlyList<EntityBase> listOwner, Func<EntityBase, IReadOnlyList<EntityBase>> getList, int ownerIndex)
+            {
+                var handle = GetHandleForList(list, listOwner, getList, ownerIndex, TableIndex.Property);
+                return handle.IsNil ? default : (PropertyDefinitionHandle)handle;
+            }
+
+            static EventDefinitionHandle GetEventHandleForList(IReadOnlyList<EntityBase> list, IReadOnlyList<EntityBase> listOwner, Func<EntityBase, IReadOnlyList<EntityBase>> getList, int ownerIndex)
+            {
+                var handle = GetHandleForList(list, listOwner, getList, ownerIndex, TableIndex.Event);
+                return handle.IsNil ? default : (EventDefinitionHandle)handle;
+            }
+
+            static ParameterHandle GetParameterHandleForList(IReadOnlyList<EntityBase> list, IReadOnlyList<EntityBase> listOwner, Func<EntityBase, IReadOnlyList<EntityBase>> getList, int ownerIndex)
+            {
+                var handle = GetHandleForList(list, listOwner, getList, ownerIndex, TableIndex.Param);
+                return handle.IsNil ? default : (ParameterHandle)handle;
+            }
+
             static EntityHandle GetHandleForList(IReadOnlyList<EntityBase> list, IReadOnlyList<EntityBase> listOwner, Func<EntityBase, IReadOnlyList<EntityBase>> getList, int ownerIndex, TableIndex tokenType)
             {
                 // Return the first entry in the list.
@@ -412,7 +442,8 @@ namespace ILAssembler
                         return MetadataTokens.EntityHandle(tokenType, MetadataTokens.GetRowNumber(otherList[otherList.Count - 1].Handle) + 1);
                     }
                 }
-                return MetadataTokens.EntityHandle(tokenType, 0);
+                // If all lists are empty, return a nil handle
+                return default(EntityHandle);
             }
         }
 
