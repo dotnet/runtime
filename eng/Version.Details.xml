@@ -54,14 +54,14 @@
       <Sha>803d8598f98fb4efd94604b32627ee9407f246db</Sha>
       <SourceBuild RepoName="command-line-api" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.5-alpha.25621.2">
+    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.5-alpha.25628.2">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>4643f3880a4ec97246de6d53621285bb48ad4a06</Sha>
+      <Sha>1f9985e482df7a0dee94854226d0aecad102ac15</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.cecil" Version="0.11.5-alpha.25621.2">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.cecil" Version="0.11.5-alpha.25628.2">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>4643f3880a4ec97246de6d53621285bb48ad4a06</Sha>
+      <Sha>1f9985e482df7a0dee94854226d0aecad102ac15</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.12-servicing.25626.4">
@@ -372,13 +372,13 @@
       <Uri>https://github.com/dotnet/roslyn</Uri>
       <Sha>dc344ef24932dcd53cdd24c15364a5996bc6a675</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.25615.3">
+    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.26057.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>7576c1d00aeef14c682c31b193ff8e58273cdd16</Sha>
+      <Sha>5ef1abb57ce3df89eae65ecadeb1ddbab323ae05</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0-preview.25615.3">
+    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0-preview.26057.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>7576c1d00aeef14c682c31b193ff8e58273cdd16</Sha>
+      <Sha>5ef1abb57ce3df89eae65ecadeb1ddbab323ae05</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
     <Dependency Name="Microsoft.SourceBuild.Intermediate.roslyn" Version="4.12.0-3.25569.8">
