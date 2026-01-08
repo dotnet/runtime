@@ -2074,7 +2074,6 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable)
         }
     }
 
-    // This needs to be both here and inside the handler below
     // Enable preemptive mode before call into OS
     GCX_PREEMP_NO_DTOR();
 
