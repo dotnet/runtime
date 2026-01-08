@@ -422,8 +422,8 @@ namespace System.IO.Compression
                     return access switch
                     {
                         FileAccess.Read => OpenInReadMode(checkOpenable: true),
-                        FileAccess.Write => OpenInWriteModeForUpdate(),
-                        FileAccess.ReadWrite => OpenInUpdateMode(),
+                        FileAccess.Write => OpenInUpdateMode(loadExistingContent: false),
+                        FileAccess.ReadWrite => OpenInUpdateMode(loadExistingContent: true),
                         _ => throw new UnreachableException()
                     };
             }
@@ -854,32 +854,6 @@ namespace System.IO.Compression
             return OpenInWriteModeCore();
         }
 
-        private WrappedStream OpenInWriteModeForUpdate()
-        {
-            if (_currentlyOpenForWrite)
-                throw new IOException(SR.UpdateModeOneStream);
-
-            // Write access in Update mode means "replace the entry content entirely".
-            // We provide an empty MemoryStream (discarding any existing data) and write
-            // the new content to the archive at dispose time. This is necessary because
-            // writing directly to the archive could overwrite the next entry if the new
-            // data is larger than the original.
-            _everOpenedForWrite = true;
-            Changes |= ZipArchive.ChangeState.StoredData;
-            _currentlyOpenForWrite = true;
-
-            // Dispose any previously loaded data and create a fresh empty MemoryStream
-            _storedUncompressedData?.Dispose();
-            _storedUncompressedData = new MemoryStream();
-
-            // Return a stream wrapper. The stream is writable and seekable (like MemoryStream),
-            // but starts empty unlike ReadWrite mode which loads existing data.
-            return new WrappedStream(_storedUncompressedData, this, thisRef =>
-            {
-                thisRef!._currentlyOpenForWrite = false;
-            });
-        }
-
         private WrappedStream OpenInWriteModeCore()
         {
             _everOpenedForWrite = true;
@@ -896,25 +870,34 @@ namespace System.IO.Compression
             return new WrappedStream(baseStream: _outstandingWriteStream, closeBaseStream: true);
         }
 
-        private WrappedStream OpenInUpdateMode()
+        private WrappedStream OpenInUpdateMode(bool loadExistingContent = true)
         {
             if (_currentlyOpenForWrite)
                 throw new IOException(SR.UpdateModeOneStream);
 
-            ThrowIfNotOpenable(needToUncompress: true, needToLoadIntoMemory: true);
+            if (loadExistingContent)
+            {
+                ThrowIfNotOpenable(needToUncompress: true, needToLoadIntoMemory: true);
+            }
 
             _everOpenedForWrite = true;
             Changes |= ZipArchive.ChangeState.StoredData;
             _currentlyOpenForWrite = true;
-            // always put it at the beginning for them
-            Stream uncompressedData = GetUncompressedData();
-            uncompressedData.Seek(0, SeekOrigin.Begin);
-            return new WrappedStream(uncompressedData, this, thisRef =>
+
+            if (loadExistingContent)
             {
-                // once they close, we know uncompressed length, but still not compressed length
-                // so we don't fill in any size information
-                // those fields get figured out when we call GetCompressor as we write it to
-                // the actual archive
+                _storedUncompressedData = GetUncompressedData();
+            }
+            else
+            {
+                _storedUncompressedData?.Dispose();
+                _storedUncompressedData = new MemoryStream();
+            }
+
+            _storedUncompressedData.Seek(0, SeekOrigin.Begin);
+
+            return new WrappedStream(_storedUncompressedData, this, thisRef =>
+            {
                 thisRef!._currentlyOpenForWrite = false;
             });
         }
