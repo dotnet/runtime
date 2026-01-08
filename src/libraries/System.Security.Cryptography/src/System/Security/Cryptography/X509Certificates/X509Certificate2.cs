@@ -2152,20 +2152,25 @@ namespace System.Security.Cryptography.X509Certificates
         {
             // We are not going to perform any validate on the PrivateKeyInfo here. We just need a hint
             // what algorithm to use. The actual algorithm will do whatever validation on the key as needed.
-            PrivateKeyInfoAsn privateKeyInfoAsn = PrivateKeyInfoAsn.Decode(privateKeyInfo, AsnEncodingRules.DER);
+            PrivateKeyInfoAsn privateKeyInfoAsn = PrivateKeyInfoAsn.Decode(privateKeyInfo, AsnEncodingRules.BER);
 
             const X509KeyUsageFlags EcdsaKeyUsageFlags =
-                    X509KeyUsageFlags.DigitalSignature |
-                    X509KeyUsageFlags.NonRepudiation |
-                    X509KeyUsageFlags.KeyCertSign |
-                    X509KeyUsageFlags.CrlSign;
+                X509KeyUsageFlags.DigitalSignature |
+                X509KeyUsageFlags.KeyCertSign |
+                X509KeyUsageFlags.CrlSign;
 
             X509KeyUsageFlags? usages = GetKeyUsageFlags(in privateKeyInfoAsn);
 
-            // There are no key usages, or does not require EC-DSA. Load it as EC-DH, since it will either
-            // be valid for EC-DSA as well, or is keyAgreement and should be loaded as EC-DH.
-            if ((usages is null || (EcdsaKeyUsageFlags & usages) == 0) && IsECDiffieHellman(certificate))
+            // If any of the following is true we should load it as EC-DH
+            // * There is no keyUsage extension. Loading it as EC-DH will allow loading it as EC-DSA, too.
+            // * It has any keyUsage that is not a "signing" usage. That at minimum means loading it as EC-DH.
+            //   it may still yet have a keyUsage that allows signing as well, in which case it will work for EC-DSA
+            //   too.
+            // The certificate must also have a key usage that permits EC-DH, either with "no" usage (in which case
+            // it will work for EC-DSA, too) or as EC-DH explicitly.
+            if ((usages is null || (usages & ~EcdsaKeyUsageFlags) != 0) && IsECDiffieHellman(certificate))
             {
+                // TODO: We need to handle both. What happens if the key has both keyAggreement and digitalSignature?
                 using (ECDiffieHellman ecdh = ECDiffieHellman.Create())
                 {
                     ecdh.ImportPkcs8PrivateKey(privateKeyInfo.Span, out int pkcs8Read);
@@ -2197,6 +2202,8 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
+            // If we get here, the key and certificate do not agree on algorithm use (the key has digitalSignature but
+            // the certificate has keyAgreement, for example). It cannot be loaded.
             return null;
         }
 
