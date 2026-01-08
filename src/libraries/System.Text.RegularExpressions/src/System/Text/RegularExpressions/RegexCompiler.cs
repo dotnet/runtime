@@ -1883,25 +1883,16 @@ namespace System.Text.RegularExpressions
             // Returns true if the optimization was applied, false otherwise.
             bool TryEmitAlternationAsSwitch(RegexNode node, int childCount, bool isAtomic)
             {
-                // Determine whether we can use switched branches.
                 // We can't use switched branches if there's any possibility of backtracking into the alternation.
-                bool canUseSwitchedBranches = isAtomic;
-                if (!canUseSwitchedBranches)
+                if (!isAtomic)
                 {
-                    canUseSwitchedBranches = true;
                     for (int i = 0; i < childCount; i++)
                     {
                         if (analysis.MayBacktrack(node.Child(i)))
                         {
-                            canUseSwitchedBranches = false;
-                            break;
+                            return false;
                         }
                     }
-                }
-
-                if (!canUseSwitchedBranches)
-                {
-                    return false;
                 }
 
                 // Detect whether every branch begins with one or more unique characters.
@@ -1912,15 +1903,14 @@ namespace System.Text.RegularExpressions
                 // Iterate through every branch, seeing if we can easily find a starting One, Multi, or small Set.
                 // If we can, extract its starting char (or multiple in the case of a set), validate that all such
                 // starting characters are unique relative to all the branches.
-                for (int i = 0; i < childCount && canUseSwitchedBranches; i++)
+                for (int i = 0; i < childCount; i++)
                 {
                     // Look for the guaranteed starting node that's a one, multi, set,
                     // or loop of one of those with at least one minimum iteration. We need to exclude notones.
                     if (node.Child(i).FindStartingLiteralNode(allowZeroWidth: false) is not RegexNode startingLiteralNode ||
                         startingLiteralNode.IsNotoneFamily)
                     {
-                        canUseSwitchedBranches = false;
-                        break;
+                        return false;
                     }
 
                     // If it's a One or a Multi, get the first character and add it to the set.
@@ -1929,8 +1919,7 @@ namespace System.Text.RegularExpressions
                     {
                         if (!seenChars.Add(startingLiteralNode.FirstCharOfOneOrMulti()))
                         {
-                            canUseSwitchedBranches = false;
-                            break;
+                            return false;
                         }
                     }
                     else
@@ -1942,8 +1931,7 @@ namespace System.Text.RegularExpressions
                         if (RegexCharClass.IsNegated(startingLiteralNode.Str!) ||
                             (numChars = RegexCharClass.GetSetChars(startingLiteralNode.Str!, setChars)) == 0)
                         {
-                            canUseSwitchedBranches = false;
-                            break;
+                            return false;
                         }
 
                         // Check to make sure each of the chars is unique relative to all other branches examined.
@@ -1951,22 +1939,16 @@ namespace System.Text.RegularExpressions
                         {
                             if (!seenChars.Add(c))
                             {
-                                canUseSwitchedBranches = false;
-                                break;
+                                return false;
                             }
                         }
                     }
                 }
 
-                if (!canUseSwitchedBranches)
-                {
-                    return false;
-                }
-
                 // Apply the Roslyn switch heuristic: emit an IL switch only if
-                // count_of_values >= 7 AND count_of_values / (max_value - min_value + 1) >= 0.5
+                // count_of_values >= 3 AND count_of_values / (max_value - min_value + 1) >= 0.5
                 int count = seenChars.Count;
-                if (count < 7)
+                if (count < 3)
                 {
                     return false;
                 }
@@ -1986,12 +1968,12 @@ namespace System.Text.RegularExpressions
                 }
 
                 // Emit switched branches using an IL switch instruction.
-                EmitSwitchedBranches(node, childCount, seenChars, minValue, range);
+                EmitSwitchedBranches(node, childCount, minValue, range);
                 return true;
             }
 
             // Emits the code for a switch-based alternation of non-overlapping branches.
-            void EmitSwitchedBranches(RegexNode node, int childCount, HashSet<char> seenChars, int minValue, int range)
+            void EmitSwitchedBranches(RegexNode node, int childCount, int minValue, int range)
             {
                 const int SetCharsSize = 64;
                 Span<char> setChars = stackalloc char[SetCharsSize];
@@ -2033,22 +2015,12 @@ namespace System.Text.RegularExpressions
                     branchLabels[i] = DefineLabel();
                 }
 
-                // Create a label for the case when no branch matches
-                Label noMatchLabel = DefineLabel();
-
                 // Build the switch table: an array of labels indexed by (charValue - minValue)
                 var switchTable = new Label[range];
                 for (int i = 0; i < range; i++)
                 {
                     char c = (char)(minValue + i);
-                    if (charToBranchIndex.TryGetValue(c, out int branchIndex))
-                    {
-                        switchTable[i] = branchLabels[branchIndex];
-                    }
-                    else
-                    {
-                        switchTable[i] = noMatchLabel;
-                    }
+                    switchTable[i] = charToBranchIndex.TryGetValue(c, out int branchIndex) ? branchLabels[branchIndex] : originalDoneLabel;
                 }
 
                 // Load the first character of the slice, subtract minValue, and switch
@@ -2065,35 +2037,17 @@ namespace System.Text.RegularExpressions
                     Sub();
                 }
 
-                // Bounds check: if the value is outside the range, jump to noMatch
-                // if ((uint)(ch - minValue) >= range) goto noMatchLabel;
-                Dup();
-                Ldc(range);
-                Label boundsCheckPassed = DefineLabel();
-                BltUnFar(boundsCheckPassed);
-                Pop(); // Pop the duplicated value before jumping to noMatch
-                BrFar(noMatchLabel);
-                MarkLabel(boundsCheckPassed);
-
                 // Emit the switch
                 Switch(switchTable);
 
-                // Fall-through after switch should never happen because the bounds check above
-                // ensures the value is within [0, range) and the switch table has entries for all values.
-                // This branch is just a safety net.
-                BrFar(noMatchLabel);
+                // Default case: the character didn't match any branch
+                BrFar(originalDoneLabel);
 
                 // Emit the code for each branch
                 for (int i = 0; i < childCount; i++)
                 {
                     MarkLabel(branchLabels[i]);
                     sliceStaticPos = startingTextSpanPos;
-
-                    // This is used for atomic alternations and non-atomic alternations where no
-                    // branch can backtrack. Failures should jump to the original done label.
-                    // Set it before emitting the child so that any failing matches inside will
-                    // jump to the right place.
-                    doneLabel = originalDoneLabel;
 
                     RegexNode child = node.Child(i);
                     RegexNode? startingLiteralNode = child.FindStartingLiteralNode(allowZeroWidth: false);
@@ -2142,6 +2096,11 @@ namespace System.Text.RegularExpressions
                             break;
                     }
 
+                    // This is only ever used for atomic alternations, so we can simply reset the doneLabel
+                    // after emitting the child, as nothing will backtrack here (and we need to reset it
+                    // so that all branches see the original).
+                    doneLabel = originalDoneLabel;
+
                     // If we get here in the generated code, the branch completed successfully.
                     // Before jumping to the end, we need to zero out sliceStaticPos, so that no
                     // matter what the value is after the branch, whatever follows the alternate
@@ -2149,10 +2108,6 @@ namespace System.Text.RegularExpressions
                     TransferSliceStaticPosToPos();
                     BrFar(matchLabel);
                 }
-
-                // No match case - jump to the original done label
-                MarkLabel(noMatchLabel);
-                BrFar(originalDoneLabel);
 
                 // Successfully completed the alternate.
                 MarkLabel(matchLabel);
