@@ -1724,6 +1724,13 @@ public:
                                   CORDB_ADDRESS hotCodeStartAddr,
                                   NativeCodeFunctionData * pCodeInfo) = 0;
 
+    virtual
+    void LookupMethodFromCodeAddress(CORDB_ADDRESS codeAddress,
+                                     NativeCodeFunctionData* pCodeInfo,
+                                     VMPTR_Module* pModule,
+                                     mdMethodDef* pFuncMetadataToken,
+                                     CORDB_ADDRESS* pStartAddress) = 0;
+
     //-----------------------------------------------------------------------------
     // Functions to get information about types
     //-----------------------------------------------------------------------------
@@ -2710,6 +2717,25 @@ public:
 
     virtual
     HRESULT GetDomainAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_DomainAssembly *pVmDomainAssembly) = 0;
+
+    virtual
+    HRESULT GetResumePointAndNextContinuation(
+        CORDB_ADDRESS continuationAddress,
+        OUT PCODE* pDiagnosticIP,
+        OUT CORDB_ADDRESS* pNextContinuation,
+        OUT UINT32* pState) = 0;
+
+    virtual
+    void GetAsyncLocals(
+        VMPTR_MethodDesc vmMethodDesc,
+        CORDB_ADDRESS     asyncInfoAddr,
+        UINT32            state,
+        OUT DacDbiArrayList<AsyncLocalData>* pAsyncLocals) = 0;
+
+    virtual
+    HRESULT GetGenericArgTokenIndex(
+        VMPTR_MethodDesc vmMethod,
+        OUT UINT32* pTokenIndex) = 0;
 
     // The following tag tells the DD-marshalling tool to stop scanning.
     // END_MARSHAL

@@ -165,6 +165,15 @@ public:
     HRESULT GetMDStructuresVersion(ULONG32* pMDStructuresVersion);
     HRESULT EnableGCNotificationEvents(BOOL fEnable);
     HRESULT GetDomainAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_DomainAssembly *pVmDomainAssembly);
+    HRESULT GetResumePointAndNextContinuation(CORDB_ADDRESS continuationAddress,
+                                              OUT PCODE *pDiagnosticIP,
+                                              OUT CORDB_ADDRESS *pNextContinuation,
+                                              OUT UINT32 *pState);
+    void GetAsyncLocals(VMPTR_MethodDesc methodDesc,
+                        CORDB_ADDRESS addr,
+                        UINT32 state,
+                        DacDbiArrayList<AsyncLocalData> * pAsyncLocals);
+    HRESULT GetGenericArgTokenIndex(VMPTR_MethodDesc vmMethod, OUT UINT32* pIndex);
 
 private:
     void TypeHandleToExpandedTypeInfoImpl(AreValueTypesBoxed              boxed,
@@ -238,6 +247,12 @@ public:
     void GetNativeCodeInfoForAddr(VMPTR_MethodDesc         vmMethodDesc,
                                   CORDB_ADDRESS            hotCodeStartAddr,
                                   NativeCodeFunctionData * pCodeInfo);
+
+    void LookupMethodFromCodeAddress(CORDB_ADDRESS codeAddress,
+                                     NativeCodeFunctionData* pCodeInfo,
+                                     VMPTR_Module* pModule,
+                                     mdMethodDef* pFuncMetadataToken,
+                                     CORDB_ADDRESS* pStartAddress);
 
 private:
     // Get start addresses and sizes for hot and cold regions for a native code blob
