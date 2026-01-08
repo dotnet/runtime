@@ -582,11 +582,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task VirtualPropertyWithJsonPropertyNameOnBaseClass_SerializedOnce()
         {
-            // Regression test for https://github.com/dotnet/runtime/issues/96998
-            // When a virtual property with [JsonPropertyName] on the base class is overridden
-            // in a derived class without the attribute, it should only be serialized once
-            // using the JSON property name from the derived class's property (not the base class).
-
             var derived = new DerivedClassOverridingVirtualPropertyWithJsonPropertyName();
             string json = await Serializer.SerializeWrapper(derived);
 
