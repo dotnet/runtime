@@ -537,6 +537,10 @@ The extra state created by the JIT for synchronized methods (lock taken flag) mu
 
 EnC is supported for adding and editing generic methods and methods on generic types and generic methods on non-generic types.
 
+## Async methods
+
+The JIT saves the current `ExecutionContext` and `SynchronizationContext` in runtime async methods and these must be preserved during remap. The new GC encoder includes the state in the EnC frame header size, while for JIT32 the EE expects this state to exist when `CORINFO_ASYNC_SAVE_CONTEXTS` was reported to the JIT from `getMethodInfo`.
+
 # Portable entrypoints
 
 On platforms that allow dynamic code generation, the runtime abstracts away execution strategies for dynamically loaded methods by allocating [`Precode`](method-descriptor.md#precode)s. The `Precode` is a small code fragment that is used as a temporary method entrypoint until the actual method code is acquired. `Precode`s are also used as part of the execution for methods that do not have regular JITed or AOT-compiled code, for example stubs or interpreted methods. `Precode`s allow native code to use the same native code calling convention irrespective of the execution strategy used by the target method.

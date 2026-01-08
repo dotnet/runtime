@@ -52,3 +52,6 @@ export function isControllablePromise<T>(promise: Promise<T>): promise is Contro
     return (promise as any)[promiseCompletionSourceSymbol] !== undefined;
 }
 
+export function delay(ms: number): Promise<void> {
+    return new Promise<void>(resolve => setTimeout(resolve, ms));
+}
