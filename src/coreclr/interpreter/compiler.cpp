@@ -4244,6 +4244,10 @@ public:
 
     bool FindAndApplyPeep(InterpCompiler* compiler)
     {
+#ifdef DEBUG
+        if (!InterpConfig.JitOptimizeAwait())
+            return false;
+#endif // DEBUG
         return compiler->FindAndApplyPeep(Peeps);
     }
 } AsyncCallPeeps;
@@ -4358,6 +4362,24 @@ void InterpCompiler::EmitLoadPointer(intptr_t ptrValue)
         m_pLastNewIns->data[1] = (int32_t)((ptrValue >> 32) & 0xFFFFFFFF);
         PushStackType(StackTypeI8, NULL);
         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+    }
+}
+
+void InterpCompiler::CheckForPInvokeThisCallWithNoArgs(CORINFO_SIG_INFO* sigInfo, CORINFO_METHOD_HANDLE methodHnd)
+{
+    if (sigInfo->numArgs == 0)
+    {
+        CorInfoCallConv callConv = (CorInfoCallConv)(sigInfo->callConv & IMAGE_CEE_CS_CALLCONV_MASK);
+        bool isPInvoke = methodHnd != NULL || (callConv != CORINFO_CALLCONV_DEFAULT && callConv != CORINFO_CALLCONV_VARARG);
+        if (isPInvoke)
+        {
+            bool suppressGCTransition = false;
+            CorInfoCallConvExtension unmanagedCallConv = m_compHnd->getUnmanagedCallConv(methodHnd, sigInfo, &suppressGCTransition);
+            if (callConvIsInstanceMethodCallConv(unmanagedCallConv))
+            {
+                BADCODE("thiscall with 0 arguments");
+            }
+        }
     }
 }
 
@@ -4491,6 +4513,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         {
             BADCODE("Vararg methods are not supported in interpreted code");
         }
+
+        CheckForPInvokeThisCallWithNoArgs(&callInfo.sig, NULL);
 
         callIFunctionPointerVar = m_pStackPointer[-1].var;
         m_pStackPointer--;
@@ -4645,6 +4669,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             // Otherwise, we have to treat it as a marshaled pinvoke
             isMarshaledPInvoke = true;
         }
+    }
+
+    if (isPInvoke && !isMarshaledPInvoke)
+    {
+        CheckForPInvokeThisCallWithNoArgs(&callInfo.sig, callInfo.hMethod);
     }
 
     // Process sVars
@@ -5496,7 +5525,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     suspendData->keepAliveOffset = keepAliveOffset + OFFSETOF__CORINFO_Continuation__data;
     suspendData->captureSyncContextMethod = asyncInfo.captureContinuationContextMethHnd;
     suspendData->restoreExecutionContextMethod = asyncInfo.restoreExecutionContextMethHnd;
-    suspendData->restoreContextsMethod = asyncInfo.restoreContextsMethHnd;
+    suspendData->restoreContextsOnSuspensionMethod = asyncInfo.restoreContextsOnSuspensionMethHnd;
     suspendData->resumeInfo.Resume = (size_t)m_asyncResumeFuncPtr;
     suspendData->resumeInfo.DiagnosticIP = (size_t)NULL;
     suspendData->methodStartIP = 0; // This is filled in by logic later in emission once we know the final address of the method

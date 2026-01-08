@@ -218,7 +218,11 @@ namespace System
 
         public static string ToString(ReadOnlySpan<byte> bytes, Casing casing = Casing.Upper)
         {
-#if NETFRAMEWORK || NETSTANDARD2_0
+#if NET
+            SpanCasingPair args = new() { Bytes = bytes, Casing = casing };
+            return string.Create(bytes.Length * 2, args, static (chars, args) =>
+                EncodeToUtf16(args.Bytes, chars, args.Casing));
+#else
             Span<char> result = (bytes.Length > 16) ?
                 new char[bytes.Length * 2].AsSpan() :
                 stackalloc char[bytes.Length * 2];
@@ -230,17 +234,6 @@ namespace System
                 pos += 2;
             }
             return result.ToString();
-#elif NET9_0_OR_GREATER
-            SpanCasingPair args = new() { Bytes = bytes, Casing = casing };
-            return string.Create(bytes.Length * 2, args, static (chars, args) =>
-                EncodeToUtf16(args.Bytes, chars, args.Casing));
-#else
-            // .NET 8.0 path (doesn't support 'allow ref struct' feature)
-            unsafe
-            {
-                return string.Create(bytes.Length * 2, (RosPtr: (IntPtr)(&bytes), casing), static (chars, args) =>
-                    EncodeToUtf16(*(ReadOnlySpan<byte>*)args.RosPtr, chars, args.casing));
-            }
 #endif
         }
 

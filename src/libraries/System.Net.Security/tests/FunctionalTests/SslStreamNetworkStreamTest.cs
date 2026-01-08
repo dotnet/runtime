@@ -341,7 +341,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_NegotiateClientCertificateAsync_ClientWriteData()
         {
