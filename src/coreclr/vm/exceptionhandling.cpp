@@ -3959,7 +3959,8 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
     isNativeTransition = (pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME);
 
 #ifdef FEATURE_INTERPRETER
-    bool nativeTransitionFrameIsNextFrame = false;
+    bool nativeTransitionFrameIsNextFrame;
+    nativeTransitionFrameIsNextFrame = false;
 
     if (isNativeTransition &&
         (GetIP(pThis->m_crawl.GetRegisterSet()->pCurrentContext) == InterpreterFrame::DummyCallerIP))
