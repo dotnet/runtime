@@ -108,7 +108,7 @@ namespace
 #ifdef FEATURE_64BIT_ALIGNMENT
             if (pNestedType.RequiresAlign8())
             {
-                placementInfo.m_alignment = ALIGN_UP(placementInfo.m_alignment, 8);
+                placementInfo.m_alignment = max(8u, placementInfo.m_alignment);
             }
 #endif // FEATURE_64BIT_ALIGNMENT
         }

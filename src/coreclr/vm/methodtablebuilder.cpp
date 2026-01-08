@@ -8604,7 +8604,7 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
 #if defined(FEATURE_64BIT_ALIGNMENT)
                 if (pByValueMT->RequiresAlign8())
                 {
-                    alignmentRequirement = ALIGN_UP(alignmentRequirement, 8);
+                    alignmentRequirement = max(8, alignmentRequirement);
                 }
 #endif // FEATURE_64BIT_ALIGNMENT
 
