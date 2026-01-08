@@ -3,7 +3,7 @@
 
 import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, InstantiateWasmSuccessCallback, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource, LoadBootResourceCallback } from "./types";
 
-import { dotnetAssert, dotnetLogger, dotnetGetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module } from "./cross-module";
+import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module } from "./cross-module";
 import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_NODE } from "./per-module";
 import { createPromiseCompletionSource, delay } from "./promise-completion-source";
 import { locateFile, makeURLAbsoluteWithApplicationBase } from "./bootstrap";
@@ -22,7 +22,7 @@ export function setLoadBootResourceCallback(callback: LoadBootResourceCallback |
 
 export let wasmBinaryPromise: Promise<Response> | undefined = undefined;
 export const nativeModulePromiseController = createPromiseCompletionSource<EmscriptenModuleInternal>(() => {
-    dotnetUpdateInternals(dotnetGetInternals());
+    dotnetUpdateInternals(dotnetInternals);
 });
 
 export async function loadDotnetModule(asset: JsAsset): Promise<JsModuleExports> {
@@ -188,14 +188,19 @@ function loadResource(asset: AssetEntryInternal): Promise<Response> {
     return loadResourceRetry(asset);
 }
 
+const noRetryStatusCodes = new Set<number>([400, 401, 403, 404, 405, 406, 409, 410, 411, 413, 414, 415, 422, 426, 501, 505,]);
 async function loadResourceRetry(asset: AssetEntryInternal): Promise<Response> {
     let response: Response;
     response = await loadResourceAttempt();
-    if (response.ok || asset.isOptional) {
+    if (response.ok || asset.isOptional || noRetryStatusCodes.has(response.status)) {
         return response;
     }
+    if (response.status === 429) {
+        // Too Many Requests
+        await delay(100);
+    }
     response = await loadResourceAttempt();
-    if (response.ok) {
+    if (response.ok || noRetryStatusCodes.has(response.status)) {
         return response;
     }
     await delay(100); // wait 100ms before the last retry

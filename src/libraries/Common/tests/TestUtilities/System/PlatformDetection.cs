@@ -315,7 +315,7 @@ namespace System
         private static readonly Lazy<bool> s_supportsAlpn = new Lazy<bool>(GetAlpnSupport);
         private static bool GetAlpnSupport()
         {
-            if (IsWindows && !IsWindows7 && !IsNetFramework)
+            if (IsWindows && !IsNetFramework)
             {
                 return true;
             }
@@ -359,7 +359,7 @@ namespace System
         public static bool SupportsTls12 => s_supportsTls12.Value;
         public static bool SupportsTls13 => s_supportsTls13.Value;
         public static bool SendsCAListByDefault => s_sendsCAListByDefault.Value;
-        public static bool SupportsSendingCustomCANamesInTls => UsesAppleCrypto || IsOpenSslSupported || (PlatformDetection.IsWindows8xOrLater && SendsCAListByDefault);
+        public static bool SupportsSendingCustomCANamesInTls => UsesAppleCrypto || IsOpenSslSupported || (PlatformDetection.IsWindows && SendsCAListByDefault);
         public static bool SupportsSha3 => s_supportsSha3.Value;
         public static bool DoesNotSupportSha3 => !s_supportsSha3.Value;
 
@@ -597,12 +597,6 @@ namespace System
         {
             if (IsWindows)
             {
-                // TLS 1.1 can work on Windows 7 but it is disabled by default.
-                if (IsWindows7)
-                {
-                    return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport: false, disabledByDefault: true);
-                }
-
                 // It is enabled on other versions unless explicitly disabled.
                 return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport: true) && !IsWindows10Version20348OrGreater;
             }
@@ -625,12 +619,6 @@ namespace System
         {
             if (IsWindows)
             {
-                // TLS 1.2 can work on Windows 7 but it is disabled by default.
-                if (IsWindows7)
-                {
-                    return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport: false, disabledByDefault: true);
-                }
-
                 // It is enabled on other versions unless explicitly disabled.
                 return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport: true);
             }
@@ -709,9 +697,9 @@ namespace System
         {
             if (IsWindows)
             {
-                // Sending TrustedIssuers is conditioned on the registry. Win7 sends trusted issuer list by default,
-                // newer Windows versions don't.
-                object val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL", "SendTrustedIssuerList", IsWindows7 ? 1 : 0);
+                // Sending TrustedIssuers is conditioned on the registry.
+                // Newer Windows versions don't send trusted issuer list by default.
+                object val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL", "SendTrustedIssuerList", 0);
                 if (val is int i)
                 {
                     return i == 1;

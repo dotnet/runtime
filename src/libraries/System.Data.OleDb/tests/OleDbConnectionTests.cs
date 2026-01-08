@@ -132,11 +132,6 @@ namespace System.Data.OleDb.Tests
         [ConditionalFact(Helpers.IsDriverAvailable)]
         public void GetSchema_NoArgs_ReturnsMetaDataCollections()
         {
-            if (PlatformDetection.IsWindows7)
-            {
-                return; // see https://github.com/dotnet/corefx/pull/37450
-            }
-
             DataTable t1 = connection.GetSchema();
             DataTable t2 = connection.GetSchema(DbMetaDataCollectionNames.MetaDataCollections);
             Assert.Equal(t1.Rows.Count, t2.Rows.Count);
@@ -156,11 +151,6 @@ namespace System.Data.OleDb.Tests
         [InlineData(nameof(DbMetaDataCollectionNames.DataTypes), "TypeName")]
         public void GetSchema(string tableName, string columnName)
         {
-            if (PlatformDetection.IsWindows7)
-            {
-                return; // see https://github.com/dotnet/corefx/pull/37450
-            }
-
             DataTable schema = connection.GetSchema(tableName);
             Assert.True(schema != null && schema.Rows.Count > 0);
             var exception = Record.Exception(() => schema.Rows[0].Field<string>(columnName));

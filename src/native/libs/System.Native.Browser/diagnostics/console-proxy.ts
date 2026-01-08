@@ -11,8 +11,8 @@ const methods = ["log", "debug", "info", "warn", "error", "trace"];
 let originalConsoleMethods: { [key: string]: any } = {};
 
 export function installLoggingProxy() {
-    const config = dotnetApi.getConfig() as LoaderConfigInternal;
-    if (ENVIRONMENT_IS_WEB && config.forwardConsole && typeof globalThis.WebSocket != "undefined") {
+    const loaderConfig = dotnetApi.getConfig() as LoaderConfigInternal;
+    if (ENVIRONMENT_IS_WEB && loaderConfig.forwardConsole && typeof globalThis.WebSocket != "undefined") {
         setupProxyConsole(globalThis.console, globalThis.location.origin);
     }
 }

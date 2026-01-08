@@ -15,7 +15,7 @@ internal sealed partial class __ThirdModelNoNamespaceValidator__
     public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::ThirdModelNoNamespace options)
     {
         global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-        #if NET10_0_OR_GREATER
+        #if NET
         var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "ThirdModelNoNamespace", null, null);
         #else
         var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -47,7 +47,7 @@ partial class FirstValidatorNoNamespace
     public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::FirstModelNoNamespace options)
     {
         global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-        #if NET10_0_OR_GREATER
+        #if NET
         var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModelNoNamespace", null, null);
         #else
         var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -89,7 +89,7 @@ partial class SecondValidatorNoNamespace
     public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::SecondModelNoNamespace options)
     {
         global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-        #if NET10_0_OR_GREATER
+        #if NET
         var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModelNoNamespace", null, null);
         #else
         var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -123,7 +123,7 @@ namespace CustomAttr
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::CustomAttr.FirstModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -168,7 +168,7 @@ namespace Enumeration
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Enumeration.SecondModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -204,7 +204,7 @@ namespace Enumeration
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Enumeration.ThirdModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "ThirdModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -238,7 +238,7 @@ namespace Enumeration
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Enumeration.FirstModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -394,7 +394,7 @@ namespace Enumeration
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Enumeration.SecondModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -429,7 +429,7 @@ namespace FileScopedNamespace
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::FileScopedNamespace.FirstModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -464,7 +464,7 @@ namespace FunnyStrings
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::FunnyStrings.FirstModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -499,7 +499,7 @@ namespace Generics
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Generics.SecondModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -534,7 +534,7 @@ namespace Generics
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Generics.FirstModel<T> options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -574,7 +574,7 @@ namespace MultiModelValidator
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::MultiModelValidator.FirstModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -608,7 +608,7 @@ namespace MultiModelValidator
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::MultiModelValidator.SecondModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -644,7 +644,7 @@ namespace Nested
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Nested.Container1.ThirdModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "ThirdModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -681,7 +681,7 @@ namespace Nested
             public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Nested.Container1.SecondModel options)
             {
                 global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-                #if NET10_0_OR_GREATER
+                #if NET
                 var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
                 #else
                 var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -721,7 +721,7 @@ namespace Nested
                 public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Nested.Container1.FirstModel options)
                 {
                     global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-                    #if NET10_0_OR_GREATER
+                    #if NET
                     var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
                     #else
                     var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -772,7 +772,7 @@ namespace Nested
             public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Nested.Container1.SecondModel options)
             {
                 global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-                #if NET10_0_OR_GREATER
+                #if NET
                 var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
                 #else
                 var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -812,7 +812,7 @@ namespace Nested
                 public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Nested.Container1.SecondModel options)
                 {
                     global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-                    #if NET10_0_OR_GREATER
+                    #if NET
                     var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
                     #else
                     var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -853,7 +853,7 @@ namespace Nested
                 public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Nested.Container1.SecondModel options)
                 {
                     global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-                    #if NET10_0_OR_GREATER
+                    #if NET
                     var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
                     #else
                     var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -890,7 +890,7 @@ namespace RandomMembers
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RandomMembers.FirstModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -926,7 +926,7 @@ namespace RecordTypes
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RecordTypes.ThirdModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "ThirdModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -961,7 +961,7 @@ namespace RecordTypes
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RecordTypes.FirstModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1008,7 +1008,7 @@ namespace RecordTypes
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RecordTypes.SecondModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1043,7 +1043,7 @@ namespace RecordTypes
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RecordTypes.SecondModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1079,7 +1079,7 @@ namespace RepeatedTypes
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RepeatedTypes.SecondModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1119,7 +1119,7 @@ namespace RepeatedTypes
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RepeatedTypes.ThirdModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "ThirdModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1154,7 +1154,7 @@ namespace RepeatedTypes
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RepeatedTypes.FirstModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1224,7 +1224,7 @@ namespace SelfValidation
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::SelfValidation.SecondModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1262,7 +1262,7 @@ namespace SelfValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::SelfValidation.FirstModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1315,7 +1315,7 @@ namespace SelfValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::SelfValidation.SelfValidateOptions options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SelfValidateOptions", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1344,7 +1344,7 @@ namespace TestClasses.OptionsValidation
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.RangeAttributeModelDouble options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "RangeAttributeModelDouble", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1379,7 +1379,7 @@ namespace TestClasses.OptionsValidation
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.RequiredAttributeModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "RequiredAttributeModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1414,7 +1414,7 @@ namespace TestClasses.OptionsValidation
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.TypeWithoutOptionsValidator options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "TypeWithoutOptionsValidator", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1463,7 +1463,7 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.AttributePropertyModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "AttributePropertyModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1507,7 +1507,7 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.ComplexModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "ComplexModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1541,7 +1541,7 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.CustomTypeCustomValidationAttributeModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "CustomTypeCustomValidationAttributeModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1575,7 +1575,7 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.CustomValidationAttributeModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "CustomValidationAttributeModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1609,7 +1609,7 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.DataTypeAttributeModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "DataTypeAttributeModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1643,7 +1643,7 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.DerivedModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "DerivedModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1697,7 +1697,7 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.EmailAttributeModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "EmailAttributeModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1731,7 +1731,7 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.LeafModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "LeafModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1785,7 +1785,7 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.MultipleAttributeModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "MultipleAttributeModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1850,7 +1850,7 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.OptionsUsingRangeWithTimeSpan options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "OptionsUsingRangeWithTimeSpan", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1914,7 +1914,7 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.RangeAttributeModelDate options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "RangeAttributeModelDate", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1948,7 +1948,7 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.RangeAttributeModelDouble options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "RangeAttributeModelDouble", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -1982,7 +1982,7 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.RangeAttributeModelInt options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "RangeAttributeModelInt", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -2016,7 +2016,7 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.RegularExpressionAttributeModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "RegularExpressionAttributeModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -2050,7 +2050,7 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.RequiredAttributeModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "RequiredAttributeModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -2085,7 +2085,7 @@ namespace ValueTypes
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::ValueTypes.SecondModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -2120,7 +2120,7 @@ namespace ValueTypes
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::ValueTypes.FirstModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);

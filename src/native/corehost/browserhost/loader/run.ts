@@ -3,7 +3,7 @@
 
 import type { DotnetHostBuilder, JsModuleExports, EmscriptenModuleInternal } from "./types";
 
-import { dotnetAssert, dotnetGetInternals, dotnetBrowserHostExports, Module } from "./cross-module";
+import { dotnetAssert, dotnetInternals, dotnetBrowserHostExports, Module } from "./cross-module";
 import { findResources, isNodeHosted, isShellHosted, validateWasmFeatures } from "./bootstrap";
 import { exit, runtimeState } from "./exit";
 import { createPromiseCompletionSource } from "./promise-completion-source";
@@ -37,7 +37,7 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
 
     if (loaderConfig.resources.jsModuleDiagnostics && loaderConfig.resources.jsModuleDiagnostics.length > 0) {
         const diagnosticsModule = await loadDotnetModule(loaderConfig.resources.jsModuleDiagnostics[0]);
-        diagnosticsModule.dotnetInitializeModule<void>(dotnetGetInternals());
+        diagnosticsModule.dotnetInitializeModule<void>(dotnetInternals);
     }
     const nativeModulePromise: Promise<JsModuleExports> = loadDotnetModule(loaderConfig.resources.jsModuleNative[0]);
     const runtimeModulePromise: Promise<JsModuleExports> = loadDotnetModule(loaderConfig.resources.jsModuleRuntime[0]);
@@ -55,11 +55,11 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
     const modulesAfterRuntimeReadyPromise = Promise.all((loaderConfig.resources.modulesAfterRuntimeReady || []).map(loadJSModule));
 
     const nativeModule = await nativeModulePromise;
-    const modulePromise = nativeModule.dotnetInitializeModule<EmscriptenModuleInternal>(dotnetGetInternals());
+    const modulePromise = nativeModule.dotnetInitializeModule<EmscriptenModuleInternal>(dotnetInternals);
     nativeModulePromiseController.propagateFrom(modulePromise);
 
     const runtimeModule = await runtimeModulePromise;
-    const runtimeModuleReady = runtimeModule.dotnetInitializeModule<void>(dotnetGetInternals());
+    const runtimeModuleReady = runtimeModule.dotnetInitializeModule<void>(dotnetInternals);
 
     await nativeModulePromiseController.promise;
     await coreAssembliesPromise;
