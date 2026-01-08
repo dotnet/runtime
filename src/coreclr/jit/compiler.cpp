@@ -575,11 +575,6 @@ bool Compiler::isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd)
 bool Compiler::isNativeHalfStructType(CORINFO_CLASS_HANDLE clsHnd)
 {
 #if defined(TARGET_XARCH)
-    if (!compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
-    {
-        return false;
-    }
-
     if (!isIntrinsicType(clsHnd))
     {
         return false;
@@ -592,7 +587,12 @@ bool Compiler::isNativeHalfStructType(CORINFO_CLASS_HANDLE clsHnd)
         return false;
     }
 
-    return strcmp(typeName, "Half") == 0;
+    if (strcmp(typeName, "Half") != 0)
+    {
+        return false;
+    }
+
+    return compOpportunisticallyDependsOn(InstructionSet_AVX10v1);
 #else
     return false;
 #endif

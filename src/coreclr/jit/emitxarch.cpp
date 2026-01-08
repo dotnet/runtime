@@ -5397,6 +5397,7 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
                || (attrSize == EA_16BYTE) || (attrSize == EA_32BYTE) || (attrSize == EA_64BYTE) // only for x64
                || (ins == INS_movzx) || (ins == INS_movsx) || (ins == INS_vmovsh) ||
                (ins == INS_cmpxchg)
+               || IsKMOVInstruction(ins)
                // The prefetch instructions are always 3 bytes and have part of their modr/m byte hardcoded
                || isPrefetch(ins));
 
@@ -7429,13 +7430,13 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_kmovw_gpr:
         case INS_kmovd_gpr:
         case INS_kmovq_gpr:
+        case INS_vmovsh:
         {
             return true;
         }
 
 #if defined(TARGET_AMD64)
         case INS_movsxd:
-        case INS_vmovsh:
         {
             return true;
         }
@@ -7630,7 +7631,8 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
 
         case INS_vmovsh:
         {
-            hasSideEffect = false;
+            // Clears the upper bits
+            hasSideEffect = true;
             break;
         }
 
@@ -11815,12 +11817,12 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) con
 
         case EA_2BYTE:
         {
-#if defined(TARGET_AMD64)
             if (IsXMMReg(reg))
             {
                 return emitXMMregName(reg);
             }
-            else if (reg > REG_RDI)
+#if defined(TARGET_AMD64)
+            if (reg > REG_RDI)
             {
                 suffix = 'w';
                 goto APPEND_SUFFIX;
@@ -15410,7 +15412,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     // Is this a 'big' opcode?
     else if (code & 0xFF000000)
     {
-        if (size == EA_2BYTE && (ins != INS_vmovsh && ins != INS_vaddsh))
+        if (size == EA_2BYTE && !IsSimdInstruction(ins))
         {
             assert(ins == INS_movbe);
 
