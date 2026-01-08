@@ -1822,18 +1822,18 @@ namespace JIT.HardwareIntrinsics.Arm
             short product = (short)((short)op1 * (short)op2);
 
             bool dblOvf;
-            (product, dblOvf) = AddOvf(product, product);
+            dblOvf = TryAddSigned(product, product, out product);
 
             bool addOvf;
             short accum;
 
             if (subOp)
             {
-                (accum, addOvf) = SubtractOvf(op3, product);
+                addOvf = TrySubSigned(op3, product, out accum);
             }
             else
             {
-                (accum, addOvf) = AddOvf(op3, product);
+                addOvf = TryAddSigned(op3, product, out accum);
             }
 
             short roundConst = 0;
@@ -1846,7 +1846,7 @@ namespace JIT.HardwareIntrinsics.Arm
             bool rndOvf;
             short result;
 
-            (result, rndOvf) = AddOvf(accum, roundConst);
+            rndOvf = TryAddSigned(accum, roundConst, out result);
 
             return (result, addOvf ^ rndOvf ^ dblOvf);
         }
@@ -2183,18 +2183,18 @@ namespace JIT.HardwareIntrinsics.Arm
             int product = (int)((int)op1 * (int)op2);
 
             bool dblOvf;
-            (product, dblOvf) = AddOvf(product, product);
+            dblOvf = TryAddSigned(product, product, out product);
 
             bool addOvf;
             int accum;
 
             if (subOp)
             {
-                (accum, addOvf) = SubtractOvf(op3, product);
+                addOvf = TrySubSigned(op3, product, out accum);
             }
             else
             {
-                (accum, addOvf) = AddOvf(op3, product);
+                addOvf = TryAddSigned(op3, product, out accum);
             }
 
             int roundConst = 0;
@@ -2207,7 +2207,7 @@ namespace JIT.HardwareIntrinsics.Arm
             bool rndOvf;
             int result;
 
-            (result, rndOvf) = AddOvf(accum, roundConst);
+            rndOvf = TryAddSigned(accum, roundConst, out result);
 
             return (result, addOvf ^ rndOvf ^ dblOvf);
         }
@@ -2567,18 +2567,18 @@ namespace JIT.HardwareIntrinsics.Arm
             long product = (long)((long)op1 * (long)op2);
 
             bool dblOvf;
-            (product, dblOvf) = AddOvf(product, product);
+            dblOvf = TryAddSigned(product, product, out product);
 
             bool addOvf;
             long accum;
 
             if (subOp)
             {
-                (accum, addOvf) = SubtractOvf(op3, product);
+                addOvf = TrySubSigned(op3, product, out accum);
             }
             else
             {
-                (accum, addOvf) = AddOvf(op3, product);
+                addOvf = TryAddSigned(op3, product, out accum);
             }
 
             long roundConst = 0;
@@ -2591,7 +2591,7 @@ namespace JIT.HardwareIntrinsics.Arm
             bool rndOvf;
             long result;
 
-            (result, rndOvf) = AddOvf(accum, roundConst);
+            rndOvf = TryAddSigned(accum, roundConst, out result);
 
             return (result, addOvf ^ rndOvf ^ dblOvf);
         }
@@ -2966,7 +2966,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             bool addOvf;
 
-            (result, addOvf) = AddOvf(op1, rndCns);
+            addOvf = TryAddSigned(op1, rndCns, out result);
 
             if (addOvf)
             {
@@ -3070,7 +3070,8 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            (byte result, bool addOvf) = AddOvf(op1, rndCns);
+            byte result;
+            bool addOvf = TryAddUnsigned(op1, rndCns, out result);
 
             bool shiftOvf;
 
@@ -3097,34 +3098,33 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte AbsSaturate(sbyte op1) => op1 < 0 ? NegateSaturate(op1) : op1;
 
-        private static (T1 val, bool ovf) AddOvf<T1, T2>(T1 op1, T2 op2)
-            where T1 : IBinaryInteger<T1>, IMinMaxValue<T1>
-            where T2 : IBinaryInteger<T2>
+
+        private static bool TryAddSigned<T>(T left, T right, out T result)
+            where T : IBinaryInteger<T>, ISignedNumber<T>
         {
-            BigInteger a = BigInteger.CreateChecked(op1);
-            BigInteger b = BigInteger.CreateChecked(op2);
-            BigInteger min = BigInteger.CreateChecked(T1.MinValue);
-            BigInteger max = BigInteger.CreateChecked(T1.MaxValue);
-
-            BigInteger sum = a + b;
-
-            bool ovf = sum < min || sum > max;
-            return (T1.CreateTruncating(sum), ovf);
+            result = unchecked(left + right);
+            return ((result ^ left) & ~(left ^ right)) < T.Zero;
         }
 
-        private static (T1 val, bool ovf) SubtractOvf<T1, T2>(T1 op1, T2 op2)
-            where T1 : IBinaryInteger<T1>, IMinMaxValue<T1>
-            where T2 : IBinaryInteger<T2>
+        private static bool TryAddUnsigned<T>(T left, T right, out T result)
+            where T : IBinaryInteger<T>, IUnsignedNumber<T>
         {
-            BigInteger a = BigInteger.CreateChecked(op1);
-            BigInteger b = BigInteger.CreateChecked(op2);
-            BigInteger min = BigInteger.CreateChecked(T1.MinValue);
-            BigInteger max = BigInteger.CreateChecked(T1.MaxValue);
+            result = left + right;
+            return result < left;
+        }
 
-            BigInteger diff = a - b;
+        private static bool TrySubSigned<T>(T left, T right, out T result)
+            where T : IBinaryInteger<T>, ISignedNumber<T>
+        {
+            result = unchecked(left - right);
+            return ((left ^ right) & (left ^ result)) < T.Zero;
+        }
 
-            bool ovf = diff < min || diff > max;
-            return (T1.CreateTruncating(diff), ovf);
+        private static bool TrySubUnsigned<T>(T left, T right, out T result)
+            where T : IBinaryInteger<T>, IUnsignedNumber<T>
+        {
+            result = unchecked(left - right);
+            return left < right;
         }
 
         public static T1 AddSaturate<T1, T2>(T1 op1, T2 op2)
@@ -3249,7 +3249,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             bool addOvf;
 
-            (result, addOvf) = AddOvf(op1, rndCns);
+            addOvf = TryAddSigned(op1, rndCns, out result);
 
             if (addOvf)
             {
@@ -3341,7 +3341,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            (ushort result, bool addOvf) = AddOvf(op1, rndCns);
+            bool addOvf = TryAddUnsigned(op1, rndCns, out ushort result);
 
             bool shiftOvf;
 
@@ -3422,7 +3422,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             bool addOvf;
 
-            (result, addOvf) = AddOvf(op1, rndCns);
+            addOvf = TryAddSigned(op1, rndCns, out result);
 
             if (addOvf)
             {
@@ -3514,7 +3514,8 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            (uint result, bool addOvf) = AddOvf(op1, rndCns);
+            uint result;
+            bool addOvf = TryAddUnsigned(op1, rndCns, out result);
 
             bool shiftOvf;
 
@@ -3595,7 +3596,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             bool addOvf;
 
-            (result, addOvf) = AddOvf(op1, rndCns);
+            addOvf = TryAddSigned(op1, rndCns, out result);
 
             if (addOvf)
             {
@@ -3687,7 +3688,8 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            (ulong result, bool addOvf) = AddOvf(op1, rndCns);
+            ulong result;
+            bool addOvf = TryAddUnsigned(op1, rndCns, out result);
 
             bool shiftOvf;
 
