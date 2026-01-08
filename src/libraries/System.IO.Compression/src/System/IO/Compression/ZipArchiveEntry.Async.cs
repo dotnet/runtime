@@ -33,7 +33,7 @@ public partial class ZipArchiveEntry
             case ZipArchiveMode.Update:
             default:
                 Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
-                return await OpenInUpdateModeAsync(cancellationToken).ConfigureAwait(false);
+                return await OpenInUpdateModeAsync(loadExistingContent: true, cancellationToken).ConfigureAwait(false);
         }
     }
 
