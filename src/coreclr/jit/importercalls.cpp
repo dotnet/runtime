@@ -1004,14 +1004,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 {
                     call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
 
-                    if (call->AsCall()->IsSpecialIntrinsic(this, NI_System_Enum_Equals))
+                    GenTree* foldedCall = gtFoldExprCall(call->AsCall());
+                    if ((foldedCall != call) || !call->IsCall())
                     {
-                        GenTree* folded = impFoldEnumEquals(call->AsCall());
-                        if (folded)
-                        {
-                            impPushOnStack(folded, typeInfo(folded->TypeGet()));
-                            return folded->TypeGet();
-                        }
+                        impPushOnStack(foldedCall, typeInfo(foldedCall->TypeGet()));
+                        return foldedCall->TypeGet();
                     }
                 }
             }
@@ -1578,60 +1575,6 @@ DONE_CALL:
 #endif // SWIFT_SUPPORT
 
     return callRetTyp;
-}
-
-//------------------------------------------------------------------------
-// impFoldEnumEquals: Optimize Enum.Equals calls by unboxing and comparing underlying values
-//
-// Arguments:
-//    call -- call representing Enum.Equals
-//
-// Return Value:
-//    Optimized tree (or nullptr if we can't optimize it).
-//
-GenTree* Compiler::impFoldEnumEquals(GenTreeCall* call)
-{
-    assert(call->IsSpecialIntrinsic(this, NI_System_Enum_Equals));
-    assert(call->AsCall()->gtArgs.CountUserArgs() == 2);
-    GenTree* arg0 = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
-    GenTree* arg1 = call->AsCall()->gtArgs.GetArgByIndex(1)->GetNode();
-
-    bool isArg0Exact;
-    bool isArg1Exact;
-    bool isNonNull; // Unused here.
-
-    CORINFO_CLASS_HANDLE cls0 = gtGetClassHandle(arg0, &isArg0Exact, &isNonNull);
-    CORINFO_CLASS_HANDLE cls1 = gtGetClassHandle(arg1, &isArg1Exact, &isNonNull);
-    if ((cls0 != cls1) || (cls0 == NO_CLASS_HANDLE) || !isArg0Exact || !isArg1Exact)
-    {
-        return nullptr;
-    }
-
-    assert(info.compCompHnd->isEnum(cls1, nullptr) == TypeCompareState::Must);
-
-    CorInfoType corTyp = info.compCompHnd->getTypeForPrimitiveNumericClass(cls1);
-    if (corTyp == CORINFO_TYPE_UNDEF)
-    {
-        return nullptr;
-    }
-
-    var_types typ = JITtype2varType(corTyp);
-    if (!varTypeIsIntegral(typ))
-    {
-        // Ignore non-integral enums e.g. enums based on float/double
-        return nullptr;
-    }
-
-    // Unbox both integral arguments and compare their underlying values
-    GenTree* offset  = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
-    GenTree* addr0   = gtNewOperNode(GT_ADD, TYP_BYREF, arg0, offset);
-    GenTree* addr1   = gtNewOperNode(GT_ADD, TYP_BYREF, arg1, gtCloneExpr(offset));
-    GenTree* cmpNode = gtNewOperNode(GT_EQ, TYP_INT, gtNewIndir(typ, addr0), gtNewIndir(typ, addr1));
-    JITDUMP("Optimized Enum.Equals call to comparison of underlying values:\n");
-    DISPTREE(cmpNode);
-    JITDUMP("\n");
-
-    return cmpNode;
 }
 
 //------------------------------------------------------------------------
