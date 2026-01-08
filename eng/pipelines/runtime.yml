@@ -862,6 +862,18 @@ extends:
           scenarios:
             - WasmTestOnChrome
 
+      # WebAssembly CoreCLR
+      - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm
+          alwaysRun: ${{ variables.isRollingBuild }}
+          shouldRunSmokeOnly: true
+          # TODO consider shouldContinueOnError: true
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          scenarios:
+            - WasmTestOnChrome
+
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
         parameters:
