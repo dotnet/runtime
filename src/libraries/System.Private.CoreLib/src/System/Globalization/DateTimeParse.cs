@@ -3749,6 +3749,16 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                 {
                     if (str.MatchSpecifiedWord(searchStr))
                     {
+                        string searchStr1 = dtfi.PMDesignator;
+                        if (searchStr1.Length > searchStr.Length && searchStr1.StartsWith(searchStr, StringComparison.Ordinal) && str.MatchSpecifiedWord(searchStr1))
+                        {
+                            // If both AM and PM designators are prefixes of each other, we should
+                            // prefer the longer match.
+                            str.Index += (searchStr1.Length - 1);
+                            result = TM.PM;
+                            return true;
+                        }
+
                         // Found an AM timemark with length > 0.
                         str.Index += (searchStr.Length - 1);
                         result = TM.AM;
