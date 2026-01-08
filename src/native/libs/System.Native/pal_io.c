@@ -1036,13 +1036,13 @@ int32_t SystemNative_MAdvise(void* address, uint64_t length, int32_t advice)
     switch (advice)
     {
         case PAL_MADV_DONTFORK:
-#if defined(MADV_DONTFORK) && !defined(TARGET_WASI)
+#if defined(MADV_DONTFORK) && !defined(TARGET_WASM)
             return madvise(address, (size_t)length, MADV_DONTFORK);
 #else
             (void)address, (void)length, (void)advice;
             errno = ENOTSUP;
             return -1;
-#endif
+#endif // MADV_DONTFORK && !TARGET_WASM
         default:
             break; // fall through to error
     }
