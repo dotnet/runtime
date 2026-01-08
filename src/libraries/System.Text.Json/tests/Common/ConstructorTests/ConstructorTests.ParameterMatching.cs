@@ -1845,12 +1845,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithInParameters()
         {
-            if (Serializer.IsSourceGeneratedSerializer)
-            {
-                // The source generator does not support byref constructor parameters.
-                return;
-            }
-
             string json = @"{""DateTime"":""2020-12-15T00:00:00"",""TimeSpan"":""01:02:03""}";
             TypeWith_InParameters result = await Serializer.DeserializeWrapper<TypeWith_InParameters>(json);
             Assert.Equal(new DateTime(2020, 12, 15), result.DateTime);
@@ -1872,12 +1866,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithMixedByRefParameters()
         {
-            if (Serializer.IsSourceGeneratedSerializer)
-            {
-                // The source generator does not support byref constructor parameters.
-                return;
-            }
-
             string json = @"{""Value1"":42,""Value2"":""hello"",""Value3"":3.14,""Value4"":true}";
             TypeWith_MixedByRefParameters result = await Serializer.DeserializeWrapper<TypeWith_MixedByRefParameters>(json);
             Assert.Equal(42, result.Value1);
@@ -1905,12 +1893,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithLargeInParameters()
         {
-            if (Serializer.IsSourceGeneratedSerializer)
-            {
-                // The source generator does not support byref constructor parameters.
-                return;
-            }
-
             string json = @"{""A"":1,""B"":2,""C"":3,""D"":4,""E"":5}";
             TypeWith_LargeInParameters result = await Serializer.DeserializeWrapper<TypeWith_LargeInParameters>(json);
             Assert.Equal(1, result.A);
