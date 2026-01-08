@@ -8,7 +8,6 @@ namespace System.Runtime.CompilerServices
 {
     public static partial class AsyncHelpers
     {
-        [StackTraceHidden]
         public static void HandleAsyncEntryPoint(Task task)
         {
             task.ContinueWith(t =>
@@ -28,7 +27,6 @@ namespace System.Runtime.CompilerServices
             }, TaskScheduler.Default);
         }
 
-        [StackTraceHidden]
         public static int HandleAsyncEntryPoint(Task<int> task)
         {
             task.ContinueWith(t =>
