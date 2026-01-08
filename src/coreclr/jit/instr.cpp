@@ -2101,6 +2101,9 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 #if defined(TARGET_WASM)
     switch (srcType)
     {
+        case TYP_REF:
+        case TYP_BYREF:
+            // TODO-WASM: 64-bit
         case TYP_INT:
             return INS_i32_load;
         case TYP_LONG:
@@ -2501,6 +2504,9 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
 #if defined(TARGET_WASM)
     switch (dstType)
     {
+        case TYP_REF:
+        case TYP_BYREF:
+            // TODO-WASM: 64-bit
         case TYP_INT:
             return INS_i32_store;
         case TYP_LONG:
