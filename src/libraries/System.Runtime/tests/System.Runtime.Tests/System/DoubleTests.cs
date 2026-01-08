@@ -834,6 +834,7 @@ namespace System.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // Requires a lot of memory
         [OuterLoop("Takes a long time, allocates a lot of memory")]
         [SkipOnMono("Frequently throws OOM on Mono")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]
         public static void ToString_ValidLargeFormat()
         {
             double d = 123.0;

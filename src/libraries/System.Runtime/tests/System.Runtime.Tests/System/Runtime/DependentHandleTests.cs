@@ -100,6 +100,7 @@ namespace System.Runtime.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]
         public void TargetKeepsDependentAlive()
         {
             [MethodImpl(MethodImplOptions.NoInlining)]
@@ -129,6 +130,7 @@ namespace System.Runtime.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]
         public void DependentDoesNotKeepTargetAlive()
         {
             [MethodImpl(MethodImplOptions.NoInlining)]
@@ -157,6 +159,7 @@ namespace System.Runtime.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]
         public void DependentIsCollectedOnTargetNotReachable()
         {
             [MethodImpl(MethodImplOptions.NoInlining)]
@@ -184,6 +187,7 @@ namespace System.Runtime.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]
         public void DependentIsCollectedOnTargetNotReachable_EvenWithReferenceCycles()
         {
             [MethodImpl(MethodImplOptions.NoInlining)]
@@ -218,6 +222,7 @@ namespace System.Runtime.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]
         public void DependentIsCollectedAfterTargetIsSetToNull()
         {
             [MethodImpl(MethodImplOptions.NoInlining)]

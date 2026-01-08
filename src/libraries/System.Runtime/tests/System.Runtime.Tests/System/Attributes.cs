@@ -224,6 +224,7 @@ namespace System.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [SkipOnMono("Mono does not support getting DynamicMethod attributes via Attribute.GetCustomAttributes()")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]
         public static void GetCustomAttributes_DynamicMethod()
         {
             var dynamicMethod = new DynamicMethod("test", typeof(void), Type.EmptyTypes);

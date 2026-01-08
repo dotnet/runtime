@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]
     public static unsafe class WeakReferenceTests
     {
         //

@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.Runtime.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]
     public sealed class ControlledExecutionTests
     {
         private volatile bool _readyForCancellation;
@@ -54,6 +55,7 @@ namespace System.Runtime.Tests
         // Tests that an infinite loop may be aborted and that the ThreadAbortException is translated
         // to an OperationCanceledException.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]
         public void CancelOutsideOfTryCatchFinally()
         {
             var cts = new CancellationTokenSource();
@@ -160,6 +162,7 @@ namespace System.Runtime.Tests
 
         // Tests that finally blocks are not aborted. The finally block throws an exception.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]
         public void CancelInFinallyThatSleepsAndThrows()
         {
             var cts = new CancellationTokenSource();
