@@ -286,7 +286,8 @@ namespace HostActivation.Tests
                         if (arch == HostTestContext.BuildArchitecture)
                             continue;
 
-                        Assert.Matches($@"{arch}\s*\[{path}\]\r?$\s*registered at \[{pathOverride}.*{arch}.*\]", result.StdOut);
+                        var regex = new System.Text.RegularExpressions.Regex($@"{arch}\s*\[{path}\]\r?$\s*registered at \[{pathOverride}.*{arch}.*\]", System.Text.RegularExpressions.RegexOptions.Multiline);
+                        Assert.Matches(regex, result.StdOut);
                     }
                 }
             }
@@ -405,7 +406,6 @@ namespace HostActivation.Tests
                 .CaptureStdOut()
                 .Execute();
 
-            Assert.NotEqual(0, result.ExitCode);
             Assert.Contains("The app-relative .NET path is not embedded.", result.StdErr);
             Assert.Equal(Constants.ErrorCode.AppHostExeNotBoundFailure, result.ExitCode);
         }
