@@ -1062,6 +1062,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+                  extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
                   condition: >-
                     or(
                     eq(variables['librariesContainsChange'], true),
