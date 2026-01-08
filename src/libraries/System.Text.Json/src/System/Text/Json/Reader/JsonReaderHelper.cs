@@ -29,16 +29,25 @@ namespace System.Text.Json
         {
             ReadOnlySpan<char> span = propertyName.AsSpan();
 
+            int i = span.IndexOfAny(s_charactersToEscape);
+
             // Fast path: if no characters need escaping, append directly.
-            if (!span.ContainsAny(s_charactersToEscape))
+            if (i < 0)
             {
                 builder.Append(propertyName);
                 return;
             }
 
-            // Slow path: escape single quotes and backslashes.
-            foreach (char c in span)
+            // Append the portion before the first character needing escaping.
+            if (i > 0)
             {
+                builder.Append(span.Slice(0, i));
+            }
+
+            // Escape characters from position i onward.
+            for (; i < span.Length; i++)
+            {
+                char c = span[i];
                 if (c is '\\' or '\'')
                 {
                     builder.Append('\\');
@@ -56,16 +65,35 @@ namespace System.Text.Json
         {
             ReadOnlySpan<char> span = propertyName.AsSpan();
 
+            int i = span.IndexOfAny(s_charactersToEscape);
+
             // Fast path: if no characters need escaping, append directly.
-            if (!span.ContainsAny(s_charactersToEscape))
+            if (i < 0)
             {
                 builder.Append(propertyName);
                 return;
             }
 
-            // Slow path: escape single quotes and backslashes.
-            foreach (char c in span)
+            // Append the portion before the first character needing escaping.
+            if (i > 0)
             {
+#if NET
+                builder.Append(span.Slice(0, i));
+#else
+                unsafe
+                {
+                    fixed (char* pPropertyName = propertyName)
+                    {
+                        builder.Append(pPropertyName, i);
+                    }
+                }
+#endif
+            }
+
+            // Escape characters from position i onward.
+            for (; i < span.Length; i++)
+            {
+                char c = span[i];
                 if (c is '\\' or '\'')
                 {
                     builder.Append('\\');
