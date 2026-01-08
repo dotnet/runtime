@@ -429,7 +429,7 @@ namespace ILCompiler.ObjectWriter
                 // TODO-WASM: handle AssemblyStub case here
                 if (node is IMethodBodyNode methodNode && LayoutMode is CodeDataLayout.Separate)
                 {
-                    RecordMethod((ISymbolDefinitionNode)node, methodNode.Method, nodeContents);
+                    RecordMethod((ISymbolDefinitionNode)node, methodNode.Method, nodeContents, logger);
                 }
 
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
@@ -634,7 +634,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected virtual void RecordMethod(ISymbolDefinitionNode node, MethodDesc desc, ObjectData methodData)
+        private protected virtual void RecordMethod(ISymbolDefinitionNode node, MethodDesc desc, ObjectData methodData, Logger logger)
         {
             if (LayoutMode != CodeDataLayout.Separate)
             {
