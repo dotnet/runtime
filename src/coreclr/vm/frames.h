@@ -985,7 +985,7 @@ class SoftwareExceptionFrame : public Frame
 
 public:
 #ifndef DACCESS_COMPILE
-    SoftwareExceptionFrame() : Frame(FrameIdentifier::SoftwareExceptionFrame) {
+    SoftwareExceptionFrame() : Frame(FrameIdentifier::SoftwareExceptionFrame), m_ReturnAddress(0) {
         LIMITED_METHOD_CONTRACT;
     }
 

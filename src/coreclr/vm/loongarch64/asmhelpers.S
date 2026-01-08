@@ -1029,16 +1029,9 @@ LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 //   $a0 = Pointer to exception object
 // ------------------------------------------------------------------
 NESTED_ENTRY IL_Throw, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0x80
-    // Spill callee saved registers
-    PROLOG_SAVE_REG_PAIR   23, 24, 16
-    PROLOG_SAVE_REG_PAIR   25, 26, 32
-    PROLOG_SAVE_REG_PAIR   27, 28, 48
-    PROLOG_SAVE_REG_PAIR   29, 30, 64
-    PROLOG_SAVE_REG        31,     80
-
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS $a1
     // $a0 already contains exception object
-    ori  $a1, $sp, 0  // $a1 = TransitionBlock*
+    // $a1 contains pointer to TransitionBlock
     bl   C_FUNC(IL_Throw_Impl)
     // Should never return
     break 0
@@ -1052,16 +1045,9 @@ NESTED_END IL_Throw, _TEXT
 //   $a0 = Pointer to exception object
 // ------------------------------------------------------------------
 NESTED_ENTRY IL_ThrowExact, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0x80
-    // Spill callee saved registers
-    PROLOG_SAVE_REG_PAIR   23, 24, 16
-    PROLOG_SAVE_REG_PAIR   25, 26, 32
-    PROLOG_SAVE_REG_PAIR   27, 28, 48
-    PROLOG_SAVE_REG_PAIR   29, 30, 64
-    PROLOG_SAVE_REG        31,     80
-
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS $a1
     // $a0 already contains exception object
-    ori  $a1, $sp, 0  // $a1 = TransitionBlock*
+    // $a1 contains pointer to TransitionBlock
     bl   C_FUNC(IL_ThrowExact_Impl)
     // Should never return
     break 0
@@ -1072,15 +1058,8 @@ NESTED_END IL_ThrowExact, _TEXT
 // implementation written in C.
 // ------------------------------------------------------------------
 NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0x80
-    // Spill callee saved registers
-    PROLOG_SAVE_REG_PAIR   23, 24, 16
-    PROLOG_SAVE_REG_PAIR   25, 26, 32
-    PROLOG_SAVE_REG_PAIR   27, 28, 48
-    PROLOG_SAVE_REG_PAIR   29, 30, 64
-    PROLOG_SAVE_REG        31,     80
-
-    ori  $a0, $sp, 0  // $a0 = TransitionBlock*
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS $a0
+    // $a0 contains pointer to TransitionBlock
     bl   C_FUNC(IL_Rethrow_Impl)
     // Should never return
     break 0

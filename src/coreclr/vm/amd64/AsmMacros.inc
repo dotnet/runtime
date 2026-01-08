@@ -485,5 +485,37 @@ POP_COOP_PINVOKE_FRAME macro
 
         endm
 
+; Pushes a full TransitionBlock on the stack including argument registers and
+; floating point argument registers. Used for exception throw helpers where we
+; need to capture the complete register state.
+;
+; Stack layout (from high to low address after prologue):
+;   Return address
+;   CalleeSavedRegisters (r15, r14, r13, r12, rbp, rbx, rsi, rdi - 64 bytes)
+;   Outgoing argument homes (32 bytes) + alignment (8 bytes) <- TransitionBlock
+;   FloatArgumentRegisters (xmm0-xmm3, 64 bytes)
+;   sp points here
+;
+; On exit, target contains the TransitionBlock pointer (after float args area).
+PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS macro target
+
+        PUSH_CALLEE_SAVED_REGISTERS
+
+        ; Allocate space for: outgoing args (32) + align (8) + float args (64) = 104 bytes
+        alloc_stack     104
+
+        ; Save argument registers to shadow space area
+        ; Shadow space is at offset 64 (after float args) from sp
+        SAVE_ARGUMENT_REGISTERS 64
+
+        ; Save float argument registers at offset 0
+        SAVE_FLOAT_ARGUMENT_REGISTERS 0
+
+        END_PROLOGUE
+
+        lea     target, [rsp + 64]
+
+        endm
+
 ;; GC type flags
 GC_ALLOC_FINALIZE               equ 1

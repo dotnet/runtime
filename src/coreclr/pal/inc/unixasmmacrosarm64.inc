@@ -419,7 +419,43 @@ C_FUNC(\Name\()_End):
         EPILOG_RESTORE_REG_PAIR   x25, x26, 64
         EPILOG_RESTORE_REG_PAIR   x27, x28, 80
         EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 176
-.endm 
+.endm
+
+// Pushes a full TransitionBlock on the stack including argument registers and
+// floating point argument registers. Used for exception throw helpers where we
+// need to capture the complete register state.
+//
+// Stack layout (from low to high address):
+//   sp+0:     FloatArgumentRegisters (q0-q7, 128 bytes)
+//   sp+128:   TransitionBlock start (176 bytes)
+//             - CalleeSavedRegisters (fp, lr, x19-x28 - 96 bytes)
+//             - padding (8 bytes)
+//             - x8 (8 bytes)
+//             - ArgumentRegisters (x0-x7, 64 bytes)
+//
+// On exit, \target contains the TransitionBlock pointer (sp+128).
+.macro PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS target
+        PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -176
+
+        // Spill callee saved registers
+        PROLOG_SAVE_REG_PAIR   x19, x20, 16
+        PROLOG_SAVE_REG_PAIR   x21, x22, 32
+        PROLOG_SAVE_REG_PAIR   x23, x24, 48
+        PROLOG_SAVE_REG_PAIR   x25, x26, 64
+        PROLOG_SAVE_REG_PAIR   x27, x28, 80
+
+        // Allocate space for FloatArgumentRegisters
+        PROLOG_STACK_ALLOC 128
+
+        // Save argument registers (x8, x0-x7) at offset 232 from sp (128 + 104)
+        SAVE_ARGUMENT_REGISTERS sp, 232
+
+        // Save floating point argument registers (q0-q7) at sp+0
+        SAVE_FLOAT_ARGUMENT_REGISTERS sp, 0
+
+        // Set target to TransitionBlock pointer
+        add     \target, sp, #128
+.endm
 
 // ------------------------------------------------------------------
 // Macro to generate Redirection Stubs

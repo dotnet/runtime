@@ -428,6 +428,34 @@ C_FUNC(\Name\()_End):
         POP_CALLEE_SAVED_REGISTERS
 .endm
 
+// Pushes a full TransitionBlock on the stack including argument registers and
+// floating point argument registers. Used for exception throw helpers where we
+// need to capture the complete register state.
+//
+// Stack layout (from high to low address after prologue):
+//   Return address
+//   CalleeSavedRegisters (rbp, rbx, r15, r14, r13, r12 - 48 bytes)
+//   ArgumentRegisters (r9, r8, rcx, rdx, rsi, rdi - 48 bytes)  <- TransitionBlock
+//   Padding (8 bytes for 16-byte alignment)
+//   FloatArgumentRegisters (xmm0-xmm7, 128 bytes)
+//   sp points here
+//
+// On exit, \target contains the TransitionBlock pointer (after float args area).
+.macro PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS target
+        set_cfa_register rsp, 8
+
+        PUSH_CALLEE_SAVED_REGISTERS
+        PUSH_ARGUMENT_REGISTERS
+
+        // Allocate space for float argument registers (128 bytes) + alignment (8 bytes)
+        alloc_stack     136
+        SAVE_FLOAT_ARGUMENT_REGISTERS 0
+
+        END_PROLOGUE
+
+        lea     \target, [rsp + 136]
+.endm
+
 .macro INLINE_GETTHREAD
         // Inlined version of call C_FUNC(RhpGetThread)
         INLINE_GET_TLS_VAR t_CurrentThreadInfo

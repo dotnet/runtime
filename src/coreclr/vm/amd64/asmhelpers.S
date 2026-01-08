@@ -1922,7 +1922,7 @@ NESTED_END CallJittedMethodRetDoubleDouble, _TEXT
 //   rdi = Pointer to exception object
 // ------------------------------------------------------------------
 NESTED_ENTRY IL_Throw, _TEXT, NoHandler
-        PUSH_COOP_PINVOKE_FRAME rsi
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rsi
         // rdi already contains exception object
         // rsi contains pointer to TransitionBlock
         call    C_FUNC(IL_Throw_Impl)
@@ -1938,7 +1938,7 @@ NESTED_END IL_Throw, _TEXT
 //   rdi = Pointer to exception object
 // ------------------------------------------------------------------
 NESTED_ENTRY IL_ThrowExact, _TEXT, NoHandler
-        PUSH_COOP_PINVOKE_FRAME rsi
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rsi
         // rdi already contains exception object
         // rsi contains pointer to TransitionBlock
         call    C_FUNC(IL_ThrowExact_Impl)
@@ -1951,7 +1951,7 @@ NESTED_END IL_ThrowExact, _TEXT
 // implementation written in C.
 // ------------------------------------------------------------------
 NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
-        PUSH_COOP_PINVOKE_FRAME rdi
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rdi
         // rdi contains pointer to TransitionBlock
         call    C_FUNC(IL_Rethrow_Impl)
         // Should never return

@@ -1208,7 +1208,8 @@ endif ; FEATURE_INTERPRETER
 ;   RCX = Pointer to exception object
 ;==========================================================================
 NESTED_ENTRY IL_Throw, _TEXT
-        PUSH_COOP_PINVOKE_FRAME rdx
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rdx
+
         ; RCX already contains exception object
         ; RDX contains pointer to TransitionBlock
         call    IL_Throw_Impl
@@ -1224,7 +1225,8 @@ NESTED_END IL_Throw, _TEXT
 ;   RCX = Pointer to exception object
 ;==========================================================================
 NESTED_ENTRY IL_ThrowExact, _TEXT
-        PUSH_COOP_PINVOKE_FRAME rdx
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rdx
+
         ; RCX already contains exception object
         ; RDX contains pointer to TransitionBlock
         call    IL_ThrowExact_Impl
@@ -1237,7 +1239,8 @@ NESTED_END IL_ThrowExact, _TEXT
 ; implementation written in C.
 ;==========================================================================
 NESTED_ENTRY IL_Rethrow, _TEXT
-        PUSH_COOP_PINVOKE_FRAME rcx
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rcx
+
         ; RCX contains pointer to TransitionBlock
         call    IL_Rethrow_Impl
         ; Should never return
