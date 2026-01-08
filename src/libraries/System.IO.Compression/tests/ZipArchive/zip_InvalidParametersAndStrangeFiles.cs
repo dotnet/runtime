@@ -2200,7 +2200,7 @@ namespace System.IO.Compression.Tests
             ZipArchiveEntry entry = archive.GetEntry("first.txt");
             Assert.NotNull(entry);
 
-            using Stream stream = entry.Open(FileAccess.Read);
+            using Stream stream = async ? await entry.OpenAsync(FileAccess.Read) : entry.Open(FileAccess.Read);
             Assert.True(stream.CanRead);
             Assert.False(stream.CanWrite);
 
@@ -2217,8 +2217,10 @@ namespace System.IO.Compression.Tests
             ZipArchiveEntry entry = archive.GetEntry("first.txt");
             Assert.NotNull(entry);
 
-            Assert.Throws<ArgumentException>("access", () => entry.Open(FileAccess.Write));
-            Assert.Throws<ArgumentException>("access", () => entry.Open(FileAccess.ReadWrite));
+            Assert.Throws<InvalidOperationException>(() => entry.Open(FileAccess.Write));
+            Assert.Throws<InvalidOperationException>(() => entry.Open(FileAccess.ReadWrite));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => entry.OpenAsync(FileAccess.Write));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => entry.OpenAsync(FileAccess.ReadWrite));
 
             await DisposeZipArchive(async, archive);
         }
@@ -2232,7 +2234,7 @@ namespace System.IO.Compression.Tests
 
             ZipArchiveEntry entry = archive.CreateEntry("test.txt");
 
-            using Stream stream = entry.Open(FileAccess.Write);
+            using Stream stream = async ? await entry.OpenAsync(FileAccess.Write) : entry.Open(FileAccess.Write);
             Assert.False(stream.CanRead);
             Assert.True(stream.CanWrite);
 
@@ -2249,7 +2251,7 @@ namespace System.IO.Compression.Tests
             ZipArchiveEntry entry = archive.CreateEntry("test.txt");
 
             // ReadWrite should be allowed in Create mode (it opens in write mode)
-            using Stream stream = entry.Open(FileAccess.ReadWrite);
+            using Stream stream = async ? await entry.OpenAsync(FileAccess.ReadWrite) : entry.Open(FileAccess.ReadWrite);
             Assert.True(stream.CanWrite);
             Assert.False(stream.CanRead);
 
@@ -2265,7 +2267,8 @@ namespace System.IO.Compression.Tests
 
             ZipArchiveEntry entry = archive.CreateEntry("test.txt");
 
-            Assert.Throws<ArgumentException>("access", () => entry.Open(FileAccess.Read));
+            Assert.Throws<InvalidOperationException>(() => entry.Open(FileAccess.Read));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => entry.OpenAsync(FileAccess.Read));
 
             await DisposeZipArchive(async, archive);
         }
@@ -2280,7 +2283,7 @@ namespace System.IO.Compression.Tests
             ZipArchiveEntry entry = archive.GetEntry("first.txt");
             Assert.NotNull(entry);
 
-            using Stream stream = entry.Open(FileAccess.Read);
+            using Stream stream = async ? await entry.OpenAsync(FileAccess.Read) : entry.Open(FileAccess.Read);
             Assert.True(stream.CanRead);
             Assert.False(stream.CanWrite);
 
@@ -2298,7 +2301,7 @@ namespace System.IO.Compression.Tests
 
             // In Update mode, FileAccess.Write provides an empty stream (discarding any existing data).
             // The stream is backed by a MemoryStream, so it supports read/write/seek, but starts empty.
-            using Stream stream = entry.Open(FileAccess.Write);
+            using Stream stream = async ? await entry.OpenAsync(FileAccess.Write) : entry.Open(FileAccess.Write);
             Assert.True(stream.CanWrite);
             Assert.True(stream.CanRead);
             Assert.True(stream.CanSeek);
@@ -2321,7 +2324,7 @@ namespace System.IO.Compression.Tests
             ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
             ZipArchiveEntry entry = archive.CreateEntry(entryName);
 
-            using (Stream stream = entry.Open(FileAccess.Write))
+            using (Stream stream = async ? await entry.OpenAsync(FileAccess.Write) : entry.Open(FileAccess.Write))
             {
                 stream.Write(testData, 0, testData.Length);
             }
@@ -2335,7 +2338,7 @@ namespace System.IO.Compression.Tests
             ZipArchiveEntry readEntry = readArchive.GetEntry(entryName);
             Assert.NotNull(readEntry);
 
-            using (Stream readStream = readEntry.Open())
+            using (Stream readStream = async ? await readEntry.OpenAsync(FileAccess.Read) : readEntry.Open(FileAccess.Read))
             using (StreamReader reader = new StreamReader(readStream))
             {
                 string content = reader.ReadToEnd();
@@ -2360,7 +2363,7 @@ namespace System.IO.Compression.Tests
             ZipArchiveEntry entry = archive.GetEntry(entryName);
             Assert.NotNull(entry);
 
-            using (Stream stream = entry.Open(FileAccess.Write))
+            using (Stream stream = async ? await entry.OpenAsync(FileAccess.Write) : entry.Open(FileAccess.Write))
             {
                 // Stream should be empty - existing data is discarded
                 Assert.Equal(0, stream.Length);
@@ -2376,7 +2379,7 @@ namespace System.IO.Compression.Tests
             ZipArchiveEntry readEntry = readArchive.GetEntry(entryName);
             Assert.NotNull(readEntry);
 
-            using (Stream readStream = readEntry.Open())
+            using (Stream readStream = async ? await readEntry.OpenAsync(FileAccess.Read) : readEntry.Open(FileAccess.Read))
             using (StreamReader reader = new StreamReader(readStream))
             {
                 string content = reader.ReadToEnd();
@@ -2396,7 +2399,7 @@ namespace System.IO.Compression.Tests
             ZipArchiveEntry entry = archive.GetEntry("first.txt");
             Assert.NotNull(entry);
 
-            using Stream stream = entry.Open(FileAccess.ReadWrite);
+            using Stream stream = async ? await entry.OpenAsync(FileAccess.ReadWrite) : entry.Open(FileAccess.ReadWrite);
             Assert.True(stream.CanRead);
             Assert.True(stream.CanWrite);
             Assert.True(stream.CanSeek);
@@ -2431,6 +2434,8 @@ namespace System.IO.Compression.Tests
 
             Assert.Throws<ArgumentOutOfRangeException>("access", () => entry.Open((FileAccess)0));
             Assert.Throws<ArgumentOutOfRangeException>("access", () => entry.Open((FileAccess)4));
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>("access", () => entry.OpenAsync((FileAccess)0));
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>("access", () => entry.OpenAsync((FileAccess)4));
 
             await DisposeZipArchive(async, archive);
             ms.Dispose();
@@ -2451,14 +2456,14 @@ namespace System.IO.Compression.Tests
 
             byte[] contents1, contents2;
 
-            using (Stream stream1 = entry1.Open())
+            using (Stream stream1 = async ? await entry1.OpenAsync() : entry1.Open())
             {
                 using var reader = new MemoryStream();
                 stream1.CopyTo(reader);
                 contents1 = reader.ToArray();
             }
 
-            using (Stream stream2 = entry2.Open(FileAccess.Read))
+            using (Stream stream2 = async ? await entry2.OpenAsync(FileAccess.Read) : entry2.Open(FileAccess.Read))
             {
                 using var reader = new MemoryStream();
                 stream2.CopyTo(reader);
@@ -2486,7 +2491,7 @@ namespace System.IO.Compression.Tests
 
             byte[] contents1, contents2;
 
-            using (Stream stream1 = entry1.Open())
+            using (Stream stream1 = async ? await entry1.OpenAsync() : entry1.Open())
             {
                 Assert.True(stream1.CanRead);
                 Assert.True(stream1.CanWrite);
@@ -2497,7 +2502,7 @@ namespace System.IO.Compression.Tests
                 contents1 = reader.ToArray();
             }
 
-            using (Stream stream2 = entry2.Open(FileAccess.ReadWrite))
+            using (Stream stream2 = async ? await entry2.OpenAsync(FileAccess.ReadWrite) : entry2.Open(FileAccess.ReadWrite))
             {
                 Assert.True(stream2.CanRead);
                 Assert.True(stream2.CanWrite);
@@ -2527,6 +2532,7 @@ namespace System.IO.Compression.Tests
             await DisposeZipArchive(async, archive);
 
             Assert.Throws<ObjectDisposedException>(() => entry.Open(FileAccess.Read));
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => entry.OpenAsync(FileAccess.Read));
         }
     }
 }
