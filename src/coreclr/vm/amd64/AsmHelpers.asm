@@ -11,6 +11,9 @@ extern  ProfileLeave:proc
 extern  ProfileTailcall:proc
 extern OnHijackWorker:proc
 extern JIT_RareDisableHelperWorker:proc
+extern IL_Throw_Impl:proc
+extern IL_ThrowExact_Impl:proc
+extern IL_Rethrow_Impl:proc
 ifdef FEATURE_INTERPRETER
 extern ExecuteInterpretedMethod:proc
 extern GetInterpThreadContextWithPossiblyMissingThreadOrCallStub:proc

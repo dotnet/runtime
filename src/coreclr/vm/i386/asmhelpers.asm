@@ -82,9 +82,6 @@ EXTERN g_chained_lookup_miss_counter:DWORD
 EXTERN g_dispatch_cache_chain_success_counter:DWORD
 endif
 
-EXTERN @IL_Throw_x86@8:PROC
-EXTERN @IL_ThrowExact_x86@8:PROC
-EXTERN @IL_Rethrow_x86@4:PROC
 EXTERN @IL_Throw_Impl@8:PROC
 EXTERN @IL_ThrowExact_Impl@8:PROC
 EXTERN @IL_Rethrow_Impl@4:PROC

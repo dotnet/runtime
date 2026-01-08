@@ -23,6 +23,9 @@
 #endif
     IMPORT HijackHandler
     IMPORT ThrowControlForThread
+    IMPORT IL_Throw_Impl
+    IMPORT IL_ThrowExact_Impl
+    IMPORT IL_Rethrow_Impl
 #ifdef FEATURE_INTERPRETER
     IMPORT GetInterpThreadContextWithPossiblyMissingThreadOrCallStub
     IMPORT ExecuteInterpretedMethod
