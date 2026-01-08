@@ -9807,11 +9807,6 @@ bool Lowering::TryRemoveBitCast(GenTreeUnOp* node)
         return false;
     }
 
-    // if (node->TypeGet() == TYP_HALF)
-    //{
-    //     return false;
-    // }
-
     GenTree* op = node->gtGetOp1();
     assert(genTypeSize(node) == genTypeSize(genActualType(op)));
 
