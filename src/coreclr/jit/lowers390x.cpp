@@ -29,6 +29,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #ifdef FEATURE_HW_INTRINSICS
 #include "hwintrinsic.h"
 #endif
+#include "ex.h"
 
 //------------------------------------------------------------------------
 // IsCallTargetInRange: Can a call target address be encoded in-place?
@@ -38,10 +39,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 bool Lowering::IsCallTargetInRange(void* addr)
 {
-    _ASSERTE(!"NYI");
-#if 0 
+    EX_THROW(HRException, (E_FAIL));
+    //_ASSERTE(!"NYI");
+//#if 0
     return comp->codeGen->validImmForBL((ssize_t)addr);
-#endif
+//#endif
 }
 
 //------------------------------------------------------------------------
@@ -53,11 +55,12 @@ bool Lowering::IsCallTargetInRange(void* addr)
 //
 bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 {
+    EX_THROW(HRException, (E_FAIL));
     //_ASSERTE(!"NYI");
 //#if 0 
     if (!varTypeIsFloating(parentNode->TypeGet()))
     {
-//#ifdef TARGET_S390X
+#ifdef TARGET_S390X
         if (parentNode->OperIsCompare() && childNode->IsFloatPositiveZero())
         {
             // Contain 0.0 constant in fcmp on arm64
@@ -67,7 +70,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             assert(!parentNode->OperIs(GT_TEST_EQ, GT_TEST_NE));
             return true;
         }
-//#endif
+#endif
 
         // Make sure we have an actual immediate
         if (!childNode->IsCnsIntOrI())
@@ -100,23 +103,13 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
         {
             case GT_ADD:
             case GT_SUB:
-//#ifdef TARGET_S390X
                 return emitter::emitIns_valid_imm_for_add(immVal, size);
             case GT_CMPXCHG:
             case GT_LOCKADD:
             case GT_XORR:
             case GT_XAND:
             case GT_XADD:
-//                return comp->compOpportunisticallyDependsOn(InstructionSet_Atomics)
- //                          ? false
-  //                         : emitter::emitIns_valid_imm_for_add(immVal, size);
                 return emitter::emitIns_valid_imm_for_add(immVal, size);
-//#elif defined(TARGET_ARM)
-//                return emitter::emitIns_valid_imm_for_add(immVal, flags);
-//#endif
-                break;
-
-//#ifdef TARGET_S390X
             case GT_EQ:
             case GT_NE:
             case GT_LT:
@@ -138,32 +131,11 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_JTEST:
                 assert(isPow2(immVal));
                 return true;
-#if 0 
-
-//#elif defined(TARGET_ARM)
-            case GT_EQ:
-            case GT_NE:
-            case GT_LT:
-            case GT_LE:
-            case GT_GE:
-            case GT_GT:
-            case GT_CMP:
-            case GT_AND:
-            case GT_OR:
-            case GT_XOR:
-                return emitter::emitIns_valid_imm_for_alu(immVal);
-//#endif // TARGET_ARM
-       
-#endif
-
-//#ifdef TARGET_S390X
             case GT_STORE_LCL_FLD:
             case GT_STORE_LCL_VAR:
                 if (immVal == 0)
                     return true;
                 break;
-//#endif
-
             default:
                 break;
         }
@@ -185,6 +157,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 //
 bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childNode) const
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
 #ifdef DEBUG
@@ -491,7 +464,8 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
 //
 GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
-    _ASSERTE(!"NYI");
+    EX_THROW(HRException, (E_FAIL));
+    //_ASSERTE(!"NYI");
 #if 0 
 #ifdef TARGET_ARM
     // On ARM, small stores can cost a bit more in terms of code size so we try to widen them. This is legal
@@ -507,6 +481,7 @@ GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
     }
 #endif // TARGET_ARM
 
+#endif
     if (storeLoc->OperIs(GT_STORE_LCL_FLD))
     {
         // We should only encounter this for lclVars that are lvDoNotEnregister.
@@ -517,15 +492,14 @@ GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 
     GenTree* next = storeLoc->gtNext;
 
-#ifdef TARGET_S390X
+//#ifdef TARGET_S390X
     if (comp->opts.OptimizationEnabled())
     {
         TryMoveAddSubRMWAfterIndir(storeLoc);
     }
-#endif
+//#endif
 
     return next;
-#endif
 }
 
 //------------------------------------------------------------------------
@@ -539,6 +513,7 @@ GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 //
 GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     GenTree* next = node->gtNext;
@@ -569,6 +544,7 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 //
 GenTree* Lowering::LowerMul(GenTreeOp* mul)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     assert(mul->OperIsMul());
@@ -625,6 +601,7 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 //
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     if (comp->opts.OptimizationEnabled())
@@ -689,6 +666,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 //
 void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     GenTree* dstAddr = blkNode->Addr();
@@ -842,6 +820,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 //
 void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
@@ -898,6 +877,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 //
 void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     GenTree* src = putArgNode->Data();
@@ -939,6 +919,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 //
 GenTree* Lowering::LowerCast(GenTree* tree)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     assert(tree->OperGet() == GT_CAST);
@@ -978,6 +959,7 @@ GenTree* Lowering::LowerCast(GenTree* tree)
 //
 void Lowering::LowerRotate(GenTree* tree)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     if (tree->OperGet() == GT_ROL)
@@ -1126,6 +1108,7 @@ const int POST_INDEXED_ADDRESSING_MAX_DISTANCE = 16;
 //
 bool Lowering::TryMoveAddSubRMWAfterIndir(GenTreeLclVarCommon* store)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     if (!store->OperIs(GT_STORE_LCL_VAR))
@@ -1200,6 +1183,7 @@ bool Lowering::TryMoveAddSubRMWAfterIndir(GenTreeLclVarCommon* store)
 //
 bool Lowering::TryMakeIndirAndStoreAdjacent(GenTreeIndir* prevIndir, GenTreeLclVarCommon* store)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     GenTree* cur = prevIndir;
@@ -1451,6 +1435,7 @@ bool Lowering::TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next
 //
 void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     assert(node->GetHWIntrinsicId() == NI_AdvSimd_FusedMultiplyAddScalar);
@@ -1510,6 +1495,7 @@ void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
 //
 GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     if (node->TypeGet() == TYP_SIMD12)
@@ -1994,6 +1980,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 //
 bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     assert((node->GetHWIntrinsicId() == NI_Vector64_Create) || (node->GetHWIntrinsicId() == NI_Vector128_Create) ||
@@ -2034,6 +2021,7 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 //
 GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     NamedIntrinsic intrinsicId     = node->GetHWIntrinsicId();
@@ -2244,6 +2232,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 //
 GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     NamedIntrinsic intrinsicId     = node->GetHWIntrinsicId();
@@ -2418,6 +2407,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 //
 GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     NamedIntrinsic intrinsicId     = node->GetHWIntrinsicId();
@@ -2731,6 +2721,7 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
 //
 void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
 #ifdef TARGET_S390X
@@ -2840,8 +2831,9 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 //
 void Lowering::ContainCheckBinary(GenTreeOp* node)
 {
-    _ASSERTE(!"NYI");
-#if 0 
+    EX_THROW(HRException, (E_FAIL));
+    //_ASSERTE(!"NYI");
+//#if 0
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2();
 
@@ -2857,7 +2849,6 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
         return;
     }
 
-#ifdef TARGET_S390X
     if (comp->opts.OptimizationEnabled())
     {
         if (IsContainableUnaryOrBinaryOp(node, op2))
@@ -2885,8 +2876,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
             return;
         }
     }
-#endif
-#endif
+//#endif
 }
 
 //------------------------------------------------------------------------
@@ -2897,6 +2887,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
 //
 void Lowering::ContainCheckMul(GenTreeOp* node)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     ContainCheckBinary(node);
@@ -2911,6 +2902,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
 //
 void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     assert(node->OperIs(GT_DIV, GT_UDIV, GT_MOD));
@@ -2927,6 +2919,7 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 //
 void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     GenTree* shiftBy = node->gtOp2;
@@ -2956,8 +2949,9 @@ void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
 //
 void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
 {
-    _ASSERTE(!"NYI");
-#if 0 
+    EX_THROW(HRException, (E_FAIL));
+    //_ASSERTE(!"NYI");
+//#if 0
     assert(storeLoc->OperIsLocalStore());
     GenTree* op1 = storeLoc->gtGetOp1();
 
@@ -2993,7 +2987,9 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     {
         MakeSrcContained(storeLoc, op1);
     }
-#else
+#endif
+#if 0
+//#else
     // If the source is a containable immediate, make it contained, unless it is
     // an int-size or larger store of zero to memory, because we can generate smaller code
     // by zeroing a register and then storing it.
@@ -3006,8 +3002,9 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     {
         MakeSrcContained(storeLoc, op1);
     }
-#endif // TARGET_ARM
+//#endif // TARGET_ARM
 #endif
+//#endif
 }
 
 //------------------------------------------------------------------------
@@ -3018,6 +3015,7 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
 //
 void Lowering::ContainCheckCast(GenTreeCast* node)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     GenTree*  castOp     = node->CastOp();
@@ -3094,7 +3092,8 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
-//    _ASSERTE(!"NYI");
+    EX_THROW(HRException, (E_FAIL));
+    //_ASSERTE(!"NYI");
 //#if 0 
     GenTree* op1 = cmp->gtGetOp1();
     GenTree* op2 = cmp->gtGetOp2();
@@ -3314,6 +3313,7 @@ void Lowering::ContainCheckConditionalCompare(GenTreeCCMP* cmp)
 //
 void Lowering::ContainCheckSelect(GenTreeOp* node)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
 #ifdef TARGET_ARM
@@ -3789,6 +3789,7 @@ bool Lowering::TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next)
 //
 void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     assert(node->OperIs(GT_BOUNDS_CHECK));
@@ -3809,6 +3810,7 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 //
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     const HWIntrinsic intrin(node);
@@ -4165,6 +4167,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 //
 GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     assert(cndSelNode->OperIsHWIntrinsic(NI_Sve_ConditionalSelect));
@@ -4287,6 +4290,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
 //
 void Lowering::StoreFFRValue(GenTreeHWIntrinsic* node)
 {
+    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
 #ifdef DEBUG

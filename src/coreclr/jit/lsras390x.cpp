@@ -4,7 +4,7 @@
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XX                                                                           XX
-XX                    Register Requirements for ARM64                        XX
+XX                    Register Requirements for S390X                        XX
 XX                                                                           XX
 XX  This encapsulates all the logic for setting register requirements for    XX
 XX  the S390X architecture.                                                  XX
@@ -599,7 +599,7 @@ SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet  allCandi
 //
 int LinearScan::BuildNode(GenTree* tree)
 {
-    _ASSERTE(!"NYI");
+    //_ASSERTE(!"NYI");
 #if 0
     assert(!tree->isContained());
     int       srcCount;
@@ -1091,7 +1091,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 op2Use = BuildUse(tree->gtGetOp2());
             }
-
+#if 0
             // For ARMv8 exclusives the lifetime of the addr and data must be extended because
             // it may be used used multiple during retries
             if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
@@ -1113,6 +1113,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 }
             }
             else
+#endif
             {
                 // We always need the target reg for LSE, even if
                 // return value is unused, see genLockedInstructions

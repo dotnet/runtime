@@ -12423,12 +12423,19 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     bool isInterpreterStub   = false;
     bool interpreterFallback = (s_InterpreterFallback.val(CLRConfig::INTERNAL_InterpreterFallback) != 0);
     bool forceInterpreter    = (s_ForceInterpreter.val(CLRConfig::INTERNAL_ForceInterpreter) != 0);
-/*
 #ifdef TARGET_S390X
-    interpreterFallback = false;
+    MethodDesc* ftnDesc = GetMethod(info->ftn);
+    const char* ftnName = ftnDesc->GetName();
+
     forceInterpreter = true;
+    if (!strcmp(ftnName, "s390xHw"))
+    {
+        printf ("Function name is %s\n", ftnName);
+	interpreterFallback = true;
+    }
+    else
+	interpreterFallback = false;
 #endif
-*/
 
     if (interpreterFallback == false)
     {
@@ -12454,12 +12461,21 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 
     if (FAILED(ret) && jitMgr->m_jit)
     {
-        ret = CompileMethodWithEtwWrapper(jitMgr,
+        EX_TRY
+	{
+		ret = CompileMethodWithEtwWrapper(jitMgr,
                                           comp,
                                           info,
                                           CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
                                           nativeEntry,
                                           nativeSizeOfCode);
+        }
+	EX_CATCH
+	{
+	//	interpreterFallback = true;
+         //       forceInterpreter = true;
+        }
+	EX_END_CATCH(SwallowAllExceptions)
     }
 
     if (interpreterFallback == true)
@@ -12469,7 +12485,14 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
         if (FAILED(ret) &&
             (forceInterpreter || !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE)))
         {
-            if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode)))
+            // FIXME: GenerateInterpreterStub holds on to the method info longer than
+            // its life time (in particular in dynamic modules).  Allocate a new copy.
+            MethodDesc *pMD = reinterpret_cast<MethodDesc*>(info->ftn);
+            CEEInfo *jitInfo = new CEEInfo(pMD, true);
+
+            CORINFO_METHOD_INFO methInfo;
+            jitInfo->getMethodInfo(CORINFO_METHOD_HANDLE(pMD), &methInfo, NULL);
+            if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, &methInfo, nativeEntry, nativeSizeOfCode)))
             {
                 isInterpreterStub = true;
             }

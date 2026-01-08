@@ -2478,24 +2478,24 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 // true if this 'imm' can be encoded as a input operand to an add instruction
 /*static*/ bool emitter::emitIns_valid_imm_for_add(INT64 imm, emitAttr size)
 {
-    _ASSERTE(!"NYI");
-#if 0
+   // _ASSERTE(!"NYI");
+//#if 0
     if (unsigned_abs(imm) <= 0x0fff)
         return true;
     else if (canEncodeWithShiftImmBy12(imm)) // Try the shifted by 12 encoding
         return true;
 
     return false;
-#endif
+//#endif
 }
 
 // true if this 'imm' can be encoded as a input operand to an non-add/sub alu instruction
 /*static*/ bool emitter::emitIns_valid_imm_for_cmp(INT64 imm, emitAttr size)
 {
-    _ASSERTE(!"NYI");
-#if 0
+    //_ASSERTE(!"NYI");
+//#if 0
     return emitIns_valid_imm_for_add(imm, size);
-#endif
+//#endif
 }
 
 // true if this 'imm' can be encoded as a input operand to an non-add/sub alu instruction

@@ -1617,6 +1617,17 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
     return true;
 }
 #endif // TARGET_ARM64
+#if defined(TARGET_S390X)
+bool CodeGenInterface::validImmForBL(ssize_t addr)
+{
+//TODO : Giri - Is it still valid for s390x ?
+    // On arm64, we always assume a call target is in range and generate a 28-bit relative
+    // 'bl' instruction. If this isn't sufficient range, the VM will generate a jump stub when
+    // we call recordRelocation(). See the IMAGE_REL_ARM64_BRANCH26 case in jitinterface.cpp
+    // (for JIT) or zapinfo.cpp (for NGEN). If we cannot allocate a jump stub, it is fatal.
+    return true;
+}
+#endif // TARGET_S390X
 
 /*****************************************************************************
  *
