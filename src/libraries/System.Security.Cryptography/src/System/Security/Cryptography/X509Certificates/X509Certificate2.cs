@@ -1987,7 +1987,7 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     // keyAgreement is mandatory for id-ecPublicKey certificates
                     // when used with ECDH.
-                    return (ext.KeyUsages & X509KeyUsageFlags.KeyAgreement) != 0;
+                    return ((ext.KeyUsages & X509KeyUsageFlags.KeyAgreement) != 0);
                 }
             }
 
