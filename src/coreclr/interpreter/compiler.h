@@ -335,6 +335,9 @@ struct InterpBasicBlock
     // Valid only for BBs of call islands. It is set to true if it is a finally call island, false if is is a catch leave island.
     bool isFinallyCallIsland;
 
+    // Is a leave chain island basic block
+    bool isLeaveChainIsland;
+
     // If this basic block is a catch or filter funclet entry, this is the index of the variable
     // that holds the exception object.
     int clauseVarIndex;
@@ -366,6 +369,7 @@ struct InterpBasicBlock
         clauseType = BBClauseNone;
         isFilterOrCatchFuncletEntry = false;
         isFinallyCallIsland = false;
+        isLeaveChainIsland = false;
         clauseVarIndex = -1;
         overlappingEHClauseCount = 0;
         enclosingTryBlockCount = -1;

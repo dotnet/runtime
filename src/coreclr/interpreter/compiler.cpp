@@ -1099,11 +1099,23 @@ void InterpCompiler::EmitCode()
         {
             if (clause.HandlerOffset <= (uint32_t)bb->ilOffset && (clause.HandlerOffset + clause.HandlerLength) > (uint32_t)bb->ilOffset)
             {
+                if (bb->isLeaveChainIsland && (uint32_t)bb->ilOffset == clause.HandlerOffset)
+                {
+                    // This basic block is a leave chain island, and its iloffset is JUST after the end of the handler, but its logically part of it.
+                    continue;
+                }
+                INTERP_DUMP("BB %d with ilOffset %x overlaps EH clause %d (handler)\n", bb->index, bb->ilOffset, i);
                 bb->overlappingEHClauseCount++;
             }
 
             if (clause.Flags == CORINFO_EH_CLAUSE_FILTER && clause.FilterOffset <= (uint32_t)bb->ilOffset && clause.HandlerOffset > (uint32_t)bb->ilOffset)
             {
+                if (bb->isLeaveChainIsland && (uint32_t)bb->ilOffset == clause.FilterOffset)
+                {
+                    // This basic block is a leave chain island, and its iloffset is JUST after the end of the handler, but its logically part of it.
+                    continue;
+                }
+                INTERP_DUMP("BB %d with ilOffset %x overlaps EH clause %d (filter)\n", bb->index, bb->ilOffset, i);
                 bb->overlappingEHClauseCount++;
             }
         }
@@ -1569,8 +1581,27 @@ void InterpCompiler::GetNativeRangeForClause(uint32_t startILOffset, uint32_t en
     assert(pStartBB != NULL);
 
     InterpBasicBlock* pEndBB = pStartBB;
-    for (InterpBasicBlock* pBB = pStartBB->pNextBB; (pBB != NULL) && ((uint32_t)pBB->ilOffset < endILOffset); pBB = pBB->pNextBB)
+
+    // Iterate to the last BB whose ilOffset is less than endILOffset (the normal il basic blocks which are fully contained in the clause)
+    // BUT then continue on to any BB which are leave chain islands which start at the same IL offset as endILOffset, as long as they have
+    // the same overlappingEHClauseCount as pStartBB (these are also considered part of the clause) This allows the compiler to properly
+    // handle the case of an try block which contains another try block which has a handler that ends exactly at the end of the outer try block.
+    for (InterpBasicBlock* pBB = pStartBB->pNextBB;; pBB = pBB->pNextBB)
     {
+        if (pBB == NULL)
+        {
+            break;
+        }
+
+        // Check to see if we've reached or passed the end IL offset
+        if (((uint32_t)pBB->ilOffset >= endILOffset))
+        {
+            // We're probably done except for leave chain islands, which allow for a match to be allowed.
+            if (!pBB->isLeaveChainIsland || (uint32_t)pBB->ilOffset != endILOffset)
+            {
+                break;
+            }
+        }
         if (pBB->overlappingEHClauseCount == pStartBB->overlappingEHClauseCount)
         {
             pEndBB = pBB;
@@ -1682,6 +1713,18 @@ void InterpCompiler::BuildEHInfo()
     m_compHnd->setEHcount(nativeEHCount);
 
     unsigned int nativeEHIndex = 0;
+
+#ifdef DEBUG
+    INTERP_DUMP("   BB overlapping EH clause counts:\n");
+    if (t_interpDump)
+    {
+        for (InterpBasicBlock* pBB = GetBB(0); (pBB != NULL); pBB = pBB->pNextBB)
+        {
+            INTERP_DUMP("BB:%d has overlappingEHClauseCount=%d and ilOffset=%x\n", pBB->index, pBB->overlappingEHClauseCount, pBB->ilOffset);
+        }
+    }
+#endif
+
     for (unsigned int i = 0; i < getEHcount(m_methodInfo); i++)
     {
         CORINFO_EH_CLAUSE clause;
@@ -2274,6 +2317,7 @@ void InterpCompiler::CreateLeaveChainIslandBasicBlocks(CORINFO_METHOD_INFO* meth
         {
             pLeaveChainIslandBB = AllocBB(clause.HandlerOffset + clause.HandlerLength);
             pLeaveChainIslandBB->pLeaveTargetBB = pLeaveTargetBB;
+            pLeaveChainIslandBB->isLeaveChainIsland = true;
             *ppLastBBNext = pLeaveChainIslandBB;
         }
 
