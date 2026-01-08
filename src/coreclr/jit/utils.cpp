@@ -2313,7 +2313,7 @@ static float16_t roundPackToHalf(bool sign, int16_t exp, uint16_t sig)
 float16_t FloatingPointUtils::convertDoubleToFloat16(double value)
 {
     uint64_t doubleInt;
-    std::memcpy(&doubleInt, &value, sizeof(double));
+    memcpy(&doubleInt, &value, sizeof(double));
 
     bool     sign = (doubleInt & DBL_SIGN_MASK) != 0;
     int      exp  = static_cast<int>((doubleInt & DBL_EXP_MASK) >> DBL_EXP_SHIFT);
