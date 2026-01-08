@@ -1195,6 +1195,8 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types*
                 if (sizeBytes < getMinVectorByteLength())
                 {
                     // The struct itself is accelerated, in this case, it is `Half`.
+                    // If future types are added, this assert will need to be removed.
+                    assert(sizeBytes == 2);
                     structType = simdBaseType;
                     if (pSimdBaseJitType != nullptr)
                     {

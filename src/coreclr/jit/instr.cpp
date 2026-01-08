@@ -2222,7 +2222,9 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
     unsigned srcSize = genTypeSize(srcType);
 
     if (srcSize == 2)
+    {
         return INS_vmovsh;
+    }
     else if (srcSize == 4)
     {
         return INS_movss;
