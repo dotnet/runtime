@@ -1020,10 +1020,10 @@ namespace Internal.JitInterface
                     break;
 
                 case TargetArchitecture.RiscV64:
-                    yield return new InstructionSetInfo("base", "RiscV64Base", InstructionSet.RiscV64_RiscV64Base, true);
-                    yield return new InstructionSetInfo("zba", "Zba", InstructionSet.RiscV64_Zba, true);
-                    yield return new InstructionSetInfo("zbb", "Zbb", InstructionSet.RiscV64_Zbb, true);
-                    yield return new InstructionSetInfo("zbs", "Zbs", InstructionSet.RiscV64_Zbs, true);
+                    yield return new InstructionSetInfo("base", "", InstructionSet.RiscV64_RiscV64Base, true);
+                    yield return new InstructionSetInfo("zba", "", InstructionSet.RiscV64_Zba, true);
+                    yield return new InstructionSetInfo("zbb", "", InstructionSet.RiscV64_Zbb, true);
+                    yield return new InstructionSetInfo("zbs", "", InstructionSet.RiscV64_Zbs, true);
                     break;
 
                 case TargetArchitecture.X64:
@@ -1335,6 +1335,9 @@ namespace Internal.JitInterface
                     break;
 
                 case TargetArchitecture.X64:
+                    platformIntrinsicNamespace = "System.Runtime.Intrinsics.X86";
+                    break;
+
                 case TargetArchitecture.X86:
                     platformIntrinsicNamespace = "System.Runtime.Intrinsics.X86";
                     break;
@@ -1413,28 +1416,16 @@ namespace Internal.JitInterface
                         else
                         { return InstructionSet.ARM64_Sve2; }
 
+                    default:
+                        return InstructionSet.ILLEGAL;
                 }
-                break;
-
                 case TargetArchitecture.RiscV64:
                 switch (typeName)
                 {
 
-                    case "RiscV64Base":
-                        { return InstructionSet.RiscV64_RiscV64Base; }
-
-                    case "Zba":
-                        { return InstructionSet.RiscV64_Zba; }
-
-                    case "Zbb":
-                        { return InstructionSet.RiscV64_Zbb; }
-
-                    case "Zbs":
-                        { return InstructionSet.RiscV64_Zbs; }
-
+                    default:
+                        return InstructionSet.ILLEGAL;
                 }
-                break;
-
                 case TargetArchitecture.X64:
                 switch (typeName)
                 {
@@ -1763,9 +1754,9 @@ namespace Internal.JitInterface
                         else
                         { return InstructionSet.X64_AVXVNNIINT; }
 
+                    default:
+                        return InstructionSet.ILLEGAL;
                 }
-                break;
-
                 case TargetArchitecture.X86:
                 switch (typeName)
                 {
@@ -1947,9 +1938,9 @@ namespace Internal.JitInterface
                         else
                         { return InstructionSet.X86_AVXVNNIINT; }
 
+                    default:
+                        return InstructionSet.ILLEGAL;
                 }
-                break;
-
             }
             return InstructionSet.ILLEGAL;
         }
@@ -1961,7 +1952,7 @@ namespace Internal.JitInterface
                 case (InstructionSet.ARM64_ArmBase, TargetArchitecture.ARM64):
                 case (InstructionSet.ARM64_ArmBase_Arm64, TargetArchitecture.ARM64):
                 {
-                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm64"u8, "ArmBase"u8, true);
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm"u8, "ArmBase"u8, true);
                     yield return type;
                     if (instructionSet == InstructionSet.ARM64_ArmBase_Arm64)
                     {
@@ -1973,7 +1964,7 @@ namespace Internal.JitInterface
                 case (InstructionSet.ARM64_AdvSimd, TargetArchitecture.ARM64):
                 case (InstructionSet.ARM64_AdvSimd_Arm64, TargetArchitecture.ARM64):
                 {
-                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm64"u8, "AdvSimd"u8, true);
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm"u8, "AdvSimd"u8, true);
                     yield return type;
                     if (instructionSet == InstructionSet.ARM64_AdvSimd_Arm64)
                     {
@@ -1985,7 +1976,7 @@ namespace Internal.JitInterface
                 case (InstructionSet.ARM64_Aes, TargetArchitecture.ARM64):
                 case (InstructionSet.ARM64_Aes_Arm64, TargetArchitecture.ARM64):
                 {
-                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm64"u8, "Aes"u8, true);
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm"u8, "Aes"u8, true);
                     yield return type;
                     if (instructionSet == InstructionSet.ARM64_Aes_Arm64)
                     {
@@ -1997,7 +1988,7 @@ namespace Internal.JitInterface
                 case (InstructionSet.ARM64_Crc32, TargetArchitecture.ARM64):
                 case (InstructionSet.ARM64_Crc32_Arm64, TargetArchitecture.ARM64):
                 {
-                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm64"u8, "Crc32"u8, true);
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm"u8, "Crc32"u8, true);
                     yield return type;
                     if (instructionSet == InstructionSet.ARM64_Crc32_Arm64)
                     {
@@ -2009,7 +2000,7 @@ namespace Internal.JitInterface
                 case (InstructionSet.ARM64_Dp, TargetArchitecture.ARM64):
                 case (InstructionSet.ARM64_Dp_Arm64, TargetArchitecture.ARM64):
                 {
-                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm64"u8, "Dp"u8, true);
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm"u8, "Dp"u8, true);
                     yield return type;
                     if (instructionSet == InstructionSet.ARM64_Dp_Arm64)
                     {
@@ -2021,7 +2012,7 @@ namespace Internal.JitInterface
                 case (InstructionSet.ARM64_Rdm, TargetArchitecture.ARM64):
                 case (InstructionSet.ARM64_Rdm_Arm64, TargetArchitecture.ARM64):
                 {
-                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm64"u8, "Rdm"u8, true);
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm"u8, "Rdm"u8, true);
                     yield return type;
                     if (instructionSet == InstructionSet.ARM64_Rdm_Arm64)
                     {
@@ -2033,7 +2024,7 @@ namespace Internal.JitInterface
                 case (InstructionSet.ARM64_Sha1, TargetArchitecture.ARM64):
                 case (InstructionSet.ARM64_Sha1_Arm64, TargetArchitecture.ARM64):
                 {
-                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm64"u8, "Sha1"u8, true);
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm"u8, "Sha1"u8, true);
                     yield return type;
                     if (instructionSet == InstructionSet.ARM64_Sha1_Arm64)
                     {
@@ -2045,7 +2036,7 @@ namespace Internal.JitInterface
                 case (InstructionSet.ARM64_Sha256, TargetArchitecture.ARM64):
                 case (InstructionSet.ARM64_Sha256_Arm64, TargetArchitecture.ARM64):
                 {
-                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm64"u8, "Sha256"u8, true);
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm"u8, "Sha256"u8, true);
                     yield return type;
                     if (instructionSet == InstructionSet.ARM64_Sha256_Arm64)
                     {
@@ -2057,7 +2048,7 @@ namespace Internal.JitInterface
                 case (InstructionSet.ARM64_Sve, TargetArchitecture.ARM64):
                 case (InstructionSet.ARM64_Sve_Arm64, TargetArchitecture.ARM64):
                 {
-                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm64"u8, "Sve"u8, true);
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm"u8, "Sve"u8, true);
                     yield return type;
                     if (instructionSet == InstructionSet.ARM64_Sve_Arm64)
                     {
@@ -2069,7 +2060,7 @@ namespace Internal.JitInterface
                 case (InstructionSet.ARM64_Sve2, TargetArchitecture.ARM64):
                 case (InstructionSet.ARM64_Sve2_Arm64, TargetArchitecture.ARM64):
                 {
-                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm64"u8, "Sve2"u8, true);
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm"u8, "Sve2"u8, true);
                     yield return type;
                     if (instructionSet == InstructionSet.ARM64_Sve2_Arm64)
                     {

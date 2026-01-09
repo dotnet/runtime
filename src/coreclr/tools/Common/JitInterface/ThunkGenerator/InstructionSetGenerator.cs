@@ -824,20 +824,28 @@ namespace Internal.JitInterface
             string platformIntrinsicNamespace;
 
             switch (targetArch)
+            {");
+
+
+            foreach (string architecture in _architectures)
             {
-                case TargetArchitecture.ARM64:
-                    platformIntrinsicNamespace = ""System.Runtime.Intrinsics.Arm"";
-                    break;
+                if (!_architectureManagedNamespace.ContainsKey(architecture))
+                    continue;
 
-                case TargetArchitecture.X64:
-                case TargetArchitecture.X86:
-                    platformIntrinsicNamespace = ""System.Runtime.Intrinsics.X86"";
+                string ns = _architectureManagedNamespace[architecture];
+                tr.Write($@"
+                case TargetArchitecture.{architecture}:
+                    platformIntrinsicNamespace = ""{ns}"";
                     break;
+");
+            }
 
+            tr.Write(@"
                 default:
                     return InstructionSet.ILLEGAL;
             }
-
+");
+            tr.Write(@"
             if (namespaceName != platformIntrinsicNamespace)
                 return InstructionSet.ILLEGAL;
 
@@ -899,9 +907,9 @@ namespace Internal.JitInterface
 ");
                 }
                 tr.Write($@"
-                }}
-                break;
-");
+                    default:
+                        return InstructionSet.ILLEGAL;
+                }}");
             }
 
             tr.Write(@"
