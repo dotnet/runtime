@@ -240,8 +240,6 @@ namespace ILCompiler.ObjectWriter
         {
             int funcIdx = _sectionNameToIndex[ObjectNodeSection.WasmFunctionSection.Name];
             PrependCount(_sections[funcIdx], _methodBodyCount);
-
-
             int typeIdx = _sectionNameToIndex[ObjectNodeSection.WasmTypeSection.Name];
             PrependCount(_sections[typeIdx], _uniqueSignatures.Count);
 
