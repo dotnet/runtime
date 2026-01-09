@@ -18931,6 +18931,8 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeq** pFldSe
 bool Compiler::gtStoreDefinesField(
     LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFieldStoreSize)
 {
+    assert(!varTypeHasUnknownSize(fieldVarDsc));
+
     ssize_t  fieldOffset = fieldVarDsc->lvFldOffset;
     unsigned fieldSize   = genTypeSize(fieldVarDsc); // No TYP_STRUCT field locals.
 

@@ -2802,6 +2802,15 @@ unsigned Compiler::lvaLclExactSize(unsigned varNum)
     return lvaGetDesc(varNum)->lvExactSize();
 }
 
+// Return the size of the local variable, allowing the possibility for the local
+// to have an unknown size. Returns the size of the local variable in bytes, or
+// SIZE_UNKNOWN.
+ValueSize Compiler::lvaLclValueSize(unsigned varNum)
+{
+    assert(varNum < lvaCount);
+    return lvaGetDesc(varNum)->lvValueSize();
+}
+
 // LclVarDsc "less" comparer used to compare the weight of two locals, when optimizing for small code.
 class LclVarDsc_SmallCode_Less
 {
@@ -3238,7 +3247,31 @@ void Compiler::lvaSortByRefCount()
 //
 unsigned LclVarDsc::lvExactSize() const
 {
-    return (lvType == TYP_STRUCT) ? GetLayout()->GetSize() : genTypeSize(lvType);
+    assert(!varTypeHasUnknownSize(lvType));
+    return lvValueSize().GetSize();
+}
+
+//------------------------------------------------------------------------
+// lvValueSize: Get the value size of the type of this local.
+//
+// Return Value:
+//    The value size container for this local. This either contains an exact
+//    size or a compile-time unknown size.
+//
+ValueSize LclVarDsc::lvValueSize() const
+{
+    if (lvType == TYP_STRUCT)
+    {
+        return ValueSize(GetLayout()->GetSize());
+    }
+    else if (varTypeHasUnknownSize(lvType))
+    {
+        return ValueSize::Unknown();
+    }
+    else
+    {
+        return ValueSize(genTypeSize(lvType));
+    }
 }
 
 //------------------------------------------------------------------------

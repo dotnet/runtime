@@ -985,7 +985,8 @@ public:
         lvStkOffs = offset;
     }
 
-    unsigned lvExactSize() const;
+    unsigned  lvExactSize() const;
+    ValueSize lvValueSize() const;
 
     unsigned lvSlotNum; // original slot # (if remapped)
 
@@ -4186,6 +4187,7 @@ public:
 
     unsigned lvaLclStackHomeSize(unsigned varNum);
     unsigned lvaLclExactSize(unsigned varNum);
+    ValueSize lvaLclValueSize(unsigned varNum);
 
     bool lvaHaveManyLocals(float percent = 1.0f) const;
 

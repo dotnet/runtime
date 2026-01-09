@@ -4293,7 +4293,7 @@ public:
 
                     ssize_t  fieldStoreOffset;
                     unsigned fieldStoreSize;
-                    if (m_compiler->gtStoreDefinesField(fieldVarDsc, def.Offset, def.Size, &fieldStoreOffset,
+                    if (m_compiler->gtStoreDefinesField(fieldVarDsc, def.Offset, def.Size.GetSize(), &fieldStoreOffset,
                                                         &fieldStoreSize))
                     {
                         ProcessDef(def.Def, fieldLclNum, fieldSsaNum);
