@@ -743,10 +743,8 @@ HCIMPL1(EnregisteredTypeHandle, JIT_GetClassFromMethodParam, MethodDesc* pMD)
 
     return pMT;
 HCIMPLEND
+
 #include <optdefault.h>
-
-
-
 
 //========================================================================
 //
@@ -784,9 +782,16 @@ EXTERN_C HCIMPL2(void, IL_Throw_Impl,  Object* obj, TransitionBlock* transitionB
     FC_CAN_TRIGGER_GC();
 
     if (oref == 0)
-        DispatchManagedException(kNullReferenceException);
+    {
+        // Create a NullReferenceException and throw it with the correct context
+        EEException ex(kNullReferenceException);
+        oref = ex.CreateThrowable();
+    }
+    else
+    {
+        NormalizeThrownObject(&oref);
+    }
 
-    NormalizeThrownObject(&oref);
     DispatchManagedException(oref, exceptionFrame.GetContext());
 
     FC_CAN_TRIGGER_GC_END();

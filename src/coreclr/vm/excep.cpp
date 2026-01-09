@@ -10930,8 +10930,9 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
 
     // Read FP callee-saved registers (xmm6-xmm15) from the stack
     // They are stored at negative offsets from TransitionBlock:
-    // Layout: [xmm6-xmm15 (160 bytes)] [xmm0-xmm3 (64 bytes)] [shadow (32 bytes)] [CalleeSavedRegs] [RetAddr]
-    // FP callee-saved are at TransitionBlock - 256 (160 + 64 + 32)
+    // Layout: [padding (8)] [xmm6-xmm15 (160 bytes)] [xmm0-xmm3 (64 bytes)] [shadow (32 bytes)] [CalleeSavedRegs] [RetAddr]
+    // FP callee-saved are at TransitionBlock - 256 (8 padding + 160 + 64 + 32 - 8 for the xmm start offset)
+    // More precisely: xmm6 is at TransitionBlock - 264 + 8 = TransitionBlock - 256
     M128A *pFpCalleeSaved = (M128A*)((BYTE*)pTransitionBlock - 256);
     m_Context.Xmm6 = pFpCalleeSaved[0];
     m_Context.Xmm7 = pFpCalleeSaved[1];
@@ -10993,8 +10994,8 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
 
     // Read FP callee-saved registers (d8-d15) from the stack
     // They are stored at negative offset from TransitionBlock:
-    // Layout: [d8-d15 (64 bytes)] [padding (8 bytes)] [d0-d7 (64 bytes)] [TransitionBlock]
-    // FP callee-saved are at TransitionBlock - 136 (64 + 8 + 64)
+    // Layout: [d8-d15 (64 bytes)] [padding (4)] [d0-d7 (64 bytes)] [padding (4)] [TransitionBlock]
+    // FP callee-saved are at TransitionBlock - 136 (64 + 4 + 64 + 4)
     UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 136);
     for (int i = 0; i < 8; i++)
     {

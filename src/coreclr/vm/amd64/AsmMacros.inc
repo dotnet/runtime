@@ -495,42 +495,44 @@ POP_COOP_PINVOKE_FRAME macro
 ;   Outgoing argument homes (32 bytes)
 ;   FloatArgumentRegisters (xmm0-xmm3, 64 bytes)
 ;   FP Callee-saved registers (xmm6-xmm15, 160 bytes)
+;   Padding (8 bytes for 16-byte alignment)
 ;   sp points here
 ;
-; Stack alignment: After call to IL_Throw (8 bytes) + callee-saved (64 bytes) + alloc (256 bytes) + call (8 bytes) = 336 bytes
-; 336 % 16 = 0, so stack is properly aligned for the call to IL_Throw_Impl.
+; Stack alignment: After call to IL_Throw (8 bytes) + callee-saved (64 bytes) + alloc (264 bytes) = 336 bytes
+; The XMM save area at offset 8 is 16-byte aligned (336 - 8 = 328, 328 % 16 = 8, but RSP+8 % 16 = 0).
 ;
 ; On exit, target contains the TransitionBlock pointer (CalleeSavedRegisters).
 PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS macro target
 
         PUSH_CALLEE_SAVED_REGISTERS
 
-        ; Allocate space for: outgoing args (32) + float args (64) + FP callee-saved (160) = 256 bytes
-        alloc_stack     256
+        ; Allocate space for: outgoing args (32) + float args (64) + FP callee-saved (160) + padding (8) = 264 bytes
+        alloc_stack     264
 
         ; Save argument registers to shadow space area
-        ; Shadow space is at offset 224 (after float args and FP callee-saved) from sp
-        SAVE_ARGUMENT_REGISTERS 224
+        ; Shadow space is at offset 232 (after float args and FP callee-saved and padding) from sp
+        SAVE_ARGUMENT_REGISTERS 232
 
-        ; Save float argument registers at offset 160 (after FP callee-saved)
-        SAVE_FLOAT_ARGUMENT_REGISTERS 160
+        ; Save float argument registers at offset 168 (after FP callee-saved and padding)
+        SAVE_FLOAT_ARGUMENT_REGISTERS 168
 
-        ; Save FP callee-saved registers (xmm6-xmm15) at offset 0
-        save_xmm128_postrsp xmm6,  0
-        save_xmm128_postrsp xmm7,  10h
-        save_xmm128_postrsp xmm8,  20h
-        save_xmm128_postrsp xmm9,  30h
-        save_xmm128_postrsp xmm10, 40h
-        save_xmm128_postrsp xmm11, 50h
-        save_xmm128_postrsp xmm12, 60h
-        save_xmm128_postrsp xmm13, 70h
-        save_xmm128_postrsp xmm14, 80h
-        save_xmm128_postrsp xmm15, 90h
+        ; Save FP callee-saved registers (xmm6-xmm15) at offset 8 (after padding)
+        ; Offset 8 ensures 16-byte alignment for movaps
+        save_xmm128_postrsp xmm6,  8h
+        save_xmm128_postrsp xmm7,  18h
+        save_xmm128_postrsp xmm8,  28h
+        save_xmm128_postrsp xmm9,  38h
+        save_xmm128_postrsp xmm10, 48h
+        save_xmm128_postrsp xmm11, 58h
+        save_xmm128_postrsp xmm12, 68h
+        save_xmm128_postrsp xmm13, 78h
+        save_xmm128_postrsp xmm14, 88h
+        save_xmm128_postrsp xmm15, 98h
 
         END_PROLOGUE
 
-        ; TransitionBlock pointer points to CalleeSavedRegisters at rsp + 256
-        lea     target, [rsp + 256]
+        ; TransitionBlock pointer points to CalleeSavedRegisters at rsp + 264
+        lea     target, [rsp + 264]
 
         endm
 
