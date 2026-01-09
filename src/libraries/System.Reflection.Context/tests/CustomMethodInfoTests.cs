@@ -138,24 +138,27 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetCustomAttributes_WithType_ReturnsAttributes()
+        public void GetCustomAttributes_WithType_ReturnsTestAttribute()
         {
+            // TestCustomReflectionContext adds TestAttribute to GetMessage method
             object[] attributes = _customMethod.GetCustomAttributes(typeof(Attribute), true);
-            Assert.NotNull(attributes);
+            Assert.Contains(attributes, a => a is TestAttribute);
         }
 
         [Fact]
-        public void GetCustomAttributes_NoType_ReturnsAttributes()
+        public void GetCustomAttributes_NoType_ReturnsTestAttribute()
         {
+            // TestCustomReflectionContext adds TestAttribute to GetMessage method
             object[] attributes = _customMethod.GetCustomAttributes(false);
-            Assert.NotNull(attributes);
+            Assert.Contains(attributes, a => a is TestAttribute);
         }
 
         [Fact]
-        public void GetCustomAttributesData_ReturnsProjectingData()
+        public void GetCustomAttributesData_ReturnsDataForTestAttribute()
         {
+            // TestCustomReflectionContext adds TestAttribute to GetMessage method
             IList<CustomAttributeData> data = _customMethod.GetCustomAttributesData();
-            Assert.NotNull(data);
+            Assert.NotEmpty(data);
         }
 
         [Fact]

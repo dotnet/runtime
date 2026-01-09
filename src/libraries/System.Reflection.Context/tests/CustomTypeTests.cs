@@ -174,36 +174,38 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetDefaultMembers_ReturnsProjectedMembers()
+        public void GetDefaultMembers_ReturnsIndexerProperty()
         {
+            // TestObject has DefaultMemberAttribute("Item") for the indexer
             MemberInfo[] members = _customTypeInfo.GetDefaultMembers();
-            Assert.NotNull(members);
+            Assert.Single(members);
+            Assert.Equal("Item", members[0].Name);
         }
 
         [Fact]
-        public void GetCustomAttributes_WithType_ReturnsAttributes()
+        public void GetCustomAttributes_WithType_ReturnsEmptyDueToContextOverride()
         {
-            // TestObject doesn't have DataContractAttribute applied directly, so check for any attribute
+            // TestCustomReflectionContext's GetCustomAttributes doesn't pass through type attributes
+            // so GetCustomAttributes returns empty even though GetCustomAttributesData shows the data
             object[] attributes = _customTypeInfo.GetCustomAttributes(typeof(Attribute), true);
-            Assert.NotNull(attributes);
+            Assert.Empty(attributes);
         }
 
         [Fact]
-        public void GetCustomAttributes_NoType_ReturnsAttributes()
+        public void GetCustomAttributes_NoType_ReturnsEmptyDueToContextOverride()
         {
+            // TestCustomReflectionContext's GetCustomAttributes doesn't pass through type attributes
             object[] attributes = _customTypeInfo.GetCustomAttributes(false);
-            Assert.NotNull(attributes);
+            Assert.Empty(attributes);
         }
 
         [Fact]
-        public void GetCustomAttributesData_ReturnsProjectingData()
+        public void GetCustomAttributesData_ReturnsDataContractAndDefaultMember()
         {
+            // GetCustomAttributesData returns the raw attribute data including DataContract and DefaultMember
             IList<CustomAttributeData> data = _customTypeInfo.GetCustomAttributesData();
-            Assert.NotNull(data);
-            if (data.Count > 0)
-            {
-                Assert.All(data, cad => Assert.Equal(ProjectionConstants.ProjectingCustomAttributeData, cad.GetType().FullName));
-            }
+            Assert.Equal(2, data.Count);
+            Assert.All(data, cad => Assert.Equal(ProjectionConstants.ProjectingCustomAttributeData, cad.GetType().FullName));
         }
 
         [Fact]
@@ -488,10 +490,11 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetHashCode_ReturnsValue()
+        public void GetHashCode_IsIdempotent()
         {
-            int hashCode = _customTypeInfo.GetHashCode();
-            Assert.NotEqual(0, hashCode);
+            int hashCode1 = _customTypeInfo.GetHashCode();
+            int hashCode2 = _customTypeInfo.GetHashCode();
+            Assert.Equal(hashCode1, hashCode2);
         }
     }
 }

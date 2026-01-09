@@ -21,30 +21,31 @@ namespace System.Reflection.Context.Tests
             Assembly customAssembly = _customReflectionContext.MapAssembly(assembly);
 
             object[] attrs = customAssembly.GetCustomAttributes(false);
-            Assert.NotNull(attrs);
+            // Test assembly has attributes, so we expect non-empty
+            Assert.NotEmpty(attrs);
         }
 
         // Tests for DelegatingConstructorInfo.GetCustomAttributes
         [Fact]
-        public void Constructor_GetCustomAttributes_NoType_ReturnsAttributes()
+        public void Constructor_GetCustomAttributes_NoType_ReturnsEmptyForUnattributedConstructor()
         {
             TypeInfo typeInfo = typeof(TestObject).GetTypeInfo();
             TypeInfo customType = _customReflectionContext.MapType(typeInfo);
             ConstructorInfo ctor = customType.GetConstructor(new[] { typeof(string) });
 
             object[] attrs = ctor.GetCustomAttributes(false);
-            Assert.NotNull(attrs);
+            Assert.Empty(attrs);
         }
 
         [Fact]
-        public void Constructor_GetCustomAttributes_WithType_ReturnsAttributes()
+        public void Constructor_GetCustomAttributes_WithType_ReturnsEmptyForUnattributedConstructor()
         {
             TypeInfo typeInfo = typeof(TestObject).GetTypeInfo();
             TypeInfo customType = _customReflectionContext.MapType(typeInfo);
             ConstructorInfo ctor = customType.GetConstructor(new[] { typeof(string) });
 
             object[] attrs = ctor.GetCustomAttributes(typeof(Attribute), false);
-            Assert.NotNull(attrs);
+            Assert.Empty(attrs);
         }
 
         [Fact]
@@ -60,25 +61,25 @@ namespace System.Reflection.Context.Tests
 
         // Tests for DelegatingEventInfo.GetCustomAttributes
         [Fact]
-        public void Event_GetCustomAttributes_NoType_ReturnsAttributes()
+        public void Event_GetCustomAttributes_NoType_ReturnsEmptyForUnattributedEvent()
         {
             TypeInfo typeInfo = typeof(TypeWithEvent).GetTypeInfo();
             TypeInfo customType = _customReflectionContext.MapType(typeInfo);
             EventInfo evt = customType.GetEvent("TestEvent");
 
             object[] attrs = evt.GetCustomAttributes(false);
-            Assert.NotNull(attrs);
+            Assert.Empty(attrs);
         }
 
         [Fact]
-        public void Event_GetCustomAttributes_WithType_ReturnsAttributes()
+        public void Event_GetCustomAttributes_WithType_ReturnsEmptyForUnattributedEvent()
         {
             TypeInfo typeInfo = typeof(TypeWithEvent).GetTypeInfo();
             TypeInfo customType = _customReflectionContext.MapType(typeInfo);
             EventInfo evt = customType.GetEvent("TestEvent");
 
             object[] attrs = evt.GetCustomAttributes(typeof(Attribute), false);
-            Assert.NotNull(attrs);
+            Assert.Empty(attrs);
         }
 
         [Fact]
@@ -94,25 +95,25 @@ namespace System.Reflection.Context.Tests
 
         // Tests for DelegatingFieldInfo.GetCustomAttributes
         [Fact]
-        public void Field_GetCustomAttributes_NoType_ReturnsAttributes()
+        public void Field_GetCustomAttributes_NoType_ReturnsEmptyForUnattributedField()
         {
             TypeInfo typeInfo = typeof(TypeWithFields).GetTypeInfo();
             TypeInfo customType = _customReflectionContext.MapType(typeInfo);
             FieldInfo field = customType.GetField("PublicField");
 
             object[] attrs = field.GetCustomAttributes(false);
-            Assert.NotNull(attrs);
+            Assert.Empty(attrs);
         }
 
         [Fact]
-        public void Field_GetCustomAttributes_WithType_ReturnsAttributes()
+        public void Field_GetCustomAttributes_WithType_ReturnsEmptyForUnattributedField()
         {
             TypeInfo typeInfo = typeof(TypeWithFields).GetTypeInfo();
             TypeInfo customType = _customReflectionContext.MapType(typeInfo);
             FieldInfo field = customType.GetField("PublicField");
 
             object[] attrs = field.GetCustomAttributes(typeof(Attribute), false);
-            Assert.NotNull(attrs);
+            Assert.Empty(attrs);
         }
 
         [Fact]
@@ -128,37 +129,38 @@ namespace System.Reflection.Context.Tests
 
         // Tests for DelegatingMethodInfo.GetCustomAttributes
         [Fact]
-        public void Method_GetCustomAttributes_NoType_ReturnsAttributes()
+        public void Method_GetCustomAttributes_NoType_ReturnsTestAttribute()
         {
             TypeInfo typeInfo = typeof(TestObject).GetTypeInfo();
             TypeInfo customType = _customReflectionContext.MapType(typeInfo);
             MethodInfo method = customType.GetMethod("GetMessage");
 
+            // TestCustomReflectionContext adds TestAttribute to GetMessage
             object[] attrs = method.GetCustomAttributes(false);
-            Assert.NotNull(attrs);
+            Assert.Contains(attrs, a => a is TestAttribute);
         }
 
         // Tests for DelegatingPropertyInfo.GetCustomAttributes
         [Fact]
-        public void Property_GetCustomAttributes_NoType_ReturnsAttributes()
+        public void Property_GetCustomAttributes_NoType_ReturnsEmptyForUnattributedProperty()
         {
             TypeInfo typeInfo = typeof(TypeWithProperties).GetTypeInfo();
             TypeInfo customType = _customReflectionContext.MapType(typeInfo);
             PropertyInfo prop = customType.GetProperty("ReadWriteProperty");
 
             object[] attrs = prop.GetCustomAttributes(false);
-            Assert.NotNull(attrs);
+            Assert.Empty(attrs);
         }
 
         [Fact]
-        public void Property_GetCustomAttributes_WithType_ReturnsAttributes()
+        public void Property_GetCustomAttributes_WithType_ReturnsEmptyForUnattributedProperty()
         {
             TypeInfo typeInfo = typeof(TypeWithProperties).GetTypeInfo();
             TypeInfo customType = _customReflectionContext.MapType(typeInfo);
             PropertyInfo prop = customType.GetProperty("ReadWriteProperty");
 
             object[] attrs = prop.GetCustomAttributes(typeof(Attribute), false);
-            Assert.NotNull(attrs);
+            Assert.Empty(attrs);
         }
 
         [Fact]
@@ -174,7 +176,7 @@ namespace System.Reflection.Context.Tests
 
         // Tests for DelegatingParameterInfo.GetCustomAttributes
         [Fact]
-        public void Parameter_GetCustomAttributes_NoType_ReturnsAttributes()
+        public void Parameter_GetCustomAttributes_NoType_ReturnsEmptyForReturnParameter()
         {
             TypeInfo typeInfo = typeof(TestObject).GetTypeInfo();
             TypeInfo customType = _customReflectionContext.MapType(typeInfo);
@@ -182,11 +184,11 @@ namespace System.Reflection.Context.Tests
             ParameterInfo returnParam = method.ReturnParameter;
 
             object[] attrs = returnParam.GetCustomAttributes(false);
-            Assert.NotNull(attrs);
+            Assert.Empty(attrs);
         }
 
         [Fact]
-        public void Parameter_GetCustomAttributes_WithType_ReturnsAttributes()
+        public void Parameter_GetCustomAttributes_WithType_ReturnsEmptyForReturnParameter()
         {
             TypeInfo typeInfo = typeof(TestObject).GetTypeInfo();
             TypeInfo customType = _customReflectionContext.MapType(typeInfo);
@@ -194,7 +196,7 @@ namespace System.Reflection.Context.Tests
             ParameterInfo returnParam = method.ReturnParameter;
 
             object[] attrs = returnParam.GetCustomAttributes(typeof(Attribute), false);
-            Assert.NotNull(attrs);
+            Assert.Empty(attrs);
         }
 
         [Fact]
@@ -211,14 +213,14 @@ namespace System.Reflection.Context.Tests
 
         // Tests for module GetCustomAttributes
         [Fact]
-        public void Module_GetCustomAttributes_NoType_ReturnsAttributes()
+        public void Module_GetCustomAttributes_NoType_ContainsTestModuleAttribute()
         {
             Assembly assembly = typeof(FinalCoverageTests2).Assembly;
             Assembly customAssembly = _customReflectionContext.MapAssembly(assembly);
             Module module = customAssembly.ManifestModule;
 
             object[] attrs = module.GetCustomAttributes(false);
-            Assert.NotNull(attrs);
+            Assert.Contains(attrs, a => a is TestModuleAttribute);
         }
 
         // Tests for filter exception handling clause

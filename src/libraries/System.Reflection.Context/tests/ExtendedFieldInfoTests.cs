@@ -199,26 +199,24 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetCustomAttributes_WithType_ReturnsAttributes()
+        public void GetCustomAttributes_WithType_ReturnsEmptyForUnattributedField()
         {
-            TypeInfo customType = _customReflectionContext.MapType(typeof(SecondTestObject).GetTypeInfo());
-            FieldInfo customField = customType.GetField("field");
-            object[] attributes = customField.GetCustomAttributes(typeof(Attribute), true);
-            Assert.NotNull(attributes);
+            object[] attributes = _publicField.GetCustomAttributes(typeof(Attribute), true);
+            Assert.Empty(attributes);
         }
 
         [Fact]
-        public void GetCustomAttributes_NoType_ReturnsAttributes()
+        public void GetCustomAttributes_NoType_ReturnsEmptyForUnattributedField()
         {
             object[] attributes = _publicField.GetCustomAttributes(false);
-            Assert.NotNull(attributes);
+            Assert.Empty(attributes);
         }
 
         [Fact]
-        public void GetCustomAttributesData_ReturnsData()
+        public void GetCustomAttributesData_ReturnsEmptyForUnattributedField()
         {
             IList<CustomAttributeData> data = _publicField.GetCustomAttributesData();
-            Assert.NotNull(data);
+            Assert.Empty(data);
         }
 
         [Fact]
@@ -257,10 +255,11 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetHashCode_ReturnsValue()
+        public void GetHashCode_IsIdempotent()
         {
-            int hashCode = _publicField.GetHashCode();
-            Assert.NotEqual(0, hashCode);
+            int hashCode1 = _publicField.GetHashCode();
+            int hashCode2 = _publicField.GetHashCode();
+            Assert.Equal(hashCode1, hashCode2);
         }
     }
 }

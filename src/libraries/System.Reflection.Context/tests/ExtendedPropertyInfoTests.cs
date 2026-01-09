@@ -216,24 +216,24 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetCustomAttributes_WithType_ReturnsAttributes()
+        public void GetCustomAttributes_WithType_ReturnsEmptyForUnattributedProperty()
         {
-            object[] attributes = _attributedProperty.GetCustomAttributes(typeof(Attribute), true);
-            Assert.NotNull(attributes);
+            object[] attributes = _readWriteProperty.GetCustomAttributes(typeof(Attribute), true);
+            Assert.Empty(attributes);
         }
 
         [Fact]
-        public void GetCustomAttributes_NoType_ReturnsAttributes()
+        public void GetCustomAttributes_NoType_ReturnsEmptyForUnattributedProperty()
         {
-            object[] attributes = _attributedProperty.GetCustomAttributes(false);
-            Assert.NotNull(attributes);
+            object[] attributes = _readWriteProperty.GetCustomAttributes(false);
+            Assert.Empty(attributes);
         }
 
         [Fact]
-        public void GetCustomAttributesData_ReturnsData()
+        public void GetCustomAttributesData_ReturnsEmptyForUnattributedProperty()
         {
-            IList<CustomAttributeData> data = _attributedProperty.GetCustomAttributesData();
-            Assert.NotNull(data);
+            IList<CustomAttributeData> data = _readWriteProperty.GetCustomAttributesData();
+            Assert.Empty(data);
         }
 
         [Fact]
@@ -279,10 +279,11 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetHashCode_ReturnsValue()
+        public void GetHashCode_IsIdempotent()
         {
-            int hashCode = _readWriteProperty.GetHashCode();
-            Assert.NotEqual(0, hashCode);
+            int hashCode1 = _readWriteProperty.GetHashCode();
+            int hashCode2 = _readWriteProperty.GetHashCode();
+            Assert.Equal(hashCode1, hashCode2);
         }
     }
 }

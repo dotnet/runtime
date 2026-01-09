@@ -113,31 +113,31 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetCustomAttributes_WithType_ReturnsAttributes()
+        public void GetCustomAttributes_WithType_ReturnsEmptyForUnattributedConstructor()
         {
             object[] attributes = _customConstructor.GetCustomAttributes(typeof(Attribute), true);
-            Assert.NotNull(attributes);
+            Assert.Empty(attributes);
         }
 
         [Fact]
-        public void GetCustomAttributes_NoType_ReturnsAttributes()
+        public void GetCustomAttributes_NoType_ReturnsEmptyForUnattributedConstructor()
         {
             object[] attributes = _customConstructor.GetCustomAttributes(false);
-            Assert.NotNull(attributes);
+            Assert.Empty(attributes);
         }
 
         [Fact]
-        public void GetCustomAttributesData_ReturnsProjectingData()
+        public void GetCustomAttributesData_ReturnsEmptyForUnattributedConstructor()
         {
             IList<CustomAttributeData> data = _customConstructor.GetCustomAttributesData();
-            Assert.NotNull(data);
+            Assert.Empty(data);
         }
 
         [Fact]
-        public void IsDefined_ReturnsValue()
+        public void IsDefined_ReturnsFalseForUnattributedConstructor()
         {
-            bool isDefined = _customConstructor.IsDefined(typeof(Attribute), true);
             // TestObject constructor doesn't have any attributes
+            bool isDefined = _customConstructor.IsDefined(typeof(Attribute), true);
             Assert.False(isDefined);
         }
 
