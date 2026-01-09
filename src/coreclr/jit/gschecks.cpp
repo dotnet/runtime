@@ -176,7 +176,7 @@ void Compiler::gsVisitDependentLocals(GenTree* node, TVisit visit)
         };
 
         Visitor(Compiler* compiler, TVisit& visit)
-            : GenTreeVisitor(compiler)
+            : GenTreeVisitor<Visitor>(compiler)
             , m_visit(visit)
         {
         }
@@ -272,6 +272,8 @@ bool Compiler::gsFindVulnerableParams()
 
                     break;
                 }
+                default:
+                    break;
             }
         }
     }
