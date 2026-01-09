@@ -205,6 +205,11 @@ namespace Internal.IL
                         return methodIL;
                 }
 
+                // Generic async thunks are not yet implemented. They require additional
+                // MutableModule support for MethodRef and MethodSpec tokens
+                if (method.IsAsyncThunk())
+                    return null;
+
                 var methodDefinitionIL = GetMethodIL(method.GetTypicalMethodDefinition());
                 if (methodDefinitionIL == null)
                     return null;
