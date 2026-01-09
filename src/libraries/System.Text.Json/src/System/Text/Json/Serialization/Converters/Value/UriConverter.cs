@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Text.Json.Nodes;
+using System.Text.Json.Extensions;
 using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override Uri? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            return reader.TokenType is JsonTokenType.Null ? null : ReadCore(ref reader);
+            return reader.TokenType is JsonTokenType.Null ? null : reader.GetUri();
         }
 
         public override void Write(Utf8JsonWriter writer, Uri? value, JsonSerializerOptions options)
@@ -28,19 +28,7 @@ namespace System.Text.Json.Serialization.Converters
         internal override Uri ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             Debug.Assert(reader.TokenType is JsonTokenType.PropertyName);
-            return ReadCore(ref reader);
-        }
-
-        private static Uri ReadCore(ref Utf8JsonReader reader)
-        {
-            string? uriString = reader.GetString();
-
-            if (!Uri.TryCreate(uriString, UriKind.RelativeOrAbsolute, out Uri? value))
-            {
-                ThrowHelper.ThrowJsonException();
-            }
-
-            return value;
+            return reader.GetUri();
         }
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, Uri value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
