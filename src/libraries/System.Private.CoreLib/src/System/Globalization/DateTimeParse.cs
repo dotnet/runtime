@@ -3750,7 +3750,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                     if (str.MatchSpecifiedWord(searchStr))
                     {
                         string searchStr1 = dtfi.PMDesignator;
-                        if (searchStr1.Length > searchStr.Length && searchStr1.StartsWith(searchStr1, StringComparison.Ordinal) && str.MatchSpecifiedWord(searchStr1))
+                        if (searchStr1.Length > searchStr.Length && searchStr1.StartsWith(searchStr, StringComparison.Ordinal) && str.MatchSpecifiedWord(searchStr1))
                         {
                             // AM designator is a prefix of PM designator and we have matched PM designator. Use longer match.
                             str.Index += (searchStr1.Length - 1);
