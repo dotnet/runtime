@@ -1961,8 +1961,8 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = @"{""Value1"":42,""Value2"":""hello""}";
             TypeWith_OutParameters result = await Serializer.DeserializeWrapper<TypeWith_OutParameters>(json);
-            // The constructor sets Value1 and Value2 from properties, not from the out parameters.
-            // The out parameters receive the deserialized values but the constructor ignores them.
+            // The constructor assigns its own values to the out parameters, ignoring
+            // any values that might be passed. The properties get set from those assigned values.
             Assert.Equal(99, result.Value1);
             Assert.Equal("default", result.Value2);
         }
@@ -1971,9 +1971,9 @@ namespace System.Text.Json.Serialization.Tests
         {
             public TypeWith_OutParameters(out int value1, out string value2)
             {
-                // out parameters must be assigned by the constructor.
-                // The values passed in are the deserialized values, but
-                // since this is an out parameter, they are meant to be output.
+                // Out parameters must be assigned by the constructor before use.
+                // The serializer passes addresses for the deserialized values, but
+                // since these are out parameters, the constructor assigns new values.
                 value1 = 99;
                 value2 = "default";
                 Value1 = value1;
