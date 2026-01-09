@@ -755,7 +755,7 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
 // Arguments:
 //    tree - the node
 //
-void CodeGen::genCodeForNegNot(GenTree* tree)
+void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_NEG, GT_NOT));
 
@@ -2457,6 +2457,14 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         unsigned  saveRegsSize    = saveRegsCount * REGSIZE_BYTES; // bytes of regs we're saving
         unsigned  saveSizeWithPSP = saveRegsSize + REGSIZE_BYTES /* PSP sym */;
         if (compiler->lvaMonAcquired != BAD_VAR_NUM)
+        {
+            saveSizeWithPSP += TARGET_POINTER_SIZE;
+        }
+        if (compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
+        {
+            saveSizeWithPSP += TARGET_POINTER_SIZE;
+        }
+        if (compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
         {
             saveSizeWithPSP += TARGET_POINTER_SIZE;
         }

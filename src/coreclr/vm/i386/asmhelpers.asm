@@ -30,19 +30,13 @@ EXTERN __imp__RtlUnwind@16:DWORD
 ifdef FEATURE_HIJACK
 EXTERN _OnHijackWorker@4:PROC
 endif ;FEATURE_HIJACK
-ifdef FEATURE_EH_FUNCLETS
 EXTERN _ProcessCLRException:PROC
 EXTERN _UMEntryPrestubUnwindFrameChainHandler:PROC
 EXTERN _CallDescrWorkerUnwindFrameChainHandler:PROC
 ifdef FEATURE_COMINTEROP
 EXTERN _ReverseComUnwindFrameChainHandler:PROC
 endif ; FEATURE_COMINTEROP
-else
-EXTERN _COMPlusFrameHandler:PROC
-ifdef FEATURE_COMINTEROP
-EXTERN _COMPlusFrameHandlerRevCom:PROC
-endif ; FEATURE_COMINTEROP
-endif ; FEATURE_EH_FUNCLETS
+EXTERN _ProcessCLRException:PROC
 EXTERN __alloca_probe:PROC
 EXTERN _PInvokeImportWorker@4:PROC
 
@@ -97,58 +91,6 @@ UNREFERENCED macro arg
     unref equ size arg
 endm
 
-ifndef FEATURE_EH_FUNCLETS
-ifdef FEATURE_COMINTEROP
-ifdef _DEBUG
-    CPFH_STACK_SIZE     equ SIZEOF_FrameHandlerExRecord + STACK_OVERWRITE_BARRIER_SIZE*4
-else ; _DEBUG
-    CPFH_STACK_SIZE     equ SIZEOF_FrameHandlerExRecord
-endif ; _DEBUG
-
-PUSH_CPFH_FOR_COM macro trashReg, pFrameBaseReg, pFrameOffset
-
-    ;
-    ; Setup the FrameHandlerExRecord
-    ;
-    push    dword ptr [pFrameBaseReg + pFrameOffset]
-    push    _COMPlusFrameHandlerRevCom
-    mov     trashReg, fs:[0]
-    push    trashReg
-    mov     fs:[0], esp
-
-ifdef _DEBUG
-    mov     trashReg, STACK_OVERWRITE_BARRIER_SIZE
-@@:
-    push    STACK_OVERWRITE_BARRIER_VALUE
-    dec     trashReg
-    jnz     @B
-endif ; _DEBUG
-
-endm  ; PUSH_CPFH_FOR_COM
-
-
-POP_CPFH_FOR_COM macro trashReg
-
-    ;
-    ; Unlink FrameHandlerExRecord from FS:0 chain
-    ;
-ifdef _DEBUG
-    add     esp, STACK_OVERWRITE_BARRIER_SIZE*4
-endif
-    mov     trashReg, [esp + OFFSETOF__FrameHandlerExRecord__m_ExReg__Next]
-    mov     fs:[0], trashReg
-    add     esp, SIZEOF_FrameHandlerExRecord
-
-endm  ; POP_CPFH_FOR_COM
-endif ; FEATURE_COMINTEROP
-
-PUSH_CLR_EXCEPTION_HANDLER macro handlerName
-endm
-POP_CLR_EXCEPTION_HANDLER macro
-endm
-
-else ; FEATURE_EH_FUNCLETS
-
 CPFH_STACK_SIZE     equ 8
 
 PUSH_CLR_EXCEPTION_HANDLER macro handlerName
@@ -171,8 +113,6 @@ endm
 POP_CPFH_FOR_COM macro trashReg
     POP_CLR_EXCEPTION_HANDLER
 endm
-
-endif ; FEATURE_EH_FUNCLETS
 
 ;
 ; FramedMethodFrame prolog
@@ -288,18 +228,6 @@ _RestoreFPUContext@4 ENDP
 ; Note that these directives must be in a file that defines symbols that will be used during linking,
 ; otherwise it's possible that the resulting .obj will completely be ignored by the linker and these
 ; directives will have no effect.
-ifndef FEATURE_EH_FUNCLETS
-COMPlusFrameHandler proto c
-.safeseh COMPlusFrameHandler
-COMPlusNestedExceptionHandler proto c
-.safeseh COMPlusNestedExceptionHandler
-FastNExportExceptHandler proto c
-.safeseh FastNExportExceptHandler
-ifdef FEATURE_COMINTEROP
-COMPlusFrameHandlerRevCom proto c
-.safeseh COMPlusFrameHandlerRevCom
-endif
-else ; FEATURE_EH_FUNCLETS
 ProcessCLRException proto c
 .safeseh ProcessCLRException
 UMEntryPrestubUnwindFrameChainHandler proto c
@@ -310,7 +238,6 @@ ifdef FEATURE_COMINTEROP
 ReverseComUnwindFrameChainHandler proto c
 .safeseh ReverseComUnwindFrameChainHandler
 endif ; FEATURE_COMINTEROP
-endif ; FEATURE_EH_FUNCLETS
 
 ifdef HAS_ADDRESS_SANITIZER
 EXTERN ___asan_handle_no_return:PROC
@@ -331,130 +258,6 @@ CallRtlUnwind PROC stdcall public USES ebx esi edi, pEstablisherFrame :DWORD, ca
 
         RET
 CallRtlUnwind ENDP
-
-ifndef FEATURE_EH_FUNCLETS
-_ResumeAtJitEHHelper@4 PROC public
-        ; Call ___asan_handle_no_return here as we are not going to return.
-ifdef HAS_ADDRESS_SANITIZER
-        call    ___asan_handle_no_return
-endif
-        mov     edx, [esp+4]     ; edx = pContext (EHContext*)
-
-        mov     ebx, [edx+EHContext_Ebx]
-        mov     esi, [edx+EHContext_Esi]
-        mov     edi, [edx+EHContext_Edi]
-        mov     ebp, [edx+EHContext_Ebp]
-        mov     ecx, [edx+EHContext_Esp]
-        mov     eax, [edx+EHContext_Eip]
-        mov     [ecx-4], eax
-        mov     eax, [edx+EHContext_Eax]
-        mov     [ecx-8], eax
-        mov     eax, [edx+EHContext_Ecx]
-        mov     [ecx-0Ch], eax
-        mov     eax, [edx+EHContext_Edx]
-        mov     [ecx-10h], eax
-        lea     esp, [ecx-10h]
-        pop     edx
-        pop     ecx
-        pop     eax
-        ret
-_ResumeAtJitEHHelper@4 ENDP
-
-; int __stdcall CallJitEHFilterHelper(size_t *pShadowSP, EHContext *pContext);
-;   on entry, only the pContext->Esp, Ebx, Esi, Edi, Ebp, and Eip are initialized
-_CallJitEHFilterHelper@8 PROC public
-        ; Call ___asan_handle_no_return here as we touch registers that ASAN uses.
-ifdef HAS_ADDRESS_SANITIZER
-        call    ___asan_handle_no_return
-endif
-        push    ebp
-        mov     ebp, esp
-        push    ebx
-        push    esi
-        push    edi
-
-        pShadowSP equ [ebp+8]
-        pContext  equ [ebp+12]
-
-        mov     eax, pShadowSP      ; Write esp-4 to the shadowSP slot
-        test    eax, eax
-        jz      DONE_SHADOWSP_FILTER
-        mov     ebx, esp
-        sub     ebx, 4
-        or      ebx, SHADOW_SP_IN_FILTER_ASM
-        mov     [eax], ebx
-    DONE_SHADOWSP_FILTER:
-
-        mov     edx, [pContext]
-        mov     eax, [edx+EHContext_Eax]
-        mov     ebx, [edx+EHContext_Ebx]
-        mov     esi, [edx+EHContext_Esi]
-        mov     edi, [edx+EHContext_Edi]
-        mov     ebp, [edx+EHContext_Ebp]
-
-        call    dword ptr [edx+EHContext_Eip]
-ifdef _DEBUG
-        nop  ; Indicate that it is OK to call managed code directly from here
-endif
-
-        pop     edi
-        pop     esi
-        pop     ebx
-        pop     ebp ; don't use 'leave' here, as ebp as been trashed
-        retn    8
-_CallJitEHFilterHelper@8 ENDP
-
-
-; void __stdcall CallJITEHFinallyHelper(size_t *pShadowSP, EHContext *pContext);
-;   on entry, only the pContext->Esp, Ebx, Esi, Edi, Ebp, and Eip are initialized
-_CallJitEHFinallyHelper@8 PROC public
-        ; Call ___asan_handle_no_return here as we touch registers that ASAN uses.
-ifdef HAS_ADDRESS_SANITIZER
-        call    ___asan_handle_no_return
-endif
-        push    ebp
-        mov     ebp, esp
-        push    ebx
-        push    esi
-        push    edi
-
-        pShadowSP equ [ebp+8]
-        pContext  equ [ebp+12]
-
-        mov     eax, pShadowSP      ; Write esp-4 to the shadowSP slot
-        test    eax, eax
-        jz      DONE_SHADOWSP_FINALLY
-        mov     ebx, esp
-        sub     ebx, 4
-        mov     [eax], ebx
-    DONE_SHADOWSP_FINALLY:
-
-        mov     edx, [pContext]
-        mov     eax, [edx+EHContext_Eax]
-        mov     ebx, [edx+EHContext_Ebx]
-        mov     esi, [edx+EHContext_Esi]
-        mov     edi, [edx+EHContext_Edi]
-        mov     ebp, [edx+EHContext_Ebp]
-        call    dword ptr [edx+EHContext_Eip]
-ifdef _DEBUG
-        nop  ; Indicate that it is OK to call managed code directly from here
-endif
-
-        ; Reflect the changes to the context and only update non-volatile registers.
-        ; This will be used later to update REGDISPLAY
-        mov     edx, [esp+12+12]
-        mov     [edx+EHContext_Ebx], ebx
-        mov     [edx+EHContext_Esi], esi
-        mov     [edx+EHContext_Edi], edi
-        mov     [edx+EHContext_Ebp], ebp
-
-        pop     edi
-        pop     esi
-        pop     ebx
-        pop     ebp ; don't use 'leave' here, as ebp as been trashed
-        retn    8
-_CallJitEHFinallyHelper@8 ENDP
-endif
 
 ;------------------------------------------------------------------------------
 ; This helper routine enregisters the appropriate arguments and makes the

@@ -18,6 +18,8 @@ void emitDispInst(instruction ins);
 public:
 void emitIns(instruction ins);
 void emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm);
+void emitIns_I_Ty(instruction ins, unsigned int imm, WasmValueType valType, int offs);
+void emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* tgtBlock);
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
 
@@ -31,6 +33,10 @@ static unsigned SizeOfULEB128(uint64_t value);
 static unsigned SizeOfSLEB128(int64_t value);
 
 static unsigned emitGetAlignHintLog2(const instrDesc* id);
+
+instrDesc*           emitNewInstrLclVarDecl(emitAttr attr, unsigned int localCount, WasmValueType type, int lclOffset);
+static WasmValueType emitGetLclVarDeclType(const instrDesc* id);
+static unsigned int  emitGetLclVarDeclCount(const instrDesc* id);
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */
