@@ -14,7 +14,7 @@ using Xunit;
 
 namespace System.Tests
 {
-     [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static class GCTests
     {
         private static bool s_is32Bits = IntPtr.Size == 4; // Skip IntPtr tests on 32-bit platforms
