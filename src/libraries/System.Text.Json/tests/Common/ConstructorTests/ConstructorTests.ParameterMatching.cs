@@ -1919,5 +1919,69 @@ namespace System.Text.Json.Serialization.Tests
             public int D { get; set; }
             public int E { get; set; }
         }
+
+        [Fact]
+        public async Task DeserializeType_WithRefParameters()
+        {
+            // ref parameters work with reflection-based serialization but not source generation.
+            // Source generation would require emitting 'ref' keyword at call sites.
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                return;
+            }
+
+            string json = @"{""Value1"":42,""Value2"":""hello""}";
+            TypeWith_RefParameters result = await Serializer.DeserializeWrapper<TypeWith_RefParameters>(json);
+            Assert.Equal(42, result.Value1);
+            Assert.Equal("hello", result.Value2);
+        }
+
+        public class TypeWith_RefParameters
+        {
+            public TypeWith_RefParameters(ref int value1, ref string value2)
+            {
+                Value1 = value1;
+                Value2 = value2;
+            }
+
+            public int Value1 { get; set; }
+            public string Value2 { get; set; }
+        }
+
+        [Fact]
+        public async Task DeserializeType_WithOutParameters()
+        {
+            // out parameters work with reflection-based serialization but the constructor
+            // receives default values since out parameters are meant to provide output,
+            // not receive input. Source generation doesn't support out parameters.
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                return;
+            }
+
+            string json = @"{""Value1"":42,""Value2"":""hello""}";
+            TypeWith_OutParameters result = await Serializer.DeserializeWrapper<TypeWith_OutParameters>(json);
+            // The constructor sets Value1 and Value2 from properties, not from the out parameters.
+            // The out parameters receive the deserialized values but the constructor ignores them.
+            Assert.Equal(99, result.Value1);
+            Assert.Equal("default", result.Value2);
+        }
+
+        public class TypeWith_OutParameters
+        {
+            public TypeWith_OutParameters(out int value1, out string value2)
+            {
+                // out parameters must be assigned by the constructor.
+                // The values passed in are the deserialized values, but
+                // since this is an out parameter, they are meant to be output.
+                value1 = 99;
+                value2 = "default";
+                Value1 = value1;
+                Value2 = value2;
+            }
+
+            public int Value1 { get; set; }
+            public string Value2 { get; set; }
+        }
     }
 }
