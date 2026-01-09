@@ -124,10 +124,13 @@ ep_thread_unregister (EventPipeThread *thread)
 		if (thread_session_state == NULL)
 			continue;
 
-		EventPipeBufferManager *buffer_manager = ep_session_get_buffer_manager (thread_session_state->session);
-		EP_ASSERT (buffer_manager != NULL);
+		EventPipeSession *session = ep_volatile_load_session (i);
+		if (session == NULL)
+			continue;
 
-		ep_rt_wait_event_set (&buffer_manager->rt_wait_event);
+		EventPipeBufferManager *buffer_manager = ep_session_get_buffer_manager (session);
+		EP_ASSERT (buffer_manager != NULL);
+		ep_rt_wait_event_set (ep_buffer_manager_get_rt_wait_event_ref (buffer_manager));
 	}
 
 	bool found = false;

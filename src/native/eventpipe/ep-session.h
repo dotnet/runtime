@@ -115,6 +115,9 @@ ep_session_inc_ref (EventPipeSession *session);
 void
 ep_session_dec_ref (EventPipeSession *session);
 
+void
+ep_session_close (EventPipeSession *session);
+
 // _Requires_lock_held (ep)
 EventPipeSessionProvider *
 ep_session_get_session_provider (

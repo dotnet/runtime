@@ -691,6 +691,8 @@ disable_holding_lock (
 		// been emitted.
 		ep_session_write_sequence_point_unbuffered (session);
 
+		ep_session_close (session);
+
 		ep_session_dec_ref (session);
 
 		// Providers can't be deleted during tracing because they may be needed when serializing the file.

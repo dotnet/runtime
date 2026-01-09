@@ -402,6 +402,15 @@ ep_session_dec_ref (EventPipeSession *session)
 	ep_rt_object_free (session);
 }
 
+void
+ep_session_close (EventPipeSession *session)
+{
+	EP_ASSERT (session != NULL);
+
+	if (ep_session_type_uses_buffer_manager (session->session_type))
+		ep_buffer_manager_close (session->buffer_manager);
+}
+
 EventPipeSessionProvider *
 ep_session_get_session_provider (
 	const EventPipeSession *session,

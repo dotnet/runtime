@@ -208,7 +208,7 @@ ep_buffer_manager_get_next_event (EventPipeBufferManager *buffer_manager);
 // threads can be in the middle of a write operation and get blocked, and we may not get an opportunity
 // to free their buffer for a very long time.
 void
-ep_buffer_manager_deallocate_buffers (EventPipeBufferManager *buffer_manager);
+ep_buffer_manager_close (EventPipeBufferManager *buffer_manager);
 
 #ifdef EP_CHECKED_BUILD
 bool

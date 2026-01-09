@@ -88,7 +88,8 @@ buffer_manager_release_buffer (
 // attempts to advance the cursor to the next event. If there is no event prior to stop_timestamp then
 // the get_current_event () again returns NULL, otherwise it returns that event. The event pointer returned
 // by get_current_event() is valid until move_next_xxx() is called again. Once all events in a buffer have
-// been read the iterator will delete that buffer from the pool.
+// been read the iterator will delete that buffer from the pool. Once all buffers from a thread have been
+// read and the thread has been unregistered, the EventPipeThreadSessionState is cleaned up and removed.
 
 // Moves to the next oldest event searching across all threads. If there is no event older than
 // stop_timestamp then get_current_event() will return NULL.
@@ -107,8 +108,9 @@ buffer_manager_move_next_event_same_thread (
 	EventPipeBufferManager *buffer_manager,
 	ep_timestamp_t stop_timestamp);
 
-// Finds the first buffer in EventPipeBufferList that has a readable event prior to before_timestamp,
-// starting with pBuffer
+// Finds the first buffer in an EventPipeThreadSessionState's buffer list with an event prior to before_timestamp.
+// Should any empty buffers be encountered along the way, they are actively removed, and callers are notified
+// if the EventPipeThreadSessionState is exhausted.
 static
 EventPipeBuffer *
 buffer_manager_advance_to_non_empty_buffer (
@@ -571,8 +573,9 @@ buffer_manager_move_next_event_any_thread (
 	buffer_manager->current_buffer = NULL;
 	buffer_manager->current_thread_session_state = NULL;
 
-	// We need to do this in two steps because we can't hold m_lock and EventPipeThread::m_lock
-	// at the same time.
+	// Safely reading the thread_session_state_list under the buffer_manager lock and
+	// yielding to writes in progress to release their pointers to buffers being converted to read-only
+	// requires us to cache the list first.
 
 	// Step 1 - while holding m_lock get the oldest buffer from each thread
 	DN_DEFAULT_LOCAL_ALLOCATOR (allocator, dn_vector_ptr_default_local_allocator_byte_size * 2);
@@ -877,11 +880,11 @@ ep_buffer_manager_free (EventPipeBufferManager * buffer_manager)
 {
 	ep_return_void_if_nok (buffer_manager != NULL);
 
-	ep_buffer_manager_deallocate_buffers (buffer_manager);
-
 	dn_list_free (buffer_manager->sequence_points);
 
 	dn_list_free (buffer_manager->thread_session_state_list_snapshot);
+
+	EP_ASSERT (dn_list_empty (buffer_manager->thread_session_state_list));
 
 	dn_list_free (buffer_manager->thread_session_state_list);
 
@@ -956,7 +959,7 @@ ep_buffer_manager_write_event (
 	// Before we pick a buffer, make sure the event is enabled.
 	ep_return_false_if_nok (ep_event_is_enabled (ep_event));
 
-	// Check to see an event thread was specified. If not, then use the current thread.
+	// Check to see if an event thread was specified. If not, then use the current thread.
 	if (event_thread == NULL)
 		event_thread = thread;
 
@@ -1220,6 +1223,8 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 		// the sequence point captured a lower bound for sequence number on each thread, but iterating
 		// through the events we may have observed that a higher numbered event was recorded. If so we
 		// should adjust the sequence numbers upwards to ensure the data in the stream is consistent.
+		// EventPipeThreadSessionStates removed during move_next_event_any|same_thread, will already
+		// have had their sequence numbers updated.
 		EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section2)
 			DN_LIST_FOREACH_BEGIN (EventPipeThreadSessionState *, session_state, buffer_manager->thread_session_state_list) {
 				EventPipeThread *thread = ep_thread_session_state_get_thread (session_state);
@@ -1283,6 +1288,9 @@ ep_buffer_manager_get_next_event (EventPipeBufferManager *buffer_manager)
 	buffer_manager->current_buffer = NULL;
 	buffer_manager->current_thread_session_state = NULL;
 
+	// Safely reading the thread_session_state_list under the buffer_manager lock and
+	// yielding to writes in progress to release their pointers to buffers being converted to read-only
+	// requires us to build the snapshot first.
 	if (dn_list_empty (buffer_manager->thread_session_state_list_snapshot)) {
 		ep_timestamp_t snapshot_timestamp = ep_perf_timestamp_get ();
 		buffer_manager->snapshot_timestamp = snapshot_timestamp;
@@ -1346,7 +1354,7 @@ ep_on_error:
 }
 
 void
-ep_buffer_manager_deallocate_buffers (EventPipeBufferManager *buffer_manager)
+ep_buffer_manager_close (EventPipeBufferManager *buffer_manager)
 {
 	EP_ASSERT (buffer_manager != NULL);
 
