@@ -55,8 +55,7 @@
 	// This allows developers to just use 'dotnet build' on the command-line, and the local dotnet version will be used.
     // Add the Android SDK tooling and emulator to the path.
 	"remoteEnv": {
-		"PATH": "${containerWorkspaceFolder}/.dotnet:${containerEnv:ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools/bin:${containerEnv:ANDROID_SDK_ROOT}/emulator:${containerEnv:ANDROID_SDK_ROOT}/platform-tools:${containerEnv:PATH}",
-		"DOTNET_MULTILEVEL_LOOKUP": "0"
+		"PATH": "${containerWorkspaceFolder}/.dotnet:${containerEnv:ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools/bin:${containerEnv:ANDROID_SDK_ROOT}/emulator:${containerEnv:ANDROID_SDK_ROOT}/platform-tools:${containerEnv:PATH}"
 	},
 
 	// Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.

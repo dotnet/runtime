@@ -304,6 +304,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup>
       <_WasmEmitSourceMapBuild>$(WasmEmitSourceMap)</_WasmEmitSourceMapBuild>
       <_WasmEmitSourceMapBuild Condition="'$(_WasmEmitSourceMapBuild)' == ''">true</_WasmEmitSourceMapBuild>
+      <_WasmEmitDiagnosticModuleBuild Condition="'$(EnableDiagnostics)' == 'true' or '$(WasmEmitSymbolMap)' == 'true' or '$(WasmTestSupport)' == 'true'">true</_WasmEmitDiagnosticModuleBuild>
+      <_WasmEmitDiagnosticModuleBuild Condition="'$(_WasmEmitDiagnosticModuleBuild)' == ''">false</_WasmEmitDiagnosticModuleBuild>
     </PropertyGroup>
 
     <ComputeWasmBuildAssets
@@ -319,7 +321,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       CopySymbols="$(_WasmCopyOutputSymbolsToOutputDirectory)"
       OutputPath="$(OutputPath)"
       EnableThreads="$(_WasmEnableThreads)"
-      EnableDiagnostics="$(EnableDiagnostics)"
+      EnableDiagnostics="$(_WasmEmitDiagnosticModuleBuild)"
       EmitSourceMap="$(_WasmEmitSourceMapBuild)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       FingerprintDotnetJs="$(_WasmFingerprintDotnetJs)"
@@ -451,7 +453,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       Endpoints="@(_WasmResolvedEndpoints)"
       DebugBuild="true"
       DebugLevel="$(WasmDebugLevel)"
-      LinkerEnabled="false"
       CacheBootResources="$(_BlazorCacheBootResources)"
       MergeWith="@(_WasmDotnetJsForBuild)"
       OutputPath="$(_WasmBuildBootJsonPath)"
@@ -473,7 +474,13 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
-      BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)" />
+      BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
+      ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
+      AppendElementOnExit="$(WasmTestAppendElementOnExit)"
+      LogExitCode="$(WasmTestLogExitCode)"
+      AsyncFlushOnExit="$(WasmTestAsyncFlushOnExit)"
+      ForwardConsole="$(WasmTestForwardConsole)"
+      />
 
     <ItemGroup>
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
@@ -566,8 +573,13 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <Target Name="_AddWasmPreloadBuildProperties" DependsOnTargets="_WasmConfigurePreload;_AddWasmStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsManifest" Condition="'$(_WasmPreloadAssets)' == 'true'">
+    <PropertyGroup>
+      <_WasmBootConfigFileNameWithoutExtension>$([System.IO.Path]::GetFileNameWithoutExtension('$(_WasmBootConfigFileName)'))</_WasmBootConfigFileNameWithoutExtension>
+      <_WasmBootConfigFileExtension>$([System.IO.Path]::GetExtension('$(_WasmBootConfigFileName)'))</_WasmBootConfigFileExtension>
+    </PropertyGroup>
     <ItemGroup>
-      <_WasmPreloadBuildScriptAsset Include="@(StaticWebAsset)" Condition="'%(AssetKind)' != 'Publish' and '%(FileName)%(Extension)' == '$(_WasmBootConfigFileName)'" />
+      <_WasmPreloadBuildScriptAsset Include="@(StaticWebAsset)" Condition="'$(_WasmFingerprintAssets)' == 'true' and '$(_WasmFingerprintBootConfig)' == 'true' and '%(AssetKind)' != 'Publish' and '%(FileName)%(Extension)' == '$(_WasmBootConfigFileNameWithoutExtension).%(Fingerprint)$(_WasmBootConfigFileExtension)'" />
+      <_WasmPreloadBuildScriptAsset Include="@(StaticWebAsset)" Condition="('$(_WasmFingerprintAssets)' != 'true' or '$(_WasmFingerprintBootConfig)' != 'true') and '%(AssetKind)' != 'Publish' and '%(FileName)%(Extension)' == '$(_WasmBootConfigFileName)'" />
     </ItemGroup>
 
     <FilterStaticWebAssetEndpoints
@@ -647,6 +659,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup>
       <_WasmEmitSourceMapPublish>$(WasmEmitSourceMap)</_WasmEmitSourceMapPublish>
       <_WasmEmitSourceMapPublish Condition="'$(_WasmEmitSourceMapPublish)' == ''">false</_WasmEmitSourceMapPublish>
+      <_WasmEmitDiagnosticModulePublish Condition="'$(EnableDiagnostics)' == 'true' or '$(WasmEmitSymbolMap)' == 'true' or '$(WasmTestSupport)' == 'true'">true</_WasmEmitDiagnosticModulePublish>
+      <_WasmEmitDiagnosticModulePublish Condition="'$(_WasmEmitDiagnosticModulePublish)' == ''">false</_WasmEmitDiagnosticModulePublish>
     </PropertyGroup>
 
     <ItemGroup Condition="@(WasmAssembliesFinal->Count()) == 0 or '$(TargetFrameworkVersion)' == 'v6.0'">
@@ -673,7 +687,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       CopySymbols="$(CopyOutputSymbolsToPublishDirectory)"
       ExistingAssets="@(_WasmPublishPrefilteredAssets)"
       EnableThreads="$(_WasmEnableThreads)"
-      EnableDiagnostics="$(EnableDiagnostics)"
+      EnableDiagnostics="$(_WasmEmitDiagnosticModulePublish)"
       EmitSourceMap="$(_WasmEmitSourceMapPublish)"
       IsWebCilEnabled="$(_WasmEnableWebcil)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
@@ -860,7 +874,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       Endpoints="@(_WasmResolvedEndpointsForPublish)"
       DebugBuild="false"
       DebugLevel="$(WasmDebugLevel)"
-      LinkerEnabled="$(PublishTrimmed)"
       CacheBootResources="$(_BlazorCacheBootResources)"
       MergeWith="@(_WasmDotnetJsForPublish)"
       OutputPath="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)"
@@ -882,7 +895,13 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
-      BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)" />
+      BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
+      ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
+      AppendElementOnExit="$(WasmTestAppendElementOnExit)"
+      LogExitCode="$(WasmTestLogExitCode)"
+      AsyncFlushOnExit="$(WasmTestAsyncFlushOnExit)"
+      ForwardConsole="$(WasmTestForwardConsole)"
+      />
 
     <ItemGroup>
       <FileWrites Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)" />

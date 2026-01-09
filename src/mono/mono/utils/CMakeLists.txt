@@ -104,8 +104,6 @@ set(utils_common_sources
     mono-stack-unwinding.h
     hazard-pointer.c
     hazard-pointer.h
-    lifo-semaphore.c
-    lifo-semaphore.h
     lock-free-queue.c
     lock-free-queue.h
     lock-free-alloc.c

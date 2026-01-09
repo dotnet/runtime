@@ -162,13 +162,6 @@ class CallStackLogger
     // MethodDescs of the stack frames, the TOS is at index 0
     CDynArray<MethodDesc*> m_frames;
 
-    // Index of a stack frame where a possible repetition of frames starts
-    int m_commonStartIndex = -1;
-    // Length of the largest found repeated sequence of frames
-    int m_largestCommonStartLength = 0;
-    // Number of repetitions of the largest repeated sequence of frames
-    int m_largestCommonStartRepeat = 0;
-
     StackWalkAction LogCallstackForLogCallbackWorker(CrawlFrame *pCF)
     {
         WRAPPER_NO_CONTRACT;
@@ -183,36 +176,6 @@ class CallStackLogger
             }
         }
 
-        MethodDesc *pMD = pCF->GetFunction();
-
-        if (m_commonStartIndex != -1)
-        {
-            // Some common frames were already found
-
-            if (m_frames[m_frames.Count() - m_commonStartIndex] != pMD)
-            {
-                // The frame being added is not part of the repeated sequence
-                if (m_frames.Count() / m_commonStartIndex >= 2)
-                {
-                    // A sequence repeated at least twice was found. It is the largest one that was found so far
-                    m_largestCommonStartLength = m_commonStartIndex;
-                    m_largestCommonStartRepeat = m_frames.Count() / m_commonStartIndex;
-                }
-
-                m_commonStartIndex = -1;
-            }
-        }
-
-        if (m_commonStartIndex == -1)
-        {
-            if ((m_frames.Count() != 0) && (pMD == m_frames[0]))
-            {
-                // We have found a frame with the same MethodDesc as the frame at the top of the stack,
-                // possibly a new repeated sequence is starting.
-                m_commonStartIndex = m_frames.Count();
-            }
-        }
-
         MethodDesc** itemPtr = m_frames.Append();
         if (itemPtr == nullptr)
         {
@@ -220,7 +183,7 @@ class CallStackLogger
             return SWA_ABORT;
         }
 
-        *itemPtr = pMD;
+        *itemPtr = pCF->GetFunction();
 
         return SWA_CONTINUE;
     }
@@ -260,22 +223,91 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        if (m_largestCommonStartLength != 0)
+        // Length of the largest found repeated sequence of frames
+        int largestCommonLength = 0;
+        // Number of repetitions of the largest repeated sequence of frames
+        int largestCommonRepeat = 0;
+
+        // NOTE: the algorithm below is O(n^2) but we limit the depth of the search for
+        // the start of the repetition to a maximum of 1000 frames.
+        // Even on macOS M1 where the minimal stack frames are smaller than on Intel
+        // and the default stack size is larger than on Windows and stack overflow in
+        // a tight loop produces a stack trace with ~350000 frames, the search in case
+        // we would not find any repetitions at all would take around 130ms.
+
+        const int MaxRepetitionStartOffsetSearch = 1000;
+        int repetitionSearchLimit = min(m_frames.Count(), MaxRepetitionStartOffsetSearch);
+        // Start index of the repetition
+        int largestCommonStartOffset;
+        for (largestCommonStartOffset = 0; largestCommonStartOffset < repetitionSearchLimit; largestCommonStartOffset++)
+        {
+            // Index of a stack frame where a possible repetition of frames starts
+            int commonStartIndex = -1;
+            largestCommonLength = 0;
+            largestCommonRepeat = 0;
+
+            for (int i = largestCommonStartOffset; i < m_frames.Count(); i++)
+            {
+                MethodDesc* pMD = m_frames[i];
+                if (commonStartIndex != -1)
+                {
+                    // Some common frames were already found
+
+                    int commonLength = commonStartIndex - largestCommonStartOffset;
+                    if (m_frames[i - commonLength] != pMD)
+                    {
+                        // The frame being added is not part of the repeated sequence
+                        int commonRepeat = (i - largestCommonStartOffset) / commonLength;
+                        if (commonRepeat >= 2)
+                        {
+                            // A sequence repeated at least twice was found. It is the largest one that was found so far
+                            largestCommonLength = commonLength;
+                            largestCommonRepeat = commonRepeat;
+                        }
+
+                        commonStartIndex = -1;
+                    }
+                }
+
+                if (commonStartIndex == -1)
+                {
+                    if ((i != largestCommonStartOffset) && (pMD == m_frames[largestCommonStartOffset]))
+                    {
+                        // We have found a frame with the same MethodDesc as the frame at the start of the repetition search (index largestCommonStartOffset),
+                        // possibly a new repeated sequence is starting.
+                        commonStartIndex = i;
+                    }
+                }
+            }
+
+            if (largestCommonRepeat != 0)
+            {
+                // A repeated sequence of frames was identified
+                break;
+            }
+        }
+
+        for (int i = 0; i < largestCommonStartOffset; i++)
+        {
+            PrintFrame(i, pWordAt);
+        }
+
+        if (largestCommonLength != 0)
         {
             SmallStackSString repeatStr;
-            repeatStr.AppendPrintf("Repeated %d times:\n", m_largestCommonStartRepeat);
+            repeatStr.AppendPrintf("Repeated %d times:\n", largestCommonRepeat);
 
             PrintToStdErrW(repeatStr.GetUnicode());
 
             PrintToStdErrA("--------------------------------\n");
-            for (int i = 0; i < m_largestCommonStartLength; i++)
+            for (int i = largestCommonStartOffset; i < largestCommonStartOffset + largestCommonLength; i++)
             {
                 PrintFrame(i, pWordAt);
             }
             PrintToStdErrA("--------------------------------\n");
         }
 
-        for (int i = m_largestCommonStartLength * m_largestCommonStartRepeat; i < m_frames.Count(); i++)
+        for (int i = largestCommonLength * largestCommonRepeat + largestCommonStartOffset; i < m_frames.Count(); i++)
         {
             PrintFrame(i, pWordAt);
         }

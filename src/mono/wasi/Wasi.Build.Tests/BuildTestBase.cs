@@ -26,7 +26,8 @@ namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
-        public static readonly string DefaultTargetFramework = $"net{Environment.Version.Major}.0";
+        private const int TargetMajorVersion = 11;
+        public static readonly string DefaultTargetFramework = $"net{TargetMajorVersion}.0";
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
         protected string? _projectDir;
@@ -760,7 +761,7 @@ namespace Wasm.Build.Tests
         string? TargetFramework           = null,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
     );
-    
+
     public record AssertBundleOptions(
         BuildProjectOptions BuildOptions,
         bool ExpectSymbolsFile = true,

@@ -43,9 +43,6 @@ public class GenerateWasmBootJson : Task
     public string DebugLevel { get; set; }
 
     [Required]
-    public bool LinkerEnabled { get; set; }
-
-    [Required]
     public bool CacheBootResources { get; set; }
 
     public bool LoadFullICUData { get; set; }
@@ -94,6 +91,16 @@ public class GenerateWasmBootJson : Task
 
     public bool BundlerFriendly { get; set; }
 
+    public bool ExitOnUnhandledError { get; set; }
+
+    public bool AppendElementOnExit { get; set; }
+
+    public bool LogExitCode { get; set; }
+
+    public bool AsyncFlushOnExit { get; set; }
+
+    public bool ForwardConsole { get; set; }
+
     public override bool Execute()
     {
         var entryAssemblyName = AssemblyName.GetAssemblyName(AssemblyPath).Name;
@@ -124,6 +131,15 @@ public class GenerateWasmBootJson : Task
             result.applicationEnvironment = ApplicationEnvironment;
         }
 
+        if (IsTargeting110OrLater())
+        {
+            if (ExitOnUnhandledError) result.exitOnUnhandledError = true;
+            if (AppendElementOnExit) result.appendElementOnExit = true;
+            if (LogExitCode) result.logExitCode = true;
+            if (AsyncFlushOnExit) result.asyncFlushOnExit = true;
+            if (ForwardConsole) result.forwardConsole = true;
+        }
+
         if (IsTargeting80OrLater())
         {
             result.mainAssemblyName = entryAssemblyName;
@@ -134,14 +150,10 @@ public class GenerateWasmBootJson : Task
                 if (CacheBootResources)
                     result.cacheBootResources = CacheBootResources;
             }
-
-            if (LinkerEnabled)
-                result.linkerEnabled = LinkerEnabled;
         }
         else
         {
             result.cacheBootResources = CacheBootResources;
-            result.linkerEnabled = LinkerEnabled;
             result.config = new();
             result.debugBuild = DebugBuild;
             result.entryAssembly = entryAssemblyName;
@@ -530,6 +542,7 @@ public class GenerateWasmBootJson : Task
     private static readonly Version version80 = new Version(8, 0);
     private static readonly Version version90 = new Version(9, 0);
     private static readonly Version version100 = new Version(10, 0);
+    private static readonly Version version110 = new Version(11, 0);
 
     private bool IsTargeting80OrLater()
         => IsTargetingVersionOrLater(version80);
@@ -539,6 +552,9 @@ public class GenerateWasmBootJson : Task
 
     private bool IsTargeting100OrLater()
         => IsTargetingVersionOrLater(version100);
+
+    private bool IsTargeting110OrLater()
+        => IsTargetingVersionOrLater(version110);
 
     private bool IsTargetingVersionOrLater(Version version)
     {

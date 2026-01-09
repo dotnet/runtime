@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
 
 //
 // EXCEPTMACROS.H -
@@ -106,8 +105,6 @@
 //       around the call to simulate a CLR "try-finally" but EX_TRY
 //       is relatively expensive compared to the real thing.)
 //
-//
-
 
 #ifndef __exceptmacros_h__
 #define __exceptmacros_h__
@@ -180,68 +177,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
         PAL_ENDTRY                                                      \
     }
 
-
-
-
-//==========================================================================
-// Helpful macros to declare exception handlers, their implementation,
-// and to call them.
-//==========================================================================
-
-#define _EXCEPTION_HANDLER_DECL(funcname)                                                               \
-    EXCEPTION_DISPOSITION __cdecl funcname(EXCEPTION_RECORD *pExceptionRecord,                          \
-                                           struct _EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame,    \
-                                           CONTEXT *pContext,                                           \
-                                           DISPATCHER_CONTEXT *pDispatcherContext)
-
-#define EXCEPTION_HANDLER_DECL(funcname) \
-    extern "C"  _EXCEPTION_HANDLER_DECL(funcname)
-
-#define EXCEPTION_HANDLER_IMPL(funcname) \
-    _EXCEPTION_HANDLER_DECL(funcname)
-
-#define EXCEPTION_HANDLER_FWD(funcname) \
-    funcname(pExceptionRecord, pEstablisherFrame, pContext, pDispatcherContext)
-
-//==========================================================================
-// Declares a CLR frame handler that can be used to make sure that
-// exceptions that should be handled from within managed code
-// are handled within and don't leak out to give other handlers a
-// chance at them.
-//==========================================================================
-#define INSTALL_COMPLUS_EXCEPTION_HANDLER()                                     \
-    DECLARE_CPFH_EH_RECORD(GET_THREAD());                                       \
-    INSTALL_COMPLUS_EXCEPTION_HANDLER_NO_DECLARE()
-
-#define INSTALL_COMPLUS_EXCEPTION_HANDLER_NO_DECLARE()                          \
-{                                                                               \
-    INSTALL_EXCEPTION_HANDLING_RECORD(&(___pExRecord->m_ExReg));                \
-    /* work around unreachable code warning */                                  \
-    if (true) {
-
-#define UNINSTALL_COMPLUS_EXCEPTION_HANDLER()                                   \
-    }                                                                           \
-    UNINSTALL_EXCEPTION_HANDLING_RECORD(&(___pExRecord->m_ExReg));              \
-}
-
-#if !defined(FEATURE_EH_FUNCLETS)
-
-#define INSTALL_NESTED_EXCEPTION_HANDLER(frame)                                                                       \
-   NestedHandlerExRecord *__pNestedHandlerExRecord = (NestedHandlerExRecord*) _alloca(sizeof(NestedHandlerExRecord)); \
-   __pNestedHandlerExRecord->m_handlerInfo.m_hThrowable = NULL;                                                       \
-   __pNestedHandlerExRecord->Init((PEXCEPTION_ROUTINE)COMPlusNestedExceptionHandler, frame);                          \
-   INSTALL_EXCEPTION_HANDLING_RECORD(&(__pNestedHandlerExRecord->m_ExReg));
-
-#define UNINSTALL_NESTED_EXCEPTION_HANDLER()                                                                          \
-   UNINSTALL_EXCEPTION_HANDLING_RECORD(&(__pNestedHandlerExRecord->m_ExReg));
-
-#else // defined(FEATURE_EH_FUNCLETS)
-
-#define INSTALL_NESTED_EXCEPTION_HANDLER(frame)
-#define UNINSTALL_NESTED_EXCEPTION_HANDLER()
-
-#endif // !defined(FEATURE_EH_FUNCLETS)
-
 enum VEH_ACTION
 {
     VEH_NO_ACTION = -3,
@@ -288,11 +223,11 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 #define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(nativeRethrow) \
         }                                           \
         catch (PAL_SEHException& ex)                \
-        {                                           \
-            if (nativeRethrow)                      \
-            {                                       \
-                throw;                              \
-            }                                       \
+        {                        \
+            if (nativeRethrow || (ex.HasTargetFrame() && ex.TargetFrameSp > (SIZE_T)&exCopy))               \
+            { \
+                throw; \
+            } \
             exCopy = std::move(ex);                 \
             hasCaughtException = true;              \
         }                                           \
@@ -322,7 +257,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
             UNREACHABLE();                                                                          \
         }
 
-#elif defined(TARGET_X86) && defined(TARGET_WINDOWS) && defined(FEATURE_EH_FUNCLETS)
+#elif defined(TARGET_X86) && defined(TARGET_WINDOWS)
 
 #define INSTALL_MANAGED_EXCEPTION_DISPATCHER
 #define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER

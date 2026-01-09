@@ -12,6 +12,6 @@ namespace ILCompiler
     {
         MethodDesc IPrefixMangledMethod.BaseMethod => _wrappedMethod;
 
-        string IPrefixMangledMethod.Prefix => "AsyncCallable";
+        ReadOnlySpan<byte> IPrefixMangledMethod.Prefix => "AsyncCallable"u8;
     }
 }

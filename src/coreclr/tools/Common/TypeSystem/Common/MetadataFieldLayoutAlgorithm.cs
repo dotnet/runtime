@@ -904,17 +904,17 @@ namespace Internal.TypeSystem
             }
             else if (cumulativeInstanceFieldPos.AsInt > context.Target.PointerSize)
             {
-                if (requiresAlign8)
-                {
-                    minAlign = new LayoutInt(8);
-                }
-                else if (type.ContainsGCPointers)
+                if (type.ContainsGCPointers)
                 {
                     minAlign = context.Target.LayoutPointerSize;
                 }
                 else
                 {
                     minAlign = largestAlignmentRequired;
+                }
+                if (requiresAlign8 && minAlign.AsInt < 8)
+                {
+                    minAlign = new LayoutInt(8);
                 }
             }
             else

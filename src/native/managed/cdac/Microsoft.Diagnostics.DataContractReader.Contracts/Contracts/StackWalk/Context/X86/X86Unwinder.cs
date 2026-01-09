@@ -466,9 +466,6 @@ public class X86Unwinder(Target target)
                 context.Esp = (uint)baseSP + _pointerSize;
                 return true;
             }
-
-            /* The cDAC only supports FEATURE_EH_FUNCLETS and therefore does not
-               support unwinding filters without funclets. */
         }
 
         //

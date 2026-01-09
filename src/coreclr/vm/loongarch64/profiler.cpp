@@ -149,7 +149,20 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
                 }
                 return (LPBYTE)&pData->buffer[bufferPos];
             }
-            _ASSERTE(pArgLocDesc->m_cFloatReg == 2);
+            else if ((pArgLocDesc->m_structFields.flags & 0xF0) == 0xA0)
+            {
+                // For struct{single, single} case, fill and return the pData->buffer address.
+                _ASSERTE(pArgLocDesc->m_cFloatReg == 2);
+                _ASSERTE(m_bufferPos + 8 <= sizeof(pData->buffer));
+
+                UINT32 bufferPos = m_bufferPos;
+                UINT32* dst = (UINT32*)&pData->buffer[bufferPos];
+                m_bufferPos += 8;
+                *dst++ = *(const UINT32*)&pData->floatArgumentRegisters.f[pArgLocDesc->m_idxFloatReg];
+                *dst   = *(const UINT32*)(&pData->floatArgumentRegisters.f[pArgLocDesc->m_idxFloatReg] + 1);
+
+                return (LPBYTE)&pData->buffer[bufferPos];
+            }
         }
 
         _ASSERTE(offset + argSize <= sizeof(pData->floatArgumentRegisters));

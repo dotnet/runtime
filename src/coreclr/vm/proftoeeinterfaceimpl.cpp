@@ -8022,10 +8022,7 @@ typedef struct _PROFILER_STACK_WALK_DATA
     ULONG32 infoFlags;
     ULONG32 contextFlags;
     void *clientData;
-
-#ifdef FEATURE_EH_FUNCLETS
     StackFrame sfParent;
-#endif
 } PROFILER_STACK_WALK_DATA;
 
 
@@ -8057,7 +8054,6 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     CONTEXT builtContext;
 #endif
 
-#ifdef FEATURE_EH_FUNCLETS
     //
     // Skip all managed exception handling functions
     //
@@ -8068,7 +8064,6 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     {
         return SWA_CONTINUE;
     }
-#endif // FEATURE_EH_FUNCLETS
 
     //
     // For Unmanaged-to-managed transitions we get a NativeMarker back, which we want
@@ -8088,7 +8083,6 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
         return SWA_CONTINUE;
     }
 
-#ifdef FEATURE_EH_FUNCLETS
     if (!pCf->IsFrameless() && InlinedCallFrame::FrameHasActiveCall(pCf->GetFrame()))
     {
         // Skip new exception handling helpers
@@ -8100,7 +8094,6 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
             return SWA_CONTINUE;
         }
     }
-#endif // FEATURE_EH_FUNCLETS
 
     //
     // If this is not a transition of any sort and not a managed
@@ -8877,9 +8870,8 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
     data.infoFlags = infoFlags;
     data.contextFlags = 0;
     data.clientData = clientData;
-#ifdef FEATURE_EH_FUNCLETS
+
     data.sfParent.Clear();
-#endif
 
     // workaround: The ForbidTypeLoad book keeping in the stackwalker is not robust against exceptions.
     // Unfortunately, it is hard to get it right in the stackwalker since it has to be exception

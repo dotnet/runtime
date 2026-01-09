@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -835,7 +836,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
         {
             TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-            return factory.ExternFunctionSymbol(JitHelper.GetNewObjectHelperForType(instantiatedType));
+            return factory.ExternFunctionSymbol(new Utf8String(JitHelper.GetNewObjectHelperForType(instantiatedType)));
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

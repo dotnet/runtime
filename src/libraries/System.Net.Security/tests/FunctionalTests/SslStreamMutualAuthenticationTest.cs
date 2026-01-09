@@ -66,7 +66,7 @@ namespace System.Net.Security.Tests
             return data;
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [MemberData(nameof(BoolAndCertSourceData))]
         public async Task SslStream_RequireClientCert_IsMutuallyAuthenticated_ReturnsTrue(bool clientCertificateRequired, ClientCertSource certSource)
         {
@@ -120,7 +120,7 @@ namespace System.Net.Security.Tests
             Assert.NotEqual(_serverCertificate.Handle, IntPtr.Zero);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
         public async Task SslStream_CachedCredentials_IsMutuallyAuthenticatedCorrect(
            SslProtocols protocol)
@@ -227,7 +227,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
         public async Task SslStream_ResumedSessionsClientCollection_IsMutuallyAuthenticatedCorrect(
            SslProtocols protocol)
@@ -278,7 +278,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
         public async Task SslStream_ResumedSessionsCallbackSet_IsMutuallyAuthenticatedCorrect(
            SslProtocols protocol)
@@ -333,7 +333,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
         public async Task SslStream_ResumedSessionsCallbackMaybeSet_IsMutuallyAuthenticatedCorrect(
            SslProtocols protocol)

@@ -559,7 +559,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <XCodeSdk Condition="'$(TargetsiOS)' == 'true'">iphone</XCodeSdk>
+      <XCodeSdk Condition="'$(TargetsiOS)' == 'true'">iphoneos</XCodeSdk>
       <XCodeSdk Condition="'$(TargetsiOSSimulator)' == 'true'">iphonesimulator</XCodeSdk>
       <XCodeSdk Condition="'$(TargetstvOS)' == 'true'">appletvos</XCodeSdk>
       <XCodeSdk Condition="'$(TargetstvOSSimulator)' == 'true'">appletvsimulator</XCodeSdk>

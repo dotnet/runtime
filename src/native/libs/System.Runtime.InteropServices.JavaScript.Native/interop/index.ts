@@ -3,17 +3,25 @@
 
 import type { InternalExchange, RuntimeAPI, RuntimeExports, RuntimeExportsTable } from "./types";
 import { InternalExchangeIndex } from "../types";
+
+import GitHash from "consts:gitHash";
+
 import { dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "./cross-module";
 import { ENVIRONMENT_IS_NODE } from "./per-module";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
     if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
+    const runtimeApi = internals[InternalExchangeIndex.RuntimeAPI];
+    if (typeof runtimeApi !== "object") throw new Error("Expected internals to have RuntimeAPI");
+
+    if (runtimeApi.runtimeBuildInfo.gitHash && runtimeApi.runtimeBuildInfo.gitHash !== GitHash) {
+        throw new Error(`Mismatched git hashes between loader and runtime. Loader: ${runtimeApi.runtimeBuildInfo.gitHash}, Runtime: ${GitHash}`);
+    }
+
     const runtimeApiLocal: Partial<RuntimeAPI> = {
         getAssemblyExports,
         setModuleImports,
     };
-    const runtimeApi = internals[InternalExchangeIndex.RuntimeAPI];
-    if (typeof runtimeApi !== "object") throw new Error("Expected internals to have RuntimeAPI");
     Object.assign(runtimeApi, runtimeApiLocal);
 
     internals[InternalExchangeIndex.RuntimeExportsTable] = runtimeExportsToTable({

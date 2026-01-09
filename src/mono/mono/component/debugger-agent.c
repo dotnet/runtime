@@ -10351,6 +10351,10 @@ array_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				if (CHECK_ICORDBG (TRUE))
 					buffer_add_byte (buf, GINT_TO_UINT8 (MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass)))));
 			}
+			if (type == MONO_TYPE_SZARRAY && CHECK_ICORDBG (TRUE) && CHECK_PROTOCOL_VERSION (2, 67))
+			{
+				buffer_add_typeid (buf, arr->obj.vtable->domain, m_class_get_element_class (arr->obj.vtable->klass));
+			}
 		}
 		break;
 	case CMD_ARRAY_REF_GET_LENGTH:

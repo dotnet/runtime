@@ -8349,9 +8349,9 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                 }
             }
 
-#if defined(TARGET_XARCH)
             if ((oper == GT_LSH) || (oper == GT_RSH) || (oper == GT_RSZ))
             {
+#if defined(TARGET_XARCH)
                 if (TypeOfVN(arg1VN) == TYP_SIMD16)
                 {
                     if (!HWIntrinsicInfo::IsVariableShift(ni))
@@ -8377,8 +8377,25 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                         }
                     }
                 }
-            }
+#elif defined(TARGET_ARM64)
+                CorInfoType auxJitType = tree->GetAuxiliaryJitType();
+                if (auxJitType != CORINFO_TYPE_UNDEF &&
+                    genTypeSize(JITtype2varType(auxJitType)) != genTypeSize(baseType))
+                {
+                    // Handle the "wide elements" variant of shift, where arg1 is a vector of ulongs,
+                    // which is looped over to read the shift values. The values can safely be narrowed
+                    // to the result type.
+                    assert(auxJitType == CORINFO_TYPE_ULONG);
+                    assert(tree->TypeIs(TYP_SIMD16));
+
+                    simd16_t arg1 = GetConstantSimd16(arg1VN);
+
+                    simd16_t result = {};
+                    NarrowSimdLong<simd16_t>(baseType, &result, arg1);
+                    arg1VN = VNForSimd16Con(result);
+                }
 #endif // TARGET_XARCH
+            }
 
             return EvaluateBinarySimd(this, oper, isScalar, type, baseType, arg0VN, arg1VN);
         }
@@ -11887,7 +11904,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             }
             else if ((typ == TYP_LONG) || (typ == TYP_ULONG))
             {
-                tree->gtVNPair.SetBoth(vnStore->VNForLongCon(INT64(tree->AsIntConCommon()->LngValue())));
+                tree->gtVNPair.SetBoth(vnStore->VNForLongCon(tree->AsIntConCommon()->IntegralValue()));
             }
             else
             {
@@ -12632,9 +12649,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             case GT_GCPOLL:
             case GT_JMP:   // Control flow
             case GT_LABEL: // Control flow
-#if defined(FEATURE_EH_WINDOWS_X86)
-            case GT_END_LFIN: // Control flow
-#endif
                 tree->gtVNPair = vnStore->VNPForVoid();
                 break;
 
@@ -14289,10 +14303,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
 
         case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
             vnf = VNF_RuntimeHandleClass;
-            break;
-
-        case CORINFO_HELP_STRCNS:
-            vnf = VNF_LazyStrCns;
             break;
 
         case CORINFO_HELP_CHKCASTCLASS:

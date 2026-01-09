@@ -648,14 +648,15 @@ namespace System.DirectoryServices.AccountManagement
                 List<string> schemaTypes = GetSchemaFilter(typeof(GroupPrincipal));
 
                 SecurityIdentifier principalSid = p.Sid;
-                byte[] SidB = new byte[principalSid.BinaryLength];
-                principalSid.GetBinaryForm(SidB, 0);
 
                 if (principalSid == null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "GetGroupsMemberOf: bad SID IC");
                     throw new InvalidOperationException(SR.StoreCtxNeedValueSecurityIdentityClaimToQuery);
                 }
+
+                byte[] SidB = new byte[principalSid.BinaryLength];
+                principalSid.GetBinaryForm(SidB, 0);
 
                 // Create the ResultSet that will perform the client-side filtering
                 SAMQuerySet resultSet = new SAMQuerySet(

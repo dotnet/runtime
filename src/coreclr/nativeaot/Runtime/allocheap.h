@@ -27,10 +27,6 @@ class AllocHeap
     uint8_t * AllocAligned(uintptr_t cbMem,
                          uintptr_t alignment);
 
-    // Returns true if this AllocHeap owns the memory range [pvMem, pvMem+cbMem)
-    bool Contains(void * pvMem,
-                  uintptr_t cbMem);
-
   private:
     // Allocation Helpers
     uint8_t* _Alloc(uintptr_t cbMem, uintptr_t alignment);
@@ -43,20 +39,18 @@ class AllocHeap
     bool _UpdateMemPtrs(uint8_t* pNextFree, uint8_t* pFreeCommitEnd);
     bool _UpdateMemPtrs(uint8_t* pNextFree);
 
-    typedef rh::util::MemRange Block;
-    typedef DPTR(Block) PTR_Block;
-    struct BlockListElem : public Block
+    struct BlockListElem
     {
-        BlockListElem(Block const & block)
-            : Block(block)
-            {}
-
         BlockListElem(uint8_t * pbMem, uintptr_t  cbMem)
-            : Block(pbMem, cbMem)
+            : m_pbMem(pbMem), m_cbMem(cbMem), m_pNext(NULL)
             {}
 
-        Block       m_block;
-        PTR_Block   m_pNext;
+        uint8_t* GetStart() const { return m_pbMem; }
+        uintptr_t GetLength() const { return m_cbMem; }
+
+        uint8_t *   m_pbMem;
+        uintptr_t   m_cbMem;
+        BlockListElem* m_pNext;
     };
 
     typedef SList<BlockListElem>    BlockList;

@@ -73,7 +73,7 @@ elif [[ "$__TargetOS" == linux-bionic && -z "$ROOTFS_DIR" ]]; then
 elif [[ "$__TargetOS" == iossimulator ]]; then
     # set default iOS simulator deployment target
     # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-    __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2 $__CMakeArgs"
+    __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 $__CMakeArgs"
     if [[ "$__TargetArch" == x64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
     elif [[ "$__TargetArch" == x86 ]]; then
@@ -87,7 +87,7 @@ elif [[ "$__TargetOS" == iossimulator ]]; then
 elif [[ "$__TargetOS" == ios ]]; then
     # set default iOS device deployment target
     # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-    __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2 $__CMakeArgs"
+    __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 $__CMakeArgs"
     if [[ "$__TargetArch" == arm64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     elif [[ "$__TargetArch" == arm ]]; then
@@ -99,7 +99,7 @@ elif [[ "$__TargetOS" == ios ]]; then
 elif [[ "$__TargetOS" == tvossimulator ]]; then
     # set default tvOS simulator deployment target
     # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-    __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2 $__CMakeArgs"
+    __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 $__CMakeArgs"
     if [[ "$__TargetArch" == x64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
     elif [[ "$__TargetArch" == arm64 ]]; then
@@ -111,7 +111,7 @@ elif [[ "$__TargetOS" == tvossimulator ]]; then
 elif [[ "$__TargetOS" == tvos ]]; then
     # set default tvOS device deployment target
     # keep in sync with the root Directory.Build.props
-    __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2 $__CMakeArgs"
+    __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 $__CMakeArgs"
     if [[ "$__TargetArch" == arm64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     else

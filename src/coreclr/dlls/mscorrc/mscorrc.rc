@@ -593,6 +593,7 @@ BEGIN
         BFA_MISSING_DELEGATE_METHOD             "Missing definition for required runtime implemented delegate method."
         BFA_MULT_TYPE_SAME_NAME                 "Duplicate type with name '%1' in assembly '%2'."
         BFA_INVALID_METHOD_TOKEN                "Bad method token."
+        BFA_BAD_ASYNC_METHOD                    "Bad use of RuntimeAsync flag."
         BFA_ECALLS_MUST_BE_IN_SYS_MOD           "ECall methods must be packaged into a system module."
         BFA_CANT_GET_CLASSLAYOUT                "Could not get classlayout."
         BFA_CALLCONV_NOT_LOCAL_SIG              "Signature is not IMAGE_CEE_CS_CALLCONV_LOCAL_SIG."

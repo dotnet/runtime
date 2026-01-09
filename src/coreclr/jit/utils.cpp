@@ -1606,15 +1606,6 @@ void HelperCallProperties::init()
                 nonNullReturn = true;
                 break;
 
-            // Heap Allocation helpers that are also pure
-            case CORINFO_HELP_STRCNS:
-
-                isPure        = true;
-                isAllocator   = true;
-                nonNullReturn = true;
-                exceptions    = ExceptionSetFlags::None; // only can throw OutOfMemory
-                break;
-
             case CORINFO_HELP_BOX_NULLABLE:
                 // Box Nullable is not a 'pure' function
                 // It has a Byref argument that it reads the contents of.

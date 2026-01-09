@@ -2990,6 +2990,8 @@ interp_get_icall_sig (MonoMethodSignature *sig)
 /* larger than mono jit; chosen to ensure that List<T>.get_Item can be inlined */
 #define INLINE_LENGTH_LIMIT 30
 #define INLINE_DEPTH_LIMIT 10
+// How much imported IL we allow before we stop inlining
+#define INLINE_IL_BUDGET 1000000
 
 static gboolean
 is_metadata_update_disabled (void)
@@ -3007,6 +3009,9 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 	MonoMethodHeaderSummary header;
 
 	if (td->disable_inlining)
+		return FALSE;
+
+	if (td->total_il_size > INLINE_IL_BUDGET)
 		return FALSE;
 
 	// Exception handlers are always uncommon, with the exception of finally.
@@ -3090,6 +3095,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	int *prev_in_offsets;
 	gboolean ret;
 	unsigned int prev_max_stack_height, prev_locals_size;
+	unsigned int prev_total_il_size;
 	int prev_n_data_items;
 	int i;
 	int prev_sp_offset;
@@ -3129,6 +3135,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	prev_aggressive_inlining = td->aggressive_inlining;
 	prev_imethod_items = td->imethod_items;
 	prev_has_inlined_one_call = td->has_inlined_one_call;
+	prev_total_il_size = td->total_il_size;
 	td->has_inlined_one_call = FALSE;
 	td->inlined_method = target_method;
 
@@ -3165,6 +3172,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 			g_print ("Inline aborted method %s.%s\n", m_class_get_name (target_method->klass), target_method->name);
 		td->max_stack_height = prev_max_stack_height;
 		td->vars_size = prev_locals_size;
+		td->total_il_size = prev_total_il_size;
 
 		/* Remove any newly added items */
 		for (i = prev_n_data_items; i < td->n_data_items; i++) {
@@ -5352,6 +5360,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	td->il_code = header->code;
 	td->in_start = td->ip = header->code;
 	end = td->ip + header->code_size;
+
+	td->total_il_size += header->code_size;
 
 	td->cbb = td->entry_bb = interp_alloc_bb (td);
 	td->entry_bb->emit_state = BB_STATE_EMITTING;
@@ -8878,10 +8888,10 @@ retry_emit:
 				memcpy (td->stack, exit_bb->stack_state, exit_bb->stack_height * sizeof(td->stack [0]));
 			td->sp = td->stack + exit_bb->stack_height;
 		}
-		// If exit_bb is not reached by any other bb in this method, just mark it as dead so the
-		// method that does the inlining no longer generates code for the following IL opcodes.
+		// If exit_bb is not reached by any other bb in this method, it means the method always
+		// throws an exception. Inlining it isn't beneficial since this shouldn't be perf sensitive code.
 		if (exit_bb->in_count == 0)
-			exit_bb->dead = TRUE;
+			INLINE_FAILURE;
 		else
 			exit_bb->emit_state = BB_STATE_EMITTING;
 	}

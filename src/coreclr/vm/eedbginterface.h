@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // EE to Debugger Interface Header
 //
-
-
 
 #ifndef _eedbginterface_h_
 #define _eedbginterface_h_
@@ -154,10 +153,8 @@ public:
                                            size_t * hotSize,
                                            size_t * coldSize) = 0;
 
-#if defined(FEATURE_EH_FUNCLETS)
     virtual DWORD GetFuncletStartOffsets(const BYTE *pStart, DWORD* pStartOffsets, DWORD dwLength) = 0;
     virtual StackFrame FindParentStackFrame(CrawlFrame* pCF) = 0;
-#endif // FEATURE_EH_FUNCLETS
 
     virtual size_t GetFunctionSize(MethodDesc *pFD) = 0;
 

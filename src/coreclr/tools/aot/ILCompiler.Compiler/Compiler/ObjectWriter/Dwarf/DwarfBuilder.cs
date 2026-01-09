@@ -17,9 +17,9 @@ namespace ILCompiler.ObjectWriter
 {
     internal sealed class DwarfBuilder : ITypesDebugInfoWriter
     {
-        private record struct SectionInfo(string SectionSymbolName, ulong Size);
+        private record struct SectionInfo(Utf8String SectionSymbolName, ulong Size);
         private record struct MemberFunctionTypeInfo(MemberFunctionTypeDescriptor MemberDescriptor, uint[] ArgumentTypes, bool IsStatic);
-        public delegate (string SectionSymbolName, long Address) ResolveStaticVariable(string name);
+        public delegate (Utf8String SectionSymbolName, long Address) ResolveStaticVariable(Utf8String name);
 
         private readonly NameMangler _nameMangler;
         private readonly TargetArchitecture _architecture;
@@ -143,12 +143,12 @@ namespace ILCompiler.ObjectWriter
                 // Unit type, Address Size
                 infoSectionWriter.Write([DW_UT_compile, _targetPointerSize]);
                 // Abbrev offset
-                infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_abbrev", 0);
+                infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, new Utf8String(".debug_abbrev"u8), 0);
             }
             else
             {
                 // Abbrev offset
-                infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_abbrev", 0);
+                infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, new Utf8String(".debug_abbrev"u8), 0);
                 // Address Size
                 infoSectionWriter.Write([_targetPointerSize]);
             }
@@ -201,8 +201,8 @@ namespace ILCompiler.ObjectWriter
 
                 foreach (DwarfStaticVariableInfo staticField in _staticFields)
                 {
-                    (string sectionSymbolName, long address) = resolveStaticVariable(staticField.Name);
-                    if (sectionSymbolName is not null)
+                    (Utf8String sectionSymbolName, long address) = resolveStaticVariable(staticField.Name);
+                    if (!sectionSymbolName.IsNull)
                     {
                         staticField.Dump(dwarfInfoWriter, sectionSymbolName, address);
                     }
@@ -242,7 +242,7 @@ namespace ILCompiler.ObjectWriter
             // Version
             arangeSectionWriter.WriteLittleEndian<ushort>(2);
             // Debug Info Offset
-            arangeSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_info", 0);
+            arangeSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, new Utf8String(".debug_info"u8), 0);
             // Address size, Segment selector size
             arangeSectionWriter.Write([_targetPointerSize, 0]);
             // Ranges have to be aligned
@@ -333,7 +333,7 @@ namespace ILCompiler.ObjectWriter
             {
                 FieldTypeIndex = GetPrimitiveTypeIndex(TypeFlags.Int32),
                 Offset = fieldOffset,
-                Name = "m_NumComponents",
+                Name = new Utf8String("m_NumComponents"u8),
             });
             fieldOffset += _targetPointerSize;
 
@@ -343,7 +343,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     FieldTypeIndex = GetSimpleArrayTypeIndex(GetPrimitiveTypeIndex(TypeFlags.Int32), arrayDescriptor.Rank),
                     Offset = fieldOffset,
-                    Name = "m_Bounds",
+                    Name = new Utf8String("m_Bounds"u8),
                 });
                 fieldOffset += 2u * 4u * (ulong)arrayDescriptor.Rank;
             }
@@ -352,7 +352,7 @@ namespace ILCompiler.ObjectWriter
             {
                 FieldTypeIndex = GetSimpleArrayTypeIndex(arrayDescriptor.ElementType, 0),
                 Offset = fieldOffset,
-                Name = "m_Data",
+                Name = new Utf8String("m_Data"u8),
             });
 
             // We currently don't encode the size of the variable length data. The DWARF5
@@ -429,8 +429,8 @@ namespace ILCompiler.ObjectWriter
         }
 
         public void EmitSubprogramInfo(
-            string methodName,
-            string sectionSymbolName,
+            Utf8String methodName,
+            Utf8String sectionSymbolName,
             long methodAddress,
             int methodPCLength,
             uint methodTypeIndex,
@@ -456,7 +456,7 @@ namespace ILCompiler.ObjectWriter
 
         public void EmitLineInfo(
             int sectionIndex,
-            string sectionSymbolName,
+            Utf8String sectionSymbolName,
             long methodAddress,
             IEnumerable<NativeSequencePoint> sequencePoints)
         {
@@ -493,7 +493,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        public void EmitSectionInfo(string sectionSymbolName, ulong size)
+        public void EmitSectionInfo(Utf8String sectionSymbolName, ulong size)
         {
             _sections.Add(new SectionInfo(sectionSymbolName, size));
         }

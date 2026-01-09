@@ -8,9 +8,8 @@ function displayMeaning(meaning) {
 }
 
 try {
-    const { setModuleImports } = await dotnet
-        .withElementOnExit()
-        .withExitOnUnhandledError()
+    const { setModuleImports, getAssemblyExports, runMain } = await dotnet
+        .withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, forwardConsole: true, logExitCode: true })
         .create();
 
     setModuleImports("main.js", {

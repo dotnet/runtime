@@ -4,6 +4,7 @@ using System;
 using Xunit;
 
 public class Test_ng_standard{
+	[OuterLoop]
 	[Fact]
 	public static void TestEntryPoint(){
 		Console.WriteLine("Test creation/invocation of non-generic closed instance or open static delegates over various generic methods");

@@ -68,7 +68,7 @@ static const void* pinvoke_override(const char* library_name, const char* entry_
     {
         return SystemResolveDllImport(entry_point_name);
     }
-    if (strcmp(library_name, "libSystem.JavaScript.Native") == 0)
+    if (strcmp(library_name, "libSystem.Native.Browser") == 0)
     {
         return SystemJSResolveDllImport(entry_point_name);
     }

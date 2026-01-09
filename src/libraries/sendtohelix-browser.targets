@@ -135,6 +135,7 @@
     <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(WasmFingerprintAssets)' == 'false'">$(_XUnitTraitArg) -trait category=no-fingerprinting</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">$(_XUnitTraitArg) -trait category=bundler-friendly</_XUnitTraitArg>
+    <_XUnitTraitArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'">-trait category=$(RuntimeFlavor)</_XUnitTraitArg>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -246,7 +247,7 @@
     <ItemGroup>
       <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnV8'"                 Include="$(TestArchiveRoot)runonly/**/*.Console.V8.*.Sample.zip" />
       <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnChrome'"             Include="$(TestArchiveRoot)runonly/**/*.Browser.*.Sample.zip" />
-      <!-- xharness -> selenium -> firefox doesn't support forwarding console without dotnet.withConsoleForwarding()
+      <!-- xharness -> selenium -> firefox doesn't support forwarding console without forwardConsole
       <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnFirefox'"            Include="$(TestArchiveRoot)runonly/**/*.Browser.*.Sample.zip" />
       -->
 

@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // CGENX86.H -
 //
 // Various helper routines for generating x86 assembly code.
 //
 // DO NOT INCLUDE THIS FILE DIRECTLY - ALWAYS USE CGENSYS.H INSTEAD
-//
-
 
 
 #ifndef TARGET_X86
@@ -134,57 +133,6 @@ struct ArgumentRegisters {
 // forward decl
 struct REGDISPLAY;
 typedef REGDISPLAY *PREGDISPLAY;
-
-#ifndef FEATURE_EH_FUNCLETS
-// Sufficient context for Try/Catch restoration.
-struct EHContext {
-    INT32       Eax;
-    INT32       Ebx;
-    INT32       Ecx;
-    INT32       Edx;
-    INT32       Esi;
-    INT32       Edi;
-    INT32       Ebp;
-    INT32       Esp;
-    INT32       Eip;
-
-    void Setup(PCODE resumePC, PREGDISPLAY regs);
-    void UpdateFrame(PREGDISPLAY regs);
-
-    inline TADDR GetSP() {
-        LIMITED_METHOD_CONTRACT;
-        return (TADDR)Esp;
-    }
-    inline void SetSP(LPVOID esp) {
-        LIMITED_METHOD_CONTRACT;
-        Esp = (INT32)(size_t)esp;
-    }
-
-    inline LPVOID GetFP() {
-        LIMITED_METHOD_CONTRACT;
-        return (LPVOID)(UINT_PTR)Ebp;
-    }
-
-    inline void SetArg(LPVOID arg) {
-        LIMITED_METHOD_CONTRACT;
-        Eax = (INT32)(size_t)arg;
-    }
-
-    inline void Init()
-    {
-        LIMITED_METHOD_CONTRACT;
-        Eax = 0;
-        Ebx = 0;
-        Ecx = 0;
-        Edx = 0;
-        Esi = 0;
-        Edi = 0;
-        Ebp = 0;
-        Esp = 0;
-        Eip = 0;
-    }
-};
-#endif // !FEATURE_EH_FUNCLETS
 
 #define ARGUMENTREGISTERS_SIZE sizeof(ArgumentRegisters)
 

@@ -20,9 +20,9 @@ function saveProfile(aotProfileData) {
 }
 try {
     const { INTERNAL, getAssemblyExports: getAssemblyExports } = await dotnet
-        .withElementOnExit()
-        .withExitCodeLogging()
         .withConfig({
+            appendElementOnExit: true,
+            logExitCode: true,
             aotProfilerOptions: {
                 writeAt: "Sample.Test::StopProfile",
                 sendTo: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"

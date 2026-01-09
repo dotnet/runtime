@@ -49,76 +49,11 @@ namespace System.Numerics.Tensors
 
             public static bool Invoke(T x) => T.IsNormal(x);
 
-#if NET10_0_OR_GREATER
             public static Vector128<T> Invoke(Vector128<T> x) => Vector128.IsNormal(x);
 
             public static Vector256<T> Invoke(Vector256<T> x) => Vector256.IsNormal(x);
 
             public static Vector512<T> Invoke(Vector512<T> x) => Vector512.IsNormal(x);
-#else
-            public static Vector128<T> Invoke(Vector128<T> x)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    Vector128<uint> smallestNormalBits = Vector128.Create(0x0080_0000u);
-                    Vector128<uint> positiveInfinityBits = Vector128.Create(0x7F80_0000u);
-                    Vector128<uint> bits = Vector128.Abs(x).AsUInt32();
-                    return Vector128.LessThan(bits - smallestNormalBits, positiveInfinityBits - smallestNormalBits).As<uint, T>();
-                }
-
-                if (typeof(T) == typeof(double))
-                {
-                    Vector128<ulong> smallestNormalBits = Vector128.Create(0x0010_0000_0000_0000ul);
-                    Vector128<ulong> positiveInfinityBits = Vector128.Create(0x7FF0_0000_0000_0000ul);
-                    Vector128<ulong> bits = Vector128.Abs(x).AsUInt64();
-                    return Vector128.LessThan(bits - smallestNormalBits, positiveInfinityBits - smallestNormalBits).As<ulong, T>();
-                }
-
-                return ~Vector128.Equals(x, Vector128<T>.Zero);
-            }
-
-            public static Vector256<T> Invoke(Vector256<T> x)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    Vector256<uint> smallestNormalBits = Vector256.Create(0x0080_0000u);
-                    Vector256<uint> positiveInfinityBits = Vector256.Create(0x7F80_0000u);
-                    Vector256<uint> bits = Vector256.Abs(x).AsUInt32();
-                    return Vector256.LessThan(bits - smallestNormalBits, positiveInfinityBits - smallestNormalBits).As<uint, T>();
-                }
-
-                if (typeof(T) == typeof(double))
-                {
-                    Vector256<ulong> smallestNormalBits = Vector256.Create(0x0010_0000_0000_0000ul);
-                    Vector256<ulong> positiveInfinityBits = Vector256.Create(0x7FF0_0000_0000_0000ul);
-                    Vector256<ulong> bits = Vector256.Abs(x).AsUInt64();
-                    return Vector256.LessThan(bits - smallestNormalBits, positiveInfinityBits - smallestNormalBits).As<ulong, T>();
-                }
-
-                return ~Vector256.Equals(x, Vector256<T>.Zero);
-            }
-
-            public static Vector512<T> Invoke(Vector512<T> x)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    Vector512<uint> smallestNormalBits = Vector512.Create(0x0080_0000u);
-                    Vector512<uint> positiveInfinityBits = Vector512.Create(0x7F80_0000u);
-                    Vector512<uint> bits = Vector512.Abs(x).AsUInt32();
-                    return Vector512.LessThan(bits - smallestNormalBits, positiveInfinityBits - smallestNormalBits).As<uint, T>();
-                }
-
-                if (typeof(T) == typeof(double))
-                {
-                    Vector512<ulong> smallestNormalBits = Vector512.Create(0x0010_0000_0000_0000ul);
-                    Vector512<ulong> positiveInfinityBits = Vector512.Create(0x7FF0_0000_0000_0000ul);
-                    Vector512<ulong> bits = Vector512.Abs(x).AsUInt64();
-                    return Vector512.LessThan(bits - smallestNormalBits, positiveInfinityBits - smallestNormalBits).As<ulong, T>();
-                }
-
-                return ~Vector512.Equals(x, Vector512<T>.Zero);
-            }
-#endif
         }
     }
 }

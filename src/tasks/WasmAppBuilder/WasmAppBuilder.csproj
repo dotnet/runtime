@@ -1,25 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn),CA1050</NoWarn>
-    <!-- Ignore nullable warnings on net4* -->
-    <NoWarn>$(NoWarn),CA1850</NoWarn>
+    <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
     <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <Compile Include="..\Common\IsExternalInit.cs" />
-    <Compile Include="$(RepoRoot)src\libraries\System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/NullableAttributes.cs" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
     <Compile Remove="mono/*.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'">
+  <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
     <Compile Remove="coreclr/*.cs" />
   </ItemGroup>
 
@@ -37,23 +30,18 @@
     <ProjectReference Include="..\Microsoft.NET.WebAssembly.Webcil\Microsoft.NET.WebAssembly.Webcil.csproj" />
 
     <!-- Reference Microsoft.Build.Tasks.Core directly to avoid bringing in it's package closure.
-         This assembly is provided by MSbuild.  -->
-    <PackageDownloadAndReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" Folder="ref/net472" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net472'))" />
-    <PackageDownloadAndReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" Folder="ref/net8.0" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))" />
+         This assembly is provided by MSBuild.  -->
+    <PackageDownloadAndReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" Folder="ref/net8.0" />
   </ItemGroup>
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
-      <!-- .NETCoreApp -->
-      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*"
-                      TargetPath="tasks\$(NetCoreAppToolCurrent)" />
-      <FilesToPackage Include="$(OutputPath)Microsoft.NET.WebAssembly.Webcil.dll"
-                      TargetPath="tasks\$(NetCoreAppToolCurrent)" />
+      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*" TargetPath="tasks\$(NetCoreAppToolCurrent)" />
+      <FilesToPackage Include="$(OutputPath)Microsoft.NET.WebAssembly.Webcil.dll" TargetPath="tasks\$(NetCoreAppToolCurrent)" />
     </ItemGroup>
   </Target>
 
-  <UsingTask TaskName="ManagedToNativeGenerator" Runtime="NET" TaskFactory="TaskHostFactory" AssemblyFile="$(OutputPath)\WasmAppBuilder.dll" />
-
+  <UsingTask TaskName="ManagedToNativeGenerator" Runtime="NET" TaskFactory="TaskHostFactory" AssemblyFile="$(TargetPath)" />
   <Target Name="RunGenerator" DependsOnTargets="Build" Condition="'$(AssembliesScanPath)' != ''">
       <ItemGroup>
         <WasmPInvokeAssembly Include="$(AssembliesScanPath)**/*.dll" />
@@ -72,4 +60,5 @@
           <Output TaskParameter="FileWrites" ItemName="FileWrites" />
       </ManagedToNativeGenerator>
   </Target>
+
 </Project>

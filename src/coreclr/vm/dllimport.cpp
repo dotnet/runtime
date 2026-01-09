@@ -100,6 +100,7 @@ StubSigDesc::StubSigDesc(MethodDesc *pMD)
         GC_NOTRIGGER;
         SUPPORTS_DAC;
         PRECONDITION(pMD != NULL);
+        PRECONDITION(!pMD->IsAsyncMethod());
     }
     CONTRACTL_END;
 
@@ -107,9 +108,6 @@ StubSigDesc::StubSigDesc(MethodDesc *pMD)
     m_pMT = nullptr;
     m_sig           = pMD->GetSignature();
     m_pModule       = pMD->GetModule();         // Used for token resolution.
-
-    // TODO: (async) revisit and examine if this needs to be supported somehow
-    _ASSERTE(!pMD->IsAsyncMethod());
 
     m_tkMethodDef = pMD->GetMemberDef();
     SigTypeContext::InitTypeContext(pMD, &m_typeContext);
@@ -1131,7 +1129,6 @@ public:
         DWORD dwToken = 0;
         if (pTargetMD)
         {
-            // TODO: (async) revisit and examine if this needs to be supported somehow
             _ASSERTE(!pTargetMD->IsAsyncVariantMethod());
             dwToken = pTargetMD->GetMemberDef();
         }
@@ -2764,6 +2761,10 @@ void PInvokeStaticSigInfo::DllImportInit(
 
         PRECONDITION(CheckPointer(pMD));
 
+        // P/Invoke methods should never be marked as async.
+        // This should be blocked in the class loader.
+        PRECONDITION(!pMD->IsAsyncMethod());
+
         // These preconditions to prevent multithreaded regression
         // where pMD->m_szLibName was passed in directly, cleared
         // by this API, then accessed on another thread before being reset here.
@@ -2779,9 +2780,6 @@ void PInvokeStaticSigInfo::DllImportInit(
     IMDInternalImport  *pInternalImport = pMD->GetMDImport();
     CorPinvokeMap mappingFlags = pmMaxValue;
     mdModuleRef modref = mdModuleRefNil;
-    // TODO: (async) revisit and examine if this needs to be supported somehow
-    if (pMD->IsAsyncMethod())
-        ThrowHR(COR_E_NOTSUPPORTED);
 
     if (FAILED(pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, ppEntryPointName, &modref)))
     {
@@ -3053,6 +3051,7 @@ namespace
             STANDARD_VM_CHECK;
             PRECONDITION(pMD != NULL);
             PRECONDITION(pMD->IsPInvoke());
+            PRECONDITION(!pMD->IsAsyncMethod());
             PRECONDITION(callConv != NULL);
         }
         CONTRACTL_END;
@@ -3060,9 +3059,7 @@ namespace
         CorInfoCallConvExtension callConvLocal;
         IMDInternalImport* pInternalImport = pMD->GetMDImport();
         CorPinvokeMap mappingFlags = pmMaxValue;
-        // TODO: (async) revisit and examine if this needs to be supported somehow
-        if (pMD->IsAsyncMethod())
-            ThrowHR(COR_E_NOTSUPPORTED);
+
 
         HRESULT hr = pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, NULL /*pszImportName*/, NULL /*pmrImportDLL*/);
         if (FAILED(hr))
@@ -3249,6 +3246,12 @@ BOOL PInvoke::MarshalingRequired(
     {
         STANDARD_VM_CHECK;
         PRECONDITION(pMD != NULL || (!sigPointer.IsNull() && pModule != NULL));
+
+        // We should never see an async method here.
+        // Delegate Invoke methods should never be async.
+        // Async P/Invokes are not supported.
+        // Async UnmanagedCallersOnly methods are not supported.
+        PRECONDITION(pMD == NULL || !pMD->IsAsyncMethod());
     }
     CONTRACTL_END;
 
@@ -3324,10 +3327,6 @@ BOOL PInvoke::MarshalingRequired(
     mdMethodDef methodToken = mdMethodDefNil;
     if (pMD != NULL)
     {
-        // TODO: (async) revisit and examine if this needs to be supported somehow
-        if (pMD->IsAsyncMethod())
-            ThrowHR(COR_E_NOTSUPPORTED);
-
         methodToken = pMD->GetMemberDef();
     }
     CollateParamTokens(pMDImport, methodToken, numArgs - 1, pParamTokenArray);
@@ -6080,11 +6079,9 @@ static void GetILStubForCalli(VASigCookie* pVASigCookie, MethodDesc* pMD)
 
     if (pMD != NULL)
     {
+        _ASSERTE(pMD->IsPInvoke());
+        _ASSERTE(!pMD->IsAsyncMethod());
         PInvokeStaticSigInfo sigInfo(pMD);
-
-        // TODO: (async) revisit and examine if this needs to be supported somehow
-        if (pMD->IsAsyncMethod())
-            ThrowHR(COR_E_NOTSUPPORTED);
 
         md = pMD->GetMemberDef();
         nlFlags = sigInfo.GetLinkFlags();

@@ -2045,6 +2045,10 @@ void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
     if (pMD->HasClassOrMethodInstantiation())
         EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_GenericMethod")));
 
+    // No async methods
+    if (pMD->IsAsyncMethod())
+        EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_AsyncMethod")));
+
     // Arguments - Scenarios involving UnmanagedCallersOnly are handled during the jit.
     bool unmanagedCallersOnlyRequiresMarshalling = false;
     if (PInvoke::MarshalingRequired(pMD, NULL, NULL, NULL, unmanagedCallersOnlyRequiresMarshalling))
@@ -2788,13 +2792,6 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // that has the _methodBase field filled in with the LoaderAllocator of the collectible assembly
     // associated with the instantiation.
     BOOL fMaybeCollectibleAndStatic = FALSE;
-
-    // Do not allow static methods with [UnmanagedCallersOnlyAttribute] to be a delegate target.
-    // A method marked UnmanagedCallersOnly is special and allowing it to be delegate target will destabilize the runtime.
-    if (pTargetMethod->HasUnmanagedCallersOnlyAttribute())
-    {
-        COMPlusThrow(kNotSupportedException, W("NotSupported_UnmanagedCallersOnlyTarget"));
-    }
 
     if (isStatic)
     {

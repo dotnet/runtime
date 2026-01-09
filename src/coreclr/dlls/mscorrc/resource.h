@@ -366,6 +366,7 @@
 #define BFA_MISSING_DELEGATE_METHOD             0x2030
 #define BFA_MULT_TYPE_SAME_NAME                 0x2031
 #define BFA_INVALID_METHOD_TOKEN                0x2032
+#define BFA_BAD_ASYNC_METHOD                    0x2033
 #define BFA_ECALLS_MUST_BE_IN_SYS_MOD           0x2034
 #define BFA_CANT_GET_CLASSLAYOUT                0x2035
 #define BFA_CALLCONV_NOT_LOCAL_SIG              0x2036

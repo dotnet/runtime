@@ -169,7 +169,6 @@
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+host.native+host.pkg+host.tools+host.pretest+host.tests</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+libs.native+libs.sfx+libs.oob+libs.pretest+libs.tests</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+packs.product+packs.installers+packs.tests</AllSubsetsExpansion>
-    <AllSubsetsExpansion>$(AllSubsetsExpansion)+regeneratedownloadtable+regeneratethirdpartynotices+tasks</AllSubsetsExpansion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -254,6 +253,7 @@
     <SubsetName Include="Tools.Cdac" Description="Diagnostic data contract reader and related projects." />
     <SubsetName Include="Tools.ILLinkTests" OnDemand="true" Description="Unit tests for the tools.illink subset." />
     <SubsetName Include="Tools.CdacTests" OnDemand="true" Description="Unit tests for the diagnostic data contract reader." />
+    <SubsetName Include="Tools.ILAsm" OnDemand="true" Description="Build only the managed ilasm tool." />
 
     <!-- Host -->
     <SubsetName Include="Host" Description="The .NET hosts, packages, hosting libraries, and tests. Equivalent to: $(DefaultHostSubsets)" />
@@ -278,7 +278,6 @@
     <SubsetName Include="Packs.Tests" Description="The framework pack tests." />
 
     <!-- Utility -->
-    <SubsetName Include="RegenerateDownloadTable" OnDemand="true" Description="Regenerates the nightly build download table" />
     <SubsetName Include="RegenerateThirdPartyNotices" OnDemand="true" Description="Regenerates the THIRD-PARTY-NOTICES.TXT file based on other repos' TPN files." />
     <SubsetName Include="tasks" OnDemand="true" Description="Build the repo local task projects." />
     <SubsetName Include="bootstrap" OnDemand="true" Description="Build the projects needed to build shipping assets in the repo against live assets." />
@@ -549,6 +548,11 @@
       Test="true" Category="tools"/>
   </ItemGroup>
 
+  <ItemGroup Condition="$(_subset.Contains('+tools.ilasm+'))">
+    <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ILAssembler\ILAssembler.csproj" Category="tools" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\tests\ILAssembler.Tests\ILAssembler.Tests.csproj" Category="tools" Test="true" />
+  </ItemGroup>
+
   <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot)crossgen-corelib.proj" Category="clr" />
   </ItemGroup>
@@ -743,11 +747,6 @@
   <ItemGroup Condition="$(_subset.Contains('+packs.tests+'))">
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj" />
     <ProjectToBuild Include="@(TestProjectToBuild)" BuildInParallel="true" Test="true" Category="packs" />
-  </ItemGroup>
-
-  <!-- Utility -->
-  <ItemGroup Condition="$(_subset.Contains('+regeneratedownloadtable+'))">
-    <ProjectToBuild Include="$(RepositoryEngineeringDir)regenerate-download-table.proj" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+regeneratethirdpartynotices+'))">

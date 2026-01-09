@@ -2101,6 +2101,9 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 #if defined(TARGET_WASM)
     switch (srcType)
     {
+        case TYP_REF:
+        case TYP_BYREF:
+            return ins_Load(TYP_I_IMPL, aligned);
         case TYP_INT:
             return INS_i32_load;
         case TYP_LONG:
@@ -2497,6 +2500,27 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
 instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false*/)
 {
     // TODO-Cleanup: split this function across target-specific files (e. g. emit<target>.cpp).
+
+#if defined(TARGET_WASM)
+    switch (dstType)
+    {
+        case TYP_REF:
+        case TYP_BYREF:
+            return ins_Store(TYP_I_IMPL, aligned);
+        case TYP_INT:
+            return INS_i32_store;
+        case TYP_LONG:
+            return INS_i64_store;
+        case TYP_FLOAT:
+            return INS_f32_store;
+        case TYP_DOUBLE:
+            return INS_f64_store;
+        default:
+            NYI_WASM("ins_Store");
+            return INS_none;
+    }
+#endif // defined(TARGET_WASM)
+
     if (varTypeUsesIntReg(dstType))
     {
         instruction ins = INS_invalid;

@@ -367,8 +367,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
     CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
 
-    CORINFO_HELP_STRCNS,            // create a new string literal
-
     /* Object model */
 
     CORINFO_HELP_INITCLASS,         // Initialize class if not already initialized
@@ -2379,7 +2377,10 @@ public:
             CORINFO_RESOLVED_TOKEN *    pResolvedToken /* IN  */) = 0;
 
     // Returns (sub)string length and content (can be null for dynamic context)
-    // for given metaTOK and module, length `-1` means input is incorrect
+    // for given metaTOK and module, length `-1` means input is incorrect.
+    //
+    // Return value: The actual length of the (sub)string. Note that this may be larger
+    // than bufferSize, in which case only bufferSize characters are copied to buffer.
     virtual int getStringLiteral (
             CORINFO_MODULE_HANDLE       module,     /* IN  */
             unsigned                    metaTOK,    /* IN  */
@@ -3235,12 +3236,6 @@ public:
             CORINFO_METHOD_HANDLE   ftn,
             bool                    isUnsafeFunctionPointer,
             CORINFO_CONST_LOOKUP *  pResult
-            ) = 0;
-
-    // get slow lazy string literal helper to use (CORINFO_HELP_STRCNS*).
-    // Returns CORINFO_HELP_UNDEF if lazy string literal helper cannot be used.
-    virtual CorInfoHelpFunc getLazyStringLiteralHelper(
-            CORINFO_MODULE_HANDLE   handle
             ) = 0;
 
     virtual CORINFO_MODULE_HANDLE embedModuleHandle(

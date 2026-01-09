@@ -234,7 +234,7 @@ namespace Loader
 #include "utilcode.h"
 #include "log.h"
 #include "loaderheap.h"
-#include "stgpool.h"
+#include "memorystreams.h"
 
 // src/vm
 #include "gcenv.interlocked.h"
