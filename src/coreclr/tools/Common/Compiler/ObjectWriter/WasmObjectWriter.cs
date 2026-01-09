@@ -279,7 +279,7 @@ namespace ILCompiler.ObjectWriter
         public Stream PrependStream
         {
             get { return _prependStream ?? MemoryStream.Null; }
-            set {  _prependStream = value ?? MemoryStream.Null; }
+            set { _prependStream = value ?? MemoryStream.Null; }
         }
 
         public Stream Stream
