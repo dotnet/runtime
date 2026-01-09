@@ -97,6 +97,8 @@ struct _EventPipeBufferManager_Internal {
 	// The thread session state grabbed from the thread_session_state_list containing the current event
 	// that is being processed by the reader thread.
 	EventPipeThreadSessionState *current_thread_session_state;
+	dn_list_t *thread_session_state_list_snapshot;
+	ep_timestamp_t snapshot_timestamp;
 	// The total allocation size of buffers under management.
 	volatile size_t size_of_all_buffers;
 	// The maximum allowable size of buffers under management.

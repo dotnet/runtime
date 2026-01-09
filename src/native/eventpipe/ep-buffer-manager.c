@@ -828,6 +828,13 @@ ep_buffer_manager_alloc (
 	ep_rt_wait_event_alloc (&instance->rt_wait_event, false, true);
 	ep_raise_error_if_nok (ep_rt_wait_event_is_valid (&instance->rt_wait_event));
 
+	instance->thread_session_state_list_snapshot = NULL;
+	if (ep_session_get_session_type (session) == EP_SESSION_TYPE_LISTENER) {
+		instance->thread_session_state_list_snapshot = dn_list_alloc ();
+		ep_raise_error_if_nok (instance->thread_session_state_list_snapshot != NULL);
+	}
+	instance->snapshot_timestamp = 0;
+
 	instance->session = session;
 	instance->size_of_all_buffers = 0;
 	instance->num_oversized_events_dropped = 0;
@@ -873,6 +880,8 @@ ep_buffer_manager_free (EventPipeBufferManager * buffer_manager)
 	ep_buffer_manager_deallocate_buffers (buffer_manager);
 
 	dn_list_free (buffer_manager->sequence_points);
+
+	dn_list_free (buffer_manager->thread_session_state_list_snapshot);
 
 	dn_list_free (buffer_manager->thread_session_state_list);
 
@@ -1245,25 +1254,95 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
+// Former `buffer_manager_move_next_event_any_thread (buffer_manager, ep_perf_timestamp_get ()` perf comment
+// PERF: This may be too aggressive? If this method is being called frequently enough to keep pace with the
+// writing threads we could be in a state of high lock contention and lots of churning buffers. Each writer
+// would take several locks, allocate a new buffer, write one event into it, then the reader would take the
+// lock, convert the buffer to read-only and read the single event out of it. Allowing more events to accumulate
+// in the buffers before converting between writable and read-only amortizes a lot of the overhead. One way
+// to achieve that would be picking a stop_timestamp that was Xms in the past. This would let Xms of events
+// to accumulate in the write buffer before we converted it and forced the writer to allocate another. Other more
+// sophisticated approaches would probably build a low overhead synchronization mechanism to read and write the
+// buffer at the same time.
+//
+// As a slight optimization for many writer threads concurrently writing events while the reader thread attempts
+// to convert all head buffers to read-only, we take a snapshot of known thread session states and iterate
+// until all events before the snapshot timestamp have been read before taking a new snapshot.
 EventPipeEventInstance *
 ep_buffer_manager_get_next_event (EventPipeBufferManager *buffer_manager)
 {
 	EP_ASSERT (buffer_manager != NULL);
+	EP_ASSERT (buffer_manager->thread_session_state_list_snapshot != NULL);
 
 	ep_requires_lock_not_held ();
 
-	// PERF: This may be too aggressive? If this method is being called frequently enough to keep pace with the
-	// writing threads we could be in a state of high lock contention and lots of churning buffers. Each writer
-	// would take several locks, allocate a new buffer, write one event into it, then the reader would take the
-	// lock, convert the buffer to read-only and read the single event out of it. Allowing more events to accumulate
-	// in the buffers before converting between writable and read-only amortizes a lot of the overhead. One way
-	// to achieve that would be picking a stop_timestamp that was Xms in the past. This would let Xms of events
-	// to accumulate in the write buffer before we converted it and forced the writer to allocate another. Other more
-	// sophisticated approaches would probably build a low overhead synchronization mechanism to read and write the
-	// buffer at the same time.
-	ep_timestamp_t stop_timestamp = ep_perf_timestamp_get ();
-	buffer_manager_move_next_event_any_thread (buffer_manager, stop_timestamp);
+	if (buffer_manager->current_event != NULL)
+		ep_buffer_move_next_read_event (buffer_manager->current_buffer);
+
+	buffer_manager->current_event = NULL;
+	buffer_manager->current_buffer = NULL;
+	buffer_manager->current_thread_session_state = NULL;
+
+	if (dn_list_empty (buffer_manager->thread_session_state_list_snapshot)) {
+		ep_timestamp_t snapshot_timestamp = ep_perf_timestamp_get ();
+		buffer_manager->snapshot_timestamp = snapshot_timestamp;
+		EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
+			DN_LIST_FOREACH_BEGIN (EventPipeThreadSessionState *, thread_session_state, buffer_manager->thread_session_state_list) {
+				EventPipeBufferList *buffer_list = ep_thread_session_state_get_buffer_list (thread_session_state);
+				EventPipeBuffer *buffer = buffer_list->head_buffer;
+				if (buffer && ep_buffer_get_creation_timestamp (buffer) < snapshot_timestamp)
+					dn_list_push_back (buffer_manager->thread_session_state_list_snapshot, thread_session_state);
+			} DN_LIST_FOREACH_END;
+		EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section1)
+	}
+	
+	// Step 2 - iterate the snapshot list to find the one with the oldest event. This may require
+	// converting some of the live buffers from writable to readable. We may need to wait outside the
+	// buffer_manager lock for a writer thread to finish an in progress write to the buffer.
+	ep_timestamp_t stop_timestamp = buffer_manager->snapshot_timestamp;
+	ep_timestamp_t oldest_timestamp = stop_timestamp;
+
+	EventPipeBuffer *buffer;
+	for (dn_list_it_t it = dn_list_begin (buffer_manager->thread_session_state_list_snapshot); !dn_list_it_end (it); ) {
+		EventPipeThreadSessionState *thread_session_state = *dn_list_it_data_t (it, EventPipeThreadSessionState *);
+		EP_ASSERT (thread_session_state != NULL);
+
+		dn_list_it_t next_it = dn_list_it_next (it);
+
+		bool live_thread_session_state_exhausted = false;
+		bool snapshot_thread_session_state_exhausted = true;
+		buffer = buffer_manager_advance_to_non_empty_buffer (buffer_manager, thread_session_state, stop_timestamp, &live_thread_session_state_exhausted);
+		if (buffer) {
+			EventPipeEventInstance *next_event = ep_buffer_get_current_read_event (buffer);
+			if (next_event) {
+				ep_timestamp_t next_event_timestamp = ep_event_instance_get_timestamp (next_event);
+				if (next_event_timestamp < stop_timestamp)
+					snapshot_thread_session_state_exhausted = false;
+				if (next_event_timestamp < oldest_timestamp) {
+					buffer_manager->current_event = next_event;
+					buffer_manager->current_buffer = buffer;
+					buffer_manager->current_thread_session_state = thread_session_state;
+					oldest_timestamp = next_event_timestamp;
+				}
+			}
+		}
+		if (snapshot_thread_session_state_exhausted)
+			dn_list_erase (it);
+		if (live_thread_session_state_exhausted) {
+			ep_rt_spin_lock_acquire (&buffer_manager->rt_lock);
+				buffer_manager_remove_and_delete_thread_session_state (buffer_manager, thread_session_state);
+			ep_rt_spin_lock_release (&buffer_manager->rt_lock);
+		}
+
+		it = next_it;
+	}
+
+ep_on_exit:
 	return buffer_manager->current_event;
+
+ep_on_error:
+	buffer_manager->current_event = NULL;
+	ep_exit_error_handler ();
 }
 
 void
