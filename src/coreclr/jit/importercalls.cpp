@@ -8649,10 +8649,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 #endif // DEBUG
     }
 
-    // Is the call a generic virtual method call?
-    const bool isGenericVirtual = call->IsGenericVirtual(this);
-
-    // In R2R mode, we might see virtual stub calls to
+    // In R2R mode, we might see virtual stub calls / gvm calls to
     // non-virtuals. For instance cases where the non-virtual method
     // is in a different assembly but is called via CALLVIRT. For
     // version resilience we must allow for the fact that the method
@@ -8663,7 +8660,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     if ((baseMethodAttribs & CORINFO_FLG_VIRTUAL) == 0)
     {
-        assert(call->IsVirtualStub());
+        assert(call->IsVirtualStub() || call->IsGenericVirtual(this));
         assert(IsAot());
         JITDUMP("\nimpDevirtualizeCall: [R2R] base method not virtual, sorry\n");
         return;
@@ -8755,7 +8752,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // It may or may not know enough to devirtualize...
     if (isInterface)
     {
-        assert(call->IsVirtualStub() || isGenericVirtual);
+        assert(call->IsVirtualStub() || call->IsGenericVirtual(this));
         JITDUMP("--- base class is interface\n");
     }
 
@@ -8793,7 +8790,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
             // Generic virtual method devirt also returns a generic method.
             //
-            assert(isGenericVirtual || dvInfo.needsMethodContext);
+            assert(call->IsGenericVirtual(this) || dvInfo.needsMethodContext);
             assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
             derivedClass = info.compCompHnd->getMethodClass(derivedMethod);
         }
