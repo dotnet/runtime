@@ -1,6 +1,6 @@
-# The purpose of this pipeline is to exercise various developer workflows in the repo.
-# Primarily, it is meant to cover local (non-cross) build scenarios and
-# source-build scenarios that commonly cause build breaks.
+# This pipeline is used for running the VMR verification of the PR changes in repo-level PRs.
+# If there are changes in flight that intentionally create cross-repo breaking changes in the VMR ingestion,
+# this pipeline is expected to fail until the conflicts are resolved in the VMR.
 
 trigger: none
 
@@ -18,6 +18,11 @@ pr:
     - .devcontainer/*
     - .github/*
     - docs/*
+    # Don't trigger VMR builds for changes to Mono.
+    # Mono-based stage 2 source-build is not blocking for the VMR and is only done as a basic validation
+    # for our partners. Interesting Mono-based stage 2 source-build legs are for architectures that are not
+    # supported on CoreCLR, like S390X, which we don't build ourselves.
+    - src/mono/*
     - eng/pipelines/coreclr/*.*
     - eng/pipelines/libraries/*.*
     - eng/pipelines/installer/*.*
@@ -25,95 +30,25 @@ pr:
     - THIRD-PARTY-NOTICES.TXT
 
 variables:
-  - template: /eng/pipelines/common/variables.yml
+- template: /eng/common/templates/variables/pool-providers.yml@self
 
-extends:
-  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+- name: skipComponentGovernanceDetection  # we run CG on internal builds only
+  value: true
+
+- name: Codeql.Enabled  # we run CodeQL on internal builds only
+  value: false
+
+resources:
+  repositories:
+  - repository: vmr
+    type: github
+    name: dotnet/dotnet
+    endpoint: dotnet
+
+stages:
+- template: /eng/pipelines/templates/stages/vmr-build.yml@vmr
   parameters:
-    isOfficialBuild: false
-    stages:
-    - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
-      - stage: EvaluatePaths
-        displayName: Evaluate Paths
-        jobs:
-          - template: /eng/pipelines/common/evaluate-default-paths.yml
+    isBuiltFromVmr: false
+    scope: lite
+    verifications: [ "source-build-stage1", "source-build-stage2" ]
 
-    - stage: Build
-      jobs:
-
-      #
-      # Build with Release config and runtimeConfiguration with MSBuild generator
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platforms:
-          - windows_x86
-          jobParameters:
-            testGroup: innerloop
-            nameSuffix: MSBuild_CMake
-            buildArgs: -c Release -msbuild
-            timeoutInMinutes: 120
-            condition:
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      #
-      # Build with RuntimeFlavor only. This exercise code paths where only RuntimeFlavor is
-      # specified. Catches cases where we depend on Configuration also being specified
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: debug
-          platforms:
-          - linux_x64_dev_innerloop
-          jobParameters:
-            testGroup: innerloop
-            nameSuffix: RuntimeFlavor_Mono
-            buildArgs: /p:RuntimeFlavor=Mono
-            timeoutInMinutes: 120
-            condition:
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      #
-      # Build Libraries (all TFMs) and create packages on a non Windows operating system.
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: debug
-          platforms:
-          - linux_x64_dev_innerloop
-          jobParameters:
-            nameSuffix: Libraries_WithPackages
-            buildArgs: -subset libs -pack
-            timeoutInMinutes: 120
-            condition:
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      #
-      # Build native assets on Alpine. This exercises more modern musl libc changes that have a tendendy to break source-build.
-      # We don't add this as a source-build job as the repo source-build infrastructure isn't set up to run on alpine effectively.
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: debug
-          platforms:
-          - linux_musl_x64_dev_innerloop
-          jobParameters:
-            nameSuffix: Musl_Validation
-            buildArgs: -subset clr.native+libs.native+host.native -c $(_BuildConfig)
-            timeoutInMinutes: 120
-            condition:
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
