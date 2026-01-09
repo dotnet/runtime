@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Text;
+using System.Text.Unicode;
 
 namespace System.Web.Util
 {
@@ -676,12 +677,9 @@ namespace System.Web.Util
 
                 Span<char> chars = _charBuffer.Slice(0, _numChars);
 
-                const char HIGH_SURROGATE_START = '\ud800';
-                const char LOW_SURROGATE_END = '\udfff';
-
                 // Replace any invalid surrogate chars.
-                int idxOfFirstSurrogate = chars.IndexOfAnyInRange(HIGH_SURROGATE_START, LOW_SURROGATE_END);
-                for (int i = idxOfFirstSurrogate; (uint)i < (uint)chars.Length; i++)
+                int idxOfFirstInvalidSurrogate = Utf16.IndexOfInvalidSubsequence(chars);
+                for (int i = idxOfFirstInvalidSurrogate; (uint)i < (uint)chars.Length; i++)
                 {
                     if (char.IsHighSurrogate(chars[i]))
                     {
