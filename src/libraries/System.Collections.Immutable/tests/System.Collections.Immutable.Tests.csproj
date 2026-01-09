@@ -52,6 +52,7 @@
     <Compile Include="ImmutableStackTest.cs" />
     <Compile Include="ImmutableTestBase.cs" />
     <Compile Include="IndexOfTests.cs" />
+    <Compile Include="SearchValuesPolyfillTests.cs" />
     <Compile Include="SimpleElementImmutablesTestBase.cs" />
     <Compile Include="TestExtensionsMethods.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
