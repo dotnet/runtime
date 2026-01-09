@@ -11363,11 +11363,11 @@ HRESULT CordbAsyncFrame::GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICo
     {
         CordbType * pType;
         CordbFunction* function = m_pCode->GetFunction();
+        RSExtSmartPtr<CordbILCode> ilCode;
         ULONG argCount = 0;
         _ASSERTE(function != NULL);
-        IfFailRet(function->GetILCodeAndSigToken());
+        IfFailRet(function->GetILCode(&ilCode));
         IfFailRet(function->GetSig(NULL, &argCount, NULL));
-        CordbILCode* ilCode = function->GetILCode();
 
         LoadGenericArgs();
         IfFailRet(ilCode->GetLocalVariableType(dwIndex, &m_genericArgs, &pType));
@@ -11566,9 +11566,10 @@ HRESULT CordbAsyncValueEnum::Init()
         case LOCAL_VARS:
         {
             // Get the locals signature.
+            RSExtSmartPtr<CordbILCode> ilCode;
             ULONG localsCount;
-            IfFailRet(func->GetILCodeAndSigToken());
-            IfFailRet(func->GetILCode()->GetLocalVarSig(NULL, &localsCount));
+            IfFailRet(func->GetILCode(&ilCode));
+            IfFailRet(ilCode->GetLocalVarSig(NULL, &localsCount));
 
             // Grab the number of locals for the size of the enumeration.
             m_iCurrent = 0;

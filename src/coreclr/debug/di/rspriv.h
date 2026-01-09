@@ -5400,8 +5400,6 @@ class CordbFunction : public CordbBase,
                       public ICorDebugFunction4,
                       public ICorDebugFunction5
 {
-    friend class CordbAsyncFrame;
-    friend class CordbAsyncValueEnum;
 public:
     //-----------------------------------------------------------
     // Create from scope and member objects.
@@ -6991,6 +6989,7 @@ private:
     UINT            m_iMax;
 };
 
+class CordbAsyncFrame;
 class CordbAsyncValueEnum : public CordbBase, public ICorDebugValueEnum
 {
 public:
