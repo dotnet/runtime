@@ -2014,9 +2014,8 @@ namespace System.Security.Cryptography.X509Certificates
                 }
 
                 byte[] base64Buffer = CryptoPool.Rent(fields.DecodedDataLength);
-                byte[]? decryptedBuffer = null;
                 int base64ClearSize = CryptoPool.ClearAll;
-                int decryptBufferClearSize = CryptoPool.ClearAll;
+                ArraySegment<byte>? decryptedPkcs8 = null;
 
                 try
                 {
@@ -2029,19 +2028,15 @@ namespace System.Security.Cryptography.X509Certificates
                     }
 
                     base64ClearSize = base64Written;
-                    ReadOnlyMemory<byte> epkiData = base64Buffer.AsMemory(0, base64Written);
-                    EncryptedPrivateKeyInfoAsn epki = EncryptedPrivateKeyInfoAsn.Decode(epkiData, AsnEncodingRules.BER);
-                    decryptedBuffer = CryptoPool.Rent(epki.EncryptedData.Length);
+                    Debug.Assert(!decryptedPkcs8.HasValue);
+                    decryptedPkcs8 = KeyFormatHelper.DecryptPkcs8(password, base64Buffer.AsMemory(0, base64Written), out int bytesRead);
 
-                    int decryptedBytes = PasswordBasedEncryption.Decrypt(
-                        epki.EncryptionAlgorithm,
-                        password,
-                        default,
-                        epki.EncryptedData.Span,
-                        decryptedBuffer);
+                    if (bytesRead != base64Written)
+                    {
+                        break;
+                    }
 
-                    decryptBufferClearSize = decryptedBytes;
-                    X509Certificate2? loaded = ExtractKeyFromECPrivateKeyInfo(certificate, decryptedBuffer.AsMemory(0, decryptedBytes));
+                    X509Certificate2? loaded = ExtractKeyFromECPrivateKeyInfo(certificate, decryptedPkcs8.Value);
 
                     if (loaded is null)
                     {
@@ -2058,9 +2053,9 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     CryptoPool.Return(base64Buffer, base64ClearSize);
 
-                    if (decryptedBuffer is not null)
+                    if (decryptedPkcs8.HasValue)
                     {
-                        CryptoPool.Return(decryptedBuffer, decryptBufferClearSize);
+                        CryptoPool.Return(decryptedPkcs8.Value);
                     }
                 }
             }
