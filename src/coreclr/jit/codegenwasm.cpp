@@ -443,7 +443,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 //
 static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types type)
 {
-    if (type == TYP_BYREF)
+    if ((type == TYP_BYREF) || (type == TYP_REF))
     {
         type = TYP_I_IMPL;
     }

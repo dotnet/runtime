@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // File: CLRtoCOMCall.cpp
 //
-
-//
 // CLR to COM call support.
 //
-
 
 #include "common.h"
 
@@ -38,15 +36,12 @@ void CreateCLRToDispatchCOMStub(
             DWORD        dwStubFlags             // PInvokeStubFlags
             );
 
-
 PCODE TheGenericCLRToCOMCallStub()
 {
     LIMITED_METHOD_CONTRACT;
 
     return GetEEFuncEntryPoint(GenericCLRToCOMCallStub);
 }
-
-
 
 CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, DWORD* pdwStubFlags)
 {
@@ -162,8 +157,6 @@ MethodDesc* CLRToCOMCall::GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags
                     dwStubFlags);
 }
 
-
-
 PCODE CLRToCOMCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
 {
     STANDARD_VM_CONTRACT;
@@ -201,7 +194,6 @@ PCODE CLRToCOMCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
 
     return pStub;
 }
-
 
 I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
 {

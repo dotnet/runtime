@@ -12,6 +12,7 @@
     <DisableBuildCompression>true</DisableBuildCompression>
     <PublishTrimmed>false</PublishTrimmed>
     <PublishTrimmed Condition="'$(RunAOTCompilation)' == 'true' or '$(TestTrimming)' == 'true'">true</PublishTrimmed>
+    <WasmTestSupport Condition="'$(RuntimeFlavor)' == 'CoreCLR'">true</WasmTestSupport>
     <_WasmInTreeDefaults>false</_WasmInTreeDefaults>
 
     <ResolveWasmOutputsDependsOn>

@@ -103,7 +103,7 @@ namespace Internal.TypeSystem
         {
             Debug.Assert(method.IsPInvoke);
 
-            UnmanagedCallingConventions result;
+            UnmanagedCallingConventions result = 0;
 
             if (method is Internal.IL.Stubs.PInvokeTargetNativeMethod pinvokeTarget)
                 method = pinvokeTarget.Target;
@@ -116,9 +116,9 @@ namespace Internal.TypeSystem
                     && (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)UnmanagedCallingConventions.Thiscall);
                 result = (UnmanagedCallingConventions)unmanagedCallConv;
             }
-            else
+            else if (method is EcmaMethod ecmaMethod)
             {
-                CustomAttributeValue<TypeDesc>? unmanagedCallConvAttribute = ((EcmaMethod)method).GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallConvAttribute");
+                CustomAttributeValue<TypeDesc>? unmanagedCallConvAttribute = ecmaMethod.GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallConvAttribute");
                 if (unmanagedCallConvAttribute != null)
                 {
                     result = GetUnmanagedCallingConventionFromAttribute(unmanagedCallConvAttribute.Value, method.Context);
