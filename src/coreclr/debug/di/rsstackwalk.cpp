@@ -832,3 +832,209 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
     return S_OK;
 }
+
+CordbAsyncStackWalk::CordbAsyncStackWalk(CordbProcess* pProcess, CORDB_ADDRESS continuationAddress)
+: CordbBase(pProcess, 0, enumCordbAsyncStackWalk),
+  m_continuationAddress(continuationAddress)
+{
+    GetProcess()->GetContinueNeuterList()->Add(GetProcess(), this);
+}
+
+CordbAsyncStackWalk::~CordbAsyncStackWalk()
+{
+    _ASSERTE(IsNeutered());
+
+    _ASSERTE(m_pCurrentFrame == NULL);
+}
+
+void CordbAsyncStackWalk::Neuter()
+{
+    if (m_pCurrentFrame != NULL)
+    {
+        m_pCurrentFrame.Clear();
+    }
+
+    CordbBase::Neuter();
+}
+
+HRESULT CordbAsyncStackWalk::QueryInterface(REFIID id, void **pInterface)
+{
+    if (id == IID_ICorDebugStackWalk)
+    {
+        *pInterface = static_cast<ICorDebugStackWalk *>(this);
+    }
+    else if (id == IID_IUnknown)
+    {
+        *pInterface = static_cast<IUnknown *>(static_cast<ICorDebugStackWalk *>(this));
+    }
+    else
+    {
+        *pInterface = NULL;
+        return E_NOINTERFACE;
+    }
+    AddRef();
+    return S_OK;
+}
+
+HRESULT CordbAsyncStackWalk::PopulateFrame()
+{
+    if (m_pCurrentFrame != NULL)
+    {
+        // We already have a current frame.
+        return S_OK;
+    }
+
+    if (m_continuationAddress == 0)
+    {
+        return CORDBG_E_PAST_END_OF_STACK;
+    }
+
+    IDacDbiInterface* pDac = m_pProcess->GetDAC();
+
+    PCODE diagnosticIP;
+    CORDB_ADDRESS nextContinuation;
+    UINT32 state;
+    HRESULT hr = pDac->GetResumePointAndNextContinuation(
+        m_continuationAddress,
+        &diagnosticIP,
+        &nextContinuation,
+        &state);
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+
+    NativeCodeFunctionData codeData;
+    VMPTR_Module pModule;
+    mdMethodDef methodDef;
+    CORDB_ADDRESS startAddress;
+    pDac->LookupMethodFromCodeAddress(
+        diagnosticIP,
+        &codeData,
+        &pModule,
+        &methodDef,
+        &startAddress);
+    CordbAsyncFrame * frame = new CordbAsyncFrame(
+        GetProcess(),
+        pModule,
+        methodDef,
+        codeData.vmNativeCodeMethodDescToken,
+        startAddress,
+        diagnosticIP,
+        m_continuationAddress,
+        state);
+    
+    frame->Init();
+
+    m_pCurrentFrame.Assign(frame);
+
+    return S_OK;
+}
+
+HRESULT CordbAsyncStackWalk::GetContext(ULONG32   contextFlags,
+                                        ULONG32   contextBufSize,
+                                        ULONG32 * pContextSize,
+                                        BYTE      pbContextBuf[])
+{
+    // Async frames from continuations do not have a context.
+    return E_NOTIMPL;
+}
+
+HRESULT CordbAsyncStackWalk::SetContext(CorDebugSetContextFlag flag, ULONG32 contextSize, BYTE context[])
+{
+    // Async frames from continuations do not have a context.
+    return E_NOTIMPL;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// Unwind the stackwalker to the next frame.
+//
+// Return Value:
+//    Return S_OK on success.
+//    Return CORDBG_E_FAIL_TO_UNWIND_FRAME if the unwind fails.
+//    Return CORDBG_S_AT_END_OF_STACK if we have reached the end of the stack as a result of this unwind.
+//    Return CORDBG_E_PAST_END_OF_STACK if we are already at the end of the stack to begin with.
+//
+HRESULT CordbAsyncStackWalk::Next()
+{
+    HRESULT hr = S_OK;
+    PUBLIC_REENTRANT_API_BEGIN(this)
+    {
+        // When going to the next continuation, we discard the current frame.
+        m_pCurrentFrame.Clear();
+
+        if (m_continuationAddress == 0)
+        {
+            ThrowHR(CORDBG_E_PAST_END_OF_STACK);
+        }
+
+        IDacDbiInterface* pDac = m_pProcess->GetDAC();
+
+        PCODE diagnosticIP;
+        CORDB_ADDRESS nextContinuation;
+        UINT32 state;
+        hr = pDac->GetResumePointAndNextContinuation(
+            m_continuationAddress,
+            &diagnosticIP,
+            &nextContinuation,
+            &state);
+        if (FAILED(hr))
+        {
+            ThrowHR(hr);
+        }
+
+        m_continuationAddress = nextContinuation;
+
+        if (m_continuationAddress == 0)
+        {
+            hr = CORDBG_S_AT_END_OF_STACK;
+        }
+    }
+    PUBLIC_REENTRANT_API_END(hr);
+    return hr;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// Retrieves an ICDFrame corresponding to the current frame:
+// Stopped At           Out Parameter       Return Value
+// ----------           -------------       ------------
+// explicit frame       CordbInternalFrame  S_OK
+// managed stack frame  CordbNativeFrame    S_OK
+// native stack frame   NULL                S_FALSE
+//
+// Arguments:
+//    ppFrame - out parameter; return the ICDFrame
+//
+// Return Value:
+//    On success return the HRs above.
+//    Return CORDBG_E_PAST_END_OF_STACK if we are already at the end of the stack.
+//    Return E_INVALIDARG if ppFrame is NULL
+//    Return E_FAIL on other errors.
+//
+HRESULT CordbAsyncStackWalk::GetFrame(ICorDebugFrame ** ppFrame)
+{
+    HRESULT hr = S_OK;
+    PUBLIC_REENTRANT_API_NO_LOCK_BEGIN(this)
+    {
+        ATT_REQUIRE_STOPPED_MAY_FAIL_OR_THROW(GetProcess(), ThrowHR);
+        RSLockHolder lockHolder(GetProcess()->GetProcessLock());
+
+        if (ppFrame == NULL)
+        {
+            ThrowHR(E_INVALIDARG);
+        }
+
+        hr = PopulateFrame();
+        if (FAILED(hr))
+        {
+            ThrowHR(hr);
+        }
+
+        RSInitHolder<CordbAsyncFrame> pResultFrame(m_pCurrentFrame);
+        pResultFrame.TransferOwnershipExternal(ppFrame);
+    }
+    PUBLIC_REENTRANT_API_END(hr);
+    return hr;
+}
