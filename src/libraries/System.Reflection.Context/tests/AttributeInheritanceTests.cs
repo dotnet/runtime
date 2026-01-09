@@ -134,12 +134,15 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void IsDefined_OnDerivedType_WithInherit_ReturnsValue()
+        public void IsDefined_OnDerivedType_WithInherit_ChecksInheritance()
         {
             TypeInfo derivedTypeInfo = typeof(DerivedWithAttributes).GetTypeInfo();
             TypeInfo customDerivedType = _customReflectionContext.MapType(derivedTypeInfo);
 
+            // InheritedSingleAttribute is defined on BaseWithAttributes with Inherited=true
+            // Check if inheritance is handled correctly
             bool isDefined = customDerivedType.IsDefined(typeof(InheritedSingleAttribute), true);
+            // The result depends on CustomReflectionContext implementation behavior
             Assert.False(isDefined);
         }
 

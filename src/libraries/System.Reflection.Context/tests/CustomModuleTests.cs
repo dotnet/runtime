@@ -36,7 +36,8 @@ namespace System.Reflection.Context.Tests
         {
             string fqn = _customModule.FullyQualifiedName;
             Assert.NotNull(fqn);
-            Assert.NotEmpty(fqn);
+            // The FQN should end with the assembly file name
+            Assert.EndsWith(".dll", fqn, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]
@@ -115,6 +116,8 @@ namespace System.Reflection.Context.Tests
         {
             FieldInfo[] fields = _customModule.GetFields(BindingFlags.Public | BindingFlags.Static);
             Assert.NotNull(fields);
+            // Modules typically don't have public static fields, so we expect empty
+            Assert.Empty(fields);
         }
 
         [Fact]
