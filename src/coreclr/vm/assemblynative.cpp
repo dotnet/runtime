@@ -250,9 +250,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromStream(INT_PTR ptrNativeAssembl
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_IJW_IN_COLLECTIBLE_ALC);
     }
 
-    // Pass the stream based assembly as IL in an attempt to bind and load it
-    // excludeAppPaths is implicitly true for streams since the user is explicitly providing
-    // a stream that should take precedence over disk-based assemblies
+    // Pass the stream-based assembly as IL in an attempt to bind and load it
     Assembly* pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinder, pILImage);
     {
         GCX_COOP();
