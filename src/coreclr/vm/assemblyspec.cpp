@@ -436,7 +436,7 @@ Assembly *AssemblySpec::LoadAssembly(LPCWSTR pFilePath)
     if (!pILImage->CheckILFormat())
         THROW_BAD_FORMAT(BFA_BAD_IL, pILImage.GetValue());
 
-    RETURN AssemblyNative::LoadFromPEImage(AppDomain::GetCurrentDomain()->GetDefaultBinder(), pILImage, true /* excludeAppPaths */);
+    RETURN AssemblyNative::LoadFromPEImage(AppDomain::GetCurrentDomain()->GetDefaultBinder(), pILImage);
 }
 
 HRESULT AssemblySpec::CheckFriendAssemblyName()

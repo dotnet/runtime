@@ -19,7 +19,7 @@ class AssemblyBinder
 public:
 
     HRESULT BindAssemblyByName(AssemblyNameData* pAssemblyNameData, BINDER_SPACE::Assembly** ppAssembly);
-    virtual HRESULT BindUsingPEImage(PEImage* pPEImage, bool excludeAppPaths, BINDER_SPACE::Assembly** ppAssembly) = 0;
+    virtual HRESULT BindUsingPEImage(PEImage* pPEImage, BINDER_SPACE::Assembly** ppAssembly) = 0;
     virtual HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName, BINDER_SPACE::Assembly** ppAssembly) = 0;
 
     /// <summary>
@@ -89,7 +89,7 @@ private:
         {
         }
 
-        SimpleNameToExpectedMVIDAndRequiringAssembly(LPCUTF8 simpleName, GUID mvid, bool compositeComponent, LPCUTF8 AssemblyRequirementName) : 
+        SimpleNameToExpectedMVIDAndRequiringAssembly(LPCUTF8 simpleName, GUID mvid, bool compositeComponent, LPCUTF8 AssemblyRequirementName) :
             SimpleName(simpleName),
             Mvid(mvid),
             AssemblyRequirementName(AssemblyRequirementName),

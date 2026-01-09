@@ -102,7 +102,6 @@ Exit:;
 }
 
 HRESULT CustomAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
-                                                /* in */ bool excludeAppPaths,
                                                 /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly)
 {
     HRESULT hr = S_OK;
@@ -129,7 +128,7 @@ HRESULT CustomAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
         }
 
-        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, excludeAppPaths, &pCoreCLRFoundAssembly);
+        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, &pCoreCLRFoundAssembly);
         if (hr == S_OK)
         {
             _ASSERTE(pCoreCLRFoundAssembly != NULL);
@@ -230,7 +229,7 @@ void CustomAssemblyBinder::PrepareForLoadContextRelease(INT_PTR ptrManagedStrong
     // native LoaderAllocators of two collectible contexts in case the AssemblyLoadContext.Unload was called on the current
     // context before returning from its AssemblyLoadContext.Load override or the context's Resolving event.
     // But we need to release the LoaderAllocator so that it doesn't prevent completion of the final phase of unloading in
-    // some cases. It is safe to do as the AssemblyLoaderAllocator is guaranteed to be alive at least until the 
+    // some cases. It is safe to do as the AssemblyLoaderAllocator is guaranteed to be alive at least until the
     // CustomAssemblyBinder::ReleaseLoadContext is called, where we NULL this pointer.
     m_pAssemblyLoaderAllocator->Release();
 
@@ -258,7 +257,7 @@ void CustomAssemblyBinder::ReleaseLoadContext()
     DestroyHandle(handle);
     SetAssemblyLoadContext((INT_PTR)NULL);
 
-    // The AssemblyLoaderAllocator is in a process of shutdown and should not be used 
+    // The AssemblyLoaderAllocator is in a process of shutdown and should not be used
     // after this point.
     m_pAssemblyLoaderAllocator = NULL;
 }
