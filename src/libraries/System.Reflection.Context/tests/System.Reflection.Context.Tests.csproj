@@ -23,9 +23,11 @@
     <Compile Include="ExtendedTypeTests.cs" />
     <Compile Include="FinalCoverageTests.cs" />
     <Compile Include="FinalCoverageTests2.cs" />
+    <Compile Include="FinalBranchCoverageTests.cs" />
     <Compile Include="InheritedPropertyInfoTests.cs" />
     <Compile Include="InteritedMethodInfoTests.cs" />
     <Compile Include="MethodBodyTests.cs" />
+    <Compile Include="MethodLookupBranchTests.cs" />
     <Compile Include="MoreCoverageTests.cs" />
     <Compile Include="ProjectingFieldInfoTests.cs" />
     <Compile Include="ProjectingModuleTests.cs" />
