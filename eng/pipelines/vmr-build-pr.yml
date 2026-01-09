@@ -1,0 +1,48 @@
+# This pipeline is used for running the VMR verification of the PR changes in repo-level PRs.
+
+trigger: none
+
+pr:
+  branches:
+    include:
+    - main
+    - release/*.*
+  paths:
+    include:
+    - '*'
+    - eng/pipelines/global-build.yml
+    exclude:
+    - '**.md'
+    - .devcontainer/*
+    - .github/*
+    - docs/*
+    - src/mono/* # Repo PR VMR validation does not cover source-build stage2 with Mono, so don't trigger on Mono-only changes to avoid unnecessary builds
+    - eng/pipelines/coreclr/*.*
+    - eng/pipelines/libraries/*.*
+    - eng/pipelines/installer/*.*
+    - PATENTS.TXT
+    - THIRD-PARTY-NOTICES.TXT
+
+variables:
+- template: /eng/common/templates/variables/pool-providers.yml@self
+
+- name: skipComponentGovernanceDetection  # we run CG on internal builds only
+  value: true
+
+- name: Codeql.Enabled  # we run CodeQL on internal builds only
+  value: false
+
+resources:
+  repositories:
+  - repository: vmr
+    type: github
+    name: dotnet/dotnet
+    endpoint: dotnet
+
+stages:
+- template: /eng/pipelines/templates/stages/vmr-build.yml@vmr
+  parameters:
+    isBuiltFromVmr: false
+    scope: lite
+    verifications: [ "source-build-stage1", "source-build-stage2" ]
+
