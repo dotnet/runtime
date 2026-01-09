@@ -454,6 +454,7 @@ static DIR* OpenUserStore(const char* storePath, char** pathTmp, size_t* pathTmp
     char* tmp = (char*)calloc(allocSize, sizeof(char));
     if (!tmp)
     {
+        closedir(trustDir);
         *pathTmp = NULL;
         *nextFileWrite = NULL;
         return NULL;

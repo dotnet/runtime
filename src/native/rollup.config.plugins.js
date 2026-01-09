@@ -7,6 +7,7 @@ import virtual from "@rollup/plugin-virtual";
 import * as fs from "fs";
 import * as path from "path";
 import terser from "@rollup/plugin-terser";
+import MagicString from "magic-string";
 
 import { isContinuousIntegrationBuild, gitHash } from "./rollup.config.defines.js";
 
@@ -36,6 +37,50 @@ export const writeOnChangePlugin = () => ({
     generateBundle: writeWhenChanged
 });
 
+export function regexReplace(replacements = []) {
+    return {
+        name: "regexReplace",
+
+        renderChunk(code, chunk) {
+            const id = chunk.fileName;
+            return executeReplacement(this, code, id);
+        },
+
+        transform(code, id) {
+            return executeReplacement(this, code, id);
+        }
+    };
+
+    function executeReplacement(_, code, id) {
+        const magicString = new MagicString(code);
+        if (!codeHasReplacements(code, id, magicString)) {
+            return null;
+        }
+
+        const result = { code: magicString.toString() };
+        result.map = magicString.generateMap({ hires: true });
+        return result;
+    }
+
+    function codeHasReplacements(code, id, magicString) {
+        let result = false;
+        let match;
+        for (const rep of replacements) {
+            const { pattern, replacement } = rep;
+            const rx = new RegExp(pattern, "gm");
+            while ((match = rx.exec(code))) {
+                result = true;
+                const updated = replacement(match);
+                const start = match.index;
+                const end = start + match[0].length;
+                magicString.overwrite(start, end, updated);
+            }
+        }
+
+        return result;
+    }
+}
+
 // Drop invocation from IIFE
 export function iife2fe() {
     return {
@@ -45,18 +90,34 @@ export function iife2fe() {
             if (name.endsWith(".map")) return;
             const asset = bundle[name];
             const code = asset.code;
-            //throw new Error("iife2fe " + code);
             asset.code = code
-                .replace(/}\({}\);/, "};") // }({}); ->};
-                .replace(/}\)\({}\);/, "});") // })({}); ->});
-            ;
+                // spaces are there to preserve source mappings
+                .replace(/}\({}\);/, "}    ;") // }({}); -> }    ;
+                .replace(/}\)\({}\);/, "})     ;"); // })({}); -> })     ;
         }
     };
 }
 
+// Drop _ems_ symbol from emscripten libraries
+export function emsAmbient() {
+    return {
+        name: "emsAmbient",
+        generateBundle: (options, bundle) => {
+            const name = Object.keys(bundle)[0];
+            if (name.endsWith(".map")) return;
+            const asset = bundle[name];
+            const code = asset.code;
+            //throw new Error("iife2fe " + code);
+            asset.code = code
+                .replace(/_ems_\./g, "");
+        }
+    };
+}
+
+
 // force always unix line ending
 export const alwaysLF = () => ({
-    name: "writeOnChange",
+    name: "alwaysLF",
     generateBundle: (options, bundle) => {
         const name = Object.keys(bundle)[0];
         const asset = bundle[name];
@@ -103,18 +164,6 @@ function checkFileExists(file) {
 }
 
 export function onwarn(warning) {
-    if (warning.code === "CIRCULAR_DEPENDENCY") {
-        return;
-    }
-
-    if (warning.code === "UNRESOLVED_IMPORT" && warning.exporter === "process") {
-        return;
-    }
-
-    if (warning.code === "PLUGIN_WARNING" && warning.message.indexOf("sourcemap") !== -1) {
-        return;
-    }
-
     // eslint-disable-next-line no-console
     console.warn(`(!) ${warning.toString()} ${warning.code}`);
 }

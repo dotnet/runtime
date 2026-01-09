@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { DotnetModuleConfig, RuntimeAPI, AssetEntry, LoaderConfig, LoadingResource } from "./public-api";
-import type { EmscriptenModule, ManagedPointer, NativePointer, VoidPtr } from "./emscripten";
-import { InteropJavaScriptExportsTable as InteropJavaScriptExportsTable, LoaderExportsTable, BrowserHostExportsTable, RuntimeExportsTable, NativeBrowserExportsTable, BrowserUtilsExportsTable } from "./exchange";
+import type { DotnetModuleConfig, RuntimeAPI, AssetEntry, LoaderConfig } from "./public-api";
+import type { EmscriptenModule, InstantiateWasmCallBack, ManagedPointer, NativePointer, VoidPtr } from "./emscripten";
+import { InteropJavaScriptExportsTable, LoaderExportsTable, BrowserHostExportsTable, RuntimeExportsTable, NativeBrowserExportsTable, BrowserUtilsExportsTable, DiagnosticsExportsTable } from "./exchange";
 
 export type GCHandle = {
     __brand: "GCHandle"
@@ -37,7 +37,7 @@ export type EmscriptenInternals = {
     updateMemoryViews: () => void,
 };
 
-export declare interface EmscriptenModuleInternal extends EmscriptenModule {
+export type EmscriptenModuleInternal = EmscriptenModule & DotnetModuleConfig & {
     HEAP8: Int8Array,
     HEAP16: Int16Array;
     HEAP32: Int32Array;
@@ -48,33 +48,18 @@ export declare interface EmscriptenModuleInternal extends EmscriptenModule {
     HEAPF32: Float32Array;
     HEAPF64: Float64Array;
 
-    locateFile?: (path: string, prefix?: string) => string;
-    mainScriptUrlOrBlob?: string;
-    ENVIRONMENT_IS_PTHREAD?: boolean;
     FS: any;
-    wasmModule: WebAssembly.Instance | null;
-    ready: Promise<unknown>;
-    wasmExports: any;
-    getWasmTableEntry(index: number): any;
-    removeRunDependency(id: string): void;
-    addRunDependency(id: string): void;
-    safeSetTimeout(func: Function, timeout: number): number;
     runtimeKeepalivePush(): void;
     runtimeKeepalivePop(): void;
-    maybeExit(): void;
-    print(message: string): void;
-    printErr(message: string): void;
-    abort(reason: any): void;
-    exitJS(status: number, implicit?: boolean | number): void;
-    _emscripten_force_exit(exit_code: number): void;
+    instantiateWasm?: InstantiateWasmCallBack;
+    onAbort?: (reason: any, extraJson?: string) => void;
+    onExit?: (code: number) => void;
 }
 
 export interface AssetEntryInternal extends AssetEntry {
-    // this could have multiple values in time, because of re-try download logic
-    pendingDownloadInternal?: LoadingResource
-    noCache?: boolean
+    integrity?: string
+    cache?: RequestCache
     useCredentials?: boolean
-    isCore?: boolean
 }
 
 export type LoaderConfigInternal = LoaderConfig & {
@@ -115,6 +100,7 @@ export type InternalExchange = [
     InteropJavaScriptExportsTable, //6
     NativeBrowserExportsTable, //7
     BrowserUtilsExportsTable, //8
+    DiagnosticsExportsTable, //9
 ]
 export const enum InternalExchangeIndex {
     RuntimeAPI = 0,
@@ -126,9 +112,11 @@ export const enum InternalExchangeIndex {
     InteropJavaScriptExportsTable = 6,
     NativeBrowserExportsTable = 7,
     BrowserUtilsExportsTable = 8,
+    DiagnosticsExportsTable = 9,
 }
 
 export type JsModuleExports = {
     dotnetInitializeModule<T>(internals: InternalExchange): Promise<T>;
 };
 
+export type OnExitListener = (exitCode: number, reason: any, silent: boolean) => boolean;
