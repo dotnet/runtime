@@ -3096,9 +3096,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static sbyte UnsignedShift(sbyte op1, sbyte op2, bool rounding = false, bool saturating = false) => (sbyte)UnsignedShift((byte)op1, op2, rounding, saturating);
 
-        public static sbyte AbsSaturate(sbyte op1) => op1 < 0 ? NegateSaturate(op1) : op1;
-
-
         private static bool TryAddSigned<T>(T left, T right, out T result)
             where T : IBinaryInteger<T>, ISignedNumber<T>
         {
@@ -3111,6 +3108,34 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             result = left + right;
             return result < left;
+        }
+
+        private static bool TryAddSignedUnsigned<TSigned, TUnsigned>(
+            TSigned left, TUnsigned right, out TSigned result)
+            where TSigned   : IBinaryInteger<TSigned>, ISignedNumber<TSigned>
+            where TUnsigned : IBinaryInteger<TUnsigned>, IUnsignedNumber<TUnsigned>
+        {
+            result = unchecked(left + TSigned.CreateChecked(right));
+            return result < left;
+        }
+
+        private static bool TryAddUnsignedSigned<TUnsigned, TSigned>(
+            TUnsigned left, TSigned right, out TUnsigned result)
+            where TUnsigned : IBinaryInteger<TUnsigned>, IUnsignedNumber<TUnsigned>
+            where TSigned   : IBinaryInteger<TSigned>, ISignedNumber<TSigned>
+        {
+            if (right < TSigned.Zero)
+            {
+                var mag = TUnsigned.CreateChecked(-right);
+                result = unchecked(left - mag);
+                return left < mag;
+            }
+            else
+            {
+                var add = TUnsigned.CreateChecked(right);
+                result = left + add;
+                return result < left;
+            }
         }
 
         private static bool TrySubSigned<T>(T left, T right, out T result)
@@ -3127,21 +3152,42 @@ namespace JIT.HardwareIntrinsics.Arm
             return left < right;
         }
 
-        public static T1 AddSaturate<T1, T2>(T1 op1, T2 op2)
-            where T1 : IBinaryInteger<T1>, IMinMaxValue<T1>
-            where T2 : IBinaryInteger<T2>
+        public static sbyte AbsSaturate(sbyte op1) => op1 < 0 ? NegateSaturate(op1) : op1;
+
+        public static sbyte AddSaturate(sbyte op1, sbyte op2)
         {
-            BigInteger a = BigInteger.CreateChecked(op1);
-            BigInteger b = BigInteger.CreateChecked(op2);
-            BigInteger sum = a + b;
+            if (TryAddSigned(op1, op2, out sbyte result))
+            {
+                result = (result < 0) ? sbyte.MaxValue : sbyte.MinValue;
+            }
+            return result;
+        }
 
-            BigInteger min = BigInteger.CreateChecked(T1.MinValue);
-            BigInteger max = BigInteger.CreateChecked(T1.MaxValue);
+        public static sbyte AddSaturate(sbyte op1, byte op2)
+        {
+            if (TryAddSignedUnsigned(op1, op2, out sbyte result))
+            {
+                result = (result < 0) ? sbyte.MaxValue : sbyte.MinValue;
+            }
+            return result;
+        }
 
-            if (sum < min) return T1.MinValue;
-            if (sum > max) return T1.MaxValue;
+        public static byte AddSaturate(byte op1, sbyte op2)
+        {
+            if (TryAddUnsignedSigned(op1, op2, out byte result))
+            {
+                result = (op2 < 0) ? (byte)0 : byte.MaxValue;
+            }
+            return result;
+        }
 
-            return T1.CreateChecked(sum);
+        public static byte AddSaturate(byte op1, byte op2)
+        {
+            if (TryAddUnsigned(op1, op2, out byte result))
+            {
+                result = byte.MaxValue;
+            }
+            return result;
         }
 
         public static sbyte[] AddSaturateRotateComplex(sbyte[] op1, sbyte[] op2, byte rot)
@@ -3202,21 +3248,22 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte NegateSaturate(sbyte op1) => SubtractSaturate((sbyte)0, op1);
 
-        public static T1 SubtractSaturate<T1, T2>(T1 op1, T2 op2)
-            where T1 : IBinaryInteger<T1>, IMinMaxValue<T1>
-            where T2 : IBinaryInteger<T2>
+        public static sbyte SubtractSaturate(sbyte op1, sbyte op2)
         {
-            BigInteger a = BigInteger.CreateChecked(op1);
-            BigInteger b = BigInteger.CreateChecked(op2);
-            BigInteger diff = a - b;
+            if (TrySubSigned(op1, op2, out sbyte result))
+            {
+                result = (result < 0) ? sbyte.MaxValue : sbyte.MinValue;
+            }
+            return result;
+        }
 
-            BigInteger min = BigInteger.CreateChecked(T1.MinValue);
-            BigInteger max = BigInteger.CreateChecked(T1.MaxValue);
-
-            if (diff < min) return T1.MinValue;
-            if (diff > max) return T1.MaxValue;
-
-            return T1.CreateChecked(diff);
+        public static byte SubtractSaturate(byte op1, byte op2)
+        {
+            if (TrySubUnsigned(op1, op2, out byte result))
+            {
+                result = byte.MinValue;
+            }
+            return result;
         }
 
         public static short ShiftArithmetic(short op1, short op2) => SignedShift(op1, op2);
@@ -3368,6 +3415,42 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short AbsSaturate(short op1) => op1 < 0 ? NegateSaturate(op1) : op1;
 
+        public static short AddSaturate(short op1, short op2)
+        {
+            if (TryAddSigned(op1, op2, out short result))
+            {
+                result = (result < 0) ? short.MaxValue : short.MinValue;
+            }
+            return result;
+        }
+
+        public static short AddSaturate(short op1, ushort op2)
+        {
+            if (TryAddSignedUnsigned(op1, op2, out short result))
+            {
+                result = (result < 0) ? short.MaxValue : short.MinValue;
+            }
+            return result;
+        }
+
+        public static ushort AddSaturate(ushort op1, short op2)
+        {
+            if (TryAddUnsignedSigned(op1, op2, out ushort result))
+            {
+                result = (op2 < 0) ? (ushort)0 : ushort.MaxValue;
+            }
+            return result;
+        }
+
+        public static ushort AddSaturate(ushort op1, ushort op2)
+        {
+            if (TryAddUnsigned(op1, op2, out ushort result))
+            {
+                result = ushort.MaxValue;
+            }
+            return result;
+        }
+
         public static short[] AddSaturateRotateComplex(short[] op1, short[] op2, byte rot)
         {
             for (int i = 0; i < op1.Length; i += 2)
@@ -3391,6 +3474,24 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static short NegateSaturate(short op1) => SubtractSaturate((short)0, op1);
+
+        public static short SubtractSaturate(short op1, short op2)
+        {
+            if (TrySubSigned(op1, op2, out short result))
+            {
+                result = (result < 0) ? short.MaxValue : short.MinValue;
+            }
+            return result;
+        }
+
+        public static ushort SubtractSaturate(ushort op1, ushort op2)
+        {
+            if (TrySubUnsigned(op1, op2, out ushort result))
+            {
+                result = ushort.MinValue;
+            }
+            return result;
+        }
 
         public static int ShiftArithmetic(int op1, int op2) => SignedShift(op1, op2);
 
@@ -3542,6 +3643,42 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int AbsSaturate(int op1) => op1 < 0 ? NegateSaturate(op1) : op1;
 
+        public static int AddSaturate(int op1, int op2)
+        {
+            if (TryAddSigned(op1, op2, out int result))
+            {
+                result = (result < 0) ? int.MaxValue : int.MinValue;
+            }
+            return result;
+        }
+
+        public static int AddSaturate(int op1, uint op2)
+        {
+            if (TryAddSignedUnsigned(op1, op2, out int result))
+            {
+                result = (result < 0) ? int.MaxValue : int.MinValue;
+            }
+            return result;
+        }
+
+        public static uint AddSaturate(uint op1, int op2)
+        {
+            if (TryAddUnsignedSigned(op1, op2, out uint result))
+            {
+                result = (op2 < 0) ? (uint)0 : uint.MaxValue;
+            }
+            return result;
+        }
+
+        public static uint AddSaturate(uint op1, uint op2)
+        {
+            if (TryAddUnsigned(op1, op2, out uint result))
+            {
+                result = uint.MaxValue;
+            }
+            return result;
+        }
+
         public static int[] AddSaturateRotateComplex(int[] op1, int[] op2, byte rot)
         {
             for (int i = 0; i < op1.Length; i += 2)
@@ -3565,6 +3702,24 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static int NegateSaturate(int op1) => SubtractSaturate((int)0, op1);
+
+        public static int SubtractSaturate(int op1, int op2)
+        {
+            if (TrySubSigned(op1, op2, out int result))
+            {
+                result = (result < 0) ? int.MaxValue : int.MinValue;
+            }
+            return result;
+        }
+
+        public static uint SubtractSaturate(uint op1, uint op2)
+        {
+            if (TrySubUnsigned(op1, op2, out uint result))
+            {
+                result = uint.MinValue;
+            }
+            return result;
+        }
 
         public static long ShiftArithmetic(long op1, long op2) => SignedShift(op1, op2);
 
@@ -3716,6 +3871,43 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long AbsSaturate(long op1) => op1 < 0 ? NegateSaturate(op1) : op1;
 
+        public static long AddSaturate(long op1, long op2)
+        {
+            if (TryAddSigned(op1, op2, out long result))
+            {
+                result = (result < 0) ? long.MaxValue : long.MinValue;
+            }
+            return result;
+        }
+
+        public static long AddSaturate(long op1, ulong op2)
+        {
+            if (TryAddSignedUnsigned(op1, op2, out long result))
+            {
+                result = (result < 0) ? long.MaxValue : long.MinValue;
+            }
+            return result;
+        }
+
+        public static ulong AddSaturate(ulong op1, long op2)
+        {
+            if (TryAddUnsignedSigned(op1, op2, out ulong result))
+            {
+                result = (op2 < 0) ? (ulong)0 : ulong.MaxValue;
+            }
+            return result;
+        }
+
+
+        public static ulong AddSaturate(ulong op1, ulong op2)
+        {
+            if (TryAddUnsigned(op1, op2, out ulong result))
+            {
+                result = ulong.MaxValue;
+            }
+            return result;
+        }
+
         public static long[] AddSaturateRotateComplex(long[] op1, long[] op2, byte rot)
         {
             for (int i = 0; i < op1.Length; i += 2)
@@ -3739,6 +3931,24 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static long NegateSaturate(long op1) => SubtractSaturate((long)0, op1);
+
+        public static long SubtractSaturate(long op1, long op2)
+        {
+            if (TrySubSigned(op1, op2, out long result))
+            {
+                result = (result < 0) ? long.MaxValue : long.MinValue;
+            }
+            return result;
+        }
+
+        public static ulong SubtractSaturate(ulong op1, ulong op2)
+        {
+            if (TrySubUnsigned(op1, op2, out ulong result))
+            {
+                result = ulong.MinValue;
+            }
+            return result;
+        }
 
         private static (sbyte val, bool ovf) ShiftOvf(sbyte value, int shift)
         {
