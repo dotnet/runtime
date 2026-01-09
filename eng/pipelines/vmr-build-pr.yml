@@ -1,4 +1,6 @@
 # This pipeline is used for running the VMR verification of the PR changes in repo-level PRs.
+# If there are changes in flight that intentionally create cross-repo breaking changes in the VMR ingestion,
+# this pipeline is expected to fail until the conflicts are resolved in the VMR.
 
 trigger: none
 
