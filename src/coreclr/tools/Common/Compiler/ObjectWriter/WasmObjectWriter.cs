@@ -195,9 +195,8 @@ namespace ILCompiler.ObjectWriter
             return _sections[index];
         } 
 
-        private protected override void EmitObjectFile(Stream outputFileStream, Logger logger = null)
+        private protected override void EmitObjectFile(Stream outputFileStream, Logger logger)
         {
-            Debug.Assert(logger != null);
             if (logger.IsVerbose)
             {
                 foreach (var section in _sections)
