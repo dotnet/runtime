@@ -511,6 +511,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForStoreInd(treeNode->AsStoreInd());
             break;
 
+        case GT_NULLCHECK:
+            genCodeForNullCheck(treeNode->AsIndir());
+            break;
+
+        case GT_CALL:
+            genCall(treeNode->AsCall());
+            break;
+
         default:
 #ifdef DEBUG
             NYIRAW(GenTree::OpName(treeNode->OperGet()));
@@ -1371,6 +1379,223 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     }
 
     genUpdateLife(tree);
+}
+
+//------------------------------------------------------------------------
+// genCall: Produce code for a GT_CALL node
+//
+void CodeGen::genCall(GenTreeCall* call)
+{
+    if (call->NeedsNullCheck())
+    {
+        NYI_WASM("Insert nullchecks for calls that need it in lowering");
+    }
+
+    assert(!call->IsTailCall());
+
+    genCallInstruction(call);
+    genProduceReg(call);
+}
+
+//------------------------------------------------------------------------
+// genCallInstruction - Generate instructions necessary to transfer control to the call.
+//
+// Arguments:
+//    call - the GT_CALL node
+//
+void CodeGen::genCallInstruction(GenTreeCall* call)
+{
+    // Determine return value size(s).
+    const ReturnTypeDesc* pRetTypeDesc = call->GetReturnTypeDesc();
+    EmitCallParams        params;
+
+    // unused values are of no interest to GC.
+    if (!call->IsUnusedValue())
+    {
+        if (call->HasMultiRegRetVal())
+        {
+            NYI_WASM("multi-reg return values");
+        }
+        else
+        {
+            assert(!call->TypeIs(TYP_STRUCT));
+
+            if (call->TypeIs(TYP_REF))
+            {
+                params.retSize = EA_GCREF;
+            }
+            else if (call->TypeIs(TYP_BYREF))
+            {
+                params.retSize = EA_BYREF;
+            }
+        }
+    }
+
+    params.isJump      = call->IsFastTailCall();
+    params.hasAsyncRet = call->IsAsync();
+
+    // We need to propagate the debug information to the call instruction, so we can emit
+    // an IL to native mapping record for the call, to support managed return value debugging.
+    // We don't want tail call helper calls that were converted from normal calls to get a record,
+    // so we skip this hash table lookup logic in that case.
+    if (compiler->opts.compDbgInfo && compiler->genCallSite2DebugInfoMap != nullptr && !call->IsTailCall())
+    {
+        DebugInfo di;
+        (void)compiler->genCallSite2DebugInfoMap->Lookup(call, &di);
+        params.debugInfo = di;
+    }
+
+#ifdef DEBUG
+    // Pass the call signature information down into the emitter so the emitter can associate
+    // native call sites with the signatures they were generated from.
+    if (!call->IsHelperCall())
+    {
+        params.sigInfo = call->callSig;
+    }
+#endif // DEBUG
+    GenTree* target = getCallTarget(call, &params.methHnd);
+
+    if (target != nullptr)
+    {
+        // A call target can not be a contained indirection
+        assert(!target->isContainedIndir());
+
+        // Codegen should have already evaluated our target node (last) and pushed it onto the stack,
+        //  ready for call_indirect. Consume it.
+        genConsumeReg(target);
+
+        if (target->isContainedIntOrIImmed())
+        {
+            NYI_WASM("Contained int or iimmed call target");
+        }
+        else
+        {
+            params.callType = EC_INDIR_R;
+            // TODO-WASM: Figure out whether we need this. I think the target should always be on stack, not in a local.
+            // params.ireg     = target->GetRegNum();
+        }
+
+        // TODO-WASM: Assert disabled due to above
+        // assert(genIsValidIntReg(params.ireg));
+
+        genEmitCallWithCurrentGC(params);
+    }
+    else
+    {
+        // If we have no target and this is a call with indirection cell then
+        // we do an optimization where we load the call address directly from
+        // the indirection cell instead of duplicating the tree. In BuildCall
+        // we ensure that get an extra register for the purpose. Note that for
+        // CFG the call might have changed to
+        // CORINFO_HELP_DISPATCH_INDIRECT_CALL in which case we still have the
+        // indirection cell but we should not try to optimize.
+        WellKnownArg indirectionCellArgKind = WellKnownArg::None;
+        if (!call->IsHelperCall(compiler, CORINFO_HELP_DISPATCH_INDIRECT_CALL))
+        {
+            indirectionCellArgKind = call->GetIndirectionCellArgKind();
+        }
+
+        if (indirectionCellArgKind != WellKnownArg::None)
+        {
+            assert(call->IsR2ROrVirtualStubRelativeIndir());
+
+            // We have now generated code loading the target address from the indirection cell onto the stack.
+            params.callType = EC_INDIR_R;
+            // params.ireg     = targetAddrReg;
+            genEmitCallWithCurrentGC(params);
+        }
+        else
+        {
+            // Generate a direct call to a non-virtual user defined or helper method
+            assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
+
+            if (call->gtEntryPoint.addr != NULL)
+            {
+                NYI_WASM("Call with statically known address");
+            }
+            else
+            {
+                if (call->IsHelperCall())
+                {
+                    NYI_WASM("Call helper statically without indirection cell");
+                    CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(params.methHnd);
+                    noway_assert(helperNum != CORINFO_HELP_UNDEF);
+
+                    CORINFO_CONST_LOOKUP helperLookup = compiler->compGetHelperFtn(helperNum);
+                    params.addr                       = helperLookup.addr;
+                    assert(helperLookup.accessType == IAT_VALUE);
+                }
+                else
+                {
+                    // Direct call to a non-virtual user function.
+                    params.addr = call->gtDirectCallAddress;
+                }
+            }
+
+            params.callType = EC_FUNC_TOKEN;
+            // params.ireg     = params.isJump ? rsGetRsvdReg() : REG_RA;
+
+            genEmitCallWithCurrentGC(params);
+        }
+    }
+}
+
+//---------------------------------------------------------------------
+// genCodeForNullCheck - generate code for a GT_NULLCHECK node
+//
+// Arguments
+//    tree - the GT_NULLCHECK node
+//
+// Return value:
+//    None
+//
+void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
+{
+    assert(tree->OperIs(GT_NULLCHECK));
+    GenTree* op1 = tree->gtOp1;
+
+    genConsumeRegs(op1);
+
+    // FIXME-WASM: Emit the actual nullcheck, not just the helper call. AndyA has a PR open for this:
+    // https://github.com/dotnet/runtime/pull/123053
+
+    genEmitHelperCall(CORINFO_HELP_THROWNULLREF, 0, EA_UNKNOWN, REG_NA);
+}
+
+/*****************************************************************************
+ *  Emit a call to a helper function.
+ */
+void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTargetReg /*= REG_NA */)
+{
+    EmitCallParams params;
+
+    CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
+    params.ireg                         = callTargetReg;
+
+    if (helperFunction.accessType == IAT_VALUE)
+    {
+        params.callType = EC_FUNC_TOKEN;
+        params.addr     = helperFunction.addr;
+    }
+    else
+    {
+        // TODO-WASM: Just put helperFunction.addr in params.addr and do the indirect load
+        //  further down in the emitter for all IAT_PVALUE calls instead of doing it here
+        params.addr = nullptr;
+        assert(helperFunction.accessType == IAT_PVALUE);
+        void* pAddr = helperFunction.addr;
+
+        // Push indirection cell address onto stack for genEmitCall to dereference
+        GetEmitter()->emitIns_I(INS_i32_const, emitActualTypeSize(TYP_I_IMPL), (cnsval_ssize_t)pAddr);
+
+        params.callType = EC_INDIR_R;
+    }
+
+    params.methHnd = compiler->eeFindHelper(helper);
+    params.argSize = argSize;
+    params.retSize = retSize;
+
+    genEmitCallWithCurrentGC(params);
 }
 
 //------------------------------------------------------------------------

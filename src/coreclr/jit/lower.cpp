@@ -1975,7 +1975,7 @@ void Lowering::InsertPutArgReg(GenTree** argNode, const ABIPassingSegment& regis
 
     InsertBitCastIfNecessary(argNode, registerSegment);
 
-#ifdef HAS_FIXED_REGISTER_SET
+#if HAS_FIXED_REGISTER_SET
     GenTree* putArg = comp->gtNewPutArgReg(genActualType(*argNode), *argNode, registerSegment.GetRegister());
     BlockRange().InsertAfter(*argNode, putArg);
     *argNode = putArg;
@@ -3102,6 +3102,7 @@ GenTree* Lowering::FindEarliestPutArg(GenTreeCall* call)
         }
     } while (numMarkedNodes > 0);
 
+    // WASM-FIXME: !HAS_FIXED_REGISTER_SET ||
     assert(node->OperIsPutArg());
     return node;
 }
@@ -3155,6 +3156,11 @@ size_t Lowering::MarkCallPutArgAndFieldListNodes(GenTreeCall* call)
 //
 size_t Lowering::MarkPutArgAndFieldListNodes(GenTree* node)
 {
+#if !HAS_FIXED_REGISTER_SET
+    if (!node->OperIsPutArg() && !node->OperIsFieldList())
+        return 0;
+#endif
+
     assert(node->OperIsPutArg() || node->OperIsFieldList());
 
     assert((node->gtLIRFlags & LIR::Flags::Mark) == 0);
@@ -9243,13 +9249,14 @@ void Lowering::CheckCallArg(GenTree* arg)
 
             for (GenTreeFieldList::Use& use : list->Uses())
             {
-                assert(use.GetNode()->OperIsPutArg());
+                // WASM-FIXME
+                assert(!HAS_FIXED_REGISTER_SET || use.GetNode()->OperIsPutArg());
             }
         }
         break;
 
         default:
-            assert(arg->OperIsPutArg());
+            assert(!HAS_FIXED_REGISTER_SET || arg->OperIsPutArg());
             break;
     }
 }
