@@ -58,7 +58,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             expectedSearchDirectories += $"{Path.Combine(sharedState.DotNet.SharedFxPath, SharedTestState.NetCoreAppVersion)}{Path.DirectorySeparatorChar}{Path.PathSeparator}";
 
             result.Should().Pass()
-                 .HaveStdOutContaining($"Native search directories: '{expectedSearchDirectories}'");
+                .And.HaveStdOutContaining($"Native search directories: '{expectedSearchDirectories}'");
         }
 
         [Fact]
@@ -75,10 +75,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             sharedState.CreateNativeHostCommand(args, sharedState.DotNet.BinPath)
                 .Execute()
                 .Should().Fail()
-                 .HaveStdOutContaining($"get_native_search_directories (null, 1) returned: 0x{Constants.ErrorCode.InvalidArgFailure:x}")
-                 .HaveStdOutContaining("buffer_size: 0")
-                 .HaveStdOutContaining("hostfxr reported errors:")
-                 .HaveStdOutContaining("hostfxr_get_native_search_directories received an invalid argument.");
+                .And.HaveStdOutContaining($"get_native_search_directories (null, 1) returned: 0x{Constants.ErrorCode.InvalidArgFailure:x}")
+                .And.HaveStdOutContaining("buffer_size: 0")
+                .And.HaveStdOutContaining("hostfxr reported errors:")
+                .And.HaveStdOutContaining("hostfxr_get_native_search_directories received an invalid argument.");
         }
 
         [Fact]
@@ -95,10 +95,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             sharedState.CreateNativeHostCommand(args, sharedState.DotNet.BinPath)
                 .Execute()
                 .Should().Fail()
-                 .HaveStdOutContaining($"get_native_search_directories (temp_buffer, -1) returned: 0x{Constants.ErrorCode.InvalidArgFailure:x}")
-                 .HaveStdOutContaining("buffer_size: 0")
-                 .HaveStdOutContaining("hostfxr reported errors:")
-                 .HaveStdOutContaining("hostfxr_get_native_search_directories received an invalid argument.");
+                .And.HaveStdOutContaining($"get_native_search_directories (temp_buffer, -1) returned: 0x{Constants.ErrorCode.InvalidArgFailure:x}")
+                .And.HaveStdOutContaining("buffer_size: 0")
+                .And.HaveStdOutContaining("hostfxr reported errors:")
+                .And.HaveStdOutContaining("hostfxr_get_native_search_directories received an invalid argument.");
         }
 
         // This test also validates that hostfxr_set_error_writer propagates the custom writer
@@ -122,11 +122,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             sharedState.CreateNativeHostCommand(args, sharedState.DotNet.BinPath)
                 .Execute()
                 .Should().Fail()
-                 .HaveStdOutContaining($"get_native_search_directories (null,0) returned unexpected error code 0x{Constants.ErrorCode.ResolverInitFailure:x} expected HostApiBufferTooSmall (0x80008098).")
-                 .HaveStdOutContaining("buffer_size: 0")
-                 .HaveStdOutContaining("hostfxr reported errors:")
-                 .HaveStdOutContaining($"Failed to parse file [{depsJsonFile}]. JSON parsing exception: Missing a name for object member. [offset 1: line 1, column 2]")
-                 .HaveStdOutContaining($"Error initializing the dependency resolver: An error occurred while parsing: {depsJsonFile}");
+                .And.HaveStdOutContaining($"get_native_search_directories (null,0) returned unexpected error code 0x{Constants.ErrorCode.ResolverInitFailure:x} expected HostApiBufferTooSmall (0x80008098).")
+                .And.HaveStdOutContaining("buffer_size: 0")
+                .And.HaveStdOutContaining("hostfxr reported errors:")
+                .And.HaveStdOutContaining($"Failed to parse file [{depsJsonFile}]. JSON parsing exception: Missing a name for object member. [offset 1: line 1, column 2]")
+                .And.HaveStdOutContaining($"Error initializing the dependency resolver: An error occurred while parsing: {depsJsonFile}");
         }
 
         [Fact]
@@ -145,9 +145,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Fail()
-                 .HaveStdOutContaining($"get_native_search_directories (null,0) returned unexpected error code 0x{Constants.ErrorCode.AppArgNotRunnable:x} expected HostApiBufferTooSmall (0x80008098).")
-                 .HaveStdOutContaining("buffer_size: 0")
-                 .HaveStdErrContaining("Application 'build' is not a managed executable.");
+                .And.HaveStdOutContaining($"get_native_search_directories (null,0) returned unexpected error code 0x{Constants.ErrorCode.AppArgNotRunnable:x} expected HostApiBufferTooSmall (0x80008098).")
+                .And.HaveStdOutContaining("buffer_size: 0")
+                .And.HaveStdErrContaining("Application 'build' is not a managed executable.");
         }
 
         public class SharedTestState : SharedTestStateBase

@@ -55,9 +55,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 new TestSettings().WithRuntimeConfigCustomizer(rc =>
                     rc.WithFramework(MicrosoftNETCoreApp, "9999.9.9")))
                 .Should().Fail()
-                 .HaveStdErrContaining(expectedOutput)
-                 .HaveStdErrContaining("https://aka.ms/dotnet/app-launch-failed")
-                 .HaveStdErrContaining("Ignoring FX version [9999.9.9] without .deps.json");
+                .And.HaveStdErrContaining(expectedOutput)
+                .And.HaveStdErrContaining("https://aka.ms/dotnet/app-launch-failed")
+                .And.HaveStdErrContaining("Ignoring FX version [9999.9.9] without .deps.json");
         }
 
         [Fact]
@@ -88,7 +88,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                         .WithEnvironment(TestOnlyEnvironmentVariables.RegisteredConfigLocation, registeredInstallLocationOverride.PathValueOverride));
 
                 result.ShouldFailToFindCompatibleFrameworkVersion(MicrosoftNETCoreApp, requestedVersion)
-                     .HaveStdErrContaining("The following frameworks for other architectures were found:");
+                    .And.HaveStdErrContaining("The following frameworks for other architectures were found:");
 
                 // Error message should list framework found for other architectures
                 foreach ((string arch, string path) in installLocations)
@@ -158,7 +158,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     .WithEnvironment(Constants.DisableRuntimeVersions.EnvironmentVariable, disabledVersion));
 
             result.ShouldFailToFindCompatibleFrameworkVersion(MicrosoftNETCoreApp, disabledVersion)
-                 .HaveStdErrContaining($"Ignoring disabled version [{disabledVersion}]");
+                .And.HaveStdErrContaining($"Ignoring disabled version [{disabledVersion}]");
         }
 
         private CommandResult RunTest(TestSettings testSettings, [CallerMemberName] string caller = "")

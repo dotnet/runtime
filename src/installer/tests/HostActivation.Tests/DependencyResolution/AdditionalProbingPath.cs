@@ -33,15 +33,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             if (dependencyExists)
             {
                 result.Should().Pass()
-                     .HaveResolvedAssembly(sharedState.DependencyPath)
-                     .HaveResolvedNativeLibraryPath(sharedState.NativeDependencyDirectory);
+                    .And.HaveResolvedAssembly(sharedState.DependencyPath)
+                    .And.HaveResolvedNativeLibraryPath(sharedState.NativeDependencyDirectory);
             }
             else
             {
                 // Specifying additional probing paths triggers file existence checking, so execution
                 // should fail on the first dependency that doesn't exist.
                 result.Should().Fail()
-                     .ErrorWithMissingAssembly(Path.GetFileName(app.DepsJson), SharedTestState.DependencyName, SharedTestState.DependencyVersion);
+                    .And.ErrorWithMissingAssembly(Path.GetFileName(app.DepsJson), SharedTestState.DependencyName, SharedTestState.DependencyVersion);
             }
         }
 
@@ -55,9 +55,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                 .HaveUsedAdditionalProbingPath(sharedState.AdditionalProbingPath_ArchTfm)
-                 .HaveResolvedAssembly(sharedState.DependencyPath_ArchTfm)
-                 .HaveResolvedNativeLibraryPath(sharedState.NativeDependencyDirectory_ArchTfm);
+                .And.HaveUsedAdditionalProbingPath(sharedState.AdditionalProbingPath_ArchTfm)
+                .And.HaveResolvedAssembly(sharedState.DependencyPath_ArchTfm)
+                .And.HaveResolvedNativeLibraryPath(sharedState.NativeDependencyDirectory_ArchTfm);
         }
 
         [Theory]
@@ -78,15 +78,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             if (dependencyExists)
             {
                 result.Should().Pass()
-                     .HaveResolvedAssembly(sharedState.DependencyPath)
-                     .HaveResolvedNativeLibraryPath(sharedState.NativeDependencyDirectory);
+                    .And.HaveResolvedAssembly(sharedState.DependencyPath)
+                    .And.HaveResolvedNativeLibraryPath(sharedState.NativeDependencyDirectory);
             }
             else
             {
                 // Specifying additional probing paths triggers file existence checking, so execution
                 // should fail on the first dependency that doesn't exist.
                 result.Should().Fail()
-                     .ErrorWithMissingAssembly(Path.GetFileName(app.DepsJson), SharedTestState.DependencyName, SharedTestState.DependencyVersion);
+                    .And.ErrorWithMissingAssembly(Path.GetFileName(app.DepsJson), SharedTestState.DependencyName, SharedTestState.DependencyVersion);
             }
         }
 

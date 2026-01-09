@@ -27,9 +27,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 sharedTestState.FrameworkReferenceApp,
                 sharedTestState.DotNetWithNetCoreApp.GreatestVersionHostFxrPath)
                 .Should().Fail()
-                 .HaveStdOutContaining($"corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.LibHostInvalidArgs.ToString("x")}]")
-                 .HaveStdOutContaining("corehost reported errors:")
-                 .HaveStdOutContaining("Failed to locate managed application");
+                .And.HaveStdOutContaining($"corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.LibHostInvalidArgs.ToString("x")}]")
+                .And.HaveStdOutContaining("corehost reported errors:")
+                .And.HaveStdOutContaining("Failed to locate managed application");
         }
 
         [Fact]
@@ -42,11 +42,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             sharedTestState.RunComponentResolutionTest(component)
                 .Should().Pass()
-                 .HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
-                 .HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}]")
-                 .HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
-                 .HaveStdErrContaining($"deps='{component.DepsJson}'")
-                 .HaveStdErrContaining($"mgd_app='{component.AppDll}'");
+                .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}]")
+                .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
+                .And.HaveStdErrContaining($"deps='{component.DepsJson}'")
+                .And.HaveStdErrContaining($"mgd_app='{component.AppDll}'");
         }
 
         [Fact]
@@ -79,21 +79,21 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             {
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Pass()
-                     .HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
-                     .HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}]")
-                     .HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
-                     .HaveStdErrContaining($"deps='{component.DepsJson}'")
-                     .HaveStdErrContaining($"mgd_app='{component.AppDll}'");
+                    .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}]")
+                    .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
+                    .And.HaveStdErrContaining($"deps='{component.DepsJson}'")
+                    .And.HaveStdErrContaining($"mgd_app='{component.AppDll}'");
             }
             else if(OperatingSystem.IsMacOS())
             {
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Pass()
-                     .HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
-                     .HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}]")
-                     .HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
-                     .HaveStdErrContaining($"deps='{changeDepsFile}'")
-                     .HaveStdErrContaining($"mgd_app='{changeFile}'");
+                    .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}]")
+                    .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
+                    .And.HaveStdErrContaining($"deps='{changeDepsFile}'")
+                    .And.HaveStdErrContaining($"mgd_app='{changeFile}'");
             }
             else
             {
@@ -101,7 +101,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 // We expect the test to fail due to the case change of AppDll
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Fail()
-                     .HaveStdErrContaining($"Failed to locate managed application [{component.AppDll}]");
+                    .And.HaveStdErrContaining($"Failed to locate managed application [{component.AppDll}]");
             }
         }
 
@@ -137,21 +137,21 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             {
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Pass()
-                     .HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
-                     .HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}]")
-                     .HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
-                     .HaveStdErrContaining($"deps='{component.DepsJson}'")
-                     .HaveStdErrContaining($"mgd_app='{component.AppDll}'");
+                    .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}]")
+                    .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
+                    .And.HaveStdErrContaining($"deps='{component.DepsJson}'")
+                    .And.HaveStdErrContaining($"mgd_app='{component.AppDll}'");
             }
             else if(OperatingSystem.IsMacOS())
             {
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Pass()
-                     .HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
-                     .HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}]")
-                     .HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
-                     .HaveStdErrContaining($"deps='{changeDepsFile}'")
-                     .HaveStdErrContaining($"mgd_app='{changeFile}'");
+                    .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}]")
+                    .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
+                    .And.HaveStdErrContaining($"deps='{changeDepsFile}'")
+                    .And.HaveStdErrContaining($"mgd_app='{changeFile}'");
             }
             else
             {
@@ -159,7 +159,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 // We expect the test to fail due to the case change of AppDll
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Fail()
-                     .HaveStdErrContaining($"Failed to locate managed application [{component.AppDll}]");
+                    .And.HaveStdErrContaining($"Failed to locate managed application [{component.AppDll}]");
             }
         }
 
@@ -195,21 +195,21 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             {
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Pass()
-                     .HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
-                     .HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{changeFile}{Path.PathSeparator}]")
-                     .HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
-                     .HaveStdErrContaining($"deps='{component.DepsJson}'")
-                     .HaveStdErrContaining($"mgd_app='{component.AppDll}'");
+                    .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{changeFile}{Path.PathSeparator}]")
+                    .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
+                    .And.HaveStdErrContaining($"deps='{component.DepsJson}'")
+                    .And.HaveStdErrContaining($"mgd_app='{component.AppDll}'");
             }
             else if(OperatingSystem.IsMacOS())
             {
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Pass()
-                     .HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
-                     .HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{changeFile}{Path.PathSeparator}]")
-                     .HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
-                     .HaveStdErrContaining($"deps='{changeDepsFile}'")
-                     .HaveStdErrContaining($"mgd_app='{changeFile}'");
+                    .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{changeFile}{Path.PathSeparator}]")
+                    .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
+                    .And.HaveStdErrContaining($"deps='{changeDepsFile}'")
+                    .And.HaveStdErrContaining($"mgd_app='{changeFile}'");
             }
             else
             {
@@ -217,7 +217,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 // We expect the test to fail due to the case change of AppDll
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Fail()
-                     .HaveStdErrContaining($"Failed to locate managed application [{component.AppDll}]");
+                    .And.HaveStdErrContaining($"Failed to locate managed application [{component.AppDll}]");
             }
         }
 
@@ -226,8 +226,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         {
             sharedTestState.RunComponentResolutionTest(sharedTestState.ComponentWithNoDependencies)
                 .Should().Pass()
-                 .HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
-                 .HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{sharedTestState.ComponentWithNoDependencies.AppDll}{Path.PathSeparator}]");
+                .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{sharedTestState.ComponentWithNoDependencies.AppDll}{Path.PathSeparator}]");
         }
 
         [Fact]
@@ -236,14 +236,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             sharedTestState.RunComponentResolutionTest(sharedTestState.ComponentWithDependencies,
                 command => command.RuntimeId("win10-x86"))
                 .Should().Pass()
-                 .HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
-                 .HaveStdOutContaining(
+                .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                .And.HaveStdOutContaining(
                     $"corehost_resolve_component_dependencies assemblies:[" +
                     $"{Path.Combine(sharedTestState.ComponentWithDependencies.Location, $"{AdditionalDependencyName}.dll")}{Path.PathSeparator}" +
                     $"{Path.Combine(sharedTestState.ComponentWithDependencies.Location, "ComponentDependency.dll")}{Path.PathSeparator}" +
                     $"{sharedTestState.ComponentWithDependencies.AppDll}{Path.PathSeparator}" +
                     $"]")
-                 .HaveStdOutContaining(
+                .And.HaveStdOutContaining(
                     $"corehost_resolve_component_dependencies native_search_paths:[" +
                     $"{Path.Combine(sharedTestState.ComponentWithDependencies.Location, "runtimes", "win10-x86", "native")}" +
                     $"{Path.DirectorySeparatorChar}{Path.PathSeparator}]");
@@ -259,8 +259,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             sharedTestState.RunComponentResolutionTest(component)
                 .Should().Pass()
-                 .HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
-                 .HaveStdOutContaining(
+                .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                .And.HaveStdOutContaining(
                     $"corehost_resolve_component_dependencies assemblies:[" +
                     $"{Path.Combine(component.Location, $"{AdditionalDependencyName}.dll")}{Path.PathSeparator}" +
                     $"{Path.Combine(component.Location, "ComponentDependency.dll")}{Path.PathSeparator}" +
@@ -278,8 +278,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             sharedTestState.RunComponentResolutionTest(component)
                 .Should().Pass()
-                 .HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
-                 .HaveStdOutContaining(
+                .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                .And.HaveStdOutContaining(
                     $"corehost_resolve_component_dependencies assemblies:[" +
                     $"{Path.Combine(component.Location, $"{AdditionalDependencyName}.dll")}{Path.PathSeparator}" +
                     $"{Path.Combine(component.Location, "ComponentDependency.dll")}{Path.PathSeparator}" +
@@ -301,8 +301,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             sharedTestState.RunComponentResolutionTest(component)
                 .Should().Pass()
-                 .HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
-                 .HaveStdOutContaining(
+                .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                .And.HaveStdOutContaining(
                     $"corehost_resolve_component_dependencies assemblies:[" +
                     $"{Path.Combine(component.Location, $"{AdditionalDependencyName}.dll")}{Path.PathSeparator}" +
                     $"{component.AppDll}{Path.PathSeparator}" +
@@ -322,12 +322,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             sharedTestState.RunComponentResolutionTest(component)
                 .Should().Fail()
-                 .HaveStdOutContaining($"corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.ResolverResolveFailure.ToString("x")}]")
-                 .HaveStdOutContaining("corehost reported errors:")
-                 .HaveStdOutContaining("An assembly specified in the application dependencies manifest (ComponentWithDependencies.deps.json) has already been found but with a different file extension")
-                 .HaveStdOutContaining("package: 'ComponentDependency_Dupe', version: '1.0.0'")
-                 .HaveStdOutContaining("path: 'ComponentDependency.notdll'")
-                 .HaveStdOutContaining($"previously found assembly: '{Path.Combine(component.Location, "ComponentDependency.dll")}'");
+                .And.HaveStdOutContaining($"corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.ResolverResolveFailure.ToString("x")}]")
+                .And.HaveStdOutContaining("corehost reported errors:")
+                .And.HaveStdOutContaining("An assembly specified in the application dependencies manifest (ComponentWithDependencies.deps.json) has already been found but with a different file extension")
+                .And.HaveStdOutContaining("package: 'ComponentDependency_Dupe', version: '1.0.0'")
+                .And.HaveStdOutContaining("path: 'ComponentDependency.notdll'")
+                .And.HaveStdOutContaining($"previously found assembly: '{Path.Combine(component.Location, "ComponentDependency.dll")}'");
         }
 
         [Fact]
@@ -341,12 +341,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             sharedTestState.RunComponentResolutionTest(component)
                 .Should().Fail()
-                 .HaveStdOutContaining($"corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.ResolverResolveFailure.ToString("x")}]")
-                 .HaveStdOutContaining("corehost reported errors:")
-                 .HaveStdOutContaining("An assembly specified in the application dependencies manifest (ComponentWithDependencies.deps.json) has already been found but with a different file extension")
-                 .HaveStdOutContaining("package: 'ComponentDependency_NI', version: '1.0.0'")
-                 .HaveStdOutContaining("path: 'ComponentDependency.ni.dll'")
-                 .HaveStdOutContaining($"previously found assembly: '{Path.Combine(component.Location, "ComponentDependency.dll")}'");
+                .And.HaveStdOutContaining($"corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.ResolverResolveFailure.ToString("x")}]")
+                .And.HaveStdOutContaining("corehost reported errors:")
+                .And.HaveStdOutContaining("An assembly specified in the application dependencies manifest (ComponentWithDependencies.deps.json) has already been found but with a different file extension")
+                .And.HaveStdOutContaining("package: 'ComponentDependency_NI', version: '1.0.0'")
+                .And.HaveStdOutContaining("path: 'ComponentDependency.ni.dll'")
+                .And.HaveStdOutContaining($"previously found assembly: '{Path.Combine(component.Location, "ComponentDependency.dll")}'");
         }
 
         // This test also validates that corehost_set_error_writer custom writer
@@ -363,10 +363,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             sharedTestState.RunComponentResolutionTest(component)
                 .Should().Fail()
-                 .HaveStdOutContaining($"corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.ResolverInitFailure.ToString("x")}]")
-                 .HaveStdOutContaining("corehost reported errors:")
-                 .HaveStdOutContaining($"Failed to parse file [{component.DepsJson}]. JSON parsing exception: Invalid value. [offset 0: line 1, column 1]")
-                 .HaveStdOutContaining($"Error initializing the dependency resolver: An error occurred while parsing: {component.DepsJson}");
+                .And.HaveStdOutContaining($"corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.ResolverInitFailure.ToString("x")}]")
+                .And.HaveStdOutContaining("corehost reported errors:")
+                .And.HaveStdOutContaining($"Failed to parse file [{component.DepsJson}]. JSON parsing exception: Invalid value. [offset 0: line 1, column 1]")
+                .And.HaveStdOutContaining($"Error initializing the dependency resolver: An error occurred while parsing: {component.DepsJson}");
         }
 
         [Fact]
@@ -374,8 +374,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         {
             sharedTestState.RunComponentResolutionTest(sharedTestState.ComponentWithResources)
                 .Should().Pass()
-                 .HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
-                 .HaveStdOutContaining($"corehost_resolve_component_dependencies resource_search_paths:[" +
+                .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                .And.HaveStdOutContaining($"corehost_resolve_component_dependencies resource_search_paths:[" +
                     $"{sharedTestState.ComponentWithResources.Location}" +
                     $"{Path.DirectorySeparatorChar}{Path.PathSeparator}]");
         }
@@ -391,8 +391,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             sharedTestState.RunComponentResolutionTest(component, command => command
                 .EnvironmentVariable("DOTNET_ADDITIONAL_DEPS", additionalDepsPath))
                 .Should().Pass()
-                 .HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
-                 .HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}]");
+                .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}]");
         }
 
         [Fact]
@@ -400,10 +400,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         {
             sharedTestState.RunComponentResolutionMultiThreadedTest(sharedTestState.ComponentWithNoDependencies, sharedTestState.ComponentWithResources)
                 .Should().Pass()
-                 .HaveStdOutContaining($"ComponentA: corehost_resolve_component_dependencies:Success")
-                 .HaveStdOutContaining($"ComponentA: corehost_resolve_component_dependencies assemblies:[{sharedTestState.ComponentWithNoDependencies.AppDll}{Path.PathSeparator}]")
-                 .HaveStdOutContaining($"ComponentB: corehost_resolve_component_dependencies:Success")
-                 .HaveStdOutContaining($"ComponentB: corehost_resolve_component_dependencies resource_search_paths:[" +
+                .And.HaveStdOutContaining($"ComponentA: corehost_resolve_component_dependencies:Success")
+                .And.HaveStdOutContaining($"ComponentA: corehost_resolve_component_dependencies assemblies:[{sharedTestState.ComponentWithNoDependencies.AppDll}{Path.PathSeparator}]")
+                .And.HaveStdOutContaining($"ComponentB: corehost_resolve_component_dependencies:Success")
+                .And.HaveStdOutContaining($"ComponentB: corehost_resolve_component_dependencies resource_search_paths:[" +
                     $"{sharedTestState.ComponentWithResources.Location}" +
                     $"{Path.DirectorySeparatorChar}{Path.PathSeparator}]");
         }
@@ -424,13 +424,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 sharedTestState.FrameworkReferenceApp,
                 sharedTestState.DotNetWithNetCoreApp.GreatestVersionHostFxrPath)
                 .Should().Fail()
-                 .HaveStdOutContaining($"ComponentA: corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.ResolverInitFailure.ToString("x")}]")
-                 .HaveStdOutContaining($"ComponentA: corehost reported errors:")
-                 .HaveStdOutContaining($"ComponentA: Failed to parse file [{componentWithNoDependencies.DepsJson}]. JSON parsing exception: Invalid value. [offset 0: line 1, column 1]")
-                 .HaveStdOutContaining($"ComponentA: Error initializing the dependency resolver: An error occurred while parsing: {componentWithNoDependencies.DepsJson}")
-                 .HaveStdOutContaining($"ComponentB: corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.LibHostInvalidArgs.ToString("x")}]")
-                 .HaveStdOutContaining($"ComponentB: corehost reported errors:")
-                 .HaveStdOutContaining($"ComponentB: Failed to locate managed application");
+                .And.HaveStdOutContaining($"ComponentA: corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.ResolverInitFailure.ToString("x")}]")
+                .And.HaveStdOutContaining($"ComponentA: corehost reported errors:")
+                .And.HaveStdOutContaining($"ComponentA: Failed to parse file [{componentWithNoDependencies.DepsJson}]. JSON parsing exception: Invalid value. [offset 0: line 1, column 1]")
+                .And.HaveStdOutContaining($"ComponentA: Error initializing the dependency resolver: An error occurred while parsing: {componentWithNoDependencies.DepsJson}")
+                .And.HaveStdOutContaining($"ComponentB: corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.LibHostInvalidArgs.ToString("x")}]")
+                .And.HaveStdOutContaining($"ComponentB: corehost reported errors:")
+                .And.HaveStdOutContaining($"ComponentB: Failed to locate managed application");
         }
 
         public class SharedTestState : ComponentSharedTestStateBase

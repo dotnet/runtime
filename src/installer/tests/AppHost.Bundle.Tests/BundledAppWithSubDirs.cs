@@ -20,7 +20,7 @@ namespace AppHost.Bundle.Tests
             sharedTestState = fixture;
         }
 
-        private CommandResultAssertions RunTheApp(string path, bool selfContained, bool deleteApp = true)
+        private FluentAssertions.AndConstraint<CommandResultAssertions> RunTheApp(string path, bool selfContained, bool deleteApp = true)
         {
             CommandResult result = Command.Create(path)
                 .EnableTracingAndCaptureOutputs()
@@ -37,7 +37,7 @@ namespace AppHost.Bundle.Tests
             }
 
             return result.Should().Pass()
-                 .HaveStdOutContaining("Wow! We now say hello to the big world and you.");
+                .And.HaveStdOutContaining("Wow! We now say hello to the big world and you.");
         }
 
         private static void DeleteExtractionDirectory(CommandResult result)
@@ -70,13 +70,13 @@ namespace AppHost.Bundle.Tests
             // Run the bundled app
             bool shouldExtract = options.HasFlag(BundleOptions.BundleAllContent);
             RunTheApp(singleFile, selfContained: false, deleteApp: !shouldExtract)
-                 .CreateExtraction(shouldExtract);
+                .And.CreateExtraction(shouldExtract);
 
             if (shouldExtract)
             {
                 // Run the bundled app again (reuse extracted files)
                 RunTheApp(singleFile, selfContained: false)
-                     .ReuseExtraction();
+                    .And.ReuseExtraction();
             }
         }
 
@@ -92,13 +92,13 @@ namespace AppHost.Bundle.Tests
             // Run the bundled app
             bool shouldExtract = options.HasFlag(BundleOptions.BundleAllContent);
             RunTheApp(singleFile, selfContained: true, deleteApp: !shouldExtract)
-                 .CreateExtraction(shouldExtract);
+                .And.CreateExtraction(shouldExtract);
 
             if (shouldExtract)
             {
                 // Run the bundled app again (reuse extracted files)
                 RunTheApp(singleFile, selfContained: true)
-                     .ReuseExtraction();
+                    .And.ReuseExtraction();
             }
         }
 
@@ -140,7 +140,7 @@ namespace AppHost.Bundle.Tests
 
     public static class BundledAppResultExtensions
     {
-        public static CommandResultAssertions CreateExtraction(this CommandResultAssertions assertion, bool shouldExtract)
+        public static FluentAssertions.AndConstraint<CommandResultAssertions> CreateExtraction(this CommandResultAssertions assertion, bool shouldExtract)
         {
             string message = "Starting new extraction of application bundle";
             return shouldExtract
@@ -148,7 +148,7 @@ namespace AppHost.Bundle.Tests
                 : assertion.NotHaveStdErrContaining(message);
         }
 
-        public static CommandResultAssertions ReuseExtraction(this CommandResultAssertions assertion)
+        public static FluentAssertions.AndConstraint<CommandResultAssertions> ReuseExtraction(this CommandResultAssertions assertion)
         {
             return assertion.HaveStdErrContaining("Reusing existing extraction of application bundle");
         }

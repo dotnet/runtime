@@ -40,8 +40,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                 .HaveStdOutContaining("New instance of Server created")
-                 .ExecuteInIsolatedContext(sharedState.ComLibrary.AssemblyName);
+                .And.HaveStdOutContaining("New instance of Server created")
+                .And.ExecuteInIsolatedContext(sharedState.ComLibrary.AssemblyName);
 
             for (var i = 1; i <= count; ++i)
             {
@@ -73,8 +73,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .Execute();
 
                 result.Should().Pass()
-                     .HaveStdOutContaining("New instance of Server created")
-                     .HaveStdOutContaining($"Activation of {sharedState.ClsidString} succeeded.");
+                    .And.HaveStdOutContaining("New instance of Server created")
+                    .And.HaveStdOutContaining($"Activation of {sharedState.ClsidString} succeeded.");
 
                 if (inDefaultContext)
                 {
@@ -106,9 +106,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .Execute();
 
                 result.Should().Pass()
-                     .HaveStdOutContaining("New instance of Server created")
-                     .HaveStdOutContaining($"Activation of {sharedState.ClsidString} succeeded.")
-                     .HaveStdErrContaining("Using environment variable DOTNET_ROOT");
+                    .And.HaveStdOutContaining("New instance of Server created")
+                    .And.HaveStdOutContaining($"Activation of {sharedState.ClsidString} succeeded.")
+                    .And.HaveStdErrContaining("Using environment variable DOTNET_ROOT");
             }
         }
 
@@ -133,11 +133,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .WorkingDirectory(cwd.Location)
                     .Execute()
                     .Should().Pass()
-                     .HaveStdOutContaining("New instance of Server created")
-                     .HaveStdOutContaining($"Activation of {sharedState.ClsidString} succeeded.")
-                     .ResolveHostFxr(HostTestContext.BuiltDotNet)
-                     .ResolveHostPolicy(HostTestContext.BuiltDotNet)
-                     .ResolveCoreClr(HostTestContext.BuiltDotNet);
+                    .And.HaveStdOutContaining("New instance of Server created")
+                    .And.HaveStdOutContaining($"Activation of {sharedState.ClsidString} succeeded.")
+                    .And.ResolveHostFxr(HostTestContext.BuiltDotNet)
+                    .And.ResolveHostPolicy(HostTestContext.BuiltDotNet)
+                    .And.ResolveCoreClr(HostTestContext.BuiltDotNet);
             }
         }
 
@@ -160,7 +160,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .Execute();
 
                 result.Should().Pass()
-                     .HaveStdOutContaining($"The specified runtimeconfig.json [{library.RuntimeConfigJson}] does not exist");
+                    .And.HaveStdOutContaining($"The specified runtimeconfig.json [{library.RuntimeConfigJson}] does not exist");
             }
         }
 
@@ -178,9 +178,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                 .HaveStdOutContaining("Loading default type library succeeded.")
-                 .HaveStdOutContaining("Loading type library 1 succeeded.")
-                 .HaveStdOutContaining("Loading type library 2 succeeded.");
+                .And.HaveStdOutContaining("Loading default type library succeeded.")
+                .And.HaveStdOutContaining("Loading type library 1 succeeded.")
+                .And.HaveStdOutContaining("Loading type library 2 succeeded.");
         }
 
         public class SharedTestState : SharedTestStateBase

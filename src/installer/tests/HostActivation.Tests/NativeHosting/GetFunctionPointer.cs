@@ -45,8 +45,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             if (validType && validMethod)
             {
                 result.Should().Pass()
-                     .ExecuteFunctionPointer(sharedState.FunctionPointerEntryPoint1, 1, 1)
-                     .ExecuteInDefaultContext(app.AssemblyName);
+                    .And.ExecuteFunctionPointer(sharedState.FunctionPointerEntryPoint1, 1, 1)
+                    .And.ExecuteInDefaultContext(app.AssemblyName);
             }
             else
             {
@@ -96,9 +96,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                 .InitializeContextForApp(app.AppDll)
-                 .ExecuteFunctionPointer(sharedState.FunctionPointerEntryPoint1, 1, 1)
-                 .ExecuteInDefaultContext(app.AssemblyName);
+                .And.InitializeContextForApp(app.AppDll)
+                .And.ExecuteFunctionPointer(sharedState.FunctionPointerEntryPoint1, 1, 1)
+                .And.ExecuteInDefaultContext(app.AssemblyName);
         }
 
         [Theory]
@@ -137,14 +137,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                 .InitializeContextForApp(app.AppDll)
-                 .ExecuteInDefaultContext(app.AssemblyName);
+                .And.InitializeContextForApp(app.AppDll)
+                .And.ExecuteInDefaultContext(app.AssemblyName);
 
             for (int i = 1; i <= callCount; ++i)
             {
                 result.Should()
                     .ExecuteFunctionPointer(functionPointer1Name, i * 2 - 1, i)
-                     .ExecuteFunctionPointer(sharedState.FunctionPointerEntryPoint2, i * 2, i);
+                    .And.ExecuteFunctionPointer(sharedState.FunctionPointerEntryPoint2, i * 2, i);
             }
         }
 
@@ -179,14 +179,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                 .InitializeContextForApp(app.AppDll)
-                 .ExecuteInDefaultContext(app.AssemblyName);
+                .And.InitializeContextForApp(app.AppDll)
+                .And.ExecuteInDefaultContext(app.AssemblyName);
 
             for (int i = 1; i <= callCount; ++i)
             {
                 result.Should()
                     .ExecuteFunctionPointer(sharedState.FunctionPointerEntryPoint1, i * 2 - 1, i)
-                     .ExecuteFunctionPointer(sharedState.FunctionPointerEntryPoint2, i * 2, i);
+                    .And.ExecuteFunctionPointer(sharedState.FunctionPointerEntryPoint2, i * 2, i);
             }
         }
 
@@ -208,8 +208,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .DisableDumps() // Expected to throw an exception
                 .Execute()
                 .Should().Fail()
-                 .InitializeContextForApp(app.AppDll)
-                 .ExecuteFunctionPointerWithException(entryPoint, 1);
+                .And.InitializeContextForApp(app.AppDll)
+                .And.ExecuteFunctionPointerWithException(entryPoint, 1);
         }
 
         public class SharedTestState : SharedTestStateBase

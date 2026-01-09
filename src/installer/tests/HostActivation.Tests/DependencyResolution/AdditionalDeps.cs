@@ -105,14 +105,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             if (dependencyExists)
             {
                 result.Should().Pass()
-                     .HaveResolvedAssembly(Path.Combine(app.Location, $"{additionalLibName}.dll"));
+                    .And.HaveResolvedAssembly(Path.Combine(app.Location, $"{additionalLibName}.dll"));
             }
             else
             {
                 // Specifying an additional deps file triggers file existence checking, so execution
                 // should fail when the dependency doesn't exist.
                 result.Should().Fail()
-                     .ErrorWithMissingAssembly($"{additionalLibName}.deps.json", additionalLibName, "1.0.0");
+                    .And.ErrorWithMissingAssembly($"{additionalLibName}.deps.json", additionalLibName, "1.0.0");
             }
         }
 
@@ -128,8 +128,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     .EnableTracingAndCaptureOutputs()
                     .Execute()
                     .Should().Fail()
-                     .HaveUsedAdditionalDeps(invalidDepsFile)
-                     .HaveStdErrContaining($"Error initializing the dependency resolver: An error occurred while parsing: {invalidDepsFile}");
+                    .And.HaveUsedAdditionalDeps(invalidDepsFile)
+                    .And.HaveStdErrContaining($"Error initializing the dependency resolver: An error occurred while parsing: {invalidDepsFile}");
             }
             finally
             {

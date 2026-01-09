@@ -677,12 +677,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     .RuntimeId(setup.Rid)
                     .Execute(caller);
                 result.Should().Pass()
-                     .HaveResolvedAssembly(expected.IncludedAssemblyPaths, app)
-                     .NotHaveResolvedAssembly(expected.ExcludedAssemblyPaths, app)
-                     .HaveResolvedNativeLibraryPath(expected.IncludedNativeLibraryPaths, app)
-                     .NotHaveResolvedNativeLibraryPath(expected.ExcludedNativeLibraryPaths, app)
-                     .HaveReadRidGraph(setup.ShouldUseRidGraph)
-                     .HaveUsedFrameworkProbe(dotnet.GreatestVersionSharedFxPath, level: 1);
+                    .And.HaveResolvedAssembly(expected.IncludedAssemblyPaths, app)
+                    .And.NotHaveResolvedAssembly(expected.ExcludedAssemblyPaths, app)
+                    .And.HaveResolvedNativeLibraryPath(expected.IncludedNativeLibraryPaths, app)
+                    .And.NotHaveResolvedNativeLibraryPath(expected.ExcludedNativeLibraryPaths, app)
+                    .And.HaveReadRidGraph(setup.ShouldUseRidGraph)
+                    .And.HaveUsedFrameworkProbe(dotnet.GreatestVersionSharedFxPath, level: 1);
 
                 if (setup.ShouldUseFallbackRid.HasValue)
                     result.Should().HaveUsedFallbackRid(setup.ShouldUseFallbackRid.Value);
@@ -733,13 +733,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 command => command.RuntimeId(setup.Rid),
                 caller: caller);
             result.Should().Pass()
-                 .HaveSuccessfullyResolvedComponentDependencies()
-                 .HaveResolvedComponentDependencyAssembly(expected.IncludedAssemblyPaths, component)
-                 .NotHaveResolvedComponentDependencyAssembly(expected.ExcludedAssemblyPaths, component)
-                 .HaveResolvedComponentDependencyNativeLibraryPath(expected.IncludedNativeLibraryPaths, component)
-                 .NotHaveResolvedComponentDependencyNativeLibraryPath(expected.ExcludedNativeLibraryPaths, component)
-                 .HaveReadRidGraph(setup.ShouldUseRidGraph)
-                 .NotHaveUsedFrameworkProbe(dotnet.GreatestVersionSharedFxPath);
+                .And.HaveSuccessfullyResolvedComponentDependencies()
+                .And.HaveResolvedComponentDependencyAssembly(expected.IncludedAssemblyPaths, component)
+                .And.NotHaveResolvedComponentDependencyAssembly(expected.ExcludedAssemblyPaths, component)
+                .And.HaveResolvedComponentDependencyNativeLibraryPath(expected.IncludedNativeLibraryPaths, component)
+                .And.NotHaveResolvedComponentDependencyNativeLibraryPath(expected.ExcludedNativeLibraryPaths, component)
+                .And.HaveReadRidGraph(setup.ShouldUseRidGraph)
+                .And.NotHaveUsedFrameworkProbe(dotnet.GreatestVersionSharedFxPath);
 
             if (setup.ShouldUseFallbackRid.HasValue)
                     result.Should().HaveUsedFallbackRid(setup.ShouldUseFallbackRid.Value);
@@ -789,12 +789,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 command => command.RuntimeId(setup.Rid),
                 caller: caller);
             result.Should().Pass()
-                 .HaveSuccessfullyResolvedComponentDependencies()
-                 .HaveResolvedComponentDependencyAssembly(expected.IncludedAssemblyPaths, component)
-                 .NotHaveResolvedComponentDependencyAssembly(expected.ExcludedAssemblyPaths, component)
-                 .HaveResolvedComponentDependencyNativeLibraryPath(expected.IncludedNativeLibraryPaths, component)
-                 .NotHaveResolvedComponentDependencyNativeLibraryPath(expected.ExcludedNativeLibraryPaths, component)
-                 .HaveReadRidGraph(setup.ShouldUseRidGraph);
+                .And.HaveSuccessfullyResolvedComponentDependencies()
+                .And.HaveResolvedComponentDependencyAssembly(expected.IncludedAssemblyPaths, component)
+                .And.NotHaveResolvedComponentDependencyAssembly(expected.ExcludedAssemblyPaths, component)
+                .And.HaveResolvedComponentDependencyNativeLibraryPath(expected.IncludedNativeLibraryPaths, component)
+                .And.NotHaveResolvedComponentDependencyNativeLibraryPath(expected.ExcludedNativeLibraryPaths, component)
+                .And.HaveReadRidGraph(setup.ShouldUseRidGraph);
 
             if (setup.ShouldUseFallbackRid.HasValue)
                 result.Should().HaveUsedFallbackRid(setup.ShouldUseFallbackRid.Value);

@@ -27,8 +27,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                 .HaveStdOutContaining("Hello World")
-                 .HaveStdErrContaining("Done waiting for breadcrumb thread to exit...");
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdErrContaining("Done waiting for breadcrumb thread to exit...");
         }
 
         [Fact]
@@ -40,9 +40,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .DisableDumps() // Expected to throw an exception
                 .Execute()
                 .Should().Fail()
-                 .HaveStdErrContaining("Unhandled exception.")
-                 .HaveStdErrContaining("System.Exception: Goodbye World")
-                 .NotHaveStdErrContaining("Done waiting for breadcrumb thread to exit...");
+                .And.HaveStdErrContaining("Unhandled exception.")
+                .And.HaveStdErrContaining("System.Exception: Goodbye World")
+                .And.NotHaveStdErrContaining("Done waiting for breadcrumb thread to exit...");
         }
 
         public class SharedTestState : IDisposable

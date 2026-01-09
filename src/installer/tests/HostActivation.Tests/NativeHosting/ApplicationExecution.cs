@@ -36,8 +36,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
                 .Execute()
                 .Should().Pass()
-                 .InitializeContextForApp(app.AppDll)
-                 .ExecuteApplication(sharedState.NativeHostPath, app.AppDll);
+                .And.InitializeContextForApp(app.AppDll)
+                .And.ExecuteApplication(sharedState.NativeHostPath, app.AppDll);
         }
 
         [Fact]
@@ -56,8 +56,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .DisableDumps() // Expected to throw an exception
                 .Execute()
                 .Should().Fail()
-                 .InitializeContextForApp(app.AppDll)
-                 .ExecuteApplicationWithException(sharedState.NativeHostPath, app.AppDll);
+                .And.InitializeContextForApp(app.AppDll)
+                .And.ExecuteApplicationWithException(sharedState.NativeHostPath, app.AppDll);
         }
 
         public class SharedTestState : SharedTestStateBase
@@ -86,24 +86,24 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
     internal static class ApplicationExecutionResultExtensions
     {
-        public static CommandResultAssertions ExecuteApplication(this CommandResultAssertions assertion, string hostPath, string appPath)
+        public static FluentAssertions.AndConstraint<CommandResultAssertions> ExecuteApplication(this CommandResultAssertions assertion, string hostPath, string appPath)
         {
             return assertion.HaveStdErrContaining($"Launch host: {hostPath}, app: {appPath}")
-                .HaveStdOutContaining("Hello World!");
+                .And.HaveStdOutContaining("Hello World!");
         }
 
-        public static CommandResultAssertions ExecuteApplicationWithException(this CommandResultAssertions assertion, string hostPath, string appPath)
+        public static FluentAssertions.AndConstraint<CommandResultAssertions> ExecuteApplicationWithException(this CommandResultAssertions assertion, string hostPath, string appPath)
         {
             var constraint = assertion.ExecuteApplication(hostPath, appPath);
             if (OperatingSystem.IsWindows())
             {
-                return constraint.HaveStdOutContaining($"hostfxr_run_app threw exception: 0x{Constants.ErrorCode.COMPlusException.ToString("x")}");
+                return constraint.And.HaveStdOutContaining($"hostfxr_run_app threw exception: 0x{Constants.ErrorCode.COMPlusException.ToString("x")}");
             }
             else
             {
                 // Exception is unhandled by native host on non-Windows systems
-                return constraint.ExitWith(Constants.ErrorCode.SIGABRT)
-                    .HaveStdErrContaining("Unhandled exception. System.Exception: Goodbye World!");
+                return constraint.And.ExitWith(Constants.ErrorCode.SIGABRT)
+                    .And.HaveStdErrContaining("Unhandled exception. System.Exception: Goodbye World!");
             }
         }
     }

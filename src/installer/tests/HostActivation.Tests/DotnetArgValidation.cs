@@ -27,7 +27,7 @@ namespace HostActivation.Tests
                 .CaptureStdErr()
                 .Execute()
                 .Should().Fail()
-                 .HaveStdErrContaining($"The application to execute does not exist: '{assemblyName}'");
+                .And.HaveStdErrContaining($"The application to execute does not exist: '{assemblyName}'");
         }
 
         [Fact]
@@ -39,7 +39,7 @@ namespace HostActivation.Tests
                 .CaptureStdErr()
                 .Execute()
                 .Should().Fail()
-                 .HaveStdErrContaining($"The application to execute does not exist: '{assemblyName}'");
+                .And.HaveStdErrContaining($"The application to execute does not exist: '{assemblyName}'");
         }
 
         [Fact]
@@ -54,7 +54,7 @@ namespace HostActivation.Tests
                 .CaptureStdErr()
                 .Execute()
                 .Should().Fail()
-                 .HaveStdErrContaining($"dotnet exec needs a managed .dll or .exe extension. The application specified was '{assemblyName}'");
+                .And.HaveStdErrContaining($"dotnet exec needs a managed .dll or .exe extension. The application specified was '{assemblyName}'");
         }
 
         [Fact]
@@ -65,7 +65,7 @@ namespace HostActivation.Tests
                 .CaptureStdErr()
                 .Execute()
                 .Should().Fail()
-                 .HaveStdErrContaining($"Failed to parse supported options or their values:");
+                .And.HaveStdErrContaining($"Failed to parse supported options or their values:");
         }
 
         [Fact]
@@ -78,8 +78,8 @@ namespace HostActivation.Tests
                 .CaptureStdErr()
                 .Execute()
                 .Should().Fail()
-                 .HaveStdErrContaining($"The application '{fileName}' does not exist")
-                 .FindAnySdk(false);
+                .And.HaveStdErrContaining($"The application '{fileName}' does not exist")
+                .And.FindAnySdk(false);
         }
 
         // Return a non-existent path that contains a mix of / and \

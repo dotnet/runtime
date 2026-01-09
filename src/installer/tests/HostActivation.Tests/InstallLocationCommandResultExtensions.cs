@@ -16,58 +16,6 @@ namespace HostActivation.Tests
     {
         private static bool IsRunningInWoW64(string rid) => OperatingSystem.IsWindows() && Environment.Is64BitOperatingSystem && rid.Equals("win-x86");
 
-        // Methods for CommandResult (used in InstallLocation.cs with imperative style)
-        public static void AssertUsedDotNetRootInstallLocation(this CommandResult result, string installLocation, string rid)
-        {
-            result.AssertUsedDotNetRootInstallLocation(installLocation, rid, null);
-        }
-
-        public static void AssertUsedDotNetRootInstallLocation(this CommandResult result,
-            string installLocation,
-            string rid,
-            string arch)
-        {
-            // If no arch is passed and we are on Windows, we need the used RID for determining whether or not we are running on WoW64.
-            if (string.IsNullOrEmpty(arch))
-                Assert.NotNull(rid);
-
-            string expectedEnvironmentVariable = !string.IsNullOrEmpty(arch) ? $"DOTNET_ROOT_{arch.ToUpper()}" :
-                IsRunningInWoW64(rid) ? "DOTNET_ROOT(x86)" : "DOTNET_ROOT";
-
-            Assert.Contains($"Using environment variable {expectedEnvironmentVariable}=[{installLocation}] as runtime location.", result.StdErr);
-        }
-
-        public static void AssertUsedRegisteredInstallLocation(this CommandResult result, string installLocation)
-        {
-            Assert.Contains($"Found registered install location '{installLocation}'.", result.StdErr);
-        }
-
-        public static void AssertUsedGlobalInstallLocation(this CommandResult result, string installLocation)
-        {
-            Assert.Contains($"Using global install location [{installLocation}]", result.StdErr);
-        }
-
-        public static void AssertUsedAppLocalInstallLocation(this CommandResult result, string installLocation)
-        {
-            Assert.Contains($"Using app-local location [{installLocation}]", result.StdErr);
-        }
-
-        public static void AssertUsedAppRelativeInstallLocation(this CommandResult result, string installLocation)
-        {
-            Assert.Contains($"Using app-relative location [{installLocation}]", result.StdErr);
-        }
-
-        public static void AssertLookedForDefaultInstallLocation(this CommandResult result, string installLocationPath)
-        {
-            Assert.Contains($"Looking for install_location file in '{Path.Combine(installLocationPath, "install_location")}'.", result.StdErr);
-        }
-
-        public static void AssertLookedForArchitectureSpecificInstallLocation(this CommandResult result, string installLocationPath, string architecture)
-        {
-            Assert.Contains($"Looking for architecture-specific install_location file in '{Path.Combine(installLocationPath, "install_location_" + architecture.ToLowerInvariant())}'.", result.StdErr);
-        }
-
-        // Methods for CommandResultAssertions (used in other files with fluent style)
         public static CommandResultAssertions HaveUsedDotNetRootInstallLocation(this CommandResultAssertions assertion, string installLocation, string rid)
         {
             return assertion.HaveUsedDotNetRootInstallLocation(installLocation, rid, null);

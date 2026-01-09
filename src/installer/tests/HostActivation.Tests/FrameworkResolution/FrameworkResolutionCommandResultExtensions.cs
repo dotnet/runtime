@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         public static CommandResultAssertions ShouldHaveResolvedFramework(this CommandResult result, string resolvedFrameworkName, string resolvedFrameworkVersion, string resolvedFrameworkBasePath = null)
         {
             return result.Should().Pass()
-                 .HaveResolvedFramework(resolvedFrameworkName, resolvedFrameworkVersion, resolvedFrameworkBasePath);
+                .And.HaveResolvedFramework(resolvedFrameworkName, resolvedFrameworkVersion, resolvedFrameworkBasePath);
         }
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             var constraint = assertion.HaveStdErrContaining("You must install or update .NET to run this application.");
             if (frameworkName is not null)
             {
-                constraint = constraint .HaveStdErrContaining($"Framework: '{frameworkName}', {(requestedVersion is null ? "" : $"version '{requestedVersion}'")}");
+                constraint = constraint.And.HaveStdErrContaining($"Framework: '{frameworkName}', {(requestedVersion is null ? "" : $"version '{requestedVersion}'")}");
             }
 
             return constraint;
@@ -59,7 +59,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         public static CommandResultAssertions ShouldFailToFindCompatibleFrameworkVersion(this CommandResult result, string frameworkName, string requestedVersion = null)
         {
             return result.Should().Fail()
-                 .DidNotFindCompatibleFrameworkVersion(frameworkName, requestedVersion);
+                .And.DidNotFindCompatibleFrameworkVersion(frameworkName, requestedVersion);
         }
 
         public static CommandResultAssertions FailedToReconcileFrameworkReference(
@@ -80,7 +80,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         {
             if (resolvedVersion == null || resolvedVersion == FrameworkResolutionBase.ResolvedFramework.FailedToReconcile)
             {
-                return result.Should().Fail() .FailedToReconcileFrameworkReference(frameworkName, lowerVersion, higherVersion);
+                return result.Should().Fail().And.FailedToReconcileFrameworkReference(frameworkName, lowerVersion, higherVersion);
             }
             else
             {
@@ -97,7 +97,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         {
             if (resolvedVersion == FrameworkResolutionBase.ResolvedFramework.FailedToReconcile)
             {
-                return result.Should().Fail() .FailedToReconcileFrameworkReference(frameworkName, lowerVersion, higherVersion);
+                return result.Should().Fail().And.FailedToReconcileFrameworkReference(frameworkName, lowerVersion, higherVersion);
             }
             else if (resolvedVersion == FrameworkResolutionBase.ResolvedFramework.NotFound)
             {

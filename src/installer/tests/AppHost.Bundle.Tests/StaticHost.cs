@@ -23,7 +23,7 @@ namespace AppHost.Bundle.Tests
                     .CaptureStdOut()
                     .Execute()
                     .Should().Pass()
-                     .HaveStdOutContaining("Hello World");
+                    .And.HaveStdOutContaining("Hello World");
             }
         }
     }

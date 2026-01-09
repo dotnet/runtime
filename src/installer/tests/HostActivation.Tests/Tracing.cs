@@ -23,8 +23,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute()
                 .Should().Pass()
-                 .NotHaveStdErrContaining(ExpectedInfoMessage)
-                 .NotHaveStdErrContaining(ExpectedVerboseMessage);
+                .And.NotHaveStdErrContaining(ExpectedInfoMessage)
+                .And.NotHaveStdErrContaining(ExpectedVerboseMessage);
         }
 
         [Fact]
@@ -34,8 +34,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                 .HaveStdErrContaining(ExpectedInfoMessage)
-                 .HaveStdErrContaining(ExpectedVerboseMessage);
+                .And.HaveStdErrContaining(ExpectedInfoMessage)
+                .And.HaveStdErrContaining(ExpectedVerboseMessage);
         }
 
         [Fact]
@@ -46,8 +46,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(Constants.HostTracing.VerbosityEnvironmentVariable, "4")
                 .Execute()
                 .Should().Pass()
-                 .HaveStdErrContaining(ExpectedInfoMessage)
-                 .HaveStdErrContaining(ExpectedVerboseMessage);
+                .And.HaveStdErrContaining(ExpectedInfoMessage)
+                .And.HaveStdErrContaining(ExpectedVerboseMessage);
         }
 
         [Fact]
@@ -58,8 +58,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(Constants.HostTracing.VerbosityEnvironmentVariable, "3")
                 .Execute()
                 .Should().Pass()
-                 .HaveStdErrContaining(ExpectedInfoMessage)
-                 .NotHaveStdErrContaining(ExpectedVerboseMessage);
+                .And.HaveStdErrContaining(ExpectedInfoMessage)
+                .And.NotHaveStdErrContaining(ExpectedVerboseMessage);
         }
 
         [Fact]
@@ -70,8 +70,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(Constants.HostTracing.VerbosityEnvironmentVariable, "2")
                 .Execute()
                 .Should().Pass()
-                 .NotHaveStdErrContaining(ExpectedInfoMessage)
-                 .NotHaveStdErrContaining(ExpectedVerboseMessage);
+                .And.NotHaveStdErrContaining(ExpectedInfoMessage)
+                .And.NotHaveStdErrContaining(ExpectedVerboseMessage);
         }
 
         [Fact]
@@ -84,10 +84,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute()
                 .Should().Pass()
-                 .NotHaveStdErrContaining(ExpectedInfoMessage)
-                 .NotHaveStdErrContaining(ExpectedVerboseMessage)
-                 .FileExists(traceFilePath)
-                 .FileContains(traceFilePath, ExpectedVerboseMessage);
+                .And.NotHaveStdErrContaining(ExpectedInfoMessage)
+                .And.NotHaveStdErrContaining(ExpectedVerboseMessage)
+                .And.FileExists(traceFilePath)
+                .And.FileContains(traceFilePath, ExpectedVerboseMessage);
 
             FileUtils.DeleteFileIfPossible(traceFilePath);
         }
@@ -100,9 +100,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable(Constants.HostTracing.TraceFileEnvironmentVariable, "badpath/TracingOnToFileBadPathDefault.log")
                 .Execute()
                 .Should().Pass()
-                 .HaveStdErrContaining(ExpectedInfoMessage)
-                 .HaveStdErrContaining(ExpectedVerboseMessage)
-                 .HaveStdErrContaining(ExpectedBadPathMessage);
+                .And.HaveStdErrContaining(ExpectedInfoMessage)
+                .And.HaveStdErrContaining(ExpectedVerboseMessage)
+                .And.HaveStdErrContaining(ExpectedBadPathMessage);
         }
 
         [Fact]
@@ -118,10 +118,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 string traceFilePath = Path.Combine(directory.Location, $"{Path.GetFileNameWithoutExtension(Binaries.DotNet.FileName)}.{result.ProcessId}.log");
                 result.Should().Pass()
-                     .NotHaveStdErrContaining(ExpectedInfoMessage)
-                     .NotHaveStdErrContaining(ExpectedVerboseMessage)
-                     .FileExists(traceFilePath)
-                     .FileContains(traceFilePath, ExpectedVerboseMessage);
+                    .And.NotHaveStdErrContaining(ExpectedInfoMessage)
+                    .And.NotHaveStdErrContaining(ExpectedVerboseMessage)
+                    .And.FileExists(traceFilePath)
+                    .And.FileContains(traceFilePath, ExpectedVerboseMessage);
             }
         }
 
@@ -133,8 +133,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute()
                 .Should().Pass()
-                 .HaveStdErrContaining(ExpectedInfoMessage)
-                 .HaveStdErrContaining(ExpectedVerboseMessage);
+                .And.HaveStdErrContaining(ExpectedInfoMessage)
+                .And.HaveStdErrContaining(ExpectedVerboseMessage);
         }
     }
 }

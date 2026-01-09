@@ -43,9 +43,9 @@ namespace AppHost.Bundle.Tests
                 .EnvironmentVariable(Constants.BundleExtractBase.EnvironmentVariable, extractionRoot)
                 .Execute()
                 .Should().Pass()
-                 .CallPInvoke(null, true)
-                 .CallPInvoke(DllImportSearchPath.AssemblyDirectory, true)
-                 .CallPInvoke(DllImportSearchPath.System32, false);
+                .And.CallPInvoke(null, true)
+                .And.CallPInvoke(DllImportSearchPath.AssemblyDirectory, true)
+                .And.CallPInvoke(DllImportSearchPath.System32, false);
         }
 
         [Fact]
@@ -71,9 +71,9 @@ namespace AppHost.Bundle.Tests
                 .EnvironmentVariable(Constants.BundleExtractBase.EnvironmentVariable, extractionRoot)
                 .Execute()
                 .Should().Pass()
-                 .TryLoadLibrary(null, true)
-                 .TryLoadLibrary(DllImportSearchPath.AssemblyDirectory, true)
-                 .TryLoadLibrary(DllImportSearchPath.System32, false);
+                .And.TryLoadLibrary(null, true)
+                .And.TryLoadLibrary(DllImportSearchPath.AssemblyDirectory, true)
+                .And.TryLoadLibrary(DllImportSearchPath.System32, false);
         }
 
         internal static string GetLibraryName(DllImportSearchPath? flags)
@@ -149,16 +149,16 @@ namespace AppHost.Bundle.Tests
 
     public static class NativeLibrariesResultExtensions
     {
-        public static CommandResultAssertions CallPInvoke(this CommandResultAssertions assertion, DllImportSearchPath? flags, bool success)
+        public static FluentAssertions.AndConstraint<CommandResultAssertions> CallPInvoke(this CommandResultAssertions assertion, DllImportSearchPath? flags, bool success)
         {
             var constraint = assertion.HaveStdOutContaining($"Loading {NativeLibraries.GetLibraryName(flags)} via P/Invoke (flags: {(flags.HasValue ? flags : "default")}) {(success ? "succeeded" : "failed")}");
             if (!success)
-                constraint = constraint .HaveStdOutContaining(typeof(DllNotFoundException).FullName);
+                constraint = constraint.And.HaveStdOutContaining(typeof(DllNotFoundException).FullName);
 
             return constraint;
         }
 
-        public static CommandResultAssertions TryLoadLibrary(this CommandResultAssertions assertion, DllImportSearchPath? flags, bool success)
+        public static FluentAssertions.AndConstraint<CommandResultAssertions> TryLoadLibrary(this CommandResultAssertions assertion, DllImportSearchPath? flags, bool success)
         {
             return assertion.HaveStdOutContaining($"Loading {NativeLibraries.GetLibraryName(flags)} via NativeLibrary API (flags: {(flags.HasValue ? flags : "default")}) {(success ? "succeeded" : "failed")}");
         }

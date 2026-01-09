@@ -53,7 +53,7 @@ namespace AppHost.Bundle.Tests
 
             singleExe.WaitForExit(twoMinutes)
                 .Should().Pass()
-                 .HaveStdOutContaining("Hello World!");
+                .And.HaveStdOutContaining("Hello World!");
         }
 
         public class SharedTestState : IDisposable

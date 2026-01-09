@@ -29,8 +29,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                 .HaveResolvedAssembly(Path.Combine(app.Location, $"{SharedTestState.DependencyName}.dll"))
-                 .HaveResolvedNativeLibraryPath(app.Location);
+                .And.HaveResolvedAssembly(Path.Combine(app.Location, $"{SharedTestState.DependencyName}.dll"))
+                .And.HaveResolvedNativeLibraryPath(app.Location);
         }
 
         [Fact]
@@ -45,7 +45,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                 .HaveResolvedAssembly(dependencyPath);
+                .And.HaveResolvedAssembly(dependencyPath);
         }
 
         [Fact]
@@ -70,7 +70,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     .EnableTracingAndCaptureOutputs()
                     .Execute()
                     .Should().Pass()
-                     .HaveResolvedAssembly(dependencyPath);
+                    .And.HaveResolvedAssembly(dependencyPath);
             }
             finally
             {

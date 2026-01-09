@@ -44,14 +44,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             if (isValid)
             {
                 result.Should().Pass()
-                     .HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
+                    .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }
             else
             {
                 result.Should().Fail()
-                     .ExitWith(1)
-                     .HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
-                     .HaveStdErrContaining($"The required library {HostFxrName} could not be found");
+                    .And.ExitWith(1)
+                    .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
+                    .And.HaveStdErrContaining($"The required library {HostFxrName} could not be found");
             }
         }
 
@@ -77,14 +77,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             if (isValid)
             {
                 result.Should().Pass()
-                     .HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
+                    .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }
             else
             {
                 result.Should().Fail()
-                     .ExitWith(1)
-                     .HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
-                     .HaveStdErrContaining($"[{Path.Combine(dotNetRoot, "host", "fxr")}] does not exist");
+                    .And.ExitWith(1)
+                    .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
+                    .And.HaveStdErrContaining($"[{Path.Combine(dotNetRoot, "host", "fxr")}] does not exist");
             }
         }
 
@@ -137,14 +137,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             if (isValid)
             {
                 result.Should().Pass()
-                     .HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
+                    .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }
             else
             {
                 result.Should().Fail()
-                     .ExitWith(1)
-                     .HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
-                     .HaveStdErrContaining($"The required library {HostFxrName} could not be found");
+                    .And.ExitWith(1)
+                    .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
+                    .And.HaveStdErrContaining($"The required library {HostFxrName} could not be found");
             }
         }
 
@@ -167,7 +167,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                 .HaveStdOutContaining($"hostfxr_path: {(useDotNetRoot ? sharedState.HostFxrPath : hostFxrPath)}".ToLower());
+                .And.HaveStdOutContaining($"hostfxr_path: {(useDotNetRoot ? sharedState.HostFxrPath : hostFxrPath)}".ToLower());
         }
 
         [Fact]
@@ -177,8 +177,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                 .HaveStdOutContaining($"hostfxr_path: {sharedState.ProductHostFxrPath}".ToLower())
-                 .HaveStdErrContaining($"Found previously loaded library {HostFxrName}");
+                .And.HaveStdOutContaining($"hostfxr_path: {sharedState.ProductHostFxrPath}".ToLower())
+                .And.HaveStdErrContaining($"Found previously loaded library {HostFxrName}");
         }
 
         [Theory]
@@ -233,15 +233,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 if (shouldPass)
                 {
                     result.Should().Pass()
-                         .HaveUsedRegisteredInstallLocation(installLocation)
-                         .HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
+                        .And.HaveUsedRegisteredInstallLocation(installLocation)
+                        .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
                 }
                 else
                 {
                     result.Should().Fail()
-                         .ExitWith(1)
-                         .HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
-                         .HaveStdErrContaining($"The required library {HostFxrName} could not be found");
+                        .And.ExitWith(1)
+                        .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
+                        .And.HaveStdErrContaining($"The required library {HostFxrName} could not be found");
                 }
             }
         }
@@ -268,11 +268,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .Execute();
 
                 result.Should().Pass()
-                     .HaveLookedForArchitectureSpecificInstallLocation(
+                    .And.HaveLookedForArchitectureSpecificInstallLocation(
                         registeredInstallLocationOverride.PathValueOverride,
                         HostTestContext.BuildArchitecture)
-                     .HaveUsedRegisteredInstallLocation(installLocation)
-                     .HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
+                    .And.HaveUsedRegisteredInstallLocation(installLocation)
+                    .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }
         }
 
@@ -298,11 +298,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .Execute();
 
                 result.Should().Pass()
-                     .HaveLookedForArchitectureSpecificInstallLocation(
+                    .And.HaveLookedForArchitectureSpecificInstallLocation(
                         registeredInstallLocationOverride.PathValueOverride,
                         HostTestContext.BuildArchitecture)
-                     .HaveUsedRegisteredInstallLocation(installLocation)
-                     .HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
+                    .And.HaveUsedRegisteredInstallLocation(installLocation)
+                    .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }
         }
 
@@ -314,8 +314,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .DotNetRoot(null)
                 .Execute()
                 .Should().Fail()
-                 .HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.InvalidArgFailure.ToString("x")}")
-                 .HaveStdErrContaining("Invalid size for get_hostfxr_parameters");
+                .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.InvalidArgFailure.ToString("x")}")
+                .And.HaveStdErrContaining("Invalid size for get_hostfxr_parameters");
         }
 
         [Fact]
@@ -329,8 +329,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Fail()
-                 .FileExists(traceFilePath)
-                 .FileContains(traceFilePath, "Tracing enabled");
+                .And.FileExists(traceFilePath)
+                .And.FileContains(traceFilePath, "Tracing enabled");
 
             FileUtils.DeleteFileIfPossible(traceFilePath);
         }
