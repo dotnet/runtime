@@ -126,15 +126,15 @@ namespace ILCompiler.ObjectWriter
         private WasmDataSection CreateCombinedDataSection()
         {
            IEnumerable<WasmSection> dataSections = _sections.Where(s => s.Type == WasmSectionType.Data);
-            int encodedSize = 0;
+            int offset = 0;
             List<WasmDataSegment> segments = new();
             foreach (WasmSection wasmSection in dataSections)
             {
                 Debug.Assert(wasmSection.Type == WasmSectionType.Data);
                 WasmDataSegment segment = new WasmDataSegment(wasmSection.Stream, wasmSection.Name, WasmDataSectionType.Active,
-                    new WasmConstExpr(WasmExprKind.I32Const, (long)encodedSize));
+                    new WasmConstExpr(WasmExprKind.I32Const, (long)offset));
                 segments.Add(segment);
-                encodedSize += segment.EncodeSize();
+                offset += segment.ContentSize;
             }
 
             return new WasmDataSection(segments, new Utf8String(ObjectNodeSection.WasmCombinedDataSection.Name));
@@ -459,6 +459,8 @@ namespace ILCompiler.ObjectWriter
         {
             return HeaderSize + (int)_stream.Length;
         }
+
+        public int ContentSize => (int)_stream.Length;
 
         public int EncodeHeader(Span<byte> headerBuffer)
         {
