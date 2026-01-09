@@ -236,6 +236,6 @@ namespace System.Text.RegularExpressions.Tests
         public string Value { get; }
         public int Index { get; }
         public int Length { get; }
-        public CaptureData[] Captures { get; }
+        public CaptureData[]? Captures { get; }
     }
 }
