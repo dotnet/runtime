@@ -2588,14 +2588,13 @@ COM_METHOD CordbProcess::GetAsyncStack(CORDB_ADDRESS continuationAddress, ICorDe
     HRESULT hr = S_OK;
 
     PUBLIC_API_ENTRY(this);
-    RSLockHolder stopGoLock(this->GetProcess()->GetStopGoLock());
-    RSLockHolder procLock(this->GetProcess()->GetProcessLock());
+    RSLockHolder stopGoLock(GetProcess()->GetStopGoLock());
+    RSLockHolder procLock(GetProcess()->GetProcessLock());
 
     EX_TRY
     {
         // TODO: verify that the address is indeed an async continuation object
         RSInitHolder<CordbAsyncStackWalk> pAsyncStackWalk(new CordbAsyncStackWalk(this, continuationAddress));
-        pAsyncStackWalk->Init();
         pAsyncStackWalk.TransferOwnershipExternal(ppStackWalk);
     }
     EX_CATCH_HRESULT(hr);

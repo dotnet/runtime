@@ -11785,7 +11785,6 @@ public:
     COM_METHOD GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICorDebugValue **ppValue);
     COM_METHOD GetCodeEx(ILCodeKind flags, ICorDebugCode **ppCode);
 
-
     CordbFunction *CordbAsyncFrame::GetFunction();
 
     private:
@@ -11798,11 +11797,10 @@ public:
 class CordbAsyncStackWalk : public CordbBase, public ICorDebugStackWalk
 {
     RSSmartPtr<CordbAsyncFrame> m_pCurrentFrame;
-    CORDB_ADDRESS m_nextContinuationAddress;
+    CORDB_ADDRESS m_continuationAddress;
 
 public:
     CordbAsyncStackWalk(CordbProcess* pProcess, CORDB_ADDRESS continuationAddress);
-    HRESULT Init();
     virtual ~CordbAsyncStackWalk();
     virtual void Neuter();
 
@@ -11816,7 +11814,7 @@ public:
     }
     COM_METHOD QueryInterface(REFIID riid, void **ppInterface);
 
-    HRESULT PopulateNextFrame();
+    HRESULT PopulateFrame();
 
     //-----------------------------------------------------------
     // ICorDebugStackWalk

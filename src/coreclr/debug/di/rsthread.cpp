@@ -10997,14 +10997,9 @@ HRESULT CordbCodeEnum::Next(ULONG celt, ICorDebugCode *values[], ULONG *pceltFet
 
 CordbAsyncStackWalk::CordbAsyncStackWalk(CordbProcess* pProcess, CORDB_ADDRESS continuationAddress)
 : CordbBase(pProcess, 0, enumCordbAsyncStackWalk),
-  m_nextContinuationAddress(continuationAddress)
+  m_continuationAddress(continuationAddress)
 {
     GetProcess()->GetContinueNeuterList()->Add(GetProcess(), this);
-}
-
-HRESULT CordbAsyncStackWalk::Init()
-{
-    return PopulateNextFrame();
 }
 
 CordbAsyncStackWalk::~CordbAsyncStackWalk()
@@ -11043,11 +11038,16 @@ HRESULT CordbAsyncStackWalk::QueryInterface(REFIID id, void **pInterface)
     return S_OK;
 }
 
-HRESULT CordbAsyncStackWalk::PopulateNextFrame()
+HRESULT CordbAsyncStackWalk::PopulateFrame()
 {
-    if (m_nextContinuationAddress == 0)
+    if (m_pCurrentFrame != NULL)
     {
-        m_pCurrentFrame.Clear();
+        // We already have a current frame.
+        return S_OK;
+    }
+
+    if (m_continuationAddress == 0)
+    {
         return CORDBG_E_PAST_END_OF_STACK;
     }
 
@@ -11057,7 +11057,7 @@ HRESULT CordbAsyncStackWalk::PopulateNextFrame()
     CORDB_ADDRESS nextContinuation;
     UINT32 state;
     HRESULT hr = pDac->GetResumePointAndNextContinuation(
-        m_nextContinuationAddress,
+        m_continuationAddress,
         &diagnosticIP,
         &nextContinuation,
         &state);
@@ -11083,14 +11083,12 @@ HRESULT CordbAsyncStackWalk::PopulateNextFrame()
         codeData.vmNativeCodeMethodDescToken,
         startAddress,
         diagnosticIP,
-        m_nextContinuationAddress,
+        m_continuationAddress,
         state);
     
     frame->Init();
 
     m_pCurrentFrame.Assign(frame);
-
-    m_nextContinuationAddress = nextContinuation;
 
     return S_OK;
 }
@@ -11123,23 +11121,39 @@ HRESULT CordbAsyncStackWalk::SetContext(CorDebugSetContextFlag flag, ULONG32 con
 HRESULT CordbAsyncStackWalk::Next()
 {
     HRESULT hr = S_OK;
-
-    PUBLIC_API_ENTRY(this);
-    RSLockHolder stopGoLock(this->GetProcess()->GetStopGoLock());
-    RSLockHolder procLock(this->GetProcess()->GetProcessLock());
-
-    EX_TRY
+    PUBLIC_REENTRANT_API_BEGIN(this)
     {
-        if (m_pCurrentFrame == NULL)
+        // When going to the next continuation, we discard the current frame.
+        m_pCurrentFrame.Clear();
+
+        if (m_continuationAddress == 0)
         {
-            // We already moved beyond the end of the stack
             ThrowHR(CORDBG_E_PAST_END_OF_STACK);
         }
 
-        // returns CORDBG_S_AT_END_OF_STACK if we reach the end
-        hr = PopulateNextFrame();
+        IDacDbiInterface* pDac = m_pProcess->GetDAC();
+
+        PCODE diagnosticIP;
+        CORDB_ADDRESS nextContinuation;
+        UINT32 state;
+        hr = pDac->GetResumePointAndNextContinuation(
+            m_continuationAddress,
+            &diagnosticIP,
+            &nextContinuation,
+            &state);
+        if (FAILED(hr))
+        {
+            ThrowHR(hr);
+        }
+
+        m_continuationAddress = nextContinuation;
+
+        if (m_continuationAddress == 0)
+        {
+            hr = CORDBG_S_AT_END_OF_STACK;
+        }
     }
-    EX_CATCH_HRESULT(hr);
+    PUBLIC_REENTRANT_API_END(hr);
     return hr;
 }
 
@@ -11164,16 +11178,20 @@ HRESULT CordbAsyncStackWalk::Next()
 HRESULT CordbAsyncStackWalk::GetFrame(ICorDebugFrame ** ppFrame)
 {
     HRESULT hr = S_OK;
-    PUBLIC_REENTRANT_API_BEGIN(this)
+    PUBLIC_REENTRANT_API_NO_LOCK_BEGIN(this)
     {
+        ATT_REQUIRE_STOPPED_MAY_FAIL_OR_THROW(GetProcess(), ThrowHR);
+        RSLockHolder lockHolder(GetProcess()->GetProcessLock());
+
         if (ppFrame == NULL)
         {
             ThrowHR(E_INVALIDARG);
         }
 
-        if (m_pCurrentFrame == NULL)
+        hr = PopulateFrame();
+        if (FAILED(hr))
         {
-            ThrowHR(CORDBG_E_PAST_END_OF_STACK);
+            ThrowHR(hr);
         }
 
         RSInitHolder<CordbAsyncFrame> pResultFrame(m_pCurrentFrame);
@@ -11208,23 +11226,23 @@ CordbAsyncFrame::CordbAsyncFrame(
 
 HRESULT CordbAsyncFrame::Init()
 {
+    _ASSERTE(GetProcess()->GetStopGoLock()->HasLock());
+    _ASSERTE(GetProcess()->GetProcessLock()->HasLock());
+
     VMPTR_DomainAssembly vmDomainAssembly;
     GetProcess()->GetDAC()->GetDomainAssemblyFromModule(m_vmModule, &vmDomainAssembly);
     m_pModule.Assign(GetProcess()->LookupOrCreateModule(vmDomainAssembly));
     m_pAppDomain.Assign(m_pModule->GetAppDomain());
 
-    {
-        // TODO: move to Init method
-        // LookupOrCreateNativeCode is marked INTERNAL_SYNC_API_ENTRY and requires the StopGoLock.
-        RSLockHolder stopGoLock(GetProcess()->GetStopGoLock());
-        m_pCode.Assign(m_pModule->LookupOrCreateNativeCode(m_methodDef, m_vmMethodDesc, m_pCodeStart));
-    }
+    // LookupOrCreateNativeCode is marked INTERNAL_SYNC_API_ENTRY and requires the StopGoLock.
+    m_pCode.Assign(m_pModule->LookupOrCreateNativeCode(m_methodDef, m_vmMethodDesc, m_pCodeStart));
 
     m_pCode->LoadNativeInfo();
     GetProcess()->GetDAC()->GetAsyncLocals(m_vmMethodDesc, m_pCodeStart, m_state, &m_asyncVars);
 
     return S_OK;
 }
+
 CordbAsyncFrame::~CordbAsyncFrame()
 {
     _ASSERTE(IsNeutered());
@@ -11291,22 +11309,46 @@ HRESULT CordbAsyncFrame::GetChain(ICorDebugChain **ppChain)
 
 HRESULT CordbAsyncFrame::GetCode(ICorDebugCode **ppCode)
 {
-    return m_pCode->QueryInterface(IID_ICorDebugCode, (void **)ppCode);
+    PUBLIC_REENTRANT_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    VALIDATE_POINTER_TO_OBJECT(ppCode, ICorDebugCode **);
+
+    *ppCode = static_cast<ICorDebugCode*>(m_pCode);
+    m_pCode->ExternalAddRef();
+
+    return S_OK;
 }
 
 HRESULT CordbAsyncFrame::GetFunction(ICorDebugFunction **ppFunction)
 {
-    return m_pCode->GetFunction(ppFunction);
+    HRESULT hr = S_OK;
+    PUBLIC_API_BEGIN(this)
+    {
+        ValidateOrThrow(ppFunction);
+
+        CordbFunction* pFunc = m_pCode->GetFunction();
+        *ppFunction = static_cast<ICorDebugFunction *>(pFunc);
+        pFunc->ExternalAddRef();
+    }
+    PUBLIC_API_END(hr);
+    return hr;
 }
 
 HRESULT CordbAsyncFrame::GetFunctionToken(mdMethodDef *pToken)
 {
-    return m_pCode->GetFunction()->GetToken(pToken);
+    FAIL_IF_NEUTERED(this);
+    VALIDATE_POINTER_TO_OBJECT(pToken, mdMethodDef *);
+
+    *pToken = m_pCode->GetFunction()->GetMetadataToken();
+
+    return S_OK;
 }
 
-//do not ask for it in an async frame -- fix concord
 HRESULT CordbAsyncFrame::GetStackRange(CORDB_ADDRESS *pStart, CORDB_ADDRESS *pEnd)
 {
+    PUBLIC_REENTRANT_API_ENTRY(this);
+
+    // TODO: What should the semantics be here?
     *pStart = (CORDB_ADDRESS)this; //this is used by VIL to find the correct frame, we need to return something or fix VIL????
     *pEnd = (CORDB_ADDRESS)this;
     return S_OK;
@@ -11331,18 +11373,21 @@ HRESULT CordbAsyncFrame::GetCallee(ICorDebugFrame **ppFrame)
 
 HRESULT CordbAsyncFrame::GetIP(ULONG32* pnOffset, CorDebugMappingResult *pMappingResult)
 {
+    PUBLIC_REENTRANT_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    VALIDATE_POINTER_TO_OBJECT(pnOffset, ULONG32 *);
+    VALIDATE_POINTER_TO_OBJECT_OR_NULL(pMappingResult, CorDebugMappingResult *);
+
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
     CorDebugMappingResult mappingType;
     ULONG uILOffset = m_pCode->GetSequencePoints()->MapNativeOffsetToIL(
                     (DWORD)(m_diagnosticIP - m_pCodeStart),
                     &mappingType);
-    if (pnOffset != NULL)
-    {
-        *pnOffset = uILOffset;
-    }
+    *pnOffset = uILOffset;
     if (pMappingResult != NULL)
-    {
         *pMappingResult = mappingType;
-    }
+
     return S_OK;
 }
 
@@ -11352,10 +11397,20 @@ HRESULT CordbAsyncFrame::SetIP(ULONG32 nOffset)
 }
 HRESULT CordbAsyncFrame::EnumerateLocalVariables(ICorDebugValueEnum **ppValueEnum)
 {
+    PUBLIC_REENTRANT_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    VALIDATE_POINTER_TO_OBJECT(ppValueEnum, ICorDebugValueEnum **);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
     return EnumerateLocalVariablesEx(ILCODE_ORIGINAL_IL, ppValueEnum);
 }
 HRESULT CordbAsyncFrame::GetLocalVariable(DWORD dwIndex, ICorDebugValue **ppValue)
 {
+    PUBLIC_REENTRANT_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    VALIDATE_POINTER_TO_OBJECT(ppValue, ICorDebugValue **);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
     return GetLocalVariableEx(ILCODE_ORIGINAL_IL, dwIndex, ppValue);
 }
 HRESULT CordbAsyncFrame::EnumerateArguments(ICorDebugValueEnum **ppValueEnum)
@@ -11386,12 +11441,12 @@ HRESULT CordbAsyncFrame::GetArgument(DWORD dwIndex, ICorDebugValue ** ppValue)
     PUBLIC_REENTRANT_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
     VALIDATE_POINTER_TO_OBJECT(ppValue, ICorDebugValue **);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
     HRESULT hr = S_OK;
     EX_TRY
     {
         CordbType * pType;
-        RSLockHolder stopGoLock(GetProcess()->GetStopGoLock());
         LoadGenericArgs();
         m_pCode->GetArgumentType(dwIndex, &m_genericArgs, &pType);
         for (unsigned int i = 0; i < m_asyncVars.Count(); i++)
@@ -11503,13 +11558,16 @@ HRESULT CordbAsyncFrame::EnumerateLocalVariablesEx(ILCodeKind flags, ICorDebugVa
 
 HRESULT CordbAsyncFrame::GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICorDebugValue **ppValue)
 {
-    PUBLIC_API_ENTRY(this);
+    PUBLIC_REENTRANT_API_ENTRY(this);
+    VALIDATE_POINTER_TO_OBJECT(ppValue, ICorDebugValue **);
+    FAIL_IF_NEUTERED(this);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
     HRESULT hr = S_OK;
 
     EX_TRY
     {
         CordbType * pType;
-        RSLockHolder stopGoLock(GetProcess()->GetStopGoLock());
         CordbFunction* function = m_pCode->GetFunction();
         ULONG argCount = 0;
         _ASSERTE(function != NULL);
@@ -11580,7 +11638,7 @@ CordbFunction *CordbAsyncFrame::GetFunction()
 void CordbAsyncFrame::LoadGenericArgs()
 {
     THROW_IF_NEUTERED(this);
-    INTERNAL_SYNC_API_ENTRY(GetProcess()); //
+    INTERNAL_SYNC_API_ENTRY(GetProcess());
 
     // The case where there are no type parameters, or the case where we've
     // already feched the realInst, is easy.
