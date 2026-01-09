@@ -61,7 +61,7 @@ public partial class ZipArchiveEntry
         cancellationToken.ThrowIfCancellationRequested();
         ThrowIfInvalidArchive();
 
-        if (access is not FileAccess.Read and not FileAccess.Write and not FileAccess.ReadWrite)
+        if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
             throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
 
         // Validate that the requested access is compatible with the archive's mode
