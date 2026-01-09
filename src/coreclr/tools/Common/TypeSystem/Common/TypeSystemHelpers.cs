@@ -157,8 +157,6 @@ namespace Internal.TypeSystem
             return null;
         }
 
-
-
         /// <summary>
         /// Retrieves all methods on a type, including the ones injected by the type system context.
         /// </summary>
