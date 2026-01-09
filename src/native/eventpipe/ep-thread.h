@@ -276,8 +276,8 @@ struct _EventPipeThreadSessionState_Internal {
 	// thread. Each event was either successfully recorded in a buffer
 	// or it was dropped.
 	//
-	// Only updated by the current thread under thread_holder->thread.rt_lock. Other
-	// event writer threads are allowed to do unsynchronized reads when
+	// Only updated by the current thread.
+	// Other event writer threads are allowed to do unsynchronized reads when
 	// capturing a sequence point but this does not provide any consistency
 	// guarantee. In particular there is no promise that the other thread
 	// is observing the most recent sequence number, nor is there a promise
