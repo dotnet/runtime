@@ -889,8 +889,8 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 {
     assert(tree->OperIs(GT_IND));
 
-    var_types   type      = tree->TypeGet();
-    instruction ins       = ins_Load(type);
+    var_types   type = tree->TypeGet();
+    instruction ins  = ins_Load(type);
 
     genConsumeAddress(tree->Addr());
 
