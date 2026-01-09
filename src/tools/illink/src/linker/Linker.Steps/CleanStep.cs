@@ -34,7 +34,7 @@ using Mono.Cecil;
 namespace Mono.Linker.Steps
 {
 
-    public class CleanStep : BaseStep
+    internal class CleanStep : BaseStep
     {
 
         protected override void ProcessAssembly(AssemblyDefinition assembly)

@@ -36,7 +36,7 @@ using Mono.Cecil;
 namespace Mono.Linker.Steps
 {
 
-    public class RegenerateGuidStep : BaseStep
+    internal class RegenerateGuidStep : BaseStep
     {
 
         protected override void ProcessAssembly(AssemblyDefinition assembly)

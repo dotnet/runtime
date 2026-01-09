@@ -9,7 +9,7 @@ using Mono.Cecil.Cil;
 
 namespace Mono.Linker.Steps
 {
-    public class CodeRewriterStep : BaseStep
+    internal class CodeRewriterStep : BaseStep
     {
         AssemblyDefinition? assembly;
         AssemblyDefinition Assembly

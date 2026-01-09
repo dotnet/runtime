@@ -5,7 +5,7 @@ using System.IO;
 
 namespace Mono.Linker.Steps
 {
-    public class OutputWarningSuppressions : BaseStep
+    internal class OutputWarningSuppressions : BaseStep
     {
         protected override bool ConditionToProcess()
         {
