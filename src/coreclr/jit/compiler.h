@@ -11256,13 +11256,13 @@ public:
     void        gsGSChecksInitCookie();   // Grabs cookie variable
     void        gsCopyShadowParams();     // Identify vulnerable params and create dhadow copies
     bool        gsFindVulnerableParams(); // Shadow param analysis code
-    void        gsParamsToShadows();      // Insert copy code and replace param uses by shadow
-    void        gsParamsToShadowsAsync(); // Insert copy code and replace param uses by shadow for async methods
-    void        gsCreateShadowingLocals();
-    void        gsRewriteTreeForShadowParam(GenTree* tree);
-
-    static fgWalkPreFn gsMarkPtrsAndAssignGroups; // Shadow param analysis tree-walk
-    static fgWalkPreFn gsReplaceShadowParams;     // Shadow param replacement tree-walk
+    template <typename TVisit>
+    void gsVisitDependentLocals(GenTree* tree, TVisit visit);
+    void gsUnionAssignGroups(unsigned lclNum1, unsigned lclNum2);
+    void gsParamsToShadows(); // Insert copy code and replace param uses by shadow
+    void gsCopyIntoShadow(unsigned lclNum, unsigned shadowLclNum);
+    void gsCreateShadowingLocals();
+    void gsRewriteTreeForShadowParam(GenTree* tree);
 
 #define DEFAULT_MAX_INLINE_SIZE                                                                                        \
     100 // Methods with >  DEFAULT_MAX_INLINE_SIZE IL bytes will never be inlined.
