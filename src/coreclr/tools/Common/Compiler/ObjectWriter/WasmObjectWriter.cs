@@ -125,7 +125,7 @@ namespace ILCompiler.ObjectWriter
 
         private WasmDataSection CreateCombinedDataSection()
         {
-           IEnumerable<WasmSection> dataSections = _sections.Where(s => s.Type == WasmSectionType.Data);
+            IEnumerable<WasmSection> dataSections = _sections.Where(s => s.Type == WasmSectionType.Data);
             int offset = 0;
             List<WasmDataSegment> segments = new();
             foreach (WasmSection wasmSection in dataSections)
@@ -368,8 +368,8 @@ namespace ILCompiler.ObjectWriter
             _segments = segments;
         }
 
-       public override int ContentSize
-       {
+        public override int ContentSize
+        {
             get
             {
                 int size = 0;
@@ -380,7 +380,7 @@ namespace ILCompiler.ObjectWriter
                 }
                 return size;
             }
-       }
+        }
 
         public override int Emit(Stream outputFileStream, Logger logger)
         {
