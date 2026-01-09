@@ -44,7 +44,7 @@ using Mono.Linker.Steps;
 namespace Mono.Linker
 {
 
-    public partial class Driver : IDisposable
+    internal partial class Driver : IDisposable
     {
         const string resolvers = "-a|-x";
         const string _linker = "IL Linker";
