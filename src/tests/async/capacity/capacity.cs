@@ -19,6 +19,7 @@ public class CapacityTests
     }
 
     [Fact]
+    [SkipOnCoreClr("", RuntimeTestModes.AnyGCStress)]
     public static void TestLargeClassWithTaskMethods_Success()
     {
         // Scenario 2: allocate an instance of a class with 32750 methods that return Task
@@ -28,6 +29,7 @@ public class CapacityTests
     }
 
     [Fact]
+    [SkipOnCoreClr("", RuntimeTestModes.AnyGCStress)]
     public static void TestLargeClassWithTaskMethods_Exception()
     {
         // Scenario 3: make a call to a method that allocates an instance of a class with 32763 methods that return Task
