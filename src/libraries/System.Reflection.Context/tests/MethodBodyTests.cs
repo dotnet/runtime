@@ -90,8 +90,7 @@ namespace System.Reflection.Context.Tests
         public void LocalSignatureMetadataToken_ReturnsValue()
         {
             int token = _methodBody.LocalSignatureMetadataToken;
-            // Token is implementation-specific but should be > 0 if there are locals
-            _ = token;
+            Assert.True(token >= 0);
         }
 
         [Fact]

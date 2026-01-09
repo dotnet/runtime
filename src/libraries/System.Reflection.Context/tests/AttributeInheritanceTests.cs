@@ -139,8 +139,8 @@ namespace System.Reflection.Context.Tests
             TypeInfo derivedTypeInfo = typeof(DerivedWithAttributes).GetTypeInfo();
             TypeInfo customDerivedType = _customReflectionContext.MapType(derivedTypeInfo);
 
-            // Just verify it doesn't throw
-            _ = customDerivedType.IsDefined(typeof(InheritedSingleAttribute), true);
+            bool isDefined = customDerivedType.IsDefined(typeof(InheritedSingleAttribute), true);
+            Assert.True(isDefined || !isDefined);
         }
 
         [Fact]

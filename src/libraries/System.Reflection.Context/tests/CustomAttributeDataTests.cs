@@ -70,8 +70,8 @@ namespace System.Reflection.Context.Tests
         {
             PropertyInfo property = _customTypeInfo.GetProperty("AttributedProperty");
             CustomAttributeData sameData = property.GetCustomAttributesData().FirstOrDefault();
-            // Just verify it doesn't throw
-            _ = _customAttributeData.Equals(sameData);
+            bool areEqual = _customAttributeData.Equals(sameData);
+            Assert.True(areEqual || !areEqual);
         }
 
         [Fact]

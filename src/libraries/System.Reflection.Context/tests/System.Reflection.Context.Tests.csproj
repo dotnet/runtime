@@ -4,6 +4,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AttributeInheritanceTests.cs" />
+    <Compile Include="BranchCoverageTests.cs" />
+    <Compile Include="BranchCoverageTests2.cs" />
     <Compile Include="CustomAssemblyAttributes.cs" />
     <Compile Include="CustomAttributeDataTests.cs" />
     <Compile Include="CustomConstructorInfoTests.cs" />

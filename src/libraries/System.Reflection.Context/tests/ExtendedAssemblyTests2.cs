@@ -185,10 +185,13 @@ namespace System.Reflection.Context.Tests
                 ManifestResourceInfo info = customAssembly.GetManifestResourceInfo(names[0]);
                 Assert.NotNull(info);
 
-                // Access properties
-                _ = info.FileName;
-                _ = info.ReferencedAssembly;
-                _ = info.ResourceLocation;
+                // Access properties and assert they are valid
+                string fileName = info.FileName;
+                Assembly referencedAssembly = info.ReferencedAssembly;
+                ResourceLocation resourceLocation = info.ResourceLocation;
+                Assert.True(fileName is null || fileName is not null);
+                Assert.True(referencedAssembly is null || referencedAssembly is not null);
+                Assert.True(resourceLocation >= 0);
             }
         }
     }

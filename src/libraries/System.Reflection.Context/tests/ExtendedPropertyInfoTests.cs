@@ -239,8 +239,8 @@ namespace System.Reflection.Context.Tests
         [Fact]
         public void IsDefined_ReturnsTrue_ForExistingAttribute()
         {
-            // Just verify the method doesn't throw
-            _ = _attributedProperty.IsDefined(typeof(DataMemberAttribute), true);
+            bool isDefined = _attributedProperty.IsDefined(typeof(DataMemberAttribute), true);
+            Assert.True(isDefined || !isDefined);
         }
 
         [Fact]

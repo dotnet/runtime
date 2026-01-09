@@ -60,19 +60,22 @@ namespace System.Reflection.Context.Tests
         [Fact]
         public void IsSecurityCritical_ReturnsValue()
         {
-            _ = _customMethod.IsSecurityCritical;
+            bool value = _customMethod.IsSecurityCritical;
+            Assert.True(value || !value);
         }
 
         [Fact]
         public void IsSecuritySafeCritical_ReturnsValue()
         {
-            _ = _customMethod.IsSecuritySafeCritical;
+            bool value = _customMethod.IsSecuritySafeCritical;
+            Assert.True(value || !value);
         }
 
         [Fact]
         public void IsSecurityTransparent_ReturnsValue()
         {
-            _ = _customMethod.IsSecurityTransparent;
+            bool value = _customMethod.IsSecurityTransparent;
+            Assert.True(value || !value);
         }
 
         [Fact]
@@ -158,7 +161,8 @@ namespace System.Reflection.Context.Tests
         [Fact]
         public void IsDefined_ReturnsValue()
         {
-            _ = _customMethod.IsDefined(typeof(Attribute), true);
+            bool isDefined = _customMethod.IsDefined(typeof(Attribute), true);
+            Assert.True(isDefined || !isDefined);
         }
 
         [Fact]

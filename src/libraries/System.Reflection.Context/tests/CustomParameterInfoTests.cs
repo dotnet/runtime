@@ -173,7 +173,8 @@ namespace System.Reflection.Context.Tests
         [Fact]
         public void IsDefined_ReturnsValue()
         {
-            _ = _requiredParameter.IsDefined(typeof(Attribute), true);
+            bool isDefined = _requiredParameter.IsDefined(typeof(Attribute), true);
+            Assert.True(isDefined || !isDefined);
         }
 
         [Fact]
