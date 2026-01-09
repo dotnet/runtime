@@ -196,11 +196,10 @@ ArraySizeOverflow
 ;;  x1 == element count
     LEAF_ENTRY RhpNewPtrArrayFast
 
-        ; Delegate overflow handling to the generic helper conservatively
-
-        mov         x2, #(0x40000000 / 8) ; sizeof(void*)
+        ; we want to limit the element count to the non-negative 32-bit int range
+        mov         x2, #0x7FFFFFFF        ; max signed 32-bit int
         cmp         x1, x2
-        bhs         RhpNewArrayFast
+        bhs         ArraySizeOverflow
 
         ; In this case we know the element size is sizeof(void *), or 8 for arm64
         ; This helps us in two ways - we can shift instead of multiplying, and
