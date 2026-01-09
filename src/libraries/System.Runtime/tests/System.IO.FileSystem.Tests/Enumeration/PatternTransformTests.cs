@@ -107,6 +107,60 @@ namespace System.IO.Tests.Enumeration
             results = GetFiles(testDirectory.FullName, "*>*");
             Assert.Equal(new string[] { fileThree.FullName }, results);
         }
+
+        [Fact]
+        public void GetFiles_StartsWithPattern()
+        {
+            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
+            FileInfo prefixOne = new FileInfo(Path.Combine(testDirectory.FullName, "prefixOne.txt"));
+            FileInfo prefixTwo = new FileInfo(Path.Combine(testDirectory.FullName, "prefixTwo.txt"));
+            FileInfo other = new FileInfo(Path.Combine(testDirectory.FullName, "other.txt"));
+            prefixOne.Create().Dispose();
+            prefixTwo.Create().Dispose();
+            other.Create().Dispose();
+
+            string[] results = GetFiles(testDirectory.FullName, "prefix*");
+            FSAssert.EqualWhenOrdered(new string[] { prefixOne.FullName, prefixTwo.FullName }, results);
+
+            results = GetFiles(testDirectory.FullName, "prefix*", new EnumerationOptions { MatchType = MatchType.Simple });
+            FSAssert.EqualWhenOrdered(new string[] { prefixOne.FullName, prefixTwo.FullName }, results);
+        }
+
+        [Fact]
+        public void GetFiles_EndsWithPattern()
+        {
+            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
+            FileInfo txtOne = new FileInfo(Path.Combine(testDirectory.FullName, "one.txt"));
+            FileInfo txtTwo = new FileInfo(Path.Combine(testDirectory.FullName, "two.txt"));
+            FileInfo logFile = new FileInfo(Path.Combine(testDirectory.FullName, "app.log"));
+            txtOne.Create().Dispose();
+            txtTwo.Create().Dispose();
+            logFile.Create().Dispose();
+
+            string[] results = GetFiles(testDirectory.FullName, "*.txt");
+            FSAssert.EqualWhenOrdered(new string[] { txtOne.FullName, txtTwo.FullName }, results);
+
+            results = GetFiles(testDirectory.FullName, "*.txt", new EnumerationOptions { MatchType = MatchType.Simple });
+            FSAssert.EqualWhenOrdered(new string[] { txtOne.FullName, txtTwo.FullName }, results);
+        }
+
+        [Fact]
+        public void GetFiles_ContainsPattern()
+        {
+            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
+            FileInfo middleOne = new FileInfo(Path.Combine(testDirectory.FullName, "amiddleb.txt"));
+            FileInfo middleTwo = new FileInfo(Path.Combine(testDirectory.FullName, "xmiddley.log"));
+            FileInfo noMatch = new FileInfo(Path.Combine(testDirectory.FullName, "other.txt"));
+            middleOne.Create().Dispose();
+            middleTwo.Create().Dispose();
+            noMatch.Create().Dispose();
+
+            string[] results = GetFiles(testDirectory.FullName, "*middle*");
+            FSAssert.EqualWhenOrdered(new string[] { middleOne.FullName, middleTwo.FullName }, results);
+
+            results = GetFiles(testDirectory.FullName, "*middle*", new EnumerationOptions { MatchType = MatchType.Simple });
+            FSAssert.EqualWhenOrdered(new string[] { middleOne.FullName, middleTwo.FullName }, results);
+        }
     }
 
     public class PatternTransformTests_DirectoryInfo : PatternTransformTests_Directory

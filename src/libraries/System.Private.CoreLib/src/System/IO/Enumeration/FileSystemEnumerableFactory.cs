@@ -98,30 +98,83 @@ namespace System.IO.Enumeration
             return isDirectoryModified;
         }
 
-        private static bool MatchesPattern(string expression, ReadOnlySpan<char> name, EnumerationOptions options)
+        /// <summary>
+        /// Returns a delegate that checks whether a file name matches the given expression.
+        /// The delegate is optimized based on the pattern type (e.g., StartsWith, EndsWith, Contains).
+        /// </summary>
+        private static Func<ReadOnlySpan<char>, bool> GetFileNameMatcher(string expression, EnumerationOptions options)
         {
             bool ignoreCase = (options.MatchCasing == MatchCasing.PlatformDefault && !PathInternal.IsCaseSensitive)
                 || options.MatchCasing == MatchCasing.CaseInsensitive;
 
-            return options.MatchType switch
+            StringComparison comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            bool useExtendedWildcards = options.MatchType == MatchType.Win32;
+
+            // Check for special patterns that can be optimized
+            if (expression == "*")
             {
-                MatchType.Simple => FileSystemName.MatchesSimpleExpression(expression.AsSpan(), name, ignoreCase),
-                MatchType.Win32 => FileSystemName.MatchesWin32Expression(expression.AsSpan(), name, ignoreCase),
-                _ => throw new ArgumentOutOfRangeException(nameof(options)),
-            };
+                // Match all
+                return _ => true;
+            }
+
+            if (expression.Length > 1)
+            {
+                bool startsWithStar = expression[0] == '*';
+                bool endsWithStar = expression[^1] == '*';
+
+                // Determine which wildcards to check for (extended wildcards include DOS special characters)
+                ReadOnlySpan<char> wildcards = useExtendedWildcards ? "\"<>*?" : "*?";
+
+                if (startsWithStar && endsWithStar)
+                {
+                    // Pattern: *literal* (Contains)
+                    ReadOnlySpan<char> middle = expression.AsSpan(1, expression.Length - 2);
+                    if (!middle.ContainsAny(wildcards))
+                    {
+                        string contains = middle.ToString();
+                        return name => name.Contains(contains, comparison);
+                    }
+                }
+                else if (startsWithStar)
+                {
+                    // Pattern: *literal (EndsWith)
+                    ReadOnlySpan<char> suffix = expression.AsSpan(1);
+                    if (!suffix.ContainsAny(wildcards))
+                    {
+                        string endsWith = suffix.ToString();
+                        return name => name.EndsWith(endsWith, comparison);
+                    }
+                }
+                else if (endsWithStar)
+                {
+                    // Pattern: literal* (StartsWith)
+                    ReadOnlySpan<char> prefix = expression.AsSpan(0, expression.Length - 1);
+                    if (!prefix.ContainsAny(wildcards))
+                    {
+                        string startsWith = prefix.ToString();
+                        return name => name.StartsWith(startsWith, comparison);
+                    }
+                }
+            }
+
+            // Fall back to the full pattern matching algorithm
+            return useExtendedWildcards
+                ? name => FileSystemName.MatchesWin32Expression(expression.AsSpan(), name, ignoreCase)
+                : name => FileSystemName.MatchesSimpleExpression(expression.AsSpan(), name, ignoreCase);
         }
 
         internal static IEnumerable<string> UserFiles(string directory,
             string expression,
             EnumerationOptions options)
         {
+            Func<ReadOnlySpan<char>, bool> matcher = GetFileNameMatcher(expression, options);
             return new FileSystemEnumerable<string>(
                 directory,
                 (ref FileSystemEntry entry) => entry.ToSpecifiedFullPath(),
                 options)
             {
                 ShouldIncludePredicate = (ref FileSystemEntry entry) =>
-                    !entry.IsDirectory && MatchesPattern(expression, entry.FileName, options)
+                    !entry.IsDirectory && matcher(entry.FileName)
             };
         }
 
@@ -129,13 +182,14 @@ namespace System.IO.Enumeration
             string expression,
             EnumerationOptions options)
         {
+            Func<ReadOnlySpan<char>, bool> matcher = GetFileNameMatcher(expression, options);
             return new FileSystemEnumerable<string>(
                 directory,
                 (ref FileSystemEntry entry) => entry.ToSpecifiedFullPath(),
                 options)
             {
                 ShouldIncludePredicate = (ref FileSystemEntry entry) =>
-                    entry.IsDirectory && MatchesPattern(expression, entry.FileName, options)
+                    entry.IsDirectory && matcher(entry.FileName)
             };
         }
 
@@ -143,13 +197,14 @@ namespace System.IO.Enumeration
             string expression,
             EnumerationOptions options)
         {
+            Func<ReadOnlySpan<char>, bool> matcher = GetFileNameMatcher(expression, options);
             return new FileSystemEnumerable<string>(
                 directory,
                 (ref FileSystemEntry entry) => entry.ToSpecifiedFullPath(),
                 options)
             {
                 ShouldIncludePredicate = (ref FileSystemEntry entry) =>
-                    MatchesPattern(expression, entry.FileName, options)
+                    matcher(entry.FileName)
             };
         }
 
@@ -159,6 +214,7 @@ namespace System.IO.Enumeration
             EnumerationOptions options,
             bool isNormalized)
         {
+            Func<ReadOnlySpan<char>, bool> matcher = GetFileNameMatcher(expression, options);
             return new FileSystemEnumerable<FileInfo>(
                directory,
                (ref FileSystemEntry entry) => (FileInfo)entry.ToFileSystemInfo(),
@@ -166,7 +222,7 @@ namespace System.IO.Enumeration
                isNormalized)
             {
                 ShouldIncludePredicate = (ref FileSystemEntry entry) =>
-                    !entry.IsDirectory && MatchesPattern(expression, entry.FileName, options)
+                    !entry.IsDirectory && matcher(entry.FileName)
             };
         }
 
@@ -176,6 +232,7 @@ namespace System.IO.Enumeration
             EnumerationOptions options,
             bool isNormalized)
         {
+            Func<ReadOnlySpan<char>, bool> matcher = GetFileNameMatcher(expression, options);
             return new FileSystemEnumerable<DirectoryInfo>(
                directory,
                (ref FileSystemEntry entry) => (DirectoryInfo)entry.ToFileSystemInfo(),
@@ -183,7 +240,7 @@ namespace System.IO.Enumeration
                isNormalized)
             {
                 ShouldIncludePredicate = (ref FileSystemEntry entry) =>
-                    entry.IsDirectory && MatchesPattern(expression, entry.FileName, options)
+                    entry.IsDirectory && matcher(entry.FileName)
             };
         }
 
@@ -193,6 +250,7 @@ namespace System.IO.Enumeration
             EnumerationOptions options,
             bool isNormalized)
         {
+            Func<ReadOnlySpan<char>, bool> matcher = GetFileNameMatcher(expression, options);
             return new FileSystemEnumerable<FileSystemInfo>(
                directory,
                (ref FileSystemEntry entry) => entry.ToFileSystemInfo(),
@@ -200,7 +258,7 @@ namespace System.IO.Enumeration
                isNormalized)
             {
                 ShouldIncludePredicate = (ref FileSystemEntry entry) =>
-                    MatchesPattern(expression, entry.FileName, options)
+                    matcher(entry.FileName)
             };
         }
     }
