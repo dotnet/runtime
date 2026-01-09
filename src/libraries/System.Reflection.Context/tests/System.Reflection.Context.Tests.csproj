@@ -19,6 +19,8 @@
     <Compile Include="ExtendedFieldInfoTests.cs" />
     <Compile Include="ExtendedPropertyInfoTests.cs" />
     <Compile Include="ExtendedTypeTests.cs" />
+    <Compile Include="FinalCoverageTests.cs" />
+    <Compile Include="FinalCoverageTests2.cs" />
     <Compile Include="InheritedPropertyInfoTests.cs" />
     <Compile Include="InteritedMethodInfoTests.cs" />
     <Compile Include="MethodBodyTests.cs" />
@@ -33,6 +35,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="VirtualMethodBaseTests.cs" />
     <Compile Include="VirtualPropertyInfo.PropertySetter.Tests.cs" />
     <Compile Include="VirtualPropertyInfo.PropertyGetter.Tests.cs" />
     <Compile Include="VirtualPropertyInfoTests.cs" />
