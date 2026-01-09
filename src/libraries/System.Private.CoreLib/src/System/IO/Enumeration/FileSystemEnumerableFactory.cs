@@ -143,14 +143,11 @@ namespace System.IO.Enumeration
                     ReadOnlySpan<char> middle = expression.AsSpan(1, expression.Length - 2);
                     if (!middle.ContainsAny(wildcards))
                     {
-                        // Capture range for AsSpan - avoid allocating a new string
-                        int start = 1;
-                        int length = expression.Length - 2;
                         return entryType switch
                         {
-                            FileSystemEntryType.Files => (ref FileSystemEntry entry) => !entry.IsDirectory && entry.FileName.Contains(expression.AsSpan(start, length), comparison),
-                            FileSystemEntryType.Directories => (ref FileSystemEntry entry) => entry.IsDirectory && entry.FileName.Contains(expression.AsSpan(start, length), comparison),
-                            _ => (ref FileSystemEntry entry) => entry.FileName.Contains(expression.AsSpan(start, length), comparison)
+                            FileSystemEntryType.Files => (ref FileSystemEntry entry) => !entry.IsDirectory && entry.FileName.Contains(expression.AsSpan(1, expression.Length - 2), comparison),
+                            FileSystemEntryType.Directories => (ref FileSystemEntry entry) => entry.IsDirectory && entry.FileName.Contains(expression.AsSpan(1, expression.Length - 2), comparison),
+                            _ => (ref FileSystemEntry entry) => entry.FileName.Contains(expression.AsSpan(1, expression.Length - 2), comparison)
                         };
                     }
                 }
@@ -160,13 +157,11 @@ namespace System.IO.Enumeration
                     ReadOnlySpan<char> suffix = expression.AsSpan(1);
                     if (!suffix.ContainsAny(wildcards))
                     {
-                        // Capture start position for AsSpan - avoid allocating a new string
-                        int start = 1;
                         return entryType switch
                         {
-                            FileSystemEntryType.Files => (ref FileSystemEntry entry) => !entry.IsDirectory && entry.FileName.EndsWith(expression.AsSpan(start), comparison),
-                            FileSystemEntryType.Directories => (ref FileSystemEntry entry) => entry.IsDirectory && entry.FileName.EndsWith(expression.AsSpan(start), comparison),
-                            _ => (ref FileSystemEntry entry) => entry.FileName.EndsWith(expression.AsSpan(start), comparison)
+                            FileSystemEntryType.Files => (ref FileSystemEntry entry) => !entry.IsDirectory && entry.FileName.EndsWith(expression.AsSpan(1), comparison),
+                            FileSystemEntryType.Directories => (ref FileSystemEntry entry) => entry.IsDirectory && entry.FileName.EndsWith(expression.AsSpan(1), comparison),
+                            _ => (ref FileSystemEntry entry) => entry.FileName.EndsWith(expression.AsSpan(1), comparison)
                         };
                     }
                 }
@@ -176,13 +171,11 @@ namespace System.IO.Enumeration
                     ReadOnlySpan<char> prefix = expression.AsSpan(0, expression.Length - 1);
                     if (!prefix.ContainsAny(wildcards))
                     {
-                        // Capture length for AsSpan - avoid allocating a new string
-                        int length = expression.Length - 1;
                         return entryType switch
                         {
-                            FileSystemEntryType.Files => (ref FileSystemEntry entry) => !entry.IsDirectory && entry.FileName.StartsWith(expression.AsSpan(0, length), comparison),
-                            FileSystemEntryType.Directories => (ref FileSystemEntry entry) => entry.IsDirectory && entry.FileName.StartsWith(expression.AsSpan(0, length), comparison),
-                            _ => (ref FileSystemEntry entry) => entry.FileName.StartsWith(expression.AsSpan(0, length), comparison)
+                            FileSystemEntryType.Files => (ref FileSystemEntry entry) => !entry.IsDirectory && entry.FileName.StartsWith(expression.AsSpan(0, expression.Length - 1), comparison),
+                            FileSystemEntryType.Directories => (ref FileSystemEntry entry) => entry.IsDirectory && entry.FileName.StartsWith(expression.AsSpan(0, expression.Length - 1), comparison),
+                            _ => (ref FileSystemEntry entry) => entry.FileName.StartsWith(expression.AsSpan(0, expression.Length - 1), comparison)
                         };
                     }
                 }
