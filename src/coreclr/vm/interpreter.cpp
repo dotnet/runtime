@@ -1404,7 +1404,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 	    // TODO TARGET_POWERPC64 check here offset on StubLinkerCPU::EmitProlog
             unsigned       intRegArgBaseOffset = 0;
 	    unsigned       floatRegArgBaseOffset = (8 * sizeof(void*));
-            unsigned short stackArgBaseOffset = 504 + (8 * sizeof(void*));
+            unsigned short stackArgBaseOffset = 496 + (8 * sizeof(void*));
 #else
 #error unsupported platform
 #endif

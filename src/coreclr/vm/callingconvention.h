@@ -196,9 +196,9 @@ struct TransitionBlock
     TADDR                   m_StackPointer;
     FloatArgumentRegisters  m_floatArgumentRegisters;
 #elif defined(TARGET_POWERPC64)
+    TADDR		    m_saveFrameAddress; 	//8
     FloatCalleeSavedRegisters    m_floatCalleeSaveRegisters;		//8*18 = 144
     CalleeSavedRegisters    m_calleeSavedRegisters; 	// r14-r31 8*18 = 144
-    TADDR		    m_padding;
     FloatArgumentRegisters  m_floatArgumentRegisters; //f1-f13 8*13 = 104 
     ArgumentRegisters       m_argumentRegisters;// 8*8 = 64 r3 - r10
     TADDR		    m_tocPtr;		//8 = r2
@@ -1171,6 +1171,8 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetThisOffset()
 #ifdef TARGET_X86
     // x86 is special as always
     ret += offsetof(ArgumentRegisters, ECX);
+//#elif defined(TARGET_POWERPC64)
+//    ret += sizeof(ArgumentRegisters);
 #endif
 
     return ret;
@@ -1191,6 +1193,8 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetRetBuffArgOffset()
     ret += this->HasThis() ? offsetof(ArgumentRegisters, EDX) : offsetof(ArgumentRegisters, ECX);
 #elif TARGET_ARM64
     ret = TransitionBlock::GetOffsetOfRetBuffArgReg();
+//#elif defined(TARGET_POWERPC64)
+//    ret += sizeof(ArgumentRegisters);
 #else
     if (this->HasThis())
         ret += TARGET_POINTER_SIZE;

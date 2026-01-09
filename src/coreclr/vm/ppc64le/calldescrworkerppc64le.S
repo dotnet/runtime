@@ -36,9 +36,9 @@ LOCAL_LABEL(StackAllocationLoop):
     cmpdi %r0, 0
     bne LOCAL_LABEL(StackAllocationLoop)
 
-    addic %r1, %r1, -104
+    addic %r1, %r1, -112
     std %r31, 0(%r1)
-    .cfi_adjust_cfa_offset 104
+    .cfi_adjust_cfa_offset 112
     .cfi_offset 65, 16
     .cfi_offset 31, -8
     mr %r31, %r1
@@ -66,8 +66,8 @@ LOCAL_LABEL(StackCopyLoop):
 
 LOCAL_LABEL(DefaultStackAllocation):
 
-    stdu %r1, -104(%r1)
-    .cfi_def_cfa_offset 104
+    stdu %r1, -112(%r1)
+    .cfi_def_cfa_offset 112
     .cfi_offset 65, 16
     .cfi_offset 31, -8
     mr %r31, %r1
@@ -153,7 +153,7 @@ LOCAL_LABEL(Epilog):
 
 LOCAL_LABEL(NO_STACK_PADDING_EPILOG):
 	mulli %r5, %r5, 8
-	addic %r6, %r5, 104
+	addic %r6, %r5, 112
 	
 	add   %r1, %r1, %r6
 

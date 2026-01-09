@@ -332,12 +332,12 @@ void StubLinkerCPU::EmitSaveArguments(unsigned int cIntRegArgs, unsigned int cFl
     //EmitStoreDoubleWord(IntReg(31), IntReg(1), -8);
 
     //#define ppc_stdu(c,S,ds,A)  ppc_emit32(c, (62 << 26) | ((S) << 21) | ((A) << 16) | ((guint32)(ds) & 0xfffc) | 1)
-    //stdu %r1, -504(%r1)
+    //stdu %r1, -496(%r1)
     IntReg RS = IntReg(1);
-    Emit32((DWORD)((62 << 26) | ((RS) << 21) | ((RS) << 16) | (-504 & 0xfffc) | 1));
+    Emit32((DWORD)((62 << 26) | ((RS) << 21) | ((RS) << 16) | (-496 & 0xfffc) | 1));
 
     //std %r31, -8(%r1)
-    EmitStoreDoubleWord(IntReg(31), IntReg(1), 496);
+    EmitStoreDoubleWord(IntReg(31), IntReg(1), 488);
 
     // Store integer argument registers (r3-r10)
     int disp = 32;
@@ -353,8 +353,6 @@ void StubLinkerCPU::EmitSaveArguments(unsigned int cIntRegArgs, unsigned int cFl
     	EmitStoreFloatingPointDouble(VecReg(i), IntReg(1), disp);
 	disp = disp + 8;
     }
-
-    disp = disp + 8; //padding
 
     // Store call-saved registers (r14-r31)
     for (int i=14; i<=31; i++)
@@ -431,8 +429,6 @@ void StubLinkerCPU::EmitRestoreArguments(IntReg R0, IntReg R1)
     	EmitLoadFloatingPointDouble(VecReg(i), IntReg(1), disp);
 	disp = disp + 8;
     }
-
-    disp = disp + 8;  //padding
 
     // Store callee-saved registers
     // ld r14 to r31
