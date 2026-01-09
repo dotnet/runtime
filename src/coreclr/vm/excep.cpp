@@ -11204,6 +11204,18 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
 }
 
+#elif defined(TARGET_WASM)
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // WASM cannot capture execution context, so just zero everything
+    memset(&m_Context, 0, sizeof(m_Context));
+    memset(&m_ContextPointers, 0, sizeof(m_ContextPointers));
+    m_ReturnAddress = 1; // Non-zero to skip VirtualUnwind in Init()
+}
+
 #endif // TARGET_X86
 
 //
