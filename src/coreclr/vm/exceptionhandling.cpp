@@ -3959,6 +3959,9 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
     isNativeTransition = (pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME);
 
 #ifdef FEATURE_INTERPRETER
+    bool nativeTransitionFrameIsNextFrame;
+    nativeTransitionFrameIsNextFrame = false;
+
     if (isNativeTransition &&
         (GetIP(pThis->m_crawl.GetRegisterSet()->pCurrentContext) == InterpreterFrame::DummyCallerIP))
     {
@@ -3988,6 +3991,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
             {
                 // The caller is native code, so we can update the regdisplay to point to it.
                 pInterpreterFrame->UpdateRegDisplay(pThis->m_crawl.GetRegisterSet(), /* updateFloats */ true);
+                nativeTransitionFrameIsNextFrame = true;
             }
         }
     }
@@ -4049,6 +4053,14 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
         if (isPropagatingToNativeCode)
         {
             pFrame = pThis->m_crawl.GetFrame();
+#ifdef FEATURE_INTERPRETER
+            if (nativeTransitionFrameIsNextFrame)
+            {
+                // Skip the InterpreterFrame that we determined earlier is NOT the frame we consider part of the native transition.
+                _ASSERTE(pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
+                pFrame = pFrame->PtrNextFrame();
+            }
+#endif
 
             // Check if there are any further managed frames on the stack or a catch for all exceptions in native code (marked by
             // DebuggerU2MCatchHandlerFrame with CatchesAllExceptions() returning true).
