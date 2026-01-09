@@ -203,10 +203,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Mono.Linker.FeatureSettings</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.IDependencyRecorder</Target>
   </Suppression>
   <Suppression>
@@ -219,10 +215,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Mono.Linker.InternalErrorException</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.ITryResolveMetadata</Target>
   </Suppression>
   <Suppression>
@@ -232,10 +224,6 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.KnownMembers</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Mono.Linker.LinkerFatalErrorException</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
