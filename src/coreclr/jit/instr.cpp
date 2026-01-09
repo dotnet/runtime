@@ -2515,6 +2515,12 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         case TYP_REF:
         case TYP_BYREF:
             return ins_Store(TYP_I_IMPL, aligned);
+        case TYP_BYTE:
+        case TYP_UBYTE:
+            return INS_i32_store8;
+        case TYP_SHORT:
+        case TYP_USHORT:
+            return INS_i32_store16;
         case TYP_INT:
             return INS_i32_store;
         case TYP_LONG:
