@@ -18,7 +18,7 @@ pr:
     - docs/*
     # Don't trigger VMR builds for changes to Mono.
     # Mono-based stage 2 source-build is not blocking for the VMR and is only done as a basic validation
-    # for our partners. Interesting Mono-based stage 2 source-build is for architectures that are not
+    # for our partners. Interesting Mono-based stage 2 source-build legs are for architectures that are not
     # supported on CoreCLR, like S390X, which we don't build ourselves.
     - src/mono/*
     - eng/pipelines/coreclr/*.*
