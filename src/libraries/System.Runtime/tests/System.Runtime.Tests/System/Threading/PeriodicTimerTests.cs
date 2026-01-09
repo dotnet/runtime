@@ -83,7 +83,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-         [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public async Task WaitForNextTickAsync_TimerFires_ReturnsTrue()
         {
             using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1));
@@ -120,7 +120,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-         [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public async Task WaitForNextTickAsync_ConcurrentDisposeAfterTicks_EventuallyReturnsFalse()
         {
             using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1));
@@ -140,7 +140,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
-         [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void PeriodicTimer_NoActiveOperations_TimerNotRooted()
         {
             WeakReference<PeriodicTimer> timer = Create();
@@ -153,7 +153,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
-         [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public async Task PeriodicTimer_ActiveOperations_TimerRooted()
         {
             // Step 1: Verify that if we have an active wait the timer does not get collected.
@@ -243,7 +243,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-         [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public async Task WaitForNextTickAsync_CanceledWaitThenWaitAgain_Succeeds()
         {
             using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1));

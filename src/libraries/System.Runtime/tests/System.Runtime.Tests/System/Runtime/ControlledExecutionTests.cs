@@ -55,7 +55,7 @@ namespace System.Runtime.Tests
         // Tests that an infinite loop may be aborted and that the ThreadAbortException is translated
         // to an OperationCanceledException.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
-         [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void CancelOutsideOfTryCatchFinally()
         {
             var cts = new CancellationTokenSource();
@@ -162,7 +162,7 @@ namespace System.Runtime.Tests
 
         // Tests that finally blocks are not aborted. The finally block throws an exception.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
-         [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void CancelInFinallyThatSleepsAndThrows()
         {
             var cts = new CancellationTokenSource();
