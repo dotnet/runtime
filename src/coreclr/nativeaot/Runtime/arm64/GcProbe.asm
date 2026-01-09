@@ -102,35 +102,33 @@ PROBE_FRAME_SIZE    field 0
 ;;  All registers correct for return to the original return address.
 ;;
 ;; Register state on exit:
-;;  x9: thread pointer
-;;  x0, x1, x2: preserved
-;;  x3, x10: trashed
+;;  x4: thread pointer
+;;  x2: preserved
+;;  x3: trashed
 ;;
     MACRO
         FixupHijackedCallstack
 
-        ;; Preserve return value registers (x0, x1, x2) since they may contain return values/async continuation
-        stp         x0, x1, [sp, #-32]!
-        stp         x2, x3, [sp, #16]
+        ;; Preserve x2 since it may contain an async continuation
+        str         x2, [sp, #-16]!
 
-        ;; x9 <- GetThread(), TRASHES x10
-        INLINE_GETTHREAD x9, x10
+        ;; x4 <- GetThread(), TRASHES x3
+        INLINE_GETTHREAD x4, x3
 
         ;;
         ;; Fix the stack by restoring the original return address
         ;;
-        ldr         lr, [x9, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+        ldr         lr, [x4, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 
         ;;
         ;; Clear hijack state
         ;;
         ASSERT OFFSETOF__Thread__m_pvHijackedReturnAddress == (OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation + 8)
         ;; Clear m_ppvHijackedReturnAddressLocation and m_pvHijackedReturnAddress
-        stp         xzr, xzr, [x9, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+        stp         xzr, xzr, [x4, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
 
-        ;; Restore return value registers
-        ldp         x2, x3, [sp, #16]
-        ldp         x0, x1, [sp], #32
+        ;; Restore x2
+        ldr         x2, [sp], #16
     MEND
 
     MACRO
@@ -170,9 +168,9 @@ WaitForGC
     EXTERN RhpThrowHwEx
 
     NESTED_ENTRY RhpWaitForGC
-        PUSH_PROBE_FRAME x9, x3, x12
+        PUSH_PROBE_FRAME x4, x3, x12
 
-        ldr         x0, [x9, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
+        ldr         x0, [x4, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
         bl          RhpWaitForGC2
 
         POP_PROBE_FRAME
@@ -214,7 +212,7 @@ WaitForGC
 ;;  x0: hijacked function return value
 ;;  x1: hijacked function return value
 ;;  x2: hijacked function async continuation value
-;;  x9: thread pointer
+;;  x4: thread pointer
 ;;  w12: register bitmask
 ;;
 ;; Register state on exit:
@@ -222,7 +220,7 @@ WaitForGC
 ;;  All other registers restored as they were when the hijack was first reached.
 ;;
     NESTED_ENTRY RhpGcStressProbe
-        PUSH_PROBE_FRAME x9, x3, x12
+        PUSH_PROBE_FRAME x4, x3, x12
 
         bl          RhpStressGc
 

@@ -289,17 +289,17 @@ C_FUNC(\Name):
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 48
 .endm
 
-.macro GETTHREAD_ETLS_9
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -64           // ;; Push down stack pointer and store FP and LR
+.macro GETTHREAD_ETLS_4
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -48           // ;; Push down stack pointer and store FP and LR
     stp         x0, x1, [sp, #0x10]
     stp         x2, x3, [sp, #0x20]
 
     bl C_FUNC(RhpGetThread)
-    mov x9, x0
+    mov x4, x0
 
-    ldp         x2, x3, [sp, #0x20]
     ldp         x0, x1, [sp, #0x10]
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 64
+    ldp         x2, x3, [sp, #0x20]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 48
 .endm
 
 .macro GETTHUNKDATA_ETLS_9

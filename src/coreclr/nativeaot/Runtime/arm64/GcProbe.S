@@ -66,8 +66,8 @@
 .macro POP_PROBE_FRAME
 
     // Restore the integer return registers
-    ldp          x0, x1,   [sp, #0x78]
-    ldr          x2,       [sp, #0x88]
+    ldp         x0, x1,   [sp, #0x78]
+    ldr         x2,       [sp, #0x88]
 
     // Restore the FP/HFA/HVA return registers
     ldp         q0, q1,   [sp, #0x90]
@@ -91,37 +91,34 @@
 //  All registers correct for return to the original return address.
 //
 // Register state on exit:
-//  x9: thread pointer
-//  x0, x1, x2: preserved
-//  x3, x10: trashed
+//  x4: thread pointer
+//  x2: preserved
 //
 .macro FixupHijackedCallstack
 
-    // Preserve return value registers (x0, x1, x2) since they may contain return values/async continuation
-    stp         x0, x1, [sp, #-32]!
-    stp         x2, x3, [sp, #16]
+    // Preserve x2 since it may contain an async continuation
+    str         x2, [sp, #-16]!
 
-    // x9 <- GetThread()
+    // x4 <- GetThread()
 #ifdef FEATURE_EMULATED_TLS
-    GETTHREAD_ETLS_9
+    GETTHREAD_ETLS_4
 #else
-    INLINE_GETTHREAD x9
+    INLINE_GETTHREAD x4
 #endif
 
     //
     // Fix the stack by restoring the original return address
     //
-    ldr         lr, [x9, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+    ldr         lr, [x4, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 
     //
     // Clear hijack state
     //
     // Clear m_ppvHijackedReturnAddressLocation and m_pvHijackedReturnAddress
-    stp         xzr, xzr, [x9, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+    stp         xzr, xzr, [x4, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
 
-    // Restore return value registers
-    ldp         x2, x3, [sp, #16]
-    ldp         x0, x1, [sp], #32
+    // Restore x2
+    ldr         x2, [sp], #16
 .endm
 
 //
@@ -143,9 +140,9 @@ NESTED_END RhpGcProbeHijack
 .global C_FUNC(RhpThrowHwEx)
 
 NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
-    PUSH_PROBE_FRAME x9, x3, x12
+    PUSH_PROBE_FRAME x4, x3, x12
 
-    ldr         x0, [x9, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
+    ldr         x0, [x4, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
     bl          C_FUNC(RhpWaitForGC2)
 
     POP_PROBE_FRAME
