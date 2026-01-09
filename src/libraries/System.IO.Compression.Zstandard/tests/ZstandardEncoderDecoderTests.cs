@@ -122,7 +122,7 @@ namespace System.IO.Compression
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
         public void GetMaxCompressedLength_TruncationOn32Bit_ThrowsArgumentOutOfRangeException()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("inputSize", () => GetMaxCompressedLength(uint.MaxValue + 1L));
+            Assert.Throws<ArgumentOutOfRangeException>("inputLength", () => GetMaxCompressedLength(uint.MaxValue + 1L));
         }
 
         [Fact]
