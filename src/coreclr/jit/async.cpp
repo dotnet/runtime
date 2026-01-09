@@ -2016,6 +2016,8 @@ BasicBlock* AsyncTransformation::RethrowExceptionOnResumption(BasicBlock*       
     if ((rethrowExceptionBB->Prev() == block) && !block->HasFlag(BBF_INTERNAL))
     {
         rethrowExceptionBB->RemoveFlags(BBF_INTERNAL);
+        // Non-internal blocks must be marked imported
+        rethrowExceptionBB->SetFlags(BBF_IMPORTED);
     }
 
     BasicBlock* storeResultBB = m_comp->fgNewBBafter(BBJ_ALWAYS, resumeBB, true);
