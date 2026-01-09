@@ -4706,6 +4706,7 @@ protected:
 
     NamedIntrinsic lookupHalfIntrinsic(NamedIntrinsic ni);
     NamedIntrinsic lookupHalfConversionIntrinsic(var_types fromType, var_types toType);
+    int lookupHalfRoundingMode(NamedIntrinsic ni);
 
     GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
                                           CORINFO_METHOD_HANDLE method,

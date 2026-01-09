@@ -198,6 +198,10 @@ enum NamedIntrinsic : unsigned short
     NI_System_Half_get_One,
     NI_System_Half_get_Zero,
 
+    NI_System_Half_Ceiling,
+    NI_System_Half_Floor,
+    NI_System_Half_Truncate,
+
 #ifdef FEATURE_HW_INTRINSICS
     NI_HW_INTRINSIC_START,
 #if defined(TARGET_XARCH)

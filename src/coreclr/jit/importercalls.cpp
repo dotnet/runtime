@@ -4495,6 +4495,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             }
 
             case NI_System_Half_Round:
+            case NI_System_Half_Ceiling:
+            case NI_System_Half_Floor:
+            case NI_System_Half_Truncate:
             {
 #ifdef TARGET_XARCH
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
@@ -4508,7 +4511,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         GenTree* op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(0.0f), TYP_FLOAT, 16);
                         op1          = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_HALF, 16);
 
-                        retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, gtNewIconNode(0x04),
+                        int halfRoundingMode = lookupHalfRoundingMode(ni);
+                        halfRoundingMode |= 0x04;
+
+                        retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, gtNewIconNode(halfRoundingMode));
                                                            NI_AVX10v1_RoundScaleScalar, TYP_HALF, 16);
                         retNode = gtNewSimdToScalarNode(TYP_HALF, retNode, TYP_HALF, 16);
                     }
@@ -10791,6 +10797,19 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             result = NI_System_Half_get_Zero;
                         }
 
+                        else if (strcmp(methodName, "Ceiling") == 0)
+                        {
+                            result = NI_System_Half_Ceiling;
+                        }
+                        else if (strcmp(methodName, "Floor") == 0)
+                        {
+                            result = NI_System_Half_Floor;
+                        }
+                        else if (strcmp(methodName, "Truncate") == 0)
+                        {
+                            result = NI_System_Half_Truncate;
+                        }
+
                         break;
                     }
                     break;
@@ -12355,14 +12374,12 @@ NamedIntrinsic Compiler::lookupHalfIntrinsic(NamedIntrinsic ni)
         case NI_System_Half_Max:
             return NI_AVX10v1_MaxScalar;
 
-        case NI_System_Half_Round:
-            return NI_AVX10v1_RoundScaleScalar;
-
         case NI_System_Half_Min:
             return NI_AVX10v1_MinScalar;
 
         case NI_System_Half_ReciprocalEstimate:
             return NI_AVX10v1_ReciprocalScalar;
+
         case NI_System_Half_ReciprocalSqrtEstimate:
             return NI_AVX10v1_ReciprocalSqrtScalar;
 
@@ -12385,12 +12402,37 @@ NamedIntrinsic Compiler::lookupHalfIntrinsic(NamedIntrinsic ni)
             return NI_AVX10v1_CompareScalarOrderedEqual;
         case NI_System_Half_op_Inequality:
             return NI_AVX10v1_CompareScalarOrderedNotEqual;
+
+        case NI_System_Half_Round:
+        case NI_System_Half_Ceiling:
+        case NI_System_Half_Floor:
+        case NI_System_Half_Truncate:
+            return NI_AVX10v1_RoundScalar;
+
         default:
             break;
     }
 #endif
 #endif
     return NI_Illegal;
+}
+
+int Compiler::lookupHalfRoundingMode(NamedIntrinsic ni)
+{
+    switch (ni)
+    {
+        case NI_System_Half_Round:
+            return 0; // Round to nearest
+        case NI_System_Half_Ceiling:
+            return 1; // Round towards +infinity
+        case NI_System_Half_Floor:
+            return 2; // Round towards -infinity
+        case NI_System_Half_Truncate:
+            return 3; // Round towards zero
+        default:
+            noway_assert(!"Should have one of the above Half intrinsics");
+            return -1;
+    }
 }
 
 NamedIntrinsic Compiler::lookupHalfConversionIntrinsic(var_types fromType, var_types toType)

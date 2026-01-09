@@ -1352,6 +1352,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
+        [Intrinsic]
         public static Half Ceiling(Half x) => (Half)MathF.Ceiling((float)x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
@@ -1363,6 +1364,7 @@ namespace System
             where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
+        [Intrinsic]
         public static Half Floor(Half x) => (Half)MathF.Floor((float)x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
@@ -1379,6 +1381,7 @@ namespace System
         public static Half Round(Half x, int digits, MidpointRounding mode) => (Half)MathF.Round((float)x, digits, mode);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
+        [Intrinsic]
         public static Half Truncate(Half x) => (Half)MathF.Truncate((float)x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
