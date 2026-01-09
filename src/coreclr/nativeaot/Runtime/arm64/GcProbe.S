@@ -37,7 +37,7 @@
 
     // Slot at [sp, #0x70] is reserved for caller sp
 
-    // Save the integer return registers
+    // Save the integer return registers, x2 might contain an objectref (async continuation)
     stp         x0, x1,   [sp, #0x78]
     str         x2,       [sp, #0x88]
 

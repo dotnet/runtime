@@ -46,7 +46,7 @@ PROBE_FRAME_SIZE    field 0
 
         ;; Slot at [sp, #0x70] is reserved for caller sp
 
-        ;; Save the integer return registers
+        ;; Save the integer return registers, x2 might contain an objectref (async continuation)
         PROLOG_NOP stp         x0, x1,   [sp, #0x78]
         PROLOG_NOP str         x2,       [sp, #0x88]
 
@@ -109,9 +109,6 @@ PROBE_FRAME_SIZE    field 0
     MACRO
         FixupHijackedCallstack
 
-        ;; Preserve x2 since it may contain an async continuation
-        str         x2, [sp, #-16]!
-
         ;; x4 <- GetThread(), TRASHES x3
         INLINE_GETTHREAD x4, x3
 
@@ -126,9 +123,6 @@ PROBE_FRAME_SIZE    field 0
         ASSERT OFFSETOF__Thread__m_pvHijackedReturnAddress == (OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation + 8)
         ;; Clear m_ppvHijackedReturnAddressLocation and m_pvHijackedReturnAddress
         stp         xzr, xzr, [x4, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
-
-        ;; Restore x2
-        ldr         x2, [sp], #16
     MEND
 
     MACRO
