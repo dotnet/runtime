@@ -32,8 +32,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 const char* CodeGen::genInsName(instruction ins)
 {
     // clang-format off
-    static
-    const char * const insNames[] =
+    static const char * const insNames[] =
     {
 #if defined(TARGET_XARCH)
         #define INST0(id, nm, um, mr,                 lat, tp, tt, flags) nm,
@@ -84,6 +83,10 @@ const char* CodeGen::genInsName(instruction ins)
 
 #elif defined(TARGET_RISCV64)
         #define INST(id, nm, ldst, e1) nm,
+        #include "instrs.h"
+
+#elif defined(TARGET_WASM)
+        #define INST(id, nm, info, fmt, opcode) nm,
         #include "instrs.h"
 
 #else
@@ -1898,7 +1901,7 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
         // If we are running the altjit for AOT, then assume we can use the "BL" instruction.
         // This matches the usual behavior for AOT, since we normally do generate "BL".
         (!compiler->info.compMatchedVM && compiler->IsAot()) ||
-        (compiler->eeGetRelocTypeHint((void*)addr) == IMAGE_REL_BASED_THUMB_BRANCH24);
+        (compiler->eeGetRelocTypeHint((void*)addr) == CorInfoReloc::ARM32_THUMB_BRANCH24);
 }
 
 #endif // TARGET_ARM
@@ -1908,7 +1911,7 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
 {
     // On arm64, we always assume a call target is in range and generate a 28-bit relative
     // 'bl' instruction. If this isn't sufficient range, the VM will generate a jump stub when
-    // we call recordRelocation(). See the IMAGE_REL_ARM64_BRANCH26 case in jitinterface.cpp
+    // we call recordRelocation(). See the CorInfoReloc::ARM64_BRANCH26 case in jitinterface.cpp
     // (for JIT) or zapinfo.cpp (for AOT). If we cannot allocate a jump stub, it is fatal.
     return true;
 }
@@ -2093,6 +2096,28 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
  */
 instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*/)
 {
+    // TODO-Cleanup: split this function across target-specific files (e. g. emit<target>.cpp).
+
+#if defined(TARGET_WASM)
+    switch (srcType)
+    {
+        case TYP_REF:
+        case TYP_BYREF:
+            return ins_Load(TYP_I_IMPL, aligned);
+        case TYP_INT:
+            return INS_i32_load;
+        case TYP_LONG:
+            return INS_i64_load;
+        case TYP_FLOAT:
+            return INS_f32_load;
+        case TYP_DOUBLE:
+            return INS_f64_load;
+        default:
+            NYI_WASM("ins_Load");
+            return INS_none;
+    }
+#endif // defined(TARGET_WASM)
+
     if (varTypeUsesIntReg(srcType))
     {
         instruction ins = INS_invalid;
@@ -2248,6 +2273,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
     }
 #else
     NYI("ins_Load");
+    return INS_none;
 #endif
 }
 
@@ -2260,6 +2286,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
  */
 instruction CodeGen::ins_Copy(var_types dstType)
 {
+    // TODO-Cleanup: split this function across target-specific files (e. g. emit<target>.cpp).
     assert(emitTypeActSz[dstType] != 0);
 
     if (varTypeUsesIntReg(dstType))
@@ -2325,6 +2352,7 @@ instruction CodeGen::ins_Copy(var_types dstType)
     }
 #else
     NYI("ins_Copy");
+    return INS_none;
 #endif
 }
 
@@ -2342,6 +2370,7 @@ instruction CodeGen::ins_Copy(var_types dstType)
 //
 instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
 {
+    // TODO-Cleanup: split this function across target-specific files (e. g. emit<target>.cpp).
     assert(srcReg != REG_NA);
 
     if (varTypeUsesIntReg(dstType))
@@ -2455,6 +2484,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
     }
 #else
     NYI("ins_Copy");
+    return INS_none;
 #endif
 }
 
@@ -2469,6 +2499,28 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
  */
 instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false*/)
 {
+    // TODO-Cleanup: split this function across target-specific files (e. g. emit<target>.cpp).
+
+#if defined(TARGET_WASM)
+    switch (dstType)
+    {
+        case TYP_REF:
+        case TYP_BYREF:
+            return ins_Store(TYP_I_IMPL, aligned);
+        case TYP_INT:
+            return INS_i32_store;
+        case TYP_LONG:
+            return INS_i64_store;
+        case TYP_FLOAT:
+            return INS_f32_store;
+        case TYP_DOUBLE:
+            return INS_f64_store;
+        default:
+            NYI_WASM("ins_Store");
+            return INS_none;
+    }
+#endif // defined(TARGET_WASM)
+
     if (varTypeUsesIntReg(dstType))
     {
         instruction ins = INS_invalid;
@@ -2572,6 +2624,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
     }
 #else
     NYI("ins_Store");
+    return INS_none;
 #endif
 }
 
@@ -2970,6 +3023,8 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
     GetEmitter()->emitIns_R_R_I(INS_ori, size, reg, REG_R0, 0);
 #elif defined(TARGET_RISCV64)
     GetEmitter()->emitIns_R_R_I(INS_addi, size, reg, REG_R0, 0);
+#elif defined(TARGET_WASM)
+    NYI_WASM("instGen_Set_Reg_To_Zero");
 #else
 #error "Unknown TARGET"
 #endif

@@ -27,7 +27,7 @@ import { populateEmscriptenPool, mono_wasm_init_threads } from "./pthreads";
 import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents, monoThreadInfo } from "./pthreads";
 import { mono_wasm_pthread_ptr, update_thread_info } from "./pthreads";
 import { jiterpreter_allocate_tables } from "./jiterpreter-support";
-import { localHeapViewU8, malloc, setU32 } from "./memory";
+import { localHeapViewU8, malloc, setU32, fixupPointer } from "./memory";
 import { assertNoProxies } from "./gc-handles";
 import { runtimeList } from "./exports";
 import { nativeAbort, nativeExit } from "./run";
@@ -36,7 +36,7 @@ import { replaceEmscriptenPThreadInit } from "./pthreads/worker-thread";
 // make pid positive 31bit integer based on startup time
 const pid = ((globalThis.performance?.timeOrigin ?? Date.now()) | 0) & 0x7FFFFFFF;
 
-export function mono_wasm_process_current_pid ():number {
+export function SystemJS_GetCurrentProcessId ():number {
     return pid;
 }
 
@@ -594,12 +594,12 @@ export function mono_wasm_asm_loaded (assembly_name: CharPtr, assembly_ptr: numb
         return;
     const heapU8 = localHeapViewU8();
     const assembly_name_str = assembly_name !== CharPtrNull ? utf8ToString(assembly_name).concat(".dll") : "";
-    const assembly_data = new Uint8Array(heapU8.buffer, assembly_ptr, assembly_len);
+    const assembly_data = new Uint8Array(heapU8.buffer, fixupPointer(assembly_ptr, 0), assembly_len);
     const assembly_b64 = toBase64StringImpl(assembly_data);
 
     let pdb_b64;
     if (pdb_ptr) {
-        const pdb_data = new Uint8Array(heapU8.buffer, pdb_ptr, pdb_len);
+        const pdb_data = new Uint8Array(heapU8.buffer, fixupPointer(pdb_ptr, 0), pdb_len);
         pdb_b64 = toBase64StringImpl(pdb_data);
     }
 

@@ -1534,13 +1534,13 @@ namespace System.ComponentModel.Tests
 
             public TestAssemblyLoadContext(string name, bool isCollectible, string mainAssemblyToLoadPath = null) : base(name, isCollectible)
             {
-                if (!PlatformDetection.IsBrowser)
+                if (!PlatformDetection.IsMobile)
                     _resolver = new AssemblyDependencyResolver(mainAssemblyToLoadPath ?? Assembly.GetExecutingAssembly().Location);
             }
 
             protected override Assembly Load(AssemblyName name)
             {
-                if (PlatformDetection.IsBrowser)
+                if (PlatformDetection.IsMobile)
                 {
                     return base.Load(name);
                 }
@@ -1577,10 +1577,9 @@ namespace System.ComponentModel.Tests
             alc.Unload();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
         // loaded in the default ALC, which causes problems for this test.
-        [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsNotMobile))]
         [ActiveIssue("34072", TestRuntimes.Mono)]
         public static void TypeDescriptor_WithDefaultProvider_UnloadsUnloadableTypes()
         {
@@ -1621,10 +1620,9 @@ namespace System.ComponentModel.Tests
             Assert.True(!weakRef.IsAlive);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
         // loaded in the default ALC, which causes problems for this test.
-        [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsNotMobile))]
         [ActiveIssue("34072", TestRuntimes.Mono)]
         public static void TypeDescriptor_WithCustomProvider_UnloadsUnloadableTypes()
         {

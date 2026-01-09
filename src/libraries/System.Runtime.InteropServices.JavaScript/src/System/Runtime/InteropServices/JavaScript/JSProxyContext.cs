@@ -398,7 +398,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_MANAGED_THREADS
                 unsafe
                 {
-                    Marshal.FreeHGlobal((IntPtr)holder.State);
+                    NativeMemory.Free(holder.State);
                     holder.State = null;
                 }
 #endif
@@ -442,7 +442,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     holderCallback = holder.Callback;
                     holder.IsDisposed = true;
 #if FEATURE_WASM_MANAGED_THREADS
-                    Marshal.FreeHGlobal((IntPtr)holder.State);
+                    NativeMemory.Free(holder.State);
                     holder.State = null;
 #endif
                 }

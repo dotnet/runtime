@@ -329,6 +329,12 @@ namespace Internal.IL
                 return false;
             }
 
+            // Validate generic parameter.
+            if (declSig.GenericParameterCount != maybeSig.GenericParameterCount)
+            {
+                return false;
+            }
+
             // Validate argument count and return type
             if (context.Kind == UnsafeAccessorKind.Constructor)
             {

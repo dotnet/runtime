@@ -143,6 +143,7 @@ public class MulticastDelegateGetInvocationList
     #endregion
     #endregion
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

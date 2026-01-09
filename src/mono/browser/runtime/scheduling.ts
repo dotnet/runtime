@@ -57,7 +57,7 @@ function mono_background_exec_until_done () {
 }
 
 let lastScheduledBackground: any = undefined;
-export function schedule_background_exec (): void {
+export function SystemJS_ScheduleBackgroundJobImpl (): void {
     if (WasmEnableThreads) return;
     if (!lastScheduledBackground) {
         lastScheduledBackground = Module.safeSetTimeout(mono_background_exec_until_done, 0);
@@ -65,7 +65,7 @@ export function schedule_background_exec (): void {
 }
 
 let lastScheduledTimeoutId: any = undefined;
-export function mono_wasm_schedule_timer (shortestDueTimeMs: number): void {
+export function SystemJS_ScheduleTimerImpl (shortestDueTimeMs: number): void {
     if (WasmEnableThreads) return;
     if (lastScheduledTimeoutId) {
         globalThis.clearTimeout(lastScheduledTimeoutId);

@@ -36,10 +36,7 @@ namespace System.Threading
                     previous = previous?.NextOwnedNamedMutex;
                 }
 
-                if (previous is not null)
-                {
-                    previous.NextOwnedNamedMutex = namedMutex.NextOwnedNamedMutex;
-                }
+                previous?.NextOwnedNamedMutex = namedMutex.NextOwnedNamedMutex;
             }
 
             namedMutex.NextOwnedNamedMutex = null;

@@ -357,8 +357,8 @@ VOID LogRCWDestroy(RCW* pWrap);
 
 //--------------------------------------------------------------------------------
 // Ensure COM is started up.
-HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread = TRUE);
-VOID EnsureComStarted(BOOL fCoInitCurrentThread = TRUE);
+HRESULT EnsureComStartedNoThrow();
+VOID EnsureComStarted();
 
 IUnknown* MarshalObjectToInterface(OBJECTREF* ppObject, MethodTable* pItfMT, MethodTable* pClassMT, DWORD dwFlags);
 void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, MethodTable *pItfMT, MethodTable *pClassMT, DWORD dwFlags);

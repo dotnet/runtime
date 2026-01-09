@@ -1622,6 +1622,7 @@ open_aot_data (MonoAssembly *assembly, MonoAotFileInfo *info, void **ret_handle)
 	data = (guint8*)mono_file_map (info->datafile_size, MONO_MMAP_READ, mono_file_map_fd (map), 0, ret_handle);
 	g_assert (data);
 
+	g_free(filename);
 	return data;
 }
 
@@ -1631,7 +1632,7 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, guint8 *blob, char 
 	char *build_info;
 	char *msg = NULL;
 	gboolean usable = TRUE;
-	gboolean full_aot, interp, safepoints;
+	gboolean full_aot, interp, safepoints, compressed_interface_bmap;
 	guint32 excluded_cpu_optimizations;
 
 	if (strcmp (assembly->image->guid, (const char*)info->assembly_guid)) {
@@ -1712,6 +1713,13 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, guint8 *blob, char 
 		usable = FALSE;
 	}
 #endif
+
+	compressed_interface_bmap = info->flags & MONO_AOT_FILE_FLAG_COMPRESSED_INTERFACE_BITMAP;
+	if ((mono_opt_compressed_interface_bitmap && !compressed_interface_bmap) ||
+			(!mono_opt_compressed_interface_bitmap && compressed_interface_bmap)) {
+		msg = g_strdup ("mismatch with compressed interface bitmap feature");
+		usable = FALSE;
+	}
 
 	*out_msg = msg;
 	return usable;
@@ -2701,8 +2709,10 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	table_size = amodule->class_name_table [0];
 	table = amodule->class_name_table + 1;
 
-	if (table_size == 0)
+	if (table_size == 0) {
+		amodule_unlock (amodule);
 		return FALSE;
+	}
 
 	if (name_space [0] == '\0')
 		full_name = g_strdup_printf ("%s", name);
@@ -3097,6 +3107,10 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoJitInfo *jinfo,
 		}
 	}
 	g_assert (nindex == ei_len + nested_len);
+	if (!async) {
+		g_free (ei);
+		g_free (type_info);
+	}
 }
 
 static gpointer

@@ -112,7 +112,7 @@ namespace ILCompiler
                         int methodOnlyResult = comparer.Compare(x.Method, y.Method);
 
                         // Assert the two sorting techniques produce the same result unless there is a CustomSort applied
-                        Debug.Assert((nodeComparerResult == methodOnlyResult) || 
+                        Debug.Assert((nodeComparerResult == methodOnlyResult) ||
                             ((x is SortableDependencyNode sortableX && sortableX.CustomSort != Int32.MaxValue) ||
                              (y is SortableDependencyNode sortableY && sortableY.CustomSort != Int32.MaxValue)));
 #endif

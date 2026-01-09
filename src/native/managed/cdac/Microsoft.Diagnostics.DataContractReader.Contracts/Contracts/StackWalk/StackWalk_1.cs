@@ -175,6 +175,64 @@ internal readonly struct StackWalk_1 : IStackWalk
     string IStackWalk.GetFrameName(TargetPointer frameIdentifier)
         => FrameIterator.GetFrameName(_target, frameIdentifier);
 
+    TargetPointer IStackWalk.GetMethodDescPtr(TargetPointer framePtr)
+        => FrameIterator.GetMethodDescPtr(_target, framePtr);
+
+    TargetPointer IStackWalk.GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle)
+    {
+        StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
+        IExecutionManager eman = _target.Contracts.ExecutionManager;
+
+        // if we are at a capital F Frame, we can get the method desc from the frame
+        TargetPointer framePtr = ((IStackWalk)this).GetFrameAddress(handle);
+        if (framePtr != TargetPointer.Null)
+        {
+            // reportInteropMD if
+            // 1) we are an InlinedCallFrame
+            // 2) the StackDataFrame is at a SW_SKIPPED_FRAME state
+            // 3) the return address is managed
+            // 4) the return address method has a MDContext arg
+            bool reportInteropMD = false;
+
+            if (FrameIterator.IsInlinedCallFrame(_target, framePtr) &&
+                handle.State == StackWalkState.SW_SKIPPED_FRAME)
+            {
+                IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+
+                // FrameIterator.GetReturnAddress is currently only implemented for InlinedCallFrame
+                // This is fine as this check is only needed for that frame type
+                TargetPointer returnAddress = FrameIterator.GetReturnAddress(_target, framePtr);
+                if (eman.GetCodeBlockHandle(returnAddress.Value) is CodeBlockHandle cbh)
+                {
+                    MethodDescHandle returnMethodDesc = rts.GetMethodDescHandle(eman.GetMethodDesc(cbh));
+                    reportInteropMD = rts.HasMDContextArg(returnMethodDesc);
+                }
+            }
+
+            if (reportInteropMD)
+            {
+                // Special reportInteropMD case
+                // This can't be handled in the GetMethodDescPtr(TargetPointer) because it relies on
+                // the state of the stack walk (SW_SKIPPED_FRAME) which is not available there.
+                // The MethodDesc pointer immediately follows the InlinedCallFrame
+                TargetPointer methodDescPtr = framePtr + _target.GetTypeInfo(DataType.InlinedCallFrame).Size
+                    ?? throw new InvalidOperationException("InlinedCallFrame type size is not defined.");
+                return _target.ReadPointer(methodDescPtr);
+            }
+            else
+            {
+                // Standard case
+                return ((IStackWalk)this).GetMethodDescPtr(framePtr);
+            }
+        }
+
+        // otherwise try to get the method desc from the IP
+        if (!IsManaged(handle.Context.InstructionPointer, out CodeBlockHandle? codeBlockHandle))
+            return TargetPointer.Null;
+
+        return eman.GetMethodDesc(codeBlockHandle.Value);
+    }
+
     private bool IsManaged(TargetPointer ip, [NotNullWhen(true)] out CodeBlockHandle? codeBlockHandle)
     {
         IExecutionManager eman = _target.Contracts.ExecutionManager;
@@ -203,11 +261,6 @@ internal readonly struct StackWalk_1 : IStackWalk
         }
 
         context.FillFromBuffer(buffer);
-    }
-
-    TargetPointer IStackWalk.GetMethodDescPtr(TargetPointer framePtr)
-    {
-        return FrameIterator.GetMethodDescPtr(framePtr, _target);
     }
 
     private static StackDataFrameHandle AssertCorrectHandle(IStackDataFrameHandle stackDataFrameHandle)

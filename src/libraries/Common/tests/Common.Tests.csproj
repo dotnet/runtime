@@ -159,12 +159,7 @@
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="CommonTest\System\" />
-    <Folder Include="Common\System\Security\Cryptography\" />
-    <Folder Include="System\Net\Sockets\" />
-    <Folder Include="System\Net\VirtualNetwork\" />
-  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" PrivateAssets="all" />
   </ItemGroup>

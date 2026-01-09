@@ -406,7 +406,7 @@ namespace System.Xml.Serialization
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlInvalidDataTypeUsage, dataType, "XmlElementAttribute.DataType"));
                     }
-                    TypeDesc? td = TypeScope.GetTypeDesc(dataType, XmlSchema.Namespace);
+                    TypeDesc? td = TypeScope.GetMatchingTypeDesc(dataType, XmlSchema.Namespace, modelTypeDesc.FullName);
                     if (td == null)
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlInvalidXsdDataType, dataType, "XmlElementAttribute.DataType", new XmlQualifiedName(dataType, XmlSchema.Namespace).ToString()));
@@ -1166,7 +1166,8 @@ namespace System.Xml.Serialization
             PrimitiveMapping mapping = new PrimitiveMapping();
             if (dataType.Length > 0)
             {
-                mapping.TypeDesc = TypeScope.GetTypeDesc(dataType, XmlSchema.Namespace);
+                TypeDesc modelTypeDesc = TypeScope.IsOptionalValue(model.Type) ? model.TypeDesc.BaseTypeDesc! : model.TypeDesc;
+                mapping.TypeDesc = TypeScope.GetMatchingTypeDesc(dataType, XmlSchema.Namespace, modelTypeDesc.FullName);
                 if (mapping.TypeDesc == null)
                 {
                     // try it as a non-Xsd type
