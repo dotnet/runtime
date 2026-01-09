@@ -10,6 +10,7 @@ using Xunit;
 public class CapacityTests
 {
     [Fact]
+    [SkipOnCoreClr("", RuntimeTestModes.AnyGCStress)]
     public static void TestLargeClassWithIntMethods()
     {
         // Scenario 1: allocate an instance of a class with 40000 methods that return int
