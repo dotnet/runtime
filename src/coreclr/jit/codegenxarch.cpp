@@ -136,112 +136,51 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
     BasicBlock* const nextBlock = block->Next();
 
-    if (compiler->UsesFunclets())
+    // Generate a call to the finally, like this:
+    //      call        finally-funclet
+    //      jmp         finally-return                  // Only for non-retless finally calls
+    // The jmp can be a NOP if we're going to the next block.
+
+    if (block->HasFlag(BBF_RETLESS_CALL))
     {
-        // Generate a call to the finally, like this:
-        //      call        finally-funclet
-        //      jmp         finally-return                  // Only for non-retless finally calls
-        // The jmp can be a NOP if we're going to the next block.
+        GetEmitter()->emitIns_J(INS_call, block->GetTarget());
 
-        if (block->HasFlag(BBF_RETLESS_CALL))
+        // We have a retless call, and the last instruction generated was a call.
+        // If the next block is in a different EH region (or is the end of the code
+        // block), then we need to generate a breakpoint here (since it will never
+        // get executed) to get proper unwind behavior.
+
+        if ((nextBlock == nullptr) || !BasicBlock::sameEHRegion(block, nextBlock))
         {
-            GetEmitter()->emitIns_J(INS_call, block->GetTarget());
-
-            // We have a retless call, and the last instruction generated was a call.
-            // If the next block is in a different EH region (or is the end of the code
-            // block), then we need to generate a breakpoint here (since it will never
-            // get executed) to get proper unwind behavior.
-
-            if ((nextBlock == nullptr) || !BasicBlock::sameEHRegion(block, nextBlock))
-            {
-                instGen(INS_BREAKPOINT); // This should never get executed
-            }
-        }
-        else
-        {
-            // Because of the way the flowgraph is connected, the liveness info for this one instruction
-            // after the call is not (can not be) correct in cases where a variable has a last use in the
-            // handler.  So turn off GC reporting once we execute the call and reenable after the jmp/nop
-            GetEmitter()->emitDisableGC();
-
-            GetEmitter()->emitIns_J(INS_call, block->GetTarget());
-
-            // Now go to where the finally funclet needs to return to.
-            BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
-            if (nextBlock->NextIs(finallyContinuation) &&
-                !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
-            {
-                // Fall-through.
-                // TODO-XArch-CQ: Can we get rid of this instruction, and just have the call return directly
-                // to the next instruction? This would depend on stack walking from within the finally
-                // handler working without this instruction being in this special EH region.
-                instGen(INS_nop);
-            }
-            else
-            {
-                inst_JMP(EJ_jmp, finallyContinuation);
-            }
-
-            GetEmitter()->emitEnableGC();
+            instGen(INS_BREAKPOINT); // This should never get executed
         }
     }
-#if defined(FEATURE_EH_WINDOWS_X86)
     else
     {
-        // If we are about to invoke a finally locally from a try block, we have to set the ShadowSP slot
-        // corresponding to the finally's nesting level. When invoked in response to an exception, the
-        // EE does this.
-        //
-        // We have a BBJ_CALLFINALLY possibly paired with a following BBJ_CALLFINALLYRET.
-        //
-        // We will emit :
-        //      mov [ebp - (n + 1)], 0
-        //      mov [ebp -  n     ], 0xFC
-        //      push &step
-        //      jmp  finallyBlock
-        // ...
-        // step:
-        //      mov [ebp -  n     ], 0
-        //      jmp leaveTarget
-        // ...
-        // leaveTarget:
+        // Because of the way the flowgraph is connected, the liveness info for this one instruction
+        // after the call is not (can not be) correct in cases where a variable has a last use in the
+        // handler.  So turn off GC reporting once we execute the call and reenable after the jmp/nop
+        GetEmitter()->emitDisableGC();
 
-        noway_assert(isFramePointerUsed());
+        GetEmitter()->emitIns_J(INS_call, block->GetTarget());
 
-        // Get the nesting level which contains the finally
-        unsigned finallyNesting = 0;
-        compiler->fgGetNestingLevel(block, &finallyNesting);
-
-        // The last slot is reserved for ICodeManager::FixContext(ppEndRegion)
-        unsigned filterEndOffsetSlotOffs;
-        filterEndOffsetSlotOffs =
-            (unsigned)(compiler->lvaLclStackHomeSize(compiler->lvaShadowSPslotsVar) - TARGET_POINTER_SIZE);
-
-        unsigned curNestingSlotOffs;
-        curNestingSlotOffs = (unsigned)(filterEndOffsetSlotOffs - ((finallyNesting + 1) * TARGET_POINTER_SIZE));
-
-        // Zero out the slot for the next nesting level
-        GetEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar,
-                                  curNestingSlotOffs - TARGET_POINTER_SIZE, 0);
-        GetEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar, curNestingSlotOffs,
-                                  LCL_FINALLY_MARK);
-
-        // Now push the address where the finally funclet should return to directly.
-        if (!block->HasFlag(BBF_RETLESS_CALL))
+        // Now go to where the finally funclet needs to return to.
+        BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
+        if (nextBlock->NextIs(finallyContinuation) && !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
         {
-            assert(block->isBBCallFinallyPair());
-            GetEmitter()->emitIns_J(INS_push_hide, nextBlock->GetFinallyContinuation());
+            // Fall-through.
+            // TODO-XArch-CQ: Can we get rid of this instruction, and just have the call return directly
+            // to the next instruction? This would depend on stack walking from within the finally
+            // handler working without this instruction being in this special EH region.
+            instGen(INS_nop);
         }
         else
         {
-            // EE expects a DWORD, so we provide 0
-            inst_IV(INS_push_hide, 0);
+            inst_JMP(EJ_jmp, finallyContinuation);
         }
 
-        // Jump to the finally BB
-        inst_JMP(EJ_jmp, block->GetTarget());
+        GetEmitter()->emitEnableGC();
     }
-#endif // FEATURE_EH_WINDOWS_X86
 
     // The BBJ_CALLFINALLYRET is used because the BBJ_CALLFINALLY can't point to the
     // jump target using bbTargetEdge - that is already used to point
@@ -263,38 +202,6 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
     // which will be position-independent.
     GetEmitter()->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, block->GetTarget(), REG_INTRET);
 }
-
-#if defined(FEATURE_EH_WINDOWS_X86)
-
-void CodeGen::genEHFinallyOrFilterRet(BasicBlock* block)
-{
-    assert(!compiler->UsesFunclets());
-    // The last statement of the block must be a GT_RETFILT, which has already been generated.
-    assert(block->lastNode() != nullptr);
-    assert(block->lastNode()->OperGet() == GT_RETFILT);
-
-    if (block->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET))
-    {
-        assert(block->lastNode()->AsOp()->gtOp1 == nullptr); // op1 == nullptr means endfinally
-
-        // Return using a pop-jmp sequence. As the "try" block calls
-        // the finally with a jmp, this leaves the x86 call-ret stack
-        // balanced in the normal flow of path.
-
-        noway_assert(isFramePointerRequired());
-        inst_RV(INS_pop_hide, REG_EAX, TYP_I_IMPL);
-        inst_RV(INS_i_jmp, REG_EAX, TYP_I_IMPL);
-    }
-    else
-    {
-        assert(block->KindIs(BBJ_EHFILTERRET));
-
-        // The return value has already been computed.
-        instGen_Return(0);
-    }
-}
-
-#endif // FEATURE_EH_WINDOWS_X86
 
 //  Move an immediate value into an integer register
 
@@ -2215,40 +2122,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_ASYNC_CONTINUATION:
             genCodeForAsyncContinuation(treeNode);
             break;
-
-#if defined(FEATURE_EH_WINDOWS_X86)
-        case GT_END_LFIN:
-        {
-            // Find the eh table entry via the eh ID
-            //
-            unsigned const ehID = (unsigned)treeNode->AsVal()->gtVal1;
-            assert(ehID < compiler->compEHID);
-            assert(compiler->m_EHIDtoEHblkDsc != nullptr);
-
-            EHblkDsc* HBtab = nullptr;
-            bool      found = compiler->m_EHIDtoEHblkDsc->Lookup(ehID, &HBtab);
-            assert(found);
-            assert(HBtab != nullptr);
-
-            // Have to clear the ShadowSP of the nesting level which encloses the finally. Generates:
-            //     mov dword ptr [ebp-0xC], 0  // for some slot of the ShadowSP local var
-            //
-            const size_t finallyNesting = HBtab->ebdHandlerNestingLevel;
-            noway_assert(finallyNesting < compiler->compHndBBtabCount);
-
-            // The last slot is reserved for ICodeManager::FixContext(ppEndRegion)
-            unsigned filterEndOffsetSlotOffs;
-            assert(compiler->lvaLclStackHomeSize(compiler->lvaShadowSPslotsVar) > TARGET_POINTER_SIZE);
-            filterEndOffsetSlotOffs =
-                (unsigned)(compiler->lvaLclStackHomeSize(compiler->lvaShadowSPslotsVar) - TARGET_POINTER_SIZE);
-
-            size_t curNestingSlotOffs;
-            curNestingSlotOffs = filterEndOffsetSlotOffs - ((finallyNesting + 1) * TARGET_POINTER_SIZE);
-            GetEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar, (unsigned)curNestingSlotOffs,
-                                      0);
-            break;
-        }
-#endif // FEATURE_EH_WINDOWS_X86
 
         case GT_PINVOKE_PROLOG:
             noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) &
@@ -6052,6 +5925,21 @@ void CodeGen::genCall(GenTreeCall* call)
             if (target->isContainedIndir())
             {
                 genConsumeAddress(target->AsIndir()->Addr());
+
+                // Consuming these registers will ensure the registers containing the state we need are available here,
+                // but it assumes we will use them immediately and will thus kill the live state. Since these registers
+                // are live into the epilog we need to remark them as live.
+                // This logic is similar to what genCallPlaceRegArgs does above for argument registers.
+                GenTreeIndir* indir = target->AsIndir();
+                if (indir->HasBase() && indir->Base()->TypeIs(TYP_BYREF, TYP_REF))
+                {
+                    gcInfo.gcMarkRegPtrVal(indir->Base()->GetRegNum(), indir->Base()->TypeGet());
+                }
+
+                if (indir->HasIndex() && indir->Index()->TypeIs(TYP_BYREF, TYP_REF))
+                {
+                    gcInfo.gcMarkRegPtrVal(indir->Index()->GetRegNum(), indir->Index()->TypeGet());
+                }
             }
             else
             {
@@ -6203,41 +6091,6 @@ void CodeGen::genCall(GenTreeCall* call)
     genStackPointerCheck(compiler->opts.compStackCheckOnCall && (call->gtCallType == CT_USER_FUNC),
                          compiler->lvaCallSpCheck, call->CallerPop() ? 0 : stackArgBytes, REG_ARG_0);
 #endif // defined(DEBUG) && defined(TARGET_X86)
-
-#if defined(FEATURE_EH_WINDOWS_X86)
-    if (!compiler->UsesFunclets())
-    {
-        //-------------------------------------------------------------------------
-        // Create a label for tracking of region protected by the monitor in synchronized methods.
-        // This needs to be here, rather than above where fPossibleSyncHelperCall is set,
-        // so the GC state vars have been updated before creating the label.
-
-        if (call->IsHelperCall() && (compiler->info.compFlags & CORINFO_FLG_SYNCH))
-        {
-            CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(call->gtCallMethHnd);
-            noway_assert(helperNum != CORINFO_HELP_UNDEF);
-            switch (helperNum)
-            {
-                case CORINFO_HELP_MON_ENTER:
-                    noway_assert(compiler->syncStartEmitCookie == nullptr);
-                    compiler->syncStartEmitCookie =
-                        GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                                   gcInfo.gcRegByrefSetCur);
-                    noway_assert(compiler->syncStartEmitCookie != nullptr);
-                    break;
-                case CORINFO_HELP_MON_EXIT:
-                    noway_assert(compiler->syncEndEmitCookie == nullptr);
-                    compiler->syncEndEmitCookie =
-                        GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                                   gcInfo.gcRegByrefSetCur);
-                    noway_assert(compiler->syncEndEmitCookie != nullptr);
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-#endif // FEATURE_EH_WINDOWS_X86
 
     unsigned stackAdjustBias = 0;
 
@@ -8627,7 +8480,6 @@ void* CodeGen::genCreateAndStoreGCInfoJIT32(unsigned            codeSize,
     // We should do this before gcInfoBlockHdrSave since varPtrTableSize must be finalized before it
     if (compiler->ehAnyFunclets())
     {
-        assert(compiler->UsesFunclets());
         gcInfo.gcMarkFilterVarsPinned();
     }
 
@@ -8769,6 +8621,7 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
         //  -return address
         //  -saved RBP
         //  -saved bool for synchronized methods
+        //  -async contexts for async methods
 
         // slots for ret address + FP + EnC callee-saves
         int preservedAreaSize = (2 + genCountBits(RBM_ENC_CALLEE_SAVED)) * REGSIZE_BYTES;
@@ -8781,6 +8634,21 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
 
             // Verify that MonAcquired bool is at the bottom of the frame header
             assert(compiler->lvaGetCallerSPRelativeOffset(compiler->lvaMonAcquired) == -preservedAreaSize);
+        }
+
+        if (compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
+
+            assert(compiler->lvaGetCallerSPRelativeOffset(compiler->lvaAsyncExecutionContextVar) == -preservedAreaSize);
+        }
+
+        if (compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
+
+            assert(compiler->lvaGetCallerSPRelativeOffset(compiler->lvaAsyncSynchronizationContextVar) ==
+                   -preservedAreaSize);
         }
 
         // Used to signal both that the method is compiled for EnC, and also the size of the block at the top of the

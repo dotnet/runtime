@@ -49,7 +49,7 @@ jobs:
     if: ${{ github.repository_owner == 'dotnet' && (github.event_name == 'issues' || github.event_name == 'pull_request_target') && github.event.action == 'reopened' }}
     steps:
       - name: Unlock if issue/PR is locked
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         if: ${{ github.event.issue.locked == true }}
         with:
           script: |

@@ -2460,6 +2460,14 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         {
             saveSizeWithPSP += TARGET_POINTER_SIZE;
         }
+        if (compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
+        {
+            saveSizeWithPSP += TARGET_POINTER_SIZE;
+        }
+        if (compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
+        {
+            saveSizeWithPSP += TARGET_POINTER_SIZE;
+        }
         assert(compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
         unsigned funcletFrameSize = preSpillRegArgSize + saveSizeWithPSP + compiler->lvaOutgoingArgSpaceSize;
 
