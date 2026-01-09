@@ -235,8 +235,7 @@ bool Compiler::gsFindVulnerableParams()
                 case GT_STOREIND:
                 case GT_STORE_BLK:
                 {
-                    GenTreeIndir* indir = node->AsIndir();
-                    gsVisitDependentLocals(indir->Addr(), [=](unsigned lclNum) {
+                    gsVisitDependentLocals(node->gtGetOp1(), [=](unsigned lclNum) {
                         lvaGetDesc(lclNum)->lvIsPtr = 1;
                     });
                     break;
@@ -546,10 +545,10 @@ void Compiler::gsRewriteTreeForShadowParam(GenTree* tree)
 void Compiler::gsCopyIntoShadow(unsigned lclNum, unsigned shadowLclNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
-    // if (varDsc->lvPromoted && !varDsc->lvDoNotEnregister)
-    //{
-    //     lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
-    // }
+    if (varDsc->lvPromoted && !varDsc->lvDoNotEnregister)
+    {
+        lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
+    }
 
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
     if (lclNum < info.compArgsCount && argRequiresSpecialCopy(lclNum) && varDsc->TypeIs(TYP_STRUCT))
