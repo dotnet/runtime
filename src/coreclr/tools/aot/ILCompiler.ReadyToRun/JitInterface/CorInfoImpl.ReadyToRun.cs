@@ -558,10 +558,7 @@ namespace Internal.JitInterface
 
         public static bool ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport instructionSetSupport, MethodDesc method)
         {
-            if (method.IsAsyncVariant())
-                return true;
-
-            EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
+            EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition().GetPrimaryMethodDesc() as EcmaMethod;
 
             var metadataReader = ecmaMethod.MetadataReader;
             var stringComparer = metadataReader.StringComparer;
