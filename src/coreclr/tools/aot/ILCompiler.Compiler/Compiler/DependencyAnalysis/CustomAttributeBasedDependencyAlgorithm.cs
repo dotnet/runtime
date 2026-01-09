@@ -240,6 +240,7 @@ namespace ILCompiler.DependencyAnalysis
 
             MetadataReader reader = attributeTypeDefinition.MetadataReader;
             var typeDefinition = reader.GetTypeDefinition(attributeTypeDefinition.Handle);
+            MethodDesc getterMethod = null;
 
             foreach (PropertyDefinitionHandle propDefHandle in typeDefinition.GetProperties())
             {
@@ -263,6 +264,11 @@ namespace ILCompiler.DependencyAnalysis
                         dependencies.Add(factory.ReflectedMethod(setterMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Custom attribute blob");
                     }
 
+                    if (!accessors.Getter.IsNil)
+                    {
+                        getterMethod = (MethodDesc)attributeTypeDefinition.EcmaModule.GetObject(accessors.Getter);
+                    }
+
                     return true;
                 }
             }
@@ -270,7 +276,7 @@ namespace ILCompiler.DependencyAnalysis
             // Haven't found it in current type. Check the base type.
             TypeDesc baseType = attributeType.BaseType;
 
-            if (baseType != null)
+            if (baseType != null && (getterMethod is null || getterMethod.IsVirtual))
                 return AddDependenciesFromPropertySetter(dependencies, factory, baseType, propertyName);
 
             // Not found. This is bad metadata that will result in a runtime failure, but we shouldn't fail the compilation.
