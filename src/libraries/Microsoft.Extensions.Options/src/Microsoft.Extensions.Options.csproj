@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(NetFrameworkMinimum)', 'net47'))">$(TargetFrameworks);net47</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides a strongly typed way of specifying and accessing settings using dependency injection.</PackageDescription>
@@ -23,9 +24,11 @@
     <PackageReference Include="System.ComponentModel.Annotations" Version="$(SystemComponentModelAnnotationsVersion)" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' AND !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net47'))">
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.ComponentModel.DataAnnotations" />
-    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
 
   <ItemGroup>

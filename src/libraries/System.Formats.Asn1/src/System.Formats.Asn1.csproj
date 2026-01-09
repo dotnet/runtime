@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(NetFrameworkMinimum)', 'net47'))">$(TargetFrameworks);net47</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);CP_NO_ZEROMEMORY</DefineConstants>
     <IsPackable>true</IsPackable>
@@ -67,8 +68,10 @@
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' AND !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net47'))">
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Numerics" />
   </ItemGroup>
 

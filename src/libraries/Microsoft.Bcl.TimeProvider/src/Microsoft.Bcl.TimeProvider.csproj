@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum);$(NetCoreAppMinimum)</TargetFrameworks>
+    <TargetFrameworks Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(NetFrameworkMinimum)', 'net47'))">$(TargetFrameworks);net47</TargetFrameworks>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides support for system time abstraction primitives for .NET Framework and .NET Standard.</PackageDescription>
   </PropertyGroup>
@@ -18,11 +19,13 @@
     </When>
 
     <Otherwise>
+      <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' AND !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net47'))">
+        <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
+      </ItemGroup>
       <ItemGroup>
         <Compile Include="$(CommonPath)System\TimeProvider.cs" Link="System\TimeProvider.cs" />
         <Compile Include="$(CommonPath)System\Threading\ITimer.cs" Link="System\Threading\ITimer.cs" />
 
-        <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
         <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
       </ItemGroup>
     </Otherwise>
