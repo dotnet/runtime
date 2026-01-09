@@ -353,6 +353,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForNegNot(treeNode->AsOp());
             break;
 
+        case GT_IND:
+            genCodeForIndir(treeNode->AsIndir());
+            break;
+
         default:
 #ifdef DEBUG
             NYIRAW(GenTree::OpName(treeNode->OperGet()));
@@ -869,6 +873,36 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     unsigned wasmLclIndex = WasmRegToIndex(targetReg);
     GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(tree), wasmLclIndex);
     genUpdateLifeStore(tree, targetReg, varDsc);
+}
+
+//------------------------------------------------------------------------
+// genCodeForIndir: Produce code for a GT_IND node.
+//
+// Arguments:
+//    tree - the GT_IND node
+//
+void CodeGen::genCodeForIndir(GenTreeIndir* tree)
+{
+    assert(tree->OperIs(GT_IND));
+
+    var_types   type      = tree->TypeGet();
+    instruction ins       = ins_Load(type);
+    regNumber   targetReg = tree->GetRegNum();
+    emitAttr    attr      = emitActualTypeSize(type);
+
+    genConsumeAddress(tree->Addr());
+
+    // TODO-WASM: Memory barriers
+    /*
+    if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
+    {
+        instGen_MemoryBarrier(BARRIER_FULL);
+    }
+    */
+
+    GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), 0);
+
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
