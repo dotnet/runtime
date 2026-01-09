@@ -850,371 +850,371 @@ void Lowering::LowerCast(GenTree* tree)
         assert(dstType != TYP_FLOAT || comp->canUseEvexEncodingDebugOnly());
     }
 
-#ifdef FEATURE_HW_INTRINSICS
-    if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType) &&
-        !comp->compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+    if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType))
     {
-        // If we don't have AVX10v2 saturating conversion instructions for
-        // floating->integral, we have to handle the saturation logic here.
+        LABELEDDISPTREERANGE("LowerCast before", BlockRange(), tree);
 
-        JITDUMP("LowerCast before:\n");
-        DISPTREERANGE(BlockRange(), tree);
+        GenTree*   castResult = nullptr;
+        LIR::Range castRange  = LIR::EmptyRange();
 
-        var_types  srcBaseType = (srcType == TYP_FLOAT) ? TYP_FLOAT : TYP_DOUBLE;
-        LIR::Range castRange   = LIR::EmptyRange();
-
-        // We'll be using SIMD instructions to fix up castOp before conversion.
-        //
-        // This creates the equivalent of the following C# code:
-        //   var srcVec = Vector128.CreateScalarUnsafe(castOp);
-
-        GenTree* srcVector = comp->gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, castOp, srcBaseType, 16);
-        castRange.InsertAtEnd(srcVector);
-
-        if (srcVector->IsCnsVec())
+        if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
         {
-            castOp->SetUnusedValue();
-        }
-
-        if (varTypeIsUnsigned(dstType) && comp->canUseEvexEncoding())
-        {
-            // EVEX unsigned conversion instructions saturate positive overflow properly, so as
-            // long as we fix up NaN and negative values, we can preserve the existing cast node.
-            //
-            // maxs[sd] will take the value from the second operand if the first operand's value is
-            // NaN, which allows us to fix up both negative and NaN values with a single instruction.
-            //
-            // This creates the equivalent of the following C# code:
-            //   castOp = Sse.MaxScalar(srcVec, Vector128<T>.Zero).ToScalar();
-
-            NamedIntrinsic maxScalarIntrinsic = NI_X86Base_MaxScalar;
-
-            GenTree* zero = comp->gtNewZeroConNode(TYP_SIMD16);
-            GenTree* fixupVal =
-                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcVector, zero, maxScalarIntrinsic, srcBaseType, 16);
-
-            GenTree* toScalar = comp->gtNewSimdToScalarNode(srcType, fixupVal, srcBaseType, 16);
-
-            castRange.InsertAtEnd(zero);
-            castRange.InsertAtEnd(fixupVal);
-            castRange.InsertAtEnd(toScalar);
-
-            tree->AsCast()->CastOp() = toScalar;
-        }
-        else
-        {
-            // We need to fix up NaN as well as handle possible overflow. Signed conversions
-            // return int/long.MinValue for any overflow, which is correct for saturation of
-            // negative, but the result must be replaced with MaxValue for positive overflow.
-
-            var_types      dstBaseType      = TYP_UNDEF;
-            NamedIntrinsic convertIntrinsic = NI_Illegal;
-            GenTree*       maxIntegralValue = nullptr;
-            GenTree*       maxFloatingValue = comp->gtNewVconNode(TYP_SIMD16);
-            simd_t*        maxFloatSimdVal  = &maxFloatingValue->AsVecCon()->gtSimdVal;
-
+            NamedIntrinsic intrinsicId = NI_Illegal;
             switch (dstType)
             {
                 case TYP_INT:
-                {
-                    dstBaseType      = TYP_INT;
-                    maxIntegralValue = comp->gtNewIconNode(INT32_MAX);
-                    if (srcType == TYP_FLOAT)
-                    {
-                        maxFloatSimdVal->f32[0] = 2147483648.0f;
-                        convertIntrinsic        = NI_X86Base_ConvertToInt32WithTruncation;
-                    }
-                    else
-                    {
-                        maxFloatSimdVal->f64[0] = 2147483648.0;
-                        convertIntrinsic        = NI_X86Base_ConvertToInt32WithTruncation;
-                    }
+                    intrinsicId = NI_AVX10v2_ConvertToInt32WithTruncatedSaturation;
                     break;
-                }
                 case TYP_UINT:
-                {
-                    dstBaseType      = TYP_UINT;
-                    maxIntegralValue = comp->gtNewIconNode(static_cast<ssize_t>(UINT32_MAX));
-                    if (srcType == TYP_FLOAT)
-                    {
-                        maxFloatSimdVal->f32[0] = 4294967296.0f;
-                        convertIntrinsic        = TargetArchitecture::Is64Bit
-                                                      ? NI_X86Base_X64_ConvertToInt64WithTruncation
-                                                      : NI_X86Base_ConvertToVector128Int32WithTruncation;
-                    }
-                    else
-                    {
-                        maxFloatSimdVal->f64[0] = 4294967296.0;
-                        convertIntrinsic        = TargetArchitecture::Is64Bit
-                                                      ? NI_X86Base_X64_ConvertToInt64WithTruncation
-                                                      : NI_X86Base_ConvertToVector128Int32WithTruncation;
-                    }
+                    intrinsicId = NI_AVX10v2_ConvertToUInt32WithTruncatedSaturation;
                     break;
-                }
                 case TYP_LONG:
-                {
-                    dstBaseType      = TYP_LONG;
-                    maxIntegralValue = comp->gtNewLconNode(INT64_MAX);
-                    if (srcType == TYP_FLOAT)
-                    {
-                        maxFloatSimdVal->f32[0] = 9223372036854775808.0f;
-                        convertIntrinsic        = NI_X86Base_X64_ConvertToInt64WithTruncation;
-                    }
-                    else
-                    {
-                        maxFloatSimdVal->f64[0] = 9223372036854775808.0;
-                        convertIntrinsic        = NI_X86Base_X64_ConvertToInt64WithTruncation;
-                    }
+                    intrinsicId = NI_AVX10v2_X64_ConvertToInt64WithTruncatedSaturation;
                     break;
-                }
                 case TYP_ULONG:
-                {
-                    dstBaseType      = TYP_ULONG;
-                    maxIntegralValue = comp->gtNewLconNode(static_cast<int64_t>(UINT64_MAX));
-                    if (srcType == TYP_FLOAT)
-                    {
-                        maxFloatSimdVal->f32[0] = 18446744073709551616.0f;
-                        convertIntrinsic        = NI_X86Base_X64_ConvertToInt64WithTruncation;
-                    }
-                    else
-                    {
-                        maxFloatSimdVal->f64[0] = 18446744073709551616.0;
-                        convertIntrinsic        = NI_X86Base_X64_ConvertToInt64WithTruncation;
-                    }
+                    intrinsicId = NI_AVX10v2_X64_ConvertToUInt64WithTruncatedSaturation;
                     break;
-                }
                 default:
-                {
                     unreached();
-                }
             }
 
-            // We will use the input value at least twice, so we preemptively replace it with a lclVar.
-            LIR::Use srcUse;
-            LIR::Use::MakeDummyUse(castRange, srcVector, &srcUse);
-            srcUse.ReplaceWithLclVar(comp);
-            srcVector = srcUse.Def();
+            castResult = comp->gtNewSimdHWIntrinsicNode(genActualType(dstType), castOp, intrinsicId, srcType, 16);
+            castRange.InsertAtEnd(castResult);
+        }
+        else
+        {
+            // If we don't have AVX10v2 saturating conversion instructions available,
+            // we have to handle the saturation logic here.
+            //
+            // We'll be using SIMD instructions to fix up castOp before conversion.
+            //
+            // This creates the equivalent of the following C# code:
+            //   var srcVec = Vector128.CreateScalarUnsafe(castOp);
 
-            GenTree* srcClone      = nullptr;
-            GenTree* convertResult = nullptr;
+            GenTree* srcVector = comp->gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, castOp, srcType, 16);
+            castRange.InsertAtEnd(srcVector);
 
-            if (varTypeIsSigned(dstType))
+            if (srcVector->IsCnsVec())
             {
-                // Fix up NaN values before conversion. Saturation is handled after conversion,
-                // because MaxValue may not be precisely representable in the floating format.
+                castOp->SetUnusedValue();
+            }
+
+            if (varTypeIsUnsigned(dstType) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+            {
+                // EVEX unsigned conversion instructions saturate positive overflow properly, so we
+                // only need special handling for NaN and negative values.
                 //
-                // This creates the equivalent of the following C# code:
-                //   var nanMask = Sse.CompareScalarOrdered(srcVec, srcVec);
-                //   var fixupVal = Sse.And(srcVec, nanMask);
-                //   convertResult = Sse.ConvertToInt32WithTruncation(fixupVal);
-
-                NamedIntrinsic compareNaNIntrinsic = NI_X86Base_CompareScalarOrdered;
-
-                srcClone         = comp->gtClone(srcVector);
-                GenTree* nanMask = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcVector, srcClone, compareNaNIntrinsic,
-                                                                  srcBaseType, 16);
-
-                castRange.InsertAtEnd(srcClone);
-                castRange.InsertAtEnd(nanMask);
-
-                srcClone          = comp->gtClone(srcVector);
-                GenTree* fixupVal = comp->gtNewSimdBinOpNode(GT_AND, TYP_SIMD16, nanMask, srcClone, srcBaseType, 16);
-
-                castRange.InsertAtEnd(srcClone);
-                castRange.InsertAtEnd(fixupVal);
-
-                convertResult = comp->gtNewSimdHWIntrinsicNode(dstType, fixupVal, convertIntrinsic, srcBaseType, 16);
-            }
-            else
-            {
                 // maxs[sd] will take the value from the second operand if the first operand's value is
                 // NaN, which allows us to fix up both negative and NaN values with a single instruction.
                 //
                 // This creates the equivalent of the following C# code:
-                //   var fixupVal = Sse.MaxScalar(srcVec, Vector128<T>.Zero);
+                //   AVX512F.ConvertToUInt32WithTruncation(Sse.MaxScalar(srcVec, Vector128<T>.Zero);
 
-                NamedIntrinsic maxScalarIntrinsic = NI_X86Base_MaxScalar;
+                NamedIntrinsic convertIntrinsic = (dstType == TYP_UINT) ? NI_AVX512_ConvertToUInt32WithTruncation
+                                                                        : NI_AVX512_X64_ConvertToUInt64WithTruncation;
 
                 GenTree* zero = comp->gtNewZeroConNode(TYP_SIMD16);
                 GenTree* fixupVal =
-                    comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcVector, zero, maxScalarIntrinsic, srcBaseType, 16);
+                    comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcVector, zero, NI_X86Base_MaxScalar, srcType, 16);
+
+                castResult =
+                    comp->gtNewSimdHWIntrinsicNode(genActualType(dstType), fixupVal, convertIntrinsic, srcType, 16);
 
                 castRange.InsertAtEnd(zero);
                 castRange.InsertAtEnd(fixupVal);
+                castRange.InsertAtEnd(castResult);
+            }
+            else
+            {
+                // We need to fix up NaN as well as handle possible overflow. Signed conversions
+                // return int/long.MinValue for any overflow, which is correct for saturation of
+                // negative, but the result must be replaced with MaxValue for positive overflow.
 
-                if ((dstType == TYP_UINT) && (convertIntrinsic == NI_X86Base_X64_ConvertToInt64WithTruncation))
+                NamedIntrinsic convertIntrinsic = NI_Illegal;
+                GenTree*       maxIntegralValue = nullptr;
+                double         minFloatOverflow = 0;
+
+                switch (dstType)
                 {
-                    // On x64, we can use long conversion to handle uint directly.
-                    convertResult =
-                        comp->gtNewSimdHWIntrinsicNode(TYP_LONG, fixupVal, convertIntrinsic, srcBaseType, 16);
+                    case TYP_INT:
+                    {
+                        convertIntrinsic = NI_X86Base_ConvertToInt32WithTruncation;
+                        maxIntegralValue = comp->gtNewIconNode(INT32_MAX);
+                        minFloatOverflow = 2147483648.0; // 2^31
+                        break;
+                    }
+
+                    case TYP_UINT:
+                    {
+                        convertIntrinsic = TargetArchitecture::Is64Bit
+                                               ? NI_X86Base_X64_ConvertToInt64WithTruncation
+                                               : NI_X86Base_ConvertToVector128Int32WithTruncation;
+                        maxIntegralValue = comp->gtNewIconNode(static_cast<ssize_t>(UINT32_MAX));
+                        minFloatOverflow = 4294967296.0; // 2^32;
+                        break;
+                    }
+
+                    case TYP_LONG:
+                    {
+                        convertIntrinsic = NI_X86Base_X64_ConvertToInt64WithTruncation;
+                        maxIntegralValue = comp->gtNewLconNode(INT64_MAX);
+                        minFloatOverflow = 9223372036854775808.0; // 2^63
+                        break;
+                    }
+
+                    case TYP_ULONG:
+                    {
+                        convertIntrinsic = NI_X86Base_X64_ConvertToInt64WithTruncation;
+                        maxIntegralValue = comp->gtNewLconNode(static_cast<int64_t>(UINT64_MAX));
+                        minFloatOverflow = 18446744073709551616.0; // 2^64
+                        break;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                    }
+                }
+
+                GenTree* ovfFloatingValue = comp->gtNewVconNode(TYP_SIMD16);
+                if (srcType == TYP_FLOAT)
+                {
+                    ovfFloatingValue->AsVecCon()->gtSimdVal.f32[0] = static_cast<float>(minFloatOverflow);
                 }
                 else
                 {
-                    // We're doing a conversion that isn't supported directly by hardware. We will emulate
-                    // the unsigned conversion by using the signed instruction on both the fixed-up input
-                    // value and a negative value that has the same bit representation when converted to
-                    // integer. If the conversion overflows as a signed integer, the negative conversion
-                    // result is selected.
+                    ovfFloatingValue->AsVecCon()->gtSimdVal.f64[0] = minFloatOverflow;
+                }
+
+                // We will use the input value at least twice, so we preemptively replace it with a lclVar.
+                LIR::Use srcUse;
+                LIR::Use::MakeDummyUse(castRange, srcVector, &srcUse);
+                srcUse.ReplaceWithLclVar(comp);
+                srcVector = srcUse.Def();
+
+                GenTree* srcClone      = nullptr;
+                GenTree* convertResult = nullptr;
+
+                if (varTypeIsSigned(dstType))
+                {
+                    // Fix up NaN values before conversion. Saturation is handled after conversion,
+                    // because MaxValue may not be precisely representable in the floating format.
                     //
                     // This creates the equivalent of the following C# code:
-                    //   var wrapVal = Sse.SubtractScalar(srcVec, maxFloatingValue);
+                    //   var nanMask = Sse.CompareScalarOrdered(srcVec, srcVec);
+                    //   var fixupVal = Sse.And(srcVec, nanMask);
+                    //   convertResult = Sse.ConvertToInt32WithTruncation(fixupVal);
 
-                    NamedIntrinsic subtractIntrinsic = NI_X86Base_SubtractScalar;
+                    srcClone         = comp->gtClone(srcVector);
+                    GenTree* nanMask = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcVector, srcClone,
+                                                                      NI_X86Base_CompareScalarOrdered, srcType, 16);
 
-                    // We're going to use maxFloatingValue twice, so replace the constant with a lclVar.
-                    castRange.InsertAtEnd(maxFloatingValue);
+                    castRange.InsertAtEnd(srcClone);
+                    castRange.InsertAtEnd(nanMask);
 
-                    LIR::Use maxFloatUse;
-                    LIR::Use::MakeDummyUse(castRange, maxFloatingValue, &maxFloatUse);
-                    maxFloatUse.ReplaceWithLclVar(comp);
-                    maxFloatingValue = maxFloatUse.Def();
+                    srcClone          = comp->gtClone(srcVector);
+                    GenTree* fixupVal = comp->gtNewSimdBinOpNode(GT_AND, TYP_SIMD16, nanMask, srcClone, srcType, 16);
 
-                    GenTree* floorVal = comp->gtClone(srcVector);
-                    castRange.InsertAtEnd(floorVal);
+                    castRange.InsertAtEnd(srcClone);
+                    castRange.InsertAtEnd(fixupVal);
 
-                    if ((srcType == TYP_DOUBLE) && (dstType == TYP_UINT))
+                    convertResult = comp->gtNewSimdHWIntrinsicNode(dstType, fixupVal, convertIntrinsic, srcType, 16);
+                }
+                else
+                {
+                    // maxs[sd] will take the value from the second operand if the first operand's value is
+                    // NaN, which allows us to fix up both negative and NaN values with a single instruction.
+                    //
+                    // This creates the equivalent of the following C# code:
+                    //   var fixupVal = Sse.MaxScalar(srcVec, Vector128<T>.Zero);
+
+                    GenTree* zero = comp->gtNewZeroConNode(TYP_SIMD16);
+                    GenTree* fixupVal =
+                        comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcVector, zero, NI_X86Base_MaxScalar, srcType, 16);
+
+                    castRange.InsertAtEnd(zero);
+                    castRange.InsertAtEnd(fixupVal);
+
+                    if ((dstType == TYP_UINT) && (convertIntrinsic == NI_X86Base_X64_ConvertToInt64WithTruncation))
                     {
-                        // This technique works only if the truncating conversion of the positive and negative
-                        // values causes them to round in the same direction. i.e. there is no rounding, because
-                        // we have a whole number. This is always true if the exponent is larger than the number
-                        // of significand bits, which will always be the case for double->ulong or float->uint.
-                        //
-                        // For double->uint, the double has enough precision to exactly represent any whole number
-                        // in range, with bits left over. e.g. we might have a value of 4294967295.9999995.
-                        // We must, therefore, truncate the value before wrapping it to negative.
-
-                        // This creates the equivalent of the following C# code:
-                        //   floorVal = Sse41.RoundToZeroScalar(srcVector);
-
-                        floorVal = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, floorVal, NI_X86Base_RoundToZeroScalar,
-                                                                  srcBaseType, 16);
-                        castRange.InsertAtEnd(floorVal);
-                    }
-
-                    GenTree* wrapVal = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, floorVal, maxFloatingValue,
-                                                                      subtractIntrinsic, srcBaseType, 16);
-                    castRange.InsertAtEnd(wrapVal);
-
-                    maxFloatingValue = comp->gtClone(maxFloatingValue);
-
-                    if (dstType == TYP_UINT)
-                    {
-                        // We can keep the conversion results in SIMD registers to make selection of the
-                        // correct result simpler.
-                        //
-                        // This creates the equivalent of the following C# code:
-                        //   var result = Sse2.ConvertToVector128Int32WithTruncation(fixupVal);
-                        //   var negated = Sse2.ConvertToVector128Int32WithTruncation(wrapVal);
-
-                        GenTree* result =
-                            comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, fixupVal, convertIntrinsic, srcBaseType, 16);
-                        GenTree* negated =
-                            comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, wrapVal, convertIntrinsic, srcBaseType, 16);
-
-                        castRange.InsertAtEnd(result);
-                        castRange.InsertAtEnd(negated);
-
-                        // We need the result twice -- one for the mask bit and one for the blend.
-                        LIR::Use resultUse;
-                        LIR::Use::MakeDummyUse(castRange, result, &resultUse);
-                        resultUse.ReplaceWithLclVar(comp);
-                        result = resultUse.Def();
-
-                        GenTree* resultClone = comp->gtClone(result);
-                        castRange.InsertAtEnd(resultClone);
-
-                        // If the conversion of the fixed-up value overflowed, the result wil be
-                        // int.MinValue. Since `blendvps` uses only the MSB for result selection,
-                        // this is adequate to force selection of the negated result.
-                        //
-                        // This creates the equivalent of the following C# code:
-                        //   convertResult = Sse41.BlendVariable(result, negated, result);
-
-                        convertResult = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, result, negated, resultClone,
-                                                                       NI_X86Base_BlendVariable, TYP_FLOAT, 16);
-
-                        // Because the results are in a SIMD register, we need to ToScalar() them out.
-                        castRange.InsertAtEnd(convertResult);
-                        convertResult = comp->gtNewSimdToScalarNode(TYP_INT, convertResult, dstBaseType, 16);
+                        // On x64, we can use long conversion to handle uint directly.
+                        convertResult =
+                            comp->gtNewSimdHWIntrinsicNode(TYP_LONG, fixupVal, convertIntrinsic, srcType, 16);
                     }
                     else
                     {
-                        assert(dstType == TYP_ULONG);
-
-                        // We're emulating floating->ulong conversion on x64. The logic is the same as for
-                        // uint on x86, except that we don't have conversion instructions that keep the
-                        // results in SIMD registers, so we do the final result selection in scalar code.
+                        // We're doing a conversion that isn't supported directly by hardware. We will emulate
+                        // the unsigned conversion by using the signed instruction on both the fixed-up input
+                        // value and a negative value that has the same bit representation when converted to
+                        // integer. If the conversion overflows as a signed integer, the negative conversion
+                        // result is selected.
                         //
                         // This creates the equivalent of the following C# code:
-                        //   long result = Sse.X64.ConvertToInt64WithTruncation(fixupVal);
-                        //   long negated = Sse.X64.ConvertToInt64WithTruncation(wrapVal);
-                        //   convertResult = (ulong)(result | (negated & (result >> 63)));
+                        //   var wrapVal = Sse.SubtractScalar(srcVec, ovfFloatingValue);
 
-                        GenTree* result =
-                            comp->gtNewSimdHWIntrinsicNode(TYP_LONG, fixupVal, convertIntrinsic, srcBaseType, 16);
-                        GenTree* negated =
-                            comp->gtNewSimdHWIntrinsicNode(TYP_LONG, wrapVal, convertIntrinsic, srcBaseType, 16);
+                        NamedIntrinsic subtractIntrinsic = NI_X86Base_SubtractScalar;
 
-                        castRange.InsertAtEnd(result);
-                        castRange.InsertAtEnd(negated);
+                        // We're going to use ovfFloatingValue twice, so replace the constant with a lclVar.
+                        castRange.InsertAtEnd(ovfFloatingValue);
 
-                        // We need the result twice -- once for the mask bit and once for the blend.
-                        LIR::Use resultUse;
-                        LIR::Use::MakeDummyUse(castRange, result, &resultUse);
-                        resultUse.ReplaceWithLclVar(comp);
-                        result = resultUse.Def();
+                        LIR::Use ovfFloatUse;
+                        LIR::Use::MakeDummyUse(castRange, ovfFloatingValue, &ovfFloatUse);
+                        ovfFloatUse.ReplaceWithLclVar(comp);
+                        ovfFloatingValue = ovfFloatUse.Def();
 
-                        GenTree* sixtyThree  = comp->gtNewIconNode(63);
-                        GenTree* mask        = comp->gtNewOperNode(GT_RSH, TYP_LONG, result, sixtyThree);
-                        GenTree* andMask     = comp->gtNewOperNode(GT_AND, TYP_LONG, mask, negated);
-                        GenTree* resultClone = comp->gtClone(result);
+                        GenTree* floorVal = comp->gtClone(srcVector);
+                        castRange.InsertAtEnd(floorVal);
 
-                        castRange.InsertAtEnd(sixtyThree);
-                        castRange.InsertAtEnd(mask);
-                        castRange.InsertAtEnd(andMask);
-                        castRange.InsertAtEnd(resultClone);
+                        if ((srcType == TYP_DOUBLE) && (dstType == TYP_UINT))
+                        {
+                            // This technique works only if the truncating conversion of the positive and negative
+                            // values causes them to round in the same direction. i.e. there is no rounding, because
+                            // we have a whole number. This is always true if the exponent is larger than the number
+                            // of significand bits, which will always be the case for double->ulong or float->uint.
+                            //
+                            // For double->uint, the double has enough precision to exactly represent any whole number
+                            // in range, with bits left over. e.g. we might have a value of 4294967295.9999995.
+                            // We must, therefore, truncate the value before wrapping it to negative.
 
-                        convertResult = comp->gtNewOperNode(GT_OR, TYP_LONG, andMask, resultClone);
+                            // This creates the equivalent of the following C# code:
+                            //   floorVal = Sse41.RoundToZeroScalar(srcVector);
+
+                            floorVal = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, floorVal,
+                                                                      NI_X86Base_RoundToZeroScalar, srcType, 16);
+                            castRange.InsertAtEnd(floorVal);
+                        }
+
+                        GenTree* wrapVal = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, floorVal, ovfFloatingValue,
+                                                                          subtractIntrinsic, srcType, 16);
+                        castRange.InsertAtEnd(wrapVal);
+
+                        ovfFloatingValue = comp->gtClone(ovfFloatingValue);
+
+                        if (dstType == TYP_UINT)
+                        {
+                            // We can keep the conversion results in SIMD registers to make selection of the
+                            // correct result simpler.
+                            //
+                            // This creates the equivalent of the following C# code:
+                            //   var result = Sse2.ConvertToVector128Int32WithTruncation(fixupVal);
+                            //   var negated = Sse2.ConvertToVector128Int32WithTruncation(wrapVal);
+
+                            GenTree* result =
+                                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, fixupVal, convertIntrinsic, srcType, 16);
+                            GenTree* negated =
+                                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, wrapVal, convertIntrinsic, srcType, 16);
+
+                            castRange.InsertAtEnd(result);
+                            castRange.InsertAtEnd(negated);
+
+                            // We need the result twice -- one for the mask bit and one for the blend.
+                            LIR::Use resultUse;
+                            LIR::Use::MakeDummyUse(castRange, result, &resultUse);
+                            resultUse.ReplaceWithLclVar(comp);
+                            result = resultUse.Def();
+
+                            GenTree* resultClone = comp->gtClone(result);
+                            castRange.InsertAtEnd(resultClone);
+
+                            // If the conversion of the fixed-up value overflowed, the result will be
+                            // int.MinValue. Since `blendvps` uses only the MSB for result selection,
+                            // this is adequate to force selection of the negated result.
+                            //
+                            // This creates the equivalent of the following C# code:
+                            //   convertResult = Sse41.BlendVariable(result, negated, result);
+
+                            convertResult = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, result, negated, resultClone,
+                                                                           NI_X86Base_BlendVariable, TYP_FLOAT, 16);
+
+                            // Because the results are in a SIMD register, we need to ToScalar() them out.
+                            castRange.InsertAtEnd(convertResult);
+                            convertResult = comp->gtNewSimdToScalarNode(TYP_INT, convertResult, dstType, 16);
+                        }
+                        else
+                        {
+                            assert(dstType == TYP_ULONG);
+
+                            // We're emulating floating->ulong conversion on x64. The logic is the same as for
+                            // uint on x86, except that we don't have conversion instructions that keep the
+                            // results in SIMD registers, so we do the final result selection in scalar code.
+                            //
+                            // This creates the equivalent of the following C# code:
+                            //   long result = Sse.X64.ConvertToInt64WithTruncation(fixupVal);
+                            //   long negated = Sse.X64.ConvertToInt64WithTruncation(wrapVal);
+                            //   convertResult = (ulong)(result | (negated & (result >> 63)));
+
+                            GenTree* result =
+                                comp->gtNewSimdHWIntrinsicNode(TYP_LONG, fixupVal, convertIntrinsic, srcType, 16);
+                            GenTree* negated =
+                                comp->gtNewSimdHWIntrinsicNode(TYP_LONG, wrapVal, convertIntrinsic, srcType, 16);
+
+                            castRange.InsertAtEnd(result);
+                            castRange.InsertAtEnd(negated);
+
+                            // We need the result twice -- once for the mask bit and once for the blend.
+                            LIR::Use resultUse;
+                            LIR::Use::MakeDummyUse(castRange, result, &resultUse);
+                            resultUse.ReplaceWithLclVar(comp);
+                            result = resultUse.Def();
+
+                            GenTree* sixtyThree  = comp->gtNewIconNode(63);
+                            GenTree* mask        = comp->gtNewOperNode(GT_RSH, TYP_LONG, result, sixtyThree);
+                            GenTree* andMask     = comp->gtNewOperNode(GT_AND, TYP_LONG, mask, negated);
+                            GenTree* resultClone = comp->gtClone(result);
+
+                            castRange.InsertAtEnd(sixtyThree);
+                            castRange.InsertAtEnd(mask);
+                            castRange.InsertAtEnd(andMask);
+                            castRange.InsertAtEnd(resultClone);
+
+                            convertResult = comp->gtNewOperNode(GT_OR, TYP_LONG, andMask, resultClone);
+                        }
                     }
                 }
+
+                // Now we handle saturation of the result for positive overflow.
+                //
+                // This creates the equivalent of the following C# code:
+                //   bool isOverflow = Sse.CompareScalarUnorderedGreaterThanOrEqual(srcVec, ovfFloatingValue);
+                //   return isOverflow ? maxIntegralValue : convertResult;
+
+                // These nodes were all created above but not used until now.
+                castRange.InsertAtEnd(ovfFloatingValue);
+                castRange.InsertAtEnd(maxIntegralValue);
+                castRange.InsertAtEnd(convertResult);
+
+                srcClone = comp->gtClone(srcVector);
+                GenTree* compareMax =
+                    comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcClone, ovfFloatingValue,
+                                                   NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual, srcType, 16);
+                castResult = comp->gtNewConditionalNode(GT_SELECT, compareMax, maxIntegralValue, convertResult,
+                                                        genActualType(dstType));
+
+                castRange.InsertAtEnd(srcClone);
+                castRange.InsertAtEnd(compareMax);
+                castRange.InsertAtEnd(castResult);
             }
-
-            // Now we handle saturation of the result for positive overflow.
-            //
-            // This creates the equivalent of the following C# code:
-            //   bool isOverflow = Sse.CompareScalarUnorderedGreaterThanOrEqual(srcVec, maxFloatingValue);
-            //   return isOverflow ? maxIntegralValue : convertResult;
-
-            NamedIntrinsic compareIntrinsic = NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual;
-
-            // These nodes were all created above but not used until now.
-            castRange.InsertAtEnd(maxFloatingValue);
-            castRange.InsertAtEnd(maxIntegralValue);
-            castRange.InsertAtEnd(convertResult);
-
-            srcClone            = comp->gtClone(srcVector);
-            GenTree* compareMax = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcClone, maxFloatingValue,
-                                                                 compareIntrinsic, srcBaseType, 16);
-            GenTree* select     = comp->gtNewConditionalNode(GT_SELECT, compareMax, maxIntegralValue, convertResult,
-                                                             genActualType(dstType));
-
-            castRange.InsertAtEnd(srcClone);
-            castRange.InsertAtEnd(compareMax);
-            castRange.InsertAtEnd(select);
-
-            // The original cast becomes a no-op, because its input is already the correct type.
-            tree->AsCast()->CastOp() = select;
         }
 
         LIR::ReadOnlyRange lowerRange(castRange.FirstNode(), castRange.LastNode());
         BlockRange().InsertBefore(tree, std::move(castRange));
 
-        JITDUMP("LowerCast after:\n");
-        DISPTREERANGE(BlockRange(), tree);
+        LABELEDDISPTREERANGE("LowerCast after", BlockRange(), castResult);
 
+        LIR::Use castUse;
+        if (BlockRange().TryGetUse(tree, &castUse))
+        {
+            castUse.ReplaceWith(castResult);
+        }
+        else
+        {
+            castResult->SetUnusedValue();
+        }
+
+        BlockRange().Remove(tree);
         LowerRange(lowerRange);
+        return;
     }
-#endif // FEATURE_HW_INTRINSICS
 
     // Now determine if we have operands that should be contained.
     ContainCheckCast(tree->AsCast());
