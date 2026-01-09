@@ -1516,7 +1516,7 @@ namespace System.Text.Json.SourceGeneration
                     CollectionType.MemoryOfT => "CreateMemoryInfo",
                     CollectionType.ReadOnlyMemoryOfT => "CreateReadOnlyMemoryInfo",
                     CollectionType.ISet => "CreateISetInfo",
-
+                    CollectionType.IReadOnlySetOfT => "CreateIReadOnlySetInfo",
                     CollectionType.Dictionary => "CreateDictionaryInfo",
                     CollectionType.IDictionaryOfTKeyTValue or CollectionType.IDictionary => "CreateIDictionaryInfo",
                     CollectionType.IReadOnlyDictionary => "CreateIReadOnlyDictionaryInfo",
