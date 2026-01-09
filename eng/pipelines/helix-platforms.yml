@@ -68,20 +68,20 @@ variables:
   # macOS for iOS device testing
   # Latest
   - name: helix_macos_ios_device_latest
-    value: OSX.13.Amd64.Iphone.Open
+    value: OSX.15.Amd64.Iphone.Open
 
   # Oldest
   - name: helix_macos_ios_device_oldest
-    value: OSX.13.Amd64.Iphone.Open
+    value: OSX.15.Amd64.Iphone.Open
 
   # macOS for tvOS device testing
   # Latest
   - name: helix_macos_tvos_device_latest
-    value: OSX.13.Amd64.AppleTV.Open
+    value: OSX.15.Amd64.AppleTV.Open
 
   # Oldest
   - name: helix_macos_tvos_device_oldest
-    value: OSX.13.Amd64.AppleTV.Open
+    value: OSX.15.Amd64.AppleTV.Open
 
   # ===========================================
   # Linux Platforms
@@ -106,7 +106,7 @@ variables:
   # Latest: 26.04
   - name: helix_linux_x64_ubuntu_latest
     value: (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-amd64
-  
+
   # Oldest: 22.04
   - name: helix_linux_x64_ubuntu_oldest
     value: Ubuntu.2204.Amd64.Open
@@ -124,11 +124,11 @@ variables:
   # Latest: 43
   - name: helix_linux_x64_fedora_latest
     value: (Fedora.43.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-43-helix-amd64
-  
+
   # Oldest: 42
   - name: helix_linux_x64_fedora_oldest
     value: (Fedora.42.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-42-helix-amd64
-  
+
   # openSUSE x64
   # Latest: 15.6
   - name: helix_linux_x64_opensuse_latest
@@ -166,7 +166,7 @@ variables:
   # Latest: Ubuntu 26.04
   - name: helix_linux_arm64_latest
     value: (Ubuntu.2604.ArmArch.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-arm64v8
-  
+
   # Oldest: Ubuntu 22.04
   - name: helix_linux_arm64_oldest
     value: Ubuntu.2204.ArmArch.Open
