@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
@@ -16,6 +17,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         {
             GetInterface_Name.Test();
             GetInterface_Name_IgnoreCase.Test();
+            GetInterfaceMap_DataFlow.Test();
         }
 
         class GetInterface_Name
@@ -181,6 +183,57 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 TestWithAll(typeof(TestType));
                 TestKnownType();
                 TestMultipleValues(0, typeof(TestType));
+            }
+        }
+
+        class GetInterfaceMap_DataFlow
+        {
+            [ExpectedWarning("IL2072", nameof(Type.GetInterfaceMap))]
+            static void TestDirectCall()
+            {
+                // This should warn: @interface doesn't have the required annotations
+                object o = new();
+                var type = o.GetType();
+                var @interface = type.GetInterfaces().First();
+                _ = type.GetInterfaceMap(@interface);
+            }
+
+            [ExpectedWarning("IL2072", nameof(Type.GetInterfaceMap))]
+            static void TestFieldAccess()
+            {
+                // This should also warn: @interface doesn't have the required annotations
+                // even though we're accessing a field on the return value
+                object o = new();
+                var type = o.GetType();
+                var @interface = type.GetInterfaces().First();
+                _ = type.GetInterfaceMap(@interface).TargetMethods;
+            }
+
+            [ExpectedWarning("IL2072", nameof(Type.GetInterfaceMap))]
+            static void TestMultipleFieldAccess()
+            {
+                // Should warn even with multiple field/property accesses
+                object o = new();
+                var type = o.GetType();
+                var @interface = type.GetInterfaces().First();
+                _ = type.GetInterfaceMap(@interface).TargetMethods.Length;
+            }
+
+            static void TestWithAnnotation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
+            {
+                // This should not warn: interfaceType has the required annotations
+                object o = new();
+                var type = o.GetType();
+                _ = type.GetInterfaceMap(interfaceType);
+                _ = type.GetInterfaceMap(interfaceType).TargetMethods;
+            }
+
+            public static void Test()
+            {
+                TestDirectCall();
+                TestFieldAccess();
+                TestMultipleFieldAccess();
+                TestWithAnnotation(null);
             }
         }
 
