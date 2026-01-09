@@ -490,13 +490,13 @@ POP_COOP_PINVOKE_FRAME macro
 ; need to capture the complete register state.
 ;
 ; Stack layout (from high to low address after prologue):
-;   Return address
-;   CalleeSavedRegisters (r15, r14, r13, r12, rbp, rbx, rsi, rdi - 64 bytes)
-;   Outgoing argument homes (32 bytes) + alignment (8 bytes) <- TransitionBlock
+;   Return address (m_ReturnAddress)
+;   CalleeSavedRegisters (r15, r14, r13, r12, rbp, rbx, rsi, rdi - 64 bytes) <- TransitionBlock starts here
+;   Outgoing argument homes (32 bytes) + alignment (8 bytes)
 ;   FloatArgumentRegisters (xmm0-xmm3, 64 bytes)
 ;   sp points here
 ;
-; On exit, target contains the TransitionBlock pointer (after float args area).
+; On exit, target contains the TransitionBlock pointer (CalleeSavedRegisters).
 PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS macro target
 
         PUSH_CALLEE_SAVED_REGISTERS
@@ -513,7 +513,8 @@ PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS macro target
 
         END_PROLOGUE
 
-        lea     target, [rsp + 64]
+        ; TransitionBlock pointer points to CalleeSavedRegisters at rsp + 104
+        lea     target, [rsp + 104]
 
         endm
 

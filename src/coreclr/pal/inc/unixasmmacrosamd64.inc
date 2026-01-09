@@ -447,9 +447,11 @@ C_FUNC(\Name\()_End):
         PUSH_CALLEE_SAVED_REGISTERS
         PUSH_ARGUMENT_REGISTERS
 
-        // Allocate space for float argument registers (128 bytes) + alignment (8 bytes)
+        // Allocate space for alignment (8 bytes) + float argument registers (128 bytes)
         alloc_stack     136
-        SAVE_FLOAT_ARGUMENT_REGISTERS 0
+        // Save float argument registers at offset 8 (after alignment padding)
+        // This ensures floats are at TransitionBlock - 128 (matching GetOffsetOfFloatArgumentRegisters)
+        SAVE_FLOAT_ARGUMENT_REGISTERS 8
 
         END_PROLOGUE
 

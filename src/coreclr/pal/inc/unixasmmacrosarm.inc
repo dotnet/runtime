@@ -288,6 +288,26 @@ C_FUNC(\Name):
         add     \target, sp, 4
 .endm
 
+// Pushes a full TransitionBlock on the stack including float argument registers.
+// On exit, \target contains the TransitionBlock pointer.
+.macro PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS target
+        // Push argument registers (r0-r3) - these will be at highest address in TransitionBlock
+        PUSH_ARGUMENT_REGISTERS
+        PUSH_CALLEE_SAVED_REGISTERS
+        PROLOG_STACK_SAVE_OFFSET r7, #12
+        // let r7 point the saved r7 in the stack (clang FP style)
+        // Allocate space for float registers (64 bytes) + padding (4 bytes) for 8-byte alignment
+        // GetNegSpaceSize() = 64 + 4 = 68, so floats must be at TransitionBlock - 68
+        alloc_stack 68
+        // Save floating point argument registers (d0-d7) at sp+0
+        // This puts them at TransitionBlock - 68, matching GetOffsetOfFloatArgumentRegisters()
+        vstm    sp, {d0-d7}
+        CHECK_STACK_ALIGNMENT
+        END_PROLOGUE
+        // TransitionBlock is at sp + 68
+        add     \target, sp, #68
+.endm
+
 .macro POP_COOP_PINVOKE_FRAME
         free_stack 4
         POP_CALLEE_SAVED_REGISTERS
