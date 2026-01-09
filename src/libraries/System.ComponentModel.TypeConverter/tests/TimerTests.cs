@@ -131,12 +131,16 @@ namespace System.Timers.Tests
                 Assert.False(timer.Enabled);
 
                 // Setting AutoReset should not restart a disabled timer
+                mres.Reset();
                 timer.AutoReset = true;
                 Assert.False(timer.Enabled);
+                Assert.False(mres.Wait(100), "Timer callback should not have fired after setting AutoReset");
 
                 // Setting Interval should not restart a disabled timer
+                mres.Reset();
                 timer.Interval = 1;
                 Assert.False(timer.Enabled);
+                Assert.False(mres.Wait(100), "Timer callback should not have fired after setting Interval");
             }
         }
     }
