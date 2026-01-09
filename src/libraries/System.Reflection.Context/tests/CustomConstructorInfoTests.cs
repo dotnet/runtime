@@ -156,17 +156,18 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetMethodImplementationFlags_ReturnsValue()
+        public void GetMethodImplementationFlags_ReturnsIL()
         {
             MethodImplAttributes flags = _customConstructor.GetMethodImplementationFlags();
-            // Just verify it doesn't throw - it's a value type
+            Assert.Equal(MethodImplAttributes.IL, flags);
         }
 
         [Fact]
-        public void GetParameters_ReturnsProjectedParameters()
+        public void GetParameters_ReturnsSingleStringParameter()
         {
             ParameterInfo[] parameters = _customConstructor.GetParameters();
             Assert.Single(parameters);
+            Assert.Equal("String", parameters[0].ParameterType.Name);
         }
 
         [Fact]
@@ -201,10 +202,11 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetHashCode_ReturnsValue()
+        public void GetHashCode_IsIdempotent()
         {
-            int hashCode = _customConstructor.GetHashCode();
-            Assert.NotEqual(0, hashCode);
+            int hashCode1 = _customConstructor.GetHashCode();
+            int hashCode2 = _customConstructor.GetHashCode();
+            Assert.Equal(hashCode1, hashCode2);
         }
     }
 }

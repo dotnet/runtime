@@ -59,14 +59,13 @@ namespace System.Reflection.Context.Tests
         private readonly CustomReflectionContext _customReflectionContext = new TestCustomReflectionContext();
 
         [Fact]
-        public void GetCustomAttributes_InheritTrue_OnDerivedType_ReturnsInheritedAttributes()
+        public void GetCustomAttributes_InheritTrue_OnDerivedType_ReturnsAttributes()
         {
             TypeInfo derivedTypeInfo = typeof(DerivedWithAttributes).GetTypeInfo();
             TypeInfo customDerivedType = _customReflectionContext.MapType(derivedTypeInfo);
 
             object[] attrs = customDerivedType.GetCustomAttributes(typeof(InheritedMultipleAttribute), true);
-            Assert.NotNull(attrs);
-            // Just verify it doesn't throw - the actual behavior depends on the implementation
+            Assert.All(attrs, a => Assert.IsType<InheritedMultipleAttribute>(a));
         }
 
         [Fact]
@@ -76,7 +75,7 @@ namespace System.Reflection.Context.Tests
             TypeInfo customDerivedType = _customReflectionContext.MapType(derivedTypeInfo);
 
             object[] attrs = customDerivedType.GetCustomAttributes(typeof(InheritedMultipleAttribute), false);
-            Assert.NotNull(attrs);
+            Assert.All(attrs, a => Assert.IsType<InheritedMultipleAttribute>(a));
         }
 
         [Fact]
@@ -90,59 +89,57 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetCustomAttributes_InheritedSingle_OnDerivedWithSame_ReturnsOnlyDerived()
+        public void GetCustomAttributes_InheritedSingle_OnDerivedWithSame_ReturnsMatchingAttributes()
         {
             TypeInfo derivedTypeInfo = typeof(DerivedWithSameAttribute).GetTypeInfo();
             TypeInfo customDerivedType = _customReflectionContext.MapType(derivedTypeInfo);
 
             object[] attrs = customDerivedType.GetCustomAttributes(typeof(InheritedSingleAttribute), true);
-            // AllowMultiple=false means the derived attribute should replace the base
-            Assert.NotNull(attrs);
+            Assert.All(attrs, a => Assert.IsType<InheritedSingleAttribute>(a));
         }
 
         [Fact]
-        public void GetCustomAttributes_OnOverriddenMethod_WithInherit_ReturnsInheritedAttributes()
+        public void GetCustomAttributes_OnOverriddenMethod_WithInherit_ReturnsMatchingAttributes()
         {
             TypeInfo derivedTypeInfo = typeof(DerivedWithAttributes).GetTypeInfo();
             TypeInfo customDerivedType = _customReflectionContext.MapType(derivedTypeInfo);
             MethodInfo method = customDerivedType.GetMethod("VirtualMethod");
 
             object[] attrs = method.GetCustomAttributes(typeof(InheritedMultipleAttribute), true);
-            Assert.NotNull(attrs);
+            Assert.All(attrs, a => Assert.IsType<InheritedMultipleAttribute>(a));
         }
 
         [Fact]
-        public void GetCustomAttributes_OnOverriddenMethod_WithoutInherit_ReturnsDeclaredOnly()
+        public void GetCustomAttributes_OnOverriddenMethod_WithoutInherit_ReturnsDeclaredAttributes()
         {
             TypeInfo derivedTypeInfo = typeof(DerivedWithAttributes).GetTypeInfo();
             TypeInfo customDerivedType = _customReflectionContext.MapType(derivedTypeInfo);
             MethodInfo method = customDerivedType.GetMethod("VirtualMethod");
 
             object[] attrs = method.GetCustomAttributes(typeof(InheritedMultipleAttribute), false);
-            Assert.NotNull(attrs);
+            Assert.All(attrs, a => Assert.IsType<InheritedMultipleAttribute>(a));
         }
 
         [Fact]
-        public void GetCustomAttributes_OnBaseMethod_ReturnsDeclaredAttributes()
+        public void GetCustomAttributes_OnBaseMethod_ReturnsMatchingAttributes()
         {
             TypeInfo baseTypeInfo = typeof(BaseWithAttributes).GetTypeInfo();
             TypeInfo customBaseType = _customReflectionContext.MapType(baseTypeInfo);
             MethodInfo method = customBaseType.GetMethod("VirtualMethod");
 
             object[] attrs = method.GetCustomAttributes(typeof(InheritedSingleAttribute), false);
-            Assert.NotNull(attrs);
+            Assert.All(attrs, a => Assert.IsType<InheritedSingleAttribute>(a));
         }
 
         [Fact]
-        public void IsDefined_OnDerivedType_WithInherit_ChecksInheritance()
+        public void IsDefined_OnDerivedType_WithInherit_ReturnsFalseForInheritedSingle()
         {
             TypeInfo derivedTypeInfo = typeof(DerivedWithAttributes).GetTypeInfo();
             TypeInfo customDerivedType = _customReflectionContext.MapType(derivedTypeInfo);
 
-            // InheritedSingleAttribute is defined on BaseWithAttributes with Inherited=true
-            // Check if inheritance is handled correctly
+            // InheritedSingleAttribute is defined on BaseWithAttributes but not on DerivedWithAttributes
+            // CustomReflectionContext.IsDefined returns false for inherited attributes
             bool isDefined = customDerivedType.IsDefined(typeof(InheritedSingleAttribute), true);
-            // The result depends on CustomReflectionContext implementation behavior
             Assert.False(isDefined);
         }
 
@@ -156,7 +153,7 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetCustomAttributes_FilteredByAttributeType_ReturnsOnlyMatchingType()
+        public void GetCustomAttributes_FilteredByAttributeType_ReturnsMatchingAttributes()
         {
             TypeInfo baseTypeInfo = typeof(BaseWithAttributes).GetTypeInfo();
             TypeInfo customBaseType = _customReflectionContext.MapType(baseTypeInfo);
@@ -166,51 +163,51 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetCustomAttributes_OnConstructor_ReturnsAttributes()
+        public void GetCustomAttributes_OnConstructor_ReturnsEmptyForUnattributedConstructor()
         {
             TypeInfo typeInfo = typeof(TestObject).GetTypeInfo();
             TypeInfo customType = _customReflectionContext.MapType(typeInfo);
             ConstructorInfo ctor = customType.GetConstructor(new[] { typeof(string) });
 
             object[] attrs = ctor.GetCustomAttributes(typeof(Attribute), false);
-            Assert.NotNull(attrs);
+            Assert.Empty(attrs);
         }
 
         [Fact]
-        public void GetCustomAttributes_OnProperty_ReturnsAttributes()
+        public void GetCustomAttributes_OnProperty_ReturnsMatchingAttributes()
         {
             TypeInfo typeInfo = typeof(TypeWithProperties).GetTypeInfo();
             TypeInfo customType = _customReflectionContext.MapType(typeInfo);
             PropertyInfo prop = customType.GetProperty("AttributedProperty");
 
             object[] attrs = prop.GetCustomAttributes(typeof(Attribute), false);
-            Assert.NotNull(attrs);
+            Assert.All(attrs, a => Assert.IsAssignableFrom<Attribute>(a));
         }
 
         [Fact]
-        public void GetCustomAttributes_OnEvent_ReturnsAttributes()
+        public void GetCustomAttributes_OnEvent_ReturnsEmptyForUnattributedEvent()
         {
             TypeInfo typeInfo = typeof(TypeWithEvent).GetTypeInfo();
             TypeInfo customType = _customReflectionContext.MapType(typeInfo);
             EventInfo evt = customType.GetEvent("TestEvent");
 
             object[] attrs = evt.GetCustomAttributes(typeof(Attribute), false);
-            Assert.NotNull(attrs);
+            Assert.Empty(attrs);
         }
 
         [Fact]
-        public void GetCustomAttributes_OnField_ReturnsAttributes()
+        public void GetCustomAttributes_OnField_ReturnsEmptyForUnattributedField()
         {
             TypeInfo typeInfo = typeof(SecondTestObject).GetTypeInfo();
             TypeInfo customType = _customReflectionContext.MapType(typeInfo);
             FieldInfo field = customType.GetField("field");
 
             object[] attrs = field.GetCustomAttributes(typeof(Attribute), false);
-            Assert.NotNull(attrs);
+            Assert.Empty(attrs);
         }
 
         [Fact]
-        public void GetCustomAttributes_OnParameter_ReturnsAttributes()
+        public void GetCustomAttributes_OnParameter_ReturnsEmptyForUnattributedParameter()
         {
             TypeInfo typeInfo = typeof(TypeWithParameters).GetTypeInfo();
             TypeInfo customType = _customReflectionContext.MapType(typeInfo);
@@ -218,7 +215,7 @@ namespace System.Reflection.Context.Tests
             ParameterInfo param = method.GetParameters()[1];
 
             object[] attrs = param.GetCustomAttributes(typeof(Attribute), false);
-            Assert.NotNull(attrs);
+            Assert.Empty(attrs);
         }
     }
 }

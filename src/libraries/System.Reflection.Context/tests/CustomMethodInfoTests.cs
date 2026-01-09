@@ -159,11 +159,11 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void IsDefined_ReturnsValue()
+        public void IsDefined_ForTestAttribute_ReturnsTrue()
         {
-            bool isDefined = _customMethod.IsDefined(typeof(Attribute), true);
-            // May be true if there are inherited attributes
-            Assert.True(isDefined || !isDefined);
+            // TestCustomReflectionContext adds TestAttribute to GetMessage method
+            bool isDefined = _customMethod.IsDefined(typeof(TestAttribute), true);
+            Assert.True(isDefined);
         }
 
         [Fact]
@@ -174,24 +174,25 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetMethodBody_ReturnsProjectedBody()
+        public void GetMethodBody_ReturnsBodyWithLocals()
         {
             MethodBody body = _customMethod.GetMethodBody();
             Assert.NotNull(body);
+            Assert.NotNull(body.LocalVariables);
         }
 
         [Fact]
-        public void GetMethodImplementationFlags_ReturnsValue()
+        public void GetMethodImplementationFlags_ReturnsIL()
         {
             MethodImplAttributes flags = _customMethod.GetMethodImplementationFlags();
-            // Just verify it doesn't throw - it's a value type
+            Assert.Equal(MethodImplAttributes.IL, flags);
         }
 
         [Fact]
-        public void GetParameters_ReturnsProjectedParameters()
+        public void GetParameters_ReturnsEmptyForNoArgMethod()
         {
             ParameterInfo[] parameters = _customMethod.GetParameters();
-            Assert.NotNull(parameters);
+            Assert.Empty(parameters);
         }
 
         [Fact]
@@ -226,10 +227,11 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetHashCode_ReturnsValue()
+        public void GetHashCode_IsIdempotent()
         {
-            int hashCode = _customMethod.GetHashCode();
-            Assert.NotEqual(0, hashCode);
+            int hashCode1 = _customMethod.GetHashCode();
+            int hashCode2 = _customMethod.GetHashCode();
+            Assert.Equal(hashCode1, hashCode2);
         }
     }
 }

@@ -32,12 +32,12 @@ namespace System.Reflection.Context.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
-        public void FullyQualifiedName_ReturnsValue()
+        public void FullyQualifiedName_ContainsTestAssemblyName()
         {
             string fqn = _customModule.FullyQualifiedName;
             Assert.NotNull(fqn);
-            // The FQN should end with the assembly file name
-            Assert.EndsWith(".dll", fqn, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("System.Reflection.Context.Tests", fqn);
+            Assert.EndsWith(".dll", fqn);
         }
 
         [Fact]
@@ -48,25 +48,28 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void ModuleVersionId_ReturnsValue()
+        public void ModuleVersionId_ReturnsNonEmptyGuid()
         {
             Guid mvid = _customModule.ModuleVersionId;
+            Guid mvid2 = _customModule.ModuleVersionId;
             Assert.NotEqual(Guid.Empty, mvid);
+            Assert.Equal(mvid, mvid2);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
-        public void Name_ReturnsValue()
+        public void Name_ContainsTestAssemblyName()
         {
             string name = _customModule.Name;
             Assert.NotNull(name);
-            Assert.Contains(".dll", name);
+            Assert.Contains("System.Reflection.Context.Tests", name);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
-        public void ScopeName_ReturnsValue()
+        public void ScopeName_ContainsTestAssemblyName()
         {
             string scopeName = _customModule.ScopeName;
             Assert.NotNull(scopeName);
+            Assert.Contains("System.Reflection.Context.Tests", scopeName);
         }
 
         [Fact]
@@ -78,17 +81,17 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetCustomAttributes_NoType_ReturnsAttributes()
+        public void GetCustomAttributes_NoType_ReturnsTestModuleAttribute()
         {
             object[] attributes = _customModule.GetCustomAttributes(false);
-            Assert.NotNull(attributes);
+            Assert.Contains(attributes, a => a is TestModuleAttribute);
         }
 
         [Fact]
-        public void GetCustomAttributesData_ReturnsData()
+        public void GetCustomAttributesData_ContainsAttributeData()
         {
             IList<CustomAttributeData> data = _customModule.GetCustomAttributesData();
-            Assert.NotNull(data);
+            Assert.NotEmpty(data);
         }
 
         [Fact]
@@ -128,10 +131,10 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetMethods_ReturnsProjectedMethods()
+        public void GetMethods_ReturnsEmptyForTestModule()
         {
             MethodInfo[] methods = _customModule.GetMethods(BindingFlags.Public | BindingFlags.Static);
-            Assert.NotNull(methods);
+            Assert.Empty(methods);
         }
 
         [Fact]
@@ -214,10 +217,10 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void ToString_ReturnsValue()
+        public void ToString_ContainsTestAssemblyName()
         {
             string str = _customModule.ToString();
-            Assert.NotNull(str);
+            Assert.Contains("System.Reflection.Context.Tests", str);
         }
 
         [Fact]
@@ -228,10 +231,11 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetHashCode_ReturnsValue()
+        public void GetHashCode_IsIdempotent()
         {
-            int hashCode = _customModule.GetHashCode();
-            Assert.NotEqual(0, hashCode);
+            int hashCode1 = _customModule.GetHashCode();
+            int hashCode2 = _customModule.GetHashCode();
+            Assert.Equal(hashCode1, hashCode2);
         }
     }
 }

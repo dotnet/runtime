@@ -44,21 +44,21 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void ConstructorArguments_ReturnsValue()
+        public void ConstructorArguments_ReturnsEmptyForParameterlessAttribute()
         {
             IList<CustomAttributeTypedArgument> args = _customAttributeData.ConstructorArguments;
-            Assert.NotNull(args);
+            Assert.Empty(args);
         }
 
         [Fact]
-        public void NamedArguments_ReturnsValue()
+        public void NamedArguments_ReturnsEmptyForSimpleAttribute()
         {
             IList<CustomAttributeNamedArgument> args = _customAttributeData.NamedArguments;
-            Assert.NotNull(args);
+            Assert.Empty(args);
         }
 
         [Fact]
-        public void ToString_ReturnsValue()
+        public void ToString_ContainsAttributeTypeName()
         {
             string str = _customAttributeData.ToString();
             Assert.NotNull(str);
@@ -66,20 +66,19 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void Equals_SameData_ReturnsValue()
+        public void Equals_DifferentInstance_ReturnsFalse()
         {
             PropertyInfo property = _customTypeInfo.GetProperty("AttributedProperty");
-            CustomAttributeData sameData = property.GetCustomAttributesData().FirstOrDefault();
-            bool areEqual = _customAttributeData.Equals(sameData);
-            // May be false if the data objects are different instances
-            Assert.False(areEqual);
+            CustomAttributeData otherData = property.GetCustomAttributesData().FirstOrDefault();
+            Assert.False(_customAttributeData.Equals(otherData));
         }
 
         [Fact]
-        public void GetHashCode_ReturnsValue()
+        public void GetHashCode_IsIdempotent()
         {
-            int hashCode = _customAttributeData.GetHashCode();
-            Assert.NotEqual(0, hashCode);
+            int hashCode1 = _customAttributeData.GetHashCode();
+            int hashCode2 = _customAttributeData.GetHashCode();
+            Assert.Equal(hashCode1, hashCode2);
         }
     }
 }

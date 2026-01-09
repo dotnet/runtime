@@ -150,28 +150,28 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetCustomAttributes_WithType_ReturnsAttributes()
+        public void GetCustomAttributes_WithType_ReturnsEmptyForUnattributedParameter()
         {
             object[] attributes = _requiredParameter.GetCustomAttributes(typeof(Attribute), true);
-            Assert.NotNull(attributes);
+            Assert.Empty(attributes);
         }
 
         [Fact]
-        public void GetCustomAttributes_NoType_ReturnsAttributes()
+        public void GetCustomAttributes_NoType_ReturnsEmptyForUnattributedParameter()
         {
             object[] attributes = _requiredParameter.GetCustomAttributes(false);
-            Assert.NotNull(attributes);
+            Assert.Empty(attributes);
         }
 
         [Fact]
-        public void GetCustomAttributesData_ReturnsData()
+        public void GetCustomAttributesData_ReturnsEmptyForUnattributedParameter()
         {
             IList<CustomAttributeData> data = _requiredParameter.GetCustomAttributesData();
-            Assert.NotNull(data);
+            Assert.Empty(data);
         }
 
         [Fact]
-        public void IsDefined_ReturnsValue()
+        public void IsDefined_ReturnsFalseForUnattributedParameter()
         {
             bool isDefined = _requiredParameter.IsDefined(typeof(Attribute), true);
             Assert.False(isDefined);
@@ -192,10 +192,11 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void ToString_ReturnsValue()
+        public void ToString_ContainsParameterInfo()
         {
             string str = _requiredParameter.ToString();
             Assert.NotNull(str);
+            Assert.NotEmpty(str);
         }
 
         [Fact]
@@ -211,7 +212,6 @@ namespace System.Reflection.Context.Tests
         {
             MethodInfo paramsMethod = _customTypeInfo.GetMethod("MethodWithParamsArray");
             ParameterInfo paramsParam = paramsMethod.GetParameters()[0];
-            // Verify the parameter type is an array
             Assert.True(paramsParam.ParameterType.IsArray);
         }
     }

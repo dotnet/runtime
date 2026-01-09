@@ -34,12 +34,6 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void EventType_ReturnsCustomEvent()
-        {
-            Assert.NotNull(_customEvent);
-        }
-
-        [Fact]
         public void Attributes_ReturnsValue()
         {
             EventAttributes attrs = _customEvent.Attributes;
@@ -67,9 +61,10 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void MetadataToken_ReturnsValue()
+        public void MetadataToken_ReturnsPositiveValue()
         {
-            Assert.True(_customEvent.MetadataToken > 0);
+            int token = _customEvent.MetadataToken;
+            Assert.InRange(token, 1, int.MaxValue);
         }
 
         [Fact]
@@ -149,28 +144,28 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetCustomAttributes_WithType_ReturnsAttributes()
+        public void GetCustomAttributes_WithType_ReturnsEmptyForUnattributedEvent()
         {
             object[] attributes = _customEvent.GetCustomAttributes(typeof(Attribute), true);
-            Assert.NotNull(attributes);
+            Assert.Empty(attributes);
         }
 
         [Fact]
-        public void GetCustomAttributes_NoType_ReturnsAttributes()
+        public void GetCustomAttributes_NoType_ReturnsEmptyForUnattributedEvent()
         {
             object[] attributes = _customEvent.GetCustomAttributes(false);
-            Assert.NotNull(attributes);
+            Assert.Empty(attributes);
         }
 
         [Fact]
-        public void GetCustomAttributesData_ReturnsData()
+        public void GetCustomAttributesData_ReturnsEmptyForUnattributedEvent()
         {
             IList<CustomAttributeData> data = _customEvent.GetCustomAttributesData();
-            Assert.NotNull(data);
+            Assert.Empty(data);
         }
 
         [Fact]
-        public void IsDefined_ReturnsValue()
+        public void IsDefined_ReturnsFalseForUnattributedEvent()
         {
             bool isDefined = _customEvent.IsDefined(typeof(Attribute), true);
             Assert.False(isDefined);
@@ -191,18 +186,20 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void GetHashCode_ReturnsValue()
+        public void GetHashCode_IsIdempotent()
         {
-            int hashCode = _customEvent.GetHashCode();
-            Assert.NotEqual(0, hashCode);
+            int hashCode1 = _customEvent.GetHashCode();
+            int hashCode2 = _customEvent.GetHashCode();
+            Assert.Equal(hashCode1, hashCode2);
         }
 
         [Fact]
-        public void GetEvents_ReturnsProjectedEvents()
+        public void GetEvents_ReturnsTwoEvents()
         {
             EventInfo[] events = _customTypeInfo.GetEvents(BindingFlags.Public | BindingFlags.Instance);
-            Assert.NotEmpty(events);
             Assert.Equal(2, events.Length);
+            Assert.Contains(events, e => e.Name == "TestEvent");
+            Assert.Contains(events, e => e.Name == "GenericEvent");
         }
     }
 }
