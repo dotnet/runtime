@@ -59,9 +59,6 @@
 const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 char* g_szCreateDumpPath = nullptr;
 char* g_ppidarg  = nullptr;
-bool g_warnCreateDumpMissing = false;
-
-const char* g_createDumpMissingMessage = "DOTNET_DbgEnableMiniDump is set and the createdump binary does not exist\n";
 
 const size_t MaxUnsigned32BitDecString = STRING_LENGTH("4294967295");
 const size_t MaxUnsigned64BitDecString = STRING_LENGTH("18446744073709551615");
@@ -134,10 +131,6 @@ BuildCreateDumpCommandLine(
 {
     if (g_szCreateDumpPath == nullptr || g_ppidarg == nullptr)
     {
-        if (g_warnCreateDumpMissing)
-        {
-            fprintf(stderr, "%s", g_createDumpMissingMessage);
-        }
         return false;
     }
 
@@ -278,7 +271,14 @@ CreateCrashDump(
         // Execute the createdump program
         if (execv(argv[0], (char* const *)argv) == -1)
         {
-            fprintf(stderr, "Problem launching createdump (may not have execute permissions): execv(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
+            if (errno == ENOENT)
+            {
+                fprintf(stderr, "DOTNET_DbgEnableMiniDump is set and the createdump binary does not exist: %s\n", argv[0]);
+            }
+            else
+            {
+                fprintf(stderr, "Problem launching createdump (may not have execute permissions): execv(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
+            }
             exit(-1);
         }
     }
@@ -472,11 +472,6 @@ PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, void*
         free(signalAddressArg);
         free(exceptionRecordArg);
     }
-    else if (g_warnCreateDumpMissing)
-    {
-        // DOTNET_DbgEnableMiniDump was set but createdump binary was not found
-        fprintf(stderr, "%s", g_createDumpMissingMessage);
-    }
 #endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
 }
 
@@ -633,14 +628,6 @@ PalCreateDumpInitialize()
         }
         strncat(program, DumpGeneratorName, programLen);
 
-        struct stat fileData;
-        if (stat(program, &fileData) == -1 || !S_ISREG(fileData.st_mode))
-        {
-            // Createdump binary not found - set flag to warn if someone tries to create a dump
-            g_warnCreateDumpMissing = true;
-            free(program);
-            return true;
-        }
         g_szCreateDumpPath = program;
 
         // Format the app pid for the createdump command line
