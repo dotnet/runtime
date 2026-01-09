@@ -937,6 +937,43 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     }
 }
 
+/*****************************************************************************
+ *  Emit a call to a helper function.
+ */
+void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTargetReg /*= REG_NA */)
+{
+    EmitCallParams params;
+
+    CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
+    params.ireg = callTargetReg;
+
+    if (helperFunction.accessType == IAT_VALUE)
+    {
+        params.callType = EC_FUNC_TOKEN;
+        params.addr     = helperFunction.addr;
+    }
+    else
+    {
+        // TODO-WASM: Just put helperFunction.addr in params.addr and do the indirect load
+        //  further down in the emitter for all IAT_PVALUE calls instead of doing it here
+        params.addr = nullptr;
+        assert(helperFunction.accessType == IAT_PVALUE);
+        void* pAddr = helperFunction.addr;
+
+        // Indirect load from pAddr
+        GetEmitter()->emitIns_I(INS_i32_const, emitActualTypeSize(TYP_I_IMPL), (cnsval_ssize_t)pAddr);
+        GetEmitter()->emitIns_I(INS_i32_load, emitActualTypeSize(TYP_I_IMPL), 0);
+
+        params.callType = EC_INDIR_R;
+    }
+
+    params.methHnd = compiler->eeFindHelper(helper);
+    params.argSize = argSize;
+    params.retSize = retSize;
+
+    genEmitCallWithCurrentGC(params);
+}
+
 //------------------------------------------------------------------------
 // genCodeForCompare: Produce code for a GT_EQ/GT_NE/GT_LT/GT_LE/GT_GE/GT_GT node.
 //

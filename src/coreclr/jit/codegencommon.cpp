@@ -1550,7 +1550,6 @@ FOUND_AM:
     return true;
 }
 
-#ifndef TARGET_WASM
 //------------------------------------------------------------------------
 // genEmitCallWithCurrentGC:
 //   Emit a call with GC information captured from current GC information.
@@ -1565,7 +1564,6 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
     params.byrefRegs = gcInfo.gcRegByrefSetCur;
     GetEmitter()->emitIns_Call(params);
 }
-#endif // !TARGET_WASM
 
 /*****************************************************************************
  *
