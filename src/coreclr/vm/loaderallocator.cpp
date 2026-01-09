@@ -1383,7 +1383,6 @@ void LoaderAllocator::Terminate()
 
     if (m_fGCPressure)
     {
-        GCX_PREEMP();
         GCInterface::RemoveMemoryPressure(30000);
         m_fGCPressure = false;
     }
