@@ -296,10 +296,12 @@ namespace Wasm.Build.Tests
             }
         }
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task LibraryModeBuild(bool useWasmSdk)
+        [Theory, TestCategory("no-workload")]
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        public async Task LibraryMode(bool useWasmSdk, bool isPublish)
         {
             var config = Configuration.Release;
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.LibraryModeTestApp, "libraryMode");
@@ -309,13 +311,22 @@ namespace Wasm.Build.Tests
                     { "Microsoft.NET.Sdk.WebAssembly", "Microsoft.NET.Sdk" }
                 });
             }
-            BuildProject(info, config, new BuildOptions(AssertAppBundle: useWasmSdk));
+
+            // Publishing without WASM SDK is expected to fail
+            bool expectSuccess = useWasmSdk || !isPublish;
+            if (isPublish)
+                PublishProject(info, config, new PublishOptions(AssertAppBundle: useWasmSdk, ExpectSuccess: expectSuccess));
+            else
+                BuildProject(info, config, new BuildOptions(AssertAppBundle: useWasmSdk, ExpectSuccess: expectSuccess));
+
             if (useWasmSdk)
             {
-                var result = await RunForBuildWithDotnetRun(new BrowserRunOptions(config, ExpectedExitCode: 100));
+                var result = isPublish
+                    ? await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 100))
+                    : await RunForBuildWithDotnetRun(new BrowserRunOptions(config, ExpectedExitCode: 100));
+
                 Assert.Contains("WASM Library MyExport is called", result.TestOutput);
             }
-            
         }
 
         [Theory]
