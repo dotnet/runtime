@@ -1013,7 +1013,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.ARM64_Vector128, false);
                     yield return new InstructionSetInfo("Dczva", "", InstructionSet.ARM64_Dczva, false);
                     yield return new InstructionSetInfo("rcpc", "", InstructionSet.ARM64_Rcpc, true);
-                    yield return new InstructionSetInfo("vectort128", "VectorT128", InstructionSet.ARM64_VectorT128, true);
+                    yield return new InstructionSetInfo("vectort128", "", InstructionSet.ARM64_VectorT128, true);
                     yield return new InstructionSetInfo("rcpc2", "", InstructionSet.ARM64_Rcpc2, true);
                     yield return new InstructionSetInfo("sve", "Sve", InstructionSet.ARM64_Sve, true);
                     yield return new InstructionSetInfo("sve2", "Sve2", InstructionSet.ARM64_Sve2, true);
@@ -1400,9 +1400,6 @@ namespace Internal.JitInterface
                         { return InstructionSet.ARM64_Sha256_Arm64; }
                         else
                         { return InstructionSet.ARM64_Sha256; }
-
-                    case "VectorT128":
-                        { return InstructionSet.ARM64_VectorT128; }
 
                     case "Sve":
                         if (nestedTypeName == "Arm64")
@@ -2054,13 +2051,6 @@ namespace Internal.JitInterface
                     {
                         yield return type.GetNestedType("Arm64"u8);
                     }
-                }
-                break;
-
-                case (InstructionSet.ARM64_VectorT128, TargetArchitecture.ARM64):
-                {
-                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm64"u8, "VectorT128"u8, true);
-                    yield return type;
                 }
                 break;
 
