@@ -126,7 +126,7 @@ namespace ILCompiler.ObjectWriter
         private WasmDataSection CreateCombinedDataSection()
         {
            IEnumerable<WasmSection> dataSections = _sections.Where(s => s.Type == WasmSectionType.Data);
-           int encodedSize = 0;
+            int encodedSize = 0;
             List<WasmDataSegment> segments = new();
             foreach (WasmSection wasmSection in dataSections)
             {
@@ -279,7 +279,7 @@ namespace ILCompiler.ObjectWriter
         public Stream PrependStream
         {
             get { return _prependStream ?? MemoryStream.Null; }
-            set {  _prependStream = value ?? MemoryStream.Null; }
+            set { _prependStream = value ?? MemoryStream.Null; }
         }
 
         public Stream Stream

@@ -336,7 +336,6 @@ namespace ILCompiler.ObjectWriter
             return undefinedSymbolSet;
         }
 
-
         public virtual void EmitObject(Stream outputFileStream, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
         {
             // Pre-create some of the sections
