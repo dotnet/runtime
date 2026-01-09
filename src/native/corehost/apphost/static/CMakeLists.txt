@@ -142,9 +142,6 @@ if(CLR_CMAKE_TARGET_WIN32)
     # additional requirements for System.IO.Compression.Native
     include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
     append_extra_compression_libs(NATIVE_LIBS)
-
-    set(RUNTIMEINFO_LIB runtimeinfo)
-
 else()
     if(CLR_CMAKE_HOST_OSX OR (CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_UNIX_X86 AND NOT CLR_CMAKE_HOST_ANDROID))
         LIST(APPEND NATIVE_LIBS createdump_static)
@@ -203,9 +200,6 @@ else()
         include(${CLR_SRC_NATIVE_DIR}/libs/System.Security.Cryptography.Native/extra_libs.cmake)
         append_extra_cryptography_libs(NATIVE_LIBS)
     endif()
-
-    set(RUNTIMEINFO_LIB runtimeinfo)
-
 endif()
 
 LIST(APPEND NATIVE_LIBS
@@ -266,21 +260,9 @@ if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_APPLE)
     )
 endif()
 
-if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
-    # These options are used to force every object to be included even if it's unused.
-    set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
-    set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
-endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
-
 if(CLR_CMAKE_TARGET_LINUX AND CLR_CMAKE_TARGET_ARCH_RISCV64)
     add_linker_flag(-Wl,-z,notext)
 endif()
-
-if(CLR_CMAKE_TARGET_APPLE)
-    # These options are used to force every object to be included even if it's unused.
-    set(START_WHOLE_ARCHIVE -force_load)
-    set(END_WHOLE_ARCHIVE )
-endif(CLR_CMAKE_TARGET_APPLE)
 
 set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
 
@@ -289,9 +271,7 @@ target_link_libraries(
     PRIVATE
     ${NATIVE_LIBS}
 
-    ${START_WHOLE_ARCHIVE}
-    ${RUNTIMEINFO_LIB}
-    ${END_WHOLE_ARCHIVE}
+    $<LINK_LIBRARY:WHOLE_ARCHIVE,runtimeinfo>
 )
 
 target_link_libraries(singlefilehost PRIVATE hostmisc)
