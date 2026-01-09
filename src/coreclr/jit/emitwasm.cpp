@@ -117,6 +117,100 @@ bool emitter::emitInsIsStore(instruction ins)
     return false;
 }
 
+/*****************************************************************************
+ *
+ *  Add a call instruction (direct or indirect).
+ *      argSize<0 means that the caller will pop the arguments
+ *
+ * Unless callType is EC_FUNCTION_INDEX, addr needs to be null.
+ *
+ */
+
+void emitter::emitIns_Call(const EmitCallParams& params)
+{
+    /* Sanity check the arguments depending on callType */
+
+    assert(params.callType < EC_COUNT);
+    assert((params.callType == EC_FUNC_TOKEN) || (params.addr == nullptr));
+
+    // Our stack level should be always greater than the bytes of arguments we push. Just
+    // a sanity test.
+    assert((unsigned)std::abs(params.argSize) <= codeGen->genStackLevel);
+
+#ifdef DEBUG
+    if (EMIT_GC_VERBOSE)
+    {
+        printf("Call: GCvars=%s ", VarSetOps::ToString(emitComp, params.ptrVars));
+        dumpConvertedVarSet(emitComp, params.ptrVars);
+        printf("\n");
+    }
+#endif
+
+    /* Managed RetVal: emit sequence point for the call */
+    if (emitComp->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
+    {
+        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
+    }
+
+    /*
+        We need to allocate the appropriate instruction descriptor based
+        on whether this is a direct/indirect call, and whether we need to
+        record an updated set of live GC variables.
+     */
+    instrDesc* id = nullptr;
+
+    assert(params.argSize % REGSIZE_BYTES == 0);
+    int argCnt = (int)(params.argSize / (int)REGSIZE_BYTES);
+
+    // Set the instruction - special case jumping a function
+    // All Wasm calls we generate are indirect, it's just a question of *how* much indirection
+    instruction ins;
+
+    switch (params.callType)
+    {
+        case EC_FUNC_TOKEN:
+            ins = params.isJump ? INS_return_call : INS_call;
+            id  = emitNewInstrSC(EA_8BYTE, (cnsval_ssize_t)(ssize_t)params.addr /* function index */);
+            id->idIns(ins);
+            id->idInsFmt(IF_ULEB128);
+            break;
+        case EC_INDIR_R:
+            // Indirect load of actual ftn ptr from indirection cell (on the stack)
+            emitIns_I(INS_i32_load, EA_8BYTE, 0);
+            ins = params.isJump ? INS_return_call_indirect : INS_call_indirect;
+            id  = emitNewInstrSC(EA_8BYTE, 0 /* FIXME-WASM: type index */);
+            id->idIns(ins);
+            id->idInsFmt(IF_CALL_INDIRECT);
+            break;
+        default:
+            unreached();
+    }
+
+    // for the purpose of GC safepointing tail-calls are not real calls
+    id->idSetIsNoGC(params.isJump || params.noSafePoint || emitNoGChelper(params.methHnd));
+
+#ifdef DEBUG
+    if (EMIT_GC_VERBOSE)
+    {
+        if (id->idIsLargeCall())
+        {
+            printf("[%02u] Rec call GC vars = %s\n", id->idDebugOnlyInfo()->idNum,
+                   VarSetOps::ToString(emitComp, ((instrDescCGCA*)id)->idcGCvars));
+        }
+    }
+#endif
+
+    if (m_debugInfoSize > 0)
+    {
+        INDEBUG(id->idDebugOnlyInfo()->idCallSig = params.sigInfo);
+        id->idDebugOnlyInfo()->idMemCookie = (size_t)params.methHnd; // method token
+    }
+
+    dispIns(id);
+    appendToCurIG(id);
+    // emitLastMemBarrier = nullptr; // Cannot optimize away future memory barriers
+}
+
 //-----------------------------------------------------------------------------
 // emitNewInstrLclVarDecl: Construct an instrDesc corresponding to a wasm local
 // declaration.
@@ -305,6 +399,12 @@ unsigned emitter::instrDesc::idCodeSize() const
         case IF_SLEB128:
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfSLEB128(emitGetInsSC(this));
             break;
+        case IF_CALL_INDIRECT:
+        {
+            size += SizeOfULEB128(0);
+            size += SizeOfULEB128(emitGetInsSC(this));
+            break;
+        }
         case IF_F32:
             size += 4;
             break;
@@ -431,6 +531,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutputOpcode(dst, ins);
             cnsval_ssize_t constant = emitGetInsSC(id);
             dst += emitOutputSLEB128(dst, (int64_t)constant);
+            break;
+        }
+        case IF_CALL_INDIRECT:
+        {
+            dst += emitOutputByte(dst, opcode);
+            dst += emitOutputULEB128(dst, 0);
+            dst += emitOutputULEB128(dst, (uint64_t)emitGetInsSC(id));
             break;
         }
         case IF_F32:
@@ -603,6 +710,13 @@ void emitter::emitDispIns(
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu", (uint64_t)imm);
             dispJumpTargetIfAny();
+        }
+        break;
+
+        case IF_CALL_INDIRECT:
+        {
+            cnsval_ssize_t imm = emitGetInsSC(id);
+            printf(" 0 %llu", (uint64_t)imm);
         }
         break;
 
