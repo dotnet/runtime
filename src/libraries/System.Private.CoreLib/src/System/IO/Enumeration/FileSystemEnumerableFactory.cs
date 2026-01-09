@@ -182,17 +182,14 @@ namespace System.IO.Enumeration
             }
 
             // Fall back to the full pattern matching algorithm
-            return entryType switch
+            return (useExtendedWildcards, entryType) switch
             {
-                FileSystemEntryType.Files => useExtendedWildcards
-                    ? (ref FileSystemEntry entry) => !entry.IsDirectory && FileSystemName.MatchesWin32Expression(expression.AsSpan(), entry.FileName, ignoreCase)
-                    : (ref FileSystemEntry entry) => !entry.IsDirectory && FileSystemName.MatchesSimpleExpression(expression.AsSpan(), entry.FileName, ignoreCase),
-                FileSystemEntryType.Directories => useExtendedWildcards
-                    ? (ref FileSystemEntry entry) => entry.IsDirectory && FileSystemName.MatchesWin32Expression(expression.AsSpan(), entry.FileName, ignoreCase)
-                    : (ref FileSystemEntry entry) => entry.IsDirectory && FileSystemName.MatchesSimpleExpression(expression.AsSpan(), entry.FileName, ignoreCase),
-                _ => useExtendedWildcards
-                    ? (ref FileSystemEntry entry) => FileSystemName.MatchesWin32Expression(expression.AsSpan(), entry.FileName, ignoreCase)
-                    : (ref FileSystemEntry entry) => FileSystemName.MatchesSimpleExpression(expression.AsSpan(), entry.FileName, ignoreCase)
+                (true, FileSystemEntryType.Files) => (ref FileSystemEntry entry) => !entry.IsDirectory && FileSystemName.MatchesWin32Expression(expression, entry.FileName, ignoreCase),
+                (true, FileSystemEntryType.Directories) => (ref FileSystemEntry entry) => entry.IsDirectory && FileSystemName.MatchesWin32Expression(expression, entry.FileName, ignoreCase),
+                (true, _) => (ref FileSystemEntry entry) => FileSystemName.MatchesWin32Expression(expression, entry.FileName, ignoreCase),
+                (false, FileSystemEntryType.Files) => (ref FileSystemEntry entry) => !entry.IsDirectory && FileSystemName.MatchesSimpleExpression(expression, entry.FileName, ignoreCase),
+                (false, FileSystemEntryType.Directories) => (ref FileSystemEntry entry) => entry.IsDirectory && FileSystemName.MatchesSimpleExpression(expression, entry.FileName, ignoreCase),
+                (false, _) => (ref FileSystemEntry entry) => FileSystemName.MatchesSimpleExpression(expression, entry.FileName, ignoreCase)
             };
         }
 
