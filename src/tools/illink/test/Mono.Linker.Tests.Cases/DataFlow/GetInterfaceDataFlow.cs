@@ -202,7 +202,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             static void TestFieldAccess()
             {
                 // This should also warn: @interface doesn't have the required annotations
-                // even though we're accessing a field on the return value
+                // even though we're accessing a field on the return value.
+                // Regression test for https://github.com/dotnet/runtime/issues/117849
                 object o = new();
                 var type = o.GetType();
                 var @interface = type.GetInterfaces().First();
