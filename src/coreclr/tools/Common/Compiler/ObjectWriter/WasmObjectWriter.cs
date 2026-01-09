@@ -244,7 +244,7 @@ namespace ILCompiler.ObjectWriter
             PrependCount(_sections[typeIdx], _uniqueSignatures.Count);
 
             // TODO-WASM: Handle exports better (e.g., only export public methods, etc.)
-            // Also, see if we could leverage defindSymbols for this instead of doing our own bookkeeping in _uniqueSymbols.
+            // Also, see if we could leverage definedSymbols for this instead of doing our own bookkeeping in _uniqueSymbols.
             foreach ((string name, int idx) in _uniqueSymbols)
             {
                 WriteExport(name, idx);
