@@ -2390,6 +2390,27 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             // need to free the Stub allocation now.
             pStub->DecRef();
         }
+#if defined(FEATURE_INTERPRETER) && defined(HAS_FIXUP_PRECODE)
+        if (GetOrCreatePrecode()->GetType() == PRECODE_FIXUP)
+        {
+            // Check to see if the entrypoint is into the interpreter. If so, grab the interpreter codes from the stub and put that directly
+            // into the MethodDesc
+            TADDR functionAddress = GetOrCreatePrecode()->GetTarget();
+            RangeSection * pRS = ExecutionManager::FindCodeRange(functionAddress, ExecutionManager::GetScanFlags());
+            if (pRS != NULL && pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
+            {
+                if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
+                {
+                    if (((StubPrecode*)functionAddress)->GetType() == PRECODE_INTERPRETER)
+                    {
+                        InterpByteCodeStart* ilStubInterpData = (InterpByteCodeStart*)((InterpreterPrecode*)PCODEToPINSTR(functionAddress))->GetData()->ByteCodeAddr;
+                        SetInterpreterCode(ilStubInterpData);
+                    }
+                }
+            }
+        }
+#endif // FEATURE_INTERPRETER
+
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
