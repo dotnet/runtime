@@ -95,21 +95,21 @@ namespace System.Reflection.Context.Tests
         public void IsSecurityCritical_ReturnsValue()
         {
             bool value = _customTypeInfo.IsSecurityCritical;
-            Assert.True(value || !value);
+            Assert.True(value);
         }
 
         [Fact]
         public void IsSecuritySafeCritical_ReturnsValue()
         {
             bool value = _customTypeInfo.IsSecuritySafeCritical;
-            Assert.True(value || !value);
+            Assert.False(value);
         }
 
         [Fact]
         public void IsSecurityTransparent_ReturnsValue()
         {
             bool value = _customTypeInfo.IsSecurityTransparent;
-            Assert.True(value || !value);
+            Assert.False(value);
         }
 
         [Fact]
@@ -117,7 +117,7 @@ namespace System.Reflection.Context.Tests
         public void IsSerializable_ReturnsValue()
         {
             bool value = _customTypeInfo.IsSerializable;
-            Assert.True(value || !value);
+            Assert.False(value);
         }
 #pragma warning restore SYSLIB0050
 
@@ -210,7 +210,7 @@ namespace System.Reflection.Context.Tests
         public void IsDefined_ExistingAttribute_ReturnsValue()
         {
             bool isDefined = _customTypeInfo.IsDefined(typeof(DataContractAttribute), true);
-            Assert.True(isDefined || !isDefined);
+            Assert.False(isDefined);
         }
 
         [Fact]
@@ -351,7 +351,7 @@ namespace System.Reflection.Context.Tests
         {
             var testObj = new TestObject("test");
             bool isInstance = _customTypeInfo.IsInstanceOfType(testObj);
-            Assert.True(isInstance || !isInstance);
+            Assert.True(isInstance);
         }
 
         [Fact]

@@ -71,7 +71,8 @@ namespace System.Reflection.Context.Tests
             PropertyInfo property = _customTypeInfo.GetProperty("AttributedProperty");
             CustomAttributeData sameData = property.GetCustomAttributesData().FirstOrDefault();
             bool areEqual = _customAttributeData.Equals(sameData);
-            Assert.True(areEqual || !areEqual);
+            // May be false if the data objects are different instances
+            Assert.False(areEqual);
         }
 
         [Fact]

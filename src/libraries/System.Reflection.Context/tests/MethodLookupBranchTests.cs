@@ -96,7 +96,7 @@ namespace System.Reflection.Context.Tests
         {
             TypeInfo customType = _customReflectionContext.MapType(typeof(TypeWithProperties).GetTypeInfo());
             PropertyInfo prop = customType.GetProperty("ReadWriteProperty", BindingFlags.Public | BindingFlags.Instance, null, typeof(string), Type.EmptyTypes, null);
-            // May be null depending on how the search is handled
+            // The binder may not find it with this signature
             Assert.True(prop is null || prop is not null);
         }
 

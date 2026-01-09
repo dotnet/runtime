@@ -173,7 +173,7 @@ namespace System.Reflection.Context.Tests
         public void IsDefined_ReturnsValue()
         {
             bool isDefined = _customEvent.IsDefined(typeof(Attribute), true);
-            Assert.True(isDefined || !isDefined);
+            Assert.False(isDefined);
         }
 
         [Fact]

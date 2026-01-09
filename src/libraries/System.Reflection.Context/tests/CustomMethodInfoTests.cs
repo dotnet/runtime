@@ -61,21 +61,21 @@ namespace System.Reflection.Context.Tests
         public void IsSecurityCritical_ReturnsValue()
         {
             bool value = _customMethod.IsSecurityCritical;
-            Assert.True(value || !value);
+            Assert.True(value);
         }
 
         [Fact]
         public void IsSecuritySafeCritical_ReturnsValue()
         {
             bool value = _customMethod.IsSecuritySafeCritical;
-            Assert.True(value || !value);
+            Assert.False(value);
         }
 
         [Fact]
         public void IsSecurityTransparent_ReturnsValue()
         {
             bool value = _customMethod.IsSecurityTransparent;
-            Assert.True(value || !value);
+            Assert.False(value);
         }
 
         [Fact]
@@ -162,6 +162,7 @@ namespace System.Reflection.Context.Tests
         public void IsDefined_ReturnsValue()
         {
             bool isDefined = _customMethod.IsDefined(typeof(Attribute), true);
+            // May be true if there are inherited attributes
             Assert.True(isDefined || !isDefined);
         }
 

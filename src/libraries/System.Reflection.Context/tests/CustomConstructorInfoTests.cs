@@ -61,21 +61,24 @@ namespace System.Reflection.Context.Tests
         public void IsSecurityCritical_ReturnsValue()
         {
             bool value = _customConstructor.IsSecurityCritical;
-            Assert.True(value || !value); // Just verify the property can be read
+            // In .NET Core, all code is security transparent
+            Assert.True(value);
         }
 
         [Fact]
         public void IsSecuritySafeCritical_ReturnsValue()
         {
             bool value = _customConstructor.IsSecuritySafeCritical;
-            Assert.True(value || !value);
+            // In .NET Core, this is always false
+            Assert.False(value);
         }
 
         [Fact]
         public void IsSecurityTransparent_ReturnsValue()
         {
             bool value = _customConstructor.IsSecurityTransparent;
-            Assert.True(value || !value);
+            // In .NET Core, this is typically false
+            Assert.False(value);
         }
 
         [Fact]
@@ -134,7 +137,8 @@ namespace System.Reflection.Context.Tests
         public void IsDefined_ReturnsValue()
         {
             bool isDefined = _customConstructor.IsDefined(typeof(Attribute), true);
-            Assert.True(isDefined || !isDefined);
+            // TestObject constructor doesn't have any attributes
+            Assert.False(isDefined);
         }
 
         [Fact]

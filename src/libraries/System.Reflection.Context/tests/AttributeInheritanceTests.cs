@@ -140,7 +140,7 @@ namespace System.Reflection.Context.Tests
             TypeInfo customDerivedType = _customReflectionContext.MapType(derivedTypeInfo);
 
             bool isDefined = customDerivedType.IsDefined(typeof(InheritedSingleAttribute), true);
-            Assert.True(isDefined || !isDefined);
+            Assert.False(isDefined);
         }
 
         [Fact]

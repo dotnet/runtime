@@ -189,8 +189,8 @@ namespace System.Reflection.Context.Tests
                 string fileName = info.FileName;
                 Assembly referencedAssembly = info.ReferencedAssembly;
                 ResourceLocation resourceLocation = info.ResourceLocation;
-                Assert.True(fileName is null || fileName is not null);
-                Assert.True(referencedAssembly is null || referencedAssembly is not null);
+                Assert.Null(fileName);
+                Assert.Null(referencedAssembly);
                 Assert.True(resourceLocation >= 0);
             }
         }

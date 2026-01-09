@@ -121,21 +121,21 @@ namespace System.Reflection.Context.Tests
         public void IsSecurityCritical_ReturnsValue()
         {
             bool value = _publicField.IsSecurityCritical;
-            Assert.True(value || !value);
+            Assert.True(value);
         }
 
         [Fact]
         public void IsSecuritySafeCritical_ReturnsValue()
         {
             bool value = _publicField.IsSecuritySafeCritical;
-            Assert.True(value || !value);
+            Assert.False(value);
         }
 
         [Fact]
         public void IsSecurityTransparent_ReturnsValue()
         {
             bool value = _publicField.IsSecurityTransparent;
-            Assert.True(value || !value);
+            Assert.False(value);
         }
 
         [Fact]
@@ -225,7 +225,7 @@ namespace System.Reflection.Context.Tests
         public void IsDefined_ReturnsValue()
         {
             bool isDefined = _publicField.IsDefined(typeof(Attribute), true);
-            Assert.True(isDefined || !isDefined);
+            Assert.False(isDefined);
         }
 
         [Fact]

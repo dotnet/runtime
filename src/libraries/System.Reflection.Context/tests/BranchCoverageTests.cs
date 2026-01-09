@@ -37,8 +37,7 @@ namespace System.Reflection.Context.Tests
         {
             TypeInfo customType = _customReflectionContext.MapType(typeof(TestObject).GetTypeInfo());
             bool result = customType.Equals(typeof(TestObject));
-            // The result depends on implementation - just verify it doesn't throw
-            Assert.True(result || !result);
+            Assert.True(result);
         }
 
         [Fact]
