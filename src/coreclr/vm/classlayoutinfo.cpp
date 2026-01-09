@@ -95,13 +95,7 @@ namespace
                 placementInfo.m_alignment = DATA_ALIGNMENT;
             }
             else
-#elif defined(FEATURE_64BIT_ALIGNMENT)
-            if (pNestedType.RequiresAlign8())
-            {
-                placementInfo.m_alignment = 8;
-            }
-            else
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // !TARGET_64BIT && (DATA_ALIGNMENT > 4)
             if (pNestedType.GetMethodTable()->ContainsGCPointers())
             {
                 // this field type has GC pointers in it, which need to be pointer-size aligned
@@ -111,6 +105,12 @@ namespace
             {
                 placementInfo.m_alignment = pNestedType.GetMethodTable()->GetFieldAlignmentRequirement();
             }
+#ifdef FEATURE_64BIT_ALIGNMENT
+            if (pNestedType.RequiresAlign8())
+            {
+                placementInfo.m_alignment = max(8u, placementInfo.m_alignment);
+            }
+#endif // FEATURE_64BIT_ALIGNMENT
         }
 
         // No other type permitted for ManagedSequential.
