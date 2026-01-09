@@ -83,6 +83,7 @@ char* DumpUnicodeString(void* GUICookie,
 void TokenSigInit(IMDInternalImport *pImport);
 void TokenSigDelete();
 bool IsSpecialNumber(const char*);
+void NormalizeFloatString(char*);
 
 
 //---------------- see DMAN.CPP--------------------------------------------------

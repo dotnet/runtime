@@ -2767,3 +2767,32 @@ bool IsSpecialNumber(const char* szf)
         || (strstr(szf, "nan") != NULL) || (strstr(szf, "NAN") != NULL)
         || (strstr(szf, "inf") != NULL) || (strstr(szf, "INF") != NULL);
 }
+
+void NormalizeFloatString(char* szf)
+{
+    // Normalize NaN and Inf representations to remove platform-specific suffixes
+    // Windows can produce "-nan(ind)" while Linux produces "-nan"
+    // This function removes the "(ind)" suffix to ensure cross-platform consistency
+    
+    char* nan_pos = strstr(szf, "nan(");
+    if (nan_pos != NULL)
+    {
+        // Find the opening parenthesis and truncate there
+        char* paren = strchr(nan_pos, '(');
+        if (paren != NULL)
+        {
+            *paren = '\0';
+        }
+    }
+    
+    // Also handle uppercase NAN
+    char* NAN_pos = strstr(szf, "NAN(");
+    if (NAN_pos != NULL)
+    {
+        char* paren = strchr(NAN_pos, '(');
+        if (paren != NULL)
+        {
+            *paren = '\0';
+        }
+    }
+}

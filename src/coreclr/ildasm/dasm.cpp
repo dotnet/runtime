@@ -2593,6 +2593,7 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
                 char szf[32];
                 sprintf_s(szf, 32, "%#.8g", (double)MDDV.m_fltValue);
                 float df = (float)atof(szf);
+                NormalizeFloatString(szf);
                 // Must compare as underlying bytes, not floating point otherwise optimizer will
                 // try to enregister and compare 80-bit precision number with 32-bit precision number!!!!
                 if((*(ULONG*)&df == MDDV.m_ulValue)&&!IsSpecialNumber(szf))
@@ -2608,6 +2609,7 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
                 sprintf_s(szf, 32, "%#.17g", MDDV.m_dblValue);
                 double df = strtod(szf, &pch); //atof(szf);
                 szf[31]=0;
+                NormalizeFloatString(szf);
                 // Must compare as underlying bytes, not floating point otherwise optimizer will
                 // try to enregister and compare 80-bit precision number with 64-bit precision number!!!!
                 if((*(ULONGLONG*)&df == MDDV.m_ullValue)&&!IsSpecialNumber(szf))
