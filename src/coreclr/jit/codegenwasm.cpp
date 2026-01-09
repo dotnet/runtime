@@ -353,6 +353,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForNegNot(treeNode->AsOp());
             break;
 
+        case GT_NULLCHECK:
+            genCodeForNullCheck(treeNode->AsIndir());
+            break;
+
         default:
 #ifdef DEBUG
             NYIRAW(GenTree::OpName(treeNode->OperGet()));
@@ -782,6 +786,23 @@ void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 
     GetEmitter()->emitIns(ins);
     genProduceReg(tree);
+}
+
+//---------------------------------------------------------------------
+// genCodeForNullCheck - generate code for a GT_NULLCHECK node
+//
+// Arguments
+//    tree - the GT_NULLCHECK node
+//
+// Return value:
+//    None
+//
+void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
+{
+    assert(compiler->fgUseThrowHelperBlocks());
+    genConsumeOperand(tree->Addr());
+    GetEmitter()->Ins(INS_i32_eqz);
+    genJumpToThrowHlpBlk(EJ_jmpif, SCK_NULL_REF);
 }
 
 //------------------------------------------------------------------------

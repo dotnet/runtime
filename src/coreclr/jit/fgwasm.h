@@ -318,9 +318,44 @@ public:
 //  consider exceptional successors or successors that require runtime intervention
 //  (eg funclet returns).
 //
+// For method and funclet entries we add any "ACD" blocks as successors before the
+// true successors. This ensures the ACD blocks end up at the end of the funclet
+// region, and that we create proper Wasm blocks so we can branch to them from
+// anywhere within the method region or funclet region.
+//
 template <typename TFunc>
 BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc func, bool useProfile)
 {
+    // Special case throw helper blocks that are not yet connected in the flow graph.
+    //
+    AddCodeDscMap* const acdMap = comp->fgGetAddCodeDscMap();
+    if (acdMap != nullptr)
+    {
+        // Behave as if these blocks have edges from their respective region entry blocks.
+        //
+        if ((block == fgFirstBB) || comp->bbIsFuncletBeg(block))
+        {
+            AcdKeyDesignator dsg;
+            const unsigned   blockData = comp->bbThrowIndex(block, &dsg);
+
+            // We do not expect any ACDs to be mapped to try regions (only method/handler/filter)
+            //
+            assert(dsg != AcdKeyDesignator::KD_TRY);
+
+            for (const AddCodeDscKey& key : AddCodeDscMap::KeyIteration(acdMap))
+            {
+                if (key.Data() == blockData)
+                {
+                    // This ACD refers to a throw helper block in the right region.
+                    // Make it a successor.
+                    //
+                    AddCodeDsc* const acdBlock = acdMap->Lookup(key);
+                    RETURN_ON_ABORT(func(acdBlock));
+                }
+            }
+        }
+    }
+
     switch (block->GetKind())
     {
         // Funclet returns have no successors
