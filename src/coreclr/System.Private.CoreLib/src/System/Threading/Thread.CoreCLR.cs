@@ -99,7 +99,7 @@ namespace System.Threading
                 fixed (char* pThreadName = _name)
                 {
                     Exception? exception = null;
-                    if (StartInternal(GetNativeHandle(), _startHelper?._maxStackSize ?? 0, _priority, _isThreadPool ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, pThreadName, ObjectHandleOnStack.Create(ref exception)) != Interop.BOOL.TRUE)
+                    if (StartInternal(GetNativeHandle(), _startHelper?._maxStackSize ?? 0, _priority, _isThreadPool ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, pThreadName, ObjectHandleOnStack.Create(ref exception)) == Interop.BOOL.FALSE)
                     {
                         throw new ThreadStartException(exception);
                     }
