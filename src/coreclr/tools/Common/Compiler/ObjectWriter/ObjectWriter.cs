@@ -35,7 +35,7 @@ namespace ILCompiler.ObjectWriter
 
         private readonly Dictionary<ISymbolNode, Utf8String> _mangledNameMap = new();
 
-        private readonly byte? _insPaddingByte;
+        private readonly byte _insPaddingByte;
 
         // Standard sections
         private readonly Dictionary<string, int> _sectionNameToSectionIndex = new(StringComparer.Ordinal);
@@ -58,7 +58,6 @@ namespace ILCompiler.ObjectWriter
             {
                 TargetArchitecture.X86 => 0x90,
                 TargetArchitecture.X64 => 0x90,
-                TargetArchitecture.Wasm32 => null,
                 _ => 0
             };
         }
@@ -92,15 +91,7 @@ namespace ILCompiler.ObjectWriter
 
             if (!comdatName.IsNull || !_sectionNameToSectionIndex.TryGetValue(section.Name, out sectionIndex))
             {
-                if (_insPaddingByte.HasValue)
-                {
-                    sectionData = new SectionData(section.Type == SectionType.Executable ? _insPaddingByte.Value : (byte)0);
-                }
-                else
-                {
-                    sectionData = new SectionData();
-                }
-
+                sectionData = new SectionData(section.Type == SectionType.Executable ? _insPaddingByte.Value : (byte)0);
                 sectionIndex = _sectionIndexToData.Count;
                 CreateSection(section, comdatName, symbolName, sectionIndex, sectionData.GetReadStream());
                 _sectionIndexToData.Add(sectionData);
