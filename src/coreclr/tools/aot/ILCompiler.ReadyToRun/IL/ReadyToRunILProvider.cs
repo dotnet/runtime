@@ -174,7 +174,8 @@ namespace Internal.IL
                     else if (ecmaMethod.OwningType.Module != ecmaMethod.Context.SystemModule)
                     {
                         // We only allow non-Task returning runtime async methods in CoreLib
-                        ThrowHelper.ThrowBadImageFormatException();
+                        // Skip this method
+                        return null;
                     }
                 }
 
