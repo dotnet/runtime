@@ -487,34 +487,50 @@ POP_COOP_PINVOKE_FRAME macro
 
 ; Pushes a full TransitionBlock on the stack including argument registers and
 ; floating point argument registers. Used for exception throw helpers where we
-; need to capture the complete register state.
+; need to capture the complete register state including FP callee-saved registers.
 ;
 ; Stack layout (from high to low address after prologue):
 ;   Return address (m_ReturnAddress)
 ;   CalleeSavedRegisters (r15, r14, r13, r12, rbp, rbx, rsi, rdi - 64 bytes) <- TransitionBlock starts here
-;   Outgoing argument homes (32 bytes) + alignment (8 bytes)
+;   Outgoing argument homes (32 bytes)
 ;   FloatArgumentRegisters (xmm0-xmm3, 64 bytes)
+;   FP Callee-saved registers (xmm6-xmm15, 160 bytes)
 ;   sp points here
+;
+; Stack alignment: After call to IL_Throw (8 bytes) + callee-saved (64 bytes) + alloc (256 bytes) + call (8 bytes) = 336 bytes
+; 336 % 16 = 0, so stack is properly aligned for the call to IL_Throw_Impl.
 ;
 ; On exit, target contains the TransitionBlock pointer (CalleeSavedRegisters).
 PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS macro target
 
         PUSH_CALLEE_SAVED_REGISTERS
 
-        ; Allocate space for: outgoing args (32) + align (8) + float args (64) = 104 bytes
-        alloc_stack     104
+        ; Allocate space for: outgoing args (32) + float args (64) + FP callee-saved (160) = 256 bytes
+        alloc_stack     256
 
         ; Save argument registers to shadow space area
-        ; Shadow space is at offset 64 (after float args) from sp
-        SAVE_ARGUMENT_REGISTERS 64
+        ; Shadow space is at offset 224 (after float args and FP callee-saved) from sp
+        SAVE_ARGUMENT_REGISTERS 224
 
-        ; Save float argument registers at offset 0
-        SAVE_FLOAT_ARGUMENT_REGISTERS 0
+        ; Save float argument registers at offset 160 (after FP callee-saved)
+        SAVE_FLOAT_ARGUMENT_REGISTERS 160
+
+        ; Save FP callee-saved registers (xmm6-xmm15) at offset 0
+        save_xmm128_postrsp xmm6,  0
+        save_xmm128_postrsp xmm7,  10h
+        save_xmm128_postrsp xmm8,  20h
+        save_xmm128_postrsp xmm9,  30h
+        save_xmm128_postrsp xmm10, 40h
+        save_xmm128_postrsp xmm11, 50h
+        save_xmm128_postrsp xmm12, 60h
+        save_xmm128_postrsp xmm13, 70h
+        save_xmm128_postrsp xmm14, 80h
+        save_xmm128_postrsp xmm15, 90h
 
         END_PROLOGUE
 
-        ; TransitionBlock pointer points to CalleeSavedRegisters at rsp + 104
-        lea     target, [rsp + 104]
+        ; TransitionBlock pointer points to CalleeSavedRegisters at rsp + 256
+        lea     target, [rsp + 256]
 
         endm
 

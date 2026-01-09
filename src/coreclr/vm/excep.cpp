@@ -10928,9 +10928,24 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     m_Context.R8 = 0;
     m_Context.R9 = 0;
 
-    // Note: On Windows AMD64, floating point argument registers (xmm0-xmm3) are not currently saved
-    // in the transition block for IL_Throw helpers. If needed, the assembly stubs would need to be
-    // updated to save them.
+    // Read FP callee-saved registers (xmm6-xmm15) from the stack
+    // They are stored at negative offsets from TransitionBlock:
+    // Layout: [xmm6-xmm15 (160 bytes)] [xmm0-xmm3 (64 bytes)] [shadow (32 bytes)] [CalleeSavedRegs] [RetAddr]
+    // FP callee-saved are at TransitionBlock - 256 (160 + 64 + 32)
+    M128A *pFpCalleeSaved = (M128A*)((BYTE*)pTransitionBlock - 256);
+    m_Context.Xmm6 = pFpCalleeSaved[0];
+    m_Context.Xmm7 = pFpCalleeSaved[1];
+    m_Context.Xmm8 = pFpCalleeSaved[2];
+    m_Context.Xmm9 = pFpCalleeSaved[3];
+    m_Context.Xmm10 = pFpCalleeSaved[4];
+    m_Context.Xmm11 = pFpCalleeSaved[5];
+    m_Context.Xmm12 = pFpCalleeSaved[6];
+    m_Context.Xmm13 = pFpCalleeSaved[7];
+    m_Context.Xmm14 = pFpCalleeSaved[8];
+    m_Context.Xmm15 = pFpCalleeSaved[9];
+
+    // Initialize FP control/status
+    m_Context.MxCsr = 0x1F80; // Default MXCSR value (all exceptions masked)
 #endif
 
 #define CALLEE_SAVED_REGISTER(reg) \
@@ -10975,9 +10990,19 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     {
         m_Context.D[i] = pFloatArgs->d[i];
     }
-    // Initialize remaining D registers (D8-D31) to zero
-    // D8-D15 are callee-saved, D16-D31 are caller-saved
-    for (int i = 8; i < 32; i++)
+
+    // Read FP callee-saved registers (d8-d15) from the stack
+    // They are stored at negative offset from TransitionBlock:
+    // Layout: [d8-d15 (64 bytes)] [padding (8 bytes)] [d0-d7 (64 bytes)] [TransitionBlock]
+    // FP callee-saved are at TransitionBlock - 136 (64 + 8 + 64)
+    UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 136);
+    for (int i = 0; i < 8; i++)
+    {
+        m_Context.D[8 + i] = pFpCalleeSaved[i];
+    }
+
+    // Initialize remaining D registers (D16-D31) to zero - these are caller-saved
+    for (int i = 16; i < 32; i++)
     {
         m_Context.D[i] = 0;
     }
@@ -11039,9 +11064,31 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     {
         m_Context.V[i] = pFloatArgs->q[i];
     }
-    // Initialize remaining V registers (V8-V31) to zero
-    // V8-V15 are callee-saved (only lower 64 bits), V16-V31 are caller-saved
-    for (int i = 8; i < 32; i++)
+
+    // Read FP callee-saved registers (d8-d15) from the stack
+    // They are stored at negative offset from TransitionBlock:
+    // Layout: [d8-d15 (64 bytes)] [q0-q7 (128 bytes)] [TransitionBlock]
+    // FP callee-saved are at TransitionBlock - 192 (64 + 128)
+    UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 192);
+    m_Context.V[8].Low = pFpCalleeSaved[0];
+    m_Context.V[8].High = 0;
+    m_Context.V[9].Low = pFpCalleeSaved[1];
+    m_Context.V[9].High = 0;
+    m_Context.V[10].Low = pFpCalleeSaved[2];
+    m_Context.V[10].High = 0;
+    m_Context.V[11].Low = pFpCalleeSaved[3];
+    m_Context.V[11].High = 0;
+    m_Context.V[12].Low = pFpCalleeSaved[4];
+    m_Context.V[12].High = 0;
+    m_Context.V[13].Low = pFpCalleeSaved[5];
+    m_Context.V[13].High = 0;
+    m_Context.V[14].Low = pFpCalleeSaved[6];
+    m_Context.V[14].High = 0;
+    m_Context.V[15].Low = pFpCalleeSaved[7];
+    m_Context.V[15].High = 0;
+
+    // Initialize remaining V registers (V16-V31) to zero - these are caller-saved
+    for (int i = 16; i < 32; i++)
     {
         m_Context.V[i].Low = 0;
         m_Context.V[i].High = 0;
@@ -11109,8 +11156,20 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     {
         memcpy(&m_Context.F[i * 4], &pFloatArgs->f[i], sizeof(double));
     }
-    // Initialize remaining F registers to zero
-    for (int i = 8; i < 32; i++)
+
+    // Read FP callee-saved registers (f24-f31) from the stack
+    // They are stored at negative offset from TransitionBlock:
+    // Layout: [f24-f31 (64 bytes)] [fa0-fa7 (64 bytes)] [TransitionBlock]
+    // FP callee-saved are at TransitionBlock - 128 (64 + 64)
+    UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 128);
+    for (int i = 0; i < 8; i++)
+    {
+        // f24-f31 map to indices 24-31 in the F array, each taking 4 slots
+        memcpy(&m_Context.F[(24 + i) * 4], &pFpCalleeSaved[i], sizeof(double));
+    }
+
+    // Initialize remaining F registers (f8-f23) to zero
+    for (int i = 8; i < 24; i++)
     {
         memset(&m_Context.F[i * 4], 0, sizeof(double) * 4);
     }
@@ -11179,6 +11238,20 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
         // F[10-17] are fa0-fa7 in RISC-V register naming
         memcpy(&m_Context.F[10 + i], &pFloatArgs->f[i], sizeof(double));
     }
+
+    // Read FP callee-saved registers (fs0-fs11) from the stack
+    // They are stored at negative offset from TransitionBlock:
+    // Layout: [fs0-fs11 (96 bytes)] [fa0-fa7 (64 bytes)] [TransitionBlock]
+    // FP callee-saved are at TransitionBlock - 160 (96 + 64)
+    // RISC-V FP callee-saved: fs0=f8, fs1=f9, fs2-fs11=f18-f27
+    UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 160);
+    memcpy(&m_Context.F[8], &pFpCalleeSaved[0], sizeof(double));   // fs0 = f8
+    memcpy(&m_Context.F[9], &pFpCalleeSaved[1], sizeof(double));   // fs1 = f9
+    for (int i = 0; i < 10; i++)
+    {
+        memcpy(&m_Context.F[18 + i], &pFpCalleeSaved[2 + i], sizeof(double));  // fs2-fs11 = f18-f27
+    }
+
     // Initialize FP control/status register
     m_Context.Fcsr = 0;
 
