@@ -875,7 +875,7 @@
     </MergedPayloads>
     <!-- For tests where we aren't using the XHarness test runner, specify as such on the payload item. -->
     <MergedPayloads Update="@(MergedPayloads)">
-      <IncludesTestRunner>$(!$([System.IO.File]::Exists('$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).XHarnessNoRunner')))</IncludesTestRunner>
+      <IncludesTestRunner Condition="$([System.IO.File]::Exists('$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).XHarnessNoRunner'))">false</IncludesTestRunner>
     </MergedPayloads>
   </ItemGroup>
 
