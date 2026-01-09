@@ -240,13 +240,11 @@ namespace ILCompiler.ObjectWriter
         {
             int funcIdx = _sectionNameToIndex[ObjectNodeSection.WasmFunctionSection.Name];
             PrependCount(_sections[funcIdx], _methodBodyCount);
-
-
             int typeIdx = _sectionNameToIndex[ObjectNodeSection.WasmTypeSection.Name];
             PrependCount(_sections[typeIdx], _uniqueSignatures.Count);
 
             // TODO-WASM: Handle exports better (e.g., only export public methods, etc.)
-            // Also, see if we could leverage defindSymbols for this instead of doing our own bookkeeping in _uniqueSymbols.
+            // Also, see if we could leverage definedSymbols for this instead of doing our own bookkeeping in _uniqueSymbols.
             foreach ((string name, int idx) in _uniqueSymbols)
             {
                 WriteExport(name, idx);
