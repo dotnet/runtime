@@ -691,6 +691,8 @@ disable_holding_lock (
 		// been emitted.
 		ep_session_write_sequence_point_unbuffered (session);
 
+		ep_session_close (session);
+
 		ep_session_dec_ref (session);
 
 		// Providers can't be deleted during tracing because they may be needed when serializing the file.
@@ -813,18 +815,23 @@ write_event_2 (
 		EP_ASSERT (rundown_session != NULL);
 		EP_ASSERT (thread != NULL);
 
-		uint8_t *data = ep_event_payload_get_flat_data (payload);
-		if (thread != NULL && rundown_session != NULL && data != NULL) {
-			ep_session_write_event (
-				rundown_session,
-				thread,
-				ep_event,
-				payload,
-				activity_id,
-				related_activity_id,
-				event_thread,
-				stack);
+		ep_thread_set_session_write_in_progress (current_thread, ep_session_get_index (rundown_session));
+		{
+
+			uint8_t *data = ep_event_payload_get_flat_data (payload);
+			if (thread != NULL && rundown_session != NULL && data != NULL) {
+				ep_session_write_event (
+					rundown_session,
+					thread,
+					ep_event,
+					payload,
+					activity_id,
+					related_activity_id,
+					event_thread,
+					stack);
+			}
 		}
+		ep_thread_set_session_write_in_progress (current_thread, UINT32_MAX);
 	} else {
 		for (uint32_t i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; ++i) {
 			if ((ep_volatile_load_allow_write () & ((uint64_t)1 << i)) == 0)

@@ -6,6 +6,7 @@
 #define EP_IMPL_BUFFER_GETTER_SETTER
 #include "ep.h"
 #include "ep-buffer.h"
+#include "ep-buffer-manager.h"
 #include "ep-event.h"
 #include "ep-event-instance.h"
 #include "ep-event-payload.h"
@@ -55,9 +56,6 @@ void
 ep_buffer_free (EventPipeBuffer *buffer)
 {
 	ep_return_void_if_nok (buffer != NULL);
-
-	// We should never be deleting a buffer that a writer thread might still try to write to
-	EP_ASSERT (ep_rt_volatile_load_uint32_t (&buffer->state) == (uint32_t)EP_BUFFER_STATE_READ_ONLY);
 
 	ep_rt_vfree (buffer->buffer, buffer->limit - buffer->buffer);
 	ep_rt_object_free (buffer);
@@ -186,12 +184,12 @@ ep_buffer_get_volatile_state (const EventPipeBuffer *buffer)
 }
 
 void
-ep_buffer_convert_to_read_only (EventPipeBuffer *buffer)
+ep_buffer_convert_to_read_only (EventPipeBuffer *buffer, EventPipeBufferManager *buffer_manager)
 {
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer->current_read_event == NULL);
 
-	ep_thread_requires_lock_held (buffer->writer_thread);
+	ep_buffer_manager_requires_lock_held (buffer_manager);
 
 	ep_rt_volatile_store_uint32_t (&buffer->state, (uint32_t)EP_BUFFER_STATE_READ_ONLY);
 
