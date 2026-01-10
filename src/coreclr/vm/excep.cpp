@@ -94,8 +94,6 @@ BOOL IsExceptionFromManagedCode(const EXCEPTION_RECORD * pExceptionRecord)
 PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord();
 BOOL IsUnmanagedToManagedSEHHandler(EXCEPTION_REGISTRATION_RECORD*);
 
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow);
-
 //-------------------------------------------------------------------------------
 // Basically, this asks whether the exception is a managed exception thrown by
 // this instance of the CLR.
@@ -1965,61 +1963,6 @@ ReplaceExceptionContextRecord(CONTEXT *pTarget, CONTEXT *pSource)
 #endif // !CONTEXT_EXTENDED_REGISTERS
 }
 
-VOID FixupOnRethrow(Thread* pCurThread, EXCEPTION_POINTERS* pExceptionPointers)
-{
-    WRAPPER_NO_CONTRACT;
-
-    ThreadExceptionState* pExState = pCurThread->GetExceptionState();
-
-    // Don't allow rethrow of a STATUS_STACK_OVERFLOW -- it's a new throw of the CLR exception.
-    if (pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW)
-    {
-        return;
-    }
-
-    // For COMPLUS exceptions, we don't need the original context for our rethrow.
-    if (!(pExState->IsComPlusException()))
-    {
-        _ASSERTE(pExState->GetExceptionRecord());
-
-        // don't copy parm args as have already supplied them on the throw
-        memcpy((void*)pExceptionPointers->ExceptionRecord,
-               (void*)pExState->GetExceptionRecord(),
-               offsetof(EXCEPTION_RECORD, ExceptionInformation));
-    }
-
-    pExState->GetFlags()->SetIsRethrown();
-}
-
-struct RaiseExceptionFilterParam
-{
-    BOOL isRethrown;
-};
-
-LONG RaiseExceptionFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    RaiseExceptionFilterParam *pParam = (RaiseExceptionFilterParam *) pv;
-
-    if (1 == pParam->isRethrown)
-    {
-        // need to reset the EH info back to the original thrown exception
-        FixupOnRethrow(GetThread(), ep);
-
-        // only do this once
-        pParam->isRethrown++;
-    }
-    else
-    {
-        CONSISTENCY_CHECK((2 == pParam->isRethrown) || (0 == pParam->isRethrown));
-    }
-
-    return EXCEPTION_CONTINUE_SEARCH;
-}
-
 HRESULT GetHRFromThrowable(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
@@ -2041,14 +1984,14 @@ HRESULT GetHRFromThrowable(OBJECTREF throwable)
     return hr;
 }
 
-VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL rethrow, BOOL fForStackOverflow)
+VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    STRESS_LOG3(LF_EH, LL_INFO100, "******* MANAGED EXCEPTION THROWN: Object thrown: %p MT %pT rethrow %d\n",
-                OBJECTREFToObject(throwable), (throwable!=0)?throwable->GetMethodTable():0, rethrow);
+    STRESS_LOG2(LF_EH, LL_INFO100, "******* MANAGED EXCEPTION THROWN: Object thrown: %p MT %pT\n",
+                OBJECTREFToObject(throwable), (throwable!=0)?throwable->GetMethodTable():0);
 
 #ifdef STRESS_LOG
     // Any object could have been thrown, but System.Exception objects have useful information for the stress log
@@ -2071,26 +2014,16 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     }
 #endif
 
-    struct Param : RaiseExceptionFilterParam
-    {
-        OBJECTREF throwable;
-        BOOL fForStackOverflow;
-        ULONG_PTR exceptionArgs[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE];
-        Thread *pThread;
-        ThreadExceptionState* pExState;
-    } param;
-    param.isRethrown = rethrow ? 1 : 0; // normalize because we use it as a count in RaiseExceptionFilter
-    param.throwable = throwable;
-    param.fForStackOverflow = fForStackOverflow;
-    param.pThread = GetThread();
+    ULONG_PTR exceptionArgs[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE];
+    Thread* pThread = GetThread();
 
-    _ASSERTE(param.pThread);
-    param.pExState = param.pThread->GetExceptionState();
+    _ASSERTE(pThread);
+    ThreadExceptionState* pExState = pThread->GetExceptionState();
 
-    if (param.pThread->IsRudeAbortInitiated())
+    if (pThread->IsRudeAbortInitiated())
     {
         // Nobody should be able to swallow rude thread abort.
-        param.throwable = CLRException::GetBestThreadAbortException();
+        throwable = CLRException::GetBestThreadAbortException();
     }
 
 #if 0
@@ -2098,7 +2031,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
 #ifdef _DEBUG
     // If ThreadAbort exception is thrown, the thread should be marked with AbortRequest.
     // If not, we may see unhandled exception.
-    if (param.throwable->GetMethodTable() == g_pThreadAbortExceptionClass)
+    if (throwable->GetMethodTable() == g_pThreadAbortExceptionClass)
     {
         _ASSERTE(GetThread()->IsAbortRequested()
 #ifdef TARGET_X86
@@ -2111,76 +2044,41 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
 #endif
 
     // raise
-    PAL_TRY(Param *, pParam, &param)
+
+    ULONG argCount = 0;
+    ULONG flags = 0;
+    ULONG code = 0;
+
+    // Always save the current object in the handle so on rethrow we can reuse it. This is important as it
+    // contains stack trace info.
+    //
+    // Note: we use SafeSetLastThrownObject, which will try to set the throwable and if there are any problems,
+    // it will set the throwable to something appropriate (like OOM exception) and return the new
+    // exception. Thus, the user's exception object can be replaced here.
+    throwable = pThread->SafeSetLastThrownObject(throwable);
+
+    ULONG_PTR hr = GetHRFromThrowable(throwable);
+
+    argCount = MarkAsThrownByUs(exceptionArgs, hr);
+    flags = EXCEPTION_NONCONTINUABLE;
+    code = EXCEPTION_COMPLUS;
+
+    if (pThread->IsAbortInitiated () && IsExceptionOfType(kThreadAbortException,&throwable))
     {
-        //_ASSERTE(! pParam->isRethrown || pParam->pExState->m_pExceptionRecord);
-        ULONG_PTR *args = NULL;
-        ULONG argCount = 0;
-        ULONG flags = 0;
-        ULONG code = 0;
+        pThread->ResetPreparingAbort();
 
-        // Always save the current object in the handle so on rethrow we can reuse it. This is important as it
-        // contains stack trace info.
-        //
-        // Note: we use SafeSetLastThrownObject, which will try to set the throwable and if there are any problems,
-        // it will set the throwable to something appropriate (like OOM exception) and return the new
-        // exception. Thus, the user's exception object can be replaced here.
-        pParam->throwable = pParam->pThread->SafeSetLastThrownObject(pParam->throwable);
-
-        if (!pParam->isRethrown ||
-             pParam->pExState->IsComPlusException() ||
-            (pParam->pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW))
+        if (pThread->GetFrame() == FRAME_TOP)
         {
-            ULONG_PTR hr = GetHRFromThrowable(pParam->throwable);
-
-            args = pParam->exceptionArgs;
-            argCount = MarkAsThrownByUs(args, hr);
-            flags = EXCEPTION_NONCONTINUABLE;
-            code = EXCEPTION_COMPLUS;
+            // There is no more managed code on stack.
+            pThread->ResetAbort();
         }
-        else
-        {
-            // Exception code should be consistent.
-            _ASSERTE((DWORD)(pParam->pExState->GetExceptionRecord()->ExceptionCode) == pParam->pExState->GetExceptionCode());
-
-            args     = pParam->pExState->GetExceptionRecord()->ExceptionInformation;
-            argCount = pParam->pExState->GetExceptionRecord()->NumberParameters;
-            flags    = pParam->pExState->GetExceptionRecord()->ExceptionFlags;
-            code     = pParam->pExState->GetExceptionRecord()->ExceptionCode;
-        }
-
-        if (pParam->pThread->IsAbortInitiated () && IsExceptionOfType(kThreadAbortException,&pParam->throwable))
-        {
-            pParam->pThread->ResetPreparingAbort();
-
-            if (pParam->pThread->GetFrame() == FRAME_TOP)
-            {
-                // There is no more managed code on stack.
-                pParam->pThread->ResetAbort();
-            }
-        }
-
-        // Can't access the exception object when are in pre-emptive, so find out before
-        // if its an SO.
-        BOOL fIsStackOverflow = IsExceptionOfType(kStackOverflowException, &pParam->throwable);
-
-        if (fIsStackOverflow || pParam->fForStackOverflow)
-        {
-            // Don't probe if we're already handling an SO.  Just throw the exception.
-            RaiseException(code, flags, argCount, args);
-        }
-
-        // This needs to be both here and inside the handler below
-        // enable preemptive mode before call into OS
-        GCX_PREEMP_NO_DTOR();
-
-        // In non-debug, we can just raise the exception once we've probed.
-        RaiseException(code, flags, argCount, args);
     }
-    PAL_EXCEPT_FILTER (RaiseExceptionFilter)
-    {
-    }
-    PAL_ENDTRY
+
+    // Enable preemptive mode before call into OS
+    GCX_PREEMP_NO_DTOR();
+
+    RaiseException(code, flags, argCount, exceptionArgs);
+
     _ASSERTE(!"Cannot continue after CLR exception");      // Debugger can bring you here.
     // For example,
     // Debugger breaks in due to second chance exception (unhandled)
@@ -2190,7 +2088,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     UNREACHABLE();
 }
 
-static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable, BOOL rethrow)
+static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2208,10 +2106,10 @@ static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable, BOOL r
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
 
-    RaiseTheExceptionInternalOnly(throwable, rethrow);
+    RaiseTheExceptionInternalOnly(throwable);
 }
 
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow)
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2224,41 +2122,18 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow)
 
     _ASSERTE(IsException(throwable->GetMethodTable()));
 
-    // This may look a bit odd, but there is an explanation.  The rethrow boolean
-    //  means that an actual RaiseException(EXCEPTION_COMPLUS,...) is being re-thrown,
-    //  and that the exception context saved on the Thread object should replace
-    //  the exception context from the upcoming RaiseException().  There is logic
-    //  in the stack trace code to preserve MOST of the stack trace, but to drop the
-    //  last element of the stack trace (has to do with having the address of the rethrow
-    //  instead of the address of the original call in the stack trace.  That is
-    //  controversial itself, but we won't get into that here.)
-    // However, if this is not re-raising that original exception, but rather a new
+    // If this is not re-raising that original exception, but rather a new
     //  os exception for what may be an existing exception object, it is generally
     //  a good thing to preserve the stack trace.
-    if (!rethrow)
-    {
-        Thread *pThread = GetThread();
-        pThread->IncPreventAbort();
-        ExceptionPreserveStackTrace(throwable);
-        pThread->DecPreventAbort();
-    }
 
-    RealCOMPlusThrowWorker(throwable, rethrow);
+    Thread *pThread = GetThread();
+    pThread->IncPreventAbort();
+    ExceptionPreserveStackTrace(throwable);
+    pThread->DecPreventAbort();
+
+    RealCOMPlusThrowWorker(throwable);
 
     GCPROTECT_END();
-}
-
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    RealCOMPlusThrow(throwable, FALSE);
 }
 
 #ifdef TARGET_WASM
@@ -2295,7 +2170,7 @@ VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *
 #else
         OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
 #endif // TARGET_WASM
-        RealCOMPlusThrowWorker(throwable, FALSE);
+        RealCOMPlusThrowWorker(throwable);
 #ifdef TARGET_WASM
     }
     PAL_EXCEPT(SetTargetFrame(ex, __param->targetSP))
@@ -6910,7 +6785,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
     }
     else
     {
-        RaiseTheExceptionInternalOnly(orThrowable, FALSE);
+        RaiseTheExceptionInternalOnly(orThrowable);
     }
 }
 
