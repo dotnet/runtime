@@ -561,7 +561,7 @@ namespace ILCompiler.ObjectWriter
             sizeOfImage = (uint)AlignmentHelper.AlignUp((int)virtualAddress, (int)_peSectionAlignment);
         }
 
-        private protected override unsafe void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
+        private protected override unsafe void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList, Logger logger)
         {
             foreach (var reloc in relocationList)
             {
@@ -712,7 +712,7 @@ namespace ILCompiler.ObjectWriter
             relocHeader.SectionCharacteristics |= SectionCharacteristics.MemDiscardable;
         }
 
-        private protected override void EmitObjectFile(Stream outputFileStream)
+        private protected override void EmitObjectFile(Stream outputFileStream, Logger logger)
         {
             if (_baseRelocMap.Count > 0)
             {

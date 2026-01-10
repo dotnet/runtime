@@ -181,7 +181,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected override void EmitObjectFile(Stream outputFileStream)
+        private protected override void EmitObjectFile(Stream outputFileStream, Logger logger)
         {
 #if !READYTORUN
             _sections.Add(_compactUnwindSection);
@@ -574,7 +574,7 @@ namespace ILCompiler.ObjectWriter
             EmitCompactUnwindTable(definedSymbols);
         }
 
-        private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
+        private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList, Logger logger)
         {
             if (_cpuType == CPU_TYPE_ARM64)
             {
