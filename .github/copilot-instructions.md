@@ -8,7 +8,7 @@ You MUST make your best effort to ensure any code changes satisfy those criteria
 
 If you make code changes, do not complete without checking the relevant code builds and relevant tests still pass after the last edits you make. Do not simply assume that your changes fix test failures you see, actually build and run those tests again to confirm. You can avoid building if you only change comments or files that do not affect builds and tests (e.g. README.md).
 
-In order to successfully build and run tests, you MUST first handle the baseline setup (see "1.2. Baseline Setup"), e.g. before you can build/test libraries, you must run `./build.sh clr+libs -rc release` at least once.
+**In order to successfully build and run tests, you MUST first handle the baseline setup (see "1.2. Baseline Setup"), e.g. before you can build/test libraries, you must run `./build.sh clr+libs -rc release` at least once. This could take upwards of 10-20 minutes. You MUST wait for it to complete. You MUST not skip this step if you're making _any_ non-comment code changes.**
 
 You MUST follow all code-formatting and naming conventions defined in [`.editorconfig`](/.editorconfig).
 
