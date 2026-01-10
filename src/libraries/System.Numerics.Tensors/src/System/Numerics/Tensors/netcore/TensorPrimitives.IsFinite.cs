@@ -67,62 +67,9 @@ namespace System.Numerics.Tensors
 
             public static bool Invoke(T x) => T.IsFinite(x);
 
-#if NET10_0_OR_GREATER
             public static Vector128<T> Invoke(Vector128<T> x) => Vector128.IsFinite(x);
             public static Vector256<T> Invoke(Vector256<T> x) => Vector256.IsFinite(x);
             public static Vector512<T> Invoke(Vector512<T> x) => Vector512.IsFinite(x);
-#else
-            public static Vector128<T> Invoke(Vector128<T> x)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    Vector128<uint> positiveInfinityBits = Vector128.Create(0x7F80_0000u);
-                    return (~Vector128.Equals(~x.AsUInt32() & positiveInfinityBits, Vector128<uint>.Zero)).As<uint, T>();
-                }
-
-                if (typeof(T) == typeof(double))
-                {
-                    Vector128<ulong> positiveInfinityBits = Vector128.Create<ulong>(0x7FF0_0000_0000_0000u);
-                    return (~Vector128.Equals(~x.AsUInt64() & positiveInfinityBits, Vector128<ulong>.Zero)).As<ulong, T>();
-                }
-
-                return Vector128<T>.AllBitsSet;
-            }
-
-            public static Vector256<T> Invoke(Vector256<T> x)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    Vector256<uint> positiveInfinityBits = Vector256.Create(0x7F80_0000u);
-                    return (~Vector256.Equals(~x.AsUInt32() & positiveInfinityBits, Vector256<uint>.Zero)).As<uint, T>();
-                }
-
-                if (typeof(T) == typeof(double))
-                {
-                    Vector256<ulong> positiveInfinityBits = Vector256.Create<ulong>(0x7FF0_0000_0000_0000u);
-                    return (~Vector256.Equals(~x.AsUInt64() & positiveInfinityBits, Vector256<ulong>.Zero)).As<ulong, T>();
-                }
-
-                return Vector256<T>.AllBitsSet;
-            }
-
-            public static Vector512<T> Invoke(Vector512<T> x)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    Vector512<uint> positiveInfinityBits = Vector512.Create(0x7F80_0000u);
-                    return (~Vector512.Equals(~x.AsUInt32() & positiveInfinityBits, Vector512<uint>.Zero)).As<uint, T>();
-                }
-
-                if (typeof(T) == typeof(double))
-                {
-                    Vector512<ulong> positiveInfinityBits = Vector512.Create<ulong>(0x7FF0_0000_0000_0000u);
-                    return (~Vector512.Equals(~x.AsUInt64() & positiveInfinityBits, Vector512<ulong>.Zero)).As<ulong, T>();
-                }
-
-                return Vector512<T>.AllBitsSet;
-            }
-#endif
         }
     }
 }

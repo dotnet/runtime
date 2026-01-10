@@ -723,9 +723,9 @@ public:
     CUnorderedArrayWithAllocator(CUnorderedArrayWithAllocator const&) = delete;
     CUnorderedArrayWithAllocator& operator=(CUnorderedArrayWithAllocator const&) = delete;
     CUnorderedArrayWithAllocator(CUnorderedArrayWithAllocator&& other)
-        : m_iCount{ 0 }
-        , m_iSize{ 0 }
-        , m_pTable{ NULL}
+        : m_iCount{ other.m_iCount }
+        , m_iSize{ other.m_iSize }
+        , m_pTable{ other.m_pTable }
     {
         LIMITED_METHOD_CONTRACT;
         other.m_iCount = 0;

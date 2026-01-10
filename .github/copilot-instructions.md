@@ -4,11 +4,9 @@ excludeAgent: code-review-agent
 
 **Any code you commit SHOULD compile, and new and existing tests related to the change SHOULD pass.**
 
-You MUST make your best effort to ensure your changes satisfy those criteria before committing. If for any reason you were unable to build or test the changes, you MUST report that. You MUST NOT claim success unless all builds and tests pass as described above.
+You MUST make your best effort to ensure any code changes satisfy those criteria before committing. If for any reason you were unable to build or test code changes, you MUST report that. You MUST NOT claim success unless all builds and tests pass as described above.
 
-Do not complete without checking the relevant code builds and relevant tests still pass after the last edits you make. Do not simply assume that your changes fix test failures you see, actually build and run those tests again to confirm.
-
-You MUST refer to the [Building & Testing in dotnet/runtime](#building--testing-in-dotnetruntime) instructions and use the commands and approaches specified there before attempting your own suggestions.
+If you make code changes, do not complete without checking the relevant code builds and relevant tests still pass after the last edits you make. Do not simply assume that your changes fix test failures you see, actually build and run those tests again to confirm. You can avoid building if you only change comments or files that do not affect builds and tests (e.g. README.md).
 
 You MUST follow all code-formatting and naming conventions defined in [`.editorconfig`](/.editorconfig).
 
@@ -23,6 +21,7 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 - Prefer `?.` if applicable (e.g. `scope?.Dispose()`).
 - Use `ObjectDisposedException.ThrowIf` where applicable.
 - When adding new unit tests, strongly prefer to add them to existing test code files rather than creating new code files.
+- When adding new unit tests, avoid adding a regression comment citing a GitHub issue or PR number unless explicitly asked to include such information.
 - If you add new code files, ensure they are listed in the csproj file (if other files in that folder are listed there) so they build.
 - When running tests, if possible use filters and check test run counts, or look at test logs, to ensure they actually ran.
 - Do not finish work with any tests commented out or disabled that were not previously commented out or disabled.
@@ -53,7 +52,7 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 
 ## 1. Prerequisites
 
-These steps need to be done **before** applying any changes.
+These steps need to be done **before** applying any code changes.
 
 ### 1.1. Determine Affected Components
 
@@ -87,6 +86,7 @@ Before applying any changes, ensure you have a full successful build of the need
     - **Libraries:** `./build.sh clr+libs -rc release`
     - **WASM/WASI Libraries:** `./build.sh mono+libs -os browser`
     - **Host:** `./build.sh clr+libs+host -rc release -lc release`
+If changes are being made in the System.Private.CoreLib library, you can follow the Libraries steps, but you may want to use "-rc checked" instead of "-rc release"; that will result in asserts being included in the build rather than excluded.
 
 3. Verify the build completed without error.
     - _If the baseline build failed, report the failure and don't proceed with the changes._
@@ -234,6 +234,8 @@ If only one library is affected:
 
     - `dotnet build /t:test` is generally preferred over `dotnet test`
 
+System.Private.CoreLib is special. To rebuild CoreLib and prepare to run tests with the changes, `cd` into the root of the repo and run:
+`./build.sh clr.corelib+clr.nativecorelib+libs.pretest -rc release`
 ---
 
 ## 6. WebAssembly (WASM) Libraries Workflow
