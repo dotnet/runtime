@@ -1419,6 +1419,8 @@ public:
         int      bbHistogramSchemaIndex; // schema index for histogram instrumentation
     };
 
+    int bbValueSchemaIndex; // schema index for value instrumentation
+
 #define MAX_XCPTN_INDEX (USHRT_MAX - 1)
 
     // It would be nice to make bbTryIndex and bbHndIndex private, but there is still code that uses them directly,
