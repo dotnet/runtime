@@ -637,6 +637,19 @@ ep_rt_config_value_get_enable_stackwalk (void)
 	return value_uint32_t != 0;
 }
 
+static
+inline
+uint32_t
+ep_rt_config_value_get_buffer_guard_level (void)
+{
+	uint32_t buffer_guard_level = 0;
+	gchar *value = g_getenv ("DOTNET_EventPipeBufferGuardLevel");
+	if (value)
+		buffer_guard_level = (uint32_t)atoi (value);
+	g_free (value);
+	return buffer_guard_level;
+}
+
 /*
  * EventPipeSampleProfiler.
  */
@@ -1899,6 +1912,34 @@ ep_rt_volatile_store_ptr_without_barrier (
 	void *value)
 {
 	*ptr = value;
+}
+
+
+/*
+ * Memory Protection
+ */
+
+static
+inline
+bool
+ep_rt_vprotect (
+	void *addr,
+	size_t length,
+	EventPipePageProtection protection)
+{
+	return true;
+}
+
+/*
+ * Fail fast
+ */
+
+static
+inline
+void
+ep_rt_fatal_error_with_message (const ep_char8_t *message)
+{
+    /* Not implemented, no-op */
 }
 
 /*
