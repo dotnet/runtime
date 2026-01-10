@@ -3524,6 +3524,10 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
     }
     else
     {
+        if (!cond->OperIs(GT_CMP))
+        {
+            return;
+        }
         // Look for cases like this to convert to conditional increment
         // if (myvar==0) myvar = 1;
         // If we're comparing a local to a constant int, and reassigning that local to a value that is 1 larger
