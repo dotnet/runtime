@@ -2618,6 +2618,11 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 					max_field_size = size;
 			}
 
+			if (max_field_size == 0) {
+				/* No real instance fields were found for the union */
+				if (mono_class_set_type_load_failure (klass, "CUnion type cannot be empty."))
+					goto cleanup;
+			}
 			instance_size = real_size + max_field_size;
 
 			if (instance_size & (min_align - 1)) {
