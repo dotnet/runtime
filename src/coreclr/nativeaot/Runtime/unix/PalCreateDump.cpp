@@ -612,23 +612,21 @@ PalCreateDumpInitialize()
         if (RhConfig::Environment::TryGetStringValue("DbgCreateDumpToolPath", &dumpToolPath))
         {
             // Use the provided directory path and concatenate with "createdump"
-            int programLen = strlen(dumpToolPath) + strlen(DumpGeneratorName) + 2; // +2 for '/' and '\0'
+            size_t dumpToolPathLen = strlen(dumpToolPath);
+            bool needsSlash = dumpToolPathLen > 0 && dumpToolPath[dumpToolPathLen - 1] != '/';
+            int programLen = dumpToolPathLen + (needsSlash ? 1 : 0) + strlen(DumpGeneratorName) + 1;
             program = (char*)malloc(programLen);
             if (program == nullptr)
             {
                 free(dumpToolPath);
                 return false;
             }
-            // Initialize buffer and copy path
-            program[0] = '\0';
-            strncat(program, dumpToolPath, programLen - 1);
-            // Ensure path ends with '/'
-            size_t pathLen = strlen(program);
-            if (pathLen > 0 && program[pathLen - 1] != '/')
+            strncpy(program, dumpToolPath, programLen);
+            if (needsSlash)
             {
-                strncat(program, "/", programLen - pathLen - 1);
+                strncat(program, "/", programLen);
             }
-            strncat(program, DumpGeneratorName, programLen - strlen(program) - 1);
+            strncat(program, DumpGeneratorName, programLen);
             free(dumpToolPath);
         }
         else
