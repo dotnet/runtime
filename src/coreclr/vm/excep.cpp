@@ -11292,53 +11292,11 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
 #endif // TARGET_X86
 
 //
-// Init a new frame
-//
-void SoftwareExceptionFrame::Init()
-{
-    WRAPPER_NO_CONTRACT;
-
-    // On x86 and when using TransitionBlock path (indicated by m_ReturnAddress being set),
-    // we initialize the context state from transition block in UpdateContextFromTransitionBlock method.
-#ifndef TARGET_X86
-    // If m_ReturnAddress is already set, the context was populated from TransitionBlock
-    // and we should skip VirtualUnwind.
-    if (m_ReturnAddress == 0)
-    {
-#define CALLEE_SAVED_REGISTER(regname) m_ContextPointers.regname = NULL;
-        ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-#ifndef TARGET_UNIX
-        Thread::VirtualUnwindCallFrame(&m_Context, &m_ContextPointers);
-#else // !TARGET_UNIX
-        BOOL success = PAL_VirtualUnwind(&m_Context, &m_ContextPointers);
-        if (!success)
-        {
-            _ASSERTE(!"SoftwareExceptionFrame::Init failed");
-            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-        }
-#endif // !TARGET_UNIX
-
-#define CALLEE_SAVED_REGISTER(regname) if (m_ContextPointers.regname == NULL) m_ContextPointers.regname = &m_Context.regname;
-        ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-        m_ReturnAddress = ::GetIP(&m_Context);
-    }
-
-    _ASSERTE(ExecutionManager::IsManagedCode(::GetIP(&m_Context)));
-#endif // !TARGET_X86
-}
-
-//
 // Init and Link in a new frame
 //
 void SoftwareExceptionFrame::InitAndLink(Thread *pThread)
 {
     WRAPPER_NO_CONTRACT;
-
-    Init();
 
     Push(pThread);
 }

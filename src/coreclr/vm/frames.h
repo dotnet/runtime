@@ -999,7 +999,6 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-    void Init();
     void InitAndLink(Thread *pThread);
 #endif
 
