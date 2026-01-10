@@ -800,9 +800,10 @@ void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 {
     assert(compiler->fgUseThrowHelperBlocks());
-    genConsumeOperand(tree->Addr());
-    GetEmitter()->Ins(INS_i32_eqz);
-    genJumpToThrowHlpBlk(EJ_jmpif, SCK_NULL_REF);
+    genConsumeAddress(tree->Addr());
+    // TODO-WASM: compare with the appropriate small value
+    GetEmitter()->emitIns(INS_i32_eqz);
+    genJumpToThrowHlpBlk(EJ_jmpif, SCK_NULL_CHECK);
 }
 
 //------------------------------------------------------------------------

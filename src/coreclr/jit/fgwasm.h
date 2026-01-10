@@ -328,29 +328,31 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
 {
     // Special case throw helper blocks that are not yet connected in the flow graph.
     //
-    AddCodeDscMap* const acdMap = comp->fgGetAddCodeDscMap();
+    Compiler::AddCodeDscMap* const acdMap = comp->fgGetAddCodeDscMap();
     if (acdMap != nullptr)
     {
         // Behave as if these blocks have edges from their respective region entry blocks.
         //
-        if ((block == fgFirstBB) || comp->bbIsFuncletBeg(block))
+        if ((block == comp->fgFirstBB) || comp->bbIsFuncletBeg(block))
         {
-            AcdKeyDesignator dsg;
-            const unsigned   blockData = comp->bbThrowIndex(block, &dsg);
+            Compiler::AcdKeyDesignator dsg;
+            const unsigned             blockData = comp->bbThrowIndex(block, &dsg);
 
             // We do not expect any ACDs to be mapped to try regions (only method/handler/filter)
             //
-            assert(dsg != AcdKeyDesignator::KD_TRY);
+            assert(dsg != Compiler::AcdKeyDesignator::KD_TRY);
 
-            for (const AddCodeDscKey& key : AddCodeDscMap::KeyIteration(acdMap))
+            for (const Compiler::AddCodeDscKey& key : Compiler::AddCodeDscMap::KeyIteration(acdMap))
             {
                 if (key.Data() == blockData)
                 {
                     // This ACD refers to a throw helper block in the right region.
-                    // Make it a successor.
+                    // Make the block a successor.
                     //
-                    AddCodeDsc* const acdBlock = acdMap->Lookup(key);
-                    RETURN_ON_ABORT(func(acdBlock));
+                    Compiler::AddCodeDsc* acd = nullptr;
+                    ;
+                    acdMap->Lookup(key, &acd);
+                    RETURN_ON_ABORT(func(acd->acdDstBlk));
                 }
             }
         }
