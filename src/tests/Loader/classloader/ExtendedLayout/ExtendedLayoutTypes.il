@@ -216,7 +216,7 @@
         int32(0x00000001) // CUnion
     }
 
-    .field public valuetype NestedCUnionType nested
+    .field public valuetype NestedCUnionType x
 }
 
 .class flags(0x18) public value beforefieldinit CUnionCustomSeqStructField
