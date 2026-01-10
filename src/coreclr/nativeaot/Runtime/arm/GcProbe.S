@@ -79,7 +79,7 @@
 
     // restore alignment
     add         sp, sp, #4
-    
+
     pop         {r0, r1, r2}
 
     // Fix the stack by restoring the original return address
