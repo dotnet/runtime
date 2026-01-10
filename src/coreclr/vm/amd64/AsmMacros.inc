@@ -495,39 +495,51 @@ POP_COOP_PINVOKE_FRAME macro
 ;   Outgoing argument homes (32 bytes)
 ;   FloatArgumentRegisters (xmm0-xmm3, 64 bytes)
 ;   FP Callee-saved registers (xmm6-xmm15, 160 bytes)
-;   Padding (8 bytes for 16-byte alignment)
 ;   sp points here
 ;
-; Stack alignment: After call to IL_Throw (8 bytes) + callee-saved (64 bytes) + alloc (264 bytes) = 336 bytes
-; The XMM save area at offset 8 is 16-byte aligned (336 - 8 = 328, 328 % 16 = 8, but RSP+8 % 16 = 0).
+; Stack alignment: After call (8) + callee-saved pushes (64) + alloc (256) = 328 bytes
+; 328 mod 16 = 8, so RSP mod 16 = 8 after alloc - NOT 16-byte aligned.
+; We need RSP to be 16-byte aligned for movaps AND unwind offsets must be multiples of 16.
+;
+; Solution: Use alloc_stack 272 (adds 16 bytes padding). 8 + 64 + 272 = 344, 344 mod 16 = 8.
+; Wait, that's still not right. Let me recalculate:
+; After call: RSP mod 16 = 8 (return addr pushed from 16-byte aligned stack)
+; After 8 pushes (64 bytes): RSP mod 16 = (8 + 64) mod 16 = 72 mod 16 = 8
+; After alloc N: RSP mod 16 = (8 + N) mod 16
+; For RSP mod 16 = 0, need N mod 16 = 8
+; 256 mod 16 = 0, so RSP mod 16 = 8 (NOT aligned)
+; 264 mod 16 = 8, so RSP mod 16 = 0 (aligned!) but offsets 0,16,32... work
+;
+; With alloc_stack 264: RSP is 16-byte aligned, XMM saves at 0, 16, 32, ... (multiples of 16)
 ;
 ; On exit, target contains the TransitionBlock pointer (CalleeSavedRegisters).
 PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS macro target
 
         PUSH_CALLEE_SAVED_REGISTERS
 
-        ; Allocate space for: outgoing args (32) + float args (64) + FP callee-saved (160) + padding (8) = 264 bytes
+        ; Allocate space for: FP callee-saved (160) + float args (64) + shadow (32) + padding (8) = 264 bytes
+        ; This makes RSP 16-byte aligned (8 + 64 + 264 = 336, and original RSP - 336 is 16-byte aligned)
         alloc_stack     264
 
-        ; Save argument registers to shadow space area
-        ; Shadow space is at offset 232 (after float args and FP callee-saved and padding) from sp
-        SAVE_ARGUMENT_REGISTERS 232
+        ; Save argument registers to shadow space area at offset 224
+        SAVE_ARGUMENT_REGISTERS 224
 
-        ; Save float argument registers at offset 168 (after FP callee-saved and padding)
-        SAVE_FLOAT_ARGUMENT_REGISTERS 168
+        ; Save float argument registers at offset 160
+        SAVE_FLOAT_ARGUMENT_REGISTERS 160
 
-        ; Save FP callee-saved registers (xmm6-xmm15) at offset 8 (after padding)
-        ; Offset 8 ensures 16-byte alignment for movaps
-        save_xmm128_postrsp xmm6,  8h
-        save_xmm128_postrsp xmm7,  18h
-        save_xmm128_postrsp xmm8,  28h
-        save_xmm128_postrsp xmm9,  38h
-        save_xmm128_postrsp xmm10, 48h
-        save_xmm128_postrsp xmm11, 58h
-        save_xmm128_postrsp xmm12, 68h
-        save_xmm128_postrsp xmm13, 78h
-        save_xmm128_postrsp xmm14, 88h
-        save_xmm128_postrsp xmm15, 98h
+        ; Save FP callee-saved registers (xmm6-xmm15) at offset 0
+        ; RSP is 16-byte aligned, so offset 0, 16, 32, ... are all 16-byte aligned
+        ; AND these offsets are multiples of 16 as required by unwind codes
+        save_xmm128_postrsp xmm6,  0h
+        save_xmm128_postrsp xmm7,  10h
+        save_xmm128_postrsp xmm8,  20h
+        save_xmm128_postrsp xmm9,  30h
+        save_xmm128_postrsp xmm10, 40h
+        save_xmm128_postrsp xmm11, 50h
+        save_xmm128_postrsp xmm12, 60h
+        save_xmm128_postrsp xmm13, 70h
+        save_xmm128_postrsp xmm14, 80h
+        save_xmm128_postrsp xmm15, 90h
 
         END_PROLOGUE
 
