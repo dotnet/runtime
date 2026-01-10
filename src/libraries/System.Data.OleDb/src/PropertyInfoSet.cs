@@ -6,6 +6,7 @@ using System.Data.Common;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Data.OleDb
 {
@@ -106,7 +107,7 @@ namespace System.Data.OleDb
             return propertyLookup;
         }
 
-        protected override bool ReleaseHandle()
+        protected override unsafe bool ReleaseHandle()
         {
             // NOTE: The SafeHandle class guarantees this will be called exactly once and is non-interrutible.
             IntPtr ptr = base.handle;
@@ -125,7 +126,8 @@ namespace System.Data.OleDb
                         for (int k = 0; k < infoCount; ++k)
                         {
                             IntPtr valuePtr = ADP.IntPtrOffset(infoPtr, (k * ODB.SizeOf_tagDBPROPINFO) + ODB.OffsetOf_tagDBPROPINFO_Value);
-                            Interop.OleAut32.VariantClear(valuePtr);
+                            ref ComVariant variant = ref *(ComVariant*)valuePtr;
+                            variant.Dispose();
                         }
                         Interop.Ole32.CoTaskMemFree(infoPtr); // was allocated by provider
                     }
