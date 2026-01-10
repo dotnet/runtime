@@ -25,6 +25,8 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
 
     protected override string BundleDirName { get { return "wwwroot"; } }
 
+    public string GetDefaultTargetFramework() => _defaultTargetFramework;
+
     protected override IReadOnlyDictionary<string, bool> GetAllKnownDotnetFilesToFingerprintMap(AssertBundleOptions assertOptions)
     {
         var result = new SortedDictionary<string, bool>()
@@ -128,7 +130,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             Assert.False(wasmAssemblies.Any(), $"Did not expect to find any .wasm files in {publishPath} but found {string.Join(",", wasmAssemblies)}");
         }
 
-        if (!BuildTestBase.IsUsingWorkloads)
+        if (!BuildTestBase.IsUsingWorkloads || assertOptions.BuildOptions.TargetFramework != BuildTestBase.DefaultTargetFramework)
             return;
 
         // Compare files with the runtime pack
@@ -179,10 +181,11 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
 
     public void AssertWasmSdkBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild = null, bool? wasmFingerprintDotnetJs = null, string? buildOutput = null)
     {
-        if (isUsingWorkloads && buildOutput is not null)
+        string targetFramework = buildOptions.TargetFramework ?? _defaultTargetFramework;
+
+        if (isUsingWorkloads && buildOutput is not null && targetFramework == BuildTestBase.DefaultTargetFramework)
         {
-            // In no-workload case, the path would be from a restored nuget
-            ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? DefaultTargetFramework, buildOptions.RuntimeType);
+            AssertRuntimePackPath(buildOutput, targetFramework, buildOptions.RuntimeType);
         }
         AssertBundle(config, buildOptions, isUsingWorkloads, isNativeBuild, wasmFingerprintDotnetJs);
     }

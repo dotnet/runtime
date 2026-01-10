@@ -27,8 +27,8 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
                 : base(output, buildContext, new WasmSdkBasedProjectProvider(output, targetFramework ?? DefaultTargetFrameworkForBlazor))
     {
         _provider = GetProvider<WasmSdkBasedProjectProvider>();
-        _defaultBlazorPublishOptions = _defaultPublishOptions with { ExtraMSBuildArgs = _blazorExtraMSBuildArgs };
-        _defaultBlazorBuildOptions = _defaultBuildOptions with { ExtraMSBuildArgs = _blazorExtraMSBuildArgs };
+        _defaultBlazorPublishOptions = _defaultPublishOptions with { ExtraMSBuildArgs = _blazorExtraMSBuildArgs, TargetFramework = targetFramework ?? DefaultTargetFrameworkForBlazor };
+        _defaultBlazorBuildOptions = _defaultBuildOptions with { ExtraMSBuildArgs = _blazorExtraMSBuildArgs, TargetFramework = targetFramework ?? DefaultTargetFrameworkForBlazor };
     }
 
     private Dictionary<string, string> blazorHomePageReplacements = new Dictionary<string, string>
@@ -221,5 +221,5 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
     }
 
     public string GetBlazorBinFrameworkDir(Configuration config, bool forPublish, string? framework = null, string? projectDir = null)
-        => _provider.GetBinFrameworkDir(config: config, forPublish: forPublish, framework: framework ?? DefaultTargetFrameworkForBlazor, projectDir: projectDir);
+        => _provider.GetBinFrameworkDir(config: config, forPublish: forPublish, framework: framework ?? _provider.GetDefaultTargetFramework(), projectDir: projectDir);
 }
