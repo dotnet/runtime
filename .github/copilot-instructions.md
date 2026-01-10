@@ -33,293 +33,153 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 
 # Building & Testing in dotnet/runtime
 
-- [1. Prerequisites](#1-prerequisites)
-    - [1.1. Determine Affected Components](#11-determine-affected-components)
-    - [1.2. Baseline Setup](#12-baseline-setup)
-- [2. Iterative Build and Test Strategy](#2-iterative-build-and-test-strategy)
-    - [2.1. Success Criteria](#21-success-criteria)
-- [3. CoreCLR (CLR) Workflow](#3-coreclr-clr-workflow)
-- [4. Mono Runtime Workflow](#4-mono-runtime-workflow)
-- [5. Libraries Workflow](#5-libraries-workflow)
-    - [5.1. How To: Identify Affected Libraries](#51-how-to-identify-affected-libraries)
-    - [5.2. How To: Build and Test Specific Library](#52-how-to-build-and-test-specific-library)
-- [6. WebAssembly (WASM) Libraries Workflow](#6-webassembly-wasm-libraries-workflow)
-- [7. Host Workflow](#7-host-workflow)
-- [8. Additional Notes](#8-additional-notes)
-    - [8.1. Troubleshooting](#81-troubleshooting)
-    - [8.2. Windows Command Equivalents](#82-windows-command-equivalents)
-    - [8.3. References](#83-references)
+## ⚠️ MANDATORY: Run Baseline Build First
 
-## 1. Prerequisites
+**You MUST complete these steps BEFORE making any code changes.** Skipping this causes "missing testhost" and "shared framework" errors that waste time.
 
-These steps need to be done **before** applying any code changes.
+### Step 1: Identify Your Component
 
-### 1.1. Determine Affected Components
+Based on file paths you will modify:
 
-Identify which components will be impacted by the changes. If in doubt, analyze the paths of the files to be updated:
+| Files Changed | Component |
+|---------------|-----------|
+| `src/coreclr/` | CoreCLR |
+| `src/mono/` | Mono |
+| `src/libraries/` (no Browser/WASM or WASI targets) | Libraries |
+| `src/libraries/` with Browser/WASM or WASI targets in the affected `.csproj` | WASM/WASI Libraries |
+| `src/native/corehost/`, `src/installer/` | Host |
+| `src/tools` | Tools |
+| `src/native/managed` | Tools |
+| `src/tasks` | Build Tasks |
+| `src/tests` | Runtime Tests |
+| None of the above | Docs/infra only — skip build steps |
 
-- **CoreCLR (CLR):** Changes in `src/coreclr/` or `src/tests/`
-- **Mono Runtime:** Changes in `src/mono/`
-- **Libraries:** Changes in `src/libraries/`
-- **WASM/WASI Libraries:** Changes in `src/libraries/` *and* the affected library targets WASM or WASI *and* the changes are included for the target (see below for details).
-- **Host:** Changes in `src/native/corehost/`, `src/installer/managed/`, or `src/installer/tests/`
-- If none above apply, it is most possibly an infra-only or a docs-only change. Skip build and test steps.
+**WASM/WASI Library Detection:** A change under `src/libraries/` is WASM/WASI-relevant if the library's `.csproj` has explicit Browser/WASM or WASI targets (`TargetFrameworks`, `TARGET_BROWSER`, `TARGET_WASI` constants, or `Condition` attributes referencing `browser`/`wasi`), **and** the changed file is not excluded from those targets via `Condition` on `<ItemGroup>` or `<Compile>`.
 
-**WASM/WASI Library Change Detection**
+### Step 2: Run the Baseline Build (from repo root)
 
-A change is considered WASM/WASI-relevant if:
+**First, checkout the `main` branch** to establish a known-good baseline, then run the appropriate build command:
 
-- The relevant `.csproj` contains explicit Browser/WASM or WASI targets (look for `<TargetFrameworks>`, `$(TargetPlatformIdentifier)`, or `Condition` attributes referencing `browser` or `wasi`, as well as `TARGET_BROWSER` or `TARGET_WASI` constants), **and**
-- The changed file is not excluded from the build for that platform in any way with a `Condition` attribute on `<ItemGroup>` or `<Compile>`.
+| Component | Command |
+|-----------|---------|
+| **CoreCLR** | `./build.sh clr+libs+host` |
+| **Mono** | `./build.sh mono+libs` |
+| **Libraries** | `./build.sh clr+libs -rc release` |
+| **WASM Libraries** | `./build.sh mono+libs -os browser` |
+| **Host** | `./build.sh clr+libs+host -rc release -lc release` |
+| **Tools** | `./build.sh clr+libs -rc release` |
+| **Build Tasks** | `./build.sh clr+libs -rc release` |
+| **Runtime Tests** | `./build.sh clr+libs -lc release -rc checked` |
 
----
+For System.Private.CoreLib changes, use `-rc checked` instead of `-rc release` for asserts.
 
-### 1.2. Baseline Setup
+⏱️ **This build can take up to 40 minutes.** Do not cancel unless no output for 5+ minutes.
 
-Before applying any changes, ensure you have a full successful build of the needed runtime+libraries as a baseline.
+### Step 3: Configure Environment
 
-1. Checkout `main` branch
+```bash
+export PATH="$(pwd)/.dotnet:$PATH"
+dotnet --version  # Should match sdk.version in global.json
+```
 
-2. From the repository root, run the build depending on the affected component. If multiple components are affected, subsequently run and verify the builds for all of them.
-    - **CoreCLR (CLR):** `./build.sh clr+libs+host`
-    - **Mono Runtime:** `./build.sh mono+libs`
-    - **Libraries:** `./build.sh clr+libs -rc release`
-    - **WASM/WASI Libraries:** `./build.sh mono+libs -os browser`
-    - **Host:** `./build.sh clr+libs+host -rc release -lc release`
-If changes are being made in the System.Private.CoreLib library, you can follow the Libraries steps, but you may want to use "-rc checked" instead of "-rc release"; that will result in asserts being included in the build rather than excluded.
-
-3. Verify the build completed without error.
-    - _If the baseline build failed, report the failure and don't proceed with the changes._
-
-4. From the repository root:
-    - Configure PATH: `export PATH="$(pwd)/.dotnet:$PATH"`
-    - Verify SDK Version: `dotnet --version` should match `sdk.version` in `global.json`.
-
-5. Switch back to the working branch.
+**Only proceed with changes after the baseline build succeeds.** If it fails, report the failure and stop. After the baseline build, switch back to your working branch before making changes.
 
 ---
 
-## 2. Iterative Build and Test Strategy
+## Component-Specific Workflows
 
-1. Apply the intended changes
+After completing the baseline build above, use the appropriate workflow for your changes.
+All commands must complete with exit code 0, and all tests must pass with zero failures.
 
-2. **Attempt Build.** If the build fails, attempt to fix and retry the step (up to 5 attempts).
+### Libraries (Most Common)
 
-3. **Attempt Test.**
-    - If a test _build_ fails, attempt to fix and retry the step (up to 5 attempts).
-    - If a test _run_ fails,
-        - Determine if the problem is in the test or in the source
-        - If the problem is in the test, attempt to fix and retry the step (up to 5 attempts).
-        - If the problem is in the source, reconsider the full changeset, attempt to fix and repeat the workflow.
+**Build:** `./build.sh libs -rc release` (from repo root)
 
-4. **Workflow Iteration:**
-    - Repeat build and test up to 5 cycles.
-    - If issues persist after 5 workflow cycles, report failure.
-    - If the same error persists after each fix attempt, do not repeat the same fix. Instead, escalate or report with full logs.
+**Test a specific library:**
+```bash
+cd src/libraries/<LibraryName>
+dotnet build
+dotnet build /t:test ./tests/<TestProject>.csproj
+```
 
-When retrying, attempt different fixes and adjust based on the build/test results.
+Test projects are typically at: `tests/<LibraryName>.Tests.csproj` or `tests/<LibraryName>.Tests/<LibraryName>.Tests.csproj`, or under `tests/FunctionalTests/`, `tests/UnitTests/`, etc. Use `find tests -name '*.Tests.csproj'` to discover them.
 
-### 2.1. Success Criteria
+**Test all libraries:** `./build.sh libs.tests -test -rc release`
 
-- **Build:**
-    - Completes without errors.
-    - Any non-zero exit code from build commands is considered a failure.
+**System.Private.CoreLib:** Rebuild with `./build.sh clr.corelib+clr.nativecorelib+libs.pretest -rc release`
 
-- **Tests:**
-    - All tests must pass (zero failures).
-    - Any non-zero exit code from test commands is considered a failure.
+Before completing, ensure ALL tests for affected libraries pass.
 
-- **Workflow:**
-    - On success: Report completion
-    - Otherwise: Report error(s) with logs for diagnostics.
-        - Collect logs from `artifacts/log/` and the console output for both build and test steps.
-        - Attach relevant log files or error snippets when reporting failures.
+### CoreCLR
 
----
+**Build:** `./build.sh clr`
 
-## 3. CoreCLR (CLR) Workflow
+**Test:** `cd src/tests && ./build.sh && ./run.sh`
 
-From the repository root:
+### Mono
 
-- Build:
-  `./build.sh clr`
+**Build:** `./build.sh mono+libs`
 
-- Run tests:
-  `cd src/tests && ./build.sh && ./run.sh`
+**Test:**
+```bash
+./build.sh clr.host
+cd src/tests
+./build.sh mono debug /p:LibrariesConfiguration=debug
+./run.sh
+```
 
-- More info can be found in the dedicated workflow docs:
-    - [Building CoreCLR Guide](/docs/workflow/building/coreclr/README.md)
-    - [Building and Running CoreCLR Tests](/docs/workflow/testing/coreclr/testing.md)
+### WASM Libraries
 
----
+**Build:** `./build.sh libs -os browser`
 
-## 4. Mono Runtime Workflow
+**Test:** `./build.sh libs.tests -test -os browser`
 
-From the repository root:
+### Host
 
-- Build:
-  `./build.sh mono+libs`
+**Build:** `./build.sh host -rc release -lc release`
 
-- Run tests:
+**Test:** `./build.sh host.tests -rc release -lc release -test`
 
-  ```bash
-  ./build.sh clr.host
-  cd src/tests
-  ./build.sh mono debug /p:LibrariesConfiguration=debug
-  ./run.sh
-  ```
+### Tools
 
-- More info can be found in the dedicated workflow docs:
-    - [Building Mono](/docs/workflow/building/mono/README.md)
-    - [Running test suites using Mono](/docs/workflow/testing/mono/testing.md)
+**Build:** `./build.sh tools+tools.ilasm`
 
----
+**Test:** `./build.sh tools+tools.ilasm+tools.illinktests+tools.cdactests -test`
 
-## 5. Libraries Workflow
+### Build Tasks
 
-From the repository root:
+**Build:** `./build.sh tasks`
 
-- Build all libraries:
-  `./build.sh libs -rc release`
+### Runtime Tests
 
-- Run all tests for libraries:
-  `./build.sh libs.tests -test -rc release`
-
-- Build a specific library:
-    - Refer to the section [5.2. How To: Build and Test Specific Library](#52-how-to-build-and-test-specific-library) below.
-
-- Test a specific library:
-    - Refer to the sections [5.1. How To: Identify Affected Libraries](#51-how-to-identify-affected-libraries) and [5.2. How To: Build and Test Specific Library](#52-how-to-build-and-test-specific-library) below.
-
-- More info can be found in the dedicated workflow docs:
-    - [Build Libraries](/docs/workflow/building/libraries/README.md)
-    - [Testing Libraries](/docs/workflow/testing/libraries/testing.md)
-
-When working on changes limited to a specific library, do not complete without at least running all tests for that library and confirming they pass. For example if you are working within "System.Text.RegularExpressions" then make sure after your last edits that all the test libraries under `src\libraries\System.Text.RegularExpressions\tests` pass. It is OK to filter to relevant specific tests during your work, but before returning, ensure that, at least, ALL tests for the library do pass.
-
-### 5.1. How To: Identify Affected Libraries
-
-For each changed file under `src/libraries/`, find the matching library and its test project(s).
-Most libraries use:
-
-- Source: `src/libraries/<LibraryName>/src/<LibraryName>.csproj`
-
-- Tests (single):
-    - `src/libraries/<LibraryName>/tests/<LibraryName>.Tests.csproj`
-    - OR `src/libraries/<LibraryName>/tests/<LibraryName>.Tests/<LibraryName>.Tests.csproj`
-
-- Tests (multiple types):
-    - `src/libraries/<LibraryName>/tests/FunctionalTests/<LibraryName>.Functional.Tests.csproj`
-    - `src/libraries/<LibraryName>/tests/UnitTests/<LibraryName>.Unit.Tests.csproj`
-    - Or similar.
+**Build:**
+```bash
+./build.sh clr+libs -lc release -rc checked
+./src/tests/build.sh checked
+./src/tests/run.sh checked
+```
 
 ---
 
-### 5.2. How To: Build and Test Specific Library
+## Troubleshooting
 
-If only one library is affected:
+| Error | Solution |
+|-------|----------|
+| "shared framework must be built" | Run baseline build: `./build.sh clr+libs -rc release` |
+| "testhost" missing / FileNotFoundException | Run baseline build first (Step 2 above) |
+| Build timeout | Wait up to 40 min; only fail if no output for 5 min |
+| "Target does not exist" | Avoid specifying a target framework; the build will auto-select `$(NetCoreAppCurrent)` |
 
-1. **Navigate to the library directory:**
-   `cd src/libraries/<LibraryName>`
+**When reporting failures:** Include logs from `artifacts/log/` and console output for diagnostics.
 
-2. **Build the library:**
-   `dotnet build`
-
-3. **Build and run all test projects:**
-
-    - For each discovered `*.Tests.csproj` in the `tests` subdirectory:
-      `dotnet build /t:test ./tests/<TestProject>.csproj`
-
-        - *Adjust path as needed. If in doubt, search with `find tests -name '*.csproj'`.*
-
-    - `dotnet build /t:test` is generally preferred over `dotnet test`
-
-System.Private.CoreLib is special. To rebuild CoreLib and prepare to run tests with the changes, `cd` into the root of the repo and run:
-`./build.sh clr.corelib+clr.nativecorelib+libs.pretest -rc release`
----
-
-## 6. WebAssembly (WASM) Libraries Workflow
-
-From the repository root:
-
-- Build:
-  `./build.sh libs -os browser`
-
-- Run tests:
-  `./build.sh libs.tests -test -os browser`
-
-- More info can be found in the dedicated workflow docs:
-    - [Build libraries for WebAssembly](/docs/workflow/building/libraries/webassembly-instructions.md)
-    - [Testing Libraries on WebAssembly](/docs/workflow/testing/libraries/testing-wasm.md)
+**Windows:** Use `build.cmd` instead of `build.sh`. Set PATH: `set PATH=%CD%\.dotnet;%PATH%`
 
 ---
 
-## 7. Host Workflow
+## Reference
 
-From the repository root:
-
-- Build:
-  `./build.sh host -rc release -lc release`
-
-- Run all tests:
-  `./build.sh host.tests -rc release -lc release -test`
-
-- More info can be found in the dedicated workflow docs:
-    - [Building and running host tests](/docs/workflow/testing/host/testing.md)
-
----
-
-## 8. Additional Notes
-
-### 8.1. Troubleshooting
-
-- **Shared Framework Missing**
-
-    - If the build fails with an error "The shared framework must be built before the local targeting pack can be consumed.", build both the runtime (clr or mono) and the libs.
-      E.g., from the repo root, run `./build.sh clr+libs -rc release` if working on Libraries on CoreCLR. To find the applicable command, refer to the section [1.2. Baseline Setup](#12-baseline-setup).
-
-- **Testhost Is Missing**
-
-    - If a test run fails with errors indicating a missing testhost, such as:
-        - "Failed to launch testhost with error: System.IO.FileNotFoundException", or
-        - "artifacts/bin/testhost/... No such file or directory",
-      that means some of the prerequisites were not built.
-
-    - To resolve, build both the appropriate runtime (clr or mono) and the libs as a single command before running tests.
-      E.g., from the repo root, run `./build.sh clr+libs -rc release` before testing Libraries on CoreCLR. To find the applicable command, refer to the section [1.2. Baseline Setup](#12-baseline-setup).
-
-- **Build Timeout**
-
-    - Do not fail or cancel initial `./build.sh` builds due to timeout unless at least 40 minutes have elapsed.
-      A full `clr+libs` build from scratch can take up to 32 minutes or more on some systems.
-
-    - Only wait for long-running `./build.sh` commands if they continue to produce output.
-      If there is no output for 5 minutes, assume the build is stuck and fail early.
-
-- **Target Does Not Exist**
-
-    - Avoid specifying a target framework when building unless explicitly asked.
-      Build should identify and select the appropriate `$(NetCoreAppCurrent)` automatically.
-
----
-
-### 8.2. Windows Command Equivalents
-
-- Use `build.cmd` instead of `build.sh` on Windows.
-- Set PATH: `set PATH=%CD%\.dotnet;%PATH%`
-- All other commands are similar unless otherwise noted.
-
----
-
-### 8.3. References
-
-- [`.editorconfig`](/.editorconfig)
-- [Building CoreCLR Guide](/docs/workflow/building/coreclr/README.md)
-- [Building and Running CoreCLR Tests](/docs/workflow/testing/coreclr/testing.md)
-- [Building Mono](/docs/workflow/building/mono/README.md)
-- [Running test suites using Mono](/docs/workflow/testing/mono/testing.md)
-- [Build Libraries](/docs/workflow/building/libraries/README.md)
-- [Testing Libraries](/docs/workflow/testing/libraries/testing.md)
-- [Build libraries for WebAssembly](/docs/workflow/building/libraries/webassembly-instructions.md)
-- [Testing Libraries on WebAssembly](/docs/workflow/testing/libraries/testing-wasm.md)
-- [Building and running host tests](/docs/workflow/testing/host/testing.md)
+- [Build Libraries](/docs/workflow/building/libraries/README.md) · [Test Libraries](/docs/workflow/testing/libraries/testing.md)
+- [Build CoreCLR](/docs/workflow/building/coreclr/README.md) · [Test CoreCLR](/docs/workflow/testing/coreclr/testing.md)
+- [Build Mono](/docs/workflow/building/mono/README.md) · [Test Mono](/docs/workflow/testing/mono/testing.md)
+- [WASM Build](/docs/workflow/building/libraries/webassembly-instructions.md) · [WASM Test](/docs/workflow/testing/libraries/testing-wasm.md)
+- [Host Tests](/docs/workflow/testing/host/testing.md)
