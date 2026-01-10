@@ -604,19 +604,30 @@ PalCreateDumpInitialize()
         }
 
         // Build the createdump program path for the command line
+        const char* DumpGeneratorName = "createdump";
+        char* dumpToolPath = nullptr;
         char* program = nullptr;
         
-        // Check if user provided a custom path to createdump tool
-        if (RhConfig::Environment::TryGetStringValue("DbgCreateDumpToolPath", &program))
+        // Check if user provided a custom path to createdump tool directory
+        if (RhConfig::Environment::TryGetStringValue("DbgCreateDumpToolPath", &dumpToolPath))
         {
-            // Validate that the specified path exists and is a regular file
-            struct stat fileData;
-            if (stat(program, &fileData) == -1 || !S_ISREG(fileData.st_mode))
+            // Use the provided directory path and concatenate with "createdump"
+            int programLen = strlen(dumpToolPath) + strlen(DumpGeneratorName) + 2; // +2 for '/' and '\0'
+            program = (char*)malloc(programLen);
+            if (program == nullptr)
             {
-                fprintf(stderr, "DOTNET_DbgCreateDumpToolPath is set but the specified createdump binary does not exist or is not a regular file: %s\n", program);
-                free(program);
-                return true;
+                free(dumpToolPath);
+                return false;
             }
+            strncpy(program, dumpToolPath, programLen);
+            // Ensure path ends with '/'
+            size_t pathLen = strlen(program);
+            if (pathLen > 0 && program[pathLen - 1] != '/')
+            {
+                strncat(program, "/", programLen - pathLen);
+            }
+            strncat(program, DumpGeneratorName, programLen - strlen(program));
+            free(dumpToolPath);
         }
         else
         {
@@ -626,7 +637,6 @@ PalCreateDumpInitialize()
             {
                 return false;
             }
-            const char* DumpGeneratorName = "createdump";
             int programLen = strlen(info.dli_fname) + strlen(DumpGeneratorName) + 1;
             program = (char*)malloc(programLen);
             if (program == nullptr)
