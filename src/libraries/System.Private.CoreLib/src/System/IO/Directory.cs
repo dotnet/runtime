@@ -171,7 +171,11 @@ namespace System.IO
             => GetFiles(path, searchPattern, EnumerationOptions.FromSearchOption(searchOption));
 
         public static string[] GetFiles(string path, string searchPattern, EnumerationOptions enumerationOptions)
-            => new List<string>(InternalEnumeratePaths(path, searchPattern, SearchTarget.Files, enumerationOptions)).ToArray();
+        {
+            ArrayBuilder<string> builder = default;
+            builder.AddRange(InternalEnumeratePaths(path, searchPattern, SearchTarget.Files, enumerationOptions));
+            return builder.ToArray();
+        }
 
         public static string[] GetDirectories(string path) => GetDirectories(path, "*", enumerationOptions: EnumerationOptions.Compatible);
 
@@ -181,7 +185,11 @@ namespace System.IO
             => GetDirectories(path, searchPattern, EnumerationOptions.FromSearchOption(searchOption));
 
         public static string[] GetDirectories(string path, string searchPattern, EnumerationOptions enumerationOptions)
-            => new List<string>(InternalEnumeratePaths(path, searchPattern, SearchTarget.Directories, enumerationOptions)).ToArray();
+        {
+            ArrayBuilder<string> builder = default;
+            builder.AddRange(InternalEnumeratePaths(path, searchPattern, SearchTarget.Directories, enumerationOptions));
+            return builder.ToArray();
+        }
 
         public static string[] GetFileSystemEntries(string path) => GetFileSystemEntries(path, "*", enumerationOptions: EnumerationOptions.Compatible);
 
@@ -191,7 +199,11 @@ namespace System.IO
             => GetFileSystemEntries(path, searchPattern, EnumerationOptions.FromSearchOption(searchOption));
 
         public static string[] GetFileSystemEntries(string path, string searchPattern, EnumerationOptions enumerationOptions)
-            => new List<string>(InternalEnumeratePaths(path, searchPattern, SearchTarget.Both, enumerationOptions)).ToArray();
+        {
+            ArrayBuilder<string> builder = default;
+            builder.AddRange(InternalEnumeratePaths(path, searchPattern, SearchTarget.Both, enumerationOptions));
+            return builder.ToArray();
+        }
 
         internal static IEnumerable<string> InternalEnumeratePaths(
             string path,

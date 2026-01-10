@@ -64,10 +64,41 @@ namespace System.Collections.Generic
         {
             if (_count == Capacity)
             {
-                EnsureCapacity(_count + 1);
+                Grow(_count + 1);
             }
 
             UncheckedAdd(item);
+        }
+
+        /// <summary>
+        /// Adds a range of items to the backing array, resizing it as necessary.
+        /// </summary>
+        /// <param name="items">The items to add.</param>
+        public void AddRange(IEnumerable<T> items)
+        {
+            Debug.Assert(items != null);
+
+            if (items is ICollection<T> collection)
+            {
+                int count = collection.Count;
+                if (count > 0)
+                {
+                    if (_count + count > Capacity)
+                    {
+                        Grow(_count + count);
+                    }
+
+                    collection.CopyTo(_array!, _count);
+                    _count += count;
+                }
+            }
+            else
+            {
+                foreach (T item in items)
+                {
+                    Add(item);
+                }
+            }
         }
 
         /// <summary>
@@ -136,7 +167,7 @@ namespace System.Collections.Generic
             _array![_count++] = item;
         }
 
-        private void EnsureCapacity(int minimum)
+        private void Grow(int minimum)
         {
             Debug.Assert(minimum > Capacity);
 
