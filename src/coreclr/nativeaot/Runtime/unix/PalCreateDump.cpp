@@ -619,14 +619,16 @@ PalCreateDumpInitialize()
                 free(dumpToolPath);
                 return false;
             }
-            strncpy(program, dumpToolPath, programLen);
+            // Initialize buffer and copy path
+            program[0] = '\0';
+            strncat(program, dumpToolPath, programLen - 1);
             // Ensure path ends with '/'
             size_t pathLen = strlen(program);
             if (pathLen > 0 && program[pathLen - 1] != '/')
             {
-                strncat(program, "/", programLen - pathLen);
+                strncat(program, "/", programLen - pathLen - 1);
             }
-            strncat(program, DumpGeneratorName, programLen - strlen(program));
+            strncat(program, DumpGeneratorName, programLen - strlen(program) - 1);
             free(dumpToolPath);
         }
         else
