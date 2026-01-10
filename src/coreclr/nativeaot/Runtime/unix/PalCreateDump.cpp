@@ -271,7 +271,14 @@ CreateCrashDump(
         // Execute the createdump program
         if (execv(argv[0], (char* const *)argv) == -1)
         {
-            fprintf(stderr, "Problem launching createdump (may not have execute permissions): execv(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
+            if (errno == ENOENT)
+            {
+                fprintf(stderr, "DOTNET_DbgEnableMiniDump is set and the createdump binary does not exist: %s\n", argv[0]);
+            }
+            else
+            {
+                fprintf(stderr, "Problem launching createdump (may not have execute permissions): execv(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
+            }
             exit(-1);
         }
     }
@@ -621,12 +628,6 @@ PalCreateDumpInitialize()
         }
         strncat(program, DumpGeneratorName, programLen);
 
-        struct stat fileData;
-        if (stat(program, &fileData) == -1 || !S_ISREG(fileData.st_mode))
-        {
-            fprintf(stderr, "DOTNET_DbgEnableMiniDump is set and the createdump binary does not exist: %s\n", program);
-            return true;
-        }
         g_szCreateDumpPath = program;
 
         // Format the app pid for the createdump command line
