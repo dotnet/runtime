@@ -3085,5 +3085,22 @@ namespace System.Tests
                 break;
             }
         }
+
+        [Fact]
+        public void TestParsingWithAmPrefixPm()
+        {
+            var culture = new CultureInfo("en-US");
+            DateTime dt = new DateTime(2023, 4, 17, 14, 30, 0);
+
+            // AM designator is a prefix of PM designator
+            culture.DateTimeFormat.AMDesignator = "aM";
+            culture.DateTimeFormat.PMDesignator = "aMP";
+
+            string formatted = dt.ToString("hh:mm tt", culture);
+            Assert.Equal("02:30 aMP", formatted);
+
+            DateTime parsedDateTime = DateTime.ParseExact(formatted, "hh:mm tt", culture);
+            Assert.Equal(dt.TimeOfDay, parsedDateTime.TimeOfDay);
+        }
     }
 }
