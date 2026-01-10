@@ -13,26 +13,26 @@ using Debug = System.Diagnostics.Debug;
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Represents a concrete method (fully instantiated) for the purpose of
-    /// tracking dependencies of inlinees.
+    /// Represents a non-concrete method (not fully instantiated) for the purpose of
+    /// tracking dependencies.
     /// </summary>
-    public class ShadowConcreteMethodNode : ShadowMethodNode, IMethodNode, ISymbolNodeWithLinkage
+    public class ShadowNonConcreteMethodNode : ShadowMethodNode, IMethodNode, ISymbolNodeWithLinkage
     {
-        public ShadowConcreteMethodNode(MethodDesc method, IMethodNode canonicalMethod)
+        public ShadowNonConcreteMethodNode(MethodDesc method, IMethodNode canonicalMethod)
             : base(method, canonicalMethod)
         {
-            Debug.Assert(!method.IsSharedByGenericInstantiations);
+            Debug.Assert(method.IsSharedByGenericInstantiations);
         }
 
-        protected override int ClassCode => -1440570971;
+        protected override int ClassCode => 2120942405;
 
         protected override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            var compare = comparer.Compare(Method, ((ShadowConcreteMethodNode)other).Method);
+            var compare = comparer.Compare(Method, ((ShadowNonConcreteMethodNode)other).Method);
             if (compare != 0)
                 return compare;
 
-            return comparer.Compare(CanonicalMethodNode, ((ShadowConcreteMethodNode)other).CanonicalMethodNode);
+            return comparer.Compare(CanonicalMethodNode, ((ShadowNonConcreteMethodNode)other).CanonicalMethodNode);
         }
     }
 }
