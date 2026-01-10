@@ -1011,6 +1011,11 @@ BOOL PrecodeStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     else if (stubKind == STUB_CODE_BLOCK_STUBPRECODE)
     {
         Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(stubStartAddress);
+        if (pPrecode == NULL)
+        {
+            return FALSE;
+        }
+
         switch (pPrecode->GetType())
         {
             case PRECODE_STUB:

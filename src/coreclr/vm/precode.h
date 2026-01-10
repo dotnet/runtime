@@ -864,4 +864,6 @@ extern InterleavedLoaderHeapConfig s_fixupStubPrecodeHeapConfig;
 
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
+TADDR GetInterpreterCodeFromInterpreterPrecodeIfPresent(TADDR codePointerMaybeInterpreterStub);
+
 #endif // __PRECODE_H__
