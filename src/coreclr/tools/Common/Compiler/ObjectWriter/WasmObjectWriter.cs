@@ -357,7 +357,7 @@ namespace ILCompiler.ObjectWriter
     }
 
     internal class WasmDataSection : WasmSection
-     {
+    {
         private List<WasmDataSegment> _segments;
         public List<WasmDataSegment> Segments => _segments;
         public WasmDataSection(List<WasmDataSegment> segments, Utf8String name)
