@@ -9,6 +9,17 @@
     <ILLinkTreatWarningsAsErrors>false</ILLinkTreatWarningsAsErrors>
   </PropertyGroup>
 
+  <!--
+    If this runner does not use the wrapper generator, assume it has the behavior of a classic standalone test:
+    - There is no test framework so no test reporting.
+    - The expected exit code is 100.
+  -->
+  <PropertyGroup Condition="'$(BuildAsStandalone)' == 'true' or '$(ReferenceXUnitWrapperGenerator)' == 'false'">
+    <IncludesTestRunner>false</IncludesTestRunner>
+    <ExpectedExitCode>100</ExpectedExitCode>
+    <EmitXHarnessNoRunnerMarkerFile>true</EmitXHarnessNoRunnerMarkerFile>
+  </PropertyGroup>
+
   <Target Name="_AddRuntimeLibsToPublishAssets" BeforeTargets="PrepareForPublish" DependsOnTargets="ResolveLibrariesRuntimeFilesFromLocalBuild;ResolveRuntimeFilesFromLocalBuild">
     <ItemGroup>
       <RuntimePackAsset Include="@(RuntimeFiles);@(LibrariesRuntimeFiles)" AssetType="runtime" />

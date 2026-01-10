@@ -344,8 +344,9 @@
     <ItemGroup>
       <!-- Exclude WASM support files. They can interfere with our discovery process and create extra work items that don't work. -->
       <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" Exclude="$(TestBinDir)**\supportFiles\*.MergedTestAssembly" />
+      <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssemblyForStress" Exclude="$(TestBinDir)**\supportFiles\*.MergedTestAssemblyForStress" />
 
-      <_MergedWrapperMarker Update="@(_MergedWrapperMarker)">
+      <_MergedWrapperMarker>
         <TestExecutionScriptPath Condition="'$(TargetsMobile)' != 'true'">$([System.IO.Path]::ChangeExtension('%(Identity)', '.$(TestScriptExtension)'))</TestExecutionScriptPath>
         <TestExecutionScriptPath Condition="'$(TargetsMobile)' == 'true'">%(RootDir)%(Directory)$(MobileAppBundleDirName)/$(_AppBundleRunScriptName).$(TestScriptExtension)</TestExecutionScriptPath>
       </_MergedWrapperMarker>
@@ -555,7 +556,7 @@
 
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
-      <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+      <_MergedWrapperName>$([System.Text.RegularExpressions.Regex]::Replace('%(_MergedWrapperMarker.FileName)', '\.MergedTestAssembly(ForStress)?\.\d+\.\d+$', ''))</_MergedWrapperName>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -578,6 +579,8 @@
       </_MergedPayloadFiles>
       <!-- Remove the placeholder test exclusion list here -->
       <_TestExclusionListPlaceholder Include="@(_MergedPayloadFiles)" Condition="$([System.String]::new('%(FileName)').EndsWith('TestExclusionList'))" />
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)ExpectedExitCode.txt" Condition="Exists('$(_MergedWrapperDirectory)ExpectedExitCode.txt')" FileRelativeToPayloadsRootDirectory="ExpectedExitCode.txt" />
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner" Condition="Exists('$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner')" FileRelativeToPayloadsRootDirectory="$(_MergedWrapperName).XHarnessNoRunner" />
       <_MergedPayloadFiles Remove="@(_TestExclusionListPlaceholder)" />
     </ItemGroup>
 
@@ -595,7 +598,7 @@
 
     <PropertyGroup Condition="'@(_MergedWrapperMarker)' != ''" >
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
-      <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+      <_MergedWrapperName>$([System.Text.RegularExpressions.Regex]::Replace('%(_MergedWrapperMarker.FileName)', '\.MergedTestAssembly(ForStress)?\.\d+\.\d+$', ''))</_MergedWrapperName>
     </PropertyGroup>
 
     <ItemGroup Condition="'@(_MergedWrapperMarker)' != ''" >
@@ -606,6 +609,8 @@
              MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
         <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)$(MobileAppBundleDirName)/', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
       </_MergedPayloadFiles>
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)ExpectedExitCode.txt" Condition="Exists('$(_MergedWrapperDirectory)ExpectedExitCode.txt')" FileRelativeToPayloadsRootDirectory="ExpectedExitCode.txt" />
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner" Condition="Exists('$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner')" FileRelativeToPayloadsRootDirectory="$(_MergedWrapperName).XHarnessNoRunner" />
       <!-- Remove the placeholder test exclusion list here -->
       <_TestExclusionListPlaceholder Include="@(_MergedPayloadFiles)" Condition="$([System.String]::new('%(FileName)').EndsWith('TestExclusionList'))" />
       <_MergedPayloadFiles Remove="@(_TestExclusionListPlaceholder)" />
@@ -629,7 +634,7 @@
   <Target Name="ZipLegacyPayloadDirectory" AfterTargets="PrepareLegacyPayloadDirectories" Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">
     <ItemGroup>
       <LegacyPayloads Include="$([System.IO.Directory]::GetDirectories($(LegacyPayloadsRootDirectory)))" Condition="Exists('$(LegacyPayloadsRootDirectory)')" />
-      <LegacyPayloads Update="@(LegacyPayloads)">
+      <LegacyPayloads>
         <PayloadGroup>$([MSBuild]::MakeRelative($(LegacyPayloadsRootDirectory), %(FullPath)))</PayloadGroup>
         <PayloadDirectory>%(FullPath)</PayloadDirectory>
       </LegacyPayloads>
@@ -646,7 +651,7 @@
           Condition="'$(TargetsBrowser)' == 'true' or ('$(TargetsAppleMobile)' == 'true' and '$(NeedsToBuildAppsOnHelix)' == 'true')">
     <ItemGroup>
       <MergedPayloads Include="$([System.IO.Directory]::GetDirectories($(MergedPayloadsRootDirectory)))" Condition="Exists('$(MergedPayloadsRootDirectory)')" />
-      <MergedPayloads Update="@(MergedPayloads)">
+      <MergedPayloads>
         <PayloadGroup>$([MSBuild]::MakeRelative($(MergedPayloadsRootDirectory), %(FullPath)))</PayloadGroup>
         <PayloadDirectory>%(FullPath)</PayloadDirectory>
       </MergedPayloads>
@@ -865,6 +870,13 @@
       <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(ApkFileName).apk</ApkPath>
       <AppBundlePath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).app</AppBundlePath>
     </MergedPayloads>
+    <MergedPayloads Update="@(MergedPayloads)">
+      <ExpectedExitCode Condition="Exists('$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/ExpectedExitCode.txt')">$([System.IO.File]::ReadAllText('$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/ExpectedExitCode.txt').Trim())</ExpectedExitCode>
+    </MergedPayloads>
+    <!-- For tests where we aren't using the XHarness test runner, specify as such on the payload item. -->
+    <MergedPayloads Update="@(MergedPayloads)">
+      <IncludesTestRunner Condition="$([System.IO.File]::Exists('$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).XHarnessNoRunner'))">false</IncludesTestRunner>
+    </MergedPayloads>
   </ItemGroup>
 
   <PropertyGroup>
@@ -998,7 +1010,7 @@
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
       <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
     </HelixWorkItem>
-
+    
     <XHarnessApkToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAndroid)' == 'true'">
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
       <CustomCommands>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
@@ -1009,10 +1021,6 @@
       <AndroidPackageName>net.dot.%(ApkFileName)</AndroidPackageName>
       <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
-    </XHarnessApkToTest>
-
-    <XHarnessApkToTest Update="@(XHarnessApkToTest)" Condition="'$(TargetsAndroid)' == 'true'">
-      <ExpectedExitCode Condition="Exists('%(PayloadDirectory)/ExpectedExitCode.txt')">$([System.IO.File]::ReadAllText('%(PayloadDirectory)/ExpectedExitCode.txt').Trim())</ExpectedExitCode>
     </XHarnessApkToTest>
 
     <XHarnessAppBundleToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAppleMobile)' == 'true'">
