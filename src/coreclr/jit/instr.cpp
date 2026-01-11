@@ -2104,6 +2104,14 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         case TYP_REF:
         case TYP_BYREF:
             return ins_Load(TYP_I_IMPL, aligned);
+        case TYP_BYTE:
+            return INS_i32_load8_s;
+        case TYP_UBYTE:
+            return INS_i32_load8_u;
+        case TYP_SHORT:
+            return INS_i32_load16_s;
+        case TYP_USHORT:
+            return INS_i32_load16_u;
         case TYP_INT:
             return INS_i32_load;
         case TYP_LONG:
@@ -2507,6 +2515,12 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         case TYP_REF:
         case TYP_BYREF:
             return ins_Store(TYP_I_IMPL, aligned);
+        case TYP_BYTE:
+        case TYP_UBYTE:
+            return INS_i32_store8;
+        case TYP_SHORT:
+        case TYP_USHORT:
+            return INS_i32_store16;
         case TYP_INT:
             return INS_i32_store;
         case TYP_LONG:

@@ -11,11 +11,13 @@
 
 #include "corjit.h"
 
-#ifndef TARGET_UNIX
+#ifdef TARGET_WASM
+#define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT 0
+#elif !defined(TARGET_UNIX)
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((32*1024)-1)   // when generating JIT code
-#else // !TARGET_UNIX
+#else // TARGET_WASM or !TARGET_UNIX
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((GetOsPageSize() / 2) - 1)
-#endif // !TARGET_UNIX
+#endif // TARGET_UNIX
 #include "pgo.h"
 
 class ILCodeStream;
@@ -970,7 +972,7 @@ public:
     void SetDebugInfo(PTR_BYTE pDebugInfo) override;
 
     LPVOID GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig) override;
-    
+
     virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) override final;
 };
 #endif // FEATURE_INTERPRETER
