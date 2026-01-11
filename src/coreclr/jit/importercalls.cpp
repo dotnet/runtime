@@ -1003,6 +1003,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 if ((callInfo->methodFlags & CORINFO_FLG_INTRINSIC) != 0)
                 {
                     call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
+
+                    GenTree* foldedCall = gtFoldExprCall(call->AsCall());
+                    if ((foldedCall != call) || !call->IsCall())
+                    {
+                        impPushOnStack(foldedCall, typeInfo(foldedCall->TypeGet()));
+                        return foldedCall->TypeGet();
+                    }
                 }
             }
         }
@@ -1571,7 +1578,7 @@ DONE_CALL:
 }
 
 //------------------------------------------------------------------------
-// impThrowIfNull: Remove redundandant boxing from ArgumentNullException_ThrowIfNull
+// impThrowIfNull: Remove redundant boxing from ArgumentNullException_ThrowIfNull
 //    it is done for Tier0 where we can't remove it without inlining otherwise.
 //
 // Arguments:
@@ -10344,7 +10351,11 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 {
                     if (strcmp(className, "Enum") == 0)
                     {
-                        if (strcmp(methodName, "HasFlag") == 0)
+                        if (strcmp(methodName, "Equals") == 0)
+                        {
+                            result = NI_System_Enum_Equals;
+                        }
+                        else if (strcmp(methodName, "HasFlag") == 0)
                         {
                             result = NI_System_Enum_HasFlag;
                         }
