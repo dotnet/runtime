@@ -88,6 +88,7 @@ namespace Thunkerator
         private SortedDictionary<string, int> _r2rNamesByName = new SortedDictionary<string, int>();
         private SortedDictionary<int, string> _r2rNamesByNumber = new SortedDictionary<int, string>();
         private SortedSet<string> _architectures = new SortedSet<string>();
+        private Dictionary<string, string> _architectureManagedNamespace = new Dictionary<string, string>();
         private Dictionary<string, HashSet<string>> _architectureJitNames = new Dictionary<string, HashSet<string>>();
         private Dictionary<string, HashSet<string>> _architectureVectorInstructionSetJitNames = new Dictionary<string, HashSet<string>>();
         private HashSet<string> _64BitArchitectures = new HashSet<string>();
@@ -159,7 +160,7 @@ namespace Thunkerator
                     switch (command[0])
                     {
                         case "definearch":
-                            if (command.Length != 5)
+                            if (command.Length != 6)
                                 throw new Exception($"Incorrect number of args for definearch {command.Length}");
                             ArchitectureEncountered(command[1]);
                             if (command[2] == "64Bit")
@@ -172,6 +173,10 @@ namespace Thunkerator
                             }
                             _64BitVariantArchitectureJitNameSuffix[command[1]] = command[3];
                             _64BitVariantArchitectureManagedNameSuffix[command[1]] = command[4];
+                            if (command[5] != "")
+                            {
+                                _architectureManagedNamespace[command[1]] = $"System.Runtime.Intrinsics.{command[5]}";
+                            }
                             break;
                         case "instructionset":
                             if (command.Length != 7)
@@ -388,6 +393,7 @@ namespace Internal.ReadyToRunConstants
 // FROM /src/coreclr/tools/Common/JitInterface/ThunkGenerator/InstructionSetDesc.txt
 // using /src/coreclr/tools/Common/JitInterface/ThunkGenerator/gen.bat
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -818,20 +824,28 @@ namespace Internal.JitInterface
             string platformIntrinsicNamespace;
 
             switch (targetArch)
+            {");
+
+
+            foreach (string architecture in _architectures)
             {
-                case TargetArchitecture.ARM64:
-                    platformIntrinsicNamespace = ""System.Runtime.Intrinsics.Arm"";
-                    break;
+                if (!_architectureManagedNamespace.ContainsKey(architecture))
+                    continue;
 
-                case TargetArchitecture.X64:
-                case TargetArchitecture.X86:
-                    platformIntrinsicNamespace = ""System.Runtime.Intrinsics.X86"";
+                string ns = _architectureManagedNamespace[architecture];
+                tr.Write($@"
+                case TargetArchitecture.{architecture}:
+                    platformIntrinsicNamespace = ""{ns}"";
                     break;
+");
+            }
 
+            tr.Write(@"
                 default:
                     return InstructionSet.ILLEGAL;
             }
-
+");
+            tr.Write(@"
             if (namespaceName != platformIntrinsicNamespace)
                 return InstructionSet.ILLEGAL;
 
@@ -893,14 +907,95 @@ namespace Internal.JitInterface
 ");
                 }
                 tr.Write($@"
-                }}
-                break;
-");
+                    default:
+                        return InstructionSet.ILLEGAL;
+                }}");
             }
 
             tr.Write(@"
             }
             return InstructionSet.ILLEGAL;
+        }
+
+        public static IEnumerable<MetadataType> LookupPlatformIntrinsicTypes(TypeSystemContext context, InstructionSet instructionSet)
+        {
+            switch ((instructionSet, context.Target.Architecture))
+            {");
+
+            foreach (string architecture in _architectures.Where(_architectureManagedNamespace.ContainsKey))
+            {
+                var ns = _architectureManagedNamespace[architecture];
+                var archInstructionSets = _instructionSets.Where(isa => isa.Architecture == architecture && !string.IsNullOrEmpty(isa.ManagedName)).GroupBy(isa => isa.JitName).ToArray();
+                foreach (var instructionSets in archInstructionSets)
+                {
+                    string jitName = instructionSets.Key;
+                    tr.Write($@"
+                case (InstructionSet.{architecture}_{jitName}, TargetArchitecture.{architecture}):");
+
+                    bool hasSixtyFourBitInstructionSet = _64bitVariants[architecture].Contains(jitName) && _64BitArchitectures.Contains(architecture);
+                    if (hasSixtyFourBitInstructionSet)
+                    {
+                        tr.Write($@"
+                case (InstructionSet.{architecture}_{jitName}_{ArchToInstructionSetSuffixArch(architecture)}, TargetArchitecture.{architecture}):");
+                    }
+
+                    foreach (var instructionSet in instructionSets)
+                    {
+                        string managedName = instructionSet.ManagedName;
+                        if (managedName.Contains('_'))
+                        {
+                            // This is a nested type
+                            string parentName = managedName[..managedName.IndexOf('_')];
+                            string nestedName = managedName[(managedName.IndexOf('_') + 1)..];
+                            tr.Write($@"
+                {{
+                    var parentType = context.SystemModule.GetType(""{ns}""u8, ""{parentName}""u8, true);
+                    yield return parentType;
+                    yield return parentType.GetNestedType(""{nestedName}""u8);");
+
+                            if (hasSixtyFourBitInstructionSet)
+                            {
+                                string sixtyFourBitSuffix = ArchToManagedInstructionSetSuffixArch(architecture);
+                                tr.Write($@"
+                    if (instructionSet == InstructionSet.{architecture}_{instructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)})
+                    {{
+                        yield return parentType.GetNestedType(""{nestedName}_{sixtyFourBitSuffix}""u8);
+                    }}");
+                            }
+
+                        tr.Write($@"
+                }}");
+                        }
+                        else
+                        {
+                            tr.Write($@"
+                {{
+                    var type = context.SystemModule.GetType(""{ns}""u8, ""{managedName}""u8, true);
+                    yield return type;");
+
+                            if (hasSixtyFourBitInstructionSet)
+                            {
+                                string sixtyFourBitSuffix = ArchToManagedInstructionSetSuffixArch(architecture);
+                                tr.Write($@"
+                    if (instructionSet == InstructionSet.{architecture}_{instructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)})
+                    {{
+                        yield return type.GetNestedType(""{sixtyFourBitSuffix}""u8);
+                    }}");
+                            }
+
+                        tr.Write($@"
+                }}");
+                        }
+                    }
+
+                    tr.Write($@"
+                break;
+");
+                }
+            }
+
+            tr.Write(@"
+            }
         }
     }
 }
