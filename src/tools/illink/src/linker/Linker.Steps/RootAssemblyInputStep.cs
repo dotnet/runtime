@@ -7,7 +7,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-    public class RootAssemblyInput : BaseStep
+    internal class RootAssemblyInput : BaseStep
     {
         readonly string fileName;
         readonly AssemblyRootMode rootMode;

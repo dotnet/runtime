@@ -40,7 +40,7 @@ using Mono.Cecil;
 namespace Mono.Linker.Steps
 {
 
-    public class OutputStep : BaseStep
+    internal class OutputStep : BaseStep
     {
         readonly List<string> assembliesWritten;
 

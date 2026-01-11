@@ -5,7 +5,7 @@ using System.IO;
 
 namespace Mono.Linker.Steps
 {
-    public class LinkAttributesStep : ProcessLinkerXmlStepBase
+    internal class LinkAttributesStep : ProcessLinkerXmlStepBase
     {
         public LinkAttributesStep(Stream documentStream, string xmlDocumentLocation)
             : base(documentStream, xmlDocumentLocation)
