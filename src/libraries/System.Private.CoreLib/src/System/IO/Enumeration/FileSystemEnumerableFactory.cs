@@ -179,6 +179,93 @@ namespace System.IO.Enumeration
                         };
                     }
                 }
+                else
+                {
+                    // Check for prefix*suffix or prefix???suffix patterns
+                    int starIndex = expression.IndexOf('*');
+                    if (starIndex > 0)
+                    {
+                        // Pattern: prefix*suffix (StartsWith + EndsWith)
+                        ReadOnlySpan<char> prefix = expression.AsSpan(0, starIndex);
+                        ReadOnlySpan<char> suffix = expression.AsSpan(starIndex + 1);
+                        if (!prefix.ContainsAny(wildcards) && !suffix.ContainsAny(wildcards))
+                        {
+                            int prefixLength = starIndex;
+                            int suffixLength = expression.Length - starIndex - 1;
+                            int minLength = prefixLength + suffixLength;
+                            return entryType switch
+                            {
+                                FileSystemEntryType.Files => (ref FileSystemEntry entry) =>
+                                    !entry.IsDirectory &&
+                                    entry.FileName.Length >= minLength &&
+                                    entry.FileName.StartsWith(expression.AsSpan(0, prefixLength), comparison) &&
+                                    entry.FileName.EndsWith(expression.AsSpan(prefixLength + 1), comparison),
+                                FileSystemEntryType.Directories => (ref FileSystemEntry entry) =>
+                                    entry.IsDirectory &&
+                                    entry.FileName.Length >= minLength &&
+                                    entry.FileName.StartsWith(expression.AsSpan(0, prefixLength), comparison) &&
+                                    entry.FileName.EndsWith(expression.AsSpan(prefixLength + 1), comparison),
+                                _ => (ref FileSystemEntry entry) =>
+                                    entry.FileName.Length >= minLength &&
+                                    entry.FileName.StartsWith(expression.AsSpan(0, prefixLength), comparison) &&
+                                    entry.FileName.EndsWith(expression.AsSpan(prefixLength + 1), comparison)
+                            };
+                        }
+                    }
+                    else
+                    {
+                        // Check for prefix???suffix pattern (one or more ?s between prefix and suffix)
+                        // Only apply this optimization for Simple mode where '?' remains as '?'
+                        // For Win32 mode, '?' is translated to '>' which could also be a literal filename char on Unix
+                        if (!useExtendedWildcards)
+                        {
+                            int questionIndex = expression.IndexOf('?');
+                            if (questionIndex > 0)
+                            {
+                                ReadOnlySpan<char> prefix = expression.AsSpan(0, questionIndex);
+                                if (!prefix.ContainsAny(wildcards))
+                                {
+                                    // Count consecutive ?s
+                                    int questionCount = 0;
+                                    int i = questionIndex;
+                                    while (i < expression.Length && expression[i] == '?')
+                                    {
+                                        questionCount++;
+                                        i++;
+                                    }
+
+                                    if (i <= expression.Length)
+                                    {
+                                        ReadOnlySpan<char> suffix = expression.AsSpan(i);
+                                        if (!suffix.ContainsAny(wildcards))
+                                        {
+                                            int prefixLength = questionIndex;
+                                            int suffixStart = questionIndex + questionCount;
+                                            int exactLength = prefixLength + questionCount + suffix.Length;
+                                            return entryType switch
+                                            {
+                                                FileSystemEntryType.Files => (ref FileSystemEntry entry) =>
+                                                    !entry.IsDirectory &&
+                                                    entry.FileName.Length == exactLength &&
+                                                    entry.FileName.StartsWith(expression.AsSpan(0, prefixLength), comparison) &&
+                                                    entry.FileName.EndsWith(expression.AsSpan(suffixStart), comparison),
+                                                FileSystemEntryType.Directories => (ref FileSystemEntry entry) =>
+                                                    entry.IsDirectory &&
+                                                    entry.FileName.Length == exactLength &&
+                                                    entry.FileName.StartsWith(expression.AsSpan(0, prefixLength), comparison) &&
+                                                    entry.FileName.EndsWith(expression.AsSpan(suffixStart), comparison),
+                                                _ => (ref FileSystemEntry entry) =>
+                                                    entry.FileName.Length == exactLength &&
+                                                    entry.FileName.StartsWith(expression.AsSpan(0, prefixLength), comparison) &&
+                                                    entry.FileName.EndsWith(expression.AsSpan(suffixStart), comparison)
+                                            };
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             // Fall back to the full pattern matching algorithm
