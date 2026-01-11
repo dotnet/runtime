@@ -5,6 +5,8 @@
     <RootNamespace>System.Composition</RootNamespace>
     <IsTrimmable>false</IsTrimmable>
     <IsAotCompatible>false</IsAotCompatible>
+    <!-- Need ILLink task to generate resource substitutions -->
+    <UseLiveILLink>true</UseLiveILLink>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
