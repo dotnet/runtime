@@ -586,6 +586,9 @@ namespace Internal.TypeSystem.Ecma
                     case 0:
                         layoutKind = MetadataLayoutKind.CStruct;
                         break;
+                    case 1:
+                        layoutKind = MetadataLayoutKind.CUnion;
+                        break;
                     default:
                         ThrowHelper.ThrowTypeLoadException(this);
                         return default; // Invalid kind value
