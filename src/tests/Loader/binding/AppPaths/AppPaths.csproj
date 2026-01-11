@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="AppPaths.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- <ProjectReference Include="$(TestLibraryProjectPath)" /> -->
+    <ProjectReference Include="AssemblyToLoad.csproj" />
+  </ItemGroup>
+</Project>

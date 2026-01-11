@@ -18,7 +18,6 @@ class CustomAssemblyBinder final : public AssemblyBinder
 public:
 
     HRESULT BindUsingPEImage(PEImage* pPEImage,
-        bool excludeAppPaths,
         BINDER_SPACE::Assembly** ppAssembly) override;
 
     HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,

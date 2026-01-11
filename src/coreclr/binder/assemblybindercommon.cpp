@@ -1155,7 +1155,6 @@ HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pAs
 HRESULT AssemblyBinderCommon::BindUsingPEImage(/* in */  AssemblyBinder* pBinder,
                                                /* in */  BINDER_SPACE::AssemblyName *pAssemblyName,
                                                /* in */  PEImage            *pPEImage,
-                                               /* in */  bool               excludeAppPaths,
                                                /* [retval] [out] */  Assembly **ppAssembly)
 {
     HRESULT hr = E_FAIL;
@@ -1177,55 +1176,45 @@ Retry:
         // Lock the application context
         CRITSEC_Holder contextLock(pApplicationContext->GetCriticalSectionCookie());
 
-        // Attempt uncached bind and register stream if possible
-        // We skip version compatibility check - so assemblies with same simple name will be reported
-        // as a successful bind. Below we compare MVIDs in that case instead (which is a more precise equality check).
-        hr = BindByName(pApplicationContext,
-                        pAssemblyName,
-                        true,  // skipFailureCaching
-                        true,  // skipVersionCompatibilityCheck
-                        excludeAppPaths, // excludeAppPaths
-                        &bindResult);
+        // Check if an assembly with the same name was already loaded.
+        Assembly *pAssembly = NULL;
+        hr = FindInExecutionContext(pApplicationContext, pAssemblyName, &pAssembly);
 
-        if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
+        if (hr == S_FALSE && pAssembly == NULL)
         {
+            // No assembly with the same name was already loaded, so load from the stream
             IF_FAIL_GO(CreateImageAssembly(pPEImage, &bindResult));
         }
-        else if (hr == S_OK)
+        else if (hr == S_OK && pAssembly != NULL)
         {
-            if (bindResult.HaveResult())
+            // An assembly with the same name was already loaded. We need to check the MVID
+            // to confirm it is the same assembly as the one being requested.
+
+            GUID incomingMVID;
+            GUID boundMVID;
+
+            // GetMVID can throw exception
+            EX_TRY
             {
-                // Attempt was made to load an assembly that has the same name as a previously loaded one. Since same name
-                // does not imply the same assembly, we will need to check the MVID to confirm it is the same assembly as being
-                // requested.
-
-                GUID incomingMVID;
-                GUID boundMVID;
-
-                // GetMVID can throw exception
-                EX_TRY
-                {
-                    pPEImage->GetMVID(&incomingMVID);
-                    bindResult.GetAssembly()->GetPEImage()->GetMVID(&boundMVID);
-                }
-                EX_CATCH
-                {
-                    hr = GET_EXCEPTION()->GetHR();
-                    goto Exit;
-                }
-                EX_END_CATCH
-
-
-                mvidMismatch = incomingMVID != boundMVID;
-                if (mvidMismatch)
-                {
-                    // MVIDs do not match, so fail the load.
-                    IF_FAIL_GO(COR_E_FILELOAD);
-                }
-
-                // MVIDs match - request came in for the same assembly that was previously loaded.
-                // Let it through...
+                pPEImage->GetMVID(&incomingMVID);
+                pAssembly->GetPEImage()->GetMVID(&boundMVID);
             }
+            EX_CATCH
+            {
+                hr = GET_EXCEPTION()->GetHR();
+                goto Exit;
+            }
+            EX_END_CATCH
+
+            mvidMismatch = incomingMVID != boundMVID;
+            if (mvidMismatch)
+            {
+                // MVIDs do not match, so fail the load.
+                IF_FAIL_GO(COR_E_FILELOAD);
+            }
+
+            // MVIDs match - the assembly was previously loaded.
+            bindResult.SetResult(pAssembly, /*isInContext*/ true);
         }
 
         // Remember the post-bind version of the context
