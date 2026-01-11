@@ -159,6 +159,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(Class_ExtraProperty_JsonElementDictionaryExtData))]
         [JsonSerializable(typeof(Class_ManyParameters_ExtraProperty_ExtData))]
         [JsonSerializable(typeof(ClassWithRequiredProperty))]
+        [JsonSerializable(typeof(TypeWith_InParameters))]
+        [JsonSerializable(typeof(TypeWith_MixedByRefParameters))]
+        [JsonSerializable(typeof(TypeWith_LargeInParameters))]
         internal sealed partial class ConstructorTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -313,6 +316,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(Class_ExtraProperty_JsonElementDictionaryExtData))]
         [JsonSerializable(typeof(Class_ManyParameters_ExtraProperty_ExtData))]
         [JsonSerializable(typeof(ClassWithRequiredProperty))]
+        [JsonSerializable(typeof(TypeWith_InParameters))]
+        [JsonSerializable(typeof(TypeWith_MixedByRefParameters))]
+        [JsonSerializable(typeof(TypeWith_LargeInParameters))]
         internal sealed partial class ConstructorTestsContext_Default : JsonSerializerContext
         {
         }

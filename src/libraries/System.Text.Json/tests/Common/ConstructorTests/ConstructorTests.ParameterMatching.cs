@@ -1841,5 +1841,147 @@ namespace System.Text.Json.Serialization.Tests
         {
             public required string? Bar { get; set; }
         }
+
+        [Fact]
+        public async Task DeserializeType_WithInParameters()
+        {
+            string json = @"{""DateTime"":""2020-12-15T00:00:00"",""TimeSpan"":""01:02:03""}";
+            TypeWith_InParameters result = await Serializer.DeserializeWrapper<TypeWith_InParameters>(json);
+            Assert.Equal(new DateTime(2020, 12, 15), result.DateTime);
+            Assert.Equal(new TimeSpan(1, 2, 3), result.TimeSpan);
+        }
+
+        public class TypeWith_InParameters
+        {
+            public TypeWith_InParameters(in DateTime dateTime, in TimeSpan timeSpan)
+            {
+                DateTime = dateTime;
+                TimeSpan = timeSpan;
+            }
+
+            public DateTime DateTime { get; set; }
+            public TimeSpan TimeSpan { get; set; }
+        }
+
+        [Fact]
+        public async Task DeserializeType_WithMixedByRefParameters()
+        {
+            string json = @"{""Value1"":42,""Value2"":""hello"",""Value3"":3.14,""Value4"":true}";
+            TypeWith_MixedByRefParameters result = await Serializer.DeserializeWrapper<TypeWith_MixedByRefParameters>(json);
+            Assert.Equal(42, result.Value1);
+            Assert.Equal("hello", result.Value2);
+            Assert.Equal(3.14, result.Value3);
+            Assert.True(result.Value4);
+        }
+
+        public class TypeWith_MixedByRefParameters
+        {
+            public TypeWith_MixedByRefParameters(in int value1, string value2, in double value3, bool value4)
+            {
+                Value1 = value1;
+                Value2 = value2;
+                Value3 = value3;
+                Value4 = value4;
+            }
+
+            public int Value1 { get; set; }
+            public string Value2 { get; set; }
+            public double Value3 { get; set; }
+            public bool Value4 { get; set; }
+        }
+
+        [Fact]
+        public async Task DeserializeType_WithLargeInParameters()
+        {
+            string json = @"{""A"":1,""B"":2,""C"":3,""D"":4,""E"":5}";
+            TypeWith_LargeInParameters result = await Serializer.DeserializeWrapper<TypeWith_LargeInParameters>(json);
+            Assert.Equal(1, result.A);
+            Assert.Equal(2, result.B);
+            Assert.Equal(3, result.C);
+            Assert.Equal(4, result.D);
+            Assert.Equal(5, result.E);
+        }
+
+        public class TypeWith_LargeInParameters
+        {
+            public TypeWith_LargeInParameters(in int a, in int b, in int c, in int d, in int e)
+            {
+                A = a;
+                B = b;
+                C = c;
+                D = d;
+                E = e;
+            }
+
+            public int A { get; set; }
+            public int B { get; set; }
+            public int C { get; set; }
+            public int D { get; set; }
+            public int E { get; set; }
+        }
+
+        [Fact]
+        public async Task DeserializeType_WithRefParameters()
+        {
+            // ref parameters work with reflection-based serialization but not source generation.
+            // Source generation would require emitting 'ref' keyword at call sites.
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                return;
+            }
+
+            string json = @"{""Value1"":42,""Value2"":""hello""}";
+            TypeWith_RefParameters result = await Serializer.DeserializeWrapper<TypeWith_RefParameters>(json);
+            Assert.Equal(42, result.Value1);
+            Assert.Equal("hello", result.Value2);
+        }
+
+        public class TypeWith_RefParameters
+        {
+            public TypeWith_RefParameters(ref int value1, ref string value2)
+            {
+                Value1 = value1;
+                Value2 = value2;
+            }
+
+            public int Value1 { get; set; }
+            public string Value2 { get; set; }
+        }
+
+        [Fact]
+        public async Task DeserializeType_WithOutParameters()
+        {
+            // out parameters work with reflection-based serialization but the constructor
+            // receives default values since out parameters are meant to provide output,
+            // not receive input. Source generation doesn't support out parameters.
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                return;
+            }
+
+            string json = @"{""Value1"":42,""Value2"":""hello""}";
+            TypeWith_OutParameters result = await Serializer.DeserializeWrapper<TypeWith_OutParameters>(json);
+            // The constructor assigns its own values to the out parameters, ignoring
+            // any values that might be passed. The properties get set from those assigned values.
+            Assert.Equal(99, result.Value1);
+            Assert.Equal("default", result.Value2);
+        }
+
+        public class TypeWith_OutParameters
+        {
+            public TypeWith_OutParameters(out int value1, out string value2)
+            {
+                // Out parameters must be assigned by the constructor before use.
+                // The serializer passes addresses for the deserialized values, but
+                // since these are out parameters, the constructor assigns new values.
+                value1 = 99;
+                value2 = "default";
+                Value1 = value1;
+                Value2 = value2;
+            }
+
+            public int Value1 { get; set; }
+            public string Value2 { get; set; }
+        }
     }
 }

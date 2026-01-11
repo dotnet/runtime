@@ -301,10 +301,17 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowNotSupportedException_ConstructorContainsNullParameterNames(typeInfo.Converter.ConstructorInfo.DeclaringType);
                 }
 
+                // For byref parameters (in/ref/out), use the underlying element type.
+                Type parameterType = reflectionInfo.ParameterType;
+                if (parameterType.IsByRef)
+                {
+                    parameterType = parameterType.GetElementType()!;
+                }
+
                 JsonParameterInfoValues jsonInfo = new()
                 {
                     Name = reflectionInfo.Name,
-                    ParameterType = reflectionInfo.ParameterType,
+                    ParameterType = parameterType,
                     Position = reflectionInfo.Position,
                     HasDefaultValue = reflectionInfo.HasDefaultValue,
                     DefaultValue = reflectionInfo.GetDefaultValue(),
