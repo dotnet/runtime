@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using FluentAssertions;
 using System;
 using System.IO;
 using Microsoft.DotNet.CoreSetup.Test;
@@ -31,7 +30,7 @@ namespace HostActivation.Tests
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute();
-            executedCommand.Should().ExitWith(Constants.ErrorCode.AppHostExeNotBoundFailure);
+            Assert.Equal(Constants.ErrorCode.AppHostExeNotBoundFailure, executedCommand.ExitCode);
         }
     }
 }

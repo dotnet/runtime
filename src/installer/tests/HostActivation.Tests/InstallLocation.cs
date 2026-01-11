@@ -3,7 +3,6 @@
 
 using System;
 using System.IO;
-using FluentAssertions;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.CoreSetup.Test.HostActivation;
@@ -31,7 +30,7 @@ namespace HostActivation.Tests
                 .DotNetRoot(HostTestContext.BuiltDotNet.BinPath, arch)
                 .Execute()
                 .Should().Pass()
-                .And.HaveUsedDotNetRootInstallLocation(HostTestContext.BuiltDotNet.BinPath, HostTestContext.BuildRID, arch);
+                 .HaveUsedDotNetRootInstallLocation(HostTestContext.BuiltDotNet.BinPath, HostTestContext.BuildRID, arch);
         }
 
         [Fact]
@@ -43,7 +42,7 @@ namespace HostActivation.Tests
                 .DotNetRoot(HostTestContext.BuiltDotNet.BinPath)
                 .Execute()
                 .Should().Pass()
-                .And.HaveUsedDotNetRootInstallLocation(HostTestContext.BuiltDotNet.BinPath, HostTestContext.BuildRID);
+                 .HaveUsedDotNetRootInstallLocation(HostTestContext.BuiltDotNet.BinPath, HostTestContext.BuildRID);
         }
 
         [Fact]
@@ -57,8 +56,8 @@ namespace HostActivation.Tests
                 .DotNetRoot(dotnet, arch)
                 .Execute()
                 .Should().Pass()
-                .And.HaveUsedDotNetRootInstallLocation(dotnet, HostTestContext.BuildRID, arch)
-                .And.NotHaveStdErrContaining("Using environment variable DOTNET_ROOT=");
+                 .HaveUsedDotNetRootInstallLocation(dotnet, HostTestContext.BuildRID, arch)
+                 .NotHaveStdErrContaining("Using environment variable DOTNET_ROOT=");
         }
 
         [Fact]
@@ -79,8 +78,8 @@ namespace HostActivation.Tests
                     .DotNetRoot(dotnet, arch)
                     .Execute()
                     .Should().Pass()
-                    .And.HaveUsedDotNetRootInstallLocation(dotnet, HostTestContext.BuildRID, arch)
-                    .And.NotHaveStdErrContaining("Using global install location");
+                     .HaveUsedDotNetRootInstallLocation(dotnet, HostTestContext.BuildRID, arch)
+                     .NotHaveStdErrContaining("Using global install location");
             }
         }
 
@@ -97,10 +96,10 @@ namespace HostActivation.Tests
                     HostTestContext.BuiltDotNet.BinPath)
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdErrContaining("Did not find [DOTNET_ROOT] directory [non_existent_path]")
+                 .HaveStdErrContaining("Did not find [DOTNET_ROOT] directory [non_existent_path]")
                 // If DOTNET_ROOT points to a folder that does not exist, we fall back to the global install path.
-                .And.HaveUsedGlobalInstallLocation(HostTestContext.BuiltDotNet.BinPath)
-                .And.HaveStdOutContaining("Hello World");
+                 .HaveUsedGlobalInstallLocation(HostTestContext.BuiltDotNet.BinPath)
+                 .HaveStdOutContaining("Hello World");
         }
 
         [Fact]
@@ -116,9 +115,9 @@ namespace HostActivation.Tests
                     HostTestContext.BuiltDotNet.BinPath)
                 .Execute()
                 .Should().Fail()
-                .And.HaveUsedDotNetRootInstallLocation(app.Location, HostTestContext.BuildRID)
+                 .HaveUsedDotNetRootInstallLocation(app.Location, HostTestContext.BuildRID)
                 // If DOTNET_ROOT points to a folder that exists we assume that there's a dotnet installation in it
-                .And.HaveStdErrContaining($"The required library {Binaries.HostFxr.FileName} could not be found.");
+                 .HaveStdErrContaining($"The required library {Binaries.HostFxr.FileName} could not be found.");
         }
 
         [Fact]
@@ -136,7 +135,7 @@ namespace HostActivation.Tests
                     .DotNetRoot(null)
                     .Execute()
                     .Should().Pass()
-                    .And.HaveUsedGlobalInstallLocation(HostTestContext.BuiltDotNet.BinPath);
+                     .HaveUsedGlobalInstallLocation(HostTestContext.BuiltDotNet.BinPath);
             }
         }
 
@@ -155,8 +154,8 @@ namespace HostActivation.Tests
                     .DotNetRoot(null)
                     .Execute()
                     .Should().Pass()
-                    .And.HaveUsedRegisteredInstallLocation(HostTestContext.BuiltDotNet.BinPath)
-                    .And.HaveUsedGlobalInstallLocation(HostTestContext.BuiltDotNet.BinPath);
+                     .HaveUsedRegisteredInstallLocation(HostTestContext.BuiltDotNet.BinPath)
+                     .HaveUsedGlobalInstallLocation(HostTestContext.BuiltDotNet.BinPath);
             }
         }
 
@@ -191,7 +190,7 @@ namespace HostActivation.Tests
 
                 result.Should()
                     .HaveUsedRegisteredInstallLocation(path2)
-                    .And.HaveUsedGlobalInstallLocation(path2);
+                     .HaveUsedGlobalInstallLocation(path2);
             }
         }
 
@@ -214,7 +213,7 @@ namespace HostActivation.Tests
                     .DotNetRoot(null)
                     .Execute()
                     .Should().HaveLookedForDefaultInstallLocation(registeredInstallLocationOverride.PathValueOverride)
-                    .And.HaveUsedRegisteredInstallLocation(reallyLongPath);
+                     .HaveUsedRegisteredInstallLocation(reallyLongPath);
             }
         }
 
@@ -266,9 +265,9 @@ namespace HostActivation.Tests
                         .Execute();
 
                     result.Should().Pass()
-                        .And.HaveStdOutContaining("Other architectures found:")
-                        .And.NotHaveStdOutContaining(unknownArchInstall.Architecture)
-                        .And.NotHaveStdOutContaining($"[{unknownArchInstall.Path}]");
+                         .HaveStdOutContaining("Other architectures found:")
+                         .NotHaveStdOutContaining(unknownArchInstall.Architecture)
+                         .NotHaveStdOutContaining($"[{unknownArchInstall.Path}]");
 
                     string pathOverride = OperatingSystem.IsWindows() // Host uses short form of base key for Windows
                         ? registeredInstallLocationOverride.PathValueOverride.Replace(Microsoft.Win32.Registry.CurrentUser.Name, "HKCU")
@@ -306,24 +305,24 @@ namespace HostActivation.Tests
                     .DotNetRoot(null)
                     .Execute()
                     .Should().Fail()
-                    .And.HaveStdErrContaining("The following locations were searched:")
-                    .And.HaveStdErrContaining(
+                     .HaveStdErrContaining("The following locations were searched:")
+                     .HaveStdErrContaining(
                         $"""
                           Application directory:
                             {app.Location}
                         """)
-                    .And.HaveStdErrContaining(
+                     .HaveStdErrContaining(
                         $"""
                           Environment variable:
                             DOTNET_ROOT_{HostTestContext.BuildArchitecture.ToUpper()} = <not set>
                             DOTNET_ROOT = <not set>
                         """)
-                    .And.HaveStdErrMatching(
+                     .HaveStdErrMatching(
                         $"""
                           Registered location:
                             {System.Text.RegularExpressions.Regex.Escape(registeredLocationOverride)}.*{HostTestContext.BuildArchitecture}.* = <not set>
                         """)
-                    .And.HaveStdErrContaining(
+                     .HaveStdErrContaining(
                         $"""
                           Default location:
                             {defaultLocation}
@@ -398,8 +397,8 @@ namespace HostActivation.Tests
                 .CaptureStdOut()
                 .Execute()
                 .Should().Fail()
-                .And.HaveStdErrContaining("The app-relative .NET path is not embedded.")
-                .And.ExitWith(Constants.ErrorCode.AppHostExeNotBoundFailure);
+                 .HaveStdErrContaining("The app-relative .NET path is not embedded.")
+                 .ExitWith(Constants.ErrorCode.AppHostExeNotBoundFailure);
         }
 
         [Theory]

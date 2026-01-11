@@ -4,7 +4,6 @@
 using System;
 using System.IO;
 
-using FluentAssertions;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.NET.HostModel.AppHost;
@@ -30,8 +29,8 @@ namespace HostActivation.Tests
                 .Execute();
 
             result.Should().Fail()
-                .And.HaveStdErrContaining("This executable is not bound to a managed DLL to execute.")
-                .And.ExitWith(Constants.ErrorCode.AppHostExeNotBoundFailure);
+                .HaveStdErrContaining("This executable is not bound to a managed DLL to execute.")
+                .ExitWith(Constants.ErrorCode.AppHostExeNotBoundFailure);
         }
 
         [Fact]
@@ -43,7 +42,7 @@ namespace HostActivation.Tests
                 .CaptureStdOut()
                 .Execute()
                 .Should().Fail()
-                .And.HaveStdErrContaining("This executable is not bound to a managed DLL to execute.");
+                .HaveStdErrContaining("This executable is not bound to a managed DLL to execute.");
         }
 
         [Fact]
@@ -57,9 +56,9 @@ namespace HostActivation.Tests
                 .CaptureStdOut()
                 .Execute()
                 .Should().Fail()
-                .And.FileExists(traceFilePath)
-                .And.FileContains(traceFilePath, "This executable is not bound to a managed DLL to execute.")
-                .And.HaveStdErrContaining("This executable is not bound to a managed DLL to execute.");
+                .FileExists(traceFilePath)
+                .FileContains(traceFilePath, "This executable is not bound to a managed DLL to execute.")
+                .HaveStdErrContaining("This executable is not bound to a managed DLL to execute.");
 
             FileUtils.DeleteFileIfPossible(traceFilePath);
         }
@@ -73,8 +72,8 @@ namespace HostActivation.Tests
                 .Execute();
 
             result.Should().Fail()
-                .And.HaveStdErrContaining($"Error: cannot execute dotnet when renamed to {Path.GetFileNameWithoutExtension(sharedTestState.RenamedDotNet)}")
-                .And.ExitWith(Constants.ErrorCode.EntryPointFailure);
+                .HaveStdErrContaining($"Error: cannot execute dotnet when renamed to {Path.GetFileNameWithoutExtension(sharedTestState.RenamedDotNet)}")
+                .ExitWith(Constants.ErrorCode.EntryPointFailure);
         }
 
         public class SharedTestState : IDisposable

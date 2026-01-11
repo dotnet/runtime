@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using FluentAssertions;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.CoreSetup.Test.HostActivation;
@@ -113,8 +112,8 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.ReturnStatusCode(api, Constants.ErrorCode.Success)
-                .And.HaveStdOutContaining($"{api} sdks:[{expectedList}]");
+                 .ReturnStatusCode(api, Constants.ErrorCode.Success)
+                 .HaveStdOutContaining($"{api} sdks:[{expectedList}]");
         }
 
         [Fact]
@@ -134,8 +133,8 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.ReturnStatusCode(api, Constants.ErrorCode.Success)
-                .And.HaveStdOutContaining($"{api} data:[{expectedData}]");
+                 .ReturnStatusCode(api, Constants.ErrorCode.Success)
+                 .HaveStdOutContaining($"{api} data:[{expectedData}]");
         }
 
         [Fact]
@@ -155,8 +154,8 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.ReturnStatusCode(api, Constants.ErrorCode.Success)
-                .And.HaveStdOutContaining($"{api} data:[{expectedData}]");
+                 .ReturnStatusCode(api, Constants.ErrorCode.Success)
+                 .HaveStdOutContaining($"{api} data:[{expectedData}]");
         }
 
         [Fact]
@@ -184,8 +183,8 @@ namespace HostActivation.Tests
                     .EnableTracingAndCaptureOutputs()
                     .Execute()
                     .Should().Pass()
-                    .And.ReturnStatusCode(api, Constants.ErrorCode.Success)
-                    .And.HaveStdOutContaining($"{api} data:[{expectedData}]");
+                     .ReturnStatusCode(api, Constants.ErrorCode.Success)
+                     .HaveStdOutContaining($"{api} data:[{expectedData}]");
             }
         }
 
@@ -215,8 +214,8 @@ namespace HostActivation.Tests
                     .EnableTracingAndCaptureOutputs()
                     .Execute()
                     .Should().Pass()
-                    .And.ReturnStatusCode(api, Constants.ErrorCode.Success)
-                    .And.HaveStdOutContaining($"{api} data:[{expectedData}]");
+                     .ReturnStatusCode(api, Constants.ErrorCode.Success)
+                     .HaveStdOutContaining($"{api} data:[{expectedData}]");
             }
         }
 
@@ -241,8 +240,8 @@ namespace HostActivation.Tests
                     .EnableTracingAndCaptureOutputs()
                     .Execute()
                     .Should().Pass()
-                    .And.ReturnStatusCode(api, Constants.ErrorCode.Success)
-                    .And.HaveStdOutContaining($"{api} data:[{expectedData}]");
+                     .ReturnStatusCode(api, Constants.ErrorCode.Success)
+                     .HaveStdOutContaining($"{api} data:[{expectedData}]");
             }
         }
 
@@ -268,8 +267,8 @@ namespace HostActivation.Tests
                     .EnableTracingAndCaptureOutputs()
                     .Execute()
                     .Should().Pass()
-                    .And.ReturnStatusCode(api, Constants.ErrorCode.Success)
-                    .And.HaveStdOutContaining($"{api} data:[{expectedData}]");
+                     .ReturnStatusCode(api, Constants.ErrorCode.Success)
+                     .HaveStdOutContaining($"{api} data:[{expectedData}]");
             }
         }
 
@@ -296,8 +295,8 @@ namespace HostActivation.Tests
                     .EnableTracingAndCaptureOutputs()
                     .Execute()
                     .Should().Pass()
-                    .And.ReturnStatusCode(api, Constants.ErrorCode.SdkResolveFailure)
-                    .And.HaveStdOutContaining($"{api} data:[{expectedData}]");
+                     .ReturnStatusCode(api, Constants.ErrorCode.SdkResolveFailure)
+                     .HaveStdOutContaining($"{api} data:[{expectedData}]");
             }
         }
 
@@ -327,12 +326,12 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.ReturnStatusCode(api, Constants.ErrorCode.Success)
-                .And.HaveStdOutContaining($"{api} sdk versions:[{expectedSdkVersions}]")
-                .And.HaveStdOutContaining($"{api} sdk paths:[{expectedSdkPaths}]")
-                .And.HaveStdOutContaining($"{api} framework names:[{expectedFrameworkNames}]")
-                .And.HaveStdOutContaining($"{api} framework versions:[{expectedFrameworkVersions}]")
-                .And.HaveStdOutContaining($"{api} framework paths:[{expectedFrameworkPaths}]");
+                 .ReturnStatusCode(api, Constants.ErrorCode.Success)
+                 .HaveStdOutContaining($"{api} sdk versions:[{expectedSdkVersions}]")
+                 .HaveStdOutContaining($"{api} sdk paths:[{expectedSdkPaths}]")
+                 .HaveStdOutContaining($"{api} framework names:[{expectedFrameworkNames}]")
+                 .HaveStdOutContaining($"{api} framework versions:[{expectedFrameworkVersions}]")
+                 .HaveStdOutContaining($"{api} framework paths:[{expectedFrameworkPaths}]");
         }
 
         [Fact]
@@ -357,12 +356,12 @@ namespace HostActivation.Tests
                 .EnvironmentVariable(Constants.DisableRuntimeVersions.EnvironmentVariable, string.Join(';', disabledVersions))
                 .Execute();
             result.Should().Pass()
-                .And.ReturnStatusCode(api, Constants.ErrorCode.Success)
-                .And.HaveStdOutContaining($"{api} sdk versions:[{expectedSdkVersions}]")
-                .And.HaveStdOutContaining($"{api} sdk paths:[{expectedSdkPaths}]")
-                .And.HaveStdOutContaining($"{api} framework names:[{expectedFrameworkNames}]")
-                .And.HaveStdOutContaining($"{api} framework versions:[{expectedFrameworkVersions}]")
-                .And.HaveStdOutContaining($"{api} framework paths:[{expectedFrameworkPaths}]");
+                 .ReturnStatusCode(api, Constants.ErrorCode.Success)
+                 .HaveStdOutContaining($"{api} sdk versions:[{expectedSdkVersions}]")
+                 .HaveStdOutContaining($"{api} sdk paths:[{expectedSdkPaths}]")
+                 .HaveStdOutContaining($"{api} framework names:[{expectedFrameworkNames}]")
+                 .HaveStdOutContaining($"{api} framework versions:[{expectedFrameworkVersions}]")
+                 .HaveStdOutContaining($"{api} framework paths:[{expectedFrameworkPaths}]");
             foreach (string version in disabledVersions)
             {
                 result.Should().HaveStdErrContaining($"Ignoring disabled version [{version}]");
@@ -377,7 +376,7 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.ReturnStatusCode(api, Constants.ErrorCode.Success);
+                 .ReturnStatusCode(api, Constants.ErrorCode.Success);
         }
 
         [Fact]
@@ -388,8 +387,8 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.ReturnStatusCode(api, Constants.ErrorCode.InvalidArgFailure)
-                .And.HaveStdErrContaining($"{api} received an invalid argument: result should not be null.");
+                 .ReturnStatusCode(api, Constants.ErrorCode.InvalidArgFailure)
+                 .HaveStdErrContaining($"{api} received an invalid argument: result should not be null.");
         }
 
         [Fact]
@@ -400,8 +399,8 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.ReturnStatusCode(api, Constants.ErrorCode.InvalidArgFailure)
-                .And.HaveStdErrContaining($"{api} received an invalid argument: reserved should be null.");
+                 .ReturnStatusCode(api, Constants.ErrorCode.InvalidArgFailure)
+                 .HaveStdErrContaining($"{api} received an invalid argument: reserved should be null.");
         }
 
         [Theory]
@@ -430,8 +429,8 @@ namespace HostActivation.Tests
                     .CaptureStdErr()
                     .Execute();
                 result.Should().Pass()
-                    .And.NotHaveStdErr()
-                    .And.ReturnStatusCode(api, isMissing ? Constants.ErrorCode.FrameworkMissingFailure : Constants.ErrorCode.Success);
+                     .NotHaveStdErr()
+                     .ReturnStatusCode(api, isMissing ? Constants.ErrorCode.FrameworkMissingFailure : Constants.ErrorCode.Success);
                 if (isMissing)
                 {
                     result.Should().ReturnUnresolvedFramework(requested.Name, requested.Version);
@@ -464,8 +463,8 @@ namespace HostActivation.Tests
                     .CaptureStdErr()
                     .Execute();
                 result.Should().Pass()
-                    .And.NotHaveStdErr()
-                    .And.ReturnStatusCode(api, Constants.ErrorCode.Success);
+                     .NotHaveStdErr()
+                     .ReturnStatusCode(api, Constants.ErrorCode.Success);
                 foreach (var framework in includedFrameworks)
                 {
                     // All frameworks included in a self-contained config are resolved to be next to the config
@@ -536,8 +535,8 @@ namespace HostActivation.Tests
                     .CaptureStdErr()
                     .Execute();
                 result.Should().Pass()
-                    .And.NotHaveStdErr()
-                    .And.ReturnStatusCode(api, isMissing ? Constants.ErrorCode.FrameworkMissingFailure : Constants.ErrorCode.Success);
+                     .NotHaveStdErr()
+                     .ReturnStatusCode(api, isMissing ? Constants.ErrorCode.FrameworkMissingFailure : Constants.ErrorCode.Success);
                 if (isMissing)
                 {
                     result.Should().ReturnUnresolvedFramework(requested.Name, requested.Version);
@@ -587,8 +586,8 @@ namespace HostActivation.Tests
                     .CaptureStdErr()
                     .Execute();
                 result.Should().Pass()
-                    .And.NotHaveStdErr()
-                    .And.ReturnStatusCode(api, isMissing ? Constants.ErrorCode.FrameworkMissingFailure : Constants.ErrorCode.Success);
+                     .NotHaveStdErr()
+                     .ReturnStatusCode(api, isMissing ? Constants.ErrorCode.FrameworkMissingFailure : Constants.ErrorCode.Success);
                 if (isMissing)
                 {
                     result.Should().ReturnUnresolvedFramework(requested.Name, requested.Version);
@@ -633,8 +632,8 @@ namespace HostActivation.Tests
                     .CaptureStdErr()
                     .Execute();
                 result.Should().Pass()
-                    .And.NotHaveStdErr()
-                    .And.ReturnStatusCode(api, isMissing ? Constants.ErrorCode.FrameworkMissingFailure : Constants.ErrorCode.Success);
+                     .NotHaveStdErr()
+                     .ReturnStatusCode(api, isMissing ? Constants.ErrorCode.FrameworkMissingFailure : Constants.ErrorCode.Success);
                 foreach (var framework in expectedFrameworks)
                 {
                     result.Should().ReturnResolvedFramework(framework.Name, framework.Version, GetFrameworkPath(framework.Name, framework.Version, dotnet.BinPath));
@@ -678,11 +677,11 @@ namespace HostActivation.Tests
                     .CaptureStdErr()
                     .Execute()
                     .Should().Pass()
-                    .And.NotHaveStdErr()
-                    .And.ReturnStatusCode(api, Constants.ErrorCode.FrameworkCompatFailure)
-                    .And.ReturnResolvedFramework(expectedFramework.Name, expectedFramework.Version, GetFrameworkPath(expectedFramework.Name, expectedFramework.Version, dotnet.BinPath))
-                    .And.ReturnUnresolvedFramework(incompatibleLower.Name, incompatibleLower.Version)
-                    .And.ReturnUnresolvedFramework(incompatibleHigher.Name, incompatibleHigher.Version);
+                     .NotHaveStdErr()
+                     .ReturnStatusCode(api, Constants.ErrorCode.FrameworkCompatFailure)
+                     .ReturnResolvedFramework(expectedFramework.Name, expectedFramework.Version, GetFrameworkPath(expectedFramework.Name, expectedFramework.Version, dotnet.BinPath))
+                     .ReturnUnresolvedFramework(incompatibleLower.Name, incompatibleLower.Version)
+                     .ReturnUnresolvedFramework(incompatibleHigher.Name, incompatibleHigher.Version);
             }
         }
 
@@ -710,9 +709,9 @@ namespace HostActivation.Tests
                     .CaptureStdErr()
                     .Execute()
                     .Should().Pass()
-                    .And.NotHaveStdErr()
-                    .And.ReturnStatusCode(api, Constants.ErrorCode.InvalidConfigFile)
-                    .And.ReturnUnresolvedFramework(requested.Name, requested.Version, frameworkPath);
+                     .NotHaveStdErr()
+                     .ReturnStatusCode(api, Constants.ErrorCode.InvalidConfigFile)
+                     .ReturnUnresolvedFramework(requested.Name, requested.Version, frameworkPath);
             }
         }
 
@@ -743,8 +742,8 @@ namespace HostActivation.Tests
                     .CaptureStdErr()
                     .Execute()
                     .Should().Pass()
-                    .And.HaveStdErrContaining($"Framework '{Constants.MicrosoftNETCoreApp}' is missing a version")
-                    .And.ReturnStatusCode(api, Constants.ErrorCode.InvalidConfigFile);
+                     .HaveStdErrContaining($"Framework '{Constants.MicrosoftNETCoreApp}' is missing a version")
+                     .ReturnStatusCode(api, Constants.ErrorCode.InvalidConfigFile);
             }
         }
 
@@ -765,10 +764,10 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining($"APP_CONTEXT_BASE_DIRECTORY = {Path.GetDirectoryName(app.AppDll)}")
-                .And.HaveStdOutContaining($"RUNTIME_IDENTIFIER = {HostTestContext.BuildRID}")
-                .And.HaveStdOutContaining($"DOES_NOT_EXIST = <none>")
-                .And.HaveStdOutContaining($"ENTRY_ASSEMBLY_NAME = {app.AssemblyName}");
+                 .HaveStdOutContaining($"APP_CONTEXT_BASE_DIRECTORY = {Path.GetDirectoryName(app.AppDll)}")
+                 .HaveStdOutContaining($"RUNTIME_IDENTIFIER = {HostTestContext.BuildRID}")
+                 .HaveStdOutContaining($"DOES_NOT_EXIST = <none>")
+                 .HaveStdOutContaining($"ENTRY_ASSEMBLY_NAME = {app.AssemblyName}");
         }
 
         [Fact]
@@ -778,7 +777,7 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("host_runtime_contract.bundle_probe is not set");
+                 .HaveStdOutContaining("host_runtime_contract.bundle_probe is not set");
         }
 
         private static string GetFrameworkPath(string name, string version, string dotnetRoot)
@@ -829,7 +828,7 @@ namespace HostActivation.Tests
         {
             string api = ApiNames.hostfxr_resolve_frameworks_for_runtime_config;
             return assertion.HaveStdOutContaining($"{api} unresolved_framework: name={name}, requested_version={version}, path=[{path}]")
-                .And.NotHaveStdOutContaining($"{api} resolved_framework: name={name}");
+                 .NotHaveStdOutContaining($"{api} resolved_framework: name={name}");
         }
     }
 }

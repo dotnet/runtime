@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using FluentAssertions;
-using FluentAssertions.Execution;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 {
@@ -16,64 +15,62 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         private const string NATIVE_DLL_SEARCH_DIRECTORIES = nameof(NATIVE_DLL_SEARCH_DIRECTORIES);
         private const string PLATFORM_RESOURCE_ROOTS = nameof(PLATFORM_RESOURCE_ROOTS);
 
-        public static AndConstraint<CommandResultAssertions> HaveRuntimePropertyContaining(this CommandResultAssertions assertion, string propertyName, params string[] values)
+        public static CommandResultAssertions HaveRuntimePropertyContaining(this CommandResultAssertions assertion, string propertyName, params string[] values)
         {
             string propertyValue = GetAppMockPropertyValue(assertion, propertyName);
-            AssertionChain assertionChain = AssertionChain.GetOrCreate();
 
             foreach (string value in values)
             {
-                assertionChain.ForCondition(propertyValue != null && propertyValue.Contains(value))
-                    .FailWith($"The property {propertyName} doesn't contain expected value: '{value}'{Environment.NewLine}" +
-                        $"{propertyName}='{propertyValue}'" +
-                        $"{assertion.GetDiagnosticsInfo()}");
+                Assert.True(propertyValue is not null && propertyValue.Contains(value),
+                    $"The property {propertyName} doesn't contain expected value: '{value}'{Environment.NewLine}" +
+                    $"{propertyName}='{propertyValue}'" +
+                    $"{assertion.GetDiagnosticsInfo()}");
             }
 
-            return new AndConstraint<CommandResultAssertions>(assertion);
+            return assertion;
         }
 
-        public static AndConstraint<CommandResultAssertions> NotHaveRuntimePropertyContaining(this CommandResultAssertions assertion, string propertyName, params string[] values)
+        public static CommandResultAssertions NotHaveRuntimePropertyContaining(this CommandResultAssertions assertion, string propertyName, params string[] values)
         {
             string propertyValue = GetAppMockPropertyValue(assertion, propertyName);
-            AssertionChain assertionChain = AssertionChain.GetOrCreate();
 
             foreach (string value in values)
             {
-                assertionChain.ForCondition(propertyValue != null && !propertyValue.Contains(value))
-                    .FailWith($"The property {propertyName} contains unexpected value: '{value}'{Environment.NewLine}" +
-                        $"{propertyName}='{propertyValue}'" +
-                        $"{assertion.GetDiagnosticsInfo()}");
+                Assert.True(propertyValue is not null && !propertyValue.Contains(value),
+                    $"The property {propertyName} contains unexpected value: '{value}'{Environment.NewLine}" +
+                    $"{propertyName}='{propertyValue}'" +
+                    $"{assertion.GetDiagnosticsInfo()}");
             }
 
-            return new AndConstraint<CommandResultAssertions>(assertion);
+            return assertion;
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveResolvedAssembly(this CommandResultAssertions assertion, string assemblyPath, TestApp app = null)
+        public static CommandResultAssertions HaveResolvedAssembly(this CommandResultAssertions assertion, string assemblyPath, TestApp app = null)
         {
             return assertion.HaveRuntimePropertyContaining(TRUSTED_PLATFORM_ASSEMBLIES, RelativePathsToAbsoluteAppPaths(assemblyPath, app));
         }
 
-        public static AndConstraint<CommandResultAssertions> NotHaveResolvedAssembly(this CommandResultAssertions assertion, string assemblyPath, TestApp app = null)
+        public static CommandResultAssertions NotHaveResolvedAssembly(this CommandResultAssertions assertion, string assemblyPath, TestApp app = null)
         {
             return assertion.NotHaveRuntimePropertyContaining(TRUSTED_PLATFORM_ASSEMBLIES, RelativePathsToAbsoluteAppPaths(assemblyPath, app));
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveResolvedNativeLibraryPath(this CommandResultAssertions assertion, string path, TestApp app = null)
+        public static CommandResultAssertions HaveResolvedNativeLibraryPath(this CommandResultAssertions assertion, string path, TestApp app = null)
         {
             return assertion.HaveRuntimePropertyContaining(NATIVE_DLL_SEARCH_DIRECTORIES, RelativePathsToAbsoluteAppPaths(path, app));
         }
 
-        public static AndConstraint<CommandResultAssertions> NotHaveResolvedNativeLibraryPath(this CommandResultAssertions assertion, string path, TestApp app = null)
+        public static CommandResultAssertions NotHaveResolvedNativeLibraryPath(this CommandResultAssertions assertion, string path, TestApp app = null)
         {
             return assertion.NotHaveRuntimePropertyContaining(NATIVE_DLL_SEARCH_DIRECTORIES, RelativePathsToAbsoluteAppPaths(path, app));
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveResolvedResourceRootPath(this CommandResultAssertions assertion, string path, TestApp app = null)
+        public static CommandResultAssertions HaveResolvedResourceRootPath(this CommandResultAssertions assertion, string path, TestApp app = null)
         {
             return assertion.HaveRuntimePropertyContaining(PLATFORM_RESOURCE_ROOTS, RelativePathsToAbsoluteAppPaths(path, app));
         }
 
-        public static AndConstraint<CommandResultAssertions> NotHaveResolvedResourceRootPath(this CommandResultAssertions assertion, string path, TestApp app = null)
+        public static CommandResultAssertions NotHaveResolvedResourceRootPath(this CommandResultAssertions assertion, string path, TestApp app = null)
         {
             return assertion.NotHaveRuntimePropertyContaining(PLATFORM_RESOURCE_ROOTS, RelativePathsToAbsoluteAppPaths(path, app));
         }
@@ -82,50 +79,48 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         private const string assemblies = "assemblies";
         private const string native_search_paths = "native_search_paths";
 
-        public static AndConstraint<CommandResultAssertions> HaveSuccessfullyResolvedComponentDependencies(this CommandResultAssertions assertion)
+        public static CommandResultAssertions HaveSuccessfullyResolvedComponentDependencies(this CommandResultAssertions assertion)
         {
             return assertion.HaveStdOutContaining("corehost_resolve_component_dependencies:Success");
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveResolvedComponentDependencyContaining(
+        public static CommandResultAssertions HaveResolvedComponentDependencyContaining(
             this CommandResultAssertions assertion,
             string propertyName,
             params string[] values)
         {
             string propertyValue = GetComponentMockPropertyValue(assertion, propertyName);
-            AssertionChain assertionChain = AssertionChain.GetOrCreate();
 
             foreach (string value in values)
             {
-                assertionChain.ForCondition(propertyValue != null && propertyValue.Contains(value))
-                    .FailWith($"The resolved {propertyName} doesn't contain expected value: '{value}'{Environment.NewLine}" +
-                        $"{propertyName}='{propertyValue}'" +
-                        $"{assertion.GetDiagnosticsInfo()}");
+                Assert.True(propertyValue is not null && propertyValue.Contains(value),
+                    $"The resolved {propertyName} doesn't contain expected value: '{value}'{Environment.NewLine}" +
+                    $"{propertyName}='{propertyValue}'" +
+                    $"{assertion.GetDiagnosticsInfo()}");
             }
 
-            return new AndConstraint<CommandResultAssertions>(assertion);
+            return assertion;
         }
 
-        public static AndConstraint<CommandResultAssertions> NotHaveResolvedComponentDependencyContaining(
+        public static CommandResultAssertions NotHaveResolvedComponentDependencyContaining(
             this CommandResultAssertions assertion,
             string propertyName,
             params string[] values)
         {
             string propertyValue = GetComponentMockPropertyValue(assertion, propertyName);
-            AssertionChain assertionChain = AssertionChain.GetOrCreate();
 
             foreach (string value in values)
             {
-                assertionChain.ForCondition(propertyValue != null && !propertyValue.Contains(value))
-                    .FailWith($"The resolved {propertyName} contains unexpected value: '{value}'{Environment.NewLine}" +
-                        $"{propertyName}='{propertyValue}'" +
-                        $"{assertion.GetDiagnosticsInfo()}");
+                Assert.True(propertyValue is not null && !propertyValue.Contains(value),
+                    $"The resolved {propertyName} contains unexpected value: '{value}'{Environment.NewLine}" +
+                    $"{propertyName}='{propertyValue}'" +
+                    $"{assertion.GetDiagnosticsInfo()}");
             }
 
-            return new AndConstraint<CommandResultAssertions>(assertion);
+            return assertion;
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveResolvedComponentDependencyAssembly(
+        public static CommandResultAssertions HaveResolvedComponentDependencyAssembly(
             this CommandResultAssertions assertion,
             string assemblyPath,
             TestApp app = null)
@@ -133,7 +128,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             return assertion.HaveResolvedComponentDependencyContaining(assemblies, RelativePathsToAbsoluteAppPaths(assemblyPath, app));
         }
 
-        public static AndConstraint<CommandResultAssertions> NotHaveResolvedComponentDependencyAssembly(
+        public static CommandResultAssertions NotHaveResolvedComponentDependencyAssembly(
             this CommandResultAssertions assertion,
             string assemblyPath,
             TestApp app = null)
@@ -141,7 +136,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             return assertion.NotHaveResolvedComponentDependencyContaining(assemblies, RelativePathsToAbsoluteAppPaths(assemblyPath, app));
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveResolvedComponentDependencyNativeLibraryPath(
+        public static CommandResultAssertions HaveResolvedComponentDependencyNativeLibraryPath(
             this CommandResultAssertions assertion,
             string path,
             TestApp app = null)
@@ -149,7 +144,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             return assertion.HaveResolvedComponentDependencyContaining(native_search_paths, RelativePathsToAbsoluteAppPaths(path, app));
         }
 
-        public static AndConstraint<CommandResultAssertions> NotHaveResolvedComponentDependencyNativeLibraryPath(
+        public static CommandResultAssertions NotHaveResolvedComponentDependencyNativeLibraryPath(
             this CommandResultAssertions assertion,
             string path,
             TestApp app = null)
@@ -157,7 +152,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             return assertion.NotHaveResolvedComponentDependencyContaining(native_search_paths, RelativePathsToAbsoluteAppPaths(path, app));
         }
 
-        public static AndConstraint<CommandResultAssertions> ErrorWithMissingAssembly(this CommandResultAssertions assertion, string depsFileName, string dependencyName, string dependencyVersion)
+        public static CommandResultAssertions ErrorWithMissingAssembly(this CommandResultAssertions assertion, string depsFileName, string dependencyName, string dependencyVersion)
         {
             return assertion.HaveStdErrContaining(
                 $"Error:{Environment.NewLine}" +
@@ -166,18 +161,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 $"    path: \'{dependencyName}.dll\'");
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveUsedAdditionalDeps(this CommandResultAssertions assertion, string depsFilePath)
+        public static CommandResultAssertions HaveUsedAdditionalDeps(this CommandResultAssertions assertion, string depsFilePath)
         {
             return assertion.HaveStdErrContaining($"Using specified additional deps.json: '{depsFilePath}'");
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveUsedAdditionalProbingPath(this CommandResultAssertions assertion, string path)
+        public static CommandResultAssertions HaveUsedAdditionalProbingPath(this CommandResultAssertions assertion, string path)
         {
             return assertion.HaveStdErrContaining($"Additional probe dir: {path}")
                 .And.HaveStdErrContaining($"probe type=lookup dir=[{path}]");
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveReadRidGraph(this CommandResultAssertions assertion, bool readRidGraph)
+        public static CommandResultAssertions HaveReadRidGraph(this CommandResultAssertions assertion, bool readRidGraph)
         {
             string ridGraphMsg = "RID fallback graph =";
             string hostRidsMsg = "Host RID list =";
@@ -186,18 +181,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 : assertion.HaveStdErrContaining(hostRidsMsg).And.NotHaveStdErrContaining(ridGraphMsg);
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveUsedFallbackRid(this CommandResultAssertions assertion, bool usedFallbackRid)
+        public static CommandResultAssertions HaveUsedFallbackRid(this CommandResultAssertions assertion, bool usedFallbackRid)
         {
             string msg = "Falling back to base HostRID";
             return usedFallbackRid ? assertion.HaveStdErrContaining(msg) : assertion.NotHaveStdErrContaining(msg);
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveUsedFrameworkProbe(this CommandResultAssertions assertion, string path, int level)
+        public static CommandResultAssertions HaveUsedFrameworkProbe(this CommandResultAssertions assertion, string path, int level)
         {
             return assertion.HaveStdErrContaining($"probe type=framework dir=[{path}] fx_level={level}");
         }
 
-        public static AndConstraint<CommandResultAssertions> NotHaveUsedFrameworkProbe(this CommandResultAssertions assertion, string path)
+        public static CommandResultAssertions NotHaveUsedFrameworkProbe(this CommandResultAssertions assertion, string path)
         {
             return assertion.NotHaveStdErrContaining($"probe type=framework dir=[{path}]");
         }
