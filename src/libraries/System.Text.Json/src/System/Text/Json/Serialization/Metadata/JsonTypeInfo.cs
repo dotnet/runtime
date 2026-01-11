@@ -1051,6 +1051,12 @@ namespace System.Text.Json.Serialization.Metadata
         {
             public Dictionary<string, (JsonPropertyInfo, int index)> AddedProperties = new(options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
             public Dictionary<string, JsonPropertyInfo>? IgnoredProperties;
+            /// <summary>
+            /// Tracks all virtual properties that have been added to the type info.
+            /// Used to determine whether a base type virtual property is being overridden
+            /// by a derived type property, regardless of the JSON property name they use.
+            /// </summary>
+            public Dictionary<string, JsonPropertyInfo>? OverriddenVirtualProperties;
             public bool IsPropertyOrderSpecified;
         }
 
@@ -1401,6 +1407,19 @@ namespace System.Text.Json.Serialization.Metadata
                 // Algorithm should be kept in sync with the Roslyn equivalent in JsonSourceGenerator.Parser.cs
                 string memberName = jsonPropertyInfo.MemberName;
 
+                // Check if the current virtual property has been overridden by a previously added property,
+                // regardless of the JSON property name they use. This handles the case where a derived class
+                // overrides a virtual property but uses a different JSON property name (e.g., due to the base
+                // class having [JsonPropertyName] that the derived class doesn't inherit).
+                if (jsonPropertyInfo.IsVirtual &&
+                    state.OverriddenVirtualProperties?.TryGetValue(memberName, out JsonPropertyInfo? overridingProperty) == true &&
+                    jsonPropertyInfo.IsOverriddenOrShadowedBy(overridingProperty))
+                {
+                    // This virtual property is being overridden by a previously added property from a derived type.
+                    // Skip adding it to avoid duplicate serialization.
+                    return;
+                }
+
                 if (state.AddedProperties.TryAdd(jsonPropertyInfo.Name, (jsonPropertyInfo, Count)))
                 {
                     Add(jsonPropertyInfo);
@@ -1440,6 +1459,14 @@ namespace System.Text.Json.Serialization.Metadata
                 if (jsonPropertyInfo.IsIgnored)
                 {
                     (state.IgnoredProperties ??= new())[memberName] = jsonPropertyInfo;
+                }
+
+                // Track virtual properties by their CLR member name for override detection.
+                // This allows us to detect when a base type virtual property is being overridden
+                // by a derived type property with a different JSON name.
+                if (jsonPropertyInfo.IsVirtual)
+                {
+                    (state.OverriddenVirtualProperties ??= new())[memberName] = jsonPropertyInfo;
                 }
             }
         }
