@@ -2325,12 +2325,12 @@ PROCBuildCreateDumpCommandLine(
     }
     
     int argc = 0;
-    if (argc >= MAX_ARGV_ENTRIES) return FALSE;
+    if (argc + 1 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for program and null terminator
     argv[argc++] = program;
 
     if (dumpName != nullptr)
     {
-        if (argc + 1 >= MAX_ARGV_ENTRIES) return FALSE;
+        if (argc + 3 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --name, dumpName, and null terminator
         argv[argc++] = "--name";
         argv[argc++] = dumpName;
     }
@@ -2338,19 +2338,19 @@ PROCBuildCreateDumpCommandLine(
     switch (dumpType)
     {
         case DumpTypeNormal:
-            if (argc >= MAX_ARGV_ENTRIES) return FALSE;
+            if (argc + 2 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --normal and null terminator
             argv[argc++] = "--normal";
             break;
         case DumpTypeWithHeap:
-            if (argc >= MAX_ARGV_ENTRIES) return FALSE;
+            if (argc + 2 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --withheap and null terminator
             argv[argc++] = "--withheap";
             break;
         case DumpTypeTriage:
-            if (argc >= MAX_ARGV_ENTRIES) return FALSE;
+            if (argc + 2 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --triage and null terminator
             argv[argc++] = "--triage";
             break;
         case DumpTypeFull:
-            if (argc >= MAX_ARGV_ENTRIES) return FALSE;
+            if (argc + 2 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --full and null terminator
             argv[argc++] = "--full";
             break;
         default:
@@ -2359,42 +2359,42 @@ PROCBuildCreateDumpCommandLine(
 
     if (flags & GenerateDumpFlagsLoggingEnabled)
     {
-        if (argc >= MAX_ARGV_ENTRIES) return FALSE;
+        if (argc + 2 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --diag and null terminator
         argv[argc++] = "--diag";
     }
 
     if (flags & GenerateDumpFlagsVerboseLoggingEnabled)
     {
-        if (argc >= MAX_ARGV_ENTRIES) return FALSE;
+        if (argc + 2 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --verbose and null terminator
         argv[argc++] = "--verbose";
     }
 
     if (flags & GenerateDumpFlagsCrashReportEnabled)
     {
-        if (argc >= MAX_ARGV_ENTRIES) return FALSE;
+        if (argc + 2 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --crashreport and null terminator
         argv[argc++] = "--crashreport";
     }
 
     if (flags & GenerateDumpFlagsCrashReportOnlyEnabled)
     {
-        if (argc >= MAX_ARGV_ENTRIES) return FALSE;
+        if (argc + 2 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --crashreportonly and null terminator
         argv[argc++] = "--crashreportonly";
     }
 
     if (g_running_in_exe)
     {
-        if (argc >= MAX_ARGV_ENTRIES) return FALSE;
+        if (argc + 2 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --singlefile and null terminator
         argv[argc++] = "--singlefile";
     }
 
     if (logFileName != nullptr)
     {
-        if (argc + 1 >= MAX_ARGV_ENTRIES) return FALSE;
+        if (argc + 3 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --logtofile, logFileName, and null terminator
         argv[argc++] = "--logtofile";
         argv[argc++] = logFileName;
     }
 
-    if (argc + 1 >= MAX_ARGV_ENTRIES) return FALSE;
+    if (argc + 2 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for pidarg and null terminator
     argv[argc++] = *ppidarg;
     argv[argc++] = nullptr;
 
