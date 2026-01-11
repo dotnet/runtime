@@ -371,6 +371,17 @@ struct RangeOps
         return Limit(Limit::keUnknown);
     }
 
+    // Perform 'value' & 'cns'
+    static Limit AndByConstant(const Limit& value, const Limit& cns)
+    {
+        assert(cns.IsConstant());
+        if (value.IsConstant())
+        {
+            return Limit(Limit::keConstant, value.GetConstant() & cns.GetConstant());
+        }
+        return Limit(Limit::keConstant, cns.GetConstant());
+    }
+
     // Given two ranges "r1" and "r2", perform a generic 'op' operation on the ranges.
     template <typename Operation>
     static Range ApplyRangeOp(Range& r1, Range& r2, Operation op)
@@ -437,35 +448,94 @@ struct RangeOps
     static Range ShiftRight(Range& r1, Range& r2)
     {
         Limit& r1lo = r1.LowerLimit();
-        Limit& r1hi = r1.UpperLimit();
         Limit& r2lo = r2.LowerLimit();
+
+        Limit& r1hi = r1.UpperLimit();
         Limit& r2hi = r2.UpperLimit();
 
         Range result = Limit(Limit::keUnknown);
 
         // For now we only support r1 >> positive_cns (to simplify)
-        if (!r2lo.IsConstant() || !r2hi.IsConstant() || (r2lo.cns < 0) || (r2hi.cns < 0))
+        if (!r2lo.IsConstant() || !r2hi.IsConstant() || (r2lo.GetConstant() < 0) || (r2hi.GetConstant() < 0))
         {
             return result;
         }
 
-        // Check lo ranges if they are dependent and not unknown.
-        if (r1lo.IsDependent())
+        if (r1lo.IsConstant())
         {
-            result.lLimit = Limit(Limit::keDependent);
-        }
-        else if (r1lo.IsConstant())
-        {
+            // Lower limit is CNS1 >> CNS2 = CNS3
             result.lLimit = ShiftRightConstantLimit(r1lo, r2lo);
         }
 
-        if (r1hi.IsDependent())
+        if (r1hi.IsConstant())
         {
-            result.uLimit = Limit(Limit::keDependent);
-        }
-        else if (r1hi.IsConstant())
-        {
+            // Upper limit is CNS1 >> CNS2 = CNS3
             result.uLimit = ShiftRightConstantLimit(r1hi, r2hi);
+        }
+        else if (result.lLimit.IsConstant() && result.lLimit.GetConstant() >= 0 && r2hi.GetConstant() <= 31)
+        {
+            // Since r1hi is effectively [0..int32.MaxValue] and we're performing >> by a constant ([0..31])
+            // we can compute the max upper bound.
+            result.uLimit = Limit(Limit::keConstant, INT32_MAX >> r2hi.GetConstant());
+        }
+
+        return result;
+    }
+
+    static Range And(Range& r1, Range& r2)
+    {
+        Limit& r1lo = r1.LowerLimit();
+        Limit& r2lo = r2.LowerLimit();
+
+        Limit& r1hi = r1.UpperLimit();
+        Limit& r2hi = r2.UpperLimit();
+
+        Range result = Limit(Limit::keUnknown);
+
+        // AND is a commutative operation, put the constant (if any) on the right.
+        if (r1lo.IsConstant())
+        {
+            std::swap(r1lo, r2lo);
+        }
+        if (r1hi.IsConstant())
+        {
+            std::swap(r1hi, r2hi);
+        }
+
+        if (r2lo.IsConstant() && (r2lo.GetConstant() >= 0))
+        {
+            result.lLimit = AndByConstant(r1lo, r2lo);
+        }
+        if (r2hi.IsConstant() && (r2hi.GetConstant() >= 0))
+        {
+            result.uLimit = AndByConstant(r1hi, r2hi);
+        }
+        return result;
+    }
+
+    static Range Or(Range& r1, Range& r2)
+    {
+        Limit& r1lo = r1.LowerLimit();
+        Limit& r2lo = r2.LowerLimit();
+
+        Limit& r1hi = r1.UpperLimit();
+        Limit& r2hi = r2.UpperLimit();
+
+        Range result = Limit(Limit::keUnknown);
+
+        // Currently, we only handle the case when all limits are positive constants.
+        if (!r1lo.IsConstant() || !r2lo.IsConstant() || !r1hi.IsConstant() || !r2hi.IsConstant())
+        {
+            return result;
+        }
+
+        if ((r1lo.GetConstant() >= 0) && (r2lo.GetConstant() >= 0))
+        {
+            result.lLimit = Limit(Limit::keConstant, r1lo.GetConstant() | r2lo.GetConstant());
+        }
+        if ((r1hi.GetConstant() >= 0) && (r2hi.GetConstant() >= 0))
+        {
+            result.uLimit = Limit(Limit::keConstant, r1hi.GetConstant() | r2hi.GetConstant());
         }
 
         return result;
