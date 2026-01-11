@@ -9,6 +9,6 @@ internal static partial class Interop
     internal static partial class Activeds
     {
         [LibraryImport(Libraries.Activeds)]
-        internal static partial int ADsEncodeBinaryData(byte[] data, int length, ref IntPtr result);
+        internal static partial int ADsEncodeBinaryData([In] byte[] data, int length, ref IntPtr result);
     }
 }

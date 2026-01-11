@@ -31,7 +31,7 @@ internal static partial class Interop
         private static partial int AppleCryptoNative_SecKeychainCreate(
             string path,
             int utf8PassphraseLength,
-            byte[] utf8Passphrase,
+            [In] byte[] utf8Passphrase,
             out SafeKeychainHandle keychain);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
@@ -49,7 +49,7 @@ internal static partial class Interop
         private static partial int AppleCryptoNative_SecKeychainUnlock(
             SafeKeychainHandle keychain,
             int utf8PassphraseLength,
-            byte[] utf8Passphrase);
+            [In] byte[] utf8Passphrase);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_SetKeychainNeverLock(SafeKeychainHandle keychain);

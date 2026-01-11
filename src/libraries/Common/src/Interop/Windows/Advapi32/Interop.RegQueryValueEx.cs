@@ -16,9 +16,9 @@ internal static partial class Interop
         internal static partial int RegQueryValueEx(
             SafeRegistryHandle hKey,
             string? lpValueName,
-            int[]? lpReserved,
+            [In] int[]? lpReserved,
             ref int lpType,
-            byte[]? lpData,
+            [Out] byte[]? lpData,
             ref int lpcbData);
 
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegQueryValueExW", StringMarshalling = StringMarshalling.Utf16)]

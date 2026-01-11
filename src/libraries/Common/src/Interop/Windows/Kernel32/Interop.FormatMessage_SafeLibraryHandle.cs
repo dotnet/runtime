@@ -21,6 +21,6 @@ internal static partial class Interop
             int dwLanguageId,
             [Out] char[] lpBuffer,
             int nSize,
-            IntPtr[] arguments);
+            [In] IntPtr[] arguments);
     }
 }

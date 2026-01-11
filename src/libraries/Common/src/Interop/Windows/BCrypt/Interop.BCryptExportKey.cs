@@ -17,7 +17,7 @@ internal static partial class Interop
             SafeBCryptKeyHandle hKey,
             IntPtr hExportKey,
             string pszBlobType,
-            byte[]? pbOutput,
+            [Out] byte[]? pbOutput,
             int cbOutput,
             out int pcbResult,
             int dwFlags);

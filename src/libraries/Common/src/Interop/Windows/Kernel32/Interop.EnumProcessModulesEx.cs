@@ -13,6 +13,6 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.Kernel32, EntryPoint = "K32EnumProcessModulesEx", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool EnumProcessModulesEx(SafeProcessHandle handle, IntPtr[]? modules, int size, out int needed, int filterFlag);
+        internal static partial bool EnumProcessModulesEx(SafeProcessHandle handle, [Out] IntPtr[]? modules, int size, out int needed, int filterFlag);
     }
 }

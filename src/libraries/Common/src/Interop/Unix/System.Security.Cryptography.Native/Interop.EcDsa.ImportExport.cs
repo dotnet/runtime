@@ -15,9 +15,9 @@ internal static partial class Interop
         private static partial int EcKeyCreateByKeyParameters(
             out SafeEcKeyHandle key,
             string oid,
-            byte[]? qx, int qxLength,
-            byte[]? qy, int qyLength,
-            byte[]? d, int dLength);
+            [In] byte[]? qx, int qxLength,
+            [In] byte[]? qy, int qyLength,
+            [In] byte[]? d, int dLength);
 
         internal static SafeEcKeyHandle EcKeyCreateByKeyParameters(
             string oid,
@@ -40,17 +40,17 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByExplicitParameters")]
         internal static partial SafeEcKeyHandle EcKeyCreateByExplicitParameters(
             ECCurve.ECCurveType curveType,
-            byte[]? qx, int qxLength,
-            byte[]? qy, int qyLength,
-            byte[]? d, int dLength,
-            byte[] p, int pLength,
-            byte[] a, int aLength,
-            byte[] b, int bLength,
-            byte[] gx, int gxLength,
-            byte[] gy, int gyLength,
-            byte[] order, int nLength,
-            byte[]? cofactor, int cofactorLength,
-            byte[]? seed, int seedLength);
+            [In] byte[]? qx, int qxLength,
+            [In] byte[]? qy, int qyLength,
+            [In] byte[]? d, int dLength,
+            [In] byte[] p, int pLength,
+            [In] byte[] a, int aLength,
+            [In] byte[] b, int bLength,
+            [In] byte[] gx, int gxLength,
+            [In] byte[] gy, int gyLength,
+            [In] byte[] order, int nLength,
+            [In] byte[]? cofactor, int cofactorLength,
+            [In] byte[]? seed, int seedLength);
 
         internal static SafeEcKeyHandle EcKeyCreateByExplicitCurve(ECCurve curve)
         {

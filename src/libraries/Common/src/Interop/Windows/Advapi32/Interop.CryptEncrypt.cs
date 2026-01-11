@@ -15,7 +15,7 @@ internal static partial class Interop
             SafeHashHandle hHash,
             [MarshalAs(UnmanagedType.Bool)] bool Final,
             int dwFlags,
-            byte[]? pbData,
+            [In, Out] byte[]? pbData,
             ref int pdwDataLen,
             int dwBufLen);
     }

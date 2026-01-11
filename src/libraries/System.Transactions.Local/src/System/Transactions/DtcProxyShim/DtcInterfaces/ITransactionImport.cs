@@ -12,7 +12,7 @@ internal partial interface ITransactionImport
 {
     void Import(
         uint cbTransactionCookie,
-        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] byte[] rgbTransactionCookie,
+        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0), In] byte[] rgbTransactionCookie,
         in Guid piid,
         [MarshalAs(UnmanagedType.Interface)] out object ppvTransaction);
 }

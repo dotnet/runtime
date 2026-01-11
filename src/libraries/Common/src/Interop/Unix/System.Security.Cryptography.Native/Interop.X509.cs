@@ -32,7 +32,7 @@ internal static partial class Interop
         internal static partial SafeEvpPKeyHandle GetX509EvpPublicKey(SafeX509Handle x509);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeX509Crl")]
-        internal static partial SafeX509CrlHandle DecodeX509Crl(byte[] buf, int len);
+        internal static partial SafeX509CrlHandle DecodeX509Crl([In] byte[] buf, int len);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeX509")]
         internal static partial SafeX509Handle DecodeX509(ref byte buf, int len);
@@ -44,7 +44,7 @@ internal static partial class Interop
         internal static partial int GetX509DerSize(SafeX509Handle x);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodeX509")]
-        internal static partial int EncodeX509(SafeX509Handle x, byte[] buf);
+        internal static partial int EncodeX509(SafeX509Handle x, [Out] byte[] buf);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509Destroy")]
         internal static partial void X509Destroy(IntPtr a);
@@ -272,7 +272,7 @@ internal static partial class Interop
         internal static partial int GetX509SubjectPublicKeyInfoDerSize(SafeX509Handle x509);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodeX509SubjectPublicKeyInfo")]
-        internal static partial int EncodeX509SubjectPublicKeyInfo(SafeX509Handle x509, byte[] buf);
+        internal static partial int EncodeX509SubjectPublicKeyInfo(SafeX509Handle x509, [Out] byte[] buf);
 
         internal enum X509VerifyStatusCodeUniversal
         {

@@ -12,7 +12,7 @@ internal static partial class Interop
             SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool ConvertSdToStringSd(
-            byte[] securityDescriptor,
+            [In] byte[] securityDescriptor,
             /* DWORD */ uint requestedRevision,
             uint securityInformation,
             out IntPtr resultString,

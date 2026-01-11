@@ -10,7 +10,7 @@ internal static partial class Interop
     internal static partial class Globalization
     {
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetCalendarsNative", StringMarshalling = StringMarshalling.Utf8)]
-        internal static partial int GetCalendarsNative(string localeName, CalendarId[] calendars, int calendarsCapacity);
+        internal static partial int GetCalendarsNative(string localeName, [Out] CalendarId[] calendars, int calendarsCapacity);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetCalendarInfoNative", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial string GetCalendarInfoNative(string localeName, CalendarId calendarId, CalendarDataType calendarDataType);

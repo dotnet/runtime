@@ -60,6 +60,9 @@ dotnet_diagnostic.SYSLIB1060.severity = error
 # SYSLIB1061: Marshaller type has incompatible method signatures
 dotnet_diagnostic.SYSLIB1061.severity = error
 
+# SYSLIB1092: The usage of 'LibraryImportAttribute' does not follow recommendations. It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters
+dotnet_diagnostic.SYSLIB1092.severity = error
+
 # CA1000: Do not declare static members on generic types
 dotnet_diagnostic.CA1000.severity = none
 

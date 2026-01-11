@@ -31,14 +31,14 @@ internal static partial class Interop
             KeySpec dwKeySpec,
             string? szDescription,
             CryptSignAndVerifyHashFlags dwFlags,
-            byte[]? pbSignature,
+            [Out] byte[]? pbSignature,
             ref int pdwSigLen);
 
         [LibraryImport(Libraries.Advapi32, EntryPoint = "CryptVerifySignatureW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptVerifySignature(
             SafeHashHandle hHash,
-            byte[] pbSignature,
+            [In] byte[] pbSignature,
             int dwSigLen,
             SafeCapiKeyHandle hPubKey,
             string? szDescription,
