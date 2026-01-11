@@ -416,6 +416,84 @@ namespace System.Net
             return true;
         }
 
+        // Pre-allocated arrays for RFC 6761 localhost handling to avoid allocations on hot path.
+        private static readonly IPAddress[] s_localhostIPv4 = [IPAddress.Loopback];
+        private static readonly IPAddress[] s_localhostIPv6 = [IPAddress.IPv6Loopback];
+        private static readonly IPAddress[] s_localhostBoth = [IPAddress.Loopback, IPAddress.IPv6Loopback];
+
+        /// <summary>
+        /// Checks if the given host name matches a reserved name or is a subdomain of it.
+        /// For example, IsReservedName("foo.localhost", "localhost") returns true.
+        /// </summary>
+        private static bool IsReservedName(string hostName, string reservedName)
+        {
+            // Matches "reservedName" exactly, or "*.reservedName" (subdomain)
+            return hostName.EndsWith(reservedName, StringComparison.OrdinalIgnoreCase) &&
+                   (hostName.Length == reservedName.Length ||
+                    hostName[hostName.Length - reservedName.Length - 1] == '.');
+        }
+
+        /// <summary>
+        /// Returns the loopback addresses filtered by address family and OS support.
+        /// </summary>
+        private static IPAddress[] GetLoopbackAddresses(AddressFamily addressFamily)
+        {
+            bool supportsIPv4 = addressFamily is AddressFamily.Unspecified or AddressFamily.InterNetwork;
+            bool supportsIPv6 = (addressFamily is AddressFamily.Unspecified or AddressFamily.InterNetworkV6) &&
+                                SocketProtocolSupportPal.OSSupportsIPv6;
+
+            return (supportsIPv4, supportsIPv6) switch
+            {
+                (true, true) => s_localhostBoth,
+                (true, false) => s_localhostIPv4,
+                (false, true) => s_localhostIPv6,
+                _ => Array.Empty<IPAddress>()
+            };
+        }
+
+        /// <summary>
+        /// Tries to handle RFC 6761 special-use domain names.
+        /// Returns true if the host name is a reserved name (result or exception will be set).
+        /// </summary>
+        private static bool TryHandleRfc6761SpecialName(
+            string hostName,
+            bool justAddresses,
+            AddressFamily addressFamily,
+            out object? result,
+            out SocketException? exception)
+        {
+            // RFC 6761 Section 6.4: "invalid" and "*.invalid" must always return NXDOMAIN.
+            if (IsReservedName(hostName, "invalid"))
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Returning NXDOMAIN for 'invalid' domain");
+                result = null;
+                exception = CreateException(SocketError.HostNotFound, 0);
+                return true;
+            }
+
+            // RFC 6761 Section 6.3: "*.localhost" subdomains must resolve to loopback.
+            // Note: Plain "localhost" is handled by the OS resolver (preserves /etc/hosts customizations).
+            if (hostName.Length > "localhost".Length && IsReservedName(hostName, "localhost"))
+            {
+                IPAddress[] addresses = GetLoopbackAddresses(addressFamily);
+
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, $"RFC 6761: Returning loopback for localhost subdomain, {addresses.Length} addresses");
+
+                result = justAddresses ? (object)addresses : new IPHostEntry
+                {
+                    HostName = hostName,
+                    Aliases = Array.Empty<string>(),
+                    AddressList = addresses
+                };
+                exception = null;
+                return true;
+            }
+
+            result = null;
+            exception = null;
+            return false;
+        }
+
         private static object GetHostEntryOrAddressesCore(string hostName, bool justAddresses, AddressFamily addressFamily, NameResolutionActivity? activityOrDefault = default)
         {
             ValidateHostName(hostName);
@@ -428,6 +506,19 @@ namespace System.Net
 
             // NameResolutionActivity may have already been set if we're being called from RunAsync.
             NameResolutionActivity activity = activityOrDefault ?? NameResolutionTelemetry.Log.BeforeResolution(hostName);
+
+            // Handle RFC 6761 special-use domain names before calling the OS resolver.
+            if (TryHandleRfc6761SpecialName(hostName, justAddresses, addressFamily, out object? rfc6761Result, out SocketException? rfc6761Exception))
+            {
+                if (rfc6761Exception is not null)
+                {
+                    NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: null, exception: rfc6761Exception);
+                    throw rfc6761Exception;
+                }
+
+                NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: rfc6761Result);
+                return rfc6761Result!;
+            }
 
             object result;
             try
@@ -559,13 +650,6 @@ namespace System.Net
                     Task.FromCanceled<IPHostEntry>(cancellationToken);
             }
 
-            if (!ValidateAddressFamily(ref family, hostName, justAddresses, out object? resultOnFailure))
-            {
-                return justAddresses ? (Task)
-                    Task.FromResult((IPAddress[])resultOnFailure) :
-                    Task.FromResult((IPHostEntry)resultOnFailure);
-            }
-
             object asyncState;
 
             // See if it's an IP Address.
@@ -588,6 +672,36 @@ namespace System.Net
             }
             else
             {
+                // Validate hostname before any processing
+                ValidateHostName(hostName);
+
+                // Check address family support after validation
+                if (!ValidateAddressFamily(ref family, hostName, justAddresses, out object? resultOnFailure))
+                {
+                    return justAddresses ? (Task)
+                        Task.FromResult((IPAddress[])resultOnFailure) :
+                        Task.FromResult((IPHostEntry)resultOnFailure);
+                }
+
+                // Handle RFC 6761 special-use domain names before calling the OS resolver.
+                if (TryHandleRfc6761SpecialName(hostName, justAddresses, family, out object? rfc6761Result, out SocketException? rfc6761Exception))
+                {
+                    NameResolutionActivity activity = NameResolutionTelemetry.Log.BeforeResolution(hostName);
+
+                    if (rfc6761Exception is not null)
+                    {
+                        NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: null, exception: rfc6761Exception);
+                        return justAddresses ? (Task)
+                            Task.FromException<IPAddress[]>(rfc6761Exception) :
+                            Task.FromException<IPHostEntry>(rfc6761Exception);
+                    }
+
+                    NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: rfc6761Result);
+                    return justAddresses ? (Task)
+                        Task.FromResult((IPAddress[])rfc6761Result!) :
+                        Task.FromResult((IPHostEntry)rfc6761Result!);
+                }
+
                 if (NameResolutionPal.SupportsGetAddrInfoAsync)
                 {
 #pragma warning disable CS0162 // Unreachable code detected -- SupportsGetAddrInfoAsync is a constant on *nix.
@@ -595,8 +709,6 @@ namespace System.Net
                     // If the OS supports it and 'hostName' is not an IP Address, resolve the name asynchronously
                     // instead of calling the synchronous version in the ThreadPool.
                     // If it fails, we will fall back to ThreadPool as well.
-
-                    ValidateHostName(hostName);
 
                     Task? t;
                     if (NameResolutionTelemetry.AnyDiagnosticsEnabled())
