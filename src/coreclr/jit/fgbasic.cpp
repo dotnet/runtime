@@ -6415,9 +6415,16 @@ BasicBlock* Compiler::fgNewBBatTryRegionEnd(BBKinds jumpKind, unsigned tryIndex)
 //
 // Note:
 //   For debuggable code, codegen will generate the 'throw' code inline.
+//   (except for Wasm target, which always uses throw helper blocks)
+//
 // Return Value:
 //    true if 'throw' helper block should be created.
+//
 bool Compiler::fgUseThrowHelperBlocks()
 {
+#if defined(TARGET_WASM)
+    return true;
+#else
     return !opts.compDbgCode;
+#endif // !defined(TARGET_WASM)
 }

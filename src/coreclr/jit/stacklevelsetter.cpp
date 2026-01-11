@@ -90,7 +90,6 @@ PhaseStatus StackLevelSetter::DoPhase()
             }
         }
     }
-
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
@@ -272,6 +271,13 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
         }
         break;
 #endif
+
+#if defined(TARGET_WASM)
+        // TODO-WASM: add other opers that imply null checks
+        case GT_NULLCHECK:
+            SetThrowHelperBlock(SCK_NULL_CHECK, block);
+            break;
+#endif // defined(TARGET_WASM)
 
         default: // Other opers can target throw only due to overflow.
             break;
