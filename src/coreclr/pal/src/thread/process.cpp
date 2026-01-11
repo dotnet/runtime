@@ -2325,12 +2325,10 @@ PROCBuildCreateDumpCommandLine(
     }
     
     int argc = 0;
-    if (argc + 1 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for program and null terminator
     argv[argc++] = program;
 
     if (dumpName != nullptr)
     {
-        if (argc + 3 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --name, dumpName, and null terminator
         argv[argc++] = "--name";
         argv[argc++] = dumpName;
     }
@@ -2338,19 +2336,15 @@ PROCBuildCreateDumpCommandLine(
     switch (dumpType)
     {
         case DumpTypeNormal:
-            if (argc + 2 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --normal and null terminator
             argv[argc++] = "--normal";
             break;
         case DumpTypeWithHeap:
-            if (argc + 2 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --withheap and null terminator
             argv[argc++] = "--withheap";
             break;
         case DumpTypeTriage:
-            if (argc + 2 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --triage and null terminator
             argv[argc++] = "--triage";
             break;
         case DumpTypeFull:
-            if (argc + 2 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --full and null terminator
             argv[argc++] = "--full";
             break;
         default:
@@ -2359,44 +2353,39 @@ PROCBuildCreateDumpCommandLine(
 
     if (flags & GenerateDumpFlagsLoggingEnabled)
     {
-        if (argc + 2 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --diag and null terminator
         argv[argc++] = "--diag";
     }
 
     if (flags & GenerateDumpFlagsVerboseLoggingEnabled)
     {
-        if (argc + 2 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --verbose and null terminator
         argv[argc++] = "--verbose";
     }
 
     if (flags & GenerateDumpFlagsCrashReportEnabled)
     {
-        if (argc + 2 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --crashreport and null terminator
         argv[argc++] = "--crashreport";
     }
 
     if (flags & GenerateDumpFlagsCrashReportOnlyEnabled)
     {
-        if (argc + 2 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --crashreportonly and null terminator
         argv[argc++] = "--crashreportonly";
     }
 
     if (g_running_in_exe)
     {
-        if (argc + 2 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --singlefile and null terminator
         argv[argc++] = "--singlefile";
     }
 
     if (logFileName != nullptr)
     {
-        if (argc + 3 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for --logtofile, logFileName, and null terminator
         argv[argc++] = "--logtofile";
         argv[argc++] = logFileName;
     }
 
-    if (argc + 2 >= MAX_ARGV_ENTRIES) return FALSE;  // Need room for pidarg and null terminator
     argv[argc++] = *ppidarg;
     argv[argc++] = nullptr;
+
+    _ASSERTE(argc < MAX_ARGV_ENTRIES);
 
     return TRUE;
 }
@@ -2784,11 +2773,11 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
             argv[argc] = g_argvCreateDump[argc];
         }
 
-        if (signal != 0 && argc + 3 < MAX_ARGV_ENTRIES)  // Need room for at least --signal, signalArg, and null terminator
+        if (signal != 0 && argc < MAX_ARGV_ENTRIES)
         {
             // Add the signal number to the command line
             signalArg = PROCFormatInt(signal);
-            if (signalArg != nullptr && argc + 3 < MAX_ARGV_ENTRIES)  // Need room for --signal, signalArg, and null terminator
+            if (signalArg != nullptr)
             {
                 argv[argc++] = "--signal";
                 argv[argc++] = signalArg;
@@ -2796,7 +2785,7 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
 
             // Add the current thread id to the command line. This function is always called on the crashing thread.
             crashThreadArg = PROCFormatInt(THREADSilentGetCurrentThreadId());
-            if (crashThreadArg != nullptr && argc + 3 < MAX_ARGV_ENTRIES)  // Need room for --crashthread, crashThreadArg, and null terminator
+            if (crashThreadArg != nullptr)
             {
                 argv[argc++] = "--crashthread";
                 argv[argc++] = crashThreadArg;
@@ -2805,36 +2794,31 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
             if (siginfo != nullptr)
             {
                 signalCodeArg = PROCFormatInt(siginfo->si_code);
-                if (signalCodeArg != nullptr && argc + 3 < MAX_ARGV_ENTRIES)  // Need room for --code, signalCodeArg, and null terminator
+                if (signalCodeArg != nullptr)
                 {
                     argv[argc++] = "--code";
                     argv[argc++] = signalCodeArg;
                 }
                 signalErrnoArg = PROCFormatInt(siginfo->si_errno);
-                if (signalErrnoArg != nullptr && argc + 3 < MAX_ARGV_ENTRIES)  // Need room for --errno, signalErrnoArg, and null terminator
+                if (signalErrnoArg != nullptr)
                 {
                     argv[argc++] = "--errno";
                     argv[argc++] = signalErrnoArg;
                 }
                 signalAddressArg = PROCFormatInt64((ULONG64)siginfo->si_addr);
-                if (signalAddressArg != nullptr && argc + 3 < MAX_ARGV_ENTRIES)  // Need room for --address, signalAddressArg, and null terminator
+                if (signalAddressArg != nullptr)
                 {
                     argv[argc++] = "--address";
                     argv[argc++] = signalAddressArg;
                 }
             }
 
-            if (argc < MAX_ARGV_ENTRIES)
-            {
-                argv[argc++] = nullptr;
-            }
+            argv[argc++] = nullptr;
+            _ASSERTE(argc < MAX_ARGV_ENTRIES);
         }
         else
         {
-            if (argc < MAX_ARGV_ENTRIES)
-            {
-                argv[argc] = nullptr;
-            }
+            argv[argc] = nullptr;
         }
 
         PROCCreateCrashDump(argv, nullptr, 0, serialize);
