@@ -784,6 +784,11 @@ EXTERN_C HCIMPL2(void, IL_Throw_Impl,  Object* obj, TransitionBlock* transitionB
         DispatchManagedException(kNullReferenceException);
 
     NormalizeThrownObject(&oref);
+
+    // Set the last thrown object before dispatching the exception.
+    // This is required for exception handling code that checks LastThrownObject.
+    pThread->SafeSetLastThrownObject(oref);
+
     DispatchManagedException(oref, exceptionFrame.GetContext());
 
     FC_CAN_TRIGGER_GC_END();
@@ -831,6 +836,10 @@ EXTERN_C HCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transi
     exceptionFrame.InitAndLink(pThread);
 
     FC_CAN_TRIGGER_GC();
+
+    // Set the last thrown object before dispatching the exception.
+    // This is required for exception handling code that checks LastThrownObject.
+    pThread->SafeSetLastThrownObject(oref);
 
     DispatchManagedException(oref, exceptionFrame.GetContext());
 

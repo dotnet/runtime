@@ -436,29 +436,34 @@ C_FUNC(\Name\()_End):
 //   Return address
 //   CalleeSavedRegisters (rbp, rbx, r15, r14, r13, r12 - 48 bytes)
 //   ArgumentRegisters (r9, r8, rcx, rdx, rsi, rdi - 48 bytes)  <- TransitionBlock
-//   Padding (16 bytes for 16-byte alignment)
+//   Padding (24 bytes for 16-byte alignment)
 //   FloatArgumentRegisters (xmm0-xmm7, 128 bytes)
 //   sp points here
 //
-// Stack alignment: After call (8) + callee-saved (48) + arg regs (48) + alloc (144) + call (8) = 256 bytes
-// 256 % 16 = 0, so stack is properly aligned for the call to IL_Throw_Impl.
+// Stack alignment calculation:
+//   Before call to IL_Throw: rsp is 16-byte aligned
+//   After call (return addr pushed): rsp % 16 = 8
+//   After PUSH_CALLEE_SAVED_REGISTERS (48 bytes): rsp % 16 = 8 (48 % 16 = 0)
+//   After PUSH_ARGUMENT_REGISTERS (48 bytes): rsp % 16 = 8 (48 % 16 = 0)
+//   After alloc_stack 152: rsp % 16 = (8 - 152) % 16 = 0  <- properly aligned!
 //
-// On exit, \target contains the TransitionBlock pointer (after float args area).
+// On exit, \target contains the TransitionBlock pointer.
 .macro PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS target
         set_cfa_register rsp, 8
 
         PUSH_CALLEE_SAVED_REGISTERS
         PUSH_ARGUMENT_REGISTERS
 
-        // Allocate space for alignment (16 bytes) + float argument registers (128 bytes) = 144 bytes
-        alloc_stack     144
-        // Save float argument registers at offset 16 (after alignment padding)
+        // Allocate space for padding (24 bytes) + float argument registers (128 bytes) = 152 bytes
+        // The extra 8 bytes (vs 144) ensures 16-byte stack alignment before the call
+        alloc_stack     152
+        // Save float argument registers at offset 24 (after alignment padding)
         // This ensures floats are at TransitionBlock - 128 (matching GetOffsetOfFloatArgumentRegisters)
-        SAVE_FLOAT_ARGUMENT_REGISTERS 16
+        SAVE_FLOAT_ARGUMENT_REGISTERS 24
 
         END_PROLOGUE
 
-        lea     \target, [rsp + 144]
+        lea     \target, [rsp + 152]
 .endm
 
 .macro INLINE_GETTHREAD
