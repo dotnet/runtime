@@ -2325,10 +2325,12 @@ PROCBuildCreateDumpCommandLine(
     }
     
     int argc = 0;
+    if (argc >= MAX_ARGV_ENTRIES) return FALSE;
     argv[argc++] = program;
 
     if (dumpName != nullptr)
     {
+        if (argc + 1 >= MAX_ARGV_ENTRIES) return FALSE;
         argv[argc++] = "--name";
         argv[argc++] = dumpName;
     }
@@ -2336,15 +2338,19 @@ PROCBuildCreateDumpCommandLine(
     switch (dumpType)
     {
         case DumpTypeNormal:
+            if (argc >= MAX_ARGV_ENTRIES) return FALSE;
             argv[argc++] = "--normal";
             break;
         case DumpTypeWithHeap:
+            if (argc >= MAX_ARGV_ENTRIES) return FALSE;
             argv[argc++] = "--withheap";
             break;
         case DumpTypeTriage:
+            if (argc >= MAX_ARGV_ENTRIES) return FALSE;
             argv[argc++] = "--triage";
             break;
         case DumpTypeFull:
+            if (argc >= MAX_ARGV_ENTRIES) return FALSE;
             argv[argc++] = "--full";
             break;
         default:
@@ -2353,42 +2359,44 @@ PROCBuildCreateDumpCommandLine(
 
     if (flags & GenerateDumpFlagsLoggingEnabled)
     {
+        if (argc >= MAX_ARGV_ENTRIES) return FALSE;
         argv[argc++] = "--diag";
     }
 
     if (flags & GenerateDumpFlagsVerboseLoggingEnabled)
     {
+        if (argc >= MAX_ARGV_ENTRIES) return FALSE;
         argv[argc++] = "--verbose";
     }
 
     if (flags & GenerateDumpFlagsCrashReportEnabled)
     {
+        if (argc >= MAX_ARGV_ENTRIES) return FALSE;
         argv[argc++] = "--crashreport";
     }
 
     if (flags & GenerateDumpFlagsCrashReportOnlyEnabled)
     {
+        if (argc >= MAX_ARGV_ENTRIES) return FALSE;
         argv[argc++] = "--crashreportonly";
     }
 
     if (g_running_in_exe)
     {
+        if (argc >= MAX_ARGV_ENTRIES) return FALSE;
         argv[argc++] = "--singlefile";
     }
 
     if (logFileName != nullptr)
     {
+        if (argc + 1 >= MAX_ARGV_ENTRIES) return FALSE;
         argv[argc++] = "--logtofile";
         argv[argc++] = logFileName;
     }
 
+    if (argc + 1 >= MAX_ARGV_ENTRIES) return FALSE;
     argv[argc++] = *ppidarg;
     argv[argc++] = nullptr;
-
-    if (argc >= MAX_ARGV_ENTRIES)
-    {
-        return FALSE;
-    }
 
     return TRUE;
 }
@@ -2776,11 +2784,11 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
             argv[argc] = g_argvCreateDump[argc];
         }
 
-        if (signal != 0 && argc < MAX_ARGV_ENTRIES)
+        if (signal != 0 && argc + 1 < MAX_ARGV_ENTRIES)
         {
             // Add the signal number to the command line
             signalArg = PROCFormatInt(signal);
-            if (signalArg != nullptr)
+            if (signalArg != nullptr && argc + 1 < MAX_ARGV_ENTRIES)
             {
                 argv[argc++] = "--signal";
                 argv[argc++] = signalArg;
@@ -2788,39 +2796,45 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
 
             // Add the current thread id to the command line. This function is always called on the crashing thread.
             crashThreadArg = PROCFormatInt(THREADSilentGetCurrentThreadId());
-            if (crashThreadArg != nullptr && argc < MAX_ARGV_ENTRIES)
+            if (crashThreadArg != nullptr && argc + 1 < MAX_ARGV_ENTRIES)
             {
                 argv[argc++] = "--crashthread";
                 argv[argc++] = crashThreadArg;
             }
 
-            if (siginfo != nullptr && argc < MAX_ARGV_ENTRIES)
+            if (siginfo != nullptr)
             {
                 signalCodeArg = PROCFormatInt(siginfo->si_code);
-                if (signalCodeArg != nullptr)
+                if (signalCodeArg != nullptr && argc + 1 < MAX_ARGV_ENTRIES)
                 {
                     argv[argc++] = "--code";
                     argv[argc++] = signalCodeArg;
                 }
                 signalErrnoArg = PROCFormatInt(siginfo->si_errno);
-                if (signalErrnoArg != nullptr && argc < MAX_ARGV_ENTRIES)
+                if (signalErrnoArg != nullptr && argc + 1 < MAX_ARGV_ENTRIES)
                 {
                     argv[argc++] = "--errno";
                     argv[argc++] = signalErrnoArg;
                 }
                 signalAddressArg = PROCFormatInt64((ULONG64)siginfo->si_addr);
-                if (signalAddressArg != nullptr && argc < MAX_ARGV_ENTRIES)
+                if (signalAddressArg != nullptr && argc + 1 < MAX_ARGV_ENTRIES)
                 {
                     argv[argc++] = "--address";
                     argv[argc++] = signalAddressArg;
                 }
             }
 
-            argv[argc++] = nullptr;
+            if (argc < MAX_ARGV_ENTRIES)
+            {
+                argv[argc++] = nullptr;
+            }
         }
         else
         {
-            argv[argc] = nullptr;
+            if (argc < MAX_ARGV_ENTRIES)
+            {
+                argv[argc] = nullptr;
+            }
         }
 
         PROCCreateCrashDump(argv, nullptr, 0, serialize);
