@@ -54,6 +54,12 @@
 //    | |                         to either a EE runtime helper function or
 //    | |                         a framed method.
 //    | |
+#ifdef FEATURE_RESOLVE_HELPER_DISPATCH
+//    | |
+//    | + ResolveHelperFrame    - represents a call to interface resolve helper
+//    | |
+#endif // FEATURE_RESOLVE_HELPER_DISPATCH
+//    | |
 //    | +-FramedMethodFrame     - this abstract frame represents a call to a method
 //    |   |                       that generates a full-fledged frame.
 //    |   |
@@ -891,6 +897,43 @@ public:
     UINT CbStackPopUsingGCRefMap(PTR_BYTE pGCRefMap);
 #endif
 };
+
+#ifdef FEATURE_RESOLVE_HELPER_DISPATCH
+
+typedef DPTR(class ResolveHelperFrame) PTR_ResolveHelperFrame;
+
+// Represents a call to interface resolve helper
+//
+// This frame saves all argument registers and leaves GC reporting them to the callsite.
+//
+class ResolveHelperFrame : public TransitionFrame
+{
+    TADDR m_pTransitionBlock;
+
+public:
+#ifndef DACCESS_COMPILE
+    ResolveHelperFrame(TransitionBlock* pTransitionBlock)
+        : TransitionFrame(FrameIdentifier::ResolveHelperFrame), m_pTransitionBlock(dac_cast<TADDR>(pTransitionBlock))
+    {
+    }
+#endif
+
+    TADDR GetTransitionBlock_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_pTransitionBlock;
+    }
+
+    unsigned GetFrameAttribs_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return FRAME_ATTR_RESUMABLE;    // Treat the next frame as the top frame.
+    }
+
+    void UpdateRegDisplay_Impl(const PREGDISPLAY, bool updateFloats = false);
+};
+
+#endif // FEATURE_RESOLVE_HELPER_DISPATCH
 
 //-----------------------------------------------------------------------
 // TransitionFrames for exceptions

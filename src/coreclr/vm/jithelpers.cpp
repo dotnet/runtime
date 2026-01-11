@@ -2390,9 +2390,11 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
 }
 HCIMPLEND_RAW
 
-// These two do take args but have a custom calling convention.
+// These do take args but have a custom calling convention.
 EXTERN_C void JIT_ValidateIndirectCall();
 EXTERN_C void JIT_DispatchIndirectCall();
+
+EXTERN_C void JIT_InterfaceLookupForSlot();
 
 //========================================================================
 //

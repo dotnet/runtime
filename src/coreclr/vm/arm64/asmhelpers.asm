@@ -10,6 +10,7 @@
     IMPORT PInvokeImportWorker
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     IMPORT VSD_ResolveWorker
+    IMPORT VSD_ResolveWorkerForInterfaceLookupSlot
 #endif
     IMPORT ComPreStubWorker
     IMPORT COMToCLRWorker
@@ -760,6 +761,35 @@ Fail
         EPILOG_BRANCH_REG  x9
 
         NESTED_END
+
+
+;; On Input:
+;;    x0                     contains object 'this' pointer
+;;    x11                    contains the address of the indirection cell (with the flags in the low bits)
+;;
+;; On Output:
+;;    x15                    contains the target address
+;;
+;; Preserves all argument registers
+        NESTED_ENTRY JIT_InterfaceLookupForSlot
+
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        add x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
+        mov x1, x11 ; indirection cell
+
+        bl VSD_ResolveWorkerForInterfaceLookupSlot
+
+        ;; Move the result (the target address) to x12 so it doesn't get overridden when we restore the
+        ;; argument registers.
+        mov x15, x0
+
+        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+
+        EPILOG_RETURN
+
+        NESTED_END
+
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #ifdef FEATURE_READYTORUN
