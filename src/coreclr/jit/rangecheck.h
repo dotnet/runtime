@@ -488,16 +488,6 @@ struct RangeOps
 
         Range result = Limit(Limit::keUnknown);
 
-        // AND is a commutative operation, put the constant (if any) on the right.
-        if (r1lo.IsConstant())
-        {
-            std::swap(r1lo, r2lo);
-        }
-        if (r1hi.IsConstant())
-        {
-            std::swap(r1hi, r2hi);
-        }
-
         // Lower bound
         if (r2lo.IsConstant() && r1lo.IsConstant())
         {
