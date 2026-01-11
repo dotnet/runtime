@@ -72,7 +72,7 @@ namespace ILCompiler.DependencyAnalysis
             ISymbolNode target = _isAddressTaken
                 ? factory.AddressTakenMethodEntrypoint(canonMethod, _isUnboxingStub)
                 : factory.MethodEntrypoint(canonMethod, _isUnboxingStub);
-            builder.EmitPointerReloc(target);
+            builder.EmitPointerReloc(target, factory.Target.CodeDelta);
 
             // Find out what's the context to use
             ISortableSymbolNode contextParameter;
