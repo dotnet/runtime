@@ -51,9 +51,9 @@ namespace Internal.IL.Stubs
             {
                 codestream.BeginTry(tryFinallyRegion);
                 codestream.Emit(ILOpcode.nop);
-                ILExceptionRegionBuilder tryCatchRegion = emitter.NewCatchRegion(context.GetWellKnownType(WellKnownType.Object));
+                ILExceptionRegionBuilder tryFilterRegion = emitter.NewFilterRegion();
                 {
-                    codestream.BeginTry(tryCatchRegion);
+                    codestream.BeginTry(tryFilterRegion);
 
                     int localArg = 0;
                     if (!sig.IsStatic)
@@ -142,11 +142,20 @@ namespace Internal.IL.Stubs
                     codestream.EmitStLoc(returnTaskLocal);
                     codestream.Emit(ILOpcode.leave, returnTaskLabel);
 
-                    codestream.EndTry(tryCatchRegion);
+                    codestream.EndTry(tryFilterRegion);
                 }
-                // Catch
+                // Filter - check if the caught object is a System.Exception
                 {
-                    codestream.BeginHandler(tryCatchRegion);
+                    codestream.BeginFilter(tryFilterRegion);
+                    // Exception object is on the stack
+                    codestream.Emit(ILOpcode.isinst, emitter.NewToken(context.GetWellKnownType(WellKnownType.Exception)));
+                    codestream.Emit(ILOpcode.ldnull);
+                    codestream.Emit(ILOpcode.cgt_un);    // 1 if non-null (is Exception), 0 if null (not Exception)
+                    codestream.Emit(ILOpcode.endfilter); // End filter block and begin handler
+                }
+                // Handler
+                {
+                    codestream.BeginHandler(tryFilterRegion);
 
                     TypeDesc exceptionType = context.GetWellKnownType(WellKnownType.Exception);
 
@@ -182,7 +191,7 @@ namespace Internal.IL.Stubs
                     codestream.Emit(ILOpcode.call, emitter.NewToken(fromExceptionMd));
                     codestream.EmitStLoc(returnTaskLocal);
                     codestream.Emit(ILOpcode.leave, returnTaskLabel);
-                    codestream.EndHandler(tryCatchRegion);
+                    codestream.EndHandler(tryFilterRegion);
                 }
 
                 codestream.EmitLabel(suspendedLabel);

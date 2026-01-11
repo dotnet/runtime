@@ -316,6 +316,7 @@
     <Compile Include="IL\ReadyToRunILProvider.cs" />
     <Compile Include="JitInterface\CorInfoImpl.ReadyToRun.cs" />
     <Compile Include="ObjectWriter\TargetExtensions.cs" />
+    <Compile Include="TypeSystem\MethodDescExtensions.cs" />
     <Compile Include="TypeSystem\Mutable\MutableModule.cs" />
     <Compile Include="TypeSystem\Mutable\MutableModule.Sorting.cs" />
     <Compile Include="TypeSystem\Mutable\MutableModule.Symbols.cs" />

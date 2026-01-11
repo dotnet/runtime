@@ -719,7 +719,7 @@ namespace ILCompiler
                                         case MethodDesc md:
                                             if (md.IsAsyncVariant())
                                             {
-                                                Debug.Assert(((CompilerTypeSystemContext)md.Context).GetTargetOfAsyncVariantMethod(md.GetTypicalMethodDefinition()) == method);
+                                                Debug.Assert(md.GetTargetOfAsyncVariant() == method);
                                                 Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: false, throwIfNotFound: true).IsNull);
                                             }
                                             else if (_nodeFactory.Resolver.GetModuleTokenForMethod(md, allowDynamicallyCreatedReference: true, throwIfNotFound: false).IsNull)
