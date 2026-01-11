@@ -10900,15 +10900,17 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     m_ContextPointers.R9 = &m_Context.R9;
 
     // Copy floating point argument registers (xmm0-xmm7)
-    FloatArgumentRegisters *pFloatArgs = (FloatArgumentRegisters*)((BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters());
-    m_Context.Xmm0 = pFloatArgs->d[0];
-    m_Context.Xmm1 = pFloatArgs->d[1];
-    m_Context.Xmm2 = pFloatArgs->d[2];
-    m_Context.Xmm3 = pFloatArgs->d[3];
-    m_Context.Xmm4 = pFloatArgs->d[4];
-    m_Context.Xmm5 = pFloatArgs->d[5];
-    m_Context.Xmm6 = pFloatArgs->d[6];
-    m_Context.Xmm7 = pFloatArgs->d[7];
+    // Use memcpy to avoid alignment issues - the source may not be 16-byte aligned
+    // depending on stack layout in the assembly helpers
+    BYTE *pFloatArgs = (BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters();
+    memcpy(&m_Context.Xmm0, pFloatArgs + 0x00, sizeof(m_Context.Xmm0));
+    memcpy(&m_Context.Xmm1, pFloatArgs + 0x10, sizeof(m_Context.Xmm1));
+    memcpy(&m_Context.Xmm2, pFloatArgs + 0x20, sizeof(m_Context.Xmm2));
+    memcpy(&m_Context.Xmm3, pFloatArgs + 0x30, sizeof(m_Context.Xmm3));
+    memcpy(&m_Context.Xmm4, pFloatArgs + 0x40, sizeof(m_Context.Xmm4));
+    memcpy(&m_Context.Xmm5, pFloatArgs + 0x50, sizeof(m_Context.Xmm5));
+    memcpy(&m_Context.Xmm6, pFloatArgs + 0x60, sizeof(m_Context.Xmm6));
+    memcpy(&m_Context.Xmm7, pFloatArgs + 0x70, sizeof(m_Context.Xmm7));
     // Initialize remaining XMM registers to zero
     memset(&m_Context.Xmm8, 0, sizeof(m_Context.Xmm8));
     memset(&m_Context.Xmm9, 0, sizeof(m_Context.Xmm9));
