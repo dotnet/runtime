@@ -169,7 +169,7 @@ namespace Internal.IL
                 {
                     if (ecmaMethod.Signature.ReturnsTaskOrValueTask())
                     {
-                        return AsyncThunkILEmitter.EmitTaskReturningThunk(ecmaMethod, ((CompilerTypeSystemContext)ecmaMethod.Context).GetAsyncVariantMethod(ecmaMethod));
+                        return AsyncThunkILEmitter.EmitTaskReturningThunk(ecmaMethod, ((CompilerTypeSystemContext)ecmaMethod.Context).GetAsyncVariantMethod(ecmaMethod), useFilterBasedCatch: true);
                     }
                     else if (ecmaMethod.OwningType.Module != ecmaMethod.Context.SystemModule)
                     {

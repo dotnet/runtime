@@ -14,7 +14,9 @@ namespace Internal.IL.Stubs
         // it calls FinalizeTaskReturningThunk/FinalizeValueTaskReturningThunk method to get the Task/ValueTask.
 
         // The emitted code matches method EmitTaskReturningThunk in CoreCLR VM.
-        public static MethodIL EmitTaskReturningThunk(MethodDesc taskReturningMethod, MethodDesc asyncMethod)
+        // When useFilterBasedCatch is true, a filter-based exception handler is used (required for ReadyToRun).
+        // When false, a type-based catch for System.Exception is used (preferred for NativeAOT).
+        public static MethodIL EmitTaskReturningThunk(MethodDesc taskReturningMethod, MethodDesc asyncMethod, bool useFilterBasedCatch = false)
         {
             TypeSystemContext context = taskReturningMethod.Context;
 
@@ -51,9 +53,13 @@ namespace Internal.IL.Stubs
             {
                 codestream.BeginTry(tryFinallyRegion);
                 codestream.Emit(ILOpcode.nop);
-                ILExceptionRegionBuilder tryFilterRegion = emitter.NewFilterRegion();
+
+                TypeDesc exceptionType = context.GetWellKnownType(WellKnownType.Exception);
+                ILExceptionRegionBuilder tryCatchRegion = useFilterBasedCatch
+                    ? emitter.NewFilterRegion()
+                    : emitter.NewCatchRegion(exceptionType);
                 {
-                    codestream.BeginTry(tryFilterRegion);
+                    codestream.BeginTry(tryCatchRegion);
 
                     int localArg = 0;
                     if (!sig.IsStatic)
@@ -142,22 +148,21 @@ namespace Internal.IL.Stubs
                     codestream.EmitStLoc(returnTaskLocal);
                     codestream.Emit(ILOpcode.leave, returnTaskLabel);
 
-                    codestream.EndTry(tryFilterRegion);
+                    codestream.EndTry(tryCatchRegion);
                 }
-                // Filter - check if the caught object is a System.Exception
+                // Filter (only emitted when useFilterBasedCatch is true)
+                if (useFilterBasedCatch)
                 {
-                    codestream.BeginFilter(tryFilterRegion);
+                    codestream.BeginFilter(tryCatchRegion);
                     // Exception object is on the stack
-                    codestream.Emit(ILOpcode.isinst, emitter.NewToken(context.GetWellKnownType(WellKnownType.Exception)));
+                    codestream.Emit(ILOpcode.isinst, emitter.NewToken(exceptionType));
                     codestream.Emit(ILOpcode.ldnull);
                     codestream.Emit(ILOpcode.cgt_un);    // 1 if non-null (is Exception), 0 if null (not Exception)
                     codestream.Emit(ILOpcode.endfilter); // End filter block and begin handler
                 }
                 // Handler
                 {
-                    codestream.BeginHandler(tryFilterRegion);
-
-                    TypeDesc exceptionType = context.GetWellKnownType(WellKnownType.Exception);
+                    codestream.BeginHandler(tryCatchRegion);
 
                     MethodDesc fromExceptionMd;
                     if (logicalReturnType != null)
@@ -191,7 +196,7 @@ namespace Internal.IL.Stubs
                     codestream.Emit(ILOpcode.call, emitter.NewToken(fromExceptionMd));
                     codestream.EmitStLoc(returnTaskLocal);
                     codestream.Emit(ILOpcode.leave, returnTaskLabel);
-                    codestream.EndHandler(tryFilterRegion);
+                    codestream.EndHandler(tryCatchRegion);
                 }
 
                 codestream.EmitLabel(suspendedLabel);
