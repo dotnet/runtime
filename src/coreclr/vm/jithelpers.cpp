@@ -859,23 +859,7 @@ HCIMPL1(void, IL_ThrowExact, Object* obj)
 
     FC_CAN_TRIGGER_GC();
 
-#ifdef FEATURE_EH_FUNCLETS
     DispatchManagedException(oref, exceptionFrame.GetContext(), NULL, ExKind::RethrowFlag);
-#elif defined(TARGET_X86)
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-#if defined(_DEBUG) && defined(TARGET_X86)
-    g_ExceptionEIP = (PVOID)transitionBlock->m_ReturnAddress;
-#endif // defined(_DEBUG) && defined(TARGET_X86)
-
-    RaiseTheExceptionInternalOnly(oref, FALSE);
-
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-#else // FEATURE_EH_FUNCLETS
-    PORTABILITY_ASSERT("IL_ThrowExact");
-#endif // FEATURE_EH_FUNCLETS
 
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();

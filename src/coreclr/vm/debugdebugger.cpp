@@ -304,9 +304,7 @@ extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
 
     _ASSERTE(gc.pException != NULL);
 
-    // extract the information from the continuation object
-    // and populate the exception object
-    // get the state
+    // populate exception with information from the continuation object
     OBJECTHANDLE handle = AppDomain::GetCurrentDomain()->CreateHandle(gc.pException);
     EECodeInfo codeInfo((PCODE)diagnosticIP);
     if (codeInfo.IsValid())
