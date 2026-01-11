@@ -4371,7 +4371,7 @@ namespace System
                         // Unescape in-place
                         dest.Length = start;
                         UriHelper.Unescape(slice, ref dest);
-                        Debug.Assert(slice.Overlaps(dest.RawChars));
+                        Debug.Assert(slice.IsEmpty || slice.Overlaps(dest.RawChars));
                     }
                 }
                 else
