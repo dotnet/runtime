@@ -478,6 +478,22 @@ struct RangeOps
         return Multiply(r1, convertedOp2Range);
     }
 
+    static Range Or(Range& r1, Range& r2)
+    {
+        // For OR we require both operands to be constant to produce a constant result.
+        // No useful information can be derived if only one operand is constant.
+        //
+        // Example: [0..3] | [1..255] = [1..255]
+        //
+        return ApplyRangeOp(r1, r2, [](Limit& a, Limit& b) {
+            if (a.IsConstant() && b.IsConstant() && (a.GetConstant() >= 0) && (b.GetConstant() >= 0))
+            {
+                return Limit(Limit::keConstant, a.GetConstant() | b.GetConstant());
+            }
+            return Limit(Limit::keUnknown);
+        });
+    }
+
     static Range And(Range& r1, Range& r2)
     {
         Limit& r1lo = r1.LowerLimit();
@@ -488,74 +504,42 @@ struct RangeOps
 
         Range result = Limit(Limit::keUnknown);
 
-        // Lower bound
-        if (r2lo.IsConstant() && r1lo.IsConstant())
+        // if either lower bound is a non-negative constant, result >= 0
+        if ((r1lo.IsConstant() && (r1lo.GetConstant() >= 0)) || (r2lo.IsConstant() && (r2lo.GetConstant() >= 0)))
         {
-            // if both are constant, just AND them
-            result.lLimit = Limit(Limit::keConstant, r1lo.GetConstant() & r2lo.GetConstant());
-        }
-        else if (r2lo.IsConstant() && (r2lo.GetConstant() >= 0))
-        {
-            // otherwise the only knowledge is that result >= 0,
-            // because one of the AND's operands is a non-negative constant
+            // Example: [0.. ] & [unknown.. ] = [0.. ]
             result.lLimit = Limit(Limit::keConstant, 0);
         }
 
-        // Upper bound
-        if (r2hi.IsConstant() && r1hi.IsConstant())
+        // if either upper bound is a non-negative constant, result <= cns
+        if (r2hi.IsConstant() && (r2hi.GetConstant() >= 0))
         {
-            // if both are constant, just AND them
-            result.uLimit = Limit(Limit::keConstant, r1hi.GetConstant() & r2hi.GetConstant());
-        }
-        else if (r2hi.IsConstant() && (r2hi.GetConstant() >= 0))
-        {
-            // otherwise the only knowledge is that result <= r2hi,
+            // Example: [ ..X] & [ ..5] = [ ..5]
             result.uLimit = Limit(Limit::keConstant, r2hi.GetConstant());
         }
-        return result;
-    }
-
-    static Range Or(Range& r1, Range& r2)
-    {
-        Limit& r1lo = r1.LowerLimit();
-        Limit& r2lo = r2.LowerLimit();
-
-        Limit& r1hi = r1.UpperLimit();
-        Limit& r2hi = r2.UpperLimit();
-
-        Range result = Limit(Limit::keUnknown);
-
-        // For OR we can only make progress when both sides are constant and non-negative
-        //
-        if (r1lo.IsConstant() && r2lo.IsConstant() && (r1lo.GetConstant() >= 0) && (r2lo.GetConstant() >= 0))
+        else if (r1hi.IsConstant() && (r1hi.GetConstant() >= 0))
         {
-            result.lLimit = Limit(Limit::keConstant, r1lo.GetConstant() | r2lo.GetConstant());
+            // Example: [ ..5] & [ ..X] = [ ..5]
+            result.uLimit = Limit(Limit::keConstant, r1hi.GetConstant());
         }
-        if (r1hi.IsConstant() && r2hi.IsConstant() && (r1hi.GetConstant() >= 0) && (r2hi.GetConstant() >= 0))
-        {
-            result.uLimit = Limit(Limit::keConstant, r1hi.GetConstant() | r2hi.GetConstant());
-        }
+
         return result;
     }
 
     static Range UnsignedMod(Range& r1, Range& r2)
     {
+        Range result = Limit(Limit::keUnknown);
+
         Limit& r2lo = r2.LowerLimit();
         Limit& r2hi = r2.UpperLimit();
-
-        Range result = Limit(Limit::keUnknown);
 
         // For X UMOD Y we only handle the case when Y is a fixed non-negative constant.
         // Example: X % 5 -> [0..4]
         //
-        if (r2lo.IsConstant() && r2lo.Equals(r2hi))
+        if (r2lo.IsConstant() && r2lo.Equals(r2hi) && (r2lo.GetConstant() > 0))
         {
-            int op2Cns = r2lo.GetConstant();
-            if (op2Cns > 0)
-            {
-                result.lLimit = Limit(Limit::keConstant, 0);
-                result.uLimit = Limit(Limit::keConstant, op2Cns - 1);
-            }
+            result.lLimit = Limit(Limit::keConstant, 0);
+            result.uLimit = Limit(Limit::keConstant, r2lo.GetConstant() - 1);
         }
         return result;
     }
