@@ -71,7 +71,7 @@ bool Compiler::shouldDoubleAlign(
     JITDUMP("  Sum of weighted ref counts for EBP enregistered variables: %f\n", refCntWtdEBP);
     JITDUMP("  Sum of weighted ref counts for weighted stack based doubles: %f\n", refCntWtdStkDbl);
 
-    if (((weight_t)bytesUsed) > ((refCntWtdStkDbl * misaligned_weight) / BB_UNITY_WEIGHT))
+    if (((weight_t)bytesUsed) > (refCntWtdStkDbl * misaligned_weight))
     {
         JITDUMP("    Predicting not to double-align ESP to save %d bytes of code.\n", bytesUsed);
     }
