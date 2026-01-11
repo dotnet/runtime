@@ -2784,11 +2784,11 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
             argv[argc] = g_argvCreateDump[argc];
         }
 
-        if (signal != 0 && argc + 1 < MAX_ARGV_ENTRIES)
+        if (signal != 0 && argc + 3 < MAX_ARGV_ENTRIES)  // Need room for at least --signal, signalArg, and null terminator
         {
             // Add the signal number to the command line
             signalArg = PROCFormatInt(signal);
-            if (signalArg != nullptr && argc + 1 < MAX_ARGV_ENTRIES)
+            if (signalArg != nullptr && argc + 3 < MAX_ARGV_ENTRIES)  // Need room for --signal, signalArg, and null terminator
             {
                 argv[argc++] = "--signal";
                 argv[argc++] = signalArg;
@@ -2796,7 +2796,7 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
 
             // Add the current thread id to the command line. This function is always called on the crashing thread.
             crashThreadArg = PROCFormatInt(THREADSilentGetCurrentThreadId());
-            if (crashThreadArg != nullptr && argc + 1 < MAX_ARGV_ENTRIES)
+            if (crashThreadArg != nullptr && argc + 3 < MAX_ARGV_ENTRIES)  // Need room for --crashthread, crashThreadArg, and null terminator
             {
                 argv[argc++] = "--crashthread";
                 argv[argc++] = crashThreadArg;
@@ -2805,19 +2805,19 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
             if (siginfo != nullptr)
             {
                 signalCodeArg = PROCFormatInt(siginfo->si_code);
-                if (signalCodeArg != nullptr && argc + 1 < MAX_ARGV_ENTRIES)
+                if (signalCodeArg != nullptr && argc + 3 < MAX_ARGV_ENTRIES)  // Need room for --code, signalCodeArg, and null terminator
                 {
                     argv[argc++] = "--code";
                     argv[argc++] = signalCodeArg;
                 }
                 signalErrnoArg = PROCFormatInt(siginfo->si_errno);
-                if (signalErrnoArg != nullptr && argc + 1 < MAX_ARGV_ENTRIES)
+                if (signalErrnoArg != nullptr && argc + 3 < MAX_ARGV_ENTRIES)  // Need room for --errno, signalErrnoArg, and null terminator
                 {
                     argv[argc++] = "--errno";
                     argv[argc++] = signalErrnoArg;
                 }
                 signalAddressArg = PROCFormatInt64((ULONG64)siginfo->si_addr);
-                if (signalAddressArg != nullptr && argc + 1 < MAX_ARGV_ENTRIES)
+                if (signalAddressArg != nullptr && argc + 3 < MAX_ARGV_ENTRIES)  // Need room for --address, signalAddressArg, and null terminator
                 {
                     argv[argc++] = "--address";
                     argv[argc++] = signalAddressArg;
