@@ -326,6 +326,78 @@ namespace System.Net.NameResolution.Tests
                 { true, TestSettings.IPv6Host, AddressFamily.InterNetworkV6 }
             };
 
+        // RFC 6761 Section 6.4: "invalid" and "*.invalid" must always return NXDOMAIN (HostNotFound).
+        [Theory]
+        [InlineData("invalid")]
+        [InlineData("test.invalid")]
+        [InlineData("foo.bar.invalid")]
+        [InlineData("INVALID")]
+        [InlineData("Test.INVALID")]
+        public async Task DnsGetHostEntry_InvalidDomain_ThrowsHostNotFound(string hostName)
+        {
+            SocketException ex = Assert.ThrowsAny<SocketException>(() => Dns.GetHostEntry(hostName));
+            Assert.Equal(SocketError.HostNotFound, ex.SocketErrorCode);
+
+            ex = await Assert.ThrowsAnyAsync<SocketException>(() => Dns.GetHostEntryAsync(hostName));
+            Assert.Equal(SocketError.HostNotFound, ex.SocketErrorCode);
+        }
+
+        // RFC 6761 Section 6.3: "*.localhost" subdomains must resolve to loopback addresses.
+        [Theory]
+        [InlineData("foo.localhost")]
+        [InlineData("bar.foo.localhost")]
+        [InlineData("test.localhost")]
+        [InlineData("FOO.LOCALHOST")]
+        [InlineData("Test.LocalHost")]
+        public async Task DnsGetHostEntry_LocalhostSubdomain_ReturnsLoopback(string hostName)
+        {
+            IPHostEntry entry = Dns.GetHostEntry(hostName);
+            Assert.Equal(hostName, entry.HostName);
+            Assert.True(entry.AddressList.Length >= 1, "Expected at least one loopback address");
+            Assert.All(entry.AddressList, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
+
+            entry = await Dns.GetHostEntryAsync(hostName);
+            Assert.Equal(hostName, entry.HostName);
+            Assert.True(entry.AddressList.Length >= 1, "Expected at least one loopback address");
+            Assert.All(entry.AddressList, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
+        }
+
+        // RFC 6761: Ensure names that look similar but are not reserved are still resolved via OS.
+        [Theory]
+        [InlineData("notlocalhost")]
+        [InlineData("localhostfoo")]
+        [InlineData("invalidname")]
+        [InlineData("testinvalid")]
+        public async Task DnsGetHostEntry_SimilarButNotReserved_ThrowsSocketException(string hostName)
+        {
+            // These should go to the OS resolver and fail with HostNotFound (not special-cased).
+            Assert.ThrowsAny<SocketException>(() => Dns.GetHostEntry(hostName));
+            await Assert.ThrowsAnyAsync<SocketException>(() => Dns.GetHostEntryAsync(hostName));
+        }
+
+        // RFC 6761: "*.localhost" subdomains should respect AddressFamily parameter.
+        [Theory]
+        [InlineData(AddressFamily.InterNetwork)]
+        [InlineData(AddressFamily.InterNetworkV6)]
+        public async Task DnsGetHostEntry_LocalhostSubdomain_RespectsAddressFamily(AddressFamily addressFamily)
+        {
+            // Skip IPv6 test if OS doesn't support it.
+            if (addressFamily == AddressFamily.InterNetworkV6 && !Socket.OSSupportsIPv6)
+            {
+                return;
+            }
+
+            string hostName = "test.localhost";
+
+            IPHostEntry entry = Dns.GetHostEntry(hostName, addressFamily);
+            Assert.True(entry.AddressList.Length >= 1, "Expected at least one address");
+            Assert.All(entry.AddressList, addr => Assert.Equal(addressFamily, addr.AddressFamily));
+
+            entry = await Dns.GetHostEntryAsync(hostName, addressFamily);
+            Assert.True(entry.AddressList.Length >= 1, "Expected at least one address");
+            Assert.All(entry.AddressList, addr => Assert.Equal(addressFamily, addr.AddressFamily));
+        }
+
         [Fact]
         public async Task DnsGetHostEntry_PreCancelledToken_Throws()
         {

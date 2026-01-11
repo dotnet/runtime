@@ -204,6 +204,61 @@ namespace System.Net.NameResolution.Tests
                 Assert.Empty(addresses);
             }
         }
+
+        // RFC 6761 Section 6.4: "invalid" and "*.invalid" must always return NXDOMAIN (HostNotFound).
+        [Theory]
+        [InlineData("invalid")]
+        [InlineData("test.invalid")]
+        [InlineData("foo.bar.invalid")]
+        [InlineData("INVALID")]
+        [InlineData("Test.INVALID")]
+        public async Task DnsGetHostAddresses_InvalidDomain_ThrowsHostNotFound(string hostName)
+        {
+            SocketException ex = Assert.ThrowsAny<SocketException>(() => Dns.GetHostAddresses(hostName));
+            Assert.Equal(SocketError.HostNotFound, ex.SocketErrorCode);
+
+            ex = await Assert.ThrowsAnyAsync<SocketException>(() => Dns.GetHostAddressesAsync(hostName));
+            Assert.Equal(SocketError.HostNotFound, ex.SocketErrorCode);
+        }
+
+        // RFC 6761 Section 6.3: "*.localhost" subdomains must resolve to loopback addresses.
+        [Theory]
+        [InlineData("foo.localhost")]
+        [InlineData("bar.foo.localhost")]
+        [InlineData("test.localhost")]
+        public async Task DnsGetHostAddresses_LocalhostSubdomain_ReturnsLoopback(string hostName)
+        {
+            IPAddress[] addresses = Dns.GetHostAddresses(hostName);
+            Assert.True(addresses.Length >= 1, "Expected at least one loopback address");
+            Assert.All(addresses, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
+
+            addresses = await Dns.GetHostAddressesAsync(hostName);
+            Assert.True(addresses.Length >= 1, "Expected at least one loopback address");
+            Assert.All(addresses, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
+        }
+
+        // RFC 6761: "*.localhost" subdomains should respect AddressFamily parameter.
+        [Theory]
+        [InlineData(AddressFamily.InterNetwork)]
+        [InlineData(AddressFamily.InterNetworkV6)]
+        public async Task DnsGetHostAddresses_LocalhostSubdomain_RespectsAddressFamily(AddressFamily addressFamily)
+        {
+            // Skip IPv6 test if OS doesn't support it.
+            if (addressFamily == AddressFamily.InterNetworkV6 && !Socket.OSSupportsIPv6)
+            {
+                return;
+            }
+
+            string hostName = "test.localhost";
+
+            IPAddress[] addresses = Dns.GetHostAddresses(hostName, addressFamily);
+            Assert.True(addresses.Length >= 1, "Expected at least one address");
+            Assert.All(addresses, addr => Assert.Equal(addressFamily, addr.AddressFamily));
+
+            addresses = await Dns.GetHostAddressesAsync(hostName, addressFamily);
+            Assert.True(addresses.Length >= 1, "Expected at least one address");
+            Assert.All(addresses, addr => Assert.Equal(addressFamily, addr.AddressFamily));
+        }
     }
 
     // Cancellation tests are sequential to reduce the chance of timing issues.
