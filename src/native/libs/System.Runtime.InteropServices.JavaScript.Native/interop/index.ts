@@ -7,7 +7,14 @@ import { InternalExchangeIndex } from "../types";
 import GitHash from "consts:gitHash";
 
 import { dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "./cross-module";
-import { ENVIRONMENT_IS_NODE } from "./per-module";
+import { bindJSImportST, dynamicImport, getDotnetInstance, getGlobalThis, getProperty, getTypeOfProperty, hasProperty, invokeJSFunction, invokeJSImportST, setModuleImports, setProperty } from "./invoke-js";
+import { bindCsFunction, getAssemblyExports } from "./invoke-cs";
+import { initializeMarshalersToJs, resolveOrRejectPromise } from "./marshal-to-js";
+import { initializeMarshalersToCs } from "./marshal-to-cs";
+import { forceDisposeProxies, releaseCSOwnedObject } from "./gc-handles";
+import { cancelPromise } from "./cancelable-promise";
+import { loadLazyAssembly, loadSatelliteAssemblies } from "./lazy";
+import { jsInteropState } from "./marshal";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
     if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
@@ -23,27 +30,57 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         setModuleImports,
     };
     Object.assign(runtimeApi, runtimeApiLocal);
+    Object.assign(runtimeApi.INTERNAL, {
+        hasProperty,
+        getTypeOfProperty,
+        getProperty,
+        setProperty,
+        getGlobalThis,
+        getDotnetInstance,
+        dynamicImport,
+        bindCsFunction,
+        loadSatelliteAssemblies,
+        loadLazyAssembly,
+
+        // WASM-TODO: get rid of mono hacks https://github.com/dotnet/runtime/issues/122939
+        mono_wasm_gc_lock: () => { /* no-op */ },
+        mono_wasm_gc_unlock: () => { /* no-op */ },
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        monoStringToStringUnsafe: (strPtr: number) => {
+            throw new Error("Not implemented: monoStringToStringUnsafe");
+        },
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        monoObjectAsBoolOrNullUnsafe: (objPtr: number) => {
+            throw new Error("Not implemented: monoObjectAsBoolOrNullUnsafe");
+        }
+    });
 
     internals[InternalExchangeIndex.RuntimeExportsTable] = runtimeExportsToTable({
+        bindJSImportST,
+        invokeJSImportST,
+        releaseCSOwnedObject,
+        resolveOrRejectPromise,
+        cancelPromise,
+        invokeJSFunction,
+        forceDisposeProxies,
     });
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    initializeMarshalersToJs();
+    initializeMarshalersToCs();
+    jsInteropState.isInitialized = true;
+    jsInteropState.enablePerfMeasure = globalThis.performance && typeof globalThis.performance.measure === "function";
+
     function runtimeExportsToTable(map: RuntimeExports): RuntimeExportsTable {
         // keep in sync with runtimeExportsFromTable()
         return [
+            map.bindJSImportST,
+            map.invokeJSImportST,
+            map.releaseCSOwnedObject,
+            map.resolveOrRejectPromise,
+            map.cancelPromise,
+            map.invokeJSFunction,
+            map.forceDisposeProxies,
         ];
     }
 }
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function getAssemblyExports(assemblyName: string): Promise<any> {
-    throw new Error("Not implemented");
-    return ENVIRONMENT_IS_NODE; // dummy
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function setModuleImports(moduleName: string, moduleImports: any): void {
-    throw new Error("Not implemented");
-}
-

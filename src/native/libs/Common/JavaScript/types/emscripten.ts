@@ -25,6 +25,13 @@ export interface CharPtrPtr extends NativePointer {
     __brand: "CharPtrPtr"
 }
 
+export interface JSMarshalerArguments extends NativePointer {
+    __brand: "JSMarshalerArguments"
+}
+export type CSFnHandle = {
+    __brand: "CSFnHandle"
+}
+
 export interface EmscriptenModule {
     // this should match emcc -s EXPORTED_FUNCTIONS
     _malloc(size: number): VoidPtr;

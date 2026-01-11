@@ -21,6 +21,9 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         throw new Error(`Mismatched git hashes between loader and runtime. Loader: ${runtimeApi.runtimeBuildInfo.gitHash}, BrowserHost: ${GitHash}`);
     }
     Object.assign(runtimeApi, runtimeApiLocal);
+    if (runtimeApi.runtimeBuildInfo.gitHash && runtimeApi.runtimeBuildInfo.gitHash !== GitHash) {
+        throw new Error(`Mismatched git hashes between loader and runtime. Loader: ${runtimeApi.runtimeBuildInfo.gitHash}, BrowserHost: ${GitHash}`);
+    }
 
     internals[InternalExchangeIndex.BrowserHostExportsTable] = browserHostExportsToTable({
         registerDllBytes,

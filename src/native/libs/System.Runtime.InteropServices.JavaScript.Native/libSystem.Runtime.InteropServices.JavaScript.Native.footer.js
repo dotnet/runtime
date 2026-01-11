@@ -19,7 +19,14 @@
         const exports = {};
         libInteropJavaScriptNative(exports);
 
-        let commonDeps = ["$DOTNET"];
+        let commonDeps = ["$DOTNET",
+            "SystemInteropJS_GetManagedStackTrace",
+            "SystemInteropJS_CallDelegate",
+            "SystemInteropJS_CompleteTask",
+            "SystemInteropJS_ReleaseJSOwnedObjectByGCHandle",
+            "SystemInteropJS_BindAssemblyExports",
+            "SystemInteropJS_CallJSExport"
+        ];
         const lib = {
             $DOTNET_INTEROP: {
                 selfInitialize: () => {
