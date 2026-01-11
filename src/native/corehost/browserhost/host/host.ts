@@ -75,7 +75,7 @@ export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
 
         _ems_.dotnetLogger.debug(`Creating directory '${parentDirectory}'`);
 
-        _ems_.Module.FS_createPath(
+        _ems_.FS.createPath(
             "/", parentDirectory, true, true // fixme: should canWrite be false?
         );
     } else {
@@ -84,7 +84,7 @@ export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
 
     _ems_.dotnetLogger.debug(`Creating file '${fileName}' in directory '${parentDirectory}'`);
 
-    _ems_.Module.FS_createDataFile(
+    _ems_.FS.createDataFile(
         parentDirectory, fileName,
         bytes, true /* canRead */, true /* canWrite */, true /* canOwn */
     );

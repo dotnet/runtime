@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssertType, EmscriptenModuleInternal, LoggerType, LoaderExports, InternalExchange, InternalExchangeSubscriber, RuntimeAPI, BrowserUtilsExports, VoidPtr, RuntimeExports } from "../types";
+import type { AssertType, EmscriptenModuleInternal, LoggerType, LoaderExports, InternalExchange, InternalExchangeSubscriber, RuntimeAPI, BrowserUtilsExports, VoidPtr, RuntimeExports, TypedArray } from "../types";
 
 // we want to use the cross-module symbols defined in closure of dotnet.native.js
 // which are installed there by libSystem.Native.Browser.Utils.footer.js
@@ -24,6 +24,10 @@ type emAmbientSymbolsType = {
     _BrowserHost_InitializeCoreCLR: () => number;
     _BrowserHost_ExecuteAssembly: (mainAssemblyNamePtr: number, argsLength: number, argsPtr: number) => number;
     _wasm_load_icu_data: (dataPtr: VoidPtr) => number;
+    FS: {
+        createPath: (parent: string, path: string, canRead?: boolean, canWrite?: boolean) => string;
+        createDataFile: (parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean) => string;
+    }
 
     DOTNET: any;
     DOTNET_INTEROP: any;
@@ -42,7 +46,6 @@ type emAmbientSymbolsType = {
     _emscripten_force_exit: (exitCode: number) => void;
     _exit: (exitCode: number, implicit?: boolean) => void;
     safeSetTimeout: (func: Function, timeout: number) => number;
-    maybeExit: () => void;
     exitJS: (status: number, implicit?: boolean | number) => void;
     runtimeKeepalivePop: () => void;
     runtimeKeepalivePush: () => void;
