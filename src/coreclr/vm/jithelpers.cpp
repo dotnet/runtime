@@ -745,9 +745,6 @@ HCIMPL1(EnregisteredTypeHandle, JIT_GetClassFromMethodParam, MethodDesc* pMD)
 HCIMPLEND
 #include <optdefault.h>
 
-
-
-
 //========================================================================
 //
 //      EXCEPTION HELPERS
@@ -765,12 +762,8 @@ HCIMPLEND
 
 /*************************************************************/
 
-#if defined(TARGET_X86)
 EXTERN_C FCDECL1(void, IL_Throw,  Object* obj);
-EXTERN_C HCIMPL2(void, IL_Throw_x86,  Object* obj, TransitionBlock* transitionBlock)
-#else
-HCIMPL1(void, IL_Throw,  Object* obj)
-#endif
+EXTERN_C HCIMPL2(void, IL_Throw_Impl,  Object* obj, TransitionBlock* transitionBlock)
 {
     FCALL_CONTRACT;
 
@@ -782,11 +775,7 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     Thread *pThread = GetThread();
 
     SoftwareExceptionFrame exceptionFrame;
-#ifdef TARGET_X86
     exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
-#else
-    RtlCaptureContext(exceptionFrame.GetContext());
-#endif
     exceptionFrame.InitAndLink(pThread);
 
     FC_CAN_TRIGGER_GC();
@@ -795,6 +784,11 @@ HCIMPL1(void, IL_Throw,  Object* obj)
         DispatchManagedException(kNullReferenceException);
 
     NormalizeThrownObject(&oref);
+
+    // Set the last thrown object before dispatching the exception.
+    // This is required for exception handling code that checks LastThrownObject.
+    pThread->SafeSetLastThrownObject(oref);
+
     DispatchManagedException(oref, exceptionFrame.GetContext());
 
     FC_CAN_TRIGGER_GC_END();
@@ -804,23 +798,15 @@ HCIMPLEND
 
 /*************************************************************/
 
-#if defined(TARGET_X86)
 EXTERN_C FCDECL0(void, IL_Rethrow);
-EXTERN_C HCIMPL1(void, IL_Rethrow_x86, TransitionBlock* transitionBlock)
-#else
-HCIMPL0(void, IL_Rethrow)
-#endif
+EXTERN_C HCIMPL1(void, IL_Rethrow_Impl, TransitionBlock* transitionBlock)
 {
     FCALL_CONTRACT;
 
     Thread *pThread = GetThread();
 
     SoftwareExceptionFrame exceptionFrame;
-#ifdef TARGET_X86
     exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
-#else
-    RtlCaptureContext(exceptionFrame.GetContext());
-#endif
     exceptionFrame.InitAndLink(pThread);
 
     FC_CAN_TRIGGER_GC();
@@ -832,12 +818,8 @@ HCIMPL0(void, IL_Rethrow)
 }
 HCIMPLEND
 
-#if defined(TARGET_X86)
 EXTERN_C FCDECL1(void, IL_ThrowExact,  Object* obj);
-EXTERN_C HCIMPL2(void, IL_ThrowExact_x86,  Object* obj, TransitionBlock* transitionBlock)
-#else
-HCIMPL1(void, IL_ThrowExact, Object* obj)
-#endif
+EXTERN_C HCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transitionBlock)
 {
     FCALL_CONTRACT;
 
@@ -850,14 +832,14 @@ HCIMPL1(void, IL_ThrowExact, Object* obj)
     Thread *pThread = GetThread();
 
     SoftwareExceptionFrame exceptionFrame;
-#ifdef TARGET_X86
     exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
-#else
-    RtlCaptureContext(exceptionFrame.GetContext());
-#endif
     exceptionFrame.InitAndLink(pThread);
 
     FC_CAN_TRIGGER_GC();
+
+    // Set the last thrown object before dispatching the exception.
+    // This is required for exception handling code that checks LastThrownObject.
+    pThread->SafeSetLastThrownObject(oref);
 
     DispatchManagedException(oref, exceptionFrame.GetContext());
 
@@ -865,6 +847,31 @@ HCIMPL1(void, IL_ThrowExact, Object* obj)
     UNREACHABLE();
 }
 HCIMPLEND
+
+#ifdef TARGET_WASM
+// WASM doesn't have assembly stubs, so provide thin wrapper entry points
+// that call the _Impl functions with NULL (which zeros the context)
+HCIMPL1(void, IL_Throw, Object* obj)
+{
+    FCALL_CONTRACT;
+    IL_Throw_Impl(obj, NULL);
+}
+HCIMPLEND
+
+HCIMPL0(void, IL_Rethrow)
+{
+    FCALL_CONTRACT;
+    IL_Rethrow_Impl(NULL);
+}
+HCIMPLEND
+
+HCIMPL1(void, IL_ThrowExact, Object* obj)
+{
+    FCALL_CONTRACT;
+    IL_ThrowExact_Impl(obj, NULL);
+}
+HCIMPLEND
+#endif // TARGET_WASM
 
 #ifndef STATUS_STACK_BUFFER_OVERRUN  // Not defined yet in CESDK includes
 # define STATUS_STACK_BUFFER_OVERRUN      ((NTSTATUS)0xC0000409L)

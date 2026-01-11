@@ -985,13 +985,11 @@ class SoftwareExceptionFrame : public Frame
 
 public:
 #ifndef DACCESS_COMPILE
-    SoftwareExceptionFrame() : Frame(FrameIdentifier::SoftwareExceptionFrame) {
+    SoftwareExceptionFrame() : Frame(FrameIdentifier::SoftwareExceptionFrame), m_ReturnAddress(0) {
         LIMITED_METHOD_CONTRACT;
     }
 
-#ifdef TARGET_X86
     void UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock);
-#endif
 #endif
 
     TADDR GetReturnAddressPtr_Impl()
@@ -1001,7 +999,6 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-    void Init();
     void InitAndLink(Thread *pThread);
 #endif
 

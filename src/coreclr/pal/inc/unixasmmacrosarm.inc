@@ -288,6 +288,42 @@ C_FUNC(\Name):
         add     \target, sp, 4
 .endm
 
+// Pushes a full TransitionBlock on the stack including float argument registers.
+// On exit, \target contains the TransitionBlock pointer.
+//
+// Stack layout (from sp going up):
+//   sp+0:   d8-d15 (64 bytes) - FP callee-saved
+//   sp+64:  padding (4 bytes) - to make d0-d7 8-byte aligned at TransitionBlock-68
+//   sp+68:  d0-d7 (64 bytes) - float argument registers (at TransitionBlock - 68)
+//   sp+132: padding (4 bytes) - to keep total allocation 8-byte aligned  
+//   sp+136: TransitionBlock starts here (CalleeSavedRegisters + ArgumentRegisters pushed above)
+//
+// GetNegSpaceSize() for ARM32 = 64 (FloatArgumentRegisters) + 4 (padding) = 68
+// GetOffsetOfFloatArgumentRegisters() = -68
+//
+// Total stack alloc: 64 + 4 + 64 + 4 = 136 bytes
+// Stack: Arguments(16) + callee-saved(36) + alloc(136) = 188 bytes
+// 188 % 4 = 0, properly aligned for ARM32
+.macro PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS target
+        // Push argument registers (r0-r3) - these will be at highest address in TransitionBlock
+        PUSH_ARGUMENT_REGISTERS
+        PUSH_CALLEE_SAVED_REGISTERS
+        PROLOG_STACK_SAVE_OFFSET r7, #12
+        // let r7 point the saved r7 in the stack (clang FP style)
+        // Allocate space for: d8-d15 (64) + padding (4) + d0-d7 (64) + padding (4) = 136 bytes
+        alloc_stack 136
+        // Save floating point argument registers (d0-d7) at sp+68 (TransitionBlock - 68)
+        add     r12, sp, #68
+        vstm    r12, {d0-d7}
+        // Save FP callee-saved registers (d8-d15) at sp+0
+        add     r12, sp, #0
+        vstm    r12, {d8-d15}
+        CHECK_STACK_ALIGNMENT
+        END_PROLOGUE
+        // TransitionBlock is at sp + 136
+        add     \target, sp, #136
+.endm
+
 .macro POP_COOP_PINVOKE_FRAME
         free_stack 4
         POP_CALLEE_SAVED_REGISTERS
