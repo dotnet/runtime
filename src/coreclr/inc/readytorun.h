@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 17
-#define READYTORUN_MINOR_VERSION 0x0001
+#define READYTORUN_MAJOR_VERSION 18
+#define READYTORUN_MINOR_VERSION 0x0000
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 17
+#define MINIMUM_READYTORUN_MAJOR_VERSION 18
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -51,6 +51,7 @@
 // R2R Version 17 adds support for producing "fat" debug information (that e.g. can include async debug info)
 //     R2R 17 is not backward compatible with 16.x or earlier.
 // R2R Version 17.1 adds the READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE flag to specify that the R2R image pointed to by OwnerCompositeExecutable is in the platform native format.
+// R2R Version 18 updates fields layout algorithm
 
 struct READYTORUN_CORE_HEADER
 {
@@ -431,11 +432,9 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_DblRound                  = 0xE2,
     READYTORUN_HELPER_FltRound                  = 0xE3,
 
-#ifdef FEATURE_EH_FUNCLETS
     // Personality routines
     READYTORUN_HELPER_PersonalityRoutine        = 0xF0,
     READYTORUN_HELPER_PersonalityRoutineFilterFunclet = 0xF1,
-#endif
 
     // Synchronized methods
     READYTORUN_HELPER_MonitorEnter              = 0xF8,

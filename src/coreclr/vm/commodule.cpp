@@ -295,19 +295,10 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleH
     if (!pMeth)
         COMPlusThrow(kArgumentNullException);
 
-    // Otherwise, we want to return memberref token.
-    if (pMeth->IsArray())
-    {
-        _ASSERTE(!"Should not have come here!");
-        COMPlusThrow(kNotSupportedException);
-    }
-
-    // TODO: (async) revisit and examine if this needs to be supported somehow
-    if (pMeth->IsAsyncVariantMethod())
-    {
-        _ASSERTE(!"Async variants should be hidden from reflection.");
-        COMPlusThrow(kNotSupportedException);
-    }
+    // Should not have come here.
+    _ASSERTE(!pMeth->IsArray());
+    // Async variants should be hidden from reflection.
+    _ASSERTE(!pMeth->IsAsyncVariantMethod());
 
     if ((pMeth->GetMethodTable()->GetModule() == pModule))
     {

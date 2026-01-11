@@ -189,7 +189,16 @@ namespace System.Runtime.InteropServices
             delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newExternalTypeEntry,
             delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newProxyTypeEntry)
         {
-            RuntimeAssembly? startingAssembly = (RuntimeAssembly?)Assembly.GetEntryAssembly();
+            RuntimeAssembly? startingAssembly;
+            if (AppContext.GetData("System.Runtime.InteropServices.TypeMappingEntryAssembly") is string entryAssemblyName)
+            {
+                startingAssembly = (RuntimeAssembly?)Assembly.Load(entryAssemblyName);
+            }
+            else
+            {
+                startingAssembly = (RuntimeAssembly?)Assembly.GetEntryAssembly();
+            }
+
             if (startingAssembly is null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_TypeMapMissingEntryAssembly);

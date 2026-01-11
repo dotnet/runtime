@@ -7,8 +7,6 @@
 #ifndef __EXCEPTION_HANDLING_h__
 #define __EXCEPTION_HANDLING_h__
 
-#ifdef FEATURE_EH_FUNCLETS
-
 #include "eexcp.h"
 #include "exstatecommon.h"
 
@@ -90,8 +88,6 @@ public:
 #endif // FEATURE_INTERPRETER
 
 void DECLSPEC_NORETURN ExecuteFunctionBelowContext(PCODE functionPtr, CONTEXT *pContext, size_t targetSSP, size_t arg1 = 0, size_t arg2 = 0);
-
-#endif // FEATURE_EH_FUNCLETS
 
 #if defined(TARGET_X86)
 #define USE_CURRENT_CONTEXT_IN_FILTER

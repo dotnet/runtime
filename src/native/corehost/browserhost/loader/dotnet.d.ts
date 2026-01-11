@@ -1,6 +1,6 @@
 //! Licensed to the .NET Foundation under one or more agreements.
 //! The .NET Foundation licenses this file to you under the MIT license.
-//! This is generated file, see src/native/libs/Browser/rollup.config.defines.js
+//! This is generated file, see src/native/rollup.config.js
 
 //! This is not considered public API with backward compatibility guarantees. 
 
@@ -42,20 +42,7 @@ interface EmscriptenModule {
     stackSave(): VoidPtr;
     stackRestore(stack: VoidPtr): void;
     stackAlloc(size: number): VoidPtr;
-    instantiateWasm?: InstantiateWasmCallBack;
-    preInit?: (() => any)[] | (() => any);
-    preRun?: (() => any)[] | (() => any);
-    onRuntimeInitialized?: () => any;
-    postRun?: (() => any)[] | (() => any);
-    onAbort?: {
-        (error: any): void;
-    };
-    onExit?: {
-        (code: number): void;
-    };
 }
-type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => void;
-type InstantiateWasmCallBack = (imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback) => any;
 type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
 
 interface DotnetHostBuilder {
@@ -64,10 +51,6 @@ interface DotnetHostBuilder {
      * Note that if you provide resources and don't provide custom configSrc URL, the dotnet.boot.js will be downloaded and applied by default.
      */
     withConfig(config: LoaderConfig): DotnetHostBuilder;
-    /**
-     * @param configSrc URL to the configuration file. ./dotnet.boot.js is a default config file location.
-     */
-    withConfigSrc(configSrc: string): DotnetHostBuilder;
     /**
      * "command line" arguments for the Main() method.
      * @param args
@@ -129,20 +112,23 @@ interface DotnetHostBuilder {
      */
     create(): Promise<RuntimeAPI>;
     /**
+     * Runs the Main() method of the application and keeps the runtime alive.
+     * You can provide "command line" arguments for the Main() method using
+     * - dotnet.withApplicationArguments("A", "B", "C")
+     * - dotnet.withApplicationArgumentsFromQuery()
+     */
+    runMain(): Promise<number>;
+    /**
      * Runs the Main() method of the application and exits the runtime.
      * You can provide "command line" arguments for the Main() method using
      * - dotnet.withApplicationArguments("A", "B", "C")
      * - dotnet.withApplicationArgumentsFromQuery()
      * Note: after the runtime exits, it would reject all further calls to the API.
-     * You can use runMain() if you want to keep the runtime alive.
+     * You can use run() if you want to keep the runtime alive.
      */
-    run(): Promise<number>;
+    runMainAndExit(): Promise<number>;
 }
 type LoaderConfig = {
-    /**
-     * Additional search locations for assets.
-     */
-    remoteSources?: string[];
     /**
      * It will not fail the startup is .pdb files can't be downloaded
      */

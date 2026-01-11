@@ -46,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             _target = context.Target;
 
-            InitialInterfaceDispatchStub = new AddressTakenExternFunctionSymbolNode("RhpInitialDynamicInterfaceDispatch");
+            InitialInterfaceDispatchStub = new AddressTakenExternFunctionSymbolNode(new Utf8String("RhpInitialDynamicInterfaceDispatch"u8));
 
             _context = context;
             _compilationModuleGroup = compilationModuleGroup;
@@ -409,12 +409,6 @@ namespace ILCompiler.DependencyAnalysis
             });
 
             _shadowConcreteMethods = new ShadowConcreteMethodHashtable(this);
-
-            _shadowConcreteUnboxingMethods = new NodeCache<MethodDesc, ShadowConcreteUnboxingThunkNode>(method =>
-            {
-                MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                return new ShadowConcreteUnboxingThunkNode(method, MethodEntrypoint(canonMethod, true));
-            });
 
             _virtMethods = new VirtualMethodUseHashtable(this);
 
@@ -1159,13 +1153,14 @@ namespace ILCompiler.DependencyAnalysis
                 return AddressTakenMethodEntrypoint(method, isUnboxingStub);
         }
 
-        public IMethodNode CanonicalEntrypoint(MethodDesc method, bool isUnboxingStub = false)
+        public IMethodNode CanonicalEntrypoint(MethodDesc method)
         {
             MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-            if (method != canonMethod)
-                return ShadowConcreteMethod(method, isUnboxingStub);
+            if (method != canonMethod) {
+                return ShadowConcreteMethod(method);
+            }
             else
-                return MethodEntrypoint(method, isUnboxingStub);
+                return MethodEntrypoint(method);
         }
 
         private NodeCache<MethodDesc, GVMDependenciesNode> _gvmDependenciesNode;
@@ -1284,13 +1279,9 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private ShadowConcreteMethodHashtable _shadowConcreteMethods;
-        private NodeCache<MethodDesc, ShadowConcreteUnboxingThunkNode> _shadowConcreteUnboxingMethods;
-        public IMethodNode ShadowConcreteMethod(MethodDesc method, bool isUnboxingStub = false)
+        public IMethodNode ShadowConcreteMethod(MethodDesc method)
         {
-            if (isUnboxingStub)
-                return _shadowConcreteUnboxingMethods.GetOrAdd(method);
-            else
-                return _shadowConcreteMethods.GetOrCreateValue(method);
+            return _shadowConcreteMethods.GetOrCreateValue(method);
         }
 
         private static readonly string[][] s_helperEntrypointNames = new string[][] {
@@ -1520,7 +1511,7 @@ namespace ILCompiler.DependencyAnalysis
             byte[] stringBytes = new byte[stringBytesCount + 1];
             Encoding.UTF8.GetBytes(str, 0, str.Length, stringBytes, 0);
 
-            string symbolName = "__utf8str_" + NameMangler.GetMangledStringName(str);
+            Utf8String symbolName = new Utf8String("__utf8str_" + NameMangler.GetMangledStringName(str));
 
             return ReadOnlyDataBlob(symbolName, stringBytes, 1);
         }
