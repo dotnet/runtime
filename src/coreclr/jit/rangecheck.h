@@ -535,6 +535,8 @@ struct RangeOps
 
         Range result = Limit(Limit::keUnknown);
 
+        // For OR we can only make progress when both sides are constant and non-negative
+        //
         if (r1lo.IsConstant() && r2lo.IsConstant() && (r1lo.GetConstant() >= 0) && (r2lo.GetConstant() >= 0))
         {
             result.lLimit = Limit(Limit::keConstant, r1lo.GetConstant() | r2lo.GetConstant());
@@ -548,14 +550,14 @@ struct RangeOps
 
     static Range UnsignedMod(Range& r1, Range& r2)
     {
-        Limit& r1lo = r1.LowerLimit();
         Limit& r2lo = r2.LowerLimit();
-
-        Limit& r1hi = r1.UpperLimit();
         Limit& r2hi = r2.UpperLimit();
 
         Range result = Limit(Limit::keUnknown);
 
+        // For X UMOD Y we only handle the case when Y is a fixed non-negative constant.
+        // Example: X % 5 -> [0..4]
+        //
         if (r2lo.IsConstant() && r2lo.Equals(r2hi))
         {
             int op2Cns = r2lo.GetConstant();
