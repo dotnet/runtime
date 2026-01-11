@@ -471,6 +471,103 @@ struct RangeOps
         return result;
     }
 
+    static Range ShiftLeft(Range& r1, Range& r2)
+    {
+        // help the next step a bit, convert the LSH rhs to a multiply
+        Range convertedOp2Range = ConvertShiftToMultiply(r2);
+        return Multiply(r1, convertedOp2Range);
+    }
+
+    static Range And(Range& r1, Range& r2)
+    {
+        Limit& r1lo = r1.LowerLimit();
+        Limit& r2lo = r2.LowerLimit();
+
+        Limit& r1hi = r1.UpperLimit();
+        Limit& r2hi = r2.UpperLimit();
+
+        Range result = Limit(Limit::keUnknown);
+
+        // AND is a commutative operation, put the constant (if any) on the right.
+        if (r1lo.IsConstant())
+        {
+            std::swap(r1lo, r2lo);
+        }
+        if (r1hi.IsConstant())
+        {
+            std::swap(r1hi, r2hi);
+        }
+
+        // Lower bound
+        if (r2lo.IsConstant() && r1lo.IsConstant())
+        {
+            // if both are constant, just AND them
+            result.lLimit = Limit(Limit::keConstant, r1lo.GetConstant() & r2lo.GetConstant());
+        }
+        else if (r2lo.IsConstant() && (r2lo.GetConstant() >= 0))
+        {
+            // otherwise the only knowledge is that result >= 0,
+            // because one of the AND's operands is a non-negative constant
+            result.lLimit = Limit(Limit::keConstant, 0);
+        }
+
+        // Upper bound
+        if (r2hi.IsConstant() && r1hi.IsConstant())
+        {
+            // if both are constant, just AND them
+            result.uLimit = Limit(Limit::keConstant, r1hi.GetConstant() & r2hi.GetConstant());
+        }
+        else if (r2hi.IsConstant() && (r2hi.GetConstant() >= 0))
+        {
+            // otherwise the only knowledge is that result <= r2hi,
+            result.uLimit = Limit(Limit::keConstant, r2hi.GetConstant());
+        }
+        return result;
+    }
+
+    static Range Or(Range& r1, Range& r2)
+    {
+        Limit& r1lo = r1.LowerLimit();
+        Limit& r2lo = r2.LowerLimit();
+
+        Limit& r1hi = r1.UpperLimit();
+        Limit& r2hi = r2.UpperLimit();
+
+        Range result = Limit(Limit::keUnknown);
+
+        if (r1lo.IsConstant() && r2lo.IsConstant() && (r1lo.GetConstant() >= 0) && (r2lo.GetConstant() >= 0))
+        {
+            result.lLimit = Limit(Limit::keConstant, r1lo.GetConstant() | r2lo.GetConstant());
+        }
+        if (r1hi.IsConstant() && r2hi.IsConstant() && (r1hi.GetConstant() >= 0) && (r2hi.GetConstant() >= 0))
+        {
+            result.uLimit = Limit(Limit::keConstant, r1hi.GetConstant() | r2hi.GetConstant());
+        }
+        return result;
+    }
+
+    static Range UnsignedMod(Range& r1, Range& r2)
+    {
+        Limit& r1lo = r1.LowerLimit();
+        Limit& r2lo = r2.LowerLimit();
+
+        Limit& r1hi = r1.UpperLimit();
+        Limit& r2hi = r2.UpperLimit();
+
+        Range result = Limit(Limit::keUnknown);
+
+        if (r2lo.IsConstant() && r2lo.Equals(r2hi))
+        {
+            int op2Cns = r2lo.GetConstant();
+            if (op2Cns > 0)
+            {
+                result.lLimit = Limit(Limit::keConstant, 0);
+                result.uLimit = Limit(Limit::keConstant, op2Cns - 1);
+            }
+        }
+        return result;
+    }
+
     // Given two ranges "r1" and "r2", do a Phi merge. If "monIncreasing" is true,
     // then ignore the dependent variables for the lower bound but not for the upper bound.
     static Range Merge(const Range& r1, const Range& r2, bool monIncreasing)
