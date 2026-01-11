@@ -257,10 +257,6 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
              Link="Common\Interop\Windows\Kernel32\Interop.LocalFree.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.OpenThread_IntPtr.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.OpenThread_IntPtr.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs"
-             Link="Common\Interop\Windows\OleAut32\Interop.VariantClear.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantInit.cs"
-             Link="Common\Interop\Windows\OleAut32\Interop.VariantInit.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Netapi32\Interop.DS_DOMAIN_TRUSTS.cs"
              Link="Common\Interop\Windows\Netapi32\Interop.DS_DOMAIN_TRUSTS.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Netapi32\Interop.DS_DOMAINTRUST_FLAG.cs"
