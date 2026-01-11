@@ -46,6 +46,7 @@
 #endif // HAVE_GCCOVER
 
 #include "exinfo.h"
+#include "exkind.h"
 
 //----------------------------------------------------------------------------
 //
@@ -2809,8 +2810,14 @@ void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
         }
     }
 
+    else
+    {
+        stackTraceElem.flags |= STEF_CONTINUATION;
+    }
+
 #ifndef TARGET_UNIX // Watson is supported on Windows only
-    SetupWatsonBucket(currentIP, pCf);
+    if (pCf != NULL)
+        SetupWatsonBucket(currentIP, pCf);
 #endif // !TARGET_UNIX
 
     EX_TRY

@@ -91,6 +91,24 @@ FASTCALL_ENDFUNC
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+;; RhpThrowExact
+;;
+;; SUMMARY:  Similar to RhpThrowEx, except that it sets the rethrow flag
+;;
+;; INPUT:  ECX:  exception object
+;;
+;; OUTPUT:
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+FASTCALL_FUNC  RhpThrowExact, 4
+
+        mov         edx, 4                  ;; edx = ExKind.RethrowFlag
+        jmp         RhpThrowExImpl
+
+FASTCALL_ENDFUNC
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;; RhpThrowEx
 ;;
 ;; INPUT:  ECX:  exception object
@@ -100,6 +118,9 @@ FASTCALL_ENDFUNC
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 FASTCALL_FUNC  RhpThrowEx, 4
 
+        mov         edx, 1                  ;; edx = ExKind.Throw
+
+RhpThrowExImpl::
         esp_offsetof_ExInfo     textequ %0
         esp_offsetof_Context    textequ %SIZEOF__ExInfo
 
@@ -107,7 +128,6 @@ FASTCALL_FUNC  RhpThrowEx, 4
         mov         ebp, esp
 
         lea         eax, [esp+8]    ;; calculate the RSP of the throw site
-        mov         edx, [esp+4]    ;; get the throw site IP via the return address
 
 ;;  struct PAL_LIMITED_CONTEXT
 ;;  {
@@ -118,7 +138,8 @@ FASTCALL_FUNC  RhpThrowEx, 4
         mov         ebx, [ebp]
         push        ebx     ;; 'faulting' Rbp
         push        eax     ;; 'faulting' Rsp
-        push        edx     ;; 'faulting' IP
+        mov         eax, [esp+4]    ;; get the throw site IP via the return address
+        push        eax     ;; 'faulting' IP
 ;;  };
 
         sub         esp, SIZEOF__ExInfo
@@ -126,6 +147,7 @@ FASTCALL_FUNC  RhpThrowEx, 4
         ;; -------------------------
 
         lea                     ebx, [eax-4]    ;; ebx <- addr of return address
+        mov                     edi, edx        ;; save ExKind in edi
         INLINE_GETTHREAD        eax, edx        ;; eax <- thread, edx <- trashed
 
         ;; There is runtime C# code that can tail call to RhpThrowEx using a binder intrinsic.  So the return
@@ -144,7 +166,8 @@ FASTCALL_FUNC  RhpThrowEx, 4
         mov     [edx + OFFSETOF__ExInfo__m_exception], esi          ;; init the exception object to null
         mov     byte ptr [edx + OFFSETOF__ExInfo__m_passNumber], 1  ;; init to the first pass
         mov     dword ptr [edx + OFFSETOF__ExInfo__m_idxCurClause], 0FFFFFFFFh
-        mov     byte ptr [edx + OFFSETOF__ExInfo__m_kind], 1        ;; ExKind.Throw
+        mov     ebx, edi                                            ;; ebx <- ExKind (edi has value 1 or 4)
+        mov     byte ptr [edx + OFFSETOF__ExInfo__m_kind], bl       ;; ExKind (from edi via bl)
 
         ;; link the ExInfo into the thread's ExInfo chain
         mov     ebx, [eax + OFFSETOF__Thread__m_pExInfoStackHead]

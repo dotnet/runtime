@@ -4135,9 +4135,8 @@ do                                                                      \
 
                         if (exception != NULL)
                         {
-                            GetThread()->GetExceptionState()->SetRaisingForeignException();
                             pInterpreterFrame->SetIsFaulting(true);
-                            DispatchManagedException(exception);
+                            DispatchManagedException(exception, ExKind::RethrowFlag);
                             UNREACHABLE();
                         }
                     }
