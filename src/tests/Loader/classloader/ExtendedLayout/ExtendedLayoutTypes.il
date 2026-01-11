@@ -270,7 +270,7 @@
         int32(0x00000001) // CUnion
     }
 
-    .field public int8 a
+    .field public uint8 a
     .field public int32 b
 
     .pack 1
@@ -283,7 +283,7 @@
         int32(0x00000001) // CUnion
     }
 
-    .field public int8 byteField
+    .field public uint8 byteField
     .field public int16 shortField
     .field public int32 intField
     .field public int64 longField
