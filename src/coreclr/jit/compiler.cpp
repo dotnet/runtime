@@ -10510,6 +10510,8 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
             return "Decl method cannot be represented in R2R image";
         case CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE:
             return "Support for type equivalence in devirtualization is not yet implemented in crossgen2";
+        case CORINFO_DEVIRTUALIZATION_FAILED_GENERIC_VIRTUAL:
+            return "Devirtualization of generic virtual methods is not yet implemented in crossgen2";
         default:
             return "undefined";
     }
