@@ -49,8 +49,7 @@
     EPILOG_STACK_FREE   8                   // Discard flags and Thread*
     EPILOG_POP          "{r4-r10}"          // Restore non-volatile registers
     EPILOG_STACK_FREE   4                   // Discard caller's SP
-    EPILOG_POP          "{r2,r3}"           // Restore r2 (and r3, was for alignment)
-    EPILOG_POP          "{r0,r1}"           // Restore return registers
+    EPILOG_POP          "{r0-r3}"           // Restore return registers (r0-r2), r3 was for alignment
     EPILOG_VPOP         "{d0-d3}"           // Restore d0-d3 which can have the floating point return value
 .endm
 
@@ -118,7 +117,6 @@ NESTED_END RhpGcPollRare
 NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
     FixupHijackedCallstack
 
-    // r3 has the thread pointer
     PREPARE_EXTERNAL_VAR_INDIRECT RhpTrapThreads, r12
     tst         r12, #TrapThreadsFlags_TrapThreads
     bne         LOCAL_LABEL(WaitForGC)
