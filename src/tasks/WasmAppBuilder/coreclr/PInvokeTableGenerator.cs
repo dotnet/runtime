@@ -81,7 +81,7 @@ internal sealed class PInvokeTableGenerator
             // are called.
             if (pinvoke.WasmLinkage)
             {
-                // WasmLinkage means we needs to import the module
+                // WasmLinkage means we need to import the module
                 modules.Add(pinvoke.Module, pinvoke.Module);
                 Log.LogMessage(MessageImportance.Low, $"Adding module {pinvoke.Module} for WasmImportLinkage");
             }
