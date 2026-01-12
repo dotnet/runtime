@@ -2,10 +2,10 @@ project(System.Native.Browser C)
 
 set(BROWSER_SOURCES)
 
-if (NOT GEN_PINVOKE)
-    set (BROWSER_SOURCES ${BROWSER_SOURCES} entrypoints.c)
-else()
+if (GEN_PINVOKE)
     set (BROWSER_SOURCES ${BROWSER_SOURCES} empty.c)
+else()
+    set (BROWSER_SOURCES ${BROWSER_SOURCES} entrypoints.c)
 endif()
 
 add_library(System.Native.Browser-Static
