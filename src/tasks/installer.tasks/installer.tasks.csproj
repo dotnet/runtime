@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net$(BundledNETCoreAppTargetFrameworkVersion)</TargetFramework>
+    <Nullable>disable</Nullable>
     <IsShipping>false</IsShipping>
     <RunAnalyzers>false</RunAnalyzers>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
