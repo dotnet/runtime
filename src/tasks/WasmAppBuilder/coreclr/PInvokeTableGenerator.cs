@@ -54,8 +54,6 @@ internal sealed class PInvokeTableGenerator
         using TempFileName tmpFileNameReversePInvoke = new();
         using (var w = new JoinedStringStreamWriter(tmpFileNameReversePInvoke.Path, false))
         {
-            // WASM-TODO: the generator is WIP, so we disable pinvoke table generation
-            // EmitPInvokeTable(w, modules, pinvokes);
             EmitNativeToInterp(w, callbacks);
         }
 
