@@ -627,6 +627,7 @@ namespace System.Diagnostics.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
         [MemberData(nameof(Ctor_Async_TestData))]
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         public async Task ToString_Async(Func<Task> asyncMethod, string[] expectedPatterns)
         {
             Exception? caughtException = null;
@@ -645,7 +646,9 @@ namespace System.Diagnostics.Tests
 
             foreach (string pattern in expectedPatterns)
             {
-                Assert.Matches(pattern, exceptionText);
+                Assert.True(
+                    Regex.IsMatch(exceptionText, pattern),
+                    $"Pattern '{pattern}' did not match. Full text:{Environment.NewLine}{exceptionText}");
             }
         }
 
