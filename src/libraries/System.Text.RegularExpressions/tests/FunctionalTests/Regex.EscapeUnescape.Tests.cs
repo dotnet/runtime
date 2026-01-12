@@ -64,33 +64,33 @@ namespace System.Text.RegularExpressions.Tests
         /// Specifically, vertical tab (\v) should NOT be escaped.
         /// </summary>
         [Theory]
-        [InlineData("\v", "\v")] // vertical tab should NOT be escaped
-        [InlineData("a", "a")]
-        [InlineData("Z", "Z")]
-        [InlineData("0", "0")]
-        [InlineData("9", "9")]
-        [InlineData("-", "-")]
-        [InlineData("_", "_")]
-        [InlineData(":", ":")]
-        [InlineData(";", ";")]
-        [InlineData("<", "<")]
-        [InlineData(">", ">")]
-        [InlineData("=", "=")]
-        [InlineData("@", "@")]
-        [InlineData("!", "!")]
-        [InlineData("~", "~")]
-        [InlineData("`", "`")]
-        [InlineData("'", "'")]
-        [InlineData("\"", "\"")]
-        [InlineData(",", ",")]
-        [InlineData("/", "/")]
-        [InlineData("}", "}")]
-        [InlineData("]", "]")]
-        [InlineData("%", "%")]
-        [InlineData("&", "&")]
-        public static void Escape_CharactersThatShouldNotBeEscaped(string str, string expected)
+        [InlineData("\v")] // vertical tab should NOT be escaped
+        [InlineData("a")]
+        [InlineData("Z")]
+        [InlineData("0")]
+        [InlineData("9")]
+        [InlineData("-")]
+        [InlineData("_")]
+        [InlineData(":")]
+        [InlineData(";")]
+        [InlineData("<")]
+        [InlineData(">")]
+        [InlineData("=")]
+        [InlineData("@")]
+        [InlineData("!")]
+        [InlineData("~")]
+        [InlineData("`")]
+        [InlineData("'")]
+        [InlineData("\"")]
+        [InlineData(",")]
+        [InlineData("/")]
+        [InlineData("}")]
+        [InlineData("]")]
+        [InlineData("%")]
+        [InlineData("&")]
+        public static void Escape_CharactersThatShouldNotBeEscaped(string str)
         {
-            Assert.Equal(expected, Regex.Escape(str));
+            Assert.Equal(str, Regex.Escape(str));
         }
 
         /// <summary>
