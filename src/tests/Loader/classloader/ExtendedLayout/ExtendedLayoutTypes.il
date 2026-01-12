@@ -159,6 +159,18 @@
     .pack 1
 }
 
+// ByRefLike types with ExtendedLayout should fail to load
+.class flags(0x18) public value beforefieldinit CStructByRefLike
+{
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
+        int32(0x00000000) // CStruct
+    }
+
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = { }
+
+    .field public int32 a
+}
+
 // CUnion types below (can be moved to C# once we have ExtendedLayout support in the C# compiler)
 
 .class flags(0x18) public value beforefieldinit CUnionBlittablePrimitiveFields
@@ -297,4 +309,15 @@
 
     .field public int32 first
     .field public int32 second
+}
+
+.class flags(0x18) public value beforefieldinit CUnionByRefLike
+{
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
+        int32(0x00000001) // CUnion
+    }
+
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = { }
+
+    .field public int32 a
 }

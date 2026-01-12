@@ -133,4 +133,10 @@ public static class CUnionTests
         c.second = 100;
         Assert.Equal(100, c.first);
     }
+
+    [Fact]
+    public static void ByRefLike_ThrowTypeLoadException()
+    {
+        Assert.Throws<TypeLoadException>(() => typeof(CUnionByRefLike));
+    }
 }
