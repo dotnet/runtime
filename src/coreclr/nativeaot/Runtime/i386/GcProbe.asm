@@ -92,6 +92,9 @@ endm
 ;;  ECX is NOT trashed if BITMASK_REG_OR_VALUE is a literal value and not a register
 ;;
 PushProbeFrame macro BITMASK_REG_OR_VALUE
+        push        eax                                 ; Save live EAX first
+        mov         eax, [ebp - 4]          ; ECX
+        xchg        [esp], eax                          ; stack={ECX}, eax=original EAX
         push        eax                     ; EAX
         lea         eax, [ebp + 8]                      ; get caller ESP
         push        eax                     ; ESP
@@ -128,6 +131,7 @@ endm
 ;;  ESI: restored
 ;;  EDI: restored
 ;;  EAX: restored
+;;  ECX: restored
 ;;
 PopProbeFrame macro
         add         esp, 4*4h
@@ -135,7 +139,9 @@ PopProbeFrame macro
         pop         esi
         pop         edi
         pop         eax     ; discard ESP
-        pop         eax
+        pop         eax     ; EAX
+        pop         edx                                 ; ECX (into EDX temporarily)
+        mov         [ebp - 4], edx                      ; write updated ECX back to HijackFixupProlog save location
 endm
 
 ;;
