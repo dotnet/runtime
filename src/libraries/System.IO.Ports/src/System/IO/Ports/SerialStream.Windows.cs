@@ -1527,6 +1527,7 @@ namespace System.IO.Ports
             asyncResult._userCallback?.Invoke(asyncResult);
         }
 
+
         private static int ConvertBaudBitMaskToBaudRate(uint baudBitMask)
         {
             const uint BAUD_USER = 0x10000000;
@@ -1535,6 +1536,10 @@ namespace System.IO.Ports
                 return 0;
             }
 
+            // Windows passes value obtained from driver. According to docs, it should be single
+            // bit coresponding to supported max baudrate (bits up to baud 128K are dfined) or
+            // BAUD_USER if device support almost arbitrary baudrate. But some device drivers
+            // provide maximum baudrate value in decimal instead.
             if (BitOperations.PopCount(baudBitMask) != 1)
             {
                 //throw new ArgumentException("??? Not a valid baud bitmask");
