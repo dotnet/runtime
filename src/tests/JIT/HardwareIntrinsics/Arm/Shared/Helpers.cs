@@ -3119,7 +3119,7 @@ namespace JIT.HardwareIntrinsics.Arm
             where TUnsigned : IBinaryInteger<TUnsigned>, IUnsignedNumber<TUnsigned>
             where TSigned   : IBinaryInteger<TSigned>, ISignedNumber<TSigned>
         {
-            if (right < TSigned.Zero)
+            if (TSigned.IsNegative(right))
             {
                 var mag = TUnsigned.CreateChecked(-right);
                 result = unchecked(left - mag);
