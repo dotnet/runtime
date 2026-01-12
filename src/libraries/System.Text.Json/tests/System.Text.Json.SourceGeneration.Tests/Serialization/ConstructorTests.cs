@@ -162,6 +162,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TypeWith_InParameters))]
         [JsonSerializable(typeof(TypeWith_MixedByRefParameters))]
         [JsonSerializable(typeof(TypeWith_LargeInParameters))]
+        [JsonSerializable(typeof(TypeWith_InParameter_Primitive))]
+        [JsonSerializable(typeof(TypeWith_InParameter_Struct))]
+        [JsonSerializable(typeof(TypeWith_InParameter_ReferenceType))]
         internal sealed partial class ConstructorTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -319,6 +322,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TypeWith_InParameters))]
         [JsonSerializable(typeof(TypeWith_MixedByRefParameters))]
         [JsonSerializable(typeof(TypeWith_LargeInParameters))]
+        [JsonSerializable(typeof(TypeWith_InParameter_Primitive))]
+        [JsonSerializable(typeof(TypeWith_InParameter_Struct))]
+        [JsonSerializable(typeof(TypeWith_InParameter_ReferenceType))]
         internal sealed partial class ConstructorTestsContext_Default : JsonSerializerContext
         {
         }

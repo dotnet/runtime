@@ -1983,5 +1983,228 @@ namespace System.Text.Json.Serialization.Tests
             public int Value1 { get; set; }
             public string Value2 { get; set; }
         }
+
+        // Comprehensive tests for all byref parameter modifiers with different types
+        // Modifiers: in, ref, out, ref readonly
+        // Types: primitives (int), structs (DateTime), reference types (string)
+
+        #region In parameter tests with all types
+
+        [Fact]
+        public async Task DeserializeType_WithInParameter_Primitive()
+        {
+            string json = @"{""Value"":42}";
+            TypeWith_InParameter_Primitive result = await Serializer.DeserializeWrapper<TypeWith_InParameter_Primitive>(json);
+            Assert.Equal(42, result.Value);
+        }
+
+        public class TypeWith_InParameter_Primitive
+        {
+            public TypeWith_InParameter_Primitive(in int value) => Value = value;
+            public int Value { get; set; }
+        }
+
+        [Fact]
+        public async Task DeserializeType_WithInParameter_Struct()
+        {
+            string json = @"{""Value"":""2020-12-15T00:00:00""}";
+            TypeWith_InParameter_Struct result = await Serializer.DeserializeWrapper<TypeWith_InParameter_Struct>(json);
+            Assert.Equal(new DateTime(2020, 12, 15), result.Value);
+        }
+
+        public class TypeWith_InParameter_Struct
+        {
+            public TypeWith_InParameter_Struct(in DateTime value) => Value = value;
+            public DateTime Value { get; set; }
+        }
+
+        [Fact]
+        public async Task DeserializeType_WithInParameter_ReferenceType()
+        {
+            string json = @"{""Value"":""hello""}";
+            TypeWith_InParameter_ReferenceType result = await Serializer.DeserializeWrapper<TypeWith_InParameter_ReferenceType>(json);
+            Assert.Equal("hello", result.Value);
+        }
+
+        public class TypeWith_InParameter_ReferenceType
+        {
+            public TypeWith_InParameter_ReferenceType(in string value) => Value = value;
+            public string Value { get; set; }
+        }
+
+        #endregion
+
+        #region Ref parameter tests with all types
+
+        [Fact]
+        public async Task DeserializeType_WithRefParameter_Primitive()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+
+            string json = @"{""Value"":42}";
+            TypeWith_RefParameter_Primitive result = await Serializer.DeserializeWrapper<TypeWith_RefParameter_Primitive>(json);
+            Assert.Equal(42, result.Value);
+        }
+
+        public class TypeWith_RefParameter_Primitive
+        {
+            public TypeWith_RefParameter_Primitive(ref int value) => Value = value;
+            public int Value { get; set; }
+        }
+
+        [Fact]
+        public async Task DeserializeType_WithRefParameter_Struct()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+
+            string json = @"{""Value"":""2020-12-15T00:00:00""}";
+            TypeWith_RefParameter_Struct result = await Serializer.DeserializeWrapper<TypeWith_RefParameter_Struct>(json);
+            Assert.Equal(new DateTime(2020, 12, 15), result.Value);
+        }
+
+        public class TypeWith_RefParameter_Struct
+        {
+            public TypeWith_RefParameter_Struct(ref DateTime value) => Value = value;
+            public DateTime Value { get; set; }
+        }
+
+        [Fact]
+        public async Task DeserializeType_WithRefParameter_ReferenceType()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+
+            string json = @"{""Value"":""hello""}";
+            TypeWith_RefParameter_ReferenceType result = await Serializer.DeserializeWrapper<TypeWith_RefParameter_ReferenceType>(json);
+            Assert.Equal("hello", result.Value);
+        }
+
+        public class TypeWith_RefParameter_ReferenceType
+        {
+            public TypeWith_RefParameter_ReferenceType(ref string value) => Value = value;
+            public string Value { get; set; }
+        }
+
+        #endregion
+
+        #region Out parameter tests with all types
+
+        [Fact]
+        public async Task DeserializeType_WithOutParameter_Primitive()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+
+            string json = @"{""Value"":42}";
+            TypeWith_OutParameter_Primitive result = await Serializer.DeserializeWrapper<TypeWith_OutParameter_Primitive>(json);
+            // Out parameters are assigned by the constructor, not from JSON
+            Assert.Equal(99, result.Value);
+        }
+
+        public class TypeWith_OutParameter_Primitive
+        {
+            public TypeWith_OutParameter_Primitive(out int value)
+            {
+                value = 99;
+                Value = value;
+            }
+            public int Value { get; set; }
+        }
+
+        [Fact]
+        public async Task DeserializeType_WithOutParameter_Struct()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+
+            string json = @"{""Value"":""2020-12-15T00:00:00""}";
+            TypeWith_OutParameter_Struct result = await Serializer.DeserializeWrapper<TypeWith_OutParameter_Struct>(json);
+            // Out parameters are assigned by the constructor, not from JSON
+            Assert.Equal(new DateTime(1999, 1, 1), result.Value);
+        }
+
+        public class TypeWith_OutParameter_Struct
+        {
+            public TypeWith_OutParameter_Struct(out DateTime value)
+            {
+                value = new DateTime(1999, 1, 1);
+                Value = value;
+            }
+            public DateTime Value { get; set; }
+        }
+
+        [Fact]
+        public async Task DeserializeType_WithOutParameter_ReferenceType()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+
+            string json = @"{""Value"":""hello""}";
+            TypeWith_OutParameter_ReferenceType result = await Serializer.DeserializeWrapper<TypeWith_OutParameter_ReferenceType>(json);
+            // Out parameters are assigned by the constructor, not from JSON
+            Assert.Equal("default", result.Value);
+        }
+
+        public class TypeWith_OutParameter_ReferenceType
+        {
+            public TypeWith_OutParameter_ReferenceType(out string value)
+            {
+                value = "default";
+                Value = value;
+            }
+            public string Value { get; set; }
+        }
+
+        #endregion
+
+        #region Ref readonly parameter tests with all types
+
+        [Fact]
+        public async Task DeserializeType_WithRefReadonlyParameter_Primitive()
+        {
+            // ref readonly parameters don't work with source generation because
+            // the generated code passes a cast expression which can't be passed to ref readonly.
+            if (Serializer.IsSourceGeneratedSerializer) return;
+
+            string json = @"{""Value"":42}";
+            TypeWith_RefReadonlyParameter_Primitive result = await Serializer.DeserializeWrapper<TypeWith_RefReadonlyParameter_Primitive>(json);
+            Assert.Equal(42, result.Value);
+        }
+
+        public class TypeWith_RefReadonlyParameter_Primitive
+        {
+            public TypeWith_RefReadonlyParameter_Primitive(ref readonly int value) => Value = value;
+            public int Value { get; set; }
+        }
+
+        [Fact]
+        public async Task DeserializeType_WithRefReadonlyParameter_Struct()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+
+            string json = @"{""Value"":""2020-12-15T00:00:00""}";
+            TypeWith_RefReadonlyParameter_Struct result = await Serializer.DeserializeWrapper<TypeWith_RefReadonlyParameter_Struct>(json);
+            Assert.Equal(new DateTime(2020, 12, 15), result.Value);
+        }
+
+        public class TypeWith_RefReadonlyParameter_Struct
+        {
+            public TypeWith_RefReadonlyParameter_Struct(ref readonly DateTime value) => Value = value;
+            public DateTime Value { get; set; }
+        }
+
+        [Fact]
+        public async Task DeserializeType_WithRefReadonlyParameter_ReferenceType()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+
+            string json = @"{""Value"":""hello""}";
+            TypeWith_RefReadonlyParameter_ReferenceType result = await Serializer.DeserializeWrapper<TypeWith_RefReadonlyParameter_ReferenceType>(json);
+            Assert.Equal("hello", result.Value);
+        }
+
+        public class TypeWith_RefReadonlyParameter_ReferenceType
+        {
+            public TypeWith_RefReadonlyParameter_ReferenceType(ref readonly string value) => Value = value;
+            public string Value { get; set; }
+        }
+
+        #endregion
     }
 }
