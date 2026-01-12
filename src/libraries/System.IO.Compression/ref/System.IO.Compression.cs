@@ -156,6 +156,41 @@ namespace System.IO.Compression
         RunLengthEncoding = 3,
         Fixed = 4,
     }
+    public enum ZlibCompressionFormat
+    {
+        Deflate = 0,
+        ZLib = 1,
+        GZip = 2,
+    }
+    public sealed partial class ZlibDecoder : System.IDisposable
+    {
+        public ZlibDecoder(System.IO.Compression.ZlibCompressionFormat format) { }
+        public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
+        public void Dispose() { }
+        public void Reset() { }
+        public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, System.IO.Compression.ZlibCompressionFormat format) { throw null; }
+    }
+    public sealed partial class ZlibEncoder : System.IDisposable
+    {
+        public ZlibEncoder(int compressionLevel, System.IO.Compression.ZlibCompressionFormat format) { }
+        public ZlibEncoder(int compressionLevel, System.IO.Compression.ZlibCompressionFormat format, System.IO.Compression.ZLibCompressionStrategy strategy) { }
+        public ZlibEncoder(System.IO.Compression.ZlibEncoderOptions options) { }
+        public System.Buffers.OperationStatus Compress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) { throw null; }
+        public void Dispose() { }
+        public System.Buffers.OperationStatus Flush(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static int GetMaxCompressedLength(int inputSize) { throw null; }
+        public void Reset() { }
+        public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int compressionLevel, System.IO.Compression.ZlibCompressionFormat format) { throw null; }
+    }
+    public sealed partial class ZlibEncoderOptions
+    {
+        public ZlibEncoderOptions() { }
+        public int CompressionLevel { get { throw null; } set { } }
+        public System.IO.Compression.ZLibCompressionStrategy CompressionStrategy { get { throw null; } set { } }
+        public System.IO.Compression.ZlibCompressionFormat Format { get { throw null; } set { } }
+    }
     public sealed partial class ZLibStream : System.IO.Stream
     {
         public ZLibStream(System.IO.Stream stream, System.IO.Compression.CompressionLevel compressionLevel) { }
