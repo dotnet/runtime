@@ -1211,8 +1211,7 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
         // (ArrBnds assertions), so we limit the search to only those blocks that may have bounds
         // checks. It also helps reduce the cost of this search as it's not cheap.
         //
-        // TODO-Review: EH successor/predecessor iteration seems broken.
-        if ((block->bbCatchTyp != BBCT_FAULT) && block->HasFlag(BBF_MAY_HAVE_BOUNDS_CHECKS))
+        if (block->HasFlag(BBF_MAY_HAVE_BOUNDS_CHECKS))
         {
             // We're going to be adding to 'assertions', so make a copy first.
             assertions = BitVecOps::MakeCopy(m_pCompiler->apTraits, assertions);
