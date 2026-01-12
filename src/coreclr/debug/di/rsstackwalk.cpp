@@ -948,7 +948,7 @@ HRESULT CordbAsyncStackWalk::SetContext(CorDebugSetContextFlag flag, ULONG32 con
 
 //---------------------------------------------------------------------------------------
 //
-// Unwind the stackwalker to the next frame.
+// Iterate the async continuation to the next frame.
 //
 // Return Value:
 //    Return S_OK on success.
@@ -981,7 +981,7 @@ HRESULT CordbAsyncStackWalk::Next()
             &state);
         if (FAILED(hr))
         {
-            ThrowHR(hr);
+            ThrowHR(CORDBG_E_FAIL_TO_UNWIND_FRAME);
         }
 
         m_continuationAddress = nextContinuation;
@@ -997,12 +997,7 @@ HRESULT CordbAsyncStackWalk::Next()
 
 //---------------------------------------------------------------------------------------
 //
-// Retrieves an ICDFrame corresponding to the current frame:
-// Stopped At           Out Parameter       Return Value
-// ----------           -------------       ------------
-// explicit frame       CordbInternalFrame  S_OK
-// managed stack frame  CordbNativeFrame    S_OK
-// native stack frame   NULL                S_FALSE
+// Retrieves an ICDFrame corresponding to the current frame.
 //
 // Arguments:
 //    ppFrame - out parameter; return the ICDFrame

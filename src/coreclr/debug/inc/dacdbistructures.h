@@ -209,7 +209,6 @@ struct MSLAYOUT ModuleInfo
     BOOL  fInMemory;
 };
 
-
 // the following two classes track native offsets for local variables and sequence
 // points. This information is initialized on demand.
 
