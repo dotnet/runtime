@@ -97,6 +97,12 @@ struct _EventPipeBufferManager_Internal {
 	// The thread session state grabbed from the thread_session_state_list containing the current event
 	// that is being processed by the reader thread.
 	EventPipeThreadSessionState *current_thread_session_state;
+	// A snapshot of the thead_session_state_list used by the reader thread to optimize event iteration.
+	// As existing and new threads write events, this represents the subset of EventPipeThreadSessionStates
+	// containing events before the snapshot timestamp. As buffer_manager_move_next_event_any_snapshot_thread
+	// and buffer_manager_move_next_event_same_thread iterate over events, entries are removed from the list
+	// when no more events are available before the snapshot timestamp. So once there are no more events
+	// before the snapshot timestamp, the list will be empty.
 	dn_list_t *thread_session_state_list_snapshot;
 	ep_timestamp_t snapshot_timestamp;
 	// The total allocation size of buffers under management.
