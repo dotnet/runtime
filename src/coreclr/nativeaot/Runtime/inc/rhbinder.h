@@ -521,7 +521,7 @@ struct PInvokeTransitionFrame
 // RBX, RSI, RDI, R12, R13, R14, R15, RAX, RSP
 #define PInvokeTransitionFrame_SaveRegs_count 9
 #elif defined(TARGET_X86)
-// RBX, RSI, RDI, RAX, RSP, RCX
+// RBX, RSI, RDI, RSP, RAX, RCX
 #define PInvokeTransitionFrame_SaveRegs_count 6
 #elif defined(TARGET_ARM)
 // R4-R10, R0, SP
