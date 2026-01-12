@@ -33,5 +33,11 @@ namespace System.Text.Json.SourceGeneration
         public required object? DefaultValue { get; init; }
         public required int ParameterIndex { get; init; }
         public required bool IsNullable { get; init; }
+
+        /// <summary>
+        /// The ref kind of the parameter: None (0), Ref (1), Out (2), In (3), RefReadOnlyParameter (4).
+        /// Using int instead of Microsoft.CodeAnalysis.RefKind to avoid dependency issues.
+        /// </summary>
+        public required int RefKind { get; init; }
     }
 }

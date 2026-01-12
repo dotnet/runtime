@@ -1515,6 +1515,7 @@ namespace System.Text.Json.SourceGeneration
                             DefaultValue = parameterInfo.HasExplicitDefaultValue ? parameterInfo.ExplicitDefaultValue : null,
                             ParameterIndex = i,
                             IsNullable = parameterInfo.IsNullable(),
+                            RefKind = (int)parameterInfo.RefKind,
                         };
                     }
                 }

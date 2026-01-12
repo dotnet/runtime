@@ -935,14 +935,38 @@ namespace System.Text.Json.SourceGeneration
 
                 const string ArgsVarName = "args";
 
-                StringBuilder sb = new($"static {ArgsVarName} => new {typeGenerationSpec.TypeRef.FullyQualifiedName}(");
+                // RefKind values from Microsoft.CodeAnalysis.RefKind:
+                // None = 0, Ref = 1, Out = 2, In = 3, RefReadOnlyParameter = 4
+                bool hasRefOrRefReadonlyParams = parameters.Any(p => p.RefKind == 1 || p.RefKind == 4); // Ref or RefReadOnlyParameter
+
+                StringBuilder sb;
+
+                if (hasRefOrRefReadonlyParams)
+                {
+                    // For ref/ref readonly parameters, we need a block lambda with temp variables
+                    sb = new($"static {ArgsVarName} => {{ ");
+
+                    // Declare temp variables for ref and ref readonly parameters
+                    foreach (ParameterGenerationSpec param in parameters)
+                    {
+                        if (param.RefKind == 1 || param.RefKind == 4) // Ref or RefReadOnlyParameter
+                        {
+                            sb.Append($"var __temp{param.ParameterIndex} = ({param.ParameterType.FullyQualifiedName}){ArgsVarName}[{param.ParameterIndex}]; ");
+                        }
+                    }
+
+                    sb.Append($"return new {typeGenerationSpec.TypeRef.FullyQualifiedName}(");
+                }
+                else
+                {
+                    sb = new($"static {ArgsVarName} => new {typeGenerationSpec.TypeRef.FullyQualifiedName}(");
+                }
 
                 if (parameters.Count > 0)
                 {
                     foreach (ParameterGenerationSpec param in parameters)
                     {
-                        int index = param.ParameterIndex;
-                        sb.Append($"{GetParamUnboxing(param.ParameterType, index)}, ");
+                        sb.Append($"{GetParamExpression(param)}, ");
                     }
 
                     sb.Length -= 2; // delete the last ", " token
@@ -955,17 +979,31 @@ namespace System.Text.Json.SourceGeneration
                     sb.Append("{ ");
                     foreach (PropertyInitializerGenerationSpec property in propertyInitializers)
                     {
-                        sb.Append($"{property.Name} = {GetParamUnboxing(property.ParameterType, property.ParameterIndex)}, ");
+                        sb.Append($"{property.Name} = ({property.ParameterType.FullyQualifiedName}){ArgsVarName}[{property.ParameterIndex}], ");
                     }
 
                     sb.Length -= 2; // delete the last ", " token
                     sb.Append(" }");
                 }
 
+                if (hasRefOrRefReadonlyParams)
+                {
+                    sb.Append("; }");
+                }
+
                 return sb.ToString();
 
-                static string GetParamUnboxing(TypeRef type, int index)
-                    => $"({type.FullyQualifiedName}){ArgsVarName}[{index}]";
+                static string GetParamExpression(ParameterGenerationSpec param)
+                {
+                    // RefKind values: None = 0, Ref = 1, Out = 2, In = 3, RefReadOnlyParameter = 4
+                    return param.RefKind switch
+                    {
+                        1 => $"ref __temp{param.ParameterIndex}", // Ref
+                        2 => $"out var __discard{param.ParameterIndex}", // Out - use discard pattern
+                        4 => $"in __temp{param.ParameterIndex}", // RefReadOnlyParameter - use in keyword with temp
+                        _ => $"({param.ParameterType.FullyQualifiedName}){ArgsVarName}[{param.ParameterIndex}]", // None or In (in doesn't require keyword at call site)
+                    };
+                }
             }
 
             private static string? GetPrimitiveWriterMethod(TypeGenerationSpec type)

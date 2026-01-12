@@ -1923,13 +1923,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithRefParameters()
         {
-            // ref parameters work with reflection-based serialization but not source generation.
-            // Source generation would require emitting 'ref' keyword at call sites.
-            if (Serializer.IsSourceGeneratedSerializer)
-            {
-                return;
-            }
-
             string json = @"{""Value1"":42,""Value2"":""hello""}";
             TypeWith_RefParameters result = await Serializer.DeserializeWrapper<TypeWith_RefParameters>(json);
             Assert.Equal(42, result.Value1);
@@ -1951,14 +1944,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithOutParameters()
         {
-            // out parameters work with reflection-based serialization but the constructor
-            // receives default values since out parameters are meant to provide output,
-            // not receive input. Source generation doesn't support out parameters.
-            if (Serializer.IsSourceGeneratedSerializer)
-            {
-                return;
-            }
-
             string json = @"{""Value1"":42,""Value2"":""hello""}";
             TypeWith_OutParameters result = await Serializer.DeserializeWrapper<TypeWith_OutParameters>(json);
             // The constructor assigns its own values to the out parameters, ignoring
@@ -1972,8 +1957,7 @@ namespace System.Text.Json.Serialization.Tests
             public TypeWith_OutParameters(out int value1, out string value2)
             {
                 // Out parameters must be assigned by the constructor before use.
-                // The serializer passes addresses for the deserialized values, but
-                // since these are out parameters, the constructor assigns new values.
+                // The serializer discards the out parameters.
                 value1 = 99;
                 value2 = "default";
                 Value1 = value1;
@@ -2039,8 +2023,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithRefParameter_Primitive()
         {
-            if (Serializer.IsSourceGeneratedSerializer) return;
-
             string json = @"{""Value"":42}";
             TypeWith_RefParameter_Primitive result = await Serializer.DeserializeWrapper<TypeWith_RefParameter_Primitive>(json);
             Assert.Equal(42, result.Value);
@@ -2055,8 +2037,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithRefParameter_Struct()
         {
-            if (Serializer.IsSourceGeneratedSerializer) return;
-
             string json = @"{""Value"":""2020-12-15T00:00:00""}";
             TypeWith_RefParameter_Struct result = await Serializer.DeserializeWrapper<TypeWith_RefParameter_Struct>(json);
             Assert.Equal(new DateTime(2020, 12, 15), result.Value);
@@ -2071,8 +2051,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithRefParameter_ReferenceType()
         {
-            if (Serializer.IsSourceGeneratedSerializer) return;
-
             string json = @"{""Value"":""hello""}";
             TypeWith_RefParameter_ReferenceType result = await Serializer.DeserializeWrapper<TypeWith_RefParameter_ReferenceType>(json);
             Assert.Equal("hello", result.Value);
@@ -2091,8 +2069,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithOutParameter_Primitive()
         {
-            if (Serializer.IsSourceGeneratedSerializer) return;
-
             string json = @"{""Value"":42}";
             TypeWith_OutParameter_Primitive result = await Serializer.DeserializeWrapper<TypeWith_OutParameter_Primitive>(json);
             // Out parameters are assigned by the constructor, not from JSON
@@ -2112,8 +2088,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithOutParameter_Struct()
         {
-            if (Serializer.IsSourceGeneratedSerializer) return;
-
             string json = @"{""Value"":""2020-12-15T00:00:00""}";
             TypeWith_OutParameter_Struct result = await Serializer.DeserializeWrapper<TypeWith_OutParameter_Struct>(json);
             // Out parameters are assigned by the constructor, not from JSON
@@ -2133,8 +2107,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithOutParameter_ReferenceType()
         {
-            if (Serializer.IsSourceGeneratedSerializer) return;
-
             string json = @"{""Value"":""hello""}";
             TypeWith_OutParameter_ReferenceType result = await Serializer.DeserializeWrapper<TypeWith_OutParameter_ReferenceType>(json);
             // Out parameters are assigned by the constructor, not from JSON
@@ -2158,10 +2130,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithRefReadonlyParameter_Primitive()
         {
-            // ref readonly parameters don't work with source generation because
-            // the generated code passes a cast expression which can't be passed to ref readonly.
-            if (Serializer.IsSourceGeneratedSerializer) return;
-
             string json = @"{""Value"":42}";
             TypeWith_RefReadonlyParameter_Primitive result = await Serializer.DeserializeWrapper<TypeWith_RefReadonlyParameter_Primitive>(json);
             Assert.Equal(42, result.Value);
@@ -2176,8 +2144,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithRefReadonlyParameter_Struct()
         {
-            if (Serializer.IsSourceGeneratedSerializer) return;
-
             string json = @"{""Value"":""2020-12-15T00:00:00""}";
             TypeWith_RefReadonlyParameter_Struct result = await Serializer.DeserializeWrapper<TypeWith_RefReadonlyParameter_Struct>(json);
             Assert.Equal(new DateTime(2020, 12, 15), result.Value);
@@ -2192,8 +2158,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithRefReadonlyParameter_ReferenceType()
         {
-            if (Serializer.IsSourceGeneratedSerializer) return;
-
             string json = @"{""Value"":""hello""}";
             TypeWith_RefReadonlyParameter_ReferenceType result = await Serializer.DeserializeWrapper<TypeWith_RefReadonlyParameter_ReferenceType>(json);
             Assert.Equal("hello", result.Value);
