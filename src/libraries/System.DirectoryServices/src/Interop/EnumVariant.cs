@@ -77,7 +77,7 @@ namespace System.DirectoryServices
                 }
                 finally
                 {
-                    variant.Dispose();
+                    Interop.Ole32.PropVariantClear((IntPtr)(&variant));
                 }
             }
         }

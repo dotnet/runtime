@@ -155,6 +155,8 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
              Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
              Link="Common\Interop\Windows\Interop.BOOL.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.PropVariantClear.cs"
+             Link="Common\Interop\Windows\Ole32\Interop.PropVariantClear.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOLEAN.cs"
              Link="Common\Interop\Windows\Interop.BOOLEAN.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs"

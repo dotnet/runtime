@@ -548,13 +548,11 @@ namespace System.Data.OleDb
             finally
             {
                 // always clear the first structure
-                ref ComVariant currentVariant = ref *(ComVariant*)currentHandle;
-                currentVariant.Dispose();
+                Interop.Ole32.PropVariantClear(currentHandle);
                 if (different)
                 {
                     // second structure different from the first
-                    ref ComVariant originalVariant = ref *(ComVariant*)originalHandle;
-                    originalVariant.Dispose();
+                    Interop.Ole32.PropVariantClear(originalHandle);
                 }
                 else
                 {
