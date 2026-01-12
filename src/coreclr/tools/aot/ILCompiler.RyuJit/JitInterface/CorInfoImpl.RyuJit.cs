@@ -1247,15 +1247,19 @@ namespace Internal.JitInterface
                 // shared generic code - it may just resolve it to a candidate suitable for
                 // JIT compilation, and require a runtime lookup for the actual code pointer
                 // to call.
-
-                MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup, ref staticResolution);
-                if (directMethod == null && constrainedType.IsEnum)
+                if (constrainedType.IsEnum)
                 {
-                    // Constrained calls to methods on enum methods resolve to System.Enum's methods. System.Enum is a reference
-                    // type though, so we would fail to resolve and box. We have a special path for those to avoid boxing.
-                    directMethod = _compilation.TypeSystemContext.TryResolveConstrainedEnumMethod(constrainedType, method);
+                    // Optimize constrained calls to enum's GetHashCode method. TryResolveConstraintMethodApprox would return
+                    // null since the virtual method resolves to System.Enum's implementation and that's a reference type.
+                    // We can't do this for any other method since ToString and Equals have different semantics for enums
+                    // and their underlying type.
+                    if (method.OwningType.IsObject && method.Name.SequenceEqual("GetHashCode"u8))
+                    {
+                        constrainedType = constrainedType.UnderlyingType;
+                    }
                 }
 
+                MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup, ref staticResolution);
                 if (directMethod != null)
                 {
                     // Either
