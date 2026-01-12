@@ -248,6 +248,7 @@ public:
                                   CORDB_ADDRESS            hotCodeStartAddr,
                                   NativeCodeFunctionData * pCodeInfo);
 
+    // Gets information about a native code blob at a given code address
     void LookupMethodFromCodeAddress(CORDB_ADDRESS codeAddress,
                                      NativeCodeFunctionData* pCodeInfo,
                                      VMPTR_Module* pModule,
