@@ -3209,6 +3209,7 @@ namespace System
             }
 
             UriSyntaxFlags syntaxFlags = _syntax.Flags;
+            bool iriParsing = (syntaxFlags & UriSyntaxFlags.AllowIriParsing) != 0;
 
             // Check the form of the user info
             if ((cF & Flags.HasUserInfo) != 0)
@@ -3224,7 +3225,7 @@ namespace System
                 {
                     cF |= Flags.E_UserNotCanonical;
                 }
-                if ((syntaxFlags & UriSyntaxFlags.AllowIriParsing) != 0 && ((result & (Check.DisplayCanonical | Check.EscapedCanonical | Check.BackslashInPath
+                if (iriParsing && ((result & (Check.DisplayCanonical | Check.EscapedCanonical | Check.BackslashInPath
                                                 | Check.FoundNonAscii | Check.NotIriCanonical))
                                                 == (Check.DisplayCanonical | Check.FoundNonAscii)))
                 {
@@ -3356,7 +3357,7 @@ namespace System
                     cF |= Flags.E_PathNotCanonical;
                 }
 
-                if ((syntaxFlags & UriSyntaxFlags.AllowIriParsing) != 0 && !nonCanonical && ((result & (Check.DisplayCanonical | Check.EscapedCanonical
+                if (iriParsing && !nonCanonical && ((result & (Check.DisplayCanonical | Check.EscapedCanonical
                                 | Check.FoundNonAscii | Check.NotIriCanonical))
                                 == (Check.DisplayCanonical | Check.FoundNonAscii)))
                 {
@@ -3383,7 +3384,7 @@ namespace System
                     cF |= Flags.E_QueryNotCanonical;
                 }
 
-                if ((syntaxFlags & UriSyntaxFlags.AllowIriParsing) != 0 && ((result & (Check.DisplayCanonical | Check.EscapedCanonical | Check.BackslashInPath
+                if (iriParsing && ((result & (Check.DisplayCanonical | Check.EscapedCanonical | Check.BackslashInPath
                             | Check.FoundNonAscii | Check.NotIriCanonical))
                             == (Check.DisplayCanonical | Check.FoundNonAscii)))
                 {
@@ -3411,7 +3412,7 @@ namespace System
                     cF |= Flags.E_FragmentNotCanonical;
                 }
 
-                if ((syntaxFlags & UriSyntaxFlags.AllowIriParsing) != 0 && ((result & (Check.DisplayCanonical | Check.EscapedCanonical | Check.BackslashInPath
+                if (iriParsing && ((result & (Check.DisplayCanonical | Check.EscapedCanonical | Check.BackslashInPath
                             | Check.FoundNonAscii | Check.NotIriCanonical))
                             == (Check.DisplayCanonical | Check.FoundNonAscii)))
                 {
