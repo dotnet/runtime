@@ -5164,9 +5164,40 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             case GT_CNS_LNG:
             case GT_CNS_INT:
-                costEx = 1;
-                costSz = 4;
+            {
+                GenTreeIntConCommon* con            = tree->AsIntConCommon();
+                bool                 iconNeedsReloc = con->ImmedValNeedsReloc(this);
+                bool                 addrNeedsReloc = con->AddrNeedsReloc(this);
+                ssize_t              imm            = static_cast<ssize_t>(con->LngValue());
+                emitAttr             size           = EA_SIZE(emitActualTypeSize(tree));
+
+                if (iconNeedsReloc || addrNeedsReloc)
+                {
+                    // auipc + addi
+                    costSz = 8;
+                    costEx = 2;
+                }
+                else
+                {
+                    int instructionCount = GetEmitter()->emitLoadImmediate<false>(size, REG_NA, imm);
+
+                    assert(instructionCount != 0);
+
+                    if (instructionCount == -1)
+                    {
+                        // Cannot emit code in a 5 instruction sequence
+                        // Create a 8-byte constant(8) and load it with auipc(4) + ld(4)
+                        costSz = 16;
+                        costEx = 1 + IND_COST_EX;
+                    }
+                    else
+                    {
+                        costSz = 4 * instructionCount;
+                        costEx = instructionCount;
+                    }
+                }
                 goto COMMON_CNS;
+            }
 #elif defined(TARGET_WASM)
             case GT_CNS_STR:
                 costEx = IND_COST_EX + 2;
@@ -13806,6 +13837,50 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
                 return result;
             }
             break;
+        }
+
+        case NI_System_Enum_Equals:
+        {
+            assert(call->AsCall()->gtArgs.CountUserArgs() == 2);
+            GenTree* arg0 = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
+            GenTree* arg1 = call->AsCall()->gtArgs.GetArgByIndex(1)->GetNode();
+
+            bool isArg0Exact;
+            bool isArg1Exact;
+            bool isNonNull; // Unused here.
+
+            CORINFO_CLASS_HANDLE cls0 = gtGetClassHandle(arg0, &isArg0Exact, &isNonNull);
+            CORINFO_CLASS_HANDLE cls1 = gtGetClassHandle(arg1, &isArg1Exact, &isNonNull);
+            if ((cls0 != cls1) || (cls0 == NO_CLASS_HANDLE) || !isArg0Exact || !isArg1Exact)
+            {
+                break;
+            }
+
+            assert(info.compCompHnd->isEnum(cls1, nullptr) == TypeCompareState::Must);
+
+            CorInfoType corTyp = info.compCompHnd->getTypeForPrimitiveValueClass(cls1);
+            if (corTyp == CORINFO_TYPE_UNDEF)
+            {
+                break;
+            }
+
+            var_types typ = JITtype2varType(corTyp);
+            if (!varTypeIsIntegral(typ))
+            {
+                // Ignore non-integral enums e.g. enums based on float/double
+                break;
+            }
+
+            // Unbox both integral arguments and compare their underlying values
+            GenTree* offset  = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
+            GenTree* addr0   = gtNewOperNode(GT_ADD, TYP_BYREF, arg0, offset);
+            GenTree* addr1   = gtNewOperNode(GT_ADD, TYP_BYREF, arg1, gtCloneExpr(offset));
+            GenTree* cmpNode = gtNewOperNode(GT_EQ, TYP_INT, gtNewIndir(typ, addr0), gtNewIndir(typ, addr1));
+            JITDUMP("Optimized Enum.Equals call to comparison of underlying values:\n");
+            DISPTREE(cmpNode);
+            JITDUMP("\n");
+
+            return gtFoldExpr(cmpNode);
         }
 
         case NI_System_Type_op_Equality:

@@ -461,12 +461,13 @@ CodeHeapIterator::CodeHeapIterator(EECodeGenManager* manager, HeapList* heapList
     , m_HeapsIndexNext{ 0 }
     , m_pLoaderAllocatorFilter{ pLoaderAllocatorFilter }
     , m_pCurrent{ NULL }
+    , m_codeType(manager->GetCodeType())
 {
     CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
-        PRECONDITION(m_manager != NULL);
+        PRECONDITION(manager != NULL);
     }
     CONTRACTL_END;
 
@@ -485,11 +486,9 @@ CodeHeapIterator::CodeHeapIterator(EECodeGenManager* manager, HeapList* heapList
 
     // Move to the first method section.
     (void)NextMethodSectionIterator();
-
-    m_manager->AddRefIterator();
 }
 
-CodeHeapIterator::~CodeHeapIterator()
+CodeHeapIterator::EECodeGenManagerReleaseIteratorHolder::EECodeGenManagerReleaseIteratorHolder(EECodeGenManager* manager) : m_manager(manager)
 {
     CONTRACTL
     {
@@ -498,7 +497,44 @@ CodeHeapIterator::~CodeHeapIterator()
     }
     CONTRACTL_END;
 
-    m_manager->ReleaseIterator();
+    manager->AddRefIterator();
+}
+
+CodeHeapIterator::EECodeGenManagerReleaseIteratorHolder::~EECodeGenManagerReleaseIteratorHolder()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    if (m_manager)
+    {
+        m_manager->ReleaseIterator();
+        m_manager = NULL;
+    }
+}
+
+CodeHeapIterator::EECodeGenManagerReleaseIteratorHolder& CodeHeapIterator::EECodeGenManagerReleaseIteratorHolder::operator=(EECodeGenManagerReleaseIteratorHolder&& other)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    if (this != &other)
+    {
+        if (m_manager)
+        {
+            m_manager->ReleaseIterator();
+        }
+        m_manager = other.m_manager;
+        other.m_manager = NULL;
+    }
+    return *this;
 }
 
 bool CodeHeapIterator::Next()
@@ -520,8 +556,19 @@ bool CodeHeapIterator::Next()
         else
         {
             BYTE* code = m_Iterator.GetMethodCode();
-            CodeHeader* pHdr = (CodeHeader*)(code - sizeof(CodeHeader));
-            m_pCurrent = !pHdr->IsStubCodeBlock() ? pHdr->GetMethodDesc() : NULL;
+#ifdef FEATURE_INTERPRETER
+            if (m_codeType == (miManaged | miIL | miOPTIL))
+            {
+                // Interpreter case
+                InterpreterCodeHeader* pHdr = (InterpreterCodeHeader*)(code - sizeof(InterpreterCodeHeader));
+                m_pCurrent = pHdr->GetMethodDesc();
+            }
+            else
+#endif
+            {
+                CodeHeader* pHdr = (CodeHeader*)(code - sizeof(CodeHeader));
+                m_pCurrent = !pHdr->IsStubCodeBlock() ? pHdr->GetMethodDesc() : NULL;
+            }
 
             // LoaderAllocator filter
             if (m_pLoaderAllocatorFilter && m_pCurrent)

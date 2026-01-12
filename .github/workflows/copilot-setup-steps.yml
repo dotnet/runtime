@@ -42,6 +42,3 @@ jobs:
 
       - name: Run dotnet info
         run: dotnet --info
-
-      - name: Build clr+libs
-        run: ./build.sh clr+libs -rc release

@@ -2793,13 +2793,6 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // associated with the instantiation.
     BOOL fMaybeCollectibleAndStatic = FALSE;
 
-    // Do not allow static methods with [UnmanagedCallersOnlyAttribute] to be a delegate target.
-    // A method marked UnmanagedCallersOnly is special and allowing it to be delegate target will destabilize the runtime.
-    if (pTargetMethod->HasUnmanagedCallersOnlyAttribute())
-    {
-        COMPlusThrow(kNotSupportedException, W("NotSupported_UnmanagedCallersOnlyTarget"));
-    }
-
     if (isStatic)
     {
         // When this method is called and the method being considered is shared, we typically

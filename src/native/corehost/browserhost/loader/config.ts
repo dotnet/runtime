@@ -20,7 +20,7 @@ export function validateLoaderConfig(): void {
 
 
 export function mergeLoaderConfig(source: Partial<LoaderConfigInternal>): void {
-    normalizeConfig(loaderConfig);
+    defaultConfig(loaderConfig);
     normalizeConfig(source);
     mergeConfigs(loaderConfig, source);
 }
@@ -70,12 +70,7 @@ function mergeResources(target: Assets, source: Assets): Assets {
     return Object.assign(target, source);
 }
 
-
-function normalizeConfig(target: LoaderConfigInternal) {
-    if (!target.resources) target.resources = {} as any;
-    normalizeResources(target.resources!);
-    if (!target.environmentVariables) target.environmentVariables = {};
-    if (!target.runtimeOptions) target.runtimeOptions = [];
+function defaultConfig(target: LoaderConfigInternal) {
     if (target.appendElementOnExit === undefined) target.appendElementOnExit = false;
     if (target.logExitCode === undefined) target.logExitCode = false;
     if (target.exitOnUnhandledError === undefined) target.exitOnUnhandledError = false;
@@ -83,6 +78,15 @@ function normalizeConfig(target: LoaderConfigInternal) {
     if (target.debugLevel === undefined) target.debugLevel = 0;
     if (target.diagnosticTracing === undefined) target.diagnosticTracing = false;
     if (target.virtualWorkingDirectory === undefined) target.virtualWorkingDirectory = "/";
+    if (target.maxParallelDownloads === undefined) target.maxParallelDownloads = 16;
+    normalizeConfig(target);
+}
+
+function normalizeConfig(target: LoaderConfigInternal) {
+    if (!target.resources) target.resources = {} as any;
+    normalizeResources(target.resources!);
+    if (!target.environmentVariables) target.environmentVariables = {};
+    if (!target.runtimeOptions) target.runtimeOptions = [];
 }
 
 function normalizeResources(target: Assets) {
