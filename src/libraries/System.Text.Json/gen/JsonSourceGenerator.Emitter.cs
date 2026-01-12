@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 using SourceGenerators;
@@ -928,6 +929,9 @@ namespace System.Text.Json.SourceGeneration
                 writer.WriteLine('}');
             }
 
+            // RefKind.RefReadOnlyParameter was added in Roslyn 4.4
+            private const int RefKindRefReadOnlyParameter = 4;
+
             private static string GetParameterizedCtorInvocationFunc(TypeGenerationSpec typeGenerationSpec)
             {
                 ImmutableEquatableArray<ParameterGenerationSpec> parameters = typeGenerationSpec.CtorParamGenSpecs;
@@ -935,9 +939,7 @@ namespace System.Text.Json.SourceGeneration
 
                 const string ArgsVarName = "args";
 
-                // RefKind values from Microsoft.CodeAnalysis.RefKind:
-                // None = 0, Ref = 1, Out = 2, In = 3, RefReadOnlyParameter = 4
-                bool hasRefOrRefReadonlyParams = parameters.Any(p => p.RefKind == 1 || p.RefKind == 4); // Ref or RefReadOnlyParameter
+                bool hasRefOrRefReadonlyParams = parameters.Any(p => p.RefKind == (int)RefKind.Ref || p.RefKind == RefKindRefReadOnlyParameter);
 
                 StringBuilder sb;
 
@@ -949,7 +951,7 @@ namespace System.Text.Json.SourceGeneration
                     // Declare temp variables for ref and ref readonly parameters
                     foreach (ParameterGenerationSpec param in parameters)
                     {
-                        if (param.RefKind == 1 || param.RefKind == 4) // Ref or RefReadOnlyParameter
+                        if (param.RefKind == (int)RefKind.Ref || param.RefKind == RefKindRefReadOnlyParameter)
                         {
                             sb.Append($"var __temp{param.ParameterIndex} = ({param.ParameterType.FullyQualifiedName}){ArgsVarName}[{param.ParameterIndex}]; ");
                         }
@@ -995,12 +997,11 @@ namespace System.Text.Json.SourceGeneration
 
                 static string GetParamExpression(ParameterGenerationSpec param)
                 {
-                    // RefKind values: None = 0, Ref = 1, Out = 2, In = 3, RefReadOnlyParameter = 4
                     return param.RefKind switch
                     {
-                        1 => $"ref __temp{param.ParameterIndex}", // Ref
-                        2 => $"out var __discard{param.ParameterIndex}", // Out - use discard pattern
-                        4 => $"in __temp{param.ParameterIndex}", // RefReadOnlyParameter - use in keyword with temp
+                        (int)RefKind.Ref => $"ref __temp{param.ParameterIndex}",
+                        (int)RefKind.Out => $"out var __discard{param.ParameterIndex}",
+                        RefKindRefReadOnlyParameter => $"in __temp{param.ParameterIndex}",
                         _ => $"({param.ParameterType.FullyQualifiedName}){ArgsVarName}[{param.ParameterIndex}]", // None or In (in doesn't require keyword at call site)
                     };
                 }
