@@ -34,7 +34,7 @@
 #include "exceptmacros.h"
 #include "minipal/time.h"
 #include "minipal/thread.h"
-#include "asyncsafethreadmap.h"
+#include "SignalSafeThreadMap.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -56,9 +56,7 @@
 #include "perfmap.h"
 #endif
 
-#ifdef FEATURE_EH_FUNCLETS
 #include "exinfo.h"
-#endif
 
 #ifdef FEATURE_INTERPRETER
 #include "interpexec.h"
@@ -68,7 +66,7 @@
 Thread* GetThreadAsyncSafe()
 {
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
-    return (Thread*)FindThreadInAsyncSafeMap(minipal_get_current_thread_id_no_cache());
+    return (Thread*)FindThreadInSignalSafeMap(minipal_get_current_thread_id_no_cache());
 #else
     return GetThreadNULLOk();
 #endif
@@ -387,9 +385,9 @@ void SetThread(Thread* t)
     {
         t_CurrentThreadInfo.m_pAppDomain = AppDomain::GetCurrentDomain();
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
-        if (!InsertThreadIntoAsyncSafeMap(t->GetOSThreadId64(), t))
+        if (!InsertThreadIntoSignalSafeMap(t->GetOSThreadId64(), t))
         {
-            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to insert thread into async-safe map due to out of memory."));
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to insert thread into signal-safe map due to out of memory."));
         }
 #endif // TARGET_UNIX && !TARGET_WASM
     }
@@ -399,7 +397,7 @@ void SetThread(Thread* t)
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
         if (origThread != NULL)
         {
-            RemoveThreadFromAsyncSafeMap(origThread->GetOSThreadId64(), origThread);
+            RemoveThreadFromSignalSafeMap(origThread->GetOSThreadId64(), origThread);
         }
 #endif // TARGET_UNIX && !TARGET_WASM
     }
@@ -1344,10 +1342,8 @@ Thread::Thread()
 
     m_pCreatingThrowableForException = NULL;
 
-#ifdef FEATURE_EH_FUNCLETS
     m_dwIndexClauseForCatch = 0;
     m_sfEstablisherOfActualHandlerFrame.Clear();
-#endif // FEATURE_EH_FUNCLETS
 
     // Do not expose thread until it is fully constructed
     g_pThinLockThreadIdDispenser->NewId(this, this->m_ThreadId);
@@ -2360,21 +2356,6 @@ void Thread::BaseCoUninitialize()
     ::CoUninitialize();
 }// BaseCoUninitialize
 
-#ifdef FEATURE_COMINTEROP
-void Thread::BaseWinRTUninitialize()
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_PREEMPTIVE;
-
-    _ASSERTE(WinRTSupported());
-    _ASSERTE(GetThread() == this);
-    _ASSERTE(IsWinRTInitialized());
-
-    RoUninitialize();
-}
-#endif // FEATURE_COMINTEROP
-
 void Thread::CoUninitialize()
 {
     CONTRACTL {
@@ -2385,31 +2366,14 @@ void Thread::CoUninitialize()
 
     // Running threads might have performed a CoInitialize which must
     // now be balanced.
-    BOOL needsUninitialize = IsCoInitialized()
-#ifdef FEATURE_COMINTEROP
-        || IsWinRTInitialized()
-#endif // FEATURE_COMINTEROP
-        ;
 
-    if (!IsAtProcessExit() && needsUninitialize)
+    if (!IsAtProcessExit() && IsCoInitialized())
     {
         GCX_PREEMP();
         CONTRACT_VIOLATION(ThrowsViolation);
 
-        if (IsCoInitialized())
-        {
-            BaseCoUninitialize();
-            ResetThreadState(TS_CoInitialized);
-        }
-
-#ifdef FEATURE_COMINTEROP
-        if (IsWinRTInitialized())
-        {
-            _ASSERTE(WinRTSupported());
-            BaseWinRTUninitialize();
-            ResetWinRTInitialized();
-        }
-#endif // FEATURE_COMNITEROP
+        BaseCoUninitialize();
+        ResetThreadState(TS_CoInitialized);
     }
 }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -2596,31 +2560,13 @@ void Thread::CleanupCOMState()
     // now be balanced. However only the thread that called COInitialize can
     // call CoUninitialize.
 
-    BOOL needsUninitialize = IsCoInitialized()
-#ifdef FEATURE_COMINTEROP
-        || IsWinRTInitialized()
-#endif // FEATURE_COMINTEROP
-        ;
-
-    if (needsUninitialize)
+    if (IsCoInitialized())
     {
         GCX_PREEMP();
         CONTRACT_VIOLATION(ThrowsViolation);
 
-        if (IsCoInitialized())
-        {
-            BaseCoUninitialize();
-            ResetCoInitialized();
-        }
-
-#ifdef FEATURE_COMINTEROP
-        if (IsWinRTInitialized())
-        {
-            _ASSERTE(WinRTSupported());
-            BaseWinRTUninitialize();
-            ResetWinRTInitialized();
-        }
-#endif // FEATURE_COMINTEROP
+        BaseCoUninitialize();
+        ResetCoInitialized();
     }
 }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -2641,15 +2587,7 @@ void Thread::CooperativeCleanup()
     GCX_COOP();
 
     // Clear any outstanding stale EH state that maybe still active on the thread.
-#ifdef FEATURE_EH_FUNCLETS
     ExInfo::PopTrackers((void*)-1);
-#else // !FEATURE_EH_FUNCLETS
-    PTR_ThreadExceptionState pExState = GetExceptionState();
-    if (pExState->IsExceptionInProgress())
-    {
-        pExState->GetCurrentExceptionTracker()->UnwindExInfo((void *)-1);
-    }
-#endif // FEATURE_EH_FUNCLETS
 
     if (m_ThreadLocalDataPtr != NULL)
     {
@@ -2701,13 +2639,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     DWORD CurrentThreadID = pCurrentThread?pCurrentThread->GetThreadId():0;
     DWORD ThisThreadID = GetThreadId();
 
-#ifdef FEATURE_INTERPRETER
-    if (m_pInterpThreadContext != nullptr)
-    {
-        delete m_pInterpThreadContext;
-    }
-#endif // FEATURE_INTERPRETER
-
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     // If the currently running thread is the thread that died and it is an STA thread, then we
     // need to release all the RCW's in the current context. However, we cannot do this if we
@@ -2732,6 +2663,13 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     // We took a count during construction, and we rely on the count being
     // non-zero as we terminate the thread here.
     _ASSERTE(m_ExternalRefCount > 0);
+
+#ifdef FEATURE_INTERPRETER
+    if (m_pInterpThreadContext != nullptr)
+    {
+        delete m_pInterpThreadContext;
+    }
+#endif // FEATURE_INTERPRETER
 
     // The thread is no longer running.  It's important that we zero any general OBJECTHANDLE's
     // on this Thread object.  That's because we need the managed Thread object to be subject to
@@ -3772,34 +3710,15 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
     // the thread.
     if (state == AS_Unknown)
     {
-        BOOL needUninitialize = (m_State & TS_CoInitialized)
-#ifdef FEATURE_COMINTEROP
-            || IsWinRTInitialized()
-#endif // FEATURE_COMINTEROP
-            ;
-
-        if (needUninitialize)
+        if (m_State & TS_CoInitialized)
         {
             GCX_PREEMP();
 
-            // If we haven't CoInitialized the thread, then we don't have anything to do.
-            if (m_State & TS_CoInitialized)
-            {
-                // CoUninitialize the thread and reset the STA/MTA/CoInitialized state bits.
-                ::CoUninitialize();
+            // CoUninitialize the thread and reset the STA/MTA/CoInitialized state bits.
+            ::CoUninitialize();
 
-                ThreadState uninitialized = static_cast<ThreadState>(TS_InSTA | TS_InMTA | TS_CoInitialized);
-                ResetThreadState(uninitialized);
-            }
-
-#ifdef FEATURE_COMINTEROP
-            if (IsWinRTInitialized())
-            {
-                _ASSERTE(WinRTSupported());
-                BaseWinRTUninitialize();
-                ResetWinRTInitialized();
-            }
-#endif // FEATURE_COMINTEROP
+            ThreadState uninitialized = static_cast<ThreadState>(TS_InSTA | TS_InMTA | TS_CoInitialized);
+            ResetThreadState(uninitialized);
         }
         return GetApartment();
     }
@@ -3885,47 +3804,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
     else
     {
         _ASSERTE(!"Unexpected HRESULT returned from CoInitializeEx!");
-    }
-
-    // If WinRT is supported on this OS, also initialize it at the same time.  Since WinRT sits on top of COM
-    // we need to make sure that it is initialized in the same threading mode as we just started COM itself
-    // with (or that we detected COM had already been started with).
-    if (WinRTSupported() && !IsWinRTInitialized())
-    {
-        GCX_PREEMP();
-
-        BOOL isSTA = m_State & TS_InSTA;
-        _ASSERTE(isSTA || (m_State & TS_InMTA));
-
-        HRESULT hrWinRT = RoInitialize(isSTA ? RO_INIT_SINGLETHREADED : RO_INIT_MULTITHREADED);
-
-        if (SUCCEEDED(hrWinRT))
-        {
-            if (hrWinRT == S_OK)
-            {
-                SetThreadStateNC(TSNC_WinRTInitialized);
-            }
-            else
-            {
-                _ASSERTE(hrWinRT == S_FALSE);
-
-                // If the thread has already been initialized, back it out. We may not
-                // always be able to call RoUninitialize on shutdown so if there's
-                // a way to avoid having to, we should take advantage of that.
-                RoUninitialize();
-            }
-        }
-        else if (hrWinRT == E_OUTOFMEMORY)
-        {
-            COMPlusThrowOM();
-        }
-        else
-        {
-            // We don't check for RPC_E_CHANGEDMODE, since we're using the mode that was read in by
-            // initializing COM above.  COM and WinRT need to always be in the same mode, so we should never
-            // see that return code at this point.
-            _ASSERTE(!"Unexpected HRESULT From RoInitialize");
-        }
     }
 
     return GetApartment();
@@ -6112,9 +5990,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     _ASSERTE(GetThreadNULLOk() != NULL);
 
     Thread *pThread = GetThread();
-#ifdef FEATURE_EH_FUNCLETS
     Frame  *pFrame = pThread->m_pFrame;
-#endif // FEATURE_EH_FUNCLETS
 
     // The sole purpose of having this frame is to tell the debugger that we have a catch handler here
     // which may swallow managed exceptions.  The debugger needs this in order to send a
@@ -6131,9 +6007,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
 
         BOOL *pfHadException;
 
-#ifdef FEATURE_EH_FUNCLETS
         Frame *pFrame;
-#endif // FEATURE_EH_FUNCLETS
     }args;
 
     args.pTryParam = &param;
@@ -6142,9 +6016,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     BOOL fHadException = TRUE;
     args.pfHadException = &fHadException;
 
-#ifdef FEATURE_EH_FUNCLETS
     args.pFrame = pFrame;
-#endif // FEATURE_EH_FUNCLETS
 
     PAL_TRY(TryArgs *, pArgs, &args)
     {
@@ -6159,12 +6031,10 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
             //
             // If eCLRDeterminedPolicy, we only swallow for TA, RTA, and ADU exception.
             // For eHostDeterminedPolicy, we will swallow all the managed exception.
-    #ifdef FEATURE_EH_FUNCLETS
             // this must be done after the second pass has run, it does not
             // reference anything on the stack, so it is safe to run in an
             // SEH __except clause as well as a C++ catch clause.
             ExInfo::PopTrackers(pArgs->pFrame);
-    #endif // FEATURE_EH_FUNCLETS
 
             _ASSERTE(!pArgs->pThread->IsAbortRequested());
         }
@@ -6819,11 +6689,23 @@ void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP)
 #ifdef FEATURE_INTERPRETER
 InterpThreadContext* Thread::GetInterpThreadContext()
 {
-    WRAPPER_NO_CONTRACT;
+    LIMITED_METHOD_CONTRACT;
+    return m_pInterpThreadContext;
+}
+
+InterpThreadContext* Thread::GetOrCreateInterpThreadContext()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (m_pInterpThreadContext == nullptr)
     {
-        m_pInterpThreadContext = new (nothrow) InterpThreadContext();
+        m_pInterpThreadContext = new InterpThreadContext();
     }
 
     return m_pInterpThreadContext;
@@ -6839,9 +6721,7 @@ InterpThreadContext* GetInterpThreadContextWithPossiblyMissingThreadOrCallStub_W
     }
     CONTRACTL_END;
 
-    InterpThreadContext *pThreadContext = currentThread->GetInterpThreadContext();
-    if (pThreadContext == NULL)
-        COMPlusThrowOM();
+    InterpThreadContext *pThreadContext = currentThread->GetOrCreateInterpThreadContext();
     CreateNativeToInterpreterCallStub(pByteCodeStart->Method);
 
     return pThreadContext;

@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // threadsuspend.CPP
 //
@@ -17,9 +18,7 @@
 #include <minipal/memorybarrierprocesswide.h>
 #include <minipal/time.h>
 
-#ifdef FEATURE_EH_FUNCLETS
 #include "exinfo.h"
-#endif
 
 #define HIJACK_NONINTERRUPTIBLE_THREADS
 
@@ -662,21 +661,6 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
     EE_ILEXCEPTION_CLAUSE EHClause;
 
     StackWalkAction action = SWA_CONTINUE;
-#ifndef FEATURE_EH_FUNCLETS
-    // On X86, the EH encoding for catch clause is completely mess.
-    // If catch clause is in its own basic block, the end of catch includes everything in the basic block.
-    // For nested catch, the end of catch may include several jmp instructions after JIT_EndCatch call.
-    // To better decide if we are inside a nested catch, we check if offs-1 is in more than one catch clause.
-    DWORD countInCatch = 0;
-    BOOL fAtJitEndCatch = FALSE;
-    if (pData->pAbortee == GetThread() &&
-        pData->pAbortee->ThrewControlForThread() == Thread::InducedThreadRedirectAtEndOfCatch &&
-        GetControlPC(pCf->GetRegisterSet()) == (PCODE)GetIP(pData->pAbortee->GetAbortContext()))
-    {
-        fAtJitEndCatch = TRUE;
-        offs -= 1;
-    }
-#endif  // !FEATURE_EH_FUNCLETS
 
     for(ULONG i=0; i < EHCount; i++)
     {
@@ -697,20 +681,6 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
         if (offs >= EHClause.HandlerStartPC &&
             offs < EHClause.HandlerEndPC)
         {
-#ifndef FEATURE_EH_FUNCLETS
-            if (fAtJitEndCatch)
-            {
-                // On X86, JIT's EH info may include the instruction after JIT_EndCatch inside the same catch
-                // clause if it is in the same basic block.
-                // So for this case, the offs is in at least one catch handler, but since we are at the end of
-                // catch, this one should not be counted.
-                countInCatch ++;
-                if (countInCatch == 1)
-                {
-                    continue;
-                }
-            }
-#endif // !FEATURE_EH_FUNCLETS
             pData->fWithinEHClause = true;
             // We're within an EH clause. If we're asking about CERs too then stop the stack walk if we've reached a conclusive
             // result or continue looking otherwise. Else we can stop the stackwalk now.
@@ -726,14 +696,6 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
     }
     }
 
-#ifndef FEATURE_EH_FUNCLETS
-#ifdef _DEBUG
-    if (fAtJitEndCatch)
-    {
-        _ASSERTE (countInCatch > 0);
-    }
-#endif   // _DEBUG
-#endif   // !FEATURE_EH_FUNCLETS
     return action;
 }
 
@@ -963,12 +925,10 @@ BOOL Thread::ReadyForAsyncException()
         return FALSE;
     }
 
-#ifdef FEATURE_EH_FUNCLETS
     if (IsAbortPrevented())
     {
         return FALSE;
     }
-#endif // FEATURE_EH_FUNCLETS
 
     REGDISPLAY rd;
 
@@ -1524,31 +1484,9 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
                                 | TS_Detached
                                 | TS_Unstarted)));
 
-#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
-            // TODO WIN64: consider this if there is a way to detect of managed code on stack.
-            if ((m_pFrame == FRAME_TOP)
-                && (GetFirstCOMPlusSEHRecord(this) == EXCEPTION_CHAIN_END)
-            )
-            {
-#ifndef DISABLE_THREADSUSPEND
-                ResumeThread();
-#endif
-#ifdef _DEBUG
-                m_dwAbortPoint = 8;
-#endif
-
-                return S_OK;
-            }
-#endif // TARGET_X86
-
-
             if (!m_fPreemptiveGCDisabled)
             {
-                if ((m_pFrame != FRAME_TOP) && m_pFrame->IsTransitionToNativeFrame()
-#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
-                    && ((size_t) GetFirstCOMPlusSEHRecord(this) > ((size_t) m_pFrame) - 20)
-#endif // TARGET_X86
-                    )
+                if ((m_pFrame != FRAME_TOP) && m_pFrame->IsTransitionToNativeFrame())
                 {
                     fOutOfRuntime = TRUE;
                 }
@@ -3781,8 +3719,6 @@ ThrowControlForThread(
 
     STRESS_LOG0(LF_SYNC, LL_INFO100, "ThrowControlForThread Aborting\n");
 
-#ifdef FEATURE_EH_FUNCLETS
-
     GCX_COOP();
 
     EXCEPTION_RECORD exceptionRecord = {0};
@@ -3793,12 +3729,6 @@ ThrowControlForThread(
     OBJECTREF throwable = ExInfo::CreateThrowable(&exceptionRecord, TRUE);
     pfef->GetExceptionContext()->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
     DispatchManagedException(throwable, pfef->GetExceptionContext());
-#else // FEATURE_EH_FUNCLETS
-    // Here we raise an exception.
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER
-    RaiseComPlusException();
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
-#endif // FEATURE_EH_FUNCLETS
 }
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
@@ -4722,7 +4652,6 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
             // return address for hijacking.
             if (!pES->m_IsInterruptible)
             {
-#ifdef FEATURE_EH_FUNCLETS
                 PREGDISPLAY pRDT = pCF->GetRegisterSet();
                 _ASSERTE(pRDT != NULL);
 
@@ -4810,11 +4739,6 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                     PORTABILITY_ASSERT("Platform NYI");
 #endif // _TARGET_???_
                 }
-#else // FEATURE_EH_FUNCLETS
-                // peel off the next frame to expose the return address on the stack
-                pES->m_FirstPass = FALSE;
-                action = SWA_CONTINUE;
-#endif // !FEATURE_EH_FUNCLETS
             }
 #endif // HIJACK_NONINTERRUPTIBLE_THREADS
         }
@@ -5949,8 +5873,11 @@ bool Thread::InjectActivation(ActivationReason reason)
             hThread,
             (ULONG_PTR)reason,
             SpecialUserModeApcWithContextFlags);
-    _ASSERTE(success);
-    return true;
+    if (!success)
+    {
+        m_hasPendingActivation = false;
+    }
+    return success;
 #elif defined(TARGET_UNIX)
     _ASSERTE((reason == ActivationReason::SuspendForGC) || (reason == ActivationReason::ThreadAbort) || (reason == ActivationReason::SuspendForDebugger));
 

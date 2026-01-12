@@ -1572,7 +1572,7 @@ namespace System.Text.Json.SourceGeneration
 
                             var propertyInitializer = new PropertyInitializerGenerationSpec
                             {
-                                Name = property.MemberName,
+                                Name = property.NameSpecifiedInSourceCode,
                                 ParameterType = property.PropertyType,
                                 MatchesConstructorParameter = matchingConstructorParameter is not null,
                                 ParameterIndex = matchingConstructorParameter?.ParameterIndex ?? paramCount++,

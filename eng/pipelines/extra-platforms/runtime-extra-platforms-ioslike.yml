@@ -23,7 +23,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      # - ios_arm64 TODO: Enable when Helix queue upgrade is finished https://github.com/dotnet/runtime/issues/122452
+      - ios_arm64
       - tvos_arm64
     variables:
       # map dependencies variables to local variables
@@ -64,7 +64,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      # - ios_arm64 TODO: Enable when Helix queue upgrade is finished https://github.com/dotnet/runtime/issues/122452
+      - ios_arm64
       - tvos_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
@@ -108,7 +108,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      # - ios_arm64 TODO: Enable when Helix queue upgrade is finished https://github.com/dotnet/runtime/issues/122452
+      - ios_arm64
       - tvos_arm64
     variables:
       # map dependencies variables to local variables
@@ -180,7 +180,7 @@ jobs:
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
       - ios_arm64
-      # - tvos_arm64 TODO: https://github.com/dotnet/runtime/issues/120055
+      - tvos_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -223,7 +223,7 @@ jobs:
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
       - ios_arm64
-      # - tvos_arm64 TODO: https://github.com/dotnet/runtime/issues/120055
+      - tvos_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange

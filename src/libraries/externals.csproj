@@ -27,9 +27,13 @@
   <ItemGroup Condition="'$(TargetsWasm)' != 'true'">
     <HostFxrFile Include="$(DotNetHostBinDir)$(LibPrefix)hostfxr$(LibSuffix)" />
     <HostPolicyFile Include="$(DotNetHostBinDir)$(LibPrefix)hostpolicy$(LibSuffix)" />
-    <_HostSymbols Include="$(DotNetHostBinDir)$(LibPrefix)hostfxr$(LibSuffix)$(SymbolsSuffix)" />
-    <_HostSymbols Include="$(DotNetHostBinDir)$(LibPrefix)hostpolicy$(LibSuffix)$(SymbolsSuffix)" />
     <DotnetExe Include="$(DotNetHostBinDir)dotnet$(ExeSuffix)" />
+    <_HostFxrSymbols Include="$(DotNetHostBinDir)$(LibPrefix)hostfxr*$(SymbolsSuffix)"  />
+    <_HostFxrSymbols Include="$(DotNetHostBinDir)PDB\$(LibPrefix)hostfxr*$(SymbolsSuffix)" />
+    <_HostPolicySymbols Include="$(DotNetHostBinDir)$(LibPrefix)hostpolicy*$(SymbolsSuffix)" />
+    <_HostPolicySymbols Include="$(DotNetHostBinDir)PDB\$(LibPrefix)hostpolicy*$(SymbolsSuffix)" />
+    <_DotnetExeSymbols Include="$(DotNetHostBinDir)dotnet*$(SymbolsSuffix)" />
+    <_DotnetExeSymbols Include="$(DotNetHostBinDir)PDB\dotnet*$(SymbolsSuffix)" />
   </ItemGroup>
 
 
@@ -47,17 +51,17 @@
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(Filename)' == 'apphost'" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(HostFxrFile)"
+    <Copy SourceFiles="@(HostFxrFile);@(_HostFxrSymbols)"
           DestinationFolder="$(NetCoreAppCurrentTestHostPath)host\fxr\$(ProductVersion)"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
 
-    <Copy SourceFiles="@(HostPolicyFile)"
+    <Copy SourceFiles="@(HostPolicyFile);@(_HostPolicySymbols)"
           DestinationFolder="$(NetCoreAppCurrentTestHostPath)shared\Microsoft.NETCore.App\$(ProductVersion)"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
 
-    <Copy SourceFiles="@(DotnetExe)"
+    <Copy SourceFiles="@(DotnetExe);@(_DotnetExeSymbols)"
           DestinationFolder="$(NetCoreAppCurrentTestHostPath)"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
@@ -84,7 +88,8 @@
     <ItemGroup>
       <RuntimeFiles Include="@(HostFxrFile)" Condition="Exists('@(HostFxrFile)')" />
       <RuntimeFiles Include="@(HostPolicyFile)" Condition="Exists('@(HostPolicyFile)')" />
-      <RuntimeFiles Include="@(_HostSymbols)" Condition="Exists('@(_HostSymbols)')" IsNative="true" />
+      <RuntimeFiles Include="@(_HostFxrSymbols)" Condition="Exists('%(Identity)')" IsNative="true" />
+      <RuntimeFiles Include="@(_HostPolicySymbols)" Condition="Exists('%(Identity)')" IsNative="true" />
       <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\corerun*" Condition="'$(TargetsAndroid)' != 'true' and '$(TargetsBrowser)' != 'true'" />
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\PDB\corerun*" Condition="'$(TargetsAndroid)' != 'true' and '$(TargetsBrowser)' != 'true'" />
@@ -122,7 +127,8 @@
     <ItemGroup>
       <RuntimeFiles Include="@(HostFxrFile)" Condition="Exists('@(HostFxrFile)') and '$(TargetsMobile)' != 'true'"/>
       <RuntimeFiles Include="@(HostPolicyFile)" Condition="Exists('@(HostPolicyFile)') and '$(TargetsMobile)' != 'true'" />
-      <RuntimeFiles Include="@(_HostSymbols)" IsNative="true" Condition="Exists('@(_HostSymbols)') and '$(TargetsMobile)' != 'true'" />
+      <RuntimeFiles Include="@(_HostFxrSymbols)" IsNative="true" Condition="Exists('%(Identity)') and '$(TargetsMobile)' != 'true'" />
+      <RuntimeFiles Include="@(_HostPolicySymbols)" IsNative="true" Condition="Exists('%(Identity)') and '$(TargetsMobile)' != 'true'" />
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
       <!-- Setup runtime pack native. -->
       <ReferenceCopyLocalPaths Include="@(MonoCrossFiles)"
