@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // CGENX86.H -
 //
 // Various helper routines for generating x86 assembly code.
 //
 // DO NOT INCLUDE THIS FILE DIRECTLY - ALWAYS USE CGENSYS.H INSTEAD
-//
-
 
 
 #ifndef TARGET_X86
@@ -135,57 +134,6 @@ struct ArgumentRegisters {
 struct REGDISPLAY;
 typedef REGDISPLAY *PREGDISPLAY;
 
-#ifndef FEATURE_EH_FUNCLETS
-// Sufficient context for Try/Catch restoration.
-struct EHContext {
-    INT32       Eax;
-    INT32       Ebx;
-    INT32       Ecx;
-    INT32       Edx;
-    INT32       Esi;
-    INT32       Edi;
-    INT32       Ebp;
-    INT32       Esp;
-    INT32       Eip;
-
-    void Setup(PCODE resumePC, PREGDISPLAY regs);
-    void UpdateFrame(PREGDISPLAY regs);
-
-    inline TADDR GetSP() {
-        LIMITED_METHOD_CONTRACT;
-        return (TADDR)Esp;
-    }
-    inline void SetSP(LPVOID esp) {
-        LIMITED_METHOD_CONTRACT;
-        Esp = (INT32)(size_t)esp;
-    }
-
-    inline LPVOID GetFP() {
-        LIMITED_METHOD_CONTRACT;
-        return (LPVOID)(UINT_PTR)Ebp;
-    }
-
-    inline void SetArg(LPVOID arg) {
-        LIMITED_METHOD_CONTRACT;
-        Eax = (INT32)(size_t)arg;
-    }
-
-    inline void Init()
-    {
-        LIMITED_METHOD_CONTRACT;
-        Eax = 0;
-        Ebx = 0;
-        Ecx = 0;
-        Edx = 0;
-        Esi = 0;
-        Edi = 0;
-        Ebp = 0;
-        Esp = 0;
-        Eip = 0;
-    }
-};
-#endif // !FEATURE_EH_FUNCLETS
-
 #define ARGUMENTREGISTERS_SIZE sizeof(ArgumentRegisters)
 
 //**********************************************************************
@@ -210,7 +158,7 @@ inline TADDR GetSP(const CONTEXT * context) {
     return (TADDR)(context->Esp);
 }
 
-EXTERN_C LPVOID STDCALL GetCurrentSP();
+EXTERN_C void* GetCurrentSP();
 
 inline void SetSP(CONTEXT *context, TADDR esp) {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -367,7 +315,7 @@ inline BOOL isCallRegisterIndirect(const BYTE *pRetAddr)
 }
 
 //------------------------------------------------------------------------
-inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
+inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -385,36 +333,15 @@ inline void emitJumpInd(LPBYTE pBuffer, LPVOID target)
 }
 
 //------------------------------------------------------------------------
-//  Given the same pBuffer that was used by emitJump this method
+//  Given the same pBuffer that was used by emitBackToBackJump this method
 //  decodes the instructions and returns the jump target
-inline PCODE decodeJump(PCODE pCode)
+inline PCODE decodeBackToBackJump(PCODE pCode)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     CONSISTENCY_CHECK(*PTR_BYTE(pCode) == X86_INSTR_JMP_REL32);
     return rel32Decode(pCode+1);
 }
 
-//
-// On IA64 back to back jumps should be separated by a nop bundle to get
-// the best performance from the hardware's branch prediction logic.
-// For all other platforms back to back jumps don't require anything special
-// That is why we have these two wrapper functions that call emitJump and decodeJump
-//
-
-//------------------------------------------------------------------------
-inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
-{
-    WRAPPER_NO_CONTRACT;
-    emitJump(pBufferRX, pBufferRW, target);
-}
-
-//------------------------------------------------------------------------
-inline PCODE decodeBackToBackJump(PCODE pBuffer)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    return decodeJump(pBuffer);
-}
 
 EXTERN_C void __stdcall setFPReturn(int fpSize, INT64 retVal);
 EXTERN_C void __stdcall getFPReturn(int fpSize, INT64 *pretval);

@@ -546,7 +546,7 @@ namespace System.Net.Http
                 handler = new RedirectHandler(settings._maxAutomaticRedirections, handler, disableAuthOnRedirect: settings._credentials is not CredentialCache);
             }
 
-            if (settings._automaticDecompression != DecompressionMethods.None)
+            if ((settings._automaticDecompression & SupportedDecompressionMethods) != DecompressionMethods.None)
             {
                 Debug.Assert(_decompressionHandlerFactory is not null);
                 handler = _decompressionHandlerFactory(settings, handler);
@@ -567,6 +567,9 @@ namespace System.Net.Http
         {
             _decompressionHandlerFactory ??= (settings, handler) => new DecompressionHandler(settings._automaticDecompression, handler);
         }
+
+        // Not stored as a constant on the DecompressionHandler to allow it to get trimmed.
+        private const DecompressionMethods SupportedDecompressionMethods = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli;
 
         protected internal override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)

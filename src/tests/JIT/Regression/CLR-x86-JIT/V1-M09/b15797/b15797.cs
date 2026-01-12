@@ -3,11 +3,15 @@
 //
 
 // Compute distance light travels using long variables.
+
+namespace b15797;
+
 using System;
 using Xunit;
 public class Light
 {
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

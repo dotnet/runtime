@@ -334,6 +334,13 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         }
         builder.AppendLine();
 
+        builder.AppendLine(@"if (args is [""--help"" or ""-h"" or ""/?"" or ""-?""])");
+        using (builder.NewBracesScope())
+        {
+            builder.AppendLine("XUnitWrapperLibrary.Help.WriteHelpText();");
+            builder.AppendLine("return 0;");
+        }
+
         builder.AppendLine("Initialize();");
 
         // Open the stream writer for the temp log.
@@ -926,7 +933,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         }
         if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.TailcallStress))
         {
-            conditions.Add($"!{ConditionClass}.IsTailcallStress");
+            conditions.Add($"!{ConditionClass}.IsTailCallStress");
         }
         if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.TieredCompilation))
         {

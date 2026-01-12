@@ -301,6 +301,15 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
             {
                 arrSize = arrLength.lLimit.GetConstant();
             }
+            else
+            {
+                // Fast path didn't find anything - do the slow SSA-based search.
+                arrLength = GetRangeWorker(block, bndsChk->GetArrayLength(), false DEBUGARG(0));
+                if (arrLength.lLimit.IsConstant())
+                {
+                    arrSize = arrLength.lLimit.GetConstant();
+                }
+            }
         }
     }
 
@@ -863,8 +872,28 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             }
             else
             {
-                // We have a != assertion, but it doesn't tell us much about the interval. So just skip it.
-                continue;
+                assert(curAssertion->assertionKind == Compiler::OAK_NOT_EQUAL);
+
+                // We have an assertion of the form "X != constLimit".
+                // For example, if the assertion is "X != 100" and the current range for X is [100, X],
+                // we can tighten the range to [101, X].
+                // Similarly, if the range is [Y, 100], we can tighten it to [Y, 99].
+
+                if (pRange->LowerLimit().IsConstant() && pRange->LowerLimit().GetConstant() == cnstLimit)
+                {
+                    limit   = Limit(Limit::keConstant, cnstLimit);
+                    cmpOper = GT_GT;
+                }
+                else if (pRange->UpperLimit().IsConstant() && pRange->UpperLimit().GetConstant() == cnstLimit)
+                {
+                    limit   = Limit(Limit::keConstant, cnstLimit);
+                    cmpOper = GT_LT;
+                }
+                else
+                {
+                    // We can't make any useful deduction from this assertion.
+                    continue;
+                }
             }
 
             isConstantAssertion = true;

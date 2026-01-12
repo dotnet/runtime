@@ -4,13 +4,11 @@
 
 .assembly extern System.Runtime.Extensions { auto }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly extern mscorlib { auto }
-.assembly extern TestLibrary {}
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 
-.assembly 'mcc_i63' {}
-
-
-.namespace MCCTest
+.namespace mcc_i63
 {
   .class public MyClass
   {
@@ -81,7 +79,7 @@
       ldloc.s    v10
       ldloc.s    v11
       ldloc.s    v12
-      call   vararg valuetype MCCTest.VType6 MCCTest.MyClass::GetSum2(float64, int32, int64, float32, int16, float64, ...,
+      call   vararg valuetype MCCTest.VType6 mcc_i63.MyClass::GetSum2(float64, int32, int64, float32, int16, float64, ...,
                                                                 valuetype MCCTest.VType6,
                                                                 valuetype MCCTest.VType6,
                                                                 valuetype MCCTest.VType6,
@@ -99,7 +97,7 @@
 
     .method private static vararg valuetype MCCTest.VType6 GetSum2(float64, int32, int64, float32, int16, float64)
     {
-      jmp   vararg valuetype MCCTest.VType6 MCCTest.MyClass::Sum(float64, int32, int64, float32, int16, float64)
+      jmp   vararg valuetype MCCTest.VType6 mcc_i63.MyClass::Sum(float64, int32, int64, float32, int16, float64)
     }
 
     .method public specialname rtspecialname instance void  .ctor()
@@ -112,18 +110,15 @@
 
     .method public static int32 Main()
     {
-      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-          01 00 00 00
-      )
-      .entrypoint
+            .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [mscorlib]System.Type, string[]) = {
+            type([TestLibrary]TestLibrary.PlatformDetection)
+            string[1] ('IsVarArgSupported')
+        }
       .maxstack  1
-      call       bool [TestLibrary]TestLibrary.PlatformDetection::get_IsWindows()
-      brtrue.s   DoTest
-      ldc.i4     100
-      ret
+
 
     DoTest:
-      call       int32 MCCTest.MyClass::Test()
+      call       int32 mcc_i63.MyClass::Test()
       ret
     }
 
@@ -131,16 +126,16 @@
     {
       .maxstack  64
       .locals init	(
-        [0] class MCCTest.MyClass me,
+        [0] class mcc_i63.MyClass me,
         [1] valuetype MCCTest.VType6 res,
         [2] int32 rc
       )
 
-      newobj     instance void MCCTest.MyClass::.ctor()
+      newobj     instance void mcc_i63.MyClass::.ctor()
       stloc.s    me
 
       ldloc.s    me
-      call   instance valuetype MCCTest.VType6 MCCTest.MyClass::GetSum()
+      call   instance valuetype MCCTest.VType6 mcc_i63.MyClass::GetSum()
       stloc.s    res
 
       // Check Result
@@ -155,4 +150,4 @@
 
   } // end of class MyClass
 
-} // end of namespace MCCTest
+} // end of namespace mcc_i63

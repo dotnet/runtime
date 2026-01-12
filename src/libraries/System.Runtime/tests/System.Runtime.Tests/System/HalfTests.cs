@@ -555,6 +555,7 @@ namespace System.Tests
 
         [MemberData(nameof(ExplicitConversion_FromSingle_TestData))]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103347", TestPlatforms.Browser)]
         public static void ExplicitConversion_FromSingle(float f, Half expected) // Check the underlying bits for verifying NaNs
         {
             Half h = (Half)f;

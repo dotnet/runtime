@@ -16,11 +16,7 @@ namespace System.IO.Compression
             compressionLevel switch
             {
                 CompressionLevel.NoCompression => Quality_Min,
-                // We use quality 2 for Fastest instead of 0 or 1 because qualities 0 and 1 produce very poor
-                // compression for incremental writes (e.g., line-by-line), often resulting in output larger
-                // than the uncompressed input. Quality 2 provides much better compression for such scenarios
-                // while still maintaining fast compression speed.
-                CompressionLevel.Fastest => 2,
+                CompressionLevel.Fastest => 1,
                 CompressionLevel.Optimal => Quality_Default,
                 CompressionLevel.SmallestSize => Quality_Max,
                 _ => throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(compressionLevel))
