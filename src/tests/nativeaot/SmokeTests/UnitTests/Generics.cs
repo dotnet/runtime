@@ -5,6 +5,7 @@ using System;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
 
 [UnconditionalSuppressMessage("Trimming", "IL2055", Justification = "MakeGenericType - Intentional")]
@@ -30,6 +31,7 @@ class Generics
         TestInstantiatingUnboxingStubs.Run();
         TestNameManglingCollisionRegression.Run();
         TestSimpleGVMScenarios.Run();
+        TestAsyncGVMScenarios.Run();
         TestGvmDelegates.Run();
         TestGvmDependencies.Run();
         TestGvmLookups.Run();
@@ -1537,6 +1539,23 @@ class Generics
             if (s_NumErrors != 0)
                 throw new Exception();
         }
+    }
+
+    class TestAsyncGVMScenarios
+    {
+        public static void Run()
+        {
+            RunAsync().Wait();
+        }
+
+        static async Task RunAsync()
+        {
+            await new TestAsyncGVMScenarios().AsyncGvm1<object>();
+        }
+
+        public virtual async Task AsyncGvm1<T>() => await AsyncGvm2<T>();
+
+        public virtual async Task AsyncGvm2<T>() => await Task.CompletedTask;
     }
 
     class TestGvmDelegates

@@ -8,6 +8,7 @@
 
 Commonly Used Types:
 System.Net.ServerSentEvents.SseParser</PackageDescription>
+    <IncludeSpanPolyfills>true</IncludeSpanPolyfills>
   </PropertyGroup>
 
   <ItemGroup>

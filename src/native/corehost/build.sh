@@ -59,7 +59,7 @@ __IntermediatesDir="$__RootBinDir/obj/$__TargetRid.$__BuildType"
 
 export __BinDir __IntermediatesDir __RuntimeFlavor
 
-__CMakeArgs="-DCLI_CMAKE_PKG_RID=\"$__TargetRid\" -DCLI_CMAKE_FALLBACK_OS=\"$__HostFallbackOS\" -DCLI_CMAKE_COMMIT_HASH=\"$__commit_hash\" $__CMakeArgs"
+__CMakeArgs="-DCLI_CMAKE_FALLBACK_OS=\"$__HostFallbackOS\" -DCLI_CMAKE_COMMIT_HASH=\"$__commit_hash\" $__CMakeArgs"
 
 if [[ "$__TargetOS" != osx ]]; then
     __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"

@@ -8,6 +8,7 @@ public class Program
     [SkipLocalsInit]
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/118965", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static unsafe int TestEntryPoint()
     {
         bool result = true;

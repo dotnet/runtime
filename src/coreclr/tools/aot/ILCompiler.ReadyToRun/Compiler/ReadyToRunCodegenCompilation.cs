@@ -108,6 +108,12 @@ namespace ILCompiler
                 }
             }
 
+            if (callee.IsAsyncThunk())
+            {
+                // Async thunks require special handling in the compiler and should not be inlined
+                return false;
+            }
+
             _nodeFactory.DetectGenericCycles(caller, callee);
 
             return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
@@ -305,6 +311,8 @@ namespace ILCompiler
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
         private readonly int _customPESectionAlignment;
+        private readonly ReadyToRunContainerFormat _format;
+
         /// <summary>
         /// Determining whether a type's layout is fixed is a little expensive and the question can be asked many times
         /// for the same type during compilation so preserve the computed value.
@@ -337,7 +345,8 @@ namespace ILCompiler
             MethodLayoutAlgorithm methodLayoutAlgorithm,
             FileLayoutAlgorithm fileLayoutAlgorithm,
             int customPESectionAlignment,
-            bool verifyTypeAndFieldLayout)
+            bool verifyTypeAndFieldLayout,
+            ReadyToRunContainerFormat format)
             : base(
                   dependencyGraph,
                   nodeFactory,
@@ -361,6 +370,7 @@ namespace ILCompiler
             _perfMapFormatVersion = perfMapFormatVersion;
             _generateProfileFile = generateProfileFile;
             _customPESectionAlignment = customPESectionAlignment;
+            _format = format;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
             if (nodeFactory.InstrumentationDataTable != null)
                 nodeFactory.InstrumentationDataTable.Initialize(SymbolNodeFactory);
@@ -414,7 +424,9 @@ namespace ILCompiler
                     perfMapFormatVersion: _perfMapFormatVersion,
                     generateProfileFile: _generateProfileFile,
                     callChainProfile: _profileData.CallChainProfile,
-                    _customPESectionAlignment);
+                    _format,
+                    _customPESectionAlignment,
+                    _logger);
                 CompilationModuleGroup moduleGroup = _nodeFactory.CompilationModuleGroup;
 
                 if (moduleGroup.IsCompositeBuildMode)
@@ -424,6 +436,13 @@ namespace ILCompiler
                     // the composite executable.
                     string outputDirectory = Path.GetDirectoryName(outputFile);
                     string ownerExecutableName = Path.GetFileName(outputFile);
+
+                    if (_format == ReadyToRunContainerFormat.MachO)
+                    {
+                        // MachO composite images have the owner executable name stored with the dylib extension
+                        ownerExecutableName = Path.ChangeExtension(ownerExecutableName, ".dylib");
+                    }
+
                     foreach (string inputFile in _inputFiles)
                     {
                         string relativeMsilPath = Path.GetRelativePath(_compositeRootPath, inputFile);
@@ -459,12 +478,29 @@ namespace ILCompiler
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
             }
 
+            NodeFactoryOptimizationFlags optimizationFlags = _nodeFactory.OptimizationFlags with { IsComponentModule = true };
+
             flags |= _nodeFactory.CompilationModuleGroup.GetReadyToRunFlags() & ReadyToRunFlags.READYTORUN_FLAG_MultiModuleVersionBubble;
+
+            bool isNativeCompositeImage = false;
+            if (NodeFactory.Target.IsWindows && NodeFactory.Format == ReadyToRunContainerFormat.PE)
+            {
+                isNativeCompositeImage = true;
+            }
+            else if (NodeFactory.Target.IsApplePlatform && NodeFactory.Format == ReadyToRunContainerFormat.MachO)
+            {
+                isNativeCompositeImage = true;
+            }
+
+            if (isNativeCompositeImage)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNativeImage;
+            }
 
             CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
             // Re-written components shouldn't have any additional diagnostic information - only information about the forwards.
             // Even with all of this, we might be modifying the image in a silly manner - adding a directory when if didn't have one.
-            DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule, outputFile, shouldAddNiPdb: false, shouldGeneratePerfmap: false);
+            DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule, outputFile, shouldAddNiPdb: false, shouldGeneratePerfmap: false, perfMapFormatVersion: 0);
             NodeFactory componentFactory = new NodeFactory(
                 _nodeFactory.TypeSystemContext,
                 _nodeFactory.CompilationModuleGroup,
@@ -473,10 +509,11 @@ namespace ILCompiler
                 copiedCorHeader,
                 debugDirectory,
                 win32Resources: new Win32Resources.ResourceData(inputModule),
-                flags,
-                _nodeFactory.OptimizationFlags,
-                _nodeFactory.ImageBase,
-                automaticTypeValidation ? inputModule : null,
+                flags: flags,
+                nodeFactoryOptimizationFlags: optimizationFlags,
+                format: ReadyToRunContainerFormat.PE,
+                imageBase: _nodeFactory.ImageBase,
+                associatedModule: automaticTypeValidation ? inputModule : null,
                 genericCycleDepthCutoff: -1, // We don't need generic cycle detection when rewriting component assemblies
                 genericCycleBreadthCutoff: -1); // as we're not actually compiling anything
 
@@ -509,7 +546,9 @@ namespace ILCompiler
                 perfMapFormatVersion: _perfMapFormatVersion,
                 generateProfileFile: false,
                 _profileData.CallChainProfile,
-                customPESectionAlignment: 0);
+                ReadyToRunContainerFormat.PE,
+                customPESectionAlignment: 0,
+                _logger);
         }
 
         public override void WriteDependencyLog(string outputFileName)
@@ -661,6 +700,52 @@ namespace ILCompiler
                                 CorInfoImpl.IsMethodCompilable(this, methodCodeNodeNeedingCode.Method))
                                 _methodsWhichNeedMutableILBodies.Add(ecmaMethod);
                         }
+                        if (method.IsAsyncThunk())
+                        {
+                            // The synthetic async thunks require references to methods/types that may not have existing methodRef entries in the version bubble.
+                            // These references need to be added to the mutable module if they don't exist.
+                            // Extract the required references by reading the IL of the thunk method.
+                            MethodIL methodIL = GetMethodIL(method);
+                            if (methodIL is null)
+                                continue;
+
+                            _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
+                            try
+                            {
+                                foreach (var entity in ILStubReferences.GetNecessaryReferencesFromIL(methodIL))
+                                {
+                                    switch (entity)
+                                    {
+                                        case MethodDesc md:
+                                            if (md.IsAsyncVariant())
+                                            {
+                                                Debug.Assert(((CompilerTypeSystemContext)md.Context).GetTargetOfAsyncVariantMethod(md.GetTypicalMethodDefinition()) == method);
+                                                Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: false, throwIfNotFound: true).IsNull);
+                                            }
+                                            else if (_nodeFactory.Resolver.GetModuleTokenForMethod(md, allowDynamicallyCreatedReference: true, throwIfNotFound: false).IsNull)
+                                            {
+                                                _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(md);
+                                                Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForMethod(md, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
+                                            }
+                                            break;
+                                        case TypeDesc td:
+                                            if (_nodeFactory.Resolver.GetModuleTokenForType(td, allowDynamicallyCreatedReference: true, throwIfNotFound: false).IsNull)
+                                            {
+                                                _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(td);
+                                            }
+                                            Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForType(td, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
+                                            break;
+                                        default:
+                                            throw new NotImplementedException("Unexpected entity type in Async thunk.");
+                                    }
+                                }
+                            }
+                            finally
+                            {
+                                _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = null;
+                            }
+                        }
+
                         if (!_nodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method))
                         {
                             // Validate that the typedef tokens for all of the instantiation parameters of the method
@@ -944,5 +1029,6 @@ namespace ILCompiler
         {
             return _printReproInstructions(method);
         }
+
     }
 }

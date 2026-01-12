@@ -51,15 +51,6 @@ export interface EmscriptenModule {
     stackSave(): VoidPtr;
     stackRestore(stack: VoidPtr): void;
     stackAlloc(size: number): VoidPtr;
-
-
-    instantiateWasm?: InstantiateWasmCallBack;
-    preInit?: (() => any)[] | (() => any);
-    preRun?: (() => any)[] | (() => any);
-    onRuntimeInitialized?: () => any;
-    postRun?: (() => any)[] | (() => any);
-    onAbort?: { (error: any): void };
-    onExit?: { (code: number): void };
 }
 
 export type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => void;

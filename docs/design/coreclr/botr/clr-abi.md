@@ -537,6 +537,10 @@ The extra state created by the JIT for synchronized methods (lock taken flag) mu
 
 EnC is supported for adding and editing generic methods and methods on generic types and generic methods on non-generic types.
 
+## Async methods
+
+The JIT saves the current `ExecutionContext` and `SynchronizationContext` in runtime async methods and these must be preserved during remap. The new GC encoder includes the state in the EnC frame header size, while for JIT32 the EE expects this state to exist when `CORINFO_ASYNC_SAVE_CONTEXTS` was reported to the JIT from `getMethodInfo`.
+
 # Portable entrypoints
 
 On platforms that allow dynamic code generation, the runtime abstracts away execution strategies for dynamically loaded methods by allocating [`Precode`](method-descriptor.md#precode)s. The `Precode` is a small code fragment that is used as a temporary method entrypoint until the actual method code is acquired. `Precode`s are also used as part of the execution for methods that do not have regular JITed or AOT-compiled code, for example stubs or interpreted methods. `Precode`s allow native code to use the same native code calling convention irrespective of the execution strategy used by the target method.
@@ -678,3 +682,19 @@ MyStruct Test2()
 	return default;
 }
 ```
+
+# Interpreter ABI details
+
+The interpreter data stack is separately allocated from the normal "thread" stack, and it grows UP. The interpreter execution control stack is allocated on the "thread" stack, as a series of `InterpMethodContextFrame` values that are linked in a singly linked list onto an `InterpreterFrame` which is placed onto the Frame chain of the thread. `InterpMethodContextFrame` structures are always allocated in descending order so that a callee method's associated `InterpMethodContextFrame` is always located lower in memory compared to its caller or the containing `InterpreterFrame`.
+
+The base stack pointer within a method never changes, but when a function is called in the interpreter it will have a stack pointer which is associated with the set of arguments passed. In effect argument passing is done by giving a portion of the temporary args space of the caller function to the callee.
+
+All instructions and GC that address the stack pointer are relative to the current stack pointer, which does not move. This requires that implementations of the localloc instruction actually allocate the memory on the heap, and localloc'd memory is not actually tied to the data stack in any way.
+
+The stack pointer in all interpreter functions is always aligned on a `INTERP_STACK_ALIGNMENT` boundary. Currently this is a 16 byte alignment requirement.
+
+The stack elements are always aligned to at least `INTERP_STACK_SLOT_SIZE` and never more than `INTERP_STACK_ALIGNMENT` Given that today's implementation sets `INTERP_STACK_SLOT_SIZE` to 8 and `INTERP_STACK_ALIGNMENT` to 16, this implies all data on the stack is either aligned at an 8 or 16 byte alignment.
+
+Primitive types smaller than 4 bytes are always zero or sign extended to 4 bytes when on the stack.
+
+When a function is async it will have a continuation return. This return is not done using the data stack, but instead is done by setting the Continuation field in the `InterpreterFrame`. Thunks are responsible for setting/resetting this value as we enter/leave code compiled by the JIT.

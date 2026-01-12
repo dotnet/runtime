@@ -158,74 +158,13 @@ namespace System.Net.Test.Uri.IriTest
 
         private void EscapeUnescapeAllUriComponentsInDifferentCultures(string uriInput)
         {
-            string result_en_query = EscapeUnescapeTestComponent(uriInput, true);
-            string result_en_nonQuery = EscapeUnescapeTestComponent(uriInput, false);
+            string result_en_query = IriHelper.EscapeUnescapeIri(uriInput, true);
+            string result_en_nonQuery = IriHelper.EscapeUnescapeIri(uriInput, false);
 
             using (new ThreadCultureChange("zh-cn"))
             {
-                Assert.Equal(result_en_query, EscapeUnescapeTestComponent(uriInput, true));
-                Assert.Equal(result_en_nonQuery, EscapeUnescapeTestComponent(uriInput, false));
-            }
-        }
-
-        private string EscapeUnescapeTestComponent(string uriInput, bool isQuery)
-        {
-            string? ret = null;
-            HeapCheck hc = new HeapCheck(uriInput);
-
-            unsafe
-            {
-                fixed (char* pInput = hc.Buffer)
-                {
-                    ret = IriHelper.EscapeUnescapeIri(pInput + HeapCheck.PaddingLength, 0, uriInput.Length, isQuery);
-                }
-            }
-
-            // check for buffer under and overruns
-            hc.ValidatePadding();
-
-            return ret;
-        }
-
-        private class HeapCheck
-        {
-            public const int PaddingLength = 32;
-            private const char PaddingValue = (char)0xDEAD;
-
-            private readonly int _length;
-            public char[] Buffer { get; }
-
-            private HeapCheck(int length)
-            {
-                _length = length;
-                Buffer = new char[_length + PaddingLength * 2];
-                Array.Fill(Buffer, PaddingValue);
-            }
-
-            public HeapCheck(string input) : this(input.Length)
-            {
-                input.CopyTo(0, Buffer, PaddingLength, _length);
-            }
-
-            public void ValidatePadding()
-            {
-                ReadOnlySpan<char> front = Buffer.AsSpan(0, PaddingLength);
-                for (int i = 0; i < front.Length; i++)
-                {
-                    if (front[i] != PaddingValue)
-                    {
-                        Assert.Fail("Heap corruption detected: unexpected padding value at index: " + i);
-                    }
-                }
-
-                ReadOnlySpan<char> back = Buffer.AsSpan(PaddingLength + _length);
-                for (int i = 0; i < back.Length; i++)
-                {
-                    if (back[i] != PaddingValue)
-                    {
-                        Assert.Fail("Heap corruption detected: unexpected padding value at index: " + (PaddingLength + _length + i));
-                    }
-                }
+                Assert.Equal(result_en_query, IriHelper.EscapeUnescapeIri(uriInput, true));
+                Assert.Equal(result_en_nonQuery, IriHelper.EscapeUnescapeIri(uriInput, false));
             }
         }
     }
