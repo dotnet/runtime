@@ -2593,7 +2593,25 @@ COM_METHOD CordbProcess::GetAsyncStack(CORDB_ADDRESS continuationAddress, ICorDe
 
     EX_TRY
     {
-        // TODO: verify that the address is indeed an async continuation object
+        if (!m_pDacPrimitives->IsValidObject(continuationAddress))
+        {
+            // throw if not a valid object
+            ThrowHR(E_INVALIDARG);
+        }
+
+        PCODE diagnosticIP;
+        CORDB_ADDRESS nextContinuation;
+        UINT32 state;
+        if (FAILED(m_pDacPrimitives->GetResumePointAndNextContinuation(
+            continuationAddress,
+            &diagnosticIP,
+            &nextContinuation,
+            &state)))
+        {
+            // throw if not a valid async continuation object
+            ThrowHR(E_INVALIDARG);
+        }
+
         RSInitHolder<CordbAsyncStackWalk> pAsyncStackWalk(new CordbAsyncStackWalk(this, continuationAddress));
         pAsyncStackWalk.TransferOwnershipExternal(ppStackWalk);
     }

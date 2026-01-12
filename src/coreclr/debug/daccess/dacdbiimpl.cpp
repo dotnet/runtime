@@ -6860,6 +6860,10 @@ bool DacDbiInterfaceImpl::IsValidObject(CORDB_ADDRESS addr)
             PTR_Object obj(TO_TADDR(addr));
 
             PTR_MethodTable mt = obj->GetMethodTable();
+            TypeHandle th(mt);
+            th = th.UpCastTypeIfNeeded();
+            mt = th.AsMethodTable();
+
             PTR_EEClass cls = mt->GetClass();
 
             if (mt == cls->GetMethodTable())
@@ -7440,6 +7444,11 @@ HRESULT DacDbiInterfaceImpl::GetResumePointAndNextContinuation(
             state = continuation->GetOffset32(continuationField->GetOffset());
             numFound++;
         }
+    }
+
+    if (numFound < 3)
+    {
+        return E_FAIL;
     }
 
     *pDiagnosticIP = pResumeInfo->pDiagnosticIP;
