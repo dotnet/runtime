@@ -1137,7 +1137,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
 
 class AssertionsAccumulator final : public GenTreeVisitor<AssertionsAccumulator>
 {
-    int*       m_pBudget;
+    int        m_Budget;
     ASSERT_TP* m_pAssertions;
     GenTree*   m_op;
 
@@ -1148,9 +1148,14 @@ public:
         UseExecutionOrder = true
     };
 
-    AssertionsAccumulator(Compiler* compiler, int* pBudget, ASSERT_TP* pAssertions, GenTree* op)
+    int GetBudgetLeft() const
+    {
+        return m_Budget;
+    }
+
+    AssertionsAccumulator(Compiler* compiler, int budget, ASSERT_TP* pAssertions, GenTree* op)
         : GenTreeVisitor(compiler)
-        , m_pBudget(pBudget)
+        , m_Budget(budget)
         , m_pAssertions(pAssertions)
         , m_op(op)
     {
@@ -1158,7 +1163,7 @@ public:
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
-        if ((*use == m_op) || (--*m_pBudget <= 0))
+        if ((*use == m_op) || (--m_Budget <= 0))
         {
             // We've found the op or run out of budget -> abort.
             return fgWalkResult::WALK_ABORT;
@@ -1217,14 +1222,15 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
             assertions = BitVecOps::MakeCopy(m_pCompiler->apTraits, assertions);
 
             // JIT-TP: Limit the search budget to avoid spending too much time here.
-            int budget = 32;
+            int budget = 50;
             for (Statement* stmt : block->Statements())
             {
-                AssertionsAccumulator visitor(m_pCompiler, &budget, &assertions, op);
+                AssertionsAccumulator visitor(m_pCompiler, budget, &assertions, op);
                 if (visitor.WalkTree(stmt->GetRootNodePointer(), nullptr) == Compiler::fgWalkResult::WALK_ABORT)
                 {
                     break;
                 }
+                budget = visitor.GetBudgetLeft();
             }
         }
     }
