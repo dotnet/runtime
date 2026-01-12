@@ -21,8 +21,7 @@
     // Define the method prolog, allocating enough stack space for the PInvokeTransitionFrame and saving
     // incoming register values into it.
     PROLOG_VPUSH        "{d0-d3}"           // Save d0-d3 which can have the floating point return value
-    PROLOG_PUSH         "{r0,r1}"           // Save return registers
-    PROLOG_PUSH         "{r2,r3}"           // Save r2, might contain objectref (async continuation). Save r3 for alignment
+    PROLOG_PUSH         "{r0-r3}"           // Save return registers (r0-r2) and r3 for alignment
     PROLOG_STACK_ALLOC  4                   // Space for caller's SP
     PROLOG_PUSH         "{r4-r10}"          // Save non-volatile registers
     PROLOG_STACK_ALLOC  8                   // Space for flags and Thread*
