@@ -20,7 +20,7 @@ namespace System.IO.Compression
         /// </summary>
         private bool _finished;
 
-        /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> struct with default settings.</summary>
+        /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> class with default settings.</summary>
         /// <exception cref="IOException">Failed to create the <see cref="ZstandardDecoder"/> instance.</exception>
         public ZstandardDecoder()
         {
@@ -29,7 +29,7 @@ namespace System.IO.Compression
             InitializeDecoder();
         }
 
-        /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> struct with the specified maximum window size.</summary>
+        /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> class with the specified maximum window size.</summary>
         /// <param name="maxWindowLog">The maximum window size to use for decompression, expressed as base 2 logarithm.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxWindowLog"/> is not between the minimum and maximum allowed values.</exception>
         /// <exception cref="IOException">Failed to create the <see cref="ZstandardDecoder"/> instance.</exception>
@@ -53,7 +53,7 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> struct with the specified dictionary.</summary>
+        /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> class with the specified dictionary.</summary>
         /// <param name="dictionary">The decompression dictionary to use.</param>
         /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
         public ZstandardDecoder(ZstandardDictionary dictionary)
@@ -75,7 +75,7 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> struct with the specified dictionary and maximum window size.</summary>
+        /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> class with the specified dictionary and maximum window size.</summary>
         /// <param name="dictionary">The decompression dictionary to use.</param>
         /// <param name="maxWindowLog">The maximum window size to use for decompression, expressed as base 2 logarithm.</param>
         /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
@@ -106,7 +106,7 @@ namespace System.IO.Compression
         }
 
         [MemberNotNull(nameof(_context))]
-        internal void InitializeDecoder()
+        private void InitializeDecoder()
         {
             _context = Interop.Zstd.ZSTD_createDCtx();
             if (_context.IsInvalid)
@@ -321,7 +321,7 @@ namespace System.IO.Compression
         }
 
         /// <summary>References a prefix for the next decompression operation.</summary>
-        /// <remarks>The prefix will be used only for the next decompression frame and will be removed when <see cref="Reset"/> is called.</remarks>
+        /// <remarks>The prefix will be used only for the next decompression frame and will be removed when <see cref="Reset"/> is called. The referenced data must remain valid and unmodified for the duration of the decompression operation.</remarks>
         public void SetPrefix(ReadOnlyMemory<byte> prefix)
         {
             EnsureNotDisposed();

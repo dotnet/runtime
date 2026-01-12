@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -42,7 +43,7 @@ namespace System.IO.Compression
             }
 
             byte[] data = buffer.ToArray();
-            buffer.CopyTo(data);
+
 
             unsafe
             {
@@ -94,11 +95,26 @@ namespace System.IO.Compression
                 throw new ArgumentException(SR.Format(SR.ZstandardDictionary_Train_MinimumSampleCount, 5), nameof(sampleLengths));
             }
 
+            // the lengths need to be converted to nuint for the native call. Rent appropriately sized array from pool
+            // This incidentally also protects against concurrent modifications of the sampleLengths that could cause
+            // access violations later in native code.
+            byte[] lengthsArray = ArrayPool<byte>.Shared.Rent(sampleLengths.Length * Unsafe.SizeOf<nuint>());
+            Span<nuint> lengthsAsNuint = MemoryMarshal.Cast<byte, nuint>(lengthsArray.AsSpan(0, sampleLengths.Length * Unsafe.SizeOf<nuint>()));
+            Debug.Assert(lengthsAsNuint.Length == sampleLengths.Length);
+
             long totalLength = 0;
-            foreach (int length in sampleLengths)
+            for (int i = 0; i < sampleLengths.Length; i++)
             {
+                int length = sampleLengths[i];
+                if (length <= 0)
+                {
+                    ArrayPool<byte>.Shared.Return(lengthsArray);
+                    throw new ArgumentException(SR.ZstandardDictionary_Train_InvalidSampleLength, nameof(sampleLengths));
+                }
                 totalLength += length;
+                lengthsAsNuint[i] = (nuint)length;
             }
+
             if (totalLength != samples.Length)
             {
                 throw new ArgumentException(SR.ZstandardDictionary_SampleLengthsMismatch, nameof(sampleLengths));
@@ -112,50 +128,16 @@ namespace System.IO.Compression
 
             unsafe
             {
-                if (sizeof(nuint) == sizeof(int))
+                fixed (byte* samplesPtr = &MemoryMarshal.GetReference(samples))
+                fixed (byte* dictPtr = dictionaryBuffer)
+                fixed (nuint* lengthsAsNuintPtr = &MemoryMarshal.GetReference(lengthsAsNuint))
                 {
-                    ReadOnlySpan<nuint> lengthsAsNuint = MemoryMarshal.Cast<int, nuint>(sampleLengths);
-
-                    fixed (byte* samplesPtr = &MemoryMarshal.GetReference(samples))
-                    fixed (byte* dictPtr = dictionaryBuffer)
-                    fixed (nuint* lengthsAsNuintPtr = &MemoryMarshal.GetReference(lengthsAsNuint))
-                    {
-                        dictSize = Interop.Zstd.ZDICT_trainFromBuffer(
-                                dictPtr, (nuint)maxDictionarySize,
-                                samplesPtr, lengthsAsNuintPtr, (uint)sampleLengths.Length);
-                    }
+                    dictSize = Interop.Zstd.ZDICT_trainFromBuffer(
+                            dictPtr, (nuint)maxDictionarySize,
+                            samplesPtr, lengthsAsNuintPtr, (uint)sampleLengths.Length);
                 }
-                else
-                {
-                    // on 64-bit platforms, we need to convert ints to nuints
-                    const int maxStackAlloc = 128; // 1 kB
-                    byte[]? rented = null;
-                    Span<nuint> lengthsAsNuint = sampleLengths.Length <= maxStackAlloc
-                        ? stackalloc nuint[maxStackAlloc]
-                        // rent as byte[] since nuint[] don't get much reuse
-                        : MemoryMarshal.Cast<byte, nuint>((rented = ArrayPool<byte>.Shared.Rent(sampleLengths.Length * sizeof(nuint))).AsSpan());
 
-                    for (int i = 0; i < sampleLengths.Length; i++)
-                    {
-                        lengthsAsNuint[i] = (nuint)sampleLengths[i];
-                    }
-
-                    lengthsAsNuint = lengthsAsNuint.Slice(0, sampleLengths.Length);
-
-                    fixed (byte* samplesPtr = &MemoryMarshal.GetReference(samples))
-                    fixed (byte* dictPtr = dictionaryBuffer)
-                    fixed (nuint* lengthsAsNuintPtr = &MemoryMarshal.GetReference(lengthsAsNuint))
-                    {
-                        dictSize = Interop.Zstd.ZDICT_trainFromBuffer(
-                                dictPtr, (nuint)maxDictionarySize,
-                                samplesPtr, lengthsAsNuintPtr, (uint)sampleLengths.Length);
-                    }
-
-                    if (rented != null)
-                    {
-                        ArrayPool<byte>.Shared.Return(rented);
-                    }
-                }
+                ArrayPool<byte>.Shared.Return(lengthsArray);
 
                 ZstandardUtils.ThrowIfError(dictSize, SR.ZstandardDictionary_Train_Failure);
                 return Create(dictionaryBuffer.AsSpan(0, (int)dictSize));

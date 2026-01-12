@@ -300,7 +300,6 @@ namespace System.IO.Compression
         public override void Flush()
         {
             EnsureNotDisposed();
-            EnsureNoActiveRWOperation();
 
             if (_mode == CompressionMode.Compress)
             {
@@ -315,7 +314,6 @@ namespace System.IO.Compression
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             EnsureNotDisposed();
-            EnsureNoActiveRWOperation();
 
             if (_mode == CompressionMode.Compress)
             {

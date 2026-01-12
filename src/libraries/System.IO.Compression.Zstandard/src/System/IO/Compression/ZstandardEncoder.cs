@@ -20,7 +20,7 @@ namespace System.IO.Compression
         /// </summary>
         private bool _finished;
 
-        /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> struct with default settings.</summary>
+        /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> class with default settings.</summary>
         /// <exception cref="IOException">Failed to create the <see cref="ZstandardEncoder"/> instance.</exception>
         public ZstandardEncoder()
         {
@@ -28,7 +28,7 @@ namespace System.IO.Compression
             InitializeEncoder();
         }
 
-        /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> struct with the specified quality level.</summary>
+        /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> class with the specified quality level.</summary>
         /// <param name="quality">The compression quality level.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> is not between the minimum and maximum allowed values.</exception>
         /// <exception cref="IOException">Failed to create the <see cref="ZstandardEncoder"/> instance.</exception>
@@ -51,7 +51,7 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> struct with the specified dictionary.</summary>
+        /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> class with the specified dictionary.</summary>
         /// <param name="dictionary">The compression dictionary to use.</param>
         /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
         /// <exception cref="IOException">Failed to create the <see cref="ZstandardEncoder"/> instance.</exception>
@@ -71,7 +71,7 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> struct with the specified quality and window size.</summary>
+        /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> class with the specified quality and window size.</summary>
         /// <param name="quality">The compression quality level.</param>
         /// <param name="windowLog">The window size for compression, expressed as base 2 logarithm.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> is not between the minimum and maximum allowed values, or <paramref name="windowLog"/> is not between the minimum and maximum allowed values.</exception>
@@ -99,7 +99,7 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> struct with the specified dictionary and window size.</summary>
+        /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> class with the specified dictionary and window size.</summary>
         /// <param name="dictionary">The compression dictionary to use.</param>
         /// <param name="windowLog">The window size for compression, expressed as base 2 logarithm.</param>
         /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
@@ -127,7 +127,7 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> struct with the specified compression options.</summary>
+        /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> class with the specified compression options.</summary>
         /// <param name="compressionOptions">The compression options to use.</param>
         /// <exception cref="ArgumentNullException"><paramref name="compressionOptions"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">A parameter from <paramref name="compressionOptions"/> is not between the minimum and maximum allowed values.</exception>
@@ -178,7 +178,7 @@ namespace System.IO.Compression
         }
 
         [MemberNotNull(nameof(_context))]
-        internal void InitializeEncoder()
+        private void InitializeEncoder()
         {
             _context = Interop.Zstd.ZSTD_createCCtx();
             if (_context.IsInvalid)
@@ -402,7 +402,7 @@ namespace System.IO.Compression
         }
 
         /// <summary>References a prefix for the next compression operation.</summary>
-        /// <remarks>The prefix will be used only for the next compression frame and will be removed when <see cref="Reset"/> is called.</remarks>
+        /// <remarks>The prefix will be used only for the next compression frame and will be removed when <see cref="Reset"/> is called. The referenced data must remain valid and unmodified for the duration of the compression operation.</remarks>
         public void SetPrefix(ReadOnlyMemory<byte> prefix)
         {
             EnsureNotDisposed();
