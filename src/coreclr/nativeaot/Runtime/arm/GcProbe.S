@@ -119,10 +119,8 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
     FixupHijackedCallstack
 
     // r3 has the thread pointer
-    push        {r3}
-    PREPARE_EXTERNAL_VAR_INDIRECT RhpTrapThreads, r3
-    tst         r3, #TrapThreadsFlags_TrapThreads
-    pop         {r3}
+    PREPARE_EXTERNAL_VAR_INDIRECT RhpTrapThreads, r12
+    tst         r12, #TrapThreadsFlags_TrapThreads
     bne         LOCAL_LABEL(WaitForGC)
     bx          lr
 LOCAL_LABEL(WaitForGC):
