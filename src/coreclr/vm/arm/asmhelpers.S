@@ -906,9 +906,9 @@ LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 //   r0 = Pointer to exception object
 // ------------------------------------------------------------------
 NESTED_ENTRY IL_Throw, _TEXT, NoHandler
-        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS r1
+        PROLOG_WITH_TRANSITION_BLOCK
         // r0 already contains exception object
-        // r1 contains pointer to TransitionBlock
+        add         r1, sp, #__PWTB_TransitionBlock
         bl      C_FUNC(IL_Throw_Impl)
         // Should never return
         EMIT_BREAKPOINT
@@ -922,9 +922,9 @@ NESTED_END IL_Throw, _TEXT
 //   r0 = Pointer to exception object
 // ------------------------------------------------------------------
 NESTED_ENTRY IL_ThrowExact, _TEXT, NoHandler
-        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS r1
+        PROLOG_WITH_TRANSITION_BLOCK
         // r0 already contains exception object
-        // r1 contains pointer to TransitionBlock
+        add         r1, sp, #__PWTB_TransitionBlock
         bl      C_FUNC(IL_ThrowExact_Impl)
         // Should never return
         EMIT_BREAKPOINT
@@ -935,8 +935,8 @@ NESTED_END IL_ThrowExact, _TEXT
 // implementation written in C.
 // ------------------------------------------------------------------
 NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
-        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS r0
-        // r0 contains pointer to TransitionBlock
+        PROLOG_WITH_TRANSITION_BLOCK
+        add         r0, sp, #__PWTB_TransitionBlock
         bl      C_FUNC(IL_Rethrow_Impl)
         // Should never return
         EMIT_BREAKPOINT

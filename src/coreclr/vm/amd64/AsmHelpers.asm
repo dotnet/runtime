@@ -1211,10 +1211,10 @@ endif ; FEATURE_INTERPRETER
 ;   RCX = Pointer to exception object
 ;==========================================================================
 NESTED_ENTRY IL_Throw, _TEXT
-        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rdx
+        PROLOG_WITH_TRANSITION_BLOCK
 
         ; RCX already contains exception object
-        ; RDX contains pointer to TransitionBlock
+        lea     rdx, [rsp + __PWTB_TransitionBlock]
         call    IL_Throw_Impl
         ; Should never return
         int     3
@@ -1228,10 +1228,10 @@ NESTED_END IL_Throw, _TEXT
 ;   RCX = Pointer to exception object
 ;==========================================================================
 NESTED_ENTRY IL_ThrowExact, _TEXT
-        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rdx
+        PROLOG_WITH_TRANSITION_BLOCK
 
         ; RCX already contains exception object
-        ; RDX contains pointer to TransitionBlock
+        lea     rdx, [rsp + __PWTB_TransitionBlock]
         call    IL_ThrowExact_Impl
         ; Should never return
         int     3
@@ -1242,9 +1242,9 @@ NESTED_END IL_ThrowExact, _TEXT
 ; implementation written in C.
 ;==========================================================================
 NESTED_ENTRY IL_Rethrow, _TEXT
-        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rcx
+        PROLOG_WITH_TRANSITION_BLOCK
 
-        ; RCX contains pointer to TransitionBlock
+        lea     rcx, [rsp + __PWTB_TransitionBlock]
         call    IL_Rethrow_Impl
         ; Should never return
         int     3

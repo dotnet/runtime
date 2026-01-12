@@ -10900,9 +10900,10 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     m_ContextPointers.R9 = &m_Context.R9;
 
     // Copy floating point argument registers (xmm0-xmm7)
-    // Use memcpy to avoid alignment issues - the source may not be 16-byte aligned
-    // depending on stack layout in the assembly helpers
-    BYTE *pFloatArgs = (BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters();
+    // PROLOG_WITH_TRANSITION_BLOCK places floats at offset -136 from TransitionBlock
+    // (128 bytes for floats + 8 bytes padding for stack alignment)
+    // Use memcpy to avoid alignment issues
+    BYTE *pFloatArgs = (BYTE*)pTransitionBlock - 136;
     memcpy(&m_Context.Xmm0, pFloatArgs + 0x00, sizeof(m_Context.Xmm0));
     memcpy(&m_Context.Xmm1, pFloatArgs + 0x10, sizeof(m_Context.Xmm1));
     memcpy(&m_Context.Xmm2, pFloatArgs + 0x20, sizeof(m_Context.Xmm2));
@@ -10911,7 +10912,7 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     memcpy(&m_Context.Xmm5, pFloatArgs + 0x50, sizeof(m_Context.Xmm5));
     memcpy(&m_Context.Xmm6, pFloatArgs + 0x60, sizeof(m_Context.Xmm6));
     memcpy(&m_Context.Xmm7, pFloatArgs + 0x70, sizeof(m_Context.Xmm7));
-    // Initialize remaining XMM registers to zero
+    // Initialize remaining XMM registers to zero (caller-saved on Unix)
     memset(&m_Context.Xmm8, 0, sizeof(m_Context.Xmm8));
     memset(&m_Context.Xmm9, 0, sizeof(m_Context.Xmm9));
     memset(&m_Context.Xmm10, 0, sizeof(m_Context.Xmm10));
@@ -10923,28 +10924,36 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     // Initialize FP control/status
     m_Context.MxCsr = 0x1F80; // Default MXCSR value (all exceptions masked)
 #else
-    // On Windows AMD64, argument registers are not saved in the transition block
-    m_Context.Rax = 0;
-    m_Context.Rcx = 0;
-    m_Context.Rdx = 0;
-    m_Context.R8 = 0;
-    m_Context.R9 = 0;
+    // On Windows AMD64, PROLOG_WITH_TRANSITION_BLOCK saves xmm0-xmm3 (float argument registers)
+    // but not xmm6-xmm15 (callee-saved). The callee-saved FP registers are preserved by the
+    // normal calling convention - since we don't modify them, the unwinder will find them.
+    //
+    // PROLOG_WITH_TRANSITION_BLOCK layout (with extraLocals=0):
+    // __PWTB_FloatArgumentRegisters = 32 (SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES)
+    // __PWTB_StackAlloc = 32 + 64 + 8 = 104
+    // __PWTB_TransitionBlock = 104
+    // Float offset from TransitionBlock = 32 - 104 = -72
+    BYTE *pFloatArgs = (BYTE*)pTransitionBlock - 72;
+    memcpy(&m_Context.Xmm0, pFloatArgs + 0x00, sizeof(m_Context.Xmm0));
+    memcpy(&m_Context.Xmm1, pFloatArgs + 0x10, sizeof(m_Context.Xmm1));
+    memcpy(&m_Context.Xmm2, pFloatArgs + 0x20, sizeof(m_Context.Xmm2));
+    memcpy(&m_Context.Xmm3, pFloatArgs + 0x30, sizeof(m_Context.Xmm3));
 
-    // Read FP callee-saved registers (xmm6-xmm15) from the stack
-    // They are stored at negative offsets from TransitionBlock:
-    // Layout: [xmm6-xmm15 (160 bytes)] [xmm0-xmm3 (64 bytes)] [shadow (32 bytes)] [padding (8 bytes)] [CalleeSavedRegs] [RetAddr]
-    // xmm6 is at sp+0, TransitionBlock is at sp+264, so xmm6 is at TransitionBlock - 264
-    M128A *pFpCalleeSaved = (M128A*)((BYTE*)pTransitionBlock - 264);
-    m_Context.Xmm6 = pFpCalleeSaved[0];
-    m_Context.Xmm7 = pFpCalleeSaved[1];
-    m_Context.Xmm8 = pFpCalleeSaved[2];
-    m_Context.Xmm9 = pFpCalleeSaved[3];
-    m_Context.Xmm10 = pFpCalleeSaved[4];
-    m_Context.Xmm11 = pFpCalleeSaved[5];
-    m_Context.Xmm12 = pFpCalleeSaved[6];
-    m_Context.Xmm13 = pFpCalleeSaved[7];
-    m_Context.Xmm14 = pFpCalleeSaved[8];
-    m_Context.Xmm15 = pFpCalleeSaved[9];
+    // xmm4-xmm5 are volatile but not saved (zero them)
+    memset(&m_Context.Xmm4, 0, sizeof(m_Context.Xmm4));
+    memset(&m_Context.Xmm5, 0, sizeof(m_Context.Xmm5));
+
+    // xmm6-xmm15 are callee-saved - zero them here; the unwinder will restore actual values
+    memset(&m_Context.Xmm6, 0, sizeof(m_Context.Xmm6));
+    memset(&m_Context.Xmm7, 0, sizeof(m_Context.Xmm7));
+    memset(&m_Context.Xmm8, 0, sizeof(m_Context.Xmm8));
+    memset(&m_Context.Xmm9, 0, sizeof(m_Context.Xmm9));
+    memset(&m_Context.Xmm10, 0, sizeof(m_Context.Xmm10));
+    memset(&m_Context.Xmm11, 0, sizeof(m_Context.Xmm11));
+    memset(&m_Context.Xmm12, 0, sizeof(m_Context.Xmm12));
+    memset(&m_Context.Xmm13, 0, sizeof(m_Context.Xmm13));
+    memset(&m_Context.Xmm14, 0, sizeof(m_Context.Xmm14));
+    memset(&m_Context.Xmm15, 0, sizeof(m_Context.Xmm15));
 
     // Initialize FP control/status
     m_Context.MxCsr = 0x1F80; // Default MXCSR value (all exceptions masked)
@@ -10987,20 +10996,18 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     m_Context.Lr = pTransitionBlock->m_calleeSavedRegisters.r14; // r14 is link register
 
     // Copy floating point argument registers (d0-d7 / s0-s15)
+    // PROLOG_WITH_TRANSITION_BLOCK saves these at GetOffsetOfFloatArgumentRegisters()
     FloatArgumentRegisters *pFloatArgs = (FloatArgumentRegisters*)((BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters());
     for (int i = 0; i < 8; i++)
     {
         m_Context.D[i] = pFloatArgs->d[i];
     }
 
-    // Read FP callee-saved registers (d8-d15) from the stack
-    // They are stored at negative offset from TransitionBlock:
-    // Layout: [d8-d15 (64 bytes)] [padding (4)] [d0-d7 (64 bytes)] [padding (4)] [TransitionBlock]
-    // FP callee-saved are at TransitionBlock - 136 (64 + 4 + 64 + 4)
-    UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 136);
-    for (int i = 0; i < 8; i++)
+    // FP callee-saved registers (d8-d15) are not saved by PROLOG_WITH_TRANSITION_BLOCK
+    // Zero them; the unwinder will restore actual values during stack walk
+    for (int i = 8; i < 16; i++)
     {
-        m_Context.D[8 + i] = pFpCalleeSaved[i];
+        m_Context.D[i] = 0;
     }
 
     // Initialize remaining D registers (D16-D31) to zero - these are caller-saved
@@ -11061,33 +11068,20 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     m_Context.Lr = pTransitionBlock->m_calleeSavedRegisters.x30;
 
     // Copy floating point argument registers (V0-V7)
+    // PROLOG_WITH_TRANSITION_BLOCK saves these at GetOffsetOfFloatArgumentRegisters()
     FloatArgumentRegisters *pFloatArgs = (FloatArgumentRegisters*)((BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters());
     for (int i = 0; i < 8; i++)
     {
         m_Context.V[i] = pFloatArgs->q[i];
     }
 
-    // Read FP callee-saved registers (d8-d15) from the stack
-    // They are stored at negative offset from TransitionBlock:
-    // Layout: [d8-d15 (64 bytes)] [q0-q7 (128 bytes)] [TransitionBlock]
-    // FP callee-saved are at TransitionBlock - 192 (64 + 128)
-    UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 192);
-    m_Context.V[8].Low = pFpCalleeSaved[0];
-    m_Context.V[8].High = 0;
-    m_Context.V[9].Low = pFpCalleeSaved[1];
-    m_Context.V[9].High = 0;
-    m_Context.V[10].Low = pFpCalleeSaved[2];
-    m_Context.V[10].High = 0;
-    m_Context.V[11].Low = pFpCalleeSaved[3];
-    m_Context.V[11].High = 0;
-    m_Context.V[12].Low = pFpCalleeSaved[4];
-    m_Context.V[12].High = 0;
-    m_Context.V[13].Low = pFpCalleeSaved[5];
-    m_Context.V[13].High = 0;
-    m_Context.V[14].Low = pFpCalleeSaved[6];
-    m_Context.V[14].High = 0;
-    m_Context.V[15].Low = pFpCalleeSaved[7];
-    m_Context.V[15].High = 0;
+    // FP callee-saved registers (d8-d15 / V8-V15) are not saved by PROLOG_WITH_TRANSITION_BLOCK
+    // Zero them; the unwinder will restore actual values during stack walk
+    for (int i = 8; i < 16; i++)
+    {
+        m_Context.V[i].Low = 0;
+        m_Context.V[i].High = 0;
+    }
 
     // Initialize remaining V registers (V16-V31) to zero - these are caller-saved
     for (int i = 16; i < 32; i++)
@@ -11153,21 +11147,18 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     // F[] array in CONTEXT is 4*32 elements for LSX/LASX support.
     // Each FP register takes 4 slots (for 256-bit LASX vectors).
     // For 64-bit doubles, we only use the first slot of each register.
+    // PROLOG_WITH_TRANSITION_BLOCK saves these at GetOffsetOfFloatArgumentRegisters()
     FloatArgumentRegisters *pFloatArgs = (FloatArgumentRegisters*)((BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters());
     for (int i = 0; i < 8; i++)
     {
         memcpy(&m_Context.F[i * 4], &pFloatArgs->f[i], sizeof(double));
     }
 
-    // Read FP callee-saved registers (f24-f31) from the stack
-    // They are stored at negative offset from TransitionBlock:
-    // Layout: [f24-f31 (64 bytes)] [fa0-fa7 (64 bytes)] [TransitionBlock]
-    // FP callee-saved are at TransitionBlock - 128 (64 + 64)
-    UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 128);
-    for (int i = 0; i < 8; i++)
+    // FP callee-saved registers (f24-f31) are not saved by PROLOG_WITH_TRANSITION_BLOCK
+    // Zero them; the unwinder will restore actual values during stack walk
+    for (int i = 24; i < 32; i++)
     {
-        // f24-f31 map to indices 24-31 in the F array, each taking 4 slots
-        memcpy(&m_Context.F[(24 + i) * 4], &pFpCalleeSaved[i], sizeof(double));
+        memset(&m_Context.F[i * 4], 0, sizeof(double) * 4);
     }
 
     // Initialize remaining F registers (f8-f23) to zero
@@ -11233,7 +11224,9 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
 
     // Initialize all F registers to zero first
     memset(m_Context.F, 0, sizeof(m_Context.F));
+
     // Copy floating point argument registers (fa0-fa7)
+    // PROLOG_WITH_TRANSITION_BLOCK saves these at GetOffsetOfFloatArgumentRegisters()
     FloatArgumentRegisters *pFloatArgs = (FloatArgumentRegisters*)((BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters());
     for (int i = 0; i < 8; i++)
     {
@@ -11241,18 +11234,8 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
         memcpy(&m_Context.F[10 + i], &pFloatArgs->f[i], sizeof(double));
     }
 
-    // Read FP callee-saved registers (fs0-fs11) from the stack
-    // They are stored at negative offset from TransitionBlock:
-    // Layout: [fs0-fs11 (96 bytes)] [fa0-fa7 (64 bytes)] [TransitionBlock]
-    // FP callee-saved are at TransitionBlock - 160 (96 + 64)
-    // RISC-V FP callee-saved: fs0=f8, fs1=f9, fs2-fs11=f18-f27
-    UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 160);
-    memcpy(&m_Context.F[8], &pFpCalleeSaved[0], sizeof(double));   // fs0 = f8
-    memcpy(&m_Context.F[9], &pFpCalleeSaved[1], sizeof(double));   // fs1 = f9
-    for (int i = 0; i < 10; i++)
-    {
-        memcpy(&m_Context.F[18 + i], &pFpCalleeSaved[2 + i], sizeof(double));  // fs2-fs11 = f18-f27
-    }
+    // FP callee-saved registers (fs0-fs11) are not saved by PROLOG_WITH_TRANSITION_BLOCK
+    // They remain zeroed; the unwinder will restore actual values during stack walk
 
     // Initialize FP control/status register
     m_Context.Fcsr = 0;
