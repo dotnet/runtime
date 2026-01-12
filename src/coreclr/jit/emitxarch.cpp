@@ -21412,20 +21412,23 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case INS_vdivsh:
-        case INS_vsqrtsh:
-        case INS_vrcpsh:
-        case INS_vrsqrtsh:
             result.insLatency    = PERFSCORE_LATENCY_14C;
             result.insThroughput = PERFSCORE_THROUGHPUT_4C;
             break;
 
+        case INS_vsqrtsh:
+            result.insLatency    = PERFSCORE_LATENCY_14C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_4P5C;
+            break;
+
+        case INS_vrsqrtsh:
         case INS_vcomish:
         case INS_vucomish:
+        case INS_vrcpsh:
             result.insLatency    = PERFSCORE_LATENCY_4C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
 
-        case INS_vroundsh:
         case INS_vrndscalesh:
             result.insLatency    = PERFSCORE_LATENCY_8C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
