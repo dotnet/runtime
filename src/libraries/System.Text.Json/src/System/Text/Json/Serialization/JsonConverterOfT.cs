@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 
@@ -460,7 +459,7 @@ namespace System.Text.Json.Serialization
                 // If not JsonDictionaryConverter<T> then we are JsonObject.
                 // Avoid a type reference to JsonObject and its converter to support trimming.
                 // The WriteExtensionDataValue virtual method is overridden by the JsonObject converter.
-                Debug.Assert(Type == typeof(JsonObject));
+                Debug.Assert(Type == typeof(Nodes.JsonObject));
                 WriteExtensionDataValue(writer, value!, options);
 
                 return true;
