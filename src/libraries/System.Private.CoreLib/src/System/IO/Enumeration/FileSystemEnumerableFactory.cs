@@ -117,6 +117,9 @@ namespace System.IO.Enumeration
             StringComparison comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
             bool useExtendedWildcards = options.MatchType == MatchType.Win32;
 
+            // Determine which wildcards to check for (extended wildcards include DOS special characters)
+            SearchValues<char> wildcards = useExtendedWildcards ? FileSystemName.ExtendedWildcards : FileSystemName.SimpleWildcards;
+
             // Check for special patterns that can be optimized
             if (expression == "*")
             {
@@ -129,13 +132,22 @@ namespace System.IO.Enumeration
                 };
             }
 
+            // Check for literal pattern (no wildcards and no escape characters) - use simple Equals
+            // The backslash is an escape character that needs to be processed by the full matcher
+            if (!expression.AsSpan().ContainsAny(wildcards) && !expression.Contains('\\'))
+            {
+                return entryType switch
+                {
+                    FileSystemEntryType.Files => (ref FileSystemEntry entry) => !entry.IsDirectory && entry.FileName.Equals(expression, comparison),
+                    FileSystemEntryType.Directories => (ref FileSystemEntry entry) => entry.IsDirectory && entry.FileName.Equals(expression, comparison),
+                    _ => (ref FileSystemEntry entry) => entry.FileName.Equals(expression, comparison)
+                };
+            }
+
             if (expression.Length > 1)
             {
                 bool startsWithStar = expression[0] == '*';
                 bool endsWithStar = expression[^1] == '*';
-
-                // Determine which wildcards to check for (extended wildcards include DOS special characters)
-                SearchValues<char> wildcards = useExtendedWildcards ? FileSystemName.ExtendedWildcards : FileSystemName.SimpleWildcards;
 
                 if (startsWithStar && endsWithStar)
                 {

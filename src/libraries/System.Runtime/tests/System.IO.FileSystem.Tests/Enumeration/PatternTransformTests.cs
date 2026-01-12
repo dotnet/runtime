@@ -109,6 +109,26 @@ namespace System.IO.Tests.Enumeration
         }
 
         [Fact]
+        public void GetFiles_LiteralPattern()
+        {
+            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
+            FileInfo exactMatch = new FileInfo(Path.Combine(testDirectory.FullName, "log.txt"));
+            FileInfo noMatch1 = new FileInfo(Path.Combine(testDirectory.FullName, "log.txt.bak"));
+            FileInfo noMatch2 = new FileInfo(Path.Combine(testDirectory.FullName, "mylog.txt"));
+            FileInfo noMatch3 = new FileInfo(Path.Combine(testDirectory.FullName, "other.txt"));
+            exactMatch.Create().Dispose();
+            noMatch1.Create().Dispose();
+            noMatch2.Create().Dispose();
+            noMatch3.Create().Dispose();
+
+            string[] results = GetFiles(testDirectory.FullName, "log.txt");
+            Assert.Equal(new string[] { exactMatch.FullName }, results);
+
+            results = GetFiles(testDirectory.FullName, "log.txt", new EnumerationOptions { MatchType = MatchType.Simple });
+            Assert.Equal(new string[] { exactMatch.FullName }, results);
+        }
+
+        [Fact]
         public void GetFiles_StartsWithPattern()
         {
             DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
