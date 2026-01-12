@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 
@@ -458,13 +457,9 @@ namespace System.Text.Json.Serialization
             if (dictionaryConverter == null)
             {
                 // If not JsonDictionaryConverter<T> then we are JsonObject.
-                Debug.Assert(Type == typeof(JsonObject));
-
-                // Write the JsonObject extension data contents without the wrapping braces.
-                // This is necessary because extension data properties should be flattened
-                // into the parent object, not nested as a separate object.
-                JsonObject jsonObject = (JsonObject)(object)value!;
-                jsonObject.WriteContentsTo(writer, options);
+                // Avoid a type reference to JsonObject and its converter to support trimming.
+                // The WriteExtensionDataValue virtual method is overridden by the JsonObject converter.
+                WriteExtensionDataValue(writer, value!, options);
 
                 return true;
             }

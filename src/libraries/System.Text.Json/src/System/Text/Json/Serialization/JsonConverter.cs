@@ -110,6 +110,20 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
+        /// <summary>
+        /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.
+        /// Writes the extension data contents without wrapping object braces.
+        /// </summary>
+        internal virtual void WriteExtensionDataValue(
+            Utf8JsonWriter writer,
+            object value,
+            JsonSerializerOptions options)
+        {
+            Debug.Fail("Should not be reachable.");
+
+            throw new InvalidOperationException();
+        }
+
         internal virtual JsonTypeInfo CreateJsonTypeInfo(JsonSerializerOptions options)
         {
             Debug.Fail("Should not be reachable.");
