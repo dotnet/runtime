@@ -92,19 +92,20 @@
 //
 // Register state on exit:
 //  x4: thread pointer
-//  x2: preserved
+//  x0, x1, x2: preserved
 //
 .macro FixupHijackedCallstack
 
-    // Preserve x2 since it may contain an async continuation
-    str         x2, [sp, #-16]!
-
+    // Store thread pointer temporarily in x3, then move it to x4
     // x4 <- GetThread()
+
 #ifdef FEATURE_EMULATED_TLS
-    GETTHREAD_ETLS_4
+    GETTHREAD_ETLS_3
 #else
-    INLINE_GETTHREAD x4
+    INLINE_GETTHREAD x3
 #endif
+
+    mov         x4, x3
 
     //
     // Fix the stack by restoring the original return address
@@ -116,9 +117,6 @@
     //
     // Clear m_ppvHijackedReturnAddressLocation and m_pvHijackedReturnAddress
     stp         xzr, xzr, [x4, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
-
-    // Restore x2
-    ldr         x2, [sp], #16
 .endm
 
 //
