@@ -193,6 +193,9 @@ namespace System.Text.RegularExpressions
                     case '\f':
                         ch = 'f';
                         break;
+                    case '\v':
+                        ch = 'v';
+                        break;
                 }
 
                 vsb.Append('\\');
@@ -1602,7 +1605,7 @@ namespace System.Text.RegularExpressions
                 case 't':
                     return '\t';
                 case 'v':
-                    return '\u000B';
+                    return '\v';
                 case 'c':
                     return ScanControl();
                 default:
@@ -1923,7 +1926,7 @@ namespace System.Text.RegularExpressions
         private const byte Q = 4;    // quantifier          * + ? {
         private const byte S = 3;    // stopper             $ ( ) . [ \ ^ |
         private const byte Z = 2;    // # stopper           #
-        private const byte W = 1;    // whitespace          \t \n \f \r ' '
+        private const byte W = 1;    // whitespace          \t \n \v \f \r ' '
 
         /// <summary>For categorizing ASCII characters.</summary>
         private static ReadOnlySpan<byte> Category =>

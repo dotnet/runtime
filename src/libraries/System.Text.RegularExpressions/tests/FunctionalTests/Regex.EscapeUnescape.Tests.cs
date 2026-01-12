@@ -25,6 +25,14 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("\v", "\\v")]
+        [InlineData("\n\r\v\t\f", "\\n\\r\\v\\t\\f")]
+        public static void Escape_VerticalTab(string str, string expected)
+        {
+            Assert.Equal(expected, Regex.Escape(str));
+        }
+
         [Fact]
         public void Escape_NullString_ThrowsArgumentNullException()
         {
@@ -47,6 +55,14 @@ namespace System.Text.RegularExpressions.Tests
                 const int Count = 100;
                 Assert.Equal(string.Concat(Enumerable.Repeat(expected, Count)), Regex.Unescape(string.Concat(Enumerable.Repeat(str, Count))));
             }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("\\v", "\v")]
+        [InlineData("\\n\\r\\v\\t\\f", "\n\r\v\t\f")]
+        public void Unescape_VerticalTab(string str, string expected)
+        {
+            Assert.Equal(expected, Regex.Unescape(str));
         }
 
         [Fact]
