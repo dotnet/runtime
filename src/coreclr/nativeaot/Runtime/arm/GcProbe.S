@@ -22,7 +22,7 @@
     // incoming register values into it.
     PROLOG_VPUSH        "{d0-d3}"           // Save d0-d3 which can have the floating point return value
     PROLOG_PUSH         "{r0,r1}"           // Save return registers
-    PROLOG_PUSH         "{r2}"              // Save r2, it might contain an objectref (async continuation)
+    PROLOG_PUSH         "{r2,r3}"           // Save r2, might contain objectref (async continuation). Save r3 for alignment
     PROLOG_STACK_ALLOC  4                   // Space for caller's SP
     PROLOG_PUSH         "{r4-r10}"          // Save non-volatile registers
     PROLOG_STACK_ALLOC  8                   // Space for flags and Thread*
@@ -33,7 +33,7 @@
     str         \trashReg, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
 
     // Compute SP value at entry to this method and save it in slot of the frame.
-    add         \trashReg, sp, #(15 * 4 + 4 * 8)
+    add         \trashReg, sp, #(16 * 4 + 4 * 8)
     str         \trashReg, [sp, #(11 * 4)]
 
     // Link the frame into the Thread
@@ -50,7 +50,7 @@
     EPILOG_STACK_FREE   8                   // Discard flags and Thread*
     EPILOG_POP          "{r4-r10}"          // Restore non-volatile registers
     EPILOG_STACK_FREE   4                   // Discard caller's SP
-    EPILOG_POP          "{r2}"              // Restore r2
+    EPILOG_POP          "{r2,r3}"           // Restore r2 (and r3, was for alignment)
     EPILOG_POP          "{r0,r1}"           // Restore return registers
     EPILOG_VPOP         "{d0-d3}"           // Restore d0-d3 which can have the floating point return value
 .endm
@@ -86,11 +86,9 @@
     ldr         lr, [r3, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 
     // Clear hijack state
-    push        {r0}
-    mov         r0, #0
-    str         r0, [r3, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
-    str         r0, [r3, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
-    pop         {r0}
+    mov         r12, #0
+    str         r12, [r3, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+    str         r12, [r3, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 .endm
 
 NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
