@@ -17,7 +17,8 @@ namespace System.Net.Security.Tests
 {
     public class NegotiateAuthenticationTests
     {
-        private static bool UseManagedNtlm = PlatformDetection.IsUbuntu24;
+        // Ubuntu 24 and 26 ship with broekn gss-ntlmssp 1.2
+        private static bool UseManagedNtlm => PlatformDetection.IsUbuntu24 || PlatformDetection.IsUbuntu26;
         private static bool IsNtlmAvailable => UseManagedNtlm || Capability.IsNtlmInstalled() || OperatingSystem.IsAndroid() || OperatingSystem.IsTvOS();
         private static bool IsNtlmUnavailable => !IsNtlmAvailable;
 
