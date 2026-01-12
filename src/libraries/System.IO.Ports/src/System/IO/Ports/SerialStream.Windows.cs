@@ -1537,7 +1537,8 @@ namespace System.IO.Ports
 
             if (BitOperations.PopCount(baudBitMask) != 1)
             {
-                throw new ArgumentException("??? Not a valid baud bitmask");
+                //throw new ArgumentException("??? Not a valid baud bitmask");
+                return (int)baudBitMask;
             }
 
             // https://learn.microsoft.com/windows/win32/api/winbase/ns-winbase-commprop
@@ -1548,7 +1549,8 @@ namespace System.IO.Ports
 
             if (index >= bauds.Length)
             {
-                throw new Exception("??? Unsupported baudrate bitmask");
+                // throw new Exception("??? Unsupported baudrate bitmask");
+                return 0;
             }
 
             return bauds[index];
