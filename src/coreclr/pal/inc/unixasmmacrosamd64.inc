@@ -495,6 +495,11 @@ C_FUNC(\Name\()_End):
         set_cfa_register rsp, 8
 
         PUSH_CALLEE_SAVED_REGISTERS
+
+        // Set RBP as frame pointer to facilitate stack walking for 3rd party tools.
+        // After PUSH_CALLEE_SAVED_REGISTERS, saved RBP is at rsp+40 (5 regs * 8 bytes above current rsp)
+        lea     rbp, [rsp + 40]
+
         PUSH_ARGUMENT_REGISTERS
 
         // Allocate 128 bytes for floats + 8 bytes padding = 136 bytes

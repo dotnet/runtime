@@ -517,6 +517,11 @@ PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS macro target
 
         PUSH_CALLEE_SAVED_REGISTERS
 
+        ; Set RBP as frame pointer to facilitate stack walking for 3rd party tools.
+        ; After PUSH_CALLEE_SAVED_REGISTERS, saved RBP is at rsp+24 (3 regs * 8 bytes above current rsp)
+        ; Push order: r15, r14, r13, r12, rbp, rbx, rsi, rdi - so rbp is at offset 24 from rsp
+        lea     rbp, [rsp + 24]
+
         ; Allocate space for: FP callee-saved (160) + float args (64) + shadow (32) + padding (8) = 264 bytes
         ; This makes RSP 16-byte aligned (8 + 64 + 264 = 336, and original RSP - 336 is 16-byte aligned)
         alloc_stack     264
