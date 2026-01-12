@@ -115,25 +115,28 @@ ep_thread_register (EventPipeThread *thread)
 bool
 ep_thread_unregister (EventPipeThread *thread)
 {
+	ep_requires_lock_not_held ();
 	ep_rt_spin_lock_requires_lock_not_held (&_ep_threads_lock);
 
 	ep_return_false_if_nok (thread != NULL);
 
-	for (uint32_t i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; ++i) {
-		EventPipeThreadSessionState *thread_session_state = (EventPipeThreadSessionState *)ep_rt_volatile_load_ptr ((volatile void **)(&thread->session_state [i]));
-		if (thread_session_state == NULL)
-			continue;
-
-		EventPipeSession *session = ep_volatile_load_session (i);
-		if (session == NULL)
-			continue;
-
-		EventPipeBufferManager *buffer_manager = ep_session_get_buffer_manager (session);
-		EP_ASSERT (buffer_manager != NULL);
-		ep_rt_wait_event_set (ep_buffer_manager_get_rt_wait_event_ref (buffer_manager));
-	}
-
 	bool found = false;
+	EP_LOCK_ENTER (section1)
+		for (uint32_t i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; ++i) {
+			EventPipeThreadSessionState *thread_session_state = (EventPipeThreadSessionState *)ep_rt_volatile_load_ptr ((volatile void **)(&thread->session_state [i]));
+			if (thread_session_state == NULL)
+				continue;
+
+			EventPipeSession *session = ep_volatile_load_session (i);
+			if (session == NULL)
+				continue;
+
+			EventPipeBufferManager *buffer_manager = ep_session_get_buffer_manager (session);
+			EP_ASSERT (buffer_manager != NULL);
+			ep_rt_wait_event_set (ep_buffer_manager_get_rt_wait_event_ref (buffer_manager));
+		}
+	EP_LOCK_EXIT (section1)
+
 	EP_SPIN_LOCK_ENTER (&_ep_threads_lock, section1)
 		// Remove ourselves from the global list
 		DN_LIST_FOREACH_BEGIN (EventPipeThread *, current_thread, _ep_threads) {
@@ -151,6 +154,7 @@ ep_thread_unregister (EventPipeThread *thread)
 
 ep_on_exit:
 	ep_rt_spin_lock_requires_lock_not_held (&_ep_threads_lock);
+	ep_requires_lock_not_held ();
 	return found;
 
 ep_on_error:
