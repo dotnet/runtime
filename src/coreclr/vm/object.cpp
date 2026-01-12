@@ -208,14 +208,6 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
     // MyValueType1<T>'s module's m_AssemblyRefByNameTable, which is garbage if its
     // AppDomain is unloading.
     //
-    // Another AV was encountered in a similar case,
-    //
-    //     MyRefType1<MyRefType2>[] myArray
-    //
-    // where MyRefType2's module was unloaded by the time the GC occurred. In at least
-    // one case, the GC was caused by the AD unload itself (AppDomain::Unload ->
-    // AppDomain::Exit -> GCInterface::AddMemoryPressure -> WKS::GCHeapUtilities::GarbageCollect).
-    //
     // To protect against all scenarios, verify that
     //
     //     * The MT of the object is not getting unloaded, OR

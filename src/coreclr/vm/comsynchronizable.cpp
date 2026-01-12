@@ -595,31 +595,36 @@ void ThreadBaseObject::InitExisting()
     }
 }
 
-FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
+extern "C" void QCALLTYPE ThreadNative_Finalize(QCall::ObjectHandleOnStack thread)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    THREADBASEREF   refThis = (THREADBASEREF)pThisUNSAFE;
-    Thread*         thread  = refThis->GetInternal();
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    THREADBASEREF refThis = (THREADBASEREF)thread.Get();
+    Thread* pThread = refThis->GetInternal();
 
     // Prevent multiple calls to Finalize
     // Objects can be resurrected after being finalized.  However, there is no
     // race condition here.  We always check whether an exposed thread object is
     // still attached to the internal Thread object, before proceeding.
-    if (thread)
+    if (pThread)
     {
         refThis->ResetStartHelper();
 
-        if (GetThreadNULLOk() != thread)
+        if (GetThreadNULLOk() != pThread)
         {
             refThis->ClearInternal();
         }
 
-        thread->SetThreadState(Thread::TS_Finalized);
+        pThread->SetThreadState(Thread::TS_Finalized);
         Thread::SetCleanupNeededForFinalizedThread();
     }
+
+    END_QCALL;
 }
-FCIMPLEND
 
 FCIMPL0(FC_BOOL_RET, ThreadNative::CatchAtSafePoint)
 {

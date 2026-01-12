@@ -154,7 +154,6 @@ private:
     static UINT     m_iteration;
 
 public:
-    static FORCEINLINE UINT64 InterlockedAdd(UINT64 *pAugend, UINT64 addend);
     static FORCEINLINE UINT64 InterlockedSub(UINT64 *pMinuend, UINT64 subtrahend);
 
     static FCDECL0(INT64,   GetTotalPauseDuration);
@@ -179,21 +178,14 @@ public:
     static FCDECL0(INT64,    GetAllocatedBytesForCurrentThread);
     static FCDECL0(INT64,    GetTotalAllocatedBytesApproximate);
 
-    NOINLINE static void SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocated);
-    static void SendEtwAddMemoryPressureEvent(UINT64 bytesAllocated);
-
-    static void CheckCollectionCount();
-    static void RemoveMemoryPressure(UINT64 bytesAllocated);
+    // Wrapper methods that call managed implementation
     static void AddMemoryPressure(UINT64 bytesAllocated);
+    static void RemoveMemoryPressure(UINT64 bytesAllocated);
 
     static void EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback);
     static int  RefreshMemoryLimit();
     static enable_no_gc_region_callback_status EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize);
     static uint64_t GetGenerationBudget(int generation);
-
-private:
-    // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
-    NOINLINE static void GarbageCollectModeAny(int generation);
 };
 
 extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise();
@@ -220,10 +212,6 @@ extern "C" int QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeo
 extern "C" int QCALLTYPE GCInterface_StartNoGCRegion(INT64 totalSize, BOOL lohSizeKnown, INT64 lohSize, BOOL disallowFullBlockingGC);
 
 extern "C" int QCALLTYPE GCInterface_EndNoGCRegion();
-
-extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated);
-
-extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated);
 
 extern "C" void QCALLTYPE GCInterface_ReRegisterForFinalize(QCall::ObjectHandleOnStack pObj);
 

@@ -124,34 +124,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern ulong GetGenerationSize(int gen);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_AddMemoryPressure")]
-        private static partial void _AddMemoryPressure(ulong bytesAllocated);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RemoveMemoryPressure")]
-        private static partial void _RemoveMemoryPressure(ulong bytesAllocated);
-
-        public static void AddMemoryPressure(long bytesAllocated)
-        {
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bytesAllocated);
-            if (IntPtr.Size == 4)
-            {
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(bytesAllocated, int.MaxValue);
-            }
-
-            _AddMemoryPressure((ulong)bytesAllocated);
-        }
-
-        public static void RemoveMemoryPressure(long bytesAllocated)
-        {
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bytesAllocated);
-            if (IntPtr.Size == 4)
-            {
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(bytesAllocated, int.MaxValue);
-            }
-
-            _RemoveMemoryPressure((ulong)bytesAllocated);
-        }
-
         // Returns the generation that obj is currently in.
         //
         public static int GetGeneration(object obj)
