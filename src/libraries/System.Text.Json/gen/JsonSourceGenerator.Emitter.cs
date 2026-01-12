@@ -730,8 +730,11 @@ namespace System.Text.Json.SourceGeneration
             {
                 ImmutableEquatableArray<ParameterGenerationSpec> parameters = typeGenerationSpec.CtorParamGenSpecs;
                 ImmutableEquatableArray<PropertyInitializerGenerationSpec> propertyInitializers = typeGenerationSpec.PropertyInitializerSpecs;
-                int paramCount = parameters.Count + propertyInitializers.Count(propInit => !propInit.MatchesConstructorParameter);
-                Debug.Assert(paramCount > 0);
+
+                // out parameters don't appear in metadata - they don't receive values from JSON.
+                int nonOutParamCount = parameters.Count(p => p.RefKind != (int)RefKind.Out);
+                int paramCount = nonOutParamCount + propertyInitializers.Count(propInit => !propInit.MatchesConstructorParameter);
+                Debug.Assert(paramCount > 0 || parameters.Any(p => p.RefKind == (int)RefKind.Out));
 
                 writer.WriteLine($"private static {JsonParameterInfoValuesTypeRef}[] {ctorParamMetadataInitMethodName}() => new {JsonParameterInfoValuesTypeRef}[]");
                 writer.WriteLine('{');
@@ -740,12 +743,19 @@ namespace System.Text.Json.SourceGeneration
                 int i = 0;
                 foreach (ParameterGenerationSpec spec in parameters)
                 {
+                    // Skip out parameters - they don't receive values from JSON deserialization.
+                    if (spec.RefKind == (int)RefKind.Out)
+                    {
+                        continue;
+                    }
+
+                    Debug.Assert(spec.ArgsIndex >= 0);
                     writer.WriteLine($$"""
                         new()
                         {
                             Name = {{FormatStringLiteral(spec.Name)}},
                             ParameterType = typeof({{spec.ParameterType.FullyQualifiedName}}),
-                            Position = {{spec.ParameterIndex}},
+                            Position = {{spec.ArgsIndex}},
                             HasDefaultValue = {{FormatBoolLiteral(spec.HasDefaultValue)}},
                             DefaultValue = {{(spec.HasDefaultValue ? CSharpSyntaxUtilities.FormatLiteral(spec.DefaultValue, spec.ParameterType) : "null")}},
                             IsNullable = {{FormatBoolLiteral(spec.IsNullable)}},
@@ -953,7 +963,8 @@ namespace System.Text.Json.SourceGeneration
                     {
                         if (param.RefKind == (int)RefKind.Ref || param.RefKind == RefKindRefReadOnlyParameter)
                         {
-                            sb.Append($"var __temp{param.ParameterIndex} = ({param.ParameterType.FullyQualifiedName}){ArgsVarName}[{param.ParameterIndex}]; ");
+                            // Use ArgsIndex to access the args array (out params don't have entries in args)
+                            sb.Append($"var __temp{param.ParameterIndex} = ({param.ParameterType.FullyQualifiedName}){ArgsVarName}[{param.ArgsIndex}]; ");
                         }
                     }
 
@@ -968,7 +979,7 @@ namespace System.Text.Json.SourceGeneration
                 {
                     foreach (ParameterGenerationSpec param in parameters)
                     {
-                        sb.Append($"{GetParamExpression(param)}, ");
+                        sb.Append($"{GetParamExpression(param, ArgsVarName)}, ");
                     }
 
                     sb.Length -= 2; // delete the last ", " token
@@ -995,14 +1006,15 @@ namespace System.Text.Json.SourceGeneration
 
                 return sb.ToString();
 
-                static string GetParamExpression(ParameterGenerationSpec param)
+                static string GetParamExpression(ParameterGenerationSpec param, string argsVarName)
                 {
                     return param.RefKind switch
                     {
                         (int)RefKind.Ref => $"ref __temp{param.ParameterIndex}",
                         (int)RefKind.Out => $"out var __discard{param.ParameterIndex}",
                         RefKindRefReadOnlyParameter => $"in __temp{param.ParameterIndex}",
-                        _ => $"({param.ParameterType.FullyQualifiedName}){ArgsVarName}[{param.ParameterIndex}]", // None or In (in doesn't require keyword at call site)
+                        // Use ArgsIndex to access the args array (out params don't have entries in args)
+                        _ => $"({param.ParameterType.FullyQualifiedName}){argsVarName}[{param.ArgsIndex}]", // None or In (in doesn't require keyword at call site)
                     };
                 }
             }

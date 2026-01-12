@@ -92,7 +92,25 @@ namespace System.Text.Json.Serialization.Metadata
             ILGenerator generator = dynamicMethod.GetILGenerator();
 
             // For byref parameters, we need to store values in local variables and pass addresses.
+            // For out parameters, we just need a default-initialized local to pass by address.
             LocalBuilder?[] locals = new LocalBuilder?[parameterCount];
+
+            // Track the mapping from constructor parameter index to args[] index.
+            // out parameters don't have entries in args[].
+            int argsIndex = 0;
+            int[] argsIndices = new int[parameterCount];
+            for (int i = 0; i < parameterCount; i++)
+            {
+                if (parameters[i].IsOut)
+                {
+                    argsIndices[i] = -1; // out parameters don't have an args entry
+                }
+                else
+                {
+                    argsIndices[i] = argsIndex++;
+                }
+            }
+
             for (int i = 0; i < parameterCount; i++)
             {
                 Type paramType = parameters[i].ParameterType;
@@ -102,12 +120,30 @@ namespace System.Text.Json.Serialization.Metadata
                     Type elementType = paramType.GetElementType()!;
                     locals[i] = generator.DeclareLocal(elementType);
 
-                    // Load value from object array, unbox it, and store in the local.
-                    generator.Emit(OpCodes.Ldarg_0);
-                    generator.Emit(OpCodes.Ldc_I4, i);
-                    generator.Emit(OpCodes.Ldelem_Ref);
-                    generator.Emit(OpCodes.Unbox_Any, elementType);
-                    generator.Emit(OpCodes.Stloc, locals[i]!);
+                    if (parameters[i].IsOut)
+                    {
+                        // For out parameters, just initialize the local to default.
+                        // We don't load from args[] since out params aren't in the metadata.
+                        if (elementType.IsValueType)
+                        {
+                            generator.Emit(OpCodes.Ldloca, locals[i]!);
+                            generator.Emit(OpCodes.Initobj, elementType);
+                        }
+                        else
+                        {
+                            generator.Emit(OpCodes.Ldnull);
+                            generator.Emit(OpCodes.Stloc, locals[i]!);
+                        }
+                    }
+                    else
+                    {
+                        // Load value from object array, unbox it, and store in the local.
+                        generator.Emit(OpCodes.Ldarg_0);
+                        generator.Emit(OpCodes.Ldc_I4, argsIndices[i]);
+                        generator.Emit(OpCodes.Ldelem_Ref);
+                        generator.Emit(OpCodes.Unbox_Any, elementType);
+                        generator.Emit(OpCodes.Stloc, locals[i]!);
+                    }
                 }
             }
 
@@ -125,7 +161,7 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     // Load value from object array and unbox.
                     generator.Emit(OpCodes.Ldarg_0);
-                    generator.Emit(OpCodes.Ldc_I4, i);
+                    generator.Emit(OpCodes.Ldc_I4, argsIndices[i]);
                     generator.Emit(OpCodes.Ldelem_Ref);
                     generator.Emit(OpCodes.Unbox_Any, paramType);
                 }

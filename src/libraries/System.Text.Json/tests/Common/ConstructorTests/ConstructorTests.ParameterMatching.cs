@@ -1946,18 +1946,19 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = @"{""Value1"":42,""Value2"":""hello""}";
             TypeWith_OutParameters result = await Serializer.DeserializeWrapper<TypeWith_OutParameters>(json);
-            // The constructor assigns its own values to the out parameters, ignoring
-            // any values that might be passed. The properties get set from those assigned values.
-            Assert.Equal(99, result.Value1);
-            Assert.Equal("default", result.Value2);
+            // out parameters are excluded from the constructor delegate's metadata,
+            // so JSON values are set via property setters after construction.
+            // The constructor's assigned values (99, "default") are overwritten by the JSON values.
+            Assert.Equal(42, result.Value1);
+            Assert.Equal("hello", result.Value2);
         }
 
         public class TypeWith_OutParameters
         {
             public TypeWith_OutParameters(out int value1, out string value2)
             {
-                // Out parameters must be assigned by the constructor before use.
-                // The serializer discards the out parameters.
+                // Out parameters must be assigned by the constructor.
+                // Since they're excluded from metadata, these values won't come from JSON.
                 value1 = 99;
                 value2 = "default";
                 Value1 = value1;
@@ -2071,8 +2072,8 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = @"{""Value"":42}";
             TypeWith_OutParameter_Primitive result = await Serializer.DeserializeWrapper<TypeWith_OutParameter_Primitive>(json);
-            // Out parameters are assigned by the constructor, not from JSON
-            Assert.Equal(99, result.Value);
+            // Out parameters are excluded from metadata, so JSON values are set via property setters
+            Assert.Equal(42, result.Value);
         }
 
         public class TypeWith_OutParameter_Primitive
@@ -2090,8 +2091,8 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = @"{""Value"":""2020-12-15T00:00:00""}";
             TypeWith_OutParameter_Struct result = await Serializer.DeserializeWrapper<TypeWith_OutParameter_Struct>(json);
-            // Out parameters are assigned by the constructor, not from JSON
-            Assert.Equal(new DateTime(1999, 1, 1), result.Value);
+            // Out parameters are excluded from metadata, so JSON values are set via property setters
+            Assert.Equal(new DateTime(2020, 12, 15), result.Value);
         }
 
         public class TypeWith_OutParameter_Struct
@@ -2109,8 +2110,8 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = @"{""Value"":""hello""}";
             TypeWith_OutParameter_ReferenceType result = await Serializer.DeserializeWrapper<TypeWith_OutParameter_ReferenceType>(json);
-            // Out parameters are assigned by the constructor, not from JSON
-            Assert.Equal("default", result.Value);
+            // Out parameters are excluded from metadata, so JSON values are set via property setters
+            Assert.Equal("hello", result.Value);
         }
 
         public class TypeWith_OutParameter_ReferenceType

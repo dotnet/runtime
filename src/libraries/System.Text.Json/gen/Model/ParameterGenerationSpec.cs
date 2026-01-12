@@ -31,7 +31,18 @@ namespace System.Text.Json.SourceGeneration
         // The default value of a constructor parameter can only be a constant
         // so it always satisfies the structural equality requirement for the record.
         public required object? DefaultValue { get; init; }
+
+        /// <summary>
+        /// The zero-based position of the parameter in the constructor's formal parameter list.
+        /// </summary>
         public required int ParameterIndex { get; init; }
+
+        /// <summary>
+        /// The zero-based index into the args array for this parameter.
+        /// For out parameters, this is -1 since they don't receive values from the args array.
+        /// </summary>
+        public required int ArgsIndex { get; init; }
+
         public required bool IsNullable { get; init; }
 
         /// <summary>
