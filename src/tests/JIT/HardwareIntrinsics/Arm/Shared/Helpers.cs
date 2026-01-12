@@ -3121,14 +3121,13 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             if (TSigned.IsNegative(right))
             {
-                var mag = TUnsigned.CreateChecked(-right);
+                var magnitude = TUnsigned.CreateTruncating(-right);
                 result = unchecked(left - mag);
-                return left < mag;
+                return result > left;
             }
             else
             {
-                var add = TUnsigned.CreateChecked(right);
-                result = left + add;
+                result = left + TUnsigned.CreateChecked(right);
                 return result < left;
             }
         }
