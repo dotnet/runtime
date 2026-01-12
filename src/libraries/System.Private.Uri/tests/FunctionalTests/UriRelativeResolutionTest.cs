@@ -518,6 +518,13 @@ namespace System.PrivateUri.Tests
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
+        [Fact]
+        public void Uri_Ftp_WholePathCanBeRemoved()
+        {
+            Uri ftp = new Uri("ftp://host?a=b/..");
+            Assert.Equal("ftp://host/", ftp.AbsoluteUri);
+        }
+
         #endregion PathCompression
 
         #region MakeRelativeToUri
