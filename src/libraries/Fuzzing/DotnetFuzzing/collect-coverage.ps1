@@ -128,7 +128,7 @@ $coreClrBaseDir = Join-Path $repoRoot "artifacts\bin\coreclr"
 $coreClrDir = $null
 if (Test-Path $coreClrBaseDir) {
     $coreClrDir = Get-ChildItem -Path $coreClrBaseDir -Directory -Recurse -Filter "IL" -ErrorAction SilentlyContinue |
-        Where-Object { $_.FullName -match "windows\.x64\.(Debug|Checked|Release)" } |
+        Where-Object { $_.FullName -match "windows\.[^.]+\.(Debug|Checked|Release)" } |
         Select-Object -First 1 -ExpandProperty FullName
 }
 
