@@ -33,7 +33,7 @@ public class WasmTestRunner : WasmApplicationEntryPoint
     }
 #endif
 
-    // workaround for https://github.com/dotnet/runtime/issues/122972
+    // WASM-TODO: workaround for https://github.com/dotnet/runtime/issues/122972
     protected override IEnumerable<TestAssemblyInfo> GetTestAssemblies()
     {
         AssemblyName an = new AssemblyName(Path.GetFileNameWithoutExtension(TestAssembly));

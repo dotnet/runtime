@@ -18,9 +18,6 @@
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
     <WasmEnableWebcil>false</WasmEnableWebcil>
-    <!-- TODO-WASM fix IL trimming https://github.com/dotnet/runtime/issues/123030 -->
-    <EnableAggressiveTrimming>false</EnableAggressiveTrimming>
-    <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsTestProject)' == 'true' or '$(IsOutputTypeLibrary)' == 'true'">
