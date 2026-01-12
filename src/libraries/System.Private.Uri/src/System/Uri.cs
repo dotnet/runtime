@@ -4337,8 +4337,10 @@ namespace System
                 // It will also convert back slashes if needed
                 Compress(ref dest, offset, _syntax);
 
-                if (dest[start] == '\\')
+                if (dest.Length > start && dest[start] == '\\')
+                {
                     dest[start] = '/';
+                }
 
                 // Escape path if requested and found as not fully escaped
                 if (formatAs == UriFormat.UriEscaped && NotAny(Flags.UserEscaped) && InFact(Flags.E_PathNotCanonical))
@@ -4369,7 +4371,7 @@ namespace System
                         // Unescape in-place
                         dest.Length = start;
                         UriHelper.Unescape(slice, ref dest);
-                        Debug.Assert(slice.Overlaps(dest.RawChars));
+                        Debug.Assert(slice.IsEmpty || slice.Overlaps(dest.RawChars));
                     }
                 }
                 else
