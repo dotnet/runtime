@@ -13,7 +13,7 @@ include AsmMacros_Shared.inc
 ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
 EXTERN RhpCidResolve : PROC
-EXTERN _RhpUniversalTransition_DebugStepTailCall@0 : PROC
+EXTERN _RhpUniversalTransitionTailCall@0 : PROC
 
 
 ;; Macro that generates code to check a single cache entry.
@@ -92,7 +92,7 @@ RhpInterfaceDispatchSlow proc
         push        eax ; Second argument (RhpCidResolve)
 
         ;; Jump to Universal Transition
-        jmp         _RhpUniversalTransition_DebugStepTailCall@0
+        jmp         _RhpUniversalTransitionTailCall@0
 RhpInterfaceDispatchSlow endp
 
 ;; Initial dispatch on an interface when we don't have a cache yet.

@@ -65,6 +65,18 @@ namespace ILCompiler.ObjectWriter
 
         protected internal abstract void UpdateSectionAlignment(int sectionIndex, int alignment);
 
+        /// <summary>
+        /// Get the section in the image where nodes in the passed in section should actually be emitted.
+        /// </summary>
+        /// <param name="section">A node's requested section.</param>
+        /// <returns>The section to actually emit the node into.</returns>
+        /// <remarks>
+        /// Sections in an image can be very expensive, and unlike linkable formats,
+        /// sections cannot be merged after the fact.
+        /// This method allows formats that want to merge sections during emit to do so.
+        /// </remarks>
+        private protected virtual ObjectNodeSection GetEmitSection(ObjectNodeSection section) => section;
+
         private protected SectionWriter GetOrCreateSection(ObjectNodeSection section)
             => GetOrCreateSection(section, default, default);
 
@@ -86,6 +98,8 @@ namespace ILCompiler.ObjectWriter
         {
             int sectionIndex;
             SectionData sectionData;
+
+            section = GetEmitSection(section);
 
             if (!comdatName.IsNull || !_sectionNameToSectionIndex.TryGetValue(section.Name, out sectionIndex))
             {
@@ -426,6 +440,11 @@ namespace ILCompiler.ObjectWriter
 
                         _outputInfoBuilder?.AddSymbol(new OutputSymbol(sectionWriter.SectionIndex, (ulong)(sectionWriter.Position + n.Offset), alternateCName));
                     }
+
+                    if (node.Phase == (int)SortableDependencyNode.ObjectNodePhase.Ordered)
+                    {
+                        RecordWellKnownSymbol(currentSymbolName, (SortableDependencyNode.ObjectNodeOrder)node.ClassCode);
+                    }
                 }
 
                 if (nodeContents.Relocs is not null)
@@ -588,6 +607,10 @@ namespace ILCompiler.ObjectWriter
                     _outputInfoBuilder.AddSection(outputSection);
                 }
             }
+        }
+
+        private protected virtual void RecordWellKnownSymbol(Utf8String currentSymbolName, SortableDependencyNode.ObjectNodeOrder classCode)
+        {
         }
 
         private protected virtual void EmitSymbolRangeDefinition(Utf8String rangeNodeName, Utf8String startNodeName, Utf8String endNodeName, SymbolDefinition endSymbol)

@@ -81,8 +81,6 @@ cd ./artifacts/bin/coreclr/browser.wasm.Debug/corehost
 node ./main.mjs
 ```
 
-Note that paths to assemblies are in the `src/native/corehost/browserhost/sample/dotnet.boot.js`
-
 ## Debugging
 
 ### Chrome DevTools with DWARF Support

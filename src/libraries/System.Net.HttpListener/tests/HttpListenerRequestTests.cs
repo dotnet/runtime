@@ -229,11 +229,6 @@ namespace System.Net.Tests
         [InlineData("Unknown-Header: Test", false)]
         public async Task IsWebSocketRequest_GetProperty_ReturnsExpected(string webSocketString, bool expected)
         {
-            if (PlatformDetection.IsWindows7)
-            {
-                return;
-            }
-
             HttpListenerRequest request = await GetRequest("POST", "", new string[] { webSocketString });
             Assert.Equal(expected, request.IsWebSocketRequest);
         }
