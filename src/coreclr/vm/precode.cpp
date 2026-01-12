@@ -959,7 +959,7 @@ BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
 
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
-PCODE GetInterpreterCodeFromInterpreterPrecodeIfPresent(TADDR codePointerMaybeInterpreterStub)
+TADDR GetInterpreterCodeFromInterpreterPrecodeIfPresent(TADDR codePointerMaybeInterpreterStub)
 {
     CONTRACTL {
         NOTHROW;
@@ -967,10 +967,10 @@ PCODE GetInterpreterCodeFromInterpreterPrecodeIfPresent(TADDR codePointerMaybeIn
         SUPPORTS_DAC;
     } CONTRACTL_END;
     
-#ifdef FEATURE_INTERPRETER
-    if (codePointerMaybeInterpreterStub == NULL)
+#if defined(FEATURE_INTERPRETER) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
+    if (codePointerMaybeInterpreterStub == (TADDR)NULL)
     {
-        return NULL;
+        return (TADDR)NULL;
     }
 
     RangeSection * pRS = ExecutionManager::FindCodeRange(codePointerMaybeInterpreterStub, ExecutionManager::GetScanFlags());
