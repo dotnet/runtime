@@ -6,7 +6,6 @@ using System.Data.Common;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Data.OleDb
 {
