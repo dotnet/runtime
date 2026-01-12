@@ -407,6 +407,11 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"(\d{2,3}?)+?", "1234", RegexOptions.None, 0, 4, true, "12");
             yield return (@"(\d{2,3}?)*?", "123456", RegexOptions.None, 0, 4, true, "");
 
+            yield return (@"^.*$", "abcd\nefg", RegexOptions.Singleline, 0, 8, true, "abcd\nefg");
+            yield return (@"^(?:.|\n)*$", "abcd\nefg", RegexOptions.None, 0, 8, true, "abcd\nefg");
+            yield return (@"^(?:.|\r|\n)*$", "abcd\nefg", RegexOptions.None, 0, 8, true, "abcd\nefg");
+            yield return (@"^(?:\r|.|\n)*$", "abcd\nefg", RegexOptions.None, 0, 8, true, "abcd\nefg");
+
             foreach (RegexOptions lineOption in new[] { RegexOptions.None, RegexOptions.Singleline })
             {
                 yield return (@".*", "abc", lineOption, 1, 2, true, "bc");
@@ -1497,7 +1502,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.FromMilliseconds(100));
 
-                Regex r = Match_InstanceMethods_DefaultTimeout_SourceGenerated_ThrowsImpl();
+                Regex r = Match_InstanceMethods_DefaultTimeout_SourceGenerated_ThrowsImpl;
                 string input = new string('a', 50) + "@a.a";
 
                 Assert.Throws<RegexMatchTimeoutException>(() => r.Match(input));
@@ -1507,7 +1512,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [GeneratedRegex(@"^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@(([0-9a-zA-Z])+([-\w]*[0-9a-zA-Z])*\.)+[a-zA-Z]{2,9})$")]
-        private static partial Regex Match_InstanceMethods_DefaultTimeout_SourceGenerated_ThrowsImpl();
+        private static partial Regex Match_InstanceMethods_DefaultTimeout_SourceGenerated_ThrowsImpl { get; }
 #endif
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

@@ -22,6 +22,7 @@
     <Compile Include="Boxing\boxunbox\BoxPatternMatchAndSideEffects.cs" />
     <Compile Include="Boxing\misc\unusedindir.cs" />
     <Compile Include="Coverage\b433189.cs" />
+    <Compile Include="delegate\DelegateToDelegate.cs" />
     <Compile Include="delegate\GSDelegate.cs" />
     <Compile Include="delegate\VirtualDelegate.cs" />
     <Compile Include="divrem\div\negSignedMod.cs" />

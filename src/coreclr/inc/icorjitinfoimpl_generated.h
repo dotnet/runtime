@@ -556,9 +556,6 @@ void getFunctionFixedEntryPoint(
           bool isUnsafeFunctionPointer,
           CORINFO_CONST_LOOKUP* pResult) override;
 
-CorInfoHelpFunc getLazyStringLiteralHelper(
-          CORINFO_MODULE_HANDLE handle) override;
-
 CORINFO_MODULE_HANDLE embedModuleHandle(
           CORINFO_MODULE_HANDLE handle,
           void** ppIndirection) override;
@@ -743,10 +740,10 @@ void recordRelocation(
           void* location,
           void* locationRW,
           void* target,
-          uint16_t fRelocType,
+          CorInfoReloc fRelocType,
           int32_t addlDelta) override;
 
-uint16_t getRelocTypeHint(
+CorInfoReloc getRelocTypeHint(
           void* target) override;
 
 uint32_t getExpectedTargetArchitecture() override;

@@ -48,7 +48,7 @@ namespace ILCompiler.Compiler.Tests
             MetadataType testType = _testModule.GetType("Devirtualization"u8, "DevirtualizeSimple"u8);
             DevirtualizationManager scanDevirt = GetDevirtualizationManagerFromScan(testType.GetMethod("Run"u8, null));
 
-            MethodDesc implMethod = testType.GetNestedType("Derived").GetMethod("Virtual"u8, null);
+            MethodDesc implMethod = testType.GetNestedType("Derived"u8).GetMethod("Virtual"u8, null);
 
             // The impl method should be treated as sealed
             Assert.True(scanDevirt.IsEffectivelySealed(implMethod));
@@ -64,7 +64,7 @@ namespace ILCompiler.Compiler.Tests
             MetadataType testType = _testModule.GetType("Devirtualization"u8, "DevirtualizeAbstract"u8);
             DevirtualizationManager scanDevirt = GetDevirtualizationManagerFromScan(testType.GetMethod("Run"u8, null));
 
-            Assert.False(scanDevirt.IsEffectivelySealed(testType.GetNestedType("Abstract")));
+            Assert.False(scanDevirt.IsEffectivelySealed(testType.GetNestedType("Abstract"u8)));
         }
     }
 }

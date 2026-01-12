@@ -3,26 +3,26 @@
 
 import type { Assets, LoaderConfig, LoaderConfigInternal } from "./types";
 
-export const netLoaderConfig: LoaderConfigInternal = {};
+export const loaderConfig: LoaderConfigInternal = {};
 
 export function getLoaderConfig(): LoaderConfig {
-    return netLoaderConfig;
+    return loaderConfig;
 }
 
 export function validateLoaderConfig(): void {
-    if (!netLoaderConfig.mainAssemblyName) {
+    if (!loaderConfig.mainAssemblyName) {
         throw new Error("Loader configuration error: 'mainAssemblyName' is required.");
     }
-    if (!netLoaderConfig.resources || !netLoaderConfig.resources.coreAssembly || netLoaderConfig.resources.coreAssembly.length === 0) {
+    if (!loaderConfig.resources || !loaderConfig.resources.coreAssembly || loaderConfig.resources.coreAssembly.length === 0) {
         throw new Error("Loader configuration error: 'resources.coreAssembly' is required and must contain at least one assembly.");
     }
 }
 
 
 export function mergeLoaderConfig(source: Partial<LoaderConfigInternal>): void {
-    normalizeConfig(netLoaderConfig);
+    defaultConfig(loaderConfig);
     normalizeConfig(source);
-    mergeConfigs(netLoaderConfig, source);
+    mergeConfigs(loaderConfig, source);
 }
 
 function mergeConfigs(target: LoaderConfigInternal, source: Partial<LoaderConfigInternal>): LoaderConfigInternal {
@@ -70,12 +70,7 @@ function mergeResources(target: Assets, source: Assets): Assets {
     return Object.assign(target, source);
 }
 
-
-function normalizeConfig(target: LoaderConfigInternal) {
-    if (!target.resources) target.resources = {} as any;
-    normalizeResources(target.resources!);
-    if (!target.environmentVariables) target.environmentVariables = {};
-    if (!target.runtimeOptions) target.runtimeOptions = [];
+function defaultConfig(target: LoaderConfigInternal) {
     if (target.appendElementOnExit === undefined) target.appendElementOnExit = false;
     if (target.logExitCode === undefined) target.logExitCode = false;
     if (target.exitOnUnhandledError === undefined) target.exitOnUnhandledError = false;
@@ -83,6 +78,15 @@ function normalizeConfig(target: LoaderConfigInternal) {
     if (target.debugLevel === undefined) target.debugLevel = 0;
     if (target.diagnosticTracing === undefined) target.diagnosticTracing = false;
     if (target.virtualWorkingDirectory === undefined) target.virtualWorkingDirectory = "/";
+    if (target.maxParallelDownloads === undefined) target.maxParallelDownloads = 16;
+    normalizeConfig(target);
+}
+
+function normalizeConfig(target: LoaderConfigInternal) {
+    if (!target.resources) target.resources = {} as any;
+    normalizeResources(target.resources!);
+    if (!target.environmentVariables) target.environmentVariables = {};
+    if (!target.runtimeOptions) target.runtimeOptions = [];
 }
 
 function normalizeResources(target: Assets) {

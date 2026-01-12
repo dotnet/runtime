@@ -16,7 +16,7 @@ namespace System.Collections.Frozen
 
         private static class AlternateLookupDelegateHolder<TAlternateKey>
             where TAlternateKey : notnull
-#if NET9_0_OR_GREATER
+#if NET
 #pragma warning disable SA1001 // Commas should be spaced correctly
             , allows ref struct
 #pragma warning restore SA1001
@@ -33,7 +33,7 @@ namespace System.Collections.Frozen
         /// <inheritdoc cref="GetValueRefOrNullRefCore(int)" />
         private ref readonly TValue GetValueRefOrNullRefCoreAlternate<TAlternateKey>(TAlternateKey key)
             where TAlternateKey : notnull
-#if NET9_0_OR_GREATER
+#if NET
 #pragma warning disable SA1001 // Commas should be spaced correctly
             , allows ref struct
 #pragma warning restore SA1001

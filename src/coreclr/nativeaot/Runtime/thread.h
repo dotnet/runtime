@@ -280,7 +280,7 @@ public:
     void*               GetHijackedReturnAddress();
     static bool         IsHijackTarget(void * address);
 
-    static void HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHijack);
+    static void HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHijack, bool doInlineSuspend);
 #else // FEATURE_HIJACK
     void                Unhijack() { }
     bool                IsHijacked() { return false; }

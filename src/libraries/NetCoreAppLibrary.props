@@ -181,7 +181,6 @@
     <!-- List .NETCoreApp shared framework generator project names below. -->
     <NetCoreAppLibraryGenerator>
       ComInterfaceGenerator;
-      EventSourceGenerator;
       LibraryImportGenerator;
       JSImportGenerator;
       Microsoft.Interop.SourceGeneration;

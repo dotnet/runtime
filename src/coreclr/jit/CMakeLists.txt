@@ -97,6 +97,7 @@ set( JIT_SOURCES
   block.cpp
   buildstring.cpp
   codegencommon.cpp
+  codegenlinear.cpp
   compiler.cpp
   copyprop.cpp
   debuginfo.cpp
@@ -115,7 +116,6 @@ set( JIT_SOURCES
   fgprofile.cpp
   fgprofilesynthesis.cpp
   fgstmt.cpp
-  fgwasm.cpp
   flowgraph.cpp
   forwardsub.cpp
   gcinfo.cpp
@@ -162,6 +162,7 @@ set( JIT_SOURCES
   rangecheckcloning.cpp
   rationalize.cpp
   redundantbranchopts.cpp
+  regalloc.cpp
   regset.cpp
   scev.cpp
   scopeinfo.cpp
@@ -182,9 +183,7 @@ set( JIT_SOURCES
 set ( JIT_NATIVE_TARGET_SOURCES
   lsra.cpp
   lsrabuild.cpp
-  regalloc.cpp
   regMaskTPOps.cpp
-  codegenlinear.cpp
   gcdecode.cpp
   gcencode.cpp
   unwind.cpp
@@ -293,9 +292,12 @@ set( JIT_RISCV64_SOURCES
 set( JIT_WASM_SOURCES
   codegenwasm.cpp
   emitwasm.cpp
+  fgwasm.cpp
   lowerwasm.cpp
   regallocwasm.cpp
+  registeropswasm.cpp
   targetwasm.cpp
+  unwindwasm.cpp
 )
 
 # We include the headers here for better experience in IDEs.
@@ -383,6 +385,7 @@ set( JIT_HEADERS
   rangecheckcloning.h
   rationalize.h
   regalloc.h
+  regallocimpl.h
   register.h
   regset.h
   scev.h
@@ -398,6 +401,7 @@ set( JIT_HEADERS
   ssarenamestate.h
   stacklevelsetter.h
   target.h
+  targetcommon.h
   targetx86.h
   targetamd64.h
   targetarm.h
@@ -471,6 +475,7 @@ set( JIT_RISCV64_HEADERS
 
 set( JIT_WASM_HEADERS
     regallocwasm.h
+    registeropswasm.h
     targetwasm.h
     emitwasm.h
     emitfmtswasm.h
@@ -592,7 +597,6 @@ else()
        shlwapi.lib
        bcrypt.lib
        crypt32.lib
-       RuntimeObject.lib
        coreclrminipal
     )
 endif(CLR_CMAKE_HOST_UNIX)

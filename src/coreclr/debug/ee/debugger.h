@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: debugger.h
 //
-
-//
 // Header file for Runtime Controller classes of the CLR Debugging Services.
-//
 //*****************************************************************************
 
 #ifndef DEBUGGER_H_
@@ -381,13 +379,9 @@ inline LPVOID PushedRegAddr(REGDISPLAY* pRD, LPVOID pAddr)
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef FEATURE_EH_FUNCLETS
     if ( ((UINT_PTR)(pAddr) >= (UINT_PTR)pRD->pCurrentContextPointers) &&
          ((UINT_PTR)(pAddr) <= ((UINT_PTR)pRD->pCurrentContextPointers + sizeof(T_KNONVOLATILE_CONTEXT_POINTERS))) )
-#else
-    if ( ((UINT_PTR)(pAddr) >= (UINT_PTR)pRD->pContext) &&
-         ((UINT_PTR)(pAddr) <= ((UINT_PTR)pRD->pContext + sizeof(T_CONTEXT))) )
-#endif
+
         return NULL;
 
     // (Microsoft 2/9/07 - putting this in an else clause confuses gcc for some reason, so I've moved
@@ -1319,9 +1313,7 @@ private:
 
 class DebuggerJitInfo;
 
-#if defined(FEATURE_EH_FUNCLETS)
 const int PARENT_METHOD_INDEX     = -1;
-#endif // FEATURE_EH_FUNCLETS
 
 class CodeRegionInfo
 {
@@ -1600,10 +1592,8 @@ public:
     // The version number of this jitted code
     SIZE_T                   m_encVersion;
 
-#if defined(FEATURE_EH_FUNCLETS)
     DWORD                   *m_rgFunclet;
     int                      m_funcletCount;
-#endif // FEATURE_EH_FUNCLETS
 
 #ifndef DACCESS_COMPILE
 
@@ -1630,9 +1620,7 @@ public:
 
     private:
         SIZE_T m_ilOffset;
-#ifdef FEATURE_EH_FUNCLETS
         int m_funcletIndex;
-#endif
     };
 
     struct NativeOffset
@@ -1679,10 +1667,8 @@ public:
     SIZE_T MapSpecialToNative(CorDebugMappingResult mapping,
                               SIZE_T which,
                               BOOL *pfAccurate);
-#if defined(FEATURE_EH_FUNCLETS)
     void   MapSpecialToNative(int funcletIndex, DWORD* pPrologEndOffset, DWORD* pEpilogStartOffset);
     SIZE_T MapILOffsetToNativeForSetIP(SIZE_T offsetILTo, int funcletIndexFrom, EHRangeTree* pEHRT, BOOL* pExact);
-#endif // FEATURE_EH_FUNCLETS
 
     // MapNativeOffsetToIL Takes a given nativeOffset, and maps it back
     //      to the corresponding IL offset, which it returns.  If mapping indicates
@@ -1696,7 +1682,6 @@ public:
 
     void Init(TADDR newAddress);
 
-#if defined(FEATURE_EH_FUNCLETS)
     enum GetFuncletIndexMode
     {
         GFIM_BYOFFSET,
@@ -1707,7 +1692,6 @@ public:
     DWORD GetFuncletOffsetByIndex(int index);
     int   GetFuncletIndex(CORDB_ADDRESS offset, GetFuncletIndexMode mode);
     int   GetFuncletCount() {return m_funcletCount;}
-#endif // FEATURE_EH_FUNCLETS
 
     void SetVars(ULONG32 cVars, ICorDebugInfo::NativeVarInfo *pVars);
     void SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap);
