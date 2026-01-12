@@ -11288,7 +11288,7 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     // WASM cannot capture execution context, so just zero everything
     memset(&m_Context, 0, sizeof(m_Context));
     memset(&m_ContextPointers, 0, sizeof(m_ContextPointers));
-    m_ReturnAddress = 1; // Non-zero to skip VirtualUnwind in Init()
+    m_ReturnAddress = 0;
 }
 
 #endif // TARGET_X86
