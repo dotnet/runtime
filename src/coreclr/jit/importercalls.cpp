@@ -4514,8 +4514,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         int halfRoundingMode = lookupHalfRoundingMode(ni);
                         halfRoundingMode |= 0x04;
 
-                        retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, gtNewIconNode(halfRoundingMode));
-                                                           NI_AVX10v1_RoundScaleScalar, TYP_HALF, 16);
+                        retNode =
+                            gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, gtNewIconNode(halfRoundingMode, TYP_INT),
+                                                     NI_AVX10v1_RoundScaleScalar, TYP_HALF, 16);
                         retNode = gtNewSimdToScalarNode(TYP_HALF, retNode, TYP_HALF, 16);
                     }
                 }
@@ -12407,7 +12408,7 @@ NamedIntrinsic Compiler::lookupHalfIntrinsic(NamedIntrinsic ni)
         case NI_System_Half_Ceiling:
         case NI_System_Half_Floor:
         case NI_System_Half_Truncate:
-            return NI_AVX10v1_RoundScalar;
+            return NI_AVX10v1_RoundScaleScalar;
 
         default:
             break;
