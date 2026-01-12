@@ -611,13 +611,11 @@ namespace System.Text.RegularExpressions.Tests
             // "x" option. Removes unescaped whitespace from the pattern. : Actual - "\x20([^/]+)\x20","x"
             yield return ("\x20([^/]+)\x20\x20\x20\x20\x20\x20\x20", " abc       ", RegexOptions.IgnorePatternWhitespace, 0, 10, true, " abc      ");
 
-            // "x" option. Vertical tab should be ignored as whitespace
+            // Comprehensive tests for IgnorePatternWhitespace - all whitespace characters that should be ignored
+            // Tab (\t), newline (\n), vertical tab (\v), form feed (\f), carriage return (\r), and space
             if (!PlatformDetection.IsNetFramework)
             {
                 yield return ("a\vb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
-
-                // Comprehensive tests for IgnorePatternWhitespace - all whitespace characters that should be ignored
-                // Tab (\t), newline (\n), vertical tab (\v), form feed (\f), carriage return (\r), and space
                 yield return ("a\tb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
                 yield return ("a\nb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
                 yield return ("a\fb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
