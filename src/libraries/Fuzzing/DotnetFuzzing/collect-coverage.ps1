@@ -53,7 +53,7 @@ if (-not $reportGeneratorInstalled) {
 
 # Build the project
 Write-Host "Building the project..." -ForegroundColor Cyan
-& $dotnetPath build
+& $dotnetPath build $PSScriptRoot
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Build failed"
     exit 1
