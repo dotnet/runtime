@@ -9,9 +9,9 @@ namespace System.IO.Compression
     internal static class ZstandardUtils
     {
         // Zstandard compression level constants from native library
-        internal static int Quality_Min => Interop.Zstd.ZSTD_minCLevel();
-        internal static int Quality_Max => Interop.Zstd.ZSTD_maxCLevel();
-        internal static int Quality_Default => Interop.Zstd.ZSTD_defaultCLevel();
+        internal static readonly int Quality_Min = Interop.Zstd.ZSTD_minCLevel();
+        internal static readonly int Quality_Max = Interop.Zstd.ZSTD_maxCLevel();
+        internal static readonly int Quality_Default = Interop.Zstd.ZSTD_defaultCLevel();
 
         // Window size constraints based on Zstandard specification
         internal const int WindowLog_Min = 10;    // 1KB window
