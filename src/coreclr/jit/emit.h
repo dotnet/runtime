@@ -637,6 +637,10 @@ protected:
         bool              idFinallyCall; // Branch instruction is a call to finally
         bool              idCatchRet;    // Instruction is for a catch 'return'
         CORINFO_SIG_INFO* idCallSig;     // Used to report native call site signatures to the EE
+        BasicBlock*       idTargetBlock; // Target block for branches
+#ifdef TARGET_WASM
+        int lclOffset; // Base index of the WASM locals being declared
+#endif
     };
 
 #ifdef TARGET_ARM
@@ -1294,6 +1298,13 @@ protected:
             _idReg1 = reg;
             assert(reg == _idReg1);
         }
+
+#ifdef TARGET_WASM
+        bool idIsLclVarDecl() const
+        {
+            return _idInsFmt == IF_LOCAL_DECL;
+        }
+#endif
 
 #ifdef TARGET_ARM64
         GCtype idGCrefReg2() const
@@ -2334,6 +2345,25 @@ protected:
     };
 #endif
 
+#if defined(TARGET_WASM)
+    struct instrDescLclVarDecl : instrDesc
+    {
+        instrDescLclVarDecl() = delete;
+        unsigned int  lclCnt;
+        WasmValueType lclType;
+
+        void idLclType(WasmValueType type)
+        {
+            lclType = type;
+        }
+
+        void idLclCnt(unsigned int cnt)
+        {
+            lclCnt = cnt;
+        }
+    };
+#endif // TARGET_WASM
+
 #ifdef TARGET_RISCV64
     struct instrDescLoadImm : instrDescCns
     {
@@ -3292,6 +3322,7 @@ private:
     instrDesc* emitNewInstrCns(emitAttr attr, cnsval_ssize_t cns);
     instrDesc* emitNewInstrDsp(emitAttr attr, target_ssize_t dsp);
     instrDesc* emitNewInstrCnsDsp(emitAttr attr, target_ssize_t cns, int dsp);
+
 #ifdef TARGET_ARM
     instrDesc* emitNewInstrReloc(emitAttr attr, BYTE* addr);
 #endif // TARGET_ARM
@@ -3455,15 +3486,14 @@ public:
 
     void emitStackKillArgs(BYTE* addr, unsigned count, unsigned char callInstrSize);
 
-    void emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize);
-
-    bool emitLastInsIsCallWithGC();
-
     // Helpers for the above
 
     void emitStackPushLargeStk(BYTE* addr, GCtype gcType, unsigned count = 1);
     void emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callInstrSize, unsigned count = 1);
 #endif // EMIT_TRACK_STACK_DEPTH
+
+    bool emitLastInsIsCallWithGC();
+    void emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize);
 
     /* Liveness of stack variables, and registers */
 
@@ -3501,17 +3531,6 @@ public:
     /************************************************************************/
     /*      The following logic keeps track of initialized data sections    */
     /************************************************************************/
-
-    // Note: Keep synchronized with AsyncHelpers.ResumeInfo
-    struct dataAsyncResumeInfo
-    {
-        // delegate*<Continuation, ref byte, Continuation>
-        target_size_t Resume;
-        // Pointer in main code for diagnostics. See comments on
-        // ICorDebugInfo::AsyncSuspensionPoint::DiagnosticNativeOffset and
-        // ResumeInfo.DiagnosticIP in SPC.
-        target_size_t DiagnosticIP;
-    };
 
     /* One of these is allocated for every blob of initialized data */
 
@@ -3836,17 +3855,6 @@ inline unsigned emitter::emitGetEpilogCnt()
 inline UNATIVE_OFFSET emitter::emitDataSize()
 {
     return emitConsDsc.dsdOffs;
-}
-
-/*****************************************************************************
- *
- *  Return a handle to the current position in the output stream. This can
- *  be later converted to an actual code offset in bytes.
- */
-
-inline void* emitter::emitCurBlock()
-{
-    return emitCurIG;
 }
 
 /*****************************************************************************

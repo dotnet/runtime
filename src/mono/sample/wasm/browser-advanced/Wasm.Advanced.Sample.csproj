@@ -16,8 +16,6 @@
     <!-- for callspec see diagnostics-tracing.md -->
     <WasmProfilers>browser:callspec=N:Sample</WasmProfilers>
 
-    <!-- Put "framework" (dotnet.js, dlls, etc) files directly into the AppBundle -->
-    <WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>
     <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --dump-dependencies</_ExtraTrimmerArgs>
 
     <!-- 
@@ -27,8 +25,6 @@
     -->
   </PropertyGroup>
   <ItemGroup>
-    <WasmExtraFilesToDeploy Include="main.js" />
-    <WasmExtraFilesToDeploy Include="advanced-sample.lib.module.js" />
     <!-- add export GL object from Module -->
     <EmccExportedRuntimeMethod Include="GL" />
     <NativeFileReference Include="fibonacci.c" />

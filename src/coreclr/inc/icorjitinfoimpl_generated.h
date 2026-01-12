@@ -556,9 +556,6 @@ void getFunctionFixedEntryPoint(
           bool isUnsafeFunctionPointer,
           CORINFO_CONST_LOOKUP* pResult) override;
 
-CorInfoHelpFunc getLazyStringLiteralHelper(
-          CORINFO_MODULE_HANDLE handle) override;
-
 CORINFO_MODULE_HANDLE embedModuleHandle(
           CORINFO_MODULE_HANDLE handle,
           void** ppIndirection) override;

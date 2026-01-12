@@ -664,16 +664,9 @@ CDAC_TYPE_INDETERMINATE(RealCodeHeader)
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, MethodDesc, offsetof(RealCodeHeader, phdrMDesc))
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, DebugInfo, offsetof(RealCodeHeader, phdrDebugInfo))
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, GCInfo, offsetof(RealCodeHeader, phdrJitGCInfo))
-#ifdef FEATURE_EH_FUNCLETS
 CDAC_TYPE_FIELD(RealCodeHeader, /*uint32*/, NumUnwindInfos, offsetof(RealCodeHeader, nUnwindInfos))
 CDAC_TYPE_FIELD(RealCodeHeader, /* T_RUNTIME_FUNCTION */, UnwindInfos, offsetof(RealCodeHeader, unwindInfos))
-#endif // FEATURE_EH_FUNCLETS
 CDAC_TYPE_END(RealCodeHeader)
-
-CDAC_TYPE_BEGIN(PatchpointInfo)
-CDAC_TYPE_SIZE(sizeof(PatchpointInfo))
-CDAC_TYPE_FIELD(PatchpointInfo, /*uint32*/, LocalCount, cdac_data<PatchpointInfo>::LocalCount)
-CDAC_TYPE_END(PatchpointInfo)
 
 CDAC_TYPE_BEGIN(CodeHeapListNode)
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, Next, offsetof(HeapList, hpNext))
@@ -887,9 +880,7 @@ CDAC_TYPE_END(HijackArgs)
 
 CDAC_TYPE_BEGIN(FaultingExceptionFrame)
 CDAC_TYPE_SIZE(sizeof(FaultingExceptionFrame))
-#ifdef FEATURE_EH_FUNCLETS
 CDAC_TYPE_FIELD(FaultingExceptionFrame, /*T_CONTEXT*/, TargetContext, cdac_data<FaultingExceptionFrame>::TargetContext)
-#endif // FEATURE_EH_FUNCLETS
 CDAC_TYPE_END(FaultingExceptionFrame)
 
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
@@ -1144,6 +1135,12 @@ CDAC_GLOBAL_POINTER(MethodDescSizeTable, &MethodDesc::s_ClassificationSizeTable)
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
 
+
+// It is important for the subdescriptor pointers to be the last pointers in the global structure.
+// EnumMemDataDescriptors in enummem.cpp hardcodes the number of subdescriptors and utilizes
+// this order to find and enumerate the subdescriptors.
+//
+// When adding a new subdescriptor, EnumMemDescriptors must be updated appropriately.
 CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
 
 CDAC_GLOBAL_CONTRACT(CodeVersions, 1)
