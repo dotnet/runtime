@@ -497,6 +497,19 @@ namespace System.Text.Json.Serialization
             return success;
         }
 
+        /// <summary>
+        /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.
+        /// </summary>
+        /// <remarks>
+        /// Writes the extension data contents without wrapping object braces.
+        /// </remarks>
+        internal virtual void WriteExtensionDataValue(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+        {
+            Debug.Fail("Should not be reachable.");
+
+            throw new InvalidOperationException();
+        }
+
         /// <inheritdoc/>
         public sealed override Type Type { get; } = typeof(T);
 
