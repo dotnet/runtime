@@ -83,7 +83,7 @@ namespace System.IO.Compression
             _encoder.SetSourceLength(length);
         }
 
-        private void WriteCore(ReadOnlySpan<byte> buffer, bool isFinalBlock = false, bool flush = false, bool checkActiveRWOps = true)
+        private void WriteCore(ReadOnlySpan<byte> buffer, bool isFinalBlock = false, bool flush = false, bool throwOnActiveRwOp = true)
         {
             if (_mode != CompressionMode.Compress)
             {
@@ -92,13 +92,15 @@ namespace System.IO.Compression
             EnsureNotDisposed();
             Debug.Assert(_encoder != null);
 
+            if (!BeginRWOperation(throwOnActiveRwOp))
+            {
+                // we are disposing concurrently with another write, we should avoid throwing during potential stack unwinding
+                // best effort at this point is to no-op as we don't guarantee correctness in concurrent scenarios
+                return;
+            }
+
             try
             {
-                if (checkActiveRWOps)
-                {
-                    BeginRWOperation();
-                }
-
                 OperationStatus lastResult = OperationStatus.DestinationTooSmall;
 
                 // we don't need extra tracking of ArrayBuffer for write operations as
@@ -138,14 +140,11 @@ namespace System.IO.Compression
             }
             finally
             {
-                if (checkActiveRWOps)
-                {
-                    EndRWOperation();
-                }
+                EndRWOperation();
             }
         }
 
-        private async ValueTask WriteCoreAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken, bool isFinalBlock = false, bool flush = false, bool checkActiveRWOps = true)
+        private async ValueTask WriteCoreAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken, bool isFinalBlock = false, bool flush = false, bool throwOnActiveRwOp = true)
         {
             if (_mode != CompressionMode.Compress)
             {
@@ -154,13 +153,15 @@ namespace System.IO.Compression
             EnsureNotDisposed();
             Debug.Assert(_encoder != null);
 
+            if (!BeginRWOperation(throwOnActiveRwOp))
+            {
+                // we are disposing concurrently with another write, we should avoid throwing during potential stack unwinding
+                // best effort at this point is to no-op as we don't guarantee correctness in concurrent scenarios
+                return;
+            }
+
             try
             {
-                if (checkActiveRWOps)
-                {
-                    BeginRWOperation();
-                }
-
                 OperationStatus lastResult = OperationStatus.DestinationTooSmall;
 
                 // we don't need extra tracking of ArrayBuffer for write operations as
@@ -200,10 +201,7 @@ namespace System.IO.Compression
             }
             finally
             {
-                if (checkActiveRWOps)
-                {
-                    EndRWOperation();
-                }
+                EndRWOperation();
             }
         }
 

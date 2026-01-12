@@ -165,7 +165,7 @@ namespace System.IO.Compression
                 {
                     if (_mode == CompressionMode.Compress)
                     {
-                        WriteCore(ReadOnlySpan<byte>.Empty, isFinalBlock: true, checkActiveRWOps: false);
+                        WriteCore(ReadOnlySpan<byte>.Empty, isFinalBlock: true, throwOnActiveRwOp: false);
                     }
 
                     if (!_leaveOpen)
@@ -191,7 +191,7 @@ namespace System.IO.Compression
                 {
                     if (_mode == CompressionMode.Compress)
                     {
-                        await WriteCoreAsync(ReadOnlyMemory<byte>.Empty, CancellationToken.None, isFinalBlock: true).ConfigureAwait(false);
+                        await WriteCoreAsync(ReadOnlyMemory<byte>.Empty, CancellationToken.None, isFinalBlock: true, throwOnActiveRwOp: false).ConfigureAwait(false);
                     }
 
                     if (!_leaveOpen)
@@ -239,12 +239,19 @@ namespace System.IO.Compression
             throw new InvalidOperationException(SR.ZstandardStream_ConcurrentRWOperation);
         }
 
-        private void BeginRWOperation()
+        private bool BeginRWOperation(bool throwOnActiveRwOp = true)
         {
             if (Interlocked.Exchange(ref _activeRwOperation, true))
             {
+                if (!throwOnActiveRwOp)
+                {
+                    return false;
+                }
+
                 ThrowConcurrentRWOperation();
             }
+
+            return true;
         }
 
         private void EndRWOperation()

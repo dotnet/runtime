@@ -106,11 +106,10 @@ namespace System.IO.Compression
             }
 
             EnsureNotDisposed();
+            BeginRWOperation();
 
             try
             {
-                BeginRWOperation();
-
                 int bytesWritten;
                 OperationStatus lastResult;
                 while (!TryDecompress(buffer, out bytesWritten, out lastResult))
@@ -180,11 +179,10 @@ namespace System.IO.Compression
             }
 
             EnsureNotDisposed();
+            BeginRWOperation();
 
             try
             {
-                BeginRWOperation();
-
                 int bytesWritten;
                 OperationStatus lastResult;
                 while (!TryDecompress(buffer.Span, out bytesWritten, out lastResult))
