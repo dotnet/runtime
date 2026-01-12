@@ -1,8 +1,4 @@
 <Project Sdk="Microsoft.Build.NoTargets">
-  <PropertyGroup>
-    <!-- FIXME: clean up the duplication with libraries Directory.Build.props -->
-    <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
-  </PropertyGroup>
 
   <PropertyGroup>
     <InvariantTimezone Condition="'$(InvariantTimezone)' == ''">false</InvariantTimezone>
@@ -11,9 +7,6 @@
     <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>
     <WasiObjDir>$(ArtifactsObjDir)wasi</WasiObjDir>
-    <_WasiDefaultsRspPath>$(NativeBinDir)src\wasi-default.rsp</_WasiDefaultsRspPath>
-    <_WasiCompileRspPath>$(NativeBinDir)src\wasi-compile.rsp</_WasiCompileRspPath>
-    <_WasiLinkRspPath>$(NativeBinDir)src\wasi-link.rsp</_WasiLinkRspPath>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" />
@@ -57,6 +50,11 @@
   </Target>
 
   <Target Name="GenerateWasiPropsAndRspFiles">
+    <PropertyGroup>
+      <_WasiDefaultsRspPath>$(NativeBinDir)src\wasi-default.rsp</_WasiDefaultsRspPath>
+      <_WasiCompileRspPath>$(NativeBinDir)src\wasi-compile.rsp</_WasiCompileRspPath>
+      <_WasiLinkRspPath>$(NativeBinDir)src\wasi-link.rsp</_WasiLinkRspPath>
+    </PropertyGroup>
 
     <!-- Generate wasm-props.json -->
     <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">

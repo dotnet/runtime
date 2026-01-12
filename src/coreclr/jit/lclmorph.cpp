@@ -1142,21 +1142,43 @@ public:
             {
                 Value& rhs = TopValue(0);
                 Value& lhs = TopValue(1);
-                if (m_compiler->opts.OptimizationEnabled() && lhs.IsAddress() && rhs.IsAddress() &&
-                    (lhs.LclNum() == rhs.LclNum()) && (rhs.Offset() <= lhs.Offset()) &&
-                    FitsIn<int>(lhs.Offset() - rhs.Offset()))
+                if (m_compiler->opts.OptimizationEnabled() && lhs.IsAddress() && rhs.IsAddress())
                 {
-                    // TODO-Bug: Due to inlining we may end up with incorrectly typed SUB trees here.
-                    assert(node->TypeIs(TYP_I_IMPL, TYP_BYREF));
+                    LclVarDsc* lhsDsc = m_compiler->lvaGetDesc(lhs.LclNum());
+                    LclVarDsc* rhsDsc = m_compiler->lvaGetDesc(rhs.LclNum());
 
-                    ssize_t result = (ssize_t)(lhs.Offset() - rhs.Offset());
-                    node->BashToConst(result, TYP_I_IMPL);
-                    INDEBUG(lhs.Consume());
-                    INDEBUG(rhs.Consume());
-                    PopValue();
-                    PopValue();
-                    m_stmtModified = true;
-                    break;
+                    unsigned lhsLclNum = lhs.LclNum();
+                    unsigned rhsLclNum = rhs.LclNum();
+
+                    unsigned lhsOffset = lhs.Offset();
+                    unsigned rhsOffset = rhs.Offset();
+
+                    if (lhsDsc->lvIsStructField)
+                    {
+                        lhsLclNum = lhsDsc->lvParentLcl;
+                        lhsOffset += lhsDsc->lvFldOffset;
+                    }
+
+                    if (rhsDsc->lvIsStructField)
+                    {
+                        rhsLclNum = rhsDsc->lvParentLcl;
+                        rhsOffset += rhsDsc->lvFldOffset;
+                    }
+
+                    if ((lhsLclNum == rhsLclNum) && (rhsOffset <= lhsOffset) && FitsIn<int>(lhsOffset - rhsOffset))
+                    {
+                        // TODO-Bug: Due to inlining we may end up with incorrectly typed SUB trees here.
+                        assert(node->TypeIs(TYP_I_IMPL, TYP_BYREF));
+
+                        ssize_t result = (ssize_t)(lhsOffset - rhsOffset);
+                        node->BashToConst(result, TYP_I_IMPL);
+                        INDEBUG(lhs.Consume());
+                        INDEBUG(rhs.Consume());
+                        PopValue();
+                        PopValue();
+                        m_stmtModified = true;
+                        break;
+                    }
                 }
 
                 EscapeValue(TopValue(0), node);
@@ -1512,24 +1534,6 @@ private:
             }
         }
 
-        if ((callUser != nullptr) && callUser->IsAsync() && m_compiler->IsValidLclAddr(lclNum, val.Offset()))
-        {
-            CallArg* suspendedArg = callUser->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSuspendedIndicator);
-            if ((suspendedArg != nullptr) && (val.Node() == suspendedArg->GetNode()))
-            {
-                INDEBUG(varDsc->SetDefinedViaAddress(true));
-                escapeAddr = false;
-                defFlag    = GTF_VAR_DEF;
-
-                if ((val.Offset() != 0) || (varDsc->lvExactSize() != 1))
-                {
-                    defFlag |= GTF_VAR_USEASG;
-                }
-
-                callUser->asyncInfo->HasSuspensionIndicatorDef = true;
-            }
-        }
-
         if (escapeAddr)
         {
             unsigned exposedLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
@@ -1733,8 +1737,8 @@ private:
                     {
                         // Handle case 1 or the float field of case 2
                         GenTree* indexNode = m_compiler->gtNewIconNode(offset / genTypeSize(elementType));
-                        hwiNode            = m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode,
-                                                                                 CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
+                        hwiNode = m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode, TYP_FLOAT,
+                                                                      genTypeSize(varDsc));
                         break;
                     }
 
@@ -1743,7 +1747,7 @@ private:
                         // Handle the Vector3 field of case 2
                         assert(genTypeSize(varDsc) == 16);
                         hwiNode = m_compiler->gtNewSimdHWIntrinsicNode(elementType, lclNode, NI_Vector128_AsVector3,
-                                                                       CORINFO_TYPE_FLOAT, 16);
+                                                                       TYP_FLOAT, 16);
                         break;
                     }
 
@@ -1757,14 +1761,14 @@ private:
                         assert(genTypeSize(elementType) * 2 == genTypeSize(varDsc));
                         if (offset == 0)
                         {
-                            hwiNode = m_compiler->gtNewSimdGetLowerNode(elementType, lclNode, CORINFO_TYPE_FLOAT,
-                                                                        genTypeSize(varDsc));
+                            hwiNode =
+                                m_compiler->gtNewSimdGetLowerNode(elementType, lclNode, TYP_FLOAT, genTypeSize(varDsc));
                         }
                         else
                         {
                             assert(offset == genTypeSize(elementType));
-                            hwiNode = m_compiler->gtNewSimdGetUpperNode(elementType, lclNode, CORINFO_TYPE_FLOAT,
-                                                                        genTypeSize(varDsc));
+                            hwiNode =
+                                m_compiler->gtNewSimdGetUpperNode(elementType, lclNode, TYP_FLOAT, genTypeSize(varDsc));
                         }
 
                         break;
@@ -1791,9 +1795,8 @@ private:
                     {
                         // Handle case 1 or the float field of case 2
                         GenTree* indexNode = m_compiler->gtNewIconNode(offset / genTypeSize(elementType));
-                        hwiNode =
-                            m_compiler->gtNewSimdWithElementNode(varDsc->TypeGet(), simdLclNode, indexNode, elementNode,
-                                                                 CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
+                        hwiNode = m_compiler->gtNewSimdWithElementNode(varDsc->TypeGet(), simdLclNode, indexNode,
+                                                                       elementNode, TYP_FLOAT, genTypeSize(varDsc));
                         break;
                     }
 
@@ -1806,17 +1809,17 @@ private:
                         // simdLclNode[3] as the new value. This gives us a new TYP_SIMD16 with all elements in the
                         // right spots
 
-                        elementNode = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, elementNode,
-                                                                           NI_Vector128_AsVector128Unsafe,
-                                                                           CORINFO_TYPE_FLOAT, 12);
+                        elementNode =
+                            m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, elementNode,
+                                                                 NI_Vector128_AsVector128Unsafe, TYP_FLOAT, 12);
 
                         GenTree* indexNode1 = m_compiler->gtNewIconNode(3, TYP_INT);
-                        simdLclNode         = m_compiler->gtNewSimdGetElementNode(TYP_FLOAT, simdLclNode, indexNode1,
-                                                                                  CORINFO_TYPE_FLOAT, 16);
+                        simdLclNode =
+                            m_compiler->gtNewSimdGetElementNode(TYP_FLOAT, simdLclNode, indexNode1, TYP_FLOAT, 16);
 
                         GenTree* indexNode2 = m_compiler->gtNewIconNode(3, TYP_INT);
                         hwiNode = m_compiler->gtNewSimdWithElementNode(TYP_SIMD16, elementNode, indexNode2, simdLclNode,
-                                                                       CORINFO_TYPE_FLOAT, 16);
+                                                                       TYP_FLOAT, 16);
                         break;
                     }
 
@@ -1831,13 +1834,13 @@ private:
                         if (offset == 0)
                         {
                             hwiNode = m_compiler->gtNewSimdWithLowerNode(varDsc->TypeGet(), simdLclNode, elementNode,
-                                                                         CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
+                                                                         TYP_FLOAT, genTypeSize(varDsc));
                         }
                         else
                         {
                             assert(offset == genTypeSize(elementType));
                             hwiNode = m_compiler->gtNewSimdWithUpperNode(varDsc->TypeGet(), simdLclNode, elementNode,
-                                                                         CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
+                                                                         TYP_FLOAT, genTypeSize(varDsc));
                         }
 
                         break;

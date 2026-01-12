@@ -21,12 +21,6 @@ if (CLR_CMAKE_HOST_WIN32)
     # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).
     add_linker_flag("/INCREMENTAL:NO")
 
-    # Delay load libraries required for WinRT as that is not supported on all platforms
-    add_linker_flag("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
-
-    # Delay load version.dll so that we can specify how to search when loading it as it is not part of Windows' known DLLs
-    add_linker_flag("/DELAYLOAD:version.dll")
-
     # No library groups for Win32
     set(START_LIBRARY_GROUP)
     set(END_LIBRARY_GROUP)
@@ -74,10 +68,6 @@ if (NOT CLR_CMAKE_HOST_ARCH_WASM)
     set(LIB_INTEROP interop)
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
-set(LIB_CDAC_CONTRACT_DESCRIPTOR cdac_contract_descriptor)
-set(LIB_CDAC_GC_WKS_DESCRIPTOR gc_wks_descriptor)
-set(LIB_CDAC_GC_SVR_DESCRIPTOR gc_svr_descriptor)
-
 if (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     set(LIB_UNWINDER unwinder_wks)
 endif (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
@@ -86,6 +76,7 @@ endif (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 # order dependent and changing the order can result in undefined symbols in the shared
 # library.
 set(CORECLR_LIBRARIES
+    mscorrc
     utilcode
     ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
     ${LIB_CORDBEE}
@@ -96,9 +87,7 @@ set(CORECLR_LIBRARIES
     mdcompiler_wks
     mdruntime_wks
     mdruntimerw_wks
-    bcltype
     ceefgen
-    comfloat_wks
     corguids
     utilcode
     v3binder
@@ -106,13 +95,13 @@ set(CORECLR_LIBRARIES
     ${LIB_INTEROP}
     coreclrminipal
     gc_pal
-    ${LIB_CDAC_CONTRACT_DESCRIPTOR}
-    ${LIB_CDAC_GC_WKS_DESCRIPTOR}
+    cdac_contract_descriptor
+    gc_wks_descriptor
 )
 
 if (FEATURE_SVR_GC)
     list(APPEND CORECLR_LIBRARIES
-        ${LIB_CDAC_GC_SVR_DESCRIPTOR}
+        gc_svr_descriptor
     )
 endif(FEATURE_SVR_GC)
 
@@ -135,13 +124,10 @@ if(CLR_CMAKE_TARGET_WIN32)
         version.lib
         shlwapi.lib
         bcrypt.lib
-        RuntimeObject.lib
-        delayimp.lib
     )
 else()
     list(APPEND CORECLR_LIBRARIES
         coreclrpal
-        mscorrc
     )
 endif(CLR_CMAKE_TARGET_WIN32)
 
@@ -175,14 +161,6 @@ if(FEATURE_EVENT_TRACE)
     endif(CLR_CMAKE_HOST_UNIX)
 endif(FEATURE_EVENT_TRACE)
 
-if(FEATURE_PERFTRACING)
-    if(CLR_CMAKE_TARGET_LINUX)
-        list(APPEND CORECLR_LIBRARIES
-            usereventsprovider
-        )
-    endif(CLR_CMAKE_TARGET_LINUX)
-endif(FEATURE_PERFTRACING)
-
 if (FEATURE_STATICALLY_LINKED)
     if (FEATURE_JIT)
         set(CLRJIT_STATIC clrjit_static gcinfo)
@@ -196,11 +174,11 @@ if(FEATURE_JIT)
     set(CORECLR_STATIC_CLRJIT_STATIC clrjit_static)
 endif(FEATURE_JIT)
 
-if(NOT CLR_CMAKE_HOST_ARCH_WASM)
-    set(CEE_WKS_STATIC cee_wks_mergeable)
-else()
+if(CLR_CMAKE_HOST_ARCH_WASM)
     set(CEE_WKS_STATIC cee_wks)
-endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
+else()
+    set(CEE_WKS_STATIC cee_wks_mergeable)
+endif()
 
 if (CLR_CMAKE_TARGET_OSX)
     find_library(FOUNDATION Foundation REQUIRED)
@@ -210,7 +188,7 @@ if(NOT CLR_CMAKE_HOST_ARCH_WASM)
     target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} ${CLRINTERPRETER_STATIC} cee_wks_core cee_wks ${FOUNDATION})
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
-target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} cee_wks_core ${CORECLR_STATIC_CLRJIT_STATIC} ${CLRINTERPRETER_STATIC} ${CEE_WKS_STATIC} ${FOUNDATION})
+target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} ${CORECLR_STATIC_CLRJIT_STATIC} ${CLRINTERPRETER_STATIC} cee_wks_core ${CEE_WKS_STATIC} ${FOUNDATION})
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
 if (CLR_CMAKE_HOST_ANDROID)
@@ -265,6 +243,8 @@ endif(CLR_CMAKE_TARGET_WIN32)
 # add the install targets
 if(NOT CLR_CMAKE_HOST_ARCH_WASM)
     install_clr(TARGETS coreclr DESTINATIONS . sharedFramework COMPONENT runtime)
+else()
+    install_clr(TARGETS coreclr_static DESTINATIONS . sharedFramework COMPONENT runtime)
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
 if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_ARCH_WASM)

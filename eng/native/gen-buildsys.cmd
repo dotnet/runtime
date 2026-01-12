@@ -38,6 +38,7 @@ if /i "%__Ninja%" == "1" (
     set __CmakeGenerator=Ninja
 ) else (
     if /i NOT "%__Arch%" == "wasm" (
+        if /i "%__VSVersion%" == "18.0" (set __CmakeGenerator=%__CmakeGenerator% 18 2026)
         if /i "%__VSVersion%" == "17.0" (set __CmakeGenerator=%__CmakeGenerator% 17 2022)
 
         if /i "%__Arch%" == "x64" (set __ExtraCmakeParams=%__ExtraCmakeParams% -A x64)

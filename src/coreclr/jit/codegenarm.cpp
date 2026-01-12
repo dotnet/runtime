@@ -654,6 +654,21 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genAsyncResumeInfo: emits address of async resume info for a specific state
+//
+// Parameters:
+//   treeNode - the GT_ASYNC_RESUME_INFO node
+//
+void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
+{
+    CORINFO_FIELD_HANDLE fieldOffs = genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1);
+    assert(compiler->eeIsJitDataOffs(fieldOffs));
+    genMov32RelocatableDataLabel(compiler->eeGetJitDataOffs(fieldOffs), treeNode->GetRegNum());
+
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
 // genGetInsForOper: Return instruction encoding of the operation tree.
 //
 instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
@@ -740,7 +755,7 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
 // Arguments:
 //    tree - the node
 //
-void CodeGen::genCodeForNegNot(GenTree* tree)
+void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_NEG, GT_NOT));
 
@@ -2442,6 +2457,14 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         unsigned  saveRegsSize    = saveRegsCount * REGSIZE_BYTES; // bytes of regs we're saving
         unsigned  saveSizeWithPSP = saveRegsSize + REGSIZE_BYTES /* PSP sym */;
         if (compiler->lvaMonAcquired != BAD_VAR_NUM)
+        {
+            saveSizeWithPSP += TARGET_POINTER_SIZE;
+        }
+        if (compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
+        {
+            saveSizeWithPSP += TARGET_POINTER_SIZE;
+        }
+        if (compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
         {
             saveSizeWithPSP += TARGET_POINTER_SIZE;
         }

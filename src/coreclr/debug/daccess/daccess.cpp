@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: daccess.cpp
 //
-
-//
 // ClrDataAccess implementation.
-//
 //*****************************************************************************
 
 #include "stdafx.h"
@@ -5806,6 +5804,7 @@ ClrDataAccess::RawGetMethodName(
                 EX_END_CATCH
             }
         }
+#ifdef FEATURE_JIT
         else
         if (pStubManager == JumpStubStubManager::g_pManager)
         {
@@ -5827,6 +5826,7 @@ ClrDataAccess::RawGetMethodName(
                 return hr;
             }
         }
+#endif // FEATURE_JIT
 
         LPCWSTR wszStubManagerName = pStubManager->GetStubManagerName(TO_TADDR(address));
         _ASSERTE(wszStubManagerName != NULL);
@@ -7814,10 +7814,7 @@ void DacStackReferenceWalker::WalkStack()
 
     // Walk the stack, set mEnumerated to true to ensure we don't do it again.
     unsigned int flagsStackWalk = ALLOW_INVALID_OBJECTS|ALLOW_ASYNC_STACK_WALK|SKIP_GSCOOKIE_CHECK;
-
-#if defined(FEATURE_EH_FUNCLETS)
     flagsStackWalk |= GC_FUNCLET_REFERENCE_REPORTING;
-#endif // defined(FEATURE_EH_FUNCLETS)
 
     // Pre-set mEnumerated in case we hit an unexpected exception.  We don't want to
     // keep walking stack frames if we hit a failure
@@ -7982,12 +7979,10 @@ StackWalkAction DacStackReferenceWalker::Callback(CrawlFrame *pCF, VOID *pData)
     gcctx->cf = pCF;
 
     bool fReportGCReferences = true;
-#if defined(FEATURE_EH_FUNCLETS)
     // On Win64 and ARM, we may have unwound this crawlFrame and thus, shouldn't report the invalid
     // references it may contain.
     // todo.
     fReportGCReferences = pCF->ShouldCrawlframeReportGCReferences();
-#endif // defined(FEATURE_EH_FUNCLETS)
 
     Frame *pFrame = ((DacScanContext*)gcctx->sc)->pFrame = pCF->GetFrame();
 

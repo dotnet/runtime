@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Xunit;
 
 public class Base {}
@@ -35,7 +36,7 @@ public class TestClass
 		}
 	}
 
-	public static bool UIsInstT<T,U>(bool expected)
+	public static bool UIsInstT<T, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] U>(bool expected)
 	{
 		try
 		{

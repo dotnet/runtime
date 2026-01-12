@@ -171,24 +171,18 @@ namespace System.Globalization
         public string ToLower(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
+            return ChangeCaseCommon<ToLowerConversion>(this, str);
+        }
 
-            if (GlobalizationMode.Invariant)
-            {
-                return InvariantModeCasing.ToLower(str);
-            }
-
-            return ChangeCaseCommon<ToLowerConversion>(str);
+        internal static string ToLowerInvariant(string str)
+        {
+            ArgumentNullException.ThrowIfNull(str);
+            return ChangeCaseCommon<ToLowerConversion>(null, str);
         }
 
         internal void ToLower(ReadOnlySpan<char> source, Span<char> destination)
         {
-            if (GlobalizationMode.Invariant)
-            {
-                InvariantModeCasing.ToLower(source, destination);
-                return;
-            }
-
-            ChangeCaseCommon<ToLowerConversion>(source, destination);
+            ChangeCaseCommon<ToLowerConversion>(this, source, destination);
         }
 
         private unsafe char ChangeCase(char c, bool toUpper)
@@ -221,20 +215,19 @@ namespace System.Globalization
         internal void ChangeCaseToLower(ReadOnlySpan<char> source, Span<char> destination)
         {
             Debug.Assert(destination.Length >= source.Length);
-            ChangeCaseCommon<ToLowerConversion>(source, destination);
+            ChangeCaseCommon<ToLowerConversion>(this, source, destination);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ChangeCaseToUpper(ReadOnlySpan<char> source, Span<char> destination)
         {
             Debug.Assert(destination.Length >= source.Length);
-            ChangeCaseCommon<ToUpperConversion>(source, destination);
+            ChangeCaseCommon<ToUpperConversion>(this, source, destination);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void ChangeCaseCommon<TConversion>(ReadOnlySpan<char> source, Span<char> destination) where TConversion : struct
+        private static unsafe void ChangeCaseCommon<TConversion>(TextInfo? instance, ReadOnlySpan<char> source, Span<char> destination) where TConversion : struct
         {
-            Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(typeof(TConversion) == typeof(ToUpperConversion) || typeof(TConversion) == typeof(ToLowerConversion));
 
             if (source.IsEmpty)
@@ -245,7 +238,8 @@ namespace System.Globalization
             bool toUpper = typeof(TConversion) == typeof(ToUpperConversion); // JIT will treat this as a constant in release builds
             int charsConsumed = 0;
 
-            if (IsAsciiCasingSameAsInvariant)
+            // instance being null indicates the invariant culture where IsAsciiCasingSameAsInvariant is always true.
+            if (instance == null || instance.IsAsciiCasingSameAsInvariant)
             {
                 OperationStatus operationStatus = toUpper
                     ? Ascii.ToUpper(source, destination, out charsConsumed)
@@ -258,19 +252,35 @@ namespace System.Globalization
                 }
             }
 
+            if (GlobalizationMode.Invariant)
+            {
+                if (toUpper)
+                {
+                    InvariantModeCasing.ToUpper(source, destination);
+                }
+                else
+                {
+                    InvariantModeCasing.ToLower(source, destination);
+                }
+                return;
+            }
+
+            // instance being null means it's Invariant
+            instance ??= Invariant;
+
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             fixed (char* pDestination = &MemoryMarshal.GetReference(destination))
             {
-                ChangeCaseCore(pSource + charsConsumed, source.Length - charsConsumed, pDestination + charsConsumed, destination.Length - charsConsumed, toUpper);
+                instance.ChangeCaseCore(pSource + charsConsumed, source.Length - charsConsumed,
+                    pDestination + charsConsumed, destination.Length - charsConsumed, toUpper);
             }
         }
 
-        private unsafe string ChangeCaseCommon<TConversion>(string source) where TConversion : struct
+        private static unsafe string ChangeCaseCommon<TConversion>(TextInfo? instance, string source) where TConversion : struct
         {
             Debug.Assert(typeof(TConversion) == typeof(ToUpperConversion) || typeof(TConversion) == typeof(ToLowerConversion));
             bool toUpper = typeof(TConversion) == typeof(ToUpperConversion); // JIT will treat this as a constant in release builds
 
-            Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(source != null);
 
             // If the string is empty, we're done.
@@ -286,7 +296,9 @@ namespace System.Globalization
                 // If this culture's casing for ASCII is the same as invariant, try to take
                 // a fast path that'll work in managed code and ASCII rather than calling out
                 // to the OS for culture-aware casing.
-                if (IsAsciiCasingSameAsInvariant)
+                //
+                // instance being null indicates the invariant culture where IsAsciiCasingSameAsInvariant is always true.
+                if (instance == null || instance.IsAsciiCasingSameAsInvariant)
                 {
                     // Read 2 chars (one 32-bit integer) at a time
 
@@ -341,13 +353,18 @@ namespace System.Globalization
                         source.AsSpan(0, (int)currIdx).CopyTo(resultSpan);
 
                         // and re-run the fast span-based logic over the remainder of the data
-                        ChangeCaseCommon<TConversion>(source.AsSpan((int)currIdx), resultSpan.Slice((int)currIdx));
+                        ChangeCaseCommon<TConversion>(instance, source.AsSpan((int)currIdx), resultSpan.Slice((int)currIdx));
                         return result;
                     }
                 }
 
             NotAscii:
                 {
+                    if (GlobalizationMode.Invariant)
+                    {
+                        return toUpper ? InvariantModeCasing.ToUpper(source) : InvariantModeCasing.ToLower(source);
+                    }
+
                     // We reached non-ASCII data *or* the requested culture doesn't map ASCII data the same way as the invariant culture.
                     // In either case we need to fall back to the localization tables.
 
@@ -360,10 +377,13 @@ namespace System.Globalization
                         source.AsSpan(0, (int)currIdx).CopyTo(resultSpan);
                     }
 
+                    // instance being null means it's Invariant
+                    instance ??= Invariant;
+
                     // and run the culture-aware logic over the remainder of the data
                     fixed (char* pResult = result)
                     {
-                        ChangeCaseCore(pSource + currIdx, source.Length - (int)currIdx, pResult + currIdx, result.Length - (int)currIdx, toUpper);
+                        instance.ChangeCaseCore(pSource + currIdx, source.Length - (int)currIdx, pResult + currIdx, result.Length - (int)currIdx, toUpper);
                     }
                     return result;
                 }
@@ -453,24 +473,18 @@ namespace System.Globalization
         public string ToUpper(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
+            return ChangeCaseCommon<ToUpperConversion>(this, str);
+        }
 
-            if (GlobalizationMode.Invariant)
-            {
-                return InvariantModeCasing.ToUpper(str);
-            }
-
-            return ChangeCaseCommon<ToUpperConversion>(str);
+        internal static string ToUpperInvariant(string str)
+        {
+            ArgumentNullException.ThrowIfNull(str);
+            return ChangeCaseCommon<ToUpperConversion>(null, str);
         }
 
         internal void ToUpper(ReadOnlySpan<char> source, Span<char> destination)
         {
-            if (GlobalizationMode.Invariant)
-            {
-                InvariantModeCasing.ToUpper(source, destination);
-                return;
-            }
-
-            ChangeCaseCommon<ToUpperConversion>(source, destination);
+            ChangeCaseCommon<ToUpperConversion>(this, source, destination);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -25,6 +25,8 @@
 #include "dbginterface.h"
 #include "argdestination.h"
 
+#include "interpexec.h"
+
 extern "C" void QCALLTYPE RuntimeFieldHandle_GetValue(FieldDesc* fieldDesc, QCall::ObjectHandleOnStack instance, QCall::TypeHandle fieldType, QCall::TypeHandle declaringType, BOOL* pIsClassInitialized, QCall::ObjectHandleOnStack result)
 {
     QCALL_CONTRACT;
@@ -342,11 +344,6 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
         COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
     }
 
-    if (pMeth->IsAsyncMethod())
-    {
-        COMPlusThrow(kNotSupportedException, W("NotSupported_Async"));
-    }
-
 #ifdef _DEBUG
     if (g_pConfig->ShouldInvokeHalt(pMeth))
     {
@@ -411,6 +408,10 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     callDescrData.dwRegTypeMap = 0;
 #endif
     callDescrData.fpReturnSize = argit.GetFPReturnSize();
+#ifdef TARGET_WASM
+    // WASM-TODO: this is now called from the interpreter, so the arguments layout is OK. reconsider with codegen
+    callDescrData.nArgsSize = nStackBytes;
+#endif // TARGET_WASM
 
     // This is duplicated logic from MethodDesc::GetCallTarget
     PCODE pTarget;
@@ -1221,7 +1222,7 @@ extern "C" void QCALLTYPE ReflectionInvocation_CompileMethod(MethodDesc * pMD)
     // Argument is checked on the managed side
     PRECONDITION(pMD != NULL);
 
-    if (!pMD->IsPointingToPrestub())
+    if (!pMD->ShouldCallPrestub())
         return;
 
     BEGIN_QCALL;
@@ -1270,13 +1271,13 @@ static void PrepareMethodHelper(MethodDesc * pMD)
 
     pMD->EnsureActive();
 
-    if (pMD->IsPointingToPrestub())
+    if (pMD->ShouldCallPrestub())
         pMD->DoPrestub(NULL);
 
     if (pMD->IsWrapperStub())
     {
         pMD = pMD->GetWrappedMethodDesc();
-        if (pMD->IsPointingToPrestub())
+        if (pMD->ShouldCallPrestub())
             pMD->DoPrestub(NULL);
     }
 }
@@ -1366,6 +1367,23 @@ FCIMPL0(FC_BOOL_RET, ReflectionInvocation::TryEnsureSufficientExecutionStack)
     // plenty close enough for the purposes of this method.
 	UINT_PTR current = reinterpret_cast<UINT_PTR>(&pThread);
 	UINT_PTR limit = pThread->GetCachedStackSufficientExecutionLimit();
+
+#ifdef FEATURE_INTERPRETER
+    InterpThreadContext* pInterpThreadContext = pThread->GetInterpThreadContext();
+    if (pInterpThreadContext != nullptr)
+    {
+        // The interpreter has its own stack, so we need to check against that too.
+#ifdef HOST_64BIT
+        const UINT_PTR MinExecutionStackSize = 128 * 1024;
+#else // !HOST_64BIT
+        const UINT_PTR MinExecutionStackSize = 64 * 1024;
+#endif // HOST_64BIT
+        if (pInterpThreadContext->pStackPointer >= pInterpThreadContext->pStackEnd - MinExecutionStackSize)
+        {
+            FC_RETURN_BOOL(FALSE);
+        }
+    }
+#endif // FEATURE_INTERPRETER
 
 	FC_RETURN_BOOL(current >= limit);
 }

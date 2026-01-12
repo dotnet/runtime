@@ -356,6 +356,7 @@ namespace CseTest
     using System;
     public class Test_Main
     {
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

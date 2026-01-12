@@ -7,8 +7,6 @@
 #ifndef __EXCEPTION_HANDLING_h__
 #define __EXCEPTION_HANDLING_h__
 
-#ifdef FEATURE_EH_FUNCLETS
-
 #include "eexcp.h"
 #include "exstatecommon.h"
 
@@ -28,6 +26,8 @@ CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD     pExceptionRe
                                        IN OUT PT_CONTEXT            pContextRecord,
                                        IN OUT PT_DISPATCHER_CONTEXT pDispatcherContext);
 
+void NormalizeThrownObject(OBJECTREF *ppThrowable);
+
 VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT *pExceptionContext, EXCEPTION_RECORD *pExceptionRecord = NULL);
 VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable);
 VOID DECLSPEC_NORETURN DispatchManagedException(RuntimeExceptionKind reKind);
@@ -35,6 +35,8 @@ VOID DECLSPEC_NORETURN DispatchRethrownManagedException();
 VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionContext);
 
 void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo);
+
+bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode);
 
 enum CLRUnwindStatus { UnwindPending, FirstPassComplete, SecondPassComplete };
 
@@ -86,8 +88,6 @@ public:
 #endif // FEATURE_INTERPRETER
 
 void DECLSPEC_NORETURN ExecuteFunctionBelowContext(PCODE functionPtr, CONTEXT *pContext, size_t targetSSP, size_t arg1 = 0, size_t arg2 = 0);
-
-#endif // FEATURE_EH_FUNCLETS
 
 #if defined(TARGET_X86)
 #define USE_CURRENT_CONTEXT_IN_FILTER

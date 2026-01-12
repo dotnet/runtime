@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // asmconstants.h -
 //
 // This header defines field offsets and constants used by assembly code
@@ -73,36 +74,6 @@ ASMCONSTANTS_C_ASSERT(CONTEXT_Eip == offsetof(CONTEXT,Eip))
 
 #define CONTEXT_Esp 0xc4
 ASMCONSTANTS_C_ASSERT(CONTEXT_Esp == offsetof(CONTEXT,Esp))
-
-#ifndef FEATURE_EH_FUNCLETS
-// EHContext from clr/src/vm/i386/cgencpu.h
-#define EHContext_Eax 0x00
-ASMCONSTANTS_C_ASSERT(EHContext_Eax == offsetof(EHContext,Eax))
-
-#define EHContext_Ebx 0x04
-ASMCONSTANTS_C_ASSERT(EHContext_Ebx == offsetof(EHContext,Ebx))
-
-#define EHContext_Ecx 0x08
-ASMCONSTANTS_C_ASSERT(EHContext_Ecx == offsetof(EHContext,Ecx))
-
-#define EHContext_Edx 0x0c
-ASMCONSTANTS_C_ASSERT(EHContext_Edx == offsetof(EHContext,Edx))
-
-#define EHContext_Esi 0x10
-ASMCONSTANTS_C_ASSERT(EHContext_Esi == offsetof(EHContext,Esi))
-
-#define EHContext_Edi 0x14
-ASMCONSTANTS_C_ASSERT(EHContext_Edi == offsetof(EHContext,Edi))
-
-#define EHContext_Ebp 0x18
-ASMCONSTANTS_C_ASSERT(EHContext_Ebp == offsetof(EHContext,Ebp))
-
-#define EHContext_Esp 0x1c
-ASMCONSTANTS_C_ASSERT(EHContext_Esp == offsetof(EHContext,Esp))
-
-#define EHContext_Eip 0x20
-ASMCONSTANTS_C_ASSERT(EHContext_Eip == offsetof(EHContext,Eip))
-#endif // FEATURE_EH_FUNCLETS
 
 #define VASigCookie__StubOffset 4
 ASMCONSTANTS_C_ASSERT(VASigCookie__StubOffset == offsetof(VASigCookie, pPInvokeILStub))
@@ -197,17 +168,6 @@ ASMCONSTANTS_C_ASSERT(STRING_BASE_SIZE == OBJECT_BASESIZE + sizeof(DWORD) + size
 ASMCONSTANTS_C_ASSERT(SZARRAY_BASE_SIZE == OBJECT_BASESIZE + sizeof(DWORD));
 
 #ifdef FEATURE_COMINTEROP
-
-#ifndef FEATURE_EH_FUNCLETS
-#define SIZEOF_FrameHandlerExRecord 0x0c
-#define OFFSETOF__FrameHandlerExRecord__m_ExReg__Next 0
-#define OFFSETOF__FrameHandlerExRecord__m_ExReg__Handler 4
-#define OFFSETOF__FrameHandlerExRecord__m_pEntryFrame 8
-ASMCONSTANTS_C_ASSERT(SIZEOF_FrameHandlerExRecord == sizeof(FrameHandlerExRecord))
-ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_ExReg__Next == offsetof(FrameHandlerExRecord, m_ExReg) + offsetof(EXCEPTION_REGISTRATION_RECORD, Next))
-ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_ExReg__Handler == offsetof(FrameHandlerExRecord, m_ExReg) + offsetof(EXCEPTION_REGISTRATION_RECORD, Handler))
-ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_pEntryFrame == offsetof(FrameHandlerExRecord, m_pEntryFrame))
-#endif
 
 #ifdef _DEBUG
 #ifndef STACK_OVERWRITE_BARRIER_SIZE

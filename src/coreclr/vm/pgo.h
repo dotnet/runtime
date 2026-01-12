@@ -7,6 +7,7 @@
 #include "shash.h"
 
 class ReadyToRunInfo;
+class ReadyToRunLoadedImage;
 
 // PgoManager handles in-process and out of band profile data for jitted code.
 class PgoManager
@@ -26,7 +27,7 @@ public:
     static HRESULT allocPgoInstrumentationBySchema(MethodDesc* pMD, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData);
     static HRESULT getPgoInstrumentationResultsFromR2RFormat(ReadyToRunInfo *pReadyToRunInfo,
                                                              Module* pModule,
-                                                             PEDecoder* pNativeImage,
+                                                             ReadyToRunLoadedImage* pNativeImage,
                                                              BYTE* pR2RFormatData,
                                                              size_t pR2RFormatDataMaxSize,
                                                              BYTE** pAllocatedData,

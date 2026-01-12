@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//*****************************************************************************
 
 //
 // File: rsthread.cpp
 //
-//*****************************************************************************
+
 #include "stdafx.h"
 #include "primitives.h"
 #include <float.h>
@@ -782,7 +781,7 @@ CorDebugUserState CordbThread::GetUserState()
         m_userState = pDAC->GetUserState(m_vmThreadToken);
     }
 
-    return m_userState;
+    return (CorDebugUserState)m_userState;
 }
 
 
@@ -886,7 +885,7 @@ HRESULT CordbThread::CreateStepper(ICorDebugStepper ** ppStepper)
 //Returns true if current user state of a thread is USER_WAIT_SLEEP_JOIN
 bool CordbThread::IsThreadWaitingOrSleeping()
 {
-    CorDebugUserState userState = m_userState;
+    int userState = m_userState;
     if (userState == kInvalidUserState)
     {
         //If m_userState is not ready, we'll read from DAC only part of it which
@@ -2682,22 +2681,10 @@ void CordbThread::ClearStackFrameCache()
     m_stackFrames.Clear();
 }
 
-// ----------------------------------------------------------------------------
-// EnumerateBlockingObjectsCallback
-//
-// Description:
-//    A small helper used by CordbThread::GetBlockingObjects. This callback adds the enumerated items
-//    to a list
-//
-// Arguments:
-//    blockingObject - the object to add to the list
-//    pUserData - the list to add it to
-
-VOID EnumerateBlockingObjectsCallback(DacBlockingObject blockingObject, CALLBACK_DATA pUserData)
-{
-    CQuickArrayList<DacBlockingObject>* pDacBlockingObjs = (CQuickArrayList<DacBlockingObject>*)pUserData;
-    pDacBlockingObjs->Push(blockingObject);
-}
+typedef CordbEnumerator<CorDebugBlockingObject,
+                        CorDebugBlockingObject,
+                        ICorDebugBlockingObjectEnum, IID_ICorDebugBlockingObjectEnum,
+                        IdentityConvert<CorDebugBlockingObject> > CordbBlockingObjectEnumerator;
 
 // ----------------------------------------------------------------------------
 // CordbThread::GetBlockingObjects
@@ -2720,51 +2707,21 @@ HRESULT CordbThread::GetBlockingObjects(ICorDebugBlockingObjectEnum **ppBlocking
     VALIDATE_POINTER_TO_OBJECT(ppBlockingObjectEnum, ICorDebugBlockingObjectEnum **);
 
     HRESULT hr = S_OK;
-    CorDebugBlockingObject* blockingObjs = NULL;
+    *ppBlockingObjectEnum = NULL;
+
     EX_TRY
     {
-        CQuickArrayList<DacBlockingObject> dacBlockingObjects;
-        IDacDbiInterface* pDac = GetProcess()->GetDAC();
-        pDac->EnumerateBlockingObjects(m_vmThreadToken,
-            (IDacDbiInterface::FP_BLOCKINGOBJECT_ENUMERATION_CALLBACK) EnumerateBlockingObjectsCallback,
-            (CALLBACK_DATA) &dacBlockingObjects);
-        blockingObjs = new CorDebugBlockingObject[dacBlockingObjects.Size()];
-        for(SIZE_T i = 0 ; i < dacBlockingObjects.Size(); i++)
-        {
-            // ICorDebug API needs to flip the direction of the list from the way DAC stores it
-            SIZE_T dacObjIndex = dacBlockingObjects.Size()-i-1;
-            switch(dacBlockingObjects[dacObjIndex].blockingReason)
-            {
-                case DacBlockReason_MonitorCriticalSection:
-                    blockingObjs[i].blockingReason = BLOCKING_MONITOR_CRITICAL_SECTION;
-                    break;
-                case DacBlockReason_MonitorEvent:
-                    blockingObjs[i].blockingReason = BLOCKING_MONITOR_EVENT;
-                    break;
-                default:
-                    _ASSERTE(!"Should not get here");
-                    ThrowHR(E_FAIL);
-                    break;
-            }
-            blockingObjs[i].dwTimeout = dacBlockingObjects[dacObjIndex].dwTimeout;
-            CordbAppDomain* pAppDomain;
-            {
-                RSLockHolder holder(GetProcess()->GetProcessLock());
-                pAppDomain = GetProcess()->LookupOrCreateAppDomain(dacBlockingObjects[dacObjIndex].vmAppDomain);
-            }
-            blockingObjs[i].pBlockingObject = CordbValue::CreateHeapValue(pAppDomain,
-                dacBlockingObjects[dacObjIndex].vmBlockingObject);
-        }
-
-        CordbBlockingObjectEnumerator* objEnum = new CordbBlockingObjectEnumerator(GetProcess(),
-                                                                                  blockingObjs,
-                                                                                  (DWORD)dacBlockingObjects.Size());
+        // We don't have any blocking objects to enumerate from the native side,
+        // so we create an empty enumerator.
+        CordbBlockingObjectEnumerator* objEnum = new CordbBlockingObjectEnumerator(
+            GetProcess(),
+            new CorDebugBlockingObject[0],
+            0);
         GetProcess()->GetContinueNeuterList()->Add(GetProcess(), objEnum);
         hr = objEnum->QueryInterface(__uuidof(ICorDebugBlockingObjectEnum), (void**)ppBlockingObjectEnum);
-        _ASSERTE(SUCCEEDED(hr));
     }
     EX_CATCH_HRESULT(hr);
-    delete [] blockingObjs;
+
     return hr;
 }
 
@@ -4954,6 +4911,7 @@ HRESULT CordbValueEnum::Init()
         }
         case LOCAL_VARS_REJIT_IL:
         {
+#ifdef FEATURE_CODE_VERSIONING
             // Get the locals signature.
             ULONG localsCount;
             CordbReJitILCode* pCode = jil->GetReJitILCode();
@@ -4968,6 +4926,9 @@ HRESULT CordbValueEnum::Init()
                 // Grab the number of locals for the size of the enumeration.
                 m_iMax = localsCount;
             }
+#else
+            m_iMax = 0;
+#endif // FEATURE_CODE_VERSIONING
             break;
         }
     }
@@ -5576,21 +5537,17 @@ const DT_CONTEXT * CordbRuntimeUnwindableFrame::GetContext() const
 // default constructor to make the compiler happy
 CordbMiscFrame::CordbMiscFrame()
 {
-#ifdef FEATURE_EH_FUNCLETS
     this->parentIP       = 0;
     this->fpParentOrSelf = LEAF_MOST_FRAME;
     this->fIsFilterFunclet = false;
-#endif // FEATURE_EH_FUNCLETS
 }
 
 // the real constructor which stores the funclet-related information in the CordbMiscFrame
 CordbMiscFrame::CordbMiscFrame(DebuggerIPCE_JITFuncData * pJITFuncData)
 {
-#ifdef FEATURE_EH_FUNCLETS
     this->parentIP       = pJITFuncData->parentNativeOffset;
     this->fpParentOrSelf = pJITFuncData->fpParentOrSelf;
     this->fIsFilterFunclet = (pJITFuncData->fIsFilterFrame == TRUE);
-#endif // FEATURE_EH_FUNCLETS
 }
 
 /* ------------------------------------------------------------------------- *
@@ -6050,7 +6007,6 @@ HRESULT CordbNativeFrame::IsMatchingParentFrame(ICorDebugNativeFrame2 * pPotenti
             ThrowHR(CORDBG_E_NOT_CHILD_FRAME);
         }
 
-#ifdef FEATURE_EH_FUNCLETS
         CordbNativeFrame * pFrameToCheck = static_cast<CordbNativeFrame *>(pPotentialParentFrame);
         if (pFrameToCheck->IsFunclet())
         {
@@ -6064,7 +6020,6 @@ HRESULT CordbNativeFrame::IsMatchingParentFrame(ICorDebugNativeFrame2 * pPotenti
             IDacDbiInterface * pDAC = GetProcess()->GetDAC();
             *pIsParent = pDAC->IsMatchingParentFrame(fpToCheck, fpParent);
         }
-#endif // FEATURE_EH_FUNCLETS
     }
     EX_CATCH_HRESULT(hr);
 
@@ -7401,14 +7356,9 @@ bool CordbNativeFrame::IsLeafFrame() const
 
 SIZE_T CordbNativeFrame::GetInspectionIP()
 {
-#ifdef FEATURE_EH_FUNCLETS
     // On 64-bit, if this is a funclet, then return the offset of the parent method frame at which
     // the exception occurs.  Otherwise just return the normal offset.
     return (IsFunclet() ? GetParentIP() : m_ip);
-#else
-    // Always return the normal offset on all other platforms.
-    return m_ip;
-#endif // FEATURE_EH_FUNCLETS
 }
 
 //---------------------------------------------------------------------------------------
@@ -7421,11 +7371,7 @@ SIZE_T CordbNativeFrame::GetInspectionIP()
 
 bool CordbNativeFrame::IsFunclet()
 {
-#ifdef FEATURE_EH_FUNCLETS
     return (m_misc.parentIP != (SIZE_T)NULL);
-#else
-    return false;
-#endif // FEATURE_EH_FUNCLETS
 }
 
 //---------------------------------------------------------------------------------------
@@ -7438,15 +7384,10 @@ bool CordbNativeFrame::IsFunclet()
 
 bool CordbNativeFrame::IsFilterFunclet()
 {
-#ifdef FEATURE_EH_FUNCLETS
     return (IsFunclet() && m_misc.fIsFilterFunclet);
-#else
-    return false;
-#endif // FEATURE_EH_FUNCLETS
 }
 
 
-#ifdef FEATURE_EH_FUNCLETS
 //---------------------------------------------------------------------------------------
 //
 // Return the offset of the parent method frame at which the exception occurs.
@@ -7459,7 +7400,6 @@ SIZE_T CordbNativeFrame::GetParentIP()
 {
     return m_misc.parentIP;
 }
-#endif // FEATURE_EH_FUNCLETS
 
 // Accessor for the shim private hook code:CordbThread::ConvertFrameForILMethodWithoutMetadata.
 // Refer to that function for comments on the return value, the argument, etc.
@@ -7514,7 +7454,11 @@ CordbJITILFrame::CordbJITILFrame(CordbNativeFrame *    pNativeFrame,
                                  GENERICS_TYPE_TOKEN   exactGenericArgsToken,
                                  DWORD                 dwExactGenericArgsTokenIndex,
                                  bool                  fVarArgFnx,
+#ifdef FEATURE_CODE_VERSIONING
                                  CordbReJitILCode *    pRejitCode,
+#else
+                                 void *                pRejitCode,
+#endif // FEATURE_CODE_VERSIONING
                                  bool                  fAdjustedIP)
   : CordbBase(pNativeFrame->GetProcess(), 0, enumCordbJITILFrame),
     m_nativeFrame(pNativeFrame),
@@ -7530,7 +7474,9 @@ CordbJITILFrame::CordbJITILFrame(CordbNativeFrame *    pNativeFrame,
     m_genericArgsLoaded(false),
     m_frameParamsToken(exactGenericArgsToken),
     m_dwFrameParamsTokenIndex(dwExactGenericArgsTokenIndex),
+#ifdef FEATURE_CODE_VERSIONING
     m_pReJitCode(pRejitCode),
+#endif // FEATURE_CODE_VERSIONING
     m_adjustedIP(fAdjustedIP)
 {
     // We'll initialize the SigParser in CordbJITILFrame::Init().
@@ -7743,7 +7689,9 @@ void CordbJITILFrame::Neuter()
         m_rgbSigParserBuf = NULL;
     }
 
+#ifdef FEATURE_CODE_VERSIONING
     m_pReJitCode.Clear();
+#endif // FEATURE_CODE_VERSIONING
 
     // If this class ever inherits from the CordbFrame we'll need a call
     // to CordbFrame::Neuter() here instead of to CordbBase::Neuter();
@@ -8489,7 +8437,6 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
 
     HRESULT hr = S_OK;
 
-#ifdef FEATURE_EH_FUNCLETS
     if (m_nativeFrame->IsFunclet())
     {
         if ( (pNativeVarInfo->loc.vlType != ICorDebugInfo::VLT_STK) &&
@@ -8501,7 +8448,6 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
             return E_FAIL;
         }
     }
-#endif // FEATURE_EH_FUNCLETS
 
     switch (pNativeVarInfo->loc.vlType)
     {
@@ -9049,8 +8995,13 @@ HRESULT CordbJITILFrame::GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICo
 
     if (flags != ILCODE_ORIGINAL_IL && flags != ILCODE_REJIT_IL)
         return E_INVALIDARG;
+#ifdef FEATURE_CODE_VERSIONING
     if (flags == ILCODE_REJIT_IL && m_pReJitCode == NULL)
         return E_INVALIDARG;
+#else
+    if (flags == ILCODE_REJIT_IL)
+        return E_INVALIDARG;
+#endif // FEATURE_CODE_VERSIONING
 
     const ICorDebugInfo::NativeVarInfo *pNativeInfo;
 
@@ -9081,7 +9032,11 @@ HRESULT CordbJITILFrame::GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICo
 
         // Get the type of this argument from the function
         CordbType *type;
+#ifdef FEATURE_CODE_VERSIONING
         CordbILCode* pActiveCode = m_pReJitCode != NULL ? m_pReJitCode : m_ilCode;
+#else
+        CordbILCode* pActiveCode = m_ilCode;
+#endif // FEATURE_CODE_VERSIONING
         hr = pActiveCode->GetLocalVariableType(dwIndex, &(this->m_genericArgs), &type);
         IfFailThrow(hr);
 
@@ -9092,6 +9047,7 @@ HRESULT CordbJITILFrame::GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICo
         //       (GetLocalVariableType will return E_INVALIDARG if not)
         // b) the type of local in the original signature matches the type of local in the instrumented signature
         //       (the code below will return CORDBG_E_IL_VAR_NOT_AVAILABLE)
+#ifdef FEATURE_CODE_VERSIONING
         if (flags == ILCODE_ORIGINAL_IL && m_pReJitCode != NULL)
         {
             CordbType* pOriginalType;
@@ -9102,6 +9058,7 @@ HRESULT CordbJITILFrame::GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICo
                 IfFailThrow(CORDBG_E_IL_VAR_NOT_AVAILABLE); // bad profiler, it shouldn't have changed types
             }
         }
+#endif // FEATURE_CODE_VERSIONING
 
 
         hr = GetNativeVariable(type, pNativeInfo, ppValue);
@@ -9128,11 +9085,15 @@ HRESULT CordbJITILFrame::GetCodeEx(ILCodeKind flags, ICorDebugCode **ppCode)
     }
     else
     {
+#ifdef FEATURE_CODE_VERSIONING
         *ppCode = m_pReJitCode;
         if (m_pReJitCode != NULL)
         {
             m_pReJitCode->ExternalAddRef();
         }
+#else
+        *ppCode = NULL;
+#endif // FEATURE_CODE_VERSIONING
     }
     return S_OK;
 }
@@ -9142,10 +9103,12 @@ CordbILCode* CordbJITILFrame::GetOriginalILCode()
     return m_ilCode;
 }
 
+#ifdef FEATURE_CODE_VERSIONING
 CordbReJitILCode* CordbJITILFrame::GetReJitILCode()
 {
     return m_pReJitCode;
 }
+#endif // FEATURE_CODE_VERSIONING
 
 void CordbJITILFrame::AdjustIPAfterException()
 {
