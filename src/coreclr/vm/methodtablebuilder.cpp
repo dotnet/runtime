@@ -8319,10 +8319,11 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
     {
         if (!pParentMT->IsValueTypeClass()
             || hasGCFields
+            || bmtFP->fIsByRefLikeType
             || isAutoLayoutOrHasAutoLayoutField)
         {
             // CStruct layout types can't have a parent type, GC fields
-            // or auto layout fields.
+            // byreflike types, or auto layout fields.
             BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
         }
 
@@ -8339,10 +8340,11 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
     {
         if (!pParentMT->IsValueTypeClass()
             || hasGCFields
+            || bmtFP->fIsByRefLikeType
             || isAutoLayoutOrHasAutoLayoutField)
         {
             // CUnion layout types can't have a parent type, GC fields
-            // or auto layout fields.
+            // byreflike types, or auto layout fields.
             BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
         }
 

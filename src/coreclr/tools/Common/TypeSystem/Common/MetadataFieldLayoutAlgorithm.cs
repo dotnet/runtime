@@ -498,7 +498,7 @@ namespace Internal.TypeSystem
 
         protected ComputedInstanceFieldLayout ComputeCStructFieldLayout(MetadataType type, int numInstanceFields)
         {
-            if (type.ContainsGCPointers || !type.IsValueType)
+            if (type.ContainsGCPointers || type.IsByRefLike || !type.IsValueType)
             {
                 // CStruct layout algorithm does not support GC pointers.
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
@@ -583,7 +583,7 @@ namespace Internal.TypeSystem
 
         protected ComputedInstanceFieldLayout ComputeCUnionFieldLayout(MetadataType type, int numInstanceFields)
         {
-            if (type.ContainsGCPointers || !type.IsValueType)
+            if (type.ContainsGCPointers || type.IsByRefLike || !type.IsValueType)
             {
                 // CUnion layout algorithm does not support GC pointers.
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);

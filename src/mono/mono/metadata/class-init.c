@@ -2485,6 +2485,11 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 					goto cleanup;
 			}
 
+			if (m_class_is_byreflike(klass)) {
+				if (mono_class_set_type_load_failure (klass, "CStruct type cannot be ByRefLike."))
+					goto cleanup;
+			}
+
 			mono_class_setup_fields (klass->parent);
 			if (mono_class_set_type_load_failure_causedby_class (klass, klass->parent, "Cannot initialize parent class"))
 				goto cleanup;
@@ -2558,6 +2563,11 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		else if (extended_layout_kind == EXTENDED_LAYOUT_KIND_CUNION) {
 			if (!m_class_is_valuetype(klass)) {
 				if (mono_class_set_type_load_failure (klass, "CUnion type must be value type."))
+					goto cleanup;
+			}
+
+			if (m_class_is_byreflike(klass)) {
+				if (mono_class_set_type_load_failure (klass, "CStruct type cannot be ByRefLike."))
 					goto cleanup;
 			}
 
