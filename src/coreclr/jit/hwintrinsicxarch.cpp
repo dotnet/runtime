@@ -4214,7 +4214,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
             assert(HWIntrinsicInfo::IsMultiReg(intrinsic));
             assert(retType == TYP_STRUCT);
-            assert(simdBaseJitType != CORINFO_TYPE_UNDEF);
+            assert(simdBaseType != TYP_UNDEF);
 
             op2 = impPopStack().val;
             op1 = impPopStack().val;
@@ -4222,7 +4222,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             GenTreeHWIntrinsic* multiplyIntrinsic = gtNewScalarHWIntrinsicNode(retType, op1, op2, intrinsic);
 
             // Store the type from signature into SIMD base type for convenience
-            multiplyIntrinsic->SetSimdBaseJitType(simdBaseJitType);
+            multiplyIntrinsic->SetSimdBaseType(simdBaseType);
 
             retNode = impStoreMultiRegValueToVar(multiplyIntrinsic,
                                                  sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
