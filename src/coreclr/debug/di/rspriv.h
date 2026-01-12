@@ -6104,7 +6104,6 @@ public:
  * Thread classes
  * ------------------------------------------------------------------------- */
 
-class CordbAsyncStackWalk;
 class CordbThread : public CordbBase, public ICorDebugThread,
                                       public ICorDebugThread2,
                                       public ICorDebugThread3,
@@ -6989,60 +6988,6 @@ private:
     UINT            m_iMax;
 };
 
-class CordbAsyncFrame;
-class CordbAsyncValueEnum : public CordbBase, public ICorDebugValueEnum
-{
-public:
-    enum ValueEnumMode {
-        LOCAL_VARS,
-        ARGS,
-    } ;
-
-    CordbAsyncValueEnum(CordbAsyncFrame *frame, ValueEnumMode mode);
-    HRESULT Init();
-    ~CordbAsyncValueEnum();
-    virtual void Neuter();
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { return "CordbAsyncValueEnum"; }
-#endif
-
-
-    //-----------------------------------------------------------
-    // IUnknown
-    //-----------------------------------------------------------
-
-    ULONG STDMETHODCALLTYPE AddRef()
-    {
-        return (BaseAddRef());
-    }
-    ULONG STDMETHODCALLTYPE Release()
-    {
-        return (BaseRelease());
-    }
-    COM_METHOD QueryInterface(REFIID riid, void **ppInterface);
-
-    //-----------------------------------------------------------
-    // ICorDebugEnum
-    //-----------------------------------------------------------
-
-    COM_METHOD Skip(ULONG celt);
-    COM_METHOD Reset();
-    COM_METHOD Clone(ICorDebugEnum **ppEnum);
-    COM_METHOD GetCount(ULONG *pcelt);
-
-    //-----------------------------------------------------------
-    // ICorDebugValueEnum
-    //-----------------------------------------------------------
-
-    COM_METHOD Next(ULONG celt, ICorDebugValue *values[], ULONG *pceltFetched);
-
-private:
-    CordbAsyncFrame*     m_frame;
-    ValueEnumMode   m_mode;
-    UINT            m_iCurrent;
-    UINT            m_iMax;
-};
 
 /* ------------------------------------------------------------------------- *
  * Misc Info for the Native Frame class
@@ -11793,6 +11738,60 @@ public:
 
 };
 
+class CordbAsyncValueEnum : public CordbBase, public ICorDebugValueEnum
+{
+public:
+    enum ValueEnumMode {
+        LOCAL_VARS,
+        ARGS,
+    } ;
+
+    CordbAsyncValueEnum(CordbAsyncFrame *frame, ValueEnumMode mode);
+    HRESULT Init();
+    ~CordbAsyncValueEnum();
+    virtual void Neuter();
+
+#ifdef _DEBUG
+    virtual const char * DbgGetName() { return "CordbAsyncValueEnum"; }
+#endif
+
+
+    //-----------------------------------------------------------
+    // IUnknown
+    //-----------------------------------------------------------
+
+    ULONG STDMETHODCALLTYPE AddRef()
+    {
+        return (BaseAddRef());
+    }
+    ULONG STDMETHODCALLTYPE Release()
+    {
+        return (BaseRelease());
+    }
+    COM_METHOD QueryInterface(REFIID riid, void **ppInterface);
+
+    //-----------------------------------------------------------
+    // ICorDebugEnum
+    //-----------------------------------------------------------
+
+    COM_METHOD Skip(ULONG celt);
+    COM_METHOD Reset();
+    COM_METHOD Clone(ICorDebugEnum **ppEnum);
+    COM_METHOD GetCount(ULONG *pcelt);
+
+    //-----------------------------------------------------------
+    // ICorDebugValueEnum
+    //-----------------------------------------------------------
+
+    COM_METHOD Next(ULONG celt, ICorDebugValue *values[], ULONG *pceltFetched);
+
+private:
+    CordbAsyncFrame*     m_frame;
+    ValueEnumMode   m_mode;
+    UINT            m_iCurrent;
+    UINT            m_iMax;
+};
+
 class CordbAsyncStackWalk : public CordbBase, public ICorDebugStackWalk
 {
     RSSmartPtr<CordbAsyncFrame> m_pCurrentFrame;
@@ -11802,6 +11801,14 @@ public:
     CordbAsyncStackWalk(CordbProcess* pProcess, CORDB_ADDRESS continuationAddress);
     virtual ~CordbAsyncStackWalk();
     virtual void Neuter();
+
+#ifdef _DEBUG
+    virtual const char * DbgGetName() { return "CordbAsyncStackWalk"; }
+#endif
+
+    //-----------------------------------------------------------
+    // IUnknown
+    //-----------------------------------------------------------
 
     ULONG STDMETHODCALLTYPE AddRef()
     {

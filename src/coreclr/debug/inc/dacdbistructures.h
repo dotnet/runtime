@@ -209,11 +209,6 @@ struct MSLAYOUT ModuleInfo
     BOOL  fInMemory;
 };
 
-struct MSLAYOUT AsyncLocalData
-{
-    ULONG offset;
-    ULONG ilVarNum;
-};
 
 // the following two classes track native offsets for local variables and sequence
 // points. This information is initialized on demand.
@@ -473,6 +468,18 @@ public:
     // indicates whether an attempt has been made to initialize the sequence points already
     bool                                   m_fInitialized;
 }; // class SequencePoints
+
+//===================================================================================
+// AsyncLocalData serves as the Dbi equivalent of ICorDebugInfo::AsyncContinuationVarInfo.
+// It maps a the offset of a async variable within a continuation to its ILVarNum.
+//===================================================================================
+struct MSLAYOUT AsyncLocalData
+{
+    // offset within a continuation object where the variable is stored
+    ULONG offset;
+    // IL variable number corresponding to the async local
+    ULONG ilVarNum;
+};
 
 //----------------------------------------------------------------------------------
 // declarations needed for getting native code regions

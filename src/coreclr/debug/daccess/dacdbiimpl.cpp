@@ -7456,22 +7456,22 @@ static BYTE* DebugInfoStoreNew(void * pData, size_t cBytes)
 }
 
 void DacDbiInterfaceImpl::GetAsyncLocals(
-    VMPTR_MethodDesc methodDesc,
-    CORDB_ADDRESS addr,
+    VMPTR_MethodDesc vmMethod,
+    CORDB_ADDRESS codeAddr,
     UINT32 state,
     DacDbiArrayList<AsyncLocalData> * pAsyncLocals)
 {
     DD_ENTER_MAY_THROW;
 
-    MethodDesc* pMethodDesc = methodDesc.GetDacPtr();
+    MethodDesc* pMethodDesc = vmMethod.GetDacPtr();
     if (pMethodDesc->IsAsyncThunkMethod())
     {
         return;
     }
     TADDR nativeCodeStartAddr;
-    if (addr != (TADDR)NULL)
+    if (codeAddr != (TADDR)NULL)
     {
-        NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(addr);
+        NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(codeAddr);
         if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == (PCODE)NULL)
         {
             return;

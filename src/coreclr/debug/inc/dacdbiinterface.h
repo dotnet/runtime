@@ -1724,6 +1724,21 @@ public:
                                   CORDB_ADDRESS hotCodeStartAddr,
                                   NativeCodeFunctionData * pCodeInfo) = 0;
 
+    //
+    // Gets information about a native code blob at a given code address.
+    // This function looks up which method contains the specified code address and returns
+    // information about that method including its metadata and start address.
+    //
+    // Arguments:
+    //    Input:
+    //        codeAddress - the native code address to look up
+    //    Output (required):
+    //        pCodeInfo - data structure describing the native code regions for the method
+    //                    containing the specified address
+    //        pModule - the module containing the method
+    //        pFuncMetadataToken - the metadata token for the method
+    //        pStartAddress - the actual start address of the method containing the code address
+
     virtual
     void LookupMethodFromCodeAddress(CORDB_ADDRESS codeAddress,
                                      NativeCodeFunctionData* pCodeInfo,
@@ -2727,9 +2742,9 @@ public:
 
     virtual
     void GetAsyncLocals(
-        VMPTR_MethodDesc vmMethodDesc,
-        CORDB_ADDRESS     asyncInfoAddr,
-        UINT32            state,
+        VMPTR_MethodDesc vmMethod,
+        CORDB_ADDRESS codeAddr,
+        UINT32 state,
         OUT DacDbiArrayList<AsyncLocalData>* pAsyncLocals) = 0;
 
     virtual

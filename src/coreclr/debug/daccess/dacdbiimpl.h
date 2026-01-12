@@ -169,8 +169,8 @@ public:
                                               OUT PCODE *pDiagnosticIP,
                                               OUT CORDB_ADDRESS *pNextContinuation,
                                               OUT UINT32 *pState);
-    void GetAsyncLocals(VMPTR_MethodDesc methodDesc,
-                        CORDB_ADDRESS addr,
+    void GetAsyncLocals(VMPTR_MethodDesc vmMethod,
+                        CORDB_ADDRESS codeAddr,
                         UINT32 state,
                         DacDbiArrayList<AsyncLocalData> * pAsyncLocals);
     HRESULT GetGenericArgTokenIndex(VMPTR_MethodDesc vmMethod, OUT UINT32* pIndex);
