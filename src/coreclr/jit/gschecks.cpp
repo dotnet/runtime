@@ -377,13 +377,13 @@ void Compiler::gsParamsToShadows()
     {
         const LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
-        const unsigned shadowVarNum = gsShadowVarInfo[lclNum].shadowCopy;
-        if (shadowVarNum == BAD_VAR_NUM)
+        const unsigned shadowLclNum = gsShadowVarInfo[lclNum].shadowCopy;
+        if (shadowLclNum == BAD_VAR_NUM)
         {
             continue;
         }
 
-        gsCopyIntoShadow(lclNum, shadowVarNum);
+        gsCopyIntoShadow(lclNum, shadowLclNum);
     }
 
     // If the method has "Jmp CalleeMethod", then we need to copy shadow params back to original
@@ -556,13 +556,13 @@ void Compiler::gsCopyIntoShadow(unsigned lclNum, unsigned shadowLclNum)
     if (lclNum < info.compArgsCount && argRequiresSpecialCopy(lclNum) && varDsc->TypeIs(TYP_STRUCT))
     {
         JITDUMP("arg%02u requires special copy, using special copy helper to copy to shadow var V%02u\n", lclNum,
-                shadowVarNum);
+                shadowLclNum);
         CORINFO_METHOD_HANDLE copyHelper =
             info.compCompHnd->getSpecialCopyHelper(varDsc->GetLayout()->GetClassHandle());
         GenTreeCall* call = gtNewCallNode(CT_USER_FUNC, copyHelper, TYP_VOID);
 
         GenTree* src = gtNewLclVarAddrNode(lclNum);
-        GenTree* dst = gtNewLclVarAddrNode(shadowVarNum);
+        GenTree* dst = gtNewLclVarAddrNode(shadowLclNum);
 
         call->gtArgs.PushBack(this, NewCallArg::Primitive(dst));
         call->gtArgs.PushBack(this, NewCallArg::Primitive(src));
@@ -584,7 +584,7 @@ void Compiler::gsCopyIntoShadow(unsigned lclNum, unsigned shadowLclNum)
                 if (node->IsHelperCall(this, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER) ||
                     node->IsHelperCall(this, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS))
                 {
-                    insertAfter = tree;
+                    insertAfter = node;
                     break;
                 }
             }
@@ -592,7 +592,7 @@ void Compiler::gsCopyIntoShadow(unsigned lclNum, unsigned shadowLclNum)
             noway_assert(insertAfter != nullptr);
 
             JITDUMP("Inserting special copy helper call after Reverse P/Invoke transition [%06u]\n",
-                    dspTreeID(inesrtAfter));
+                    dspTreeID(insertAfter));
         }
 
         compCurBB = fgFirstBB; // Needed by some morphing
