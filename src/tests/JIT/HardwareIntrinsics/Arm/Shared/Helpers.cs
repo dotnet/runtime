@@ -7,6 +7,7 @@
 //   "%DevEnvDir%\TextTransform.exe" .\Helpers.tt
 
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -3110,6 +3111,8 @@ namespace JIT.HardwareIntrinsics.Arm
             where TSigned   : IBinaryInteger<TSigned>, ISignedNumber<TSigned>
             where TUnsigned : IBinaryInteger<TUnsigned>, IUnsignedNumber<TUnsigned>
         {
+            Debug.Assert(Unsafe.SizeOf<TUnsigned>() == Unsafe.SizeOf<TSigned>(), "Unsigned/signed types must be same width");
+
             result = unchecked(left + TSigned.CreateChecked(right));
             return result < left;
         }
@@ -3119,10 +3122,12 @@ namespace JIT.HardwareIntrinsics.Arm
             where TUnsigned : IBinaryInteger<TUnsigned>, IUnsignedNumber<TUnsigned>
             where TSigned   : IBinaryInteger<TSigned>, ISignedNumber<TSigned>
         {
+            Debug.Assert(Unsafe.SizeOf<TUnsigned>() == Unsafe.SizeOf<TSigned>(), "Unsigned/signed types must be same width");
+
             if (TSigned.IsNegative(right))
             {
                 var magnitude = TUnsigned.CreateTruncating(-right);
-                result = unchecked(left - mag);
+                result = unchecked(left - magnitude);
                 return result > left;
             }
             else
