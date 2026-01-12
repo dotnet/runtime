@@ -77,7 +77,7 @@ namespace System.Text.Json
             // Append the portion before the first character needing escaping.
             if (i > 0)
             {
-                builder.AppendSpan(span.Slice(0, i));
+                builder.Append(span.Slice(0, i));
             }
 
             // Escape characters from position i onward.
@@ -93,21 +93,16 @@ namespace System.Text.Json
             }
         }
 
-        /// <summary>Appends a span to the string builder.</summary>
-        /// <remarks>
-        /// This is a polyfill for StringBuilder.Append(ReadOnlySpan&lt;char&gt;) which is not available on .NET Standard 2.0.
-        /// </remarks>
-        private static unsafe void AppendSpan(this StringBuilder builder, ReadOnlySpan<char> span)
+#if !NET
+        /// <summary>Polyfill for StringBuilder.Append(ReadOnlySpan&lt;char&gt;) which is not available on .NET Standard 2.0.</summary>
+        private static unsafe void Append(this StringBuilder builder, ReadOnlySpan<char> span)
         {
-#if NET
-            builder.Append(span);
-#else
             fixed (char* ptr = span)
             {
                 builder.Append(ptr, span.Length);
             }
-#endif
         }
+#endif
 
         public static (int, int) CountNewLines(ReadOnlySpan<byte> data)
         {
