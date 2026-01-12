@@ -2962,11 +2962,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            sbyte result;
-
-            bool addOvf;
-
-            addOvf = TryAddSigned(op1, rndCns, out result);
+            bool addOvf = TryAddSigned(op1, rndCns, out sbyte result);
 
             if (addOvf)
             {
@@ -3070,8 +3066,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            byte result;
-            bool addOvf = TryAddUnsigned(op1, rndCns, out result);
+            bool addOvf = TryAddUnsigned(op1, rndCns, out byte result);
 
             bool shiftOvf;
 
@@ -3292,11 +3287,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            short result;
-
-            bool addOvf;
-
-            addOvf = TryAddSigned(op1, rndCns, out result);
+            bool addOvf = TryAddSigned(op1, rndCns, out short result);
 
             if (addOvf)
             {
@@ -3519,11 +3510,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            int result;
-
-            bool addOvf;
-
-            addOvf = TryAddSigned(op1, rndCns, out result);
+            bool addOvf = TryAddSigned(op1, rndCns, out int result);
 
             if (addOvf)
             {
@@ -3615,8 +3602,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            uint result;
-            bool addOvf = TryAddUnsigned(op1, rndCns, out result);
+            bool addOvf = TryAddUnsigned(op1, rndCns, out uint result);
 
             bool shiftOvf;
 
@@ -3747,11 +3733,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            long result;
-
-            bool addOvf;
-
-            addOvf = TryAddSigned(op1, rndCns, out result);
+            bool addOvf = TryAddSigned(op1, rndCns, out long result);
 
             if (addOvf)
             {
@@ -3843,8 +3825,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            ulong result;
-            bool addOvf = TryAddUnsigned(op1, rndCns, out result);
+            bool addOvf = TryAddUnsigned(op1, rndCns, out ulong result);
 
             bool shiftOvf;
 
