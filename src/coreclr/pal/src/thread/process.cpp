@@ -2812,14 +2812,10 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
                     argv[argc++] = signalAddressArg;
                 }
             }
+        }
 
-            argv[argc++] = nullptr;
-            _ASSERTE(argc < MAX_ARGV_ENTRIES);
-        }
-        else
-        {
-            argv[argc] = nullptr;
-        }
+        argv[argc] = nullptr;
+        _ASSERTE(argc < MAX_ARGV_ENTRIES);
 
         PROCCreateCrashDump(argv, nullptr, 0, serialize);
 
