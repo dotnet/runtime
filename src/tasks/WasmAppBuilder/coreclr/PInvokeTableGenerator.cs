@@ -93,7 +93,7 @@ internal sealed class PInvokeTableGenerator
             }
             else if (pinvoke.Module != "QCall")
             {
-                Log.Warning("WASM0066", $"PInvoke module '{pinvoke.Module}' for method '{pinvoke.Method.DeclaringType}::{pinvoke.Method.Name}' is not in the list of allowed modules. It is also not special treated module.");
+                Log.Warning("WASM0066", $"PInvoke module '{pinvoke.Module}' for method '{pinvoke.Method.DeclaringType}::{pinvoke.Method.Name}' is not in the list of allowed modules. It is also not a specially treated module.");
             }
         }
 
