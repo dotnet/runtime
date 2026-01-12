@@ -959,7 +959,7 @@ BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
 
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
-PCODE GetInterpreterCodeFromInterpreterPrecodeIfPresent(PCODE codePointerMaybeInterpreterStub)
+PCODE GetInterpreterCodeFromInterpreterPrecodeIfPresent(TADDR codePointerMaybeInterpreterStub)
 {
     CONTRACTL {
         NOTHROW;
