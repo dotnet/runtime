@@ -1211,15 +1211,13 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
         // (ArrBnds assertions), so we limit the search to only those blocks that may have bounds
         // checks. It also helps reduce the cost of this search as it's not cheap.
         //
-        if (m_pCompiler->GetAssertionCount() > BitVecOps::Count(m_pCompiler->apTraits, assertions) &&
-            block->HasFlag(BBF_MAY_HAVE_BOUNDS_CHECKS))
+        if (block->HasFlag(BBF_MAY_HAVE_BOUNDS_CHECKS))
         {
             // We're going to be adding to 'assertions', so make a copy first.
             assertions = BitVecOps::MakeCopy(m_pCompiler->apTraits, assertions);
 
             // JIT-TP: Limit the search budget to avoid spending too much time here.
-            int budget = 50;
-
+            int budget = 32;
             for (Statement* stmt : block->Statements())
             {
                 AssertionsAccumulator visitor(m_pCompiler, &budget, &assertions, op);
