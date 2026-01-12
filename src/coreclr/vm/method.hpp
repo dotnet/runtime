@@ -2900,7 +2900,7 @@ public:
         _ASSERTE(IsILStub());
         return (WORD)((m_dwExtendedFlags & StackArgSizeMask) >> 16);
     }
-    
+
     void SetNativeStackArgSize(WORD cbArgSize)
     {
         LIMITED_METHOD_CONTRACT;
