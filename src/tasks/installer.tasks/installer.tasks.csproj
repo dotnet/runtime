@@ -1,15 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <Nullable>disable</Nullable>
+    <TargetFramework>net$(BundledNETCoreAppTargetFrameworkVersion)</TargetFramework>
     <IsShipping>false</IsShipping>
     <RunAnalyzers>false</RunAnalyzers>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <NuGetPackageTargetFramework>net8.0</NuGetPackageTargetFramework>
+    <NuGetPackageTargetFramework Condition="'$(DotNetBuildSourceOnly)' == 'true'">net10.0</NuGetPackageTargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageDownloadAndReference Include="Microsoft.Extensions.DependencyModel" Version="$(MicrosoftExtensionsDependencyModelVersion)" Folder="lib/netstandard2.0" />
-    <PackageDownloadAndReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" Folder="lib/net8.0" />
+    <PackageDownloadAndReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" Folder="lib/$(NuGetPackageTargetFramework)" />
     <PackageDownloadAndReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" Folder="lib/netstandard2.0" />
   </ItemGroup>
 
