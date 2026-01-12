@@ -1,4 +1,4 @@
-# Usage: .\collect-coverage.ps1 JsonDocument .\json-inputs\
+# Usage: .\collect-coverage.ps1 JsonDocumentFuzzer .\json-inputs\
 param(
     [Parameter(Mandatory=$true, Position=0)]
     [string]$FuzzerName,
