@@ -20915,30 +20915,29 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_movups:
         case INS_movapd:
         case INS_movupd:
-        // todo-xarch-half: come back to fix
-        case INS_vmovsh:
-        {
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            // todo-xarch-half: come back to fix
             {
-                // ins   reg, reg
-                result.insThroughput = PERFSCORE_THROUGHPUT_4X;
-                result.insLatency    = PERFSCORE_LATENCY_ZERO;
+                if (memAccessKind == PERFSCORE_MEMORY_NONE)
+                {
+                    // ins   reg, reg
+                    result.insThroughput = PERFSCORE_THROUGHPUT_4X;
+                    result.insLatency    = PERFSCORE_LATENCY_ZERO;
+                }
+                else if (memAccessKind == PERFSCORE_MEMORY_READ)
+                {
+                    // ins   reg, mem
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_2C;
+                }
+                else
+                {
+                    // ins   mem, reg
+                    assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency += PERFSCORE_LATENCY_2C;
+                }
+                break;
             }
-            else if (memAccessKind == PERFSCORE_MEMORY_READ)
-            {
-                // ins   reg, mem
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_2C;
-            }
-            else
-            {
-                // ins   mem, reg
-                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency += PERFSCORE_LATENCY_2C;
-            }
-            break;
-        }
 
         case INS_movhps:
         case INS_movhpd:
@@ -20969,6 +20968,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_movss:
         case INS_movsd_simd:
         case INS_movddup:
+        case INS_vmovsh:
         {
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
@@ -21400,6 +21400,64 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
+        case INS_vaddsh:
+        case INS_vsubsh:
+        case INS_vmulsh:
+        case INS_vfmadd213sh:
+        case INS_vmaxsh:
+        case INS_vminsh:
+        case INS_vcvtsh2ss:
+            result.insLatency    = PERFSCORE_LATENCY_4C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            break;
+
+        case INS_vdivsh:
+        case INS_vsqrtsh:
+        case INS_vrcpsh:
+        case INS_vrsqrtsh:
+            result.insLatency    = PERFSCORE_LATENCY_14C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            break;
+
+        case INS_vcomish:
+        case INS_vucomish:
+            result.insLatency    = PERFSCORE_LATENCY_4C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        case INS_vroundsh:
+        case INS_vrndscalesh:
+            result.insLatency    = PERFSCORE_LATENCY_8C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        case INS_vcvtss2sh:
+            result.insLatency    = PERFSCORE_LATENCY_6C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1P5X;
+            break;
+
+        case INS_vcvtsd2sh:
+            result.insLatency    = PERFSCORE_THROUGHPUT_ILLEGAL;
+            result.insThroughput = PERFSCORE_THROUGHPUT_ILLEGAL;
+            break;
+
+        case INS_vcvtsh2sd:
+            result.insLatency    = PERFSCORE_LATENCY_10C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        case INS_vcvtsi2sh32:
+        case INS_vcvtsi2sh64:
+        case INS_vcvtsh2si32:
+        case INS_vcvtsh2si64:
+        case INS_vcvtusi2sh32:
+        case INS_vcvtusi2sh64:
+        case INS_vcvtsh2usi32:
+        case INS_vcvtsh2usi64:
+            result.insLatency    = PERFSCORE_LATENCY_7C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
         default:
         {
             assert((unsigned)ins < ArrLen(insThroughputInfos));
@@ -21407,20 +21465,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
             assert((unsigned)ins < ArrLen(insLatencyInfos));
             float insLatency = insLatencyInfos[ins];
-
-            // todo-xarch-half: hacking an exit on the unhandled ins to make prototyping easier
-            if (ins == INS_vcvtss2sh || ins == INS_vcvtsh2ss || ins == INS_vaddsh || ins == INS_vsubsh ||
-                ins == INS_vmulsh || ins == INS_vdivsh || ins == INS_vcomish || ins == INS_vsqrtsh ||
-                ins == INS_vmaxsh || ins == INS_vminsh || ins == INS_vrcpsh || ins == INS_vrsqrtsh ||
-                ins == INS_vrndscalesh || ins == INS_vfmadd213sh || ins == INS_vcvtsd2sh || ins == INS_vcvtsh2sd ||
-                ins == INS_vcvtsi2sh32 || ins == INS_vcvtsi2sh64 || ins == INS_vcvtsh2si32 || ins == INS_vcvtsh2si64 ||
-                ins == INS_vcvtusi2sh32 || ins == INS_vcvtusi2sh64 || ins == INS_vcvtsh2usi32 ||
-                ins == INS_vcvtsh2usi64)
-            {
-                result.insLatency    = PERFSCORE_LATENCY_1C;
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                break;
-            }
 
             if ((insLatency == PERFSCORE_LATENCY_ILLEGAL) || (insThroughput == PERFSCORE_THROUGHPUT_ILLEGAL))
             {

@@ -2028,12 +2028,13 @@ protected:
 
 #define PERFSCORE_THROUGHPUT_ZERO 0.0f // Only used for pseudo-instructions that don't generate code
 
-#define PERFSCORE_THROUGHPUT_9X (1.0f / 9.0f)
-#define PERFSCORE_THROUGHPUT_6X (1.0f / 6.0f) // Hextuple issue
-#define PERFSCORE_THROUGHPUT_5X 0.20f         // Pentuple issue
-#define PERFSCORE_THROUGHPUT_4X 0.25f         // Quad issue
-#define PERFSCORE_THROUGHPUT_3X (1.0f / 3.0f) // Three issue
-#define PERFSCORE_THROUGHPUT_2X 0.5f          // Dual issue
+#define PERFSCORE_THROUGHPUT_9X   (1.0f / 9.0f)
+#define PERFSCORE_THROUGHPUT_6X   (1.0f / 6.0f) // Hextuple issue
+#define PERFSCORE_THROUGHPUT_5X   0.20f         // Pentuple issue
+#define PERFSCORE_THROUGHPUT_4X   0.25f         // Quad issue
+#define PERFSCORE_THROUGHPUT_3X   (1.0f / 3.0f) // Three issue
+#define PERFSCORE_THROUGHPUT_2X   0.5f          // Dual issue
+#define PERFSCORE_THROUGHPUT_1P5X 0.67f         // Dual issue
 
 #define PERFSCORE_THROUGHPUT_1C 1.0f // Single Issue
 
