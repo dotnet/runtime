@@ -43,6 +43,10 @@
 #include "gdbjit.h"
 #endif // FEATURE_GDBJIT
 
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+#include <xmmintrin.h>
+#endif
+
 #ifndef DACCESS_COMPILE
 
 EXTERN_C void STDCALL ThePreStubPatch();
@@ -1804,6 +1808,15 @@ static PCODE PreStubWorker_Preemptive(
 extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, MethodDesc* pMD)
 {
     PCODE pbRetVal = (PCODE)NULL;
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    // Reset MXCSR to default value to prevent FP exceptions during JIT compilation.
+    // During exception handling, MXCSR can become corrupted (e.g., when RtlRestoreContext
+    // is called with a context that doesn't include CONTEXT_FLOATING_POINT). If the JIT
+    // is invoked during exception handling (e.g., to compile a catch handler), it may
+    // crash with an FP exception due to unmasked floating point exceptions.
+    _mm_setcsr(0x1F80);
+#endif
 
     PreserveLastErrorHolder preserveLastError;
 
