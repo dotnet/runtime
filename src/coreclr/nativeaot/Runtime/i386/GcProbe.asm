@@ -241,7 +241,7 @@ _RhpGcProbeHijack@0  proc public
         HijackFixupEpilog
 
 WaitForGC:
-        or          ecx, DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX
+        or          ecx, DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_SAVE_RCX
         jmp         RhpWaitForGC
 
 _RhpGcProbeHijack@0  endp
@@ -250,7 +250,7 @@ ifdef FEATURE_GC_STRESS
 _RhpGcStressHijack@0  proc public
 
         HijackFixupProlog
-        or          ecx, DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX
+        or          ecx, DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_SAVE_RCX
         jmp         RhpGcStressProbe
 
 _RhpGcStressHijack@0  endp
