@@ -2992,9 +2992,9 @@ CopyLoop
 ;   x0 = Pointer to exception object
 ; ------------------------------------------------------------------
     NESTED_ENTRY IL_Throw
-        PROLOG_WITH_TRANSITION_BLOCK
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS x1
         ; x0 already contains exception object
-        add         x1, sp, #__PWTB_TransitionBlock
+        ; x1 contains pointer to TransitionBlock
         bl      IL_Throw_Impl
         ; Should never return
         brk     #0
@@ -3008,9 +3008,9 @@ CopyLoop
 ;   x0 = Pointer to exception object
 ; ------------------------------------------------------------------
     NESTED_ENTRY IL_ThrowExact
-        PROLOG_WITH_TRANSITION_BLOCK
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS x1
         ; x0 already contains exception object
-        add         x1, sp, #__PWTB_TransitionBlock
+        ; x1 contains pointer to TransitionBlock
         bl      IL_ThrowExact_Impl
         ; Should never return
         brk     #0
@@ -3021,8 +3021,8 @@ CopyLoop
 ; implementation written in C.
 ; ------------------------------------------------------------------
     NESTED_ENTRY IL_Rethrow
-        PROLOG_WITH_TRANSITION_BLOCK
-        add         x0, sp, #__PWTB_TransitionBlock
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS x0
+        ; x0 contains pointer to TransitionBlock
         bl      IL_Rethrow_Impl
         ; Should never return
         brk     #0
