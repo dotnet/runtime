@@ -2905,9 +2905,9 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsILStub());
-        #if !defined(OSX_ARM64_ABI)
+#if !defined(OSX_ARM64_ABI)
         _ASSERTE((cbArgSize % TARGET_POINTER_SIZE) == 0);
-        #endif
+#endif
         m_dwExtendedFlags = (m_dwExtendedFlags & ~StackArgSizeMask) | ((DWORD)cbArgSize << 16);
     }
 #endif // TARGET_X86 || FEATURE_COMINTEROP
