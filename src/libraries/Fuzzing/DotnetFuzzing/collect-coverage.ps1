@@ -60,7 +60,6 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # Get the path to the test assembly
-$projectDir = $PSScriptRoot
 $artifactsPath = Join-Path $repoRoot "artifacts\bin\DotnetFuzzing"
 $assemblyPath = (Get-ChildItem -Path $artifactsPath -Recurse -Filter "DotnetFuzzing.dll" | Select-Object -First 1).FullName
 
@@ -73,7 +72,7 @@ Write-Host "Found assembly: $assemblyPath" -ForegroundColor Green
 
 # Get the list of instrumented assemblies
 Write-Host "Getting instrumented assemblies for $FuzzerName..." -ForegroundColor Cyan
-$instrumentedAssemblies = & $dotnetPath run --no-build -- $FuzzerName --get-instrumented-assemblies
+$instrumentedAssemblies = & $dotnetPath run --project $PSScriptRoot --no-build -- $FuzzerName --get-instrumented-assemblies
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Failed to get instrumented assemblies"
     exit 1
@@ -188,7 +187,7 @@ foreach ($target in $instrumentationTargets) {
 $coverletArgs = @(
     $assemblyPath,
     "--target", $dotnetPath,
-    "--targetargs", "run --no-build -- $FuzzerName $InputPath",
+    "--targetargs", "run --project $PSScriptRoot --no-build -- $FuzzerName $InputPath",
     "--output", "$OutputDir/",
     "--format", "opencover",
     "--use-source-link",
