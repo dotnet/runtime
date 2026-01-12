@@ -7,7 +7,6 @@ using Xunit;
 
 namespace System.Threading.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public class PeriodicTimerTests
     {
         [Fact]
@@ -66,6 +65,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public async Task Dispose_Idempotent()
         {
             var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1));
@@ -83,7 +83,6 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public async Task WaitForNextTickAsync_TimerFires_ReturnsTrue()
         {
             using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1));
@@ -243,7 +242,6 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public async Task WaitForNextTickAsync_CanceledWaitThenWaitAgain_Succeeds()
         {
             using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1));

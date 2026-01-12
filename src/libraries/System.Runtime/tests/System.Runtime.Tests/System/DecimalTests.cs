@@ -1714,6 +1714,7 @@ namespace System.Tests
             Assert.Equal(expected, --d);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // too slow
         public static class BigIntegerCompare
         {
             [Fact]

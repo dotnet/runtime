@@ -276,7 +276,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DefaultParameter_StringParameterWithMissingValue()
         {
             Assert.Equal
@@ -285,7 +284,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DefaultParameter_StringParameterWithExplicitValue()
         {
             Assert.Equal(
@@ -294,14 +292,12 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DefaultParameter_ReferenceTypeParameterWithMissingValue()
         {
             Assert.Null((new ReferenceWithDefaultValue(ReferenceMethod)).DynamicInvoke(new object[] { Type.Missing }));
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DefaultParameter_ReferenceTypeParameterWithExplicitValue()
         {
             CustomReferenceType referenceInstance = new CustomReferenceType();
@@ -311,7 +307,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DefaultParameter_ValueTypeParameterWithMissingValue()
         {
             Assert.Equal(
