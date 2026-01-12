@@ -462,16 +462,8 @@ namespace Microsoft.Win32.SafeHandles
             {
                 return false;
             }
-            else if (lockOperation == Interop.Sys.LockOperations.LOCK_EX)
-            {
-                return true; // LOCK_EX is always OK
-            }
-            else if ((access & FileAccess.Write) == 0)
-            {
-                return true; // LOCK_SH is always OK when reading
-            }
 
-            return Interop.Sys.FileSystemSupportsLocking(this);
+            return Interop.Sys.FileSystemSupportsLocking(this, lockOperation, accessWrite: (access & FileAccess.Write) != 0);
         }
 
         private void FStatCheckIO(string path, ref Interop.Sys.FileStatus status, ref bool statusHasValue)

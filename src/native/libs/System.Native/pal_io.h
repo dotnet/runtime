@@ -766,7 +766,7 @@ PALEXPORT int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid);
 /**
 * Returns whether file system associated with the handle supports .NET compatible locking.
 */
-PALEXPORT uint32_t SystemNative_FileSystemSupportsLocking(intptr_t fd);
+PALEXPORT uint32_t SystemNative_FileSystemSupportsLocking(intptr_t fd, int32_t lockOperation, int32_t accessWrite);
 
 /**
 * Attempts to lock/unlock the region of the file "fd" specified by the offset and length. lockType

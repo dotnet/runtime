@@ -1575,12 +1575,19 @@ static uint32_t FileSystemNameSupportsLocking(const char* fileSystemName)
 #endif
 #endif /* TARGET_WASI */
 
-uint32_t SystemNative_FileSystemSupportsLocking(intptr_t fd)
+// LOCK_SH does not work well for write access on nfs/cifs/samba. For example, writes are dropped silently.
+// See https://github.com/dotnet/runtime/issues/44546 and https://github.com/dotnet/runtime/issues/53182.
+uint32_t SystemNative_FileSystemSupportsLocking(intptr_t fd, int32_t lockOperation, int32_t accessWrite)
 {
-    // This method returns false when we identify the file system to be nfs (#44546), samba/cifs (#53182).
+    assert(lockOperation == PAL_LOCK_SH || lockOperation == PAL_LOCK_EX);
 #if defined(TARGET_WASI) || defined(TARGET_WASM)
     return 0; // WASI/WASM doesn't support locking.
-#elif HAVE_STATFS_FSTYPENAME || defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#else
+    if (lockOperation == PAL_LOCK_EX || accessWrite == 0)
+    {
+        return 1;
+    }
+#if HAVE_STATFS_FSTYPENAME || defined(TARGET_LINUX) || defined(TARGET_ANDROID)
     int statfsRes;
     struct statfs statfsArgs;
     // for our needs (get file system type) statfs is always enough and there is no need to use statfs64
@@ -1610,6 +1617,7 @@ uint32_t SystemNative_FileSystemSupportsLocking(intptr_t fd)
     return FileSystemNameSupportsLocking(statfsArgs.f_basetype);
 #else
     #error "Platform doesn't support fstatfs or fstatvfs"
+#endif
 #endif
 }
 
