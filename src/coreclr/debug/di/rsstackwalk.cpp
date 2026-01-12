@@ -952,7 +952,7 @@ HRESULT CordbAsyncStackWalk::SetContext(CorDebugSetContextFlag flag, ULONG32 con
 //
 // Return Value:
 //    Return S_OK on success.
-//    Return CORDBG_E_FAIL_TO_UNWIND_FRAME if the unwind fails.
+//    Return failure code if the unwind fails.
 //    Return CORDBG_S_AT_END_OF_STACK if we have reached the end of the stack as a result of this unwind.
 //    Return CORDBG_E_PAST_END_OF_STACK if we are already at the end of the stack to begin with.
 //
@@ -981,7 +981,7 @@ HRESULT CordbAsyncStackWalk::Next()
             &state);
         if (FAILED(hr))
         {
-            ThrowHR(CORDBG_E_FAIL_TO_UNWIND_FRAME);
+            ThrowHR(hr);
         }
 
         m_continuationAddress = nextContinuation;
