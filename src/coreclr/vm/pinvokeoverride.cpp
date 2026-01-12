@@ -24,18 +24,18 @@ namespace
 #define GLOBALIZATION_DLL_NAME "libSystem.Globalization.Native"
 #endif
 
+#ifndef TARGET_WASM
 // here we handle PInvokes whose implementation is always statically linked (even in .so/.dll case)
 static const void* DefaultResolveDllImport(const char* libraryName, const char* entrypointName)
 {
-#ifndef TARGET_WASM
     if (strcmp(libraryName, GLOBALIZATION_DLL_NAME) == 0)
     {
         return GlobalizationResolveDllImport(entrypointName);
     }
-#endif // TARGET_WASM
 
     return nullptr;
 }
+#endif // TARGET_WASM
 
 void PInvokeOverride::SetPInvokeOverride(PInvokeOverrideFn* overrideImpl, Source source)
 {
@@ -63,5 +63,9 @@ const void* PInvokeOverride::GetMethodImpl(const char* libraryName, const char* 
         }
     }
 
+#ifdef TARGET_WASM
+    return nullptr;
+#else // !TARGET_WASM
     return DefaultResolveDllImport(libraryName, entrypointName);
+#endif // TARGET_WASM
 }
