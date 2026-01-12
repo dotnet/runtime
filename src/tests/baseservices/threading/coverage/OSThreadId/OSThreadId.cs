@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
+using TestLibrary;
 using Xunit;
 
 namespace Threading.Tests
@@ -13,7 +14,7 @@ namespace Threading.Tests
         private static ManualResetEvent s_resetEvent = new ManualResetEvent(false);
         private static ulong[] s_threadIds = new ulong[NumThreads];
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void TestEntryPoint()
         {
             // The property to be tested is internal.
