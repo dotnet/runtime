@@ -113,9 +113,7 @@ else ()
     add_subdirectory(System.Globalization.Native)
 endif ()
 
-if (NOT CORERUN_LIBS_ONLY)
-    add_subdirectory(System.IO.Compression.Native)
-endif ()
+add_subdirectory(System.IO.Compression.Native)
 
 # Only when Browser for CoreCLR
 if (CLR_CMAKE_TARGET_BROWSER AND BUILD_LIBS_NATIVE_BROWSER)
