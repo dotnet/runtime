@@ -5,8 +5,8 @@
     <NoWarn>$(NoWarn);CA1050;CA1852;CA1861;CA2249;IDE0059;IDE0060;IDE0074</NoWarn>
     <Nullable>annotations</Nullable>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <NuGetPackageTargetFramework>net8.0</NuGetPackageTargetFramework>
-    <NuGetPackageTargetFramework Condition="'$(DotNetBuildSourceOnly)' == 'true'">net10.0</NuGetPackageTargetFramework>
+    <!-- TODO: Remove when a newer SDK with that property exposed is available. -->
+    <NetCoreSdkRoot Condition="'$(NetCoreSdkRoot)' == ''">$([System.IO.Path]::GetDirectoryName('$(BundledRuntimeIdentifierGraphFile)'))\</NetCoreSdkRoot>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,14 +22,14 @@
     <Using Include="System.Text" />
   </ItemGroup>
 
+  <!-- Reference these assemblies from the SDK directly. We do this to avoid bringing the package closure for assemblies we don't use here. -->
   <ItemGroup>
-    <!-- Bring in references for these assemblies which are provided by the SDK.
-         We do this to avoid bringing the package closure for assemblies we don't use here. -->
-    <PackageDownloadAndReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" Folder="lib/netstandard2.0" />
-    <PackageDownloadAndReference Include="NuGet.Frameworks" Version="$(NugetFrameworksVersion)" Folder="lib/$(NuGetPackageTargetFramework)" />
-    <PackageDownloadAndReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" Folder="lib/$(NuGetPackageTargetFramework)" />
-    <PackageDownloadAndReference Include="NuGet.ProjectModel" Version="$(NugetProjectModelVersion)" Folder="lib/$(NuGetPackageTargetFramework)" />
-    <PackageDownloadAndReference Include="NuGet.Versioning" Version="$(NugetVersioningVersion)" Folder="lib/$(NuGetPackageTargetFramework)" />
+    <Reference Include="$(NetCoreSdkRoot)Newtonsoft.Json.dll" Private="false" />
+    <Reference Include="$(NetCoreSdkRoot)Newtonsoft.Json.dll" Private="false" />
+    <Reference Include="$(NetCoreSdkRoot)NuGet.Frameworks.dll" Private="false" />
+    <Reference Include="$(NetCoreSdkRoot)NuGet.Packaging.dll" Private="false" />
+    <Reference Include="$(NetCoreSdkRoot)NuGet.ProjectModel.dll" Private="false" />
+    <Reference Include="$(NetCoreSdkRoot)NuGet.Versioning.dll" Private="false" />
   </ItemGroup>
 
   <ItemGroup>
