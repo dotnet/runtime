@@ -7806,6 +7806,16 @@ GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeCol
     return result;
 }
 
+#if defined(TARGET_ARM64)
+GenTreeBfi* Compiler::gtNewBfiNode(var_types type, GenTree* base, GenTree* src, unsigned offset, unsigned width)
+{
+    GenTreeBfi* result = new (this, GT_BFI) GenTreeBfi(type, base, src, offset, width);
+    result->gtFlags |= (base->gtFlags | src->gtFlags) & (GTF_ALL_EFFECT);
+    result->gtFlags &= ~GTF_SET_FLAGS;
+    return result;
+}
+#endif
+
 GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
 {
     assert(genActualType(type) == type);

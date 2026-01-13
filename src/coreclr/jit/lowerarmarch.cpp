@@ -661,6 +661,15 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
             }
         }
 
+        if (binOp->OperIs(GT_OR))
+        {
+            GenTree* next;
+            if (TryLowerOrToBFI(binOp, &next))
+            {
+                return next;
+            }
+        }
+
         if (binOp->OperIs(GT_SUB))
         {
             // Attempt to optimize for umsubl/smsubl.

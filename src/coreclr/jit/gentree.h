@@ -5967,6 +5967,41 @@ struct GenTreeQmark : public GenTreeOp
 #endif
 };
 
+#ifdef TARGET_ARM64
+struct GenTreeBfi : public GenTreeOp
+{
+    unsigned gtOffset;
+    unsigned gtWidth;
+
+    GenTreeBfi(var_types type, GenTree* base, GenTree* src, unsigned offset, unsigned width)
+        : GenTreeOp(GT_BFI, type, base, src)
+        , gtOffset(offset)
+        , gtWidth(width)
+    {
+    }
+
+    unsigned GetOffset() const
+    {
+        return gtOffset;
+    }
+    unsigned GetWidth() const
+    {
+        return gtWidth;
+    }
+    unsigned GetMask() const
+    {
+        return ((~0ULL >> (64 - gtWidth)) << gtOffset);
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeBfi()
+        : GenTreeOp()
+    {
+    }
+#endif
+};
+#endif
+
 /* gtIntrinsic   -- intrinsic   (possibly-binary op [NULL op2 is allowed] with an additional field) */
 
 struct GenTreeIntrinsic : public GenTreeOp

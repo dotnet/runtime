@@ -329,6 +329,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForSwap(treeNode->AsOp());
             break;
 
+        case GT_BFI:
+            genCodeForBfi(treeNode->AsOp());
+            break;
+
         case GT_BFIZ:
             genCodeForBfiz(treeNode->AsOp());
             break;
