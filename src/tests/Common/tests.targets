@@ -77,7 +77,7 @@
     </Exec>
 
     <ItemGroup>
-      <StandaloneRunnerResult Include="@(StandaloneRunnerScript)">
+      <StandaloneRunnerResult Include="$(StandaloneRunnerScript)">
         <Result Condition="'$(StandaloneRunnerExitCode)' == '0'">Pass</Result>
         <Result Condition="'$(StandaloneRunnerExitCode)' != '0'">Fail</Result>
       </StandaloneRunnerResult>
@@ -86,19 +86,18 @@
 
   <Target Name="RunStandaloneRunnerTests" DependsOnTargets="FindBuildAllTestsAsStandaloneRunnerScripts">
     <ItemGroup>
-      <_ProjectsToBuild Include="$(MSBuildThisFileFullPath)">
+      <_StandaloneProjectsToBuild Include="$(MSBuildThisFileFullPath)">
         <AdditionalProperties>StandaloneRunnerScript=%(StandaloneRunnerScripts.Identity)</AdditionalProperties>
-      </_ProjectsToBuild>
+      </_StandaloneProjectsToBuild>
     </ItemGroup>
 
-    <MSBuild Projects="@(_ProjectsToBuild)" Targets="RunOneStandaloneRunnerTest" BuildInParallel="true" Condition="'@(StandaloneRunnerScripts)' != ''">
+    <MSBuild Projects="@(_StandaloneProjectsToBuild)" Targets="RunOneStandaloneRunnerTest" BuildInParallel="true" Condition="'@(StandaloneRunnerScripts)' != ''">
       <Output TaskParameter="TargetOutputs" ItemName="StandaloneRunnerResults" />
     </MSBuild>
 
     <WriteLinesToFile File="$(__LogsDir)\StandaloneRunnerTestResults.testrun.log"
                       Lines="@(StandaloneRunnerResults -> '%(Identity): %(Result)')"
-                      Overwrite="true"
-                      Encoding="UTF8" />
+                      Overwrite="true" />
   </Target>
 
   <Target Name="RunTests" DependsOnTargets="RunMergedTests;RunStandaloneRunnerTests" Condition="'$(SkipTests)' != 'True'">
