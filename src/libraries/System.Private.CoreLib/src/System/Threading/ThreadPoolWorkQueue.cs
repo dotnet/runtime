@@ -849,9 +849,9 @@ namespace System.Threading
             // take over the thread, sustaining starvation. For example, when worker threads are continually starved,
             // high-priority work items may always be queued and normal-priority work items may not get a chance to run.
             bool dispatchNormalPriorityWorkFirst = workQueue._dispatchNormalPriorityWorkFirst;
+            workQueue._dispatchNormalPriorityWorkFirst = !dispatchNormalPriorityWorkFirst;
             if (dispatchNormalPriorityWorkFirst && !tl.workStealingQueue.CanSteal)
             {
-                workQueue._dispatchNormalPriorityWorkFirst = !dispatchNormalPriorityWorkFirst;
                 WorkQueue queue =
                     s_assignableWorkItemQueueCount > 0 ? tl.assignedGlobalWorkItemQueue : workQueue.workItems;
                 if (!queue.TryDequeue(out workItem) && s_assignableWorkItemQueueCount > 0)
