@@ -1534,6 +1534,7 @@ bool CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, We
 {
     switch (arg)
     {
+#if HAS_FIXED_REGISTER_SET
 #if defined(TARGET_X86) || defined(TARGET_ARM)
         // The x86 and arm32 CORINFO_HELP_INIT_PINVOKE_FRAME helpers have a custom calling convention.
         case WellKnownArg::PInvokeFrame:
@@ -1615,6 +1616,7 @@ bool CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, We
             *reg = REG_SWIFT_SELF;
             return true;
 #endif // SWIFT_SUPPORT
+#endif // HAS_FIXED_REGISTER_SET
 
         case WellKnownArg::StackArrayLocal:
         case WellKnownArg::AsyncExecutionContext:
@@ -13470,8 +13472,22 @@ void Compiler::gtPrintABILocation(const ABIPassingInformation& abiInfo, char** b
                 }
             }
 #else  // !HAS_FIXED_REGISTER_SET
-       // TODO-WASM: refactor this code to not rely on register masks.
-            NYI_WASM("gtPrintABILocation");
+            regNumber reg = segment.GetRegister();
+            if (firstReg == REG_NA)
+            {
+                firstReg = reg;
+                lastReg  = reg;
+            }
+            else if (REG_NEXT(lastReg) == reg)
+            {
+                lastReg = reg;
+            }
+            else
+            {
+                printRegs();
+                firstReg = reg;
+                lastReg  = reg;
+            }
 #endif // !HAS_FIXED_REGISTER_SET
         }
         else

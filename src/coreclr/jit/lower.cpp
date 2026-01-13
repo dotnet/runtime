@@ -9333,9 +9333,19 @@ void Lowering::LowerBlock(BasicBlock* block)
     {
         node = LowerNode(node);
     }
+    AfterLowerBlock();
 
     assert(CheckBlock(comp, block));
 }
+
+#ifndef TARGET_WASM
+//------------------------------------------------------------------------
+// AfterLowerBlock: target-specific post-processing of the lowered block.
+//
+void Lowering::AfterLowerBlock()
+{
+}
+#endif // !TARGET_WASM
 
 /** Verifies if both of these trees represent the same indirection.
  * Used by Lower to annotate if CodeGen generate an instruction of the
