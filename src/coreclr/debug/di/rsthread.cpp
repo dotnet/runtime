@@ -11056,8 +11056,6 @@ void CordbAsyncFrame::Neuter()
 
 HRESULT CordbAsyncFrame::QueryInterface(REFIID id, void **pInterface)
 {
-    // don't query for IUnknown or ICorDebugFrame! Someone else should have
-    // already taken care of that.
     if (id == IID_ICorDebugFrame)
     {
         *pInterface = static_cast<ICorDebugFrame*>(this);

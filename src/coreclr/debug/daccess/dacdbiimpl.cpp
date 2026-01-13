@@ -1254,7 +1254,7 @@ void DacDbiInterfaceImpl::LookupMethodFromCodeAddress(
     _ASSERTE(pCodeInfo->IsValid());
 
     VMPTR_MethodDesc vmMethodDesc;
-    GetMethodDescPtrFromIpEx(codeAddr, &vmMethodDesc);
+    vmMethodDesc.SetHostPtr(codeInfo.GetMethodDesc());
     MethodDesc* pMethodDesc = vmMethodDesc.GetDacPtr();
     pCodeInfo->isInstantiatedGeneric = pMethodDesc->HasClassOrMethodInstantiation();
     pCodeInfo->vmNativeCodeMethodDescToken = vmMethodDesc;
@@ -6860,15 +6860,11 @@ bool DacDbiInterfaceImpl::IsValidObject(CORDB_ADDRESS addr)
             PTR_Object obj(TO_TADDR(addr));
 
             PTR_MethodTable mt = obj->GetMethodTable();
-            TypeHandle th(mt);
-            th = th.UpCastTypeIfNeeded();
-            mt = th.AsMethodTable();
-
             PTR_EEClass cls = mt->GetClass();
 
             if (mt == cls->GetMethodTable())
                 isValid = true;
-            else if (!mt->IsCanonicalMethodTable())
+            else if (!mt->IsCanonicalMethodTable() || mt->IsContinuation())
                 isValid = cls->GetMethodTable()->GetClass() == cls;
         }
         EX_CATCH
