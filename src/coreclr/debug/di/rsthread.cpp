@@ -11023,18 +11023,49 @@ HRESULT CordbAsyncFrame::Init()
     _ASSERTE(GetProcess()->GetStopGoLock()->HasLock());
     _ASSERTE(GetProcess()->GetProcessLock()->HasLock());
 
-    VMPTR_DomainAssembly vmDomainAssembly;
-    GetProcess()->GetDAC()->GetDomainAssemblyFromModule(m_vmModule, &vmDomainAssembly);
-    m_pModule.Assign(GetProcess()->LookupOrCreateModule(vmDomainAssembly));
-    m_pAppDomain.Assign(m_pModule->GetAppDomain());
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        // Initialize module and appdomain
+        VMPTR_DomainAssembly vmDomainAssembly;
+        IfFailThrow(GetProcess()->GetDAC()->GetDomainAssemblyFromModule(m_vmModule, &vmDomainAssembly));
+        m_pModule.Assign(GetProcess()->LookupOrCreateModule(vmDomainAssembly));
+        m_pAppDomain.Assign(m_pModule->GetAppDomain());
 
-    // LookupOrCreateNativeCode is marked INTERNAL_SYNC_API_ENTRY and requires the StopGoLock.
-    m_pCode.Assign(m_pModule->LookupOrCreateNativeCode(m_methodDef, m_vmMethodDesc, m_pCodeStart));
+        // LookupOrCreateNativeCode is marked INTERNAL_SYNC_API_ENTRY and requires the StopGoLock.
+        m_pCode.Assign(m_pModule->LookupOrCreateNativeCode(m_methodDef, m_vmMethodDesc, m_pCodeStart));
 
-    m_pCode->LoadNativeInfo();
-    GetProcess()->GetDAC()->GetAsyncLocals(m_vmMethodDesc, m_pCodeStart, m_state, &m_asyncVars);
+        m_pCode->LoadNativeInfo();
+        GetProcess()->GetDAC()->GetAsyncLocals(m_vmMethodDesc, m_pCodeStart, m_state, &m_asyncVars);
 
-    return S_OK;
+        // Initialize function and IL code
+        m_pFunction.Assign(m_pCode->GetFunction());
+        RSExtSmartPtr<CordbILCode> pILCode;
+        IfFailThrow(m_pFunction->GetILCode(&pILCode));
+        m_pILCode.Assign(pILCode);
+
+        // Initialize ReJit IL code if applicable
+#ifdef FEATURE_CODE_VERSIONING
+        EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
+        {
+            VMPTR_NativeCodeVersionNode vmNativeCodeVersionNode = VMPTR_NativeCodeVersionNode::NullPtr();
+            IfFailThrow(GetProcess()->GetDAC()->GetNativeCodeVersionNode(m_vmMethodDesc, m_pCodeStart, &vmNativeCodeVersionNode));
+            if (!vmNativeCodeVersionNode.IsNull())
+            {
+                VMPTR_ILCodeVersionNode vmILCodeVersionNode = VMPTR_ILCodeVersionNode::NullPtr();
+                IfFailThrow(GetProcess()->GetDAC()->GetILCodeVersionNode(vmNativeCodeVersionNode, &vmILCodeVersionNode));
+                if (!vmILCodeVersionNode.IsNull())
+                {
+                    IfFailThrow(m_pFunction->LookupOrCreateReJitILCode(vmILCodeVersionNode, &m_pReJitCode));
+                }
+            }
+        }
+        EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY
+#endif // FEATURE_CODE_VERSIONING
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
 }
 
 CordbAsyncFrame::~CordbAsyncFrame()
@@ -11047,6 +11078,14 @@ void CordbAsyncFrame::Neuter()
     m_asyncVars.Dealloc();
     m_pModule.Clear();
     m_pAppDomain.Clear();
+
+    m_pFunction.Clear();
+
+    m_pILCode.Clear();
+#ifdef FEATURE_CODE_VERSIONING
+    m_pReJitCode.Clear();
+#endif // FEATURE_CODE_VERSIONING
+
     CordbBase::Neuter();
 }
 
@@ -11238,6 +11277,7 @@ HRESULT CordbAsyncFrame::GetArgument(DWORD dwIndex, ICorDebugValue ** ppValue)
     HRESULT hr = S_OK;
     EX_TRY
     {
+        bool foundArg = false;
         CordbType * pType;
         LoadGenericArgs();
         m_pCode->GetArgumentType(dwIndex, &m_genericArgs, &pType);
@@ -11252,7 +11292,14 @@ HRESULT CordbAsyncFrame::GetArgument(DWORD dwIndex, ICorDebugValue ** ppValue)
                     MemoryRange(NULL, 0),
                     NULL,
                     ppValue);
+                foundArg = true;
+                break;
             }
+        }
+
+        if (!foundArg)
+        {
+            ThrowHR(CORDBG_E_IL_VAR_NOT_AVAILABLE);
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -11333,9 +11380,13 @@ HRESULT CordbAsyncFrame::EnumerateLocalVariablesEx(ILCodeKind flags, ICorDebugVa
 
     HRESULT hr = S_OK;
 
+    if (flags != ILCODE_ORIGINAL_IL && flags != ILCODE_REJIT_IL)
+        return E_INVALIDARG;
+
     EX_TRY
     {
-        RSInitHolder<CordbAsyncValueEnum> cdVE(new CordbAsyncValueEnum(this, CordbAsyncValueEnum::LOCAL_VARS));
+        RSInitHolder<CordbAsyncValueEnum> cdVE(new CordbAsyncValueEnum(this,
+            flags == ILCODE_ORIGINAL_IL ? CordbAsyncValueEnum::LOCAL_VARS_ORIGINAL_IL : CordbAsyncValueEnum::LOCAL_VARS_REJIT_IL));
 
         // Initialize the new enum
         hr = cdVE->Init();
@@ -11355,20 +11406,35 @@ HRESULT CordbAsyncFrame::GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICo
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-    HRESULT hr = S_OK;
+    if (flags != ILCODE_ORIGINAL_IL && flags != ILCODE_REJIT_IL)
+        return E_INVALIDARG;
+#ifdef FEATURE_CODE_VERSIONING
+    if (flags == ILCODE_REJIT_IL && m_pReJitCode == NULL)
+        return E_INVALIDARG;
+#else
+    if (flags == ILCODE_REJIT_IL)
+        return E_INVALIDARG;
+#endif // FEATURE_CODE_VERSIONING
 
+
+    HRESULT hr = S_OK;
     EX_TRY
     {
+        bool foundLocal = false;
         CordbType * pType;
-        CordbFunction* function = m_pCode->GetFunction();
-        RSExtSmartPtr<CordbILCode> ilCode;
         ULONG argCount = 0;
-        _ASSERTE(function != NULL);
-        IfFailRet(function->GetILCode(&ilCode));
-        IfFailRet(function->GetSig(NULL, &argCount, NULL));
+        _ASSERTE(m_pFunction != NULL);
+        IfFailThrow(m_pFunction->GetSig(NULL, &argCount, NULL));
 
         LoadGenericArgs();
-        IfFailRet(ilCode->GetLocalVariableType(dwIndex, &m_genericArgs, &pType));
+
+#ifdef FEATURE_CODE_VERSIONING
+        CordbILCode* pActiveCode = m_pReJitCode != NULL ? static_cast<CordbILCode*>(m_pReJitCode) : m_pILCode;
+#else
+        CordbILCode* pActiveCode = m_pILCode;
+#endif // FEATURE_CODE_VERSIONING
+
+        IfFailThrow(pActiveCode->GetLocalVariableType(dwIndex, &m_genericArgs, &pType));
         for (unsigned int i = 0 ; i < m_asyncVars.Count(); i++)
         {
             if (m_asyncVars[i].ilVarNum == dwIndex+argCount)
@@ -11380,8 +11446,14 @@ HRESULT CordbAsyncFrame::GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICo
                     MemoryRange(NULL, 0),
                     NULL,
                     ppValue);
+                foundLocal = true;
                 break;
             }
+        }
+
+        if (!foundLocal)
+        {
+            hr = CORDBG_E_IL_VAR_NOT_AVAILABLE;
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -11405,7 +11477,15 @@ HRESULT CordbAsyncFrame::GetCodeEx(ILCodeKind flags, ICorDebugCode **ppCode)
     }
     else
     {
+#ifdef FEATURE_CODE_VERSIONING
+        *ppCode = m_pReJitCode;
+        if (m_pReJitCode != NULL)
+        {
+            m_pReJitCode->ExternalAddRef();
+        }
+#else
         *ppCode = NULL;
+#endif // FEATURE_CODE_VERSIONING
     }
     return S_OK;
 }
@@ -11421,6 +11501,18 @@ CordbFunction *CordbAsyncFrame::GetFunction()
 {
     return m_pCode->GetFunction();
 }
+
+CordbILCode* CordbAsyncFrame::GetOriginalILCode()
+{
+    return m_pILCode;
+}
+
+#ifdef FEATURE_CODE_VERSIONING
+CordbReJitILCode* CordbAsyncFrame::GetReJitILCode()
+{
+    return m_pReJitCode;
+}
+#endif // FEATURE_CODE_VERSIONING
 
 //---------------------------------------------------------------------------------------
 //
@@ -11521,7 +11613,7 @@ CordbAsyncValueEnum::CordbAsyncValueEnum(CordbAsyncFrame *frame, ValueEnumMode m
     CordbBase(frame->GetProcess(), 0, enumCordbAsyncValueEnum)
 {
     _ASSERTE( frame != NULL );
-    _ASSERTE( mode == LOCAL_VARS || mode == ARGS);
+    _ASSERTE( mode == LOCAL_VARS_ORIGINAL_IL || mode == LOCAL_VARS_REJIT_IL || mode == ARGS);
 
     m_frame = frame;
     m_mode = mode;
@@ -11546,14 +11638,15 @@ HRESULT CordbAsyncValueEnum::Init()
 {
     HRESULT hr = S_OK;
 
-    // Get the function signature
-    CordbFunction *func = m_frame->GetFunction();
-
+    
     switch (m_mode)
     {
         case ARGS:
         {
+            // Get the function signature
+            CordbFunction *func = m_frame->GetFunction();
             ULONG methodArgCount;
+
             IfFailRet(func->GetSig(NULL, &methodArgCount, NULL));
 
             // Grab the argument count for the size of the enumeration.
@@ -11561,20 +11654,52 @@ HRESULT CordbAsyncValueEnum::Init()
             m_iMax = methodArgCount;
             break;
         }
-        case LOCAL_VARS:
+        case LOCAL_VARS_ORIGINAL_IL:
         {
             // Get the locals signature.
-            RSExtSmartPtr<CordbILCode> ilCode;
             ULONG localsCount;
-            IfFailRet(func->GetILCode(&ilCode));
-            IfFailRet(ilCode->GetLocalVarSig(NULL, &localsCount));
+            IfFailRet(m_frame->GetOriginalILCode()->GetLocalVarSig(NULL, &localsCount));
 
             // Grab the number of locals for the size of the enumeration.
             m_iCurrent = 0;
             m_iMax = localsCount;
             break;
         }
+        case LOCAL_VARS_REJIT_IL:
+        {
+#ifdef FEATURE_CODE_VERSIONING
+            // Get the locals signature.
+            ULONG localsCount;
+            CordbReJitILCode* pCode = m_frame->GetReJitILCode();
+            if (pCode == NULL)
+            {
+                m_iCurrent = 0;
+                m_iMax = 0;
+            }
+            else
+            {
+                IfFailRet(pCode->GetLocalVarSig(NULL, &localsCount));
+
+                // Grab the number of locals for the size of the enumeration.
+                m_iCurrent = 0;
+                m_iMax = localsCount;
+            }
+#else
+            m_iCurrent = 0;
+            m_iMax = 0;
+#endif // FEATURE_CODE_VERSIONING
+            break;
+        }
     }
+
+    // Everything worked okay, so add this object to the neuter list for objects that are tied to the stack trace.
+    EX_TRY
+    {
+        GetProcess()->GetContinueNeuterList()->Add(GetProcess(), this);
+    }
+    EX_CATCH_HRESULT(hr);
+    SetUnrecoverableIfFailed(GetProcess(), hr);
+
 
     return hr;
 }
@@ -11723,9 +11848,14 @@ HRESULT CordbAsyncValueEnum::Next(ULONG celt, ICorDebugValue *values[], ULONG *p
                 hr = m_frame->GetArgument(i, &(values[i-m_iCurrent]));
                 break;
             }
-        case LOCAL_VARS:
+        case LOCAL_VARS_ORIGINAL_IL:
             {
                 hr = m_frame->GetLocalVariableEx(ILCODE_ORIGINAL_IL, i, &(values[i-m_iCurrent]));
+                break;
+            }
+        case LOCAL_VARS_REJIT_IL:
+            {
+                hr = m_frame->GetLocalVariableEx(ILCODE_REJIT_IL, i, &(values[i-m_iCurrent]));
                 break;
             }
         }

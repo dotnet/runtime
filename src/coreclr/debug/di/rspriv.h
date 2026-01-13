@@ -11647,6 +11647,14 @@ class CordbAsyncFrame : public CordbBase, public ICorDebugILFrame, public ICorDe
     Instantiation     m_genericArgs;        // the generics type arguments
     BOOL              m_genericArgsLoaded;  // whether we have loaded and cached the generics type arguments
 
+    RSSmartPtr<CordbFunction> m_pFunction;
+
+    RSSmartPtr<CordbILCode> m_pILCode;
+#ifdef FEATURE_CODE_VERSIONING
+    // if this frame is instrumented with rejit, this will point to the instrumented IL code
+    RSSmartPtr<CordbReJitILCode> m_pReJitCode;
+#endif // FEATURE_CODE_VERSIONING
+
 public:
     CordbAsyncFrame(CordbProcess*       process,
                     VMPTR_Module        vmModule,
@@ -11731,6 +11739,11 @@ public:
 
     CordbFunction *CordbAsyncFrame::GetFunction();
 
+    CordbILCode* GetOriginalILCode();
+#ifdef FEATURE_CODE_VERSIONING
+    CordbReJitILCode* GetReJitILCode();
+#endif // FEATURE_CODE_VERSIONING
+
     private:
 
     // load the generics type and method arguments into a cache
@@ -11742,7 +11755,8 @@ class CordbAsyncValueEnum : public CordbBase, public ICorDebugValueEnum
 {
 public:
     enum ValueEnumMode {
-        LOCAL_VARS,
+        LOCAL_VARS_ORIGINAL_IL,
+        LOCAL_VARS_REJIT_IL,
         ARGS,
     } ;
 
