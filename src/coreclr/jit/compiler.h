@@ -11258,10 +11258,11 @@ public:
     bool        gsFindVulnerableParams(); // Shadow param analysis code
     template <typename TVisit>
     void gsVisitDependentLocals(GenTree* tree, TVisit visit);
-    void gsUnionAssignGroups(unsigned lclNum1, unsigned lclNum2);
+    void gsMarkPointers(GenTree* tree);
+    void gsUnionAssignGroups(unsigned lclNum1, unsigned lclNum2, GenTree* reason);
     void gsParamsToShadows(); // Insert copy code and replace param uses by shadow
-    void gsCopyIntoShadow(unsigned lclNum, unsigned shadowLclNum);
-    void gsCreateShadowingLocals();
+    void gsCopyIntoShadow(unsigned lclNum, unsigned shadowLclNum, LIR::Range& range);
+    bool gsCreateShadowingLocals();
     void gsRewriteTreeForShadowParam(GenTree* tree);
 
 #define DEFAULT_MAX_INLINE_SIZE                                                                                        \
