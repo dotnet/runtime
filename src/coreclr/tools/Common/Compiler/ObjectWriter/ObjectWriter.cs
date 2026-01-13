@@ -16,6 +16,7 @@ using static ILCompiler.DependencyAnalysis.ObjectNode;
 using static ILCompiler.DependencyAnalysis.RelocType;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
+using ILCompiler.DependencyAnalysis.ReadyToRun;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -82,6 +83,20 @@ namespace ILCompiler.ObjectWriter
         private protected SectionWriter GetOrCreateSection(ObjectNodeSection section)
             => GetOrCreateSection(section, default, default);
 
+        private readonly SectionWriter.Params _defaultParams = new SectionWriter.Params
+        {
+            LengthEncodeFormat = LengthEncodeFormat.None
+        };
+
+        /// <summary>
+        /// Some architectures may require section-specific params for the writer. For example, on Wasm,
+        /// certain sections require length prefixes before each object entry which the section writer does support,
+        /// but this has to be indicated by a particular implementation.
+        /// </summary>
+        /// <param name="section"></param>
+        /// <returns></returns>
+        private protected virtual SectionWriter.Params WriterParams(ObjectNodeSection section) => _defaultParams;
+
         /// <summary>
         /// Get or creates an object file section.
         /// </summary>
@@ -123,7 +138,8 @@ namespace ILCompiler.ObjectWriter
             return new SectionWriter(
                 this,
                 sectionIndex,
-                sectionData);
+                sectionData,
+                WriterParams(section));
         }
 
         private protected bool ShouldShareSymbol(ObjectNode node)
@@ -373,7 +389,11 @@ namespace ILCompiler.ObjectWriter
             List<ChecksumsToCalculate> checksumRelocations = [];
             foreach (DependencyNode depNode in nodes)
             {
-                if (depNode is ISymbolRangeNode symbolRange)
+
+                // TODO-WASM: emit symbol ranges properly when code and data are separated
+                // Right now we still need to determine placements for some traditionally text-placed nodes,
+                // such as DebugDirectoryEntryNode and AssemblyStubNode
+                if (depNode is ISymbolRangeNode symbolRange && LayoutMode == CodeDataLayout.Unified)
                 {
                     logger.LogMessage($"Deferring emission of symbol range node {GetMangledName(symbolRange)}");
                     symbolRangeNodes.Add(symbolRange);
@@ -430,10 +450,17 @@ namespace ILCompiler.ObjectWriter
                 long thumbBit = 0;
 #endif
 
-                // TODO-WASM: handle AssemblyStub case here
                 if (node is IMethodBodyNode methodNode && LayoutMode is CodeDataLayout.Separate)
                 {
-                    RecordMethod((ISymbolDefinitionNode)node, methodNode.Method, nodeContents, logger);
+                    // Record only information we can get from the MethodDesc here. The actual
+                    // body will be emitted by the call to EmitData() at the end
+                    // of this loop iteration.
+                    RecordMethod((ISymbolDefinitionNode)node, methodNode.Method, logger);
+                }
+                else if (node is AssemblyStubNode or DebugDirectoryEntryNode && LayoutMode is CodeDataLayout.Separate)
+                {
+                    // TODO-WASM: handle AssemblyStub and DebugDirectoryEntryNode properly here instead of skipping
+                    continue;
                 }
 
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
@@ -527,14 +554,8 @@ namespace ILCompiler.ObjectWriter
                     }
                 }
 
-                // Write the data if:
-                // 1. We are in unified code/data layout mode so separating code and data nodes doesn't matter, OR
-                // 2. We are in separate code data layout mode but are writing data nodes
                 // Note that this has to be done last as not to advance the section writer position.
-                if (LayoutMode == CodeDataLayout.Unified || node.GetSection(_nodeFactory) != ObjectNodeSection.TextSection)
-                {
-                    sectionWriter.EmitData(nodeContents.Data);
-                }
+                sectionWriter.EmitData(nodeContents.Data);
             }
 
             foreach (ISymbolRangeNode range in symbolRangeNodes)
@@ -643,7 +664,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected virtual void RecordMethod(ISymbolDefinitionNode node, MethodDesc desc, ObjectData methodData, Logger logger)
+        private protected virtual void RecordMethod(ISymbolDefinitionNode node, MethodDesc desc, Logger logger)
         {
             if (LayoutMode != CodeDataLayout.Separate)
             {

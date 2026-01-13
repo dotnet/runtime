@@ -40,9 +40,9 @@ namespace ILCompiler.ObjectWriter
         private Dictionary<WasmFuncType, int> _uniqueSignatures = new();
         private SortedDictionary<string, int> _uniqueSymbols = new();
         private int _signatureCount = 0;
-        private int _methodBodyCount = 0;
+        private int _methodCount = 0;
 
-        private protected override void RecordMethod(ISymbolDefinitionNode symbol, MethodDesc desc, ObjectData methodBody, Logger logger)
+        private protected override void RecordMethod(ISymbolDefinitionNode symbol, MethodDesc desc, Logger logger)
         {
             WasmFuncType signature = WasmAbiContext.GetSignature(desc);
             if (!_uniqueSignatures.ContainsKey(signature))
@@ -55,18 +55,9 @@ namespace ILCompiler.ObjectWriter
 
             int signatureIndex = _uniqueSignatures[signature];
 
-            _uniqueSymbols.Add(symbol.GetMangledName(_nodeFactory.NameMangler), _methodBodyCount);
-            WriteCode(methodBody, logger);
+            _uniqueSymbols.Add(symbol.GetMangledName(_nodeFactory.NameMangler), _methodCount);
             WriteFunctionIndex(signatureIndex);
-        }
-
-        private void WriteCode(ObjectData methodBody, Logger logger)
-        {
-            string name = ObjectNodeSection.TextSection.Name;
-            SectionWriter writer = GetOrCreateSection(ObjectNodeSection.TextSection);
-            writer.WriteULEB128((ulong)methodBody.Data.Length);
-            writer.EmitData(methodBody.Data);
-            _methodBodyCount++;
+            _methodCount++;
         }
 
         private void WriteFunctionIndex(int signatureIndex)
@@ -105,7 +96,7 @@ namespace ILCompiler.ObjectWriter
             { ObjectNodeSection.WasmFunctionSection, WasmSectionType.Function },
             { ObjectNodeSection.WasmExportSection, WasmSectionType.Export },
             { ObjectNodeSection.WasmTypeSection, WasmSectionType.Type },
-            { ObjectNodeSection.TextSection, WasmSectionType.Code }
+            { ObjectNodeSection.WasmCodeSection, WasmSectionType.Code }
         };
 
         private WasmSectionType GetWasmSectionType(ObjectNodeSection section)
@@ -138,6 +129,32 @@ namespace ILCompiler.ObjectWriter
             }
 
             return new WasmDataSection(segments, new Utf8String(ObjectNodeSection.WasmCombinedDataSection.Name));
+        }
+
+        private protected override ObjectNodeSection GetEmitSection(ObjectNodeSection section)
+        {
+            if (section == ObjectNodeSection.TextSection)
+            {
+                return ObjectNodeSection.WasmCodeSection;
+            }
+
+            return section;
+        }
+
+        private protected override SectionWriter.Params WriterParams(ObjectNodeSection section)
+        {
+            if (section == ObjectNodeSection.WasmCodeSection)
+            {
+                return new SectionWriter.Params
+                {
+                    LengthEncodeFormat = LengthEncodeFormat.ULEB128
+                };
+            }
+
+            return new SectionWriter.Params
+            {
+                LengthEncodeFormat = LengthEncodeFormat.None
+            };
         }
 
         private protected override void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream)
@@ -215,8 +232,8 @@ namespace ILCompiler.ObjectWriter
             // Export section
             SectionByName(ObjectNodeSection.WasmExportSection.Name).Emit(outputFileStream, logger);
             // Code section
-            WasmSection codeSection = SectionByName(ObjectNodeSection.TextSection.Name);
-            PrependCount(codeSection, _methodBodyCount);
+            WasmSection codeSection = SectionByName(ObjectNodeSection.WasmCodeSection.Name);
+            PrependCount(codeSection, _methodCount);
             codeSection.Emit(outputFileStream, logger);
             // Data section (all segments)
             SectionByName(ObjectNodeSection.WasmCombinedDataSection.Name).Emit(outputFileStream, logger);
@@ -239,7 +256,7 @@ namespace ILCompiler.ObjectWriter
         private protected override void EmitSymbolTable(IDictionary<Utf8String, SymbolDefinition> definedSymbols, SortedSet<Utf8String> undefinedSymbols)
         {
             int funcIdx = _sectionNameToIndex[ObjectNodeSection.WasmFunctionSection.Name];
-            PrependCount(_sections[funcIdx], _methodBodyCount);
+            PrependCount(_sections[funcIdx], _methodCount);
             int typeIdx = _sectionNameToIndex[ObjectNodeSection.WasmTypeSection.Name];
             PrependCount(_sections[typeIdx], _uniqueSignatures.Count);
 
@@ -251,7 +268,7 @@ namespace ILCompiler.ObjectWriter
             }
 
             int exportIdx = _sectionNameToIndex[ObjectNodeSection.WasmExportSection.Name];
-            PrependCount(_sections[exportIdx], _methodBodyCount);
+            PrependCount(_sections[exportIdx], _methodCount);
         }
     }
 

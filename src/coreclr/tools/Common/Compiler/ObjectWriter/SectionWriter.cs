@@ -10,26 +10,58 @@ using Internal.Text;
 
 namespace ILCompiler.ObjectWriter
 {
+    enum LengthEncodeFormat
+    {
+        ULEB128,
+        None,
+    }
+
     internal struct SectionWriter
     {
         private readonly ObjectWriter _objectWriter;
         private readonly SectionData _sectionData;
 
+        LengthEncodeFormat _lengthEncodeFormat;
+
         public int SectionIndex { get; init; }
         public readonly IBufferWriter<byte> Buffer => _sectionData.BufferWriter;
+
+        public struct Params
+        {
+            public LengthEncodeFormat LengthEncodeFormat;
+        }
 
         internal SectionWriter(
             ObjectWriter objectWriter,
             int sectionIndex,
-            SectionData sectionData)
+            SectionData sectionData,
+            Params ps)
         {
             _objectWriter = objectWriter;
             SectionIndex = sectionIndex;
             _sectionData = sectionData;
+            _lengthEncodeFormat = ps.LengthEncodeFormat;
+        }
+
+        private readonly void EmitLengthPrefix(ulong length)
+        {
+            switch (_lengthEncodeFormat)
+            {
+                case LengthEncodeFormat.ULEB128:
+                    Console.WriteLine("EMITTING LENGTH: ");
+                    WriteULEB128(length);
+                    break;
+                default:
+                    throw new InvalidOperationException("Length prefix encoding not specified");
+            }
         }
 
         public readonly void EmitData(ReadOnlyMemory<byte> data)
         {
+            if (_lengthEncodeFormat != LengthEncodeFormat.None)
+            {
+                EmitLengthPrefix((ulong)data.Length);
+            }
             _sectionData.AppendData(data);
         }
 
