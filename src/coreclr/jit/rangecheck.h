@@ -434,7 +434,7 @@ struct RangeOps
         });
     }
 
-    static Range ShiftRight(Range& r1, Range& r2)
+    static Range ShiftRight(Range& r1, Range& r2, bool logical)
     {
         Limit& r1lo = r1.LowerLimit();
         Limit& r1hi = r1.UpperLimit();
@@ -444,6 +444,7 @@ struct RangeOps
         Range result = Limit(Limit::keUnknown);
 
         // For now we only support r1 >> positive_cns (to simplify)
+        // Hence, it doesn't matter if it's logical or arithmetic shift right (for now).
         if (!r2lo.IsConstant() || !r2hi.IsConstant() || (r2lo.cns < 0) || (r2hi.cns < 0))
         {
             return result;
@@ -484,6 +485,7 @@ struct RangeOps
         // No useful information can be derived if only one operand is constant.
         //
         // Example: [0..3] | [1..255] = [1..255]
+        //          [X..Y] | [1..255] = [unknown..unknown]
         //
         return ApplyRangeOp(r1, r2, [](Limit& a, Limit& b) {
             if (a.IsConstant() && b.IsConstant() && (a.GetConstant() >= 0) && (b.GetConstant() >= 0))
@@ -507,9 +509,11 @@ struct RangeOps
         // if either lower bound is a non-negative constant, result >= 0
         if ((r1lo.IsConstant() && (r1lo.GetConstant() >= 0)) || (r2lo.IsConstant() && (r2lo.GetConstant() >= 0)))
         {
-            // Example: [0.. ] & [unknown.. ] = [0.. ]
+            // Example: [4.. ] & [unknown.. ] = [4.. ]
             result.lLimit = Limit(Limit::keConstant, 0);
         }
+        // Even if both r1 and r2 lower bounds are known non-negative constants, still the best we can do
+        // is >= 0 in a general case due to the way bitwise AND works.
 
         // if either upper bound is a non-negative constant, result <= cns
         if (r2hi.IsConstant() && (r2hi.GetConstant() >= 0))
@@ -521,6 +525,13 @@ struct RangeOps
         {
             // Example: [ ..5] & [ ..X] = [ ..5]
             result.uLimit = Limit(Limit::keConstant, r1hi.GetConstant());
+        }
+
+        // Both upper bounds are constant, take the min
+        if (r1hi.IsConstant() && r2hi.IsConstant() && (r1hi.GetConstant() >= 0) && (r2hi.GetConstant() >= 0))
+        {
+            // Example: [ ..7] & [ ..5] = [ ..5]
+            result.uLimit = Limit(Limit::keConstant, min(r1hi.GetConstant(), r2hi.GetConstant()));
         }
 
         return result;

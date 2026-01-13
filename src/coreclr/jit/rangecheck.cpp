@@ -1170,7 +1170,7 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
 // Compute the range for a binary operation.
 Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool monIncreasing DEBUGARG(int indent))
 {
-    assert(binop->OperIs(GT_ADD, GT_OR, GT_XOR, GT_AND, GT_RSH, GT_LSH, GT_UMOD, GT_MUL));
+    assert(binop->OperIs(GT_ADD, GT_OR, GT_XOR, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL));
 
     // For XOR we only care about Log2 pattern for now
     if (binop->OperIs(GT_XOR))
@@ -1238,7 +1238,10 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
             r = RangeOps::Multiply(op1Range, op2Range);
             break;
         case GT_RSH:
-            r = RangeOps::ShiftRight(op1Range, op2Range);
+            r = RangeOps::ShiftRight(op1Range, op2Range, /*logical*/ false);
+            break;
+        case GT_RSZ:
+            r = RangeOps::ShiftRight(op1Range, op2Range, /*logical*/ true);
             break;
         case GT_LSH:
             r = RangeOps::ShiftLeft(op1Range, op2Range);
@@ -1670,7 +1673,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         MergeAssertion(block, expr, &range DEBUGARG(indent + 1));
     }
     // compute the range for binary operation
-    else if (expr->OperIs(GT_XOR, GT_OR, GT_ADD, GT_AND, GT_RSH, GT_LSH, GT_UMOD, GT_MUL))
+    else if (expr->OperIs(GT_XOR, GT_OR, GT_ADD, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL))
     {
         range = ComputeRangeForBinOp(block, expr->AsOp(), monIncreasing DEBUGARG(indent + 1));
     }
