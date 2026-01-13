@@ -93,17 +93,6 @@ namespace System.Text.Json
             }
         }
 
-#if !NET
-        /// <summary>Polyfill for StringBuilder.Append(ReadOnlySpan&lt;char&gt;) which is not available on .NET Standard 2.0.</summary>
-        private static unsafe void Append(this StringBuilder builder, ReadOnlySpan<char> span)
-        {
-            fixed (char* ptr = span)
-            {
-                builder.Append(ptr, span.Length);
-            }
-        }
-#endif
-
         public static (int, int) CountNewLines(ReadOnlySpan<byte> data)
         {
             int lastLineFeedIndex = data.LastIndexOf(JsonConstants.LineFeed);
