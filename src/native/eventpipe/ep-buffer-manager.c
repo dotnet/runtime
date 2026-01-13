@@ -590,7 +590,6 @@ buffer_manager_move_next_event_any_snapshot_thread (EventPipeBufferManager *buff
 {
 	EP_ASSERT (buffer_manager != NULL);
 	EP_ASSERT (buffer_manager->thread_session_state_list_snapshot != NULL);
-	EP_ASSERT (!dn_list_empty (buffer_manager->thread_session_state_list_snapshot));
 	EP_ASSERT (buffer_manager->snapshot_timestamp != 0);
 
 	ep_buffer_manager_requires_lock_not_held (buffer_manager);
