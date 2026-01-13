@@ -1729,7 +1729,7 @@ UINT MethodDesc::SizeOfArgStack()
     return argit.SizeOfArgStack();
 }
 
-
+#ifdef FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
 UINT MethodDesc::SizeOfNativeArgStack()
 {
 #ifndef UNIX_AMD64_ABI
@@ -1741,6 +1741,7 @@ UINT MethodDesc::SizeOfNativeArgStack()
     return argit.SizeOfArgStack();
 #endif
 }
+#endif // FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
 
 #ifdef TARGET_X86
 //*******************************************************************************
@@ -3233,6 +3234,10 @@ void MethodDesc::ResetCodeEntryPoint()
     WRAPPER_NO_CONTRACT;
     _ASSERTE(IsVersionable());
 
+#ifdef FEATURE_INTERPRETER
+    ClearInterpreterCodePointer();
+#endif
+
     if (MayHaveEntryPointSlotsToBackpatch())
     {
         BackpatchToResetEntryPointSlots();
@@ -3264,6 +3269,10 @@ void MethodDesc::ResetCodeEntryPointForEnC()
         otherVariant->ResetCodeEntryPointForEnC();
         return;
     }
+
+#ifdef FEATURE_INTERPRETER
+    ClearInterpreterCodePointer();
+#endif
 
     LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: this:%p - %s::%s\n", this, m_pszDebugClassName, m_pszDebugMethodName));
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS

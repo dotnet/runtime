@@ -10325,52 +10325,6 @@ void qsort1( uint8_t* *low, uint8_t* *high, unsigned int depth)
     }
 }
 #endif //USE_INTROSORT
-void rqsort1( uint8_t* *low, uint8_t* *high)
-{
-    if ((low + 16) >= high)
-    {
-        //insertion sort
-        uint8_t **i, **j;
-        for (i = low+1; i <= high; i++)
-        {
-            uint8_t* val = *i;
-            for (j=i;j >low && val>*(j-1);j--)
-            {
-                *j=*(j-1);
-            }
-            *j=val;
-        }
-    }
-    else
-    {
-        uint8_t *pivot, **left, **right;
-
-        //sort low middle and high
-        if (*(low+((high-low)/2)) > *low)
-            swap (*(low+((high-low)/2)), *low);
-        if (*high > *low)
-            swap (*low, *high);
-        if (*high > *(low+((high-low)/2)))
-            swap (*(low+((high-low)/2)), *high);
-
-        swap (*(low+((high-low)/2)), *(high-1));
-        pivot =  *(high-1);
-        left = low; right = high-1;
-        while (1) {
-            while (*(--right) < pivot);
-            while (*(++left)  > pivot);
-            if (left < right)
-            {
-                swap(*left, *right);
-            }
-            else
-                break;
-        }
-        swap (*left, *(high-1));
-        rqsort1(low, left-1);
-        rqsort1(left+1, high);
-    }
-}
 
 #ifdef USE_VXSORT
 static void do_vxsort (uint8_t** item_array, ptrdiff_t item_count, uint8_t* range_low, uint8_t* range_high)
@@ -27703,9 +27657,6 @@ void gc_heap::mark_object_simple1 (uint8_t* oo, uint8_t* start THREAD_NUMBER_DCL
     SERVER_SC_MARK_VOLATILE(uint8_t*)* mark_stack_tos = (SERVER_SC_MARK_VOLATILE(uint8_t*)*)mark_stack_array;
     SERVER_SC_MARK_VOLATILE(uint8_t*)* mark_stack_limit = (SERVER_SC_MARK_VOLATILE(uint8_t*)*)&mark_stack_array[mark_stack_array_length];
     SERVER_SC_MARK_VOLATILE(uint8_t*)* mark_stack_base = mark_stack_tos;
-#ifdef SORT_MARK_STACK
-    SERVER_SC_MARK_VOLATILE(uint8_t*)* sorted_tos = mark_stack_base;
-#endif //SORT_MARK_STACK
 
     // If we are doing a full GC we don't use mark list anyway so use m_boundary_fullgc that doesn't
     // update mark list.
@@ -27909,23 +27860,12 @@ more_to_do:
                     max_overflow_address = max (max_overflow_address, oo);
                 }
             }
-#ifdef SORT_MARK_STACK
-            if (mark_stack_tos > sorted_tos + mark_stack_array_length/8)
-            {
-                rqsort1 (sorted_tos, mark_stack_tos-1);
-                sorted_tos = mark_stack_tos-1;
-            }
-#endif //SORT_MARK_STACK
         }
     next_level:
         if (!(mark_stack_empty_p()))
         {
             oo = *(--mark_stack_tos);
             start = oo;
-
-#ifdef SORT_MARK_STACK
-            sorted_tos = min ((size_t)sorted_tos, (size_t)mark_stack_tos);
-#endif //SORT_MARK_STACK
         }
         else
             break;
@@ -28396,10 +28336,6 @@ void gc_heap::background_mark_simple1 (uint8_t* oo THREAD_NUMBER_DCL)
 {
     uint8_t** mark_stack_limit = &background_mark_stack_array[background_mark_stack_array_length];
 
-#ifdef SORT_MARK_STACK
-    uint8_t** sorted_tos = background_mark_stack_array;
-#endif //SORT_MARK_STACK
-
     background_mark_stack_tos = background_mark_stack_array;
 
     while (1)
@@ -28586,13 +28522,6 @@ void gc_heap::background_mark_simple1 (uint8_t* oo THREAD_NUMBER_DCL)
                 }
             }
         }
-#ifdef SORT_MARK_STACK
-        if (background_mark_stack_tos > sorted_tos + mark_stack_array_length/8)
-        {
-            rqsort1 (sorted_tos, background_mark_stack_tos-1);
-            sorted_tos = background_mark_stack_tos-1;
-        }
-#endif //SORT_MARK_STACK
 
 #ifdef COLLECTIBLE_CLASS
 next_level:
@@ -28602,10 +28531,6 @@ next_level:
         if (!(background_mark_stack_tos == background_mark_stack_array))
         {
             oo = *(--background_mark_stack_tos);
-
-#ifdef SORT_MARK_STACK
-            sorted_tos = (uint8_t**)min ((size_t)sorted_tos, (size_t)background_mark_stack_tos);
-#endif //SORT_MARK_STACK
         }
         else
             break;
