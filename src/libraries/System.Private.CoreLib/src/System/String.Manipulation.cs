@@ -744,6 +744,11 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
 
+            if (RuntimeHelpers.IsKnownConstant(separator) && separator == "")
+            {
+                return Concat(value);
+            }
+
             return JoinCore(separator.AsSpan(), new ReadOnlySpan<string?>(value));
         }
 
@@ -759,6 +764,11 @@ namespace System
         /// </returns>
         public static string Join(string? separator, params ReadOnlySpan<string?> value)
         {
+            if (RuntimeHelpers.IsKnownConstant(separator) && separator == "")
+            {
+                return Concat(value);
+            }
+
             return JoinCore(separator.AsSpan(), value);
         }
 
@@ -780,6 +790,11 @@ namespace System
 
         public static string Join(string? separator, IEnumerable<string?> values)
         {
+            if (RuntimeHelpers.IsKnownConstant(separator) && separator == "")
+            {
+                return Concat(values);
+            }
+
             if (values is List<string?> valuesList)
             {
                 return JoinCore(separator.AsSpan(), CollectionsMarshal.AsSpan(valuesList));
@@ -856,6 +871,11 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
             }
 
+            if (RuntimeHelpers.IsKnownConstant(separator) && separator == "")
+            {
+                return Concat(values);
+            }
+
             return JoinCore(separator.AsSpan(), (ReadOnlySpan<object?>)values);
         }
 
@@ -869,8 +889,15 @@ namespace System
         /// -or-
         /// <see cref="Empty"/> if <paramref name="values"/> has zero elements.
         /// </returns>
-        public static string Join(string? separator, params ReadOnlySpan<object?> values) =>
-            JoinCore(separator.AsSpan(), values);
+        public static string Join(string? separator, params ReadOnlySpan<object?> values)
+        {
+            if (RuntimeHelpers.IsKnownConstant(separator) && separator == "")
+            {
+                return Concat(values);
+            }
+
+            return JoinCore(separator.AsSpan(), values);
+        }
 
         private static string JoinCore(ReadOnlySpan<char> separator, ReadOnlySpan<object?> values)
         {
@@ -906,8 +933,15 @@ namespace System
         public static string Join<T>(char separator, IEnumerable<T> values) =>
             JoinCore(new ReadOnlySpan<char>(in separator), values);
 
-        public static string Join<T>(string? separator, IEnumerable<T> values) =>
-            JoinCore(separator.AsSpan(), values);
+        public static string Join<T>(string? separator, IEnumerable<T> values)
+        {
+            if (RuntimeHelpers.IsKnownConstant(separator) && separator == "")
+            {
+                return Concat(values);
+            }
+
+            return JoinCore(separator.AsSpan(), values);
+        }
 
         private static string JoinCore<T>(ReadOnlySpan<char> separator, IEnumerable<T> values)
         {
