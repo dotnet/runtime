@@ -121,12 +121,15 @@ ep_thread_unregister (EventPipeThread *thread)
 	ep_return_false_if_nok (thread != NULL);
 
 	bool found = false;
+
+	// Thread unregistration is one condition for EventPipeThreadSessionStates to be cleaned up.
+	// Rather than coordinating cross-thread cleanup, restrict the work to each reader thread by
+	// signaling events available for reading.
+	//
+	// Sessions are freed under the config lock, so hold the config lock to ensure
+	// that the buffer_manager pointer is valid for signaling.
 	EP_LOCK_ENTER (section1)
 		for (uint32_t i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; ++i) {
-			EventPipeThreadSessionState *thread_session_state = (EventPipeThreadSessionState *)ep_rt_volatile_load_ptr ((volatile void **)(&thread->session_state [i]));
-			if (thread_session_state == NULL)
-				continue;
-
 			EventPipeSession *session = ep_volatile_load_session (i);
 			if (session == NULL)
 				continue;
