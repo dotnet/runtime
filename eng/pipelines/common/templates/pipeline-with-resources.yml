@@ -66,6 +66,7 @@ extends:
       linux_x64_dev_innerloop:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04
 
+      # This branch cannot go past Alpine 3.21 due to clang compat
       linux_musl_x64_dev_innerloop:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-amd64
 
@@ -96,8 +97,8 @@ extends:
         env:
           ROOTFS_DIR: /crossrootfs/riscv64
 
-      debian-12-gcc14-amd64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-gcc14-amd64
+      debian-13-gcc14-amd64:
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-gcc14-amd64
 
       linux_x64_llvmaot:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream9
