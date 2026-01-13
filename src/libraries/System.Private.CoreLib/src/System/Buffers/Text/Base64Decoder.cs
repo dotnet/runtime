@@ -228,6 +228,7 @@ namespace System.Buffers.Text
                 throw new FormatException(SR.Format_BadBase64Char);
             }
 
+            Debug.Assert(status is OperationStatus.Done or OperationStatus.DestinationTooSmall);
             return status == OperationStatus.Done;
         }
 
@@ -248,6 +249,7 @@ namespace System.Buffers.Text
                 : (rented = ArrayPool<byte>.Shared.Rent(upperBound));
 
             OperationStatus status = DecodeFromChars(source, destination, out _, out int bytesWritten);
+            Debug.Assert(status is OperationStatus.Done or OperationStatus.InvalidData);
             byte[] result = destination.Slice(0, bytesWritten).ToArray();
 
             if (rented is not null)
