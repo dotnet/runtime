@@ -477,43 +477,6 @@ C_FUNC(\Name\()_End):
 //   After alloc_stack 136: rsp % 16 = (8 - 136 % 16) = (8 - 8) = 0  <- aligned!
 //
 // Stack layout (low to high addresses):
-//   rsp+0:    8 bytes padding (for alignment)
-//   rsp+8:    FloatArgumentRegisters (xmm0-xmm7, 128 bytes)
-//   rsp+136:  TransitionBlock start
-//             - ArgumentRegisters (rdi, rsi, rdx, rcx, r8, r9: 48 bytes)
-//             - CalleeSavedRegisters (r12, r13, r14, r15, rbx, rbp: 48 bytes)
-//             - Return address (8 bytes)
-//
-// TransitionBlock at rsp+136, floats at rsp+8 = TransitionBlock - 128
-// (matches GetOffsetOfFloatArgumentRegisters which returns -128)
-//
-// NOTE: We use SAVE_FLOAT_ARGUMENT_REGISTERS_UNALIGNED because rsp+8 is not
-// 16-byte aligned (rsp is aligned, rsp+8 is not).
-//
-// On exit, \target contains the TransitionBlock pointer.
-.macro PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS target
-        set_cfa_register rsp, 8
-
-        PUSH_CALLEE_SAVED_REGISTERS
-
-        // Set RBP as frame pointer to facilitate stack walking for 3rd party tools.
-        // After PUSH_CALLEE_SAVED_REGISTERS, saved RBP is at rsp+40 (5 regs * 8 bytes above current rsp)
-        lea     rbp, [rsp + 40]
-
-        PUSH_ARGUMENT_REGISTERS
-
-        // Allocate 128 bytes for floats + 8 bytes padding = 136 bytes
-        alloc_stack     136
-        // Save float argument registers at offset 8 (TransitionBlock - 128)
-        // Using unaligned stores because rsp+8 is not 16-byte aligned
-        SAVE_FLOAT_ARGUMENT_REGISTERS_UNALIGNED 8
-
-        END_PROLOGUE
-
-        // TransitionBlock starts at rsp+136 (where ArgumentRegisters are)
-        lea     \target, [rsp + 136]
-.endm
-
 .macro INLINE_GETTHREAD
         // Inlined version of call C_FUNC(RhpGetThread)
         INLINE_GET_TLS_VAR t_CurrentThreadInfo

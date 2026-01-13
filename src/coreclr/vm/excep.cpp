@@ -10877,53 +10877,23 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifdef UNIX_AMD64_ABI
+    // On Unix AMD64, there are no non-volatile FP registers, so we only need
+    // control registers and integer callee-saved registers. We don't need to
+    // capture argument registers or FP state for exception handling.
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+    m_Context.SegCs = 0;
+    m_Context.SegSs = 0;
+    m_Context.EFlags = 0;
+    m_Context.Rax = 0;
+#else
+    // On Windows AMD64, we need FP state because xmm6-xmm15 are non-volatile
     m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
     m_Context.SegCs = 0;
     m_Context.SegSs = 0;
     m_Context.EFlags = 0;
 
-#ifdef UNIX_AMD64_ABI
-    // On Unix AMD64, argument registers are saved in the transition block
-    m_Context.Rax = 0;
-    m_Context.Rdi = pTransitionBlock->m_argumentRegisters.RDI;
-    m_Context.Rsi = pTransitionBlock->m_argumentRegisters.RSI;
-    m_Context.Rdx = pTransitionBlock->m_argumentRegisters.RDX;
-    m_Context.Rcx = pTransitionBlock->m_argumentRegisters.RCX;
-    m_Context.R8 = pTransitionBlock->m_argumentRegisters.R8;
-    m_Context.R9 = pTransitionBlock->m_argumentRegisters.R9;
-
-    m_ContextPointers.Rdi = &m_Context.Rdi;
-    m_ContextPointers.Rsi = &m_Context.Rsi;
-    m_ContextPointers.Rdx = &m_Context.Rdx;
-    m_ContextPointers.Rcx = &m_Context.Rcx;
-    m_ContextPointers.R8 = &m_Context.R8;
-    m_ContextPointers.R9 = &m_Context.R9;
-
-    // Copy floating point argument registers (xmm0-xmm7)
-    // Use memcpy to avoid alignment issues - the source may not be 16-byte aligned
-    // depending on stack layout in the assembly helpers
-    BYTE *pFloatArgs = (BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters();
-    memcpy(&m_Context.Xmm0, pFloatArgs + 0x00, sizeof(m_Context.Xmm0));
-    memcpy(&m_Context.Xmm1, pFloatArgs + 0x10, sizeof(m_Context.Xmm1));
-    memcpy(&m_Context.Xmm2, pFloatArgs + 0x20, sizeof(m_Context.Xmm2));
-    memcpy(&m_Context.Xmm3, pFloatArgs + 0x30, sizeof(m_Context.Xmm3));
-    memcpy(&m_Context.Xmm4, pFloatArgs + 0x40, sizeof(m_Context.Xmm4));
-    memcpy(&m_Context.Xmm5, pFloatArgs + 0x50, sizeof(m_Context.Xmm5));
-    memcpy(&m_Context.Xmm6, pFloatArgs + 0x60, sizeof(m_Context.Xmm6));
-    memcpy(&m_Context.Xmm7, pFloatArgs + 0x70, sizeof(m_Context.Xmm7));
-    // Initialize remaining XMM registers to zero
-    memset(&m_Context.Xmm8, 0, sizeof(m_Context.Xmm8));
-    memset(&m_Context.Xmm9, 0, sizeof(m_Context.Xmm9));
-    memset(&m_Context.Xmm10, 0, sizeof(m_Context.Xmm10));
-    memset(&m_Context.Xmm11, 0, sizeof(m_Context.Xmm11));
-    memset(&m_Context.Xmm12, 0, sizeof(m_Context.Xmm12));
-    memset(&m_Context.Xmm13, 0, sizeof(m_Context.Xmm13));
-    memset(&m_Context.Xmm14, 0, sizeof(m_Context.Xmm14));
-    memset(&m_Context.Xmm15, 0, sizeof(m_Context.Xmm15));
-    // Initialize FP control/status
-    m_Context.MxCsr = 0x1F80; // Default MXCSR value (all exceptions masked)
-#else
-    // On Windows AMD64, argument registers are not saved in the transition block
+    // Argument registers are not saved in the transition block
     m_Context.Rax = 0;
     m_Context.Rcx = 0;
     m_Context.Rdx = 0;
