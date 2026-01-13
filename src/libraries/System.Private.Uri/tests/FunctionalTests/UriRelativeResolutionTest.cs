@@ -523,6 +523,8 @@ namespace System.PrivateUri.Tests
         {
             Uri ftp = new Uri("ftp://host?a=b/..");
             Assert.Equal("ftp://host/", ftp.AbsoluteUri);
+            Assert.Equal("/", ftp.AbsolutePath);
+            Assert.Equal("/", ftp.LocalPath);
         }
 
         #endregion PathCompression
