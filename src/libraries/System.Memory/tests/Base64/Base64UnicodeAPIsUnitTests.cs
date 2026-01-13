@@ -42,10 +42,10 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(str.Length, bytesWritten);
             Assert.Equal(inputBytes, decodedBytes.Slice(0, bytesWritten).ToArray());
             Assert.Equal(str.Length, Base64.DecodeFromChars(resultChars, decodedBytes));
-            Assert.True(Base64.TryDecodeFromChars(resultChars, decodedBytes, out bytesConsumed));
-            Assert.Equal(str.Length, bytesConsumed);
-            Assert.Equal(inputBytes, decodedBytes.Slice(0, bytesWritten).ToArray());
-            Assert.Equal(str, Encoding.UTF8.GetString(decodedBytes.Slice(0, bytesWritten)));
+            Assert.True(Base64.TryDecodeFromChars(resultChars, decodedBytes, out int tryDecodeBytesWritten));
+            Assert.Equal(str.Length, tryDecodeBytesWritten);
+            Assert.Equal(inputBytes, decodedBytes.Slice(0, tryDecodeBytesWritten).ToArray());
+            Assert.Equal(str, Encoding.UTF8.GetString(decodedBytes.Slice(0, tryDecodeBytesWritten)));
         }
 
         [Fact]
