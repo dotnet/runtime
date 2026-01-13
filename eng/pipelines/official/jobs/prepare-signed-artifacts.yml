@@ -32,6 +32,7 @@ jobs:
   - checkout: self
     clean: true
     fetchDepth: 20
+    fetchTags: false
 
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
     - task: NuGetAuthenticate@1
