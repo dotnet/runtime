@@ -1329,7 +1329,7 @@ namespace System.IO.Ports
             // i-th value corespond to (1 << i) bitmask
             ReadOnlySpan<int> bauds = [75, 110, 135, 150, 300, 600, 1200, 1800, 2400, 4800, 7200, 9600, 14400, 19200, 38400, 56000, 128000, 115200, 57600];
 
-            int index = BitOperations.LeadingZeroCount((uint)baudBitMask);
+            int index = BitOperations.TrailingZeroCount((uint)baudBitMask);
 
             // bit which has not defined macro. Rather enforce no limitation and give a try rather
             // then restricting usage of such device.
