@@ -1304,6 +1304,40 @@ namespace System.IO.Ports
             _dcb.Flags |= ((uint)setting);
         }
 
+        // Convert BAUD_XXX Win32 enum bit value to baudrate. Returns 0 if no limitation is present.
+        private static int ConvertMaxBaudBitMaskToBaudRate(int baudBitMask)
+        {
+            const uint BAUD_USER = 0x10000000;
+            if (baudBitMask == 0 || baudBitMask == BAUD_USER)
+            {
+                return 0;
+            }
+
+            // Windows passes value obtained from driver. According to docs, it should be single
+            // bit coresponding to supported max baudrate (bits up to baud 128K are defined) or
+            // BAUD_USER if device support arbitrary baudrate. But some device drivers (for example,
+            // Silicon Labs USB to UART convertors) provides maximum baudrate value as decimal
+            // value instead.
+            if (BitOperations.PopCount((uint)baudBitMask) != 1)
+            {
+                return baudBitMask;
+            }
+
+            // https://learn.microsoft.com/windows/win32/api/winbase/ns-winbase-commprop
+            // i-th value corespond to (1 << i) bitmask
+            ReadOnlySpan<int> bauds = [75, 110, 135, 150, 300, 600, 1200, 1800, 2400, 4800, 7200, 9600, 14400, 19200, 38400, 56000, 128000, 115200, 57600];
+
+            int index = BitOperations.LeadingZeroCount((uint)baudBitMask);
+
+            if (index >= bauds.Length)
+            {
+                // throw new Exception("??? Unsupported baudrate bitmask");
+                return 0;
+            }
+
+            return bauds[index];
+        }
+
         // ----SUBSECTION: internal methods supporting public read/write methods-------*
 
         private unsafe SerialStreamAsyncResult BeginReadCore(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object stateObject)
@@ -1525,40 +1559,6 @@ namespace System.IO.Ports
             }
 
             asyncResult._userCallback?.Invoke(asyncResult);
-        }
-
-
-        private static int ConvertBaudBitMaskToBaudRate(uint baudBitMask)
-        {
-            const uint BAUD_USER = 0x10000000;
-            if (baudBitMask == 0 || baudBitMask == BAUD_USER)
-            {
-                return 0;
-            }
-
-            // Windows passes value obtained from driver. According to docs, it should be single
-            // bit coresponding to supported max baudrate (bits up to baud 128K are dfined) or
-            // BAUD_USER if device support almost arbitrary baudrate. But some device drivers
-            // provide maximum baudrate value in decimal instead.
-            if (BitOperations.PopCount(baudBitMask) != 1)
-            {
-                //throw new ArgumentException("??? Not a valid baud bitmask");
-                return (int)baudBitMask;
-            }
-
-            // https://learn.microsoft.com/windows/win32/api/winbase/ns-winbase-commprop
-            // todo make static and const?
-            int[] bauds = { 75, 110, 135, 150, 300, 600, 1200, 1800, 2400, 4800, 7200, 9600, 14400, 19200, 38400, 56000, 57600, 115200, 128000 };
-
-            int index = BitOperations.LeadingZeroCount(baudBitMask);
-
-            if (index >= bauds.Length)
-            {
-                // throw new Exception("??? Unsupported baudrate bitmask");
-                return 0;
-            }
-
-            return bauds[index];
         }
 
         // ----SECTION: internal classes --------*
