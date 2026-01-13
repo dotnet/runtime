@@ -147,12 +147,6 @@ C_FUNC(\Name\()_End):
         // the xmm registers are not supported by the libunwind
 .endm
 
-// Unaligned version for use when stack alignment cannot be guaranteed
-.macro save_xmm128_postrsp_unaligned Reg, Offset
-        __Offset = \Offset
-        movdqu  xmmword ptr [rsp + __Offset], \Reg
-.endm
-
 .macro restore_xmm128 Reg, ofs
         __Offset = \ofs
         movdqa          \Reg, xmmword ptr [rsp + __Offset]
@@ -249,20 +243,6 @@ C_FUNC(\Name\()_End):
         save_xmm128_postrsp xmm5, \ofs + 0x50
         save_xmm128_postrsp xmm6, \ofs + 0x60
         save_xmm128_postrsp xmm7, \ofs + 0x70
-
-.endm
-
-// Unaligned version for cases where 16-byte stack alignment cannot be guaranteed
-.macro SAVE_FLOAT_ARGUMENT_REGISTERS_UNALIGNED ofs
-
-        save_xmm128_postrsp_unaligned xmm0, \ofs
-        save_xmm128_postrsp_unaligned xmm1, \ofs + 0x10
-        save_xmm128_postrsp_unaligned xmm2, \ofs + 0x20
-        save_xmm128_postrsp_unaligned xmm3, \ofs + 0x30
-        save_xmm128_postrsp_unaligned xmm4, \ofs + 0x40
-        save_xmm128_postrsp_unaligned xmm5, \ofs + 0x50
-        save_xmm128_postrsp_unaligned xmm6, \ofs + 0x60
-        save_xmm128_postrsp_unaligned xmm7, \ofs + 0x70
 
 .endm
 
@@ -448,35 +428,6 @@ C_FUNC(\Name\()_End):
         POP_CALLEE_SAVED_REGISTERS
 .endm
 
-// Pushes a full TransitionBlock on the stack including argument registers and
-// floating point argument registers. Used for exception throw helpers where we
-// need to capture the complete register state.
-//
-// Stack layout (from high to low address after prologue):
-//   Return address (8 bytes)
-//   CalleeSavedRegisters (rbp, rbx, r15, r14, r13, r12 - 48 bytes)
-//   ArgumentRegisters (r9, r8, rcx, rdx, rsi, rdi - 48 bytes)  <- TransitionBlock pointer
-//   FloatArgumentRegisters (xmm0-xmm7, 128 bytes) at rsp+8
-//   8-byte alignment padding at rsp+0
-//   sp points here
-//
-// Stack alignment calculation:
-//   Before call to IL_Throw: rsp is 16-byte aligned (ABI requirement before call)
-//   After call (return addr pushed): rsp % 16 = 8
-//   After PUSH_CALLEE_SAVED_REGISTERS (48 bytes): rsp % 16 = 8
-//   After PUSH_ARGUMENT_REGISTERS (48 bytes): rsp % 16 = 8
-//   After alloc_stack 136: rsp % 16 = (8 - 136 % 16) = (8 - 8) = 0  <- aligned!
-//
-// Stack layout for IL_Throw helpers using TransitionBlock with float registers.
-//
-// Stack alignment calculation:
-//   Before call to IL_Throw: rsp is 16-byte aligned (ABI requirement before call)
-//   After call (return addr pushed): rsp % 16 = 8
-//   After PUSH_CALLEE_SAVED_REGISTERS (48 bytes): rsp % 16 = 8
-//   After PUSH_ARGUMENT_REGISTERS (48 bytes): rsp % 16 = 8
-//   After alloc_stack 136: rsp % 16 = (8 - 136 % 16) = (8 - 8) = 0  <- aligned!
-//
-// Stack layout (low to high addresses):
 .macro INLINE_GETTHREAD
         // Inlined version of call C_FUNC(RhpGetThread)
         INLINE_GET_TLS_VAR t_CurrentThreadInfo
