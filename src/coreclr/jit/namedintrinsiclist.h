@@ -15,6 +15,7 @@ enum NamedIntrinsic : unsigned short
 
     NI_System_ArgumentNullException_ThrowIfNull,
 
+    NI_System_Enum_Equals,
     NI_System_Enum_HasFlag,
 
     NI_System_BitConverter_DoubleToInt64Bits,

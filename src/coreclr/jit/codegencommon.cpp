@@ -501,7 +501,6 @@ void CodeGen::genMarkLabelsForCodegen()
             case BBJ_CALLFINALLY:
                 // The finally target itself will get marked by walking the EH table, below, and marking
                 // all handler begins.
-                if (compiler->UsesCallFinallyThunks())
                 {
                     // For callfinally thunks, we need to mark the block following the callfinally/callfinallyret pair,
                     // as that's needed for identifying the range of the "duplicate finally" region in EH data.
@@ -1134,6 +1133,11 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
                                 unsigned* mulPtr,
                                 ssize_t*  cnsPtr)
 {
+// TODO-WASM: Prove whether a given addressing mode obeys the Wasm rules.
+// See https://github.com/dotnet/runtime/pull/122897#issuecomment-3721304477 for more details.
+#if defined(TARGET_WASM)
+    return false;
+#endif // TARGET_WASM
     /*
         The following indirections are valid address modes on x86/x64:
 
@@ -1626,7 +1630,7 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
 {
     bool useThrowHlpBlk = compiler->fgUseThrowHelperBlocks();
 #if defined(UNIX_X86_ABI)
-    // TODO: Is this really UNIX_X86_ABI specific? Should we guard with compiler->UsesFunclets() instead?
+    // TODO: Is this really UNIX_X86_ABI specific?
     // Inline exception-throwing code in funclet to make it possible to unwind funclet frames.
     useThrowHlpBlk = useThrowHlpBlk && (compiler->funCurrentFunc()->funKind == FUNC_ROOT);
 #endif // UNIX_X86_ABI
@@ -2103,11 +2107,15 @@ void CodeGen::genEmitMachineCode()
 
 #ifdef TARGET_64BIT
     trackedStackPtrsContig = false;
-#elif defined(TARGET_ARM)
-    // On arm due to prespilling of arguments, tracked stk-ptrs may not be contiguous
-    trackedStackPtrsContig = !compiler->opts.compDbgEnC && !compiler->compIsProfilerHookNeeded();
 #else
-    trackedStackPtrsContig = !compiler->opts.compDbgEnC;
+    // We try to allocate GC pointers contiguously on the stack except for some special cases.
+    trackedStackPtrsContig = !compiler->opts.compDbgEnC && (compiler->lvaAsyncExecutionContextVar == BAD_VAR_NUM) &&
+                             (compiler->lvaAsyncSynchronizationContextVar == BAD_VAR_NUM);
+
+#ifdef TARGET_ARM
+    // On arm due to prespilling of arguments, tracked stk-ptrs may not be contiguous
+    trackedStackPtrsContig &= !compiler->compIsProfilerHookNeeded();
+#endif
 #endif
 
     if (compiler->opts.disAsm && compiler->opts.disTesting)
@@ -2213,6 +2221,11 @@ void CodeGen::genEmitMachineCode()
 //
 void CodeGen::genEmitUnwindDebugGCandEH()
 {
+#ifdef TARGET_WASM
+    // TODO-WASM: Fix this phase causing an assertion failure even for methods with no GC locals or EH clauses
+    return;
+#endif
+
     /* Now that the code is issued, we can finalize and emit the unwind data */
 
     compiler->unwindEmit(*codePtr, coldCodePtr);
@@ -4488,7 +4501,6 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
 
 void CodeGen::genReserveFuncletProlog(BasicBlock* block)
 {
-    assert(compiler->UsesFunclets());
     assert(block != nullptr);
 
     /* Currently, no registers are live on entry to the prolog, except maybe
@@ -4519,7 +4531,6 @@ void CodeGen::genReserveFuncletProlog(BasicBlock* block)
 
 void CodeGen::genReserveFuncletEpilog(BasicBlock* block)
 {
-    assert(compiler->UsesFunclets());
     assert(block != nullptr);
 
     JITDUMP("Reserving funclet epilog IG for block " FMT_BB "\n", block->bbNum);
@@ -4782,7 +4793,6 @@ void CodeGen::genFinalizeFrame()
 #endif
 }
 
-#ifndef TARGET_WASM
 /*****************************************************************************
  *
  *  Generates code for a function prolog.
@@ -4823,7 +4833,10 @@ void CodeGen::genFnProlog()
     /* Ready to start on the prolog proper */
 
     GetEmitter()->emitBegProlog();
+
+#if !defined(TARGET_WASM)
     compiler->unwindBegProlog();
+#endif // !defined(TARGET_WASM)
 
     // Do this so we can put the prolog instruction group ahead of
     // other instruction groups
@@ -4841,6 +4854,8 @@ void CodeGen::genFnProlog()
         // Create new scopes for the method-parameters for the prolog-block.
         psiBegProlog();
     }
+
+#if !defined(TARGET_WASM)
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // For arm64 OSR, emit a "phantom prolog" to account for the actions taken
@@ -5370,31 +5385,6 @@ void CodeGen::genFnProlog()
 
     genZeroInitFrame(untrLclHi, untrLclLo, initReg, &initRegZeroed);
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    if (!compiler->UsesFunclets())
-    {
-        // when compInitMem is true the genZeroInitFrame will zero out the shadow SP slots
-        if (compiler->ehNeedsShadowSPslots() && !compiler->info.compInitMem)
-        {
-            // The last slot is reserved for ICodeManager::FixContext(ppEndRegion)
-            unsigned filterEndOffsetSlotOffs =
-                compiler->lvaLclStackHomeSize(compiler->lvaShadowSPslotsVar) - TARGET_POINTER_SIZE;
-
-            // Zero out the slot for nesting level 0
-            unsigned firstSlotOffs = filterEndOffsetSlotOffs - TARGET_POINTER_SIZE;
-
-            if (!initRegZeroed)
-            {
-                instGen_Set_Reg_To_Zero(EA_PTRSIZE, initReg);
-                initRegZeroed = true;
-            }
-
-            GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, initReg, compiler->lvaShadowSPslotsVar,
-                                      firstSlotOffs);
-        }
-    }
-#endif // FEATURE_EH_WINDOWS_X86
-
     genReportGenericContextArg(initReg, &initRegZeroed);
 
 #ifdef JIT32_GCENCODER
@@ -5640,8 +5630,15 @@ void CodeGen::genFnProlog()
     }
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
+#else  // defined(TARGET_WASM)
+    genWasmLocals();
+    GetEmitter()->emitMarkPrologEnd();
+#endif // !defined(TARGET_WASM)
+
     GetEmitter()->emitEndProlog();
 }
+
+#if !defined(TARGET_WASM)
 
 //----------------------------------------------------------------------------------
 // genEmitJumpTable: emit jump table and return its base offset
@@ -5727,7 +5724,7 @@ CORINFO_FIELD_HANDLE CodeGen::genEmitAsyncResumeInfo(unsigned stateNum)
 
     emitter::dataSection* dataSection;
     UNATIVE_OFFSET        baseOffs = genEmitAsyncResumeInfoTable(&dataSection);
-    return compiler->eeFindJitDataOffs(baseOffs + stateNum * sizeof(emitter::dataAsyncResumeInfo));
+    return compiler->eeFindJitDataOffs(baseOffs + stateNum * sizeof(CORINFO_AsyncResumeInfo));
 }
 
 //------------------------------------------------------------------------
@@ -5844,7 +5841,7 @@ void CodeGen::genDefinePendingCallLabel(GenTreeCall* call)
     genDefineInlineTempLabel(genPendingCallLabel);
     genPendingCallLabel = nullptr;
 }
-#endif // !TARGET_WASM
+#endif // !defined(TARGET_WASM)
 
 /*****************************************************************************
  *
@@ -5874,14 +5871,11 @@ void CodeGen::genGeneratePrologsAndEpilogs()
 
     // Generate all the prologs and epilogs.
 
-    if (compiler->UsesFunclets())
-    {
-        // Capture the data we're going to use in the funclet prolog and epilog generation. This is
-        // information computed during codegen, or during function prolog generation, like
-        // frame offsets. It must run after main function prolog generation.
+    // Capture the data we're going to use in the funclet prolog and epilog generation. This is
+    // information computed during codegen, or during function prolog generation, like
+    // frame offsets. It must run after main function prolog generation.
 
-        genCaptureFuncletPrologEpilogInfo();
-    }
+    genCaptureFuncletPrologEpilogInfo();
 
     // Walk the list of prologs and epilogs and generate them.
     // We maintain a list of prolog and epilog basic blocks in
@@ -7053,11 +7047,6 @@ void CodeGen::genReturn(GenTree* treeNode)
         }
     }
 
-    if (treeNode->OperIs(GT_RETURN) && compiler->compIsAsync())
-    {
-        instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_ASYNC_CONTINUATION_RET);
-    }
-
 #if EMIT_GENERATE_GCINFO
     if (treeNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
     {
@@ -7081,27 +7070,19 @@ void CodeGen::genReturn(GenTree* treeNode)
     }
 #endif // PROFILING_SUPPORTED
 
+    if (treeNode->OperIs(GT_RETURN) && compiler->compIsAsync())
+    {
+        instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_ASYNC_CONTINUATION_RET);
+        gcInfo.gcMarkRegPtrVal(REG_ASYNC_CONTINUATION_RET, TYP_REF);
+    }
+
 #if defined(DEBUG) && defined(TARGET_XARCH)
     bool doStackPointerCheck = compiler->opts.compStackCheckOnRet;
 
-    if (compiler->UsesFunclets())
+    // Don't do stack pointer check at the return from a funclet; only for the main function.
+    if (compiler->funCurrentFunc()->funKind != FUNC_ROOT)
     {
-        // Don't do stack pointer check at the return from a funclet; only for the main function.
-        if (compiler->funCurrentFunc()->funKind != FUNC_ROOT)
-        {
-            doStackPointerCheck = false;
-        }
-    }
-    else
-    {
-#if defined(FEATURE_EH_WINDOWS_X86)
-        // Don't generate stack checks for x86 finally/filter EH returns: these are not invoked
-        // with the same SP as the main function. See also CodeGen::genEHFinallyOrFilterRet().
-        if (compiler->compCurBB->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET))
-        {
-            doStackPointerCheck = false;
-        }
-#endif // FEATURE_EH_WINDOWS_X86
+        doStackPointerCheck = false;
     }
 
     genStackPointerCheck(doStackPointerCheck, compiler->lvaReturnSpCheck);
@@ -7144,6 +7125,7 @@ void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
 
     regNumber reg = genConsumeReg(op);
     inst_Mov(TYP_REF, REG_ASYNC_CONTINUATION_RET, reg, /* canSkip */ true);
+    gcInfo.gcMarkRegPtrVal(REG_ASYNC_CONTINUATION_RET, TYP_REF);
 
     ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
     unsigned       numRetRegs  = retTypeDesc.GetReturnRegCount();
@@ -7179,11 +7161,6 @@ void CodeGen::genMarkReturnGCInfo()
             gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
                                    retTypeDesc.GetReturnRegType(i));
         }
-    }
-
-    if (compiler->compIsAsync())
-    {
-        gcInfo.gcMarkRegPtrVal(REG_ASYNC_CONTINUATION_RET, TYP_REF);
     }
 }
 

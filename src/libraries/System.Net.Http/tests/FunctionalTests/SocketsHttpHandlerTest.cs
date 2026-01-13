@@ -1394,7 +1394,6 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_IdnaProtocolTests : IdnaProtocolTests
     {
         public SocketsHttpHandler_IdnaProtocolTests(ITestOutputHelper output) : base(output) { }
-        protected override bool SupportsIdna => true;
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -3390,7 +3389,7 @@ namespace System.Net.Http.Functional.Tests
             HttpRequestException hre = await Assert.ThrowsAnyAsync<HttpRequestException>(async () => await client.GetAsync($"{(useSsl ? "https" : "http")}://nowhere.invalid/foo"));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ConnectCallback_SslStream_OK(bool useSslStream)
@@ -3439,7 +3438,7 @@ namespace System.Net.Http.Functional.Tests
                 }, options: new GenericLoopbackOptions { UseSsl = true });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public async Task ConnectCallback_DerivedSslStream_OK()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
@@ -4411,7 +4410,7 @@ namespace System.Net.Http.Functional.Tests
             _certificateSetup = certificateSetup;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public async Task SslOptions_CustomTrust_Ok()
         {
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = true, Certificate = new X509Certificate2(_certificateSetup.ServerCert) };
@@ -4593,7 +4592,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         // On Windows7 DNS may return SocketError.NoData (WSANO_DATA), which we currently don't map to NameResolutionError.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public async Task NameResolutionError()
         {
             using HttpClient client = CreateHttpClient();

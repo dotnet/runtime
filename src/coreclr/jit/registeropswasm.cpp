@@ -61,6 +61,23 @@ regNumber MakeWasmReg(unsigned index, var_types type)
     return static_cast<regNumber>(regValue);
 }
 
+const char* WasmValueTypeName(WasmValueType type)
+{
+    // clang-format off
+    static const char* const WasmValueTypeNames[] = {
+        "Invalid",
+        "i32",
+        "i64",
+        "f32",
+        "f64",
+    };
+    static_assert(ArrLen(WasmValueTypeNames) == static_cast<unsigned>(WasmValueType::Count));
+    // clang-format on
+
+    assert(WasmValueType::Invalid <= type && type < WasmValueType::Count);
+    return WasmValueTypeNames[(unsigned)type];
+}
+
 //------------------------------------------------------------------------
 // UnpackWasmReg: Extract the WASM local's index and type out of a register
 //
@@ -122,18 +139,6 @@ bool genIsValidFloatReg(regNumber reg)
     WasmValueType type;
     UnpackWasmReg(reg, &type);
     return (type == WasmValueType::F32) || (type == WasmValueType::F64);
-}
-
-bool isValidIntArgReg(regNumber reg, CorInfoCallConvExtension callConv)
-{
-    NYI_WASM("isValidIntArgReg");
-    return false;
-}
-
-bool isValidFloatArgReg(regNumber reg)
-{
-    NYI_WASM("isValidFloatArgReg");
-    return false;
 }
 
 const char* getRegName(regNumber reg)

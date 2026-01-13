@@ -69,8 +69,8 @@ usage()
 
   echo "Libraries settings:"
   echo "  --coverage                 Collect code coverage when testing."
-  echo "  --framework (-f)           Build framework: net10.0 or net481."
-  echo "                             [Default: net10.0]"
+  echo "  --framework (-f)           Build framework: net11.0 or net481."
+  echo "                             [Default: net11.0]"
   echo "  --testnobuild              Skip building tests when invoking -test."
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."
   echo ""
@@ -608,7 +608,9 @@ if [[ "$bootstrap" == "1" ]]; then
       bootstrapArguments+=("$argument")
     fi
   done
-  "$scriptroot/common/build.sh" ${bootstrapArguments[@]+"${bootstrapArguments[@]}"} /p:Subset=bootstrap -bl:$scriptroot/../artifacts/log/$bootstrapConfig/bootstrap.binlog
+
+  # Set a different path for prebuilt usage tracking for the bootstrap build.
+  "$scriptroot/common/build.sh" ${bootstrapArguments[@]+"${bootstrapArguments[@]}"} /p:Subset=bootstrap /p:TrackPrebuiltUsageReportFile=$scriptroot/../artifacts/log/bootstrap-prebuilt-usage.xml -bl:$scriptroot/../artifacts/log/$bootstrapConfig/bootstrap.binlog
 
   # Remove artifacts from the bootstrap build so the product build is a "clean" build.
   echo "Cleaning up artifacts from bootstrap build..."

@@ -1,11 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// WASM-TODO: inline the code
+import { loaderConfig } from "./config";
 
-export function check(condition: unknown, messageFactory: string | (() => string)): asserts condition {
+export function check(condition: unknown, message: string): asserts condition {
     if (!condition) {
-        const message = typeof messageFactory === "string" ? messageFactory : messageFactory();
+        throw new Error(`dotnetAssert failed: ${message}`);
+    }
+}
+
+// calls to fastCheck will be inlined by rollup
+// so that the string formatting or allocation of a closure would only happen in failure cases
+// this is important for performance sensitive code paths
+export function fastCheck(condition: unknown, messageFactory: (() => string)): asserts condition {
+    if (!condition) {
+        const message = messageFactory();
         throw new Error(`dotnetAssert failed: ${message}`);
     }
 }
@@ -15,6 +24,9 @@ export function check(condition: unknown, messageFactory: string | (() => string
 const prefix = "DOTNET: ";
 
 export function debug(msg: string | (() => string), ...data: any) {
+    if (!loaderConfig.diagnosticTracing) {
+        return;
+    }
     if (typeof msg === "function") {
         msg = msg();
     }
