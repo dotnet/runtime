@@ -19,7 +19,7 @@
         const exports = {};
         libBrowserUtils(exports);
 
-        let commonDeps = ["$libBrowserUtilsFn", "$DOTNET"];
+        let commonDeps = ["$libBrowserUtilsFn", "$DOTNET", "emscripten_force_exit", "_exit", "GetDotNetRuntimeContractDescriptor"];
         const lib = {
             $BROWSER_UTILS: {
                 selfInitialize: () => {
@@ -37,13 +37,14 @@
             $BROWSER_UTILS__deps: commonDeps,
         };
 
+        // install cross-module symbols as "_ems_" ambient symbols in Emscripten closure
         // keep in sync with `reserved`+`keep_fnames` in src\native\rollup.config.defines.js
-        for (const exportName of Reflect.ownKeys(exports.cross)) {
+        for (const exportName of Reflect.ownKeys(exports._ems_ambient_)) {
             const name = String(exportName);
             if (name === "dotnetInternals") continue;
             if (name === "Module") continue;
             const emName = "$" + name;
-            lib[emName] = exports.cross[exportName];
+            lib[emName] = exports._ems_ambient_[exportName];
             commonDeps.push(emName);
         }
 

@@ -11,8 +11,6 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void Ctor_PathAndQueryNull_Throws()
         {
-            if (PlatformDetection.IsWindows7) // Null events in PowerShell log
-                return;
             Assert.Throws<ArgumentNullException>(() => new EventLogQuery(null, PathType.LogName, null));
         }
 

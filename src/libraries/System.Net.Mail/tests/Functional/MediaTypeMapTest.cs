@@ -58,6 +58,7 @@ namespace System.Net.Mime.Tests
         [InlineData(".xml", "application/xml")]
         [InlineData(".zip", "application/zip")]
         [InlineData(".txt", "text/plain")]
+        [InlineData(".cgm", "image/cgm")]
         [InlineData(".mp4", "video/mp4")]
         [InlineData(".mp3", "audio/mpeg")]
         [InlineData(".wasm", "application/wasm")]
@@ -118,6 +119,7 @@ namespace System.Net.Mime.Tests
 
         [Theory]
         [InlineData("application/pdf", ".pdf")]
+        [InlineData("image/cgm", ".cgm")]
         [InlineData("image/jpeg", ".jpg")]
         [InlineData("image/png", ".png")]
         [InlineData("text/html", ".html")]

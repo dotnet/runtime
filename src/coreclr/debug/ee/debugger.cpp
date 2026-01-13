@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: debugger.cpp
 //
-
-//
 // Debugger runtime controller routines.
-//
 //*****************************************************************************
 
 #include "stdafx.h"
@@ -3512,13 +3510,11 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
     csi.GetStackInfo(ticket, thread, LEAF_MOST_FRAME, NULL);
 
     ULONG offsetNatFrom = csi.m_activeFrame.relOffset;
-#if defined(FEATURE_EH_FUNCLETS)
     if (csi.m_activeFrame.IsFuncletFrame())
     {
         offsetNatFrom = (ULONG)((SIZE_T)GetControlPC(&(csi.m_activeFrame.registers)) -
                                 (SIZE_T)(dji->m_addrOfCode));
     }
-#endif // FEATURE_EH_FUNCLETS
 
     _ASSERTE(dji != NULL);
 
@@ -3527,11 +3523,10 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
     // the size of the individual funclets or the parent method.
     pbBase = (BYTE*)CORDB_ADDRESS_TO_PTR(dji->m_addrOfCode);
     dwSize = (DWORD)dji->m_sizeOfCode;
-#if defined(FEATURE_EH_FUNCLETS)
+
     // Currently, method offsets are not bigger than 4 bytes even on WIN64.
     // Assert that it is so here.
     _ASSERTE((SIZE_T)dwSize == dji->m_sizeOfCode);
-#endif // FEATURE_EH_FUNCLETS
 
 
     // Create our structure for analyzing this.
@@ -3539,10 +3534,8 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
     // CanSetIP & SetIP.</TODO>
     int           cFunclet  = 0;
     const DWORD * rgFunclet = NULL;
-#if defined(FEATURE_EH_FUNCLETS)
     cFunclet  = dji->GetFuncletCount();
     rgFunclet = dji->m_rgFunclet;
-#endif // FEATURE_EH_FUNCLETS
 
     EHRangeTree* pEHRT = new (nothrow) EHRangeTree(csi.m_activeFrame.pIJM,
                                                    csi.m_activeFrame.MethodToken,
@@ -3580,14 +3573,8 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
         // Caveat: we need to go to a sequence point
         if (fIsIL )
         {
-#if defined(FEATURE_EH_FUNCLETS)
             int funcletIndexFrom = dji->GetFuncletIndex((CORDB_ADDRESS)offsetNatFrom, DebuggerJitInfo::GFIM_BYOFFSET);
             offsetNatTo = dji->MapILOffsetToNativeForSetIP(offsetILTo, funcletIndexFrom, pEHRT, &exact);
-#else  // FEATURE_EH_FUNCLETS
-            DebuggerJitInfo::ILToNativeOffsetIterator it;
-            dji->InitILToNativeOffsetIterator(it, offsetILTo);
-            offsetNatTo = it.CurrentAssertOnlyOne(&exact);
-#endif // FEATURE_EH_FUNCLETS
 
             if (!exact)
             {
@@ -11383,7 +11370,6 @@ HRESULT Debugger::GetAndSendInterceptCommand(DebuggerIPCEvent *event)
 
                     ULONG relOffset = csi.m_activeFrame.relOffset;
 
-#if defined(FEATURE_EH_FUNCLETS)
                     int funcletIndex = PARENT_METHOD_INDEX;
 
                     // For funclets, we need to make sure that the stack empty sequence point we use is
@@ -11395,7 +11381,6 @@ HRESULT Debugger::GetAndSendInterceptCommand(DebuggerIPCEvent *event)
 
                     // Refer to the loop using pMap below.
                     DebuggerILToNativeMap* pMap = NULL;
-#endif // FEATURE_EH_FUNCLETS
 
                     for (unsigned int i = 0; i < pJitInfo->GetSequenceMapCount(); i++)
                     {
@@ -11432,23 +11417,18 @@ HRESULT Debugger::GetAndSendInterceptCommand(DebuggerIPCEvent *event)
                         }
 
                         if ((foundOffset < startOffset) && (startOffset <= relOffset)
-#if defined(FEATURE_EH_FUNCLETS)
                             // Check if we are still in the same funclet.
                             && (funcletIndex == pJitInfo->GetFuncletIndex(startOffset, DebuggerJitInfo::GFIM_BYOFFSET))
-#endif // FEATURE_EH_FUNCLETS
                            )
                         {
                             LOG((LF_CORDB, LL_INFO10000, "D::HIPCE: updating breakpoint at native offset 0x%zx\n",
                                  startOffset));
                             foundOffset = startOffset;
-#if defined(FEATURE_EH_FUNCLETS)
                             // Save the map entry for modification later.
                             pMap = &(pJitInfo->GetSequenceMap()[i]);
-#endif // FEATURE_EH_FUNCLETS
                         }
                     }
 
-#if defined(FEATURE_EH_FUNCLETS)
                     // This is nasty.  Starting recently we could have multiple sequence points with the same IL offset
                     // in the SAME funclet/parent method (previously different sequence points with the same IL offset
                     // imply that they are in different funclet/parent method).  Fortunately, we only run into this
@@ -11468,7 +11448,6 @@ HRESULT Debugger::GetAndSendInterceptCommand(DebuggerIPCEvent *event)
                         }
                     }
                     _ASSERTE(foundOffset < relOffset);
-#endif // FEATURE_EH_FUNCLETS
 
                     //
                     // Set up a breakpoint on the intercept IP
@@ -12452,12 +12431,7 @@ bool Debugger::IsThreadAtSafePlaceWorker(Thread *thread)
         CONTEXT ctx;
         ZeroMemory(&rd, sizeof(rd));
         ZeroMemory(&ctx, sizeof(ctx));
-#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
-        rd.ControlPC = ctx.Eip;
-        rd.PCTAddr = (TADDR)&(ctx.Eip);
-#else
         FillRegDisplay(&rd, &ctx);
-#endif
 
         if (ISREDIRECTEDTHREAD(thread))
         {
@@ -13209,7 +13183,7 @@ void STDCALL ExceptionHijackWorker(
     // call SetThreadContext on ourself to fix us.
 }
 
-#if defined(FEATURE_EH_FUNCLETS) && !defined(TARGET_UNIX)
+#ifndef TARGET_UNIX
 
 #if defined(TARGET_AMD64)
 // ----------------------------------------------------------------------------
@@ -13302,7 +13276,7 @@ ExceptionHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord,
     // exactly the behavior we want.
     return ExceptionCollidedUnwind;
 }
-#endif // FEATURE_EH_FUNCLETS && !TARGET_UNIX
+#endif // !TARGET_UNIX
 
 
 // UEF Prototype from excep.cpp
@@ -16364,12 +16338,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
         return;
     }
 
-#ifndef FEATURE_EH_FUNCLETS
-    // Reset pContext; it's only valid for active (top-most) frame.
-    pRD->pContext = NULL;
-#endif // !FEATURE_EH_FUNCLETS
-
-
 #ifdef TARGET_X86
     // Update all registers in the reg display from the CONTEXT we stored when the thread was hijacked for this func
     // eval. We have to update all registers, not just the callee saved registers, because we can hijack a thread at any
@@ -16383,20 +16351,12 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     pRD->SetEbpLocation(&(pDE->m_context.Ebp));
     SetRegdisplayPCTAddr(pRD, GetReturnAddressPtr());
 
-#ifdef FEATURE_EH_FUNCLETS
-
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Esp = (DWORD)GetSP(&pDE->m_context);
 
     SyncRegDisplayToCurrentContext(pRD);
-
-#else // FEATURE_EH_FUNCLETS
-
-    pRD->SP = (DWORD)GetSP(&pDE->m_context);
-
-#endif // FEATURE_EH_FUNCLETS
 
 #elif defined(TARGET_AMD64)
     pRD->IsCallerContextValid = FALSE;
