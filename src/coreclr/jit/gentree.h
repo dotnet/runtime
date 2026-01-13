@@ -5262,8 +5262,13 @@ struct GenTreeCall final : public GenTree
     {
         return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_VTABLE;
     }
+    bool IsGenericVirtual(Compiler* compiler) const
+    {
+        return (gtCallType == CT_INDIRECT && (gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
+                                              gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_GVMLOOKUP_FOR_SLOT)));
+    }
 
-    bool IsDevirtualizationCandidate(Compiler* compiler) const;
+    bool IsDevirtualizationCandidate(Compiler* compiler, CORINFO_METHOD_HANDLE* pMethHandle = nullptr) const;
 
     bool IsInlineCandidate() const
     {
