@@ -4067,6 +4067,7 @@ public:
     void lvaAssignVirtualFrameOffsetsToLocals();
     bool lvaParamHasLocalStackSpace(unsigned lclNum);
     int lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, int stkOffs);
+    int lvaAllocAsyncContexts(int stkOffs);
 #ifdef TARGET_AMD64
     // Returns true if compCalleeRegsPushed (including RBP if used as frame pointer) is even.
     bool lvaIsCalleeSavedIntRegCountEven();
@@ -4579,6 +4580,7 @@ protected:
                            const BYTE*             codeEndp,
                            BoxPatterns             opts);
     void impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken);
+    bool impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     void impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
@@ -5546,8 +5548,8 @@ public:
     Statement* fgNewStmtFromTree(GenTree* tree, const DebugInfo& di);
 
     GenTreeQmark* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
-    bool fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
-    void fgExpandQmarkNodes();
+    bool fgExpandQmarkStmt(BasicBlock* block, Statement* stmt, bool onlyEarlyQmarks);
+    PhaseStatus fgExpandQmarkNodes(bool early);
 
     bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
     bool fgSimpleLowerBswap16(LIR::Range& range, GenTree* op);
@@ -7414,6 +7416,7 @@ public:
 #define OMF_HAS_EXPANDABLE_CAST                0x00080000 // Method contains casts eligible for late expansion
 #define OMF_HAS_STACK_ARRAY                    0x00100000 // Method contains stack allocated arrays
 #define OMF_HAS_BOUNDS_CHECKS                  0x00200000 // Method contains bounds checks
+#define OMF_HAS_EARLY_QMARKS                   0x00400000 // Method contains early expandable QMARKs
 
     // clang-format on
 
@@ -10494,7 +10497,8 @@ public:
         // Do not stress tailcalls in IL stubs as the runtime creates several IL
         // stubs to implement the tailcall mechanism, which would then
         // recursively create more IL stubs.
-        return !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) &&
+        // Tailcalls are also not allowed out of async methods, so do not stress in those either.
+        return !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && !compIsAsync() &&
                (JitConfig.TailcallStress() != 0 || compStressCompile(STRESS_TAILCALL, 5));
 #else
         return false;

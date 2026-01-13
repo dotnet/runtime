@@ -627,10 +627,7 @@ public:
         TSNC_DebuggerSleepWaitJoin      = 0x04000000, // Indicates to the debugger that this thread is in a sleep wait or join state
                                                       // This almost mirrors the TS_Interruptible state however that flag can change
                                                       // during GC-preemptive mode whereas this one cannot.
-#ifdef FEATURE_COMINTEROP
-        TSNC_WinRTInitialized           = 0x08000000, // the thread has initialized WinRT
-#endif // FEATURE_COMINTEROP
-
+        // unused                       = 0x08000000,
         TSNC_TSLTakenForStartup         = 0x10000000, // The ThreadStoreLock (TSL) is held by another mechanism during
                                                       // thread startup so can be skipped.
 
@@ -747,20 +744,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         ResetThreadState(TS_CoInitialized);
     }
-
-#ifdef FEATURE_COMINTEROP
-    BOOL IsWinRTInitialized()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return HasThreadStateNC(TSNC_WinRTInitialized);
-    }
-
-    void ResetWinRTInitialized()
-    {
-        LIMITED_METHOD_CONTRACT;
-        ResetThreadStateNC(TSNC_WinRTInitialized);
-    }
-#endif // FEATURE_COMINTEROP
 
     void CleanupCOMState();
 
@@ -1119,7 +1102,6 @@ public:
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     void            CoUninitialize();
     void            BaseCoUninitialize();
-    void            BaseWinRTUninitialize();
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
     void        CooperativeCleanup();

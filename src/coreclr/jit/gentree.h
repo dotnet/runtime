@@ -502,6 +502,8 @@ enum GenTreeFlags : unsigned
     GTF_BOX_CLONED              = 0x40000000, // GT_BOX -- this box and its operand has been cloned, cannot assume it to be single-use anymore
     GTF_BOX_VALUE               = 0x80000000, // GT_BOX -- "box" is on a value type
 
+    GTF_QMARK_EARLY_EXPAND      = 0x01000000, // GT_QMARK -- early expansion of the QMARK node is required
+
     GTF_ARR_ADDR_NONNULL        = 0x80000000, // GT_ARR_ADDR -- this array's address is not null
 
 #define HANDLE_KIND_INDEX_SHIFT 24
@@ -5310,8 +5312,13 @@ struct GenTreeCall final : public GenTree
     {
         return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_VTABLE;
     }
+    bool IsGenericVirtual(Compiler* compiler) const
+    {
+        return (gtCallType == CT_INDIRECT && (gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
+                                              gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_GVMLOOKUP_FOR_SLOT)));
+    }
 
-    bool IsDevirtualizationCandidate(Compiler* compiler) const;
+    bool IsDevirtualizationCandidate(Compiler* compiler, CORINFO_METHOD_HANDLE* pMethHandle = nullptr) const;
 
     bool IsInlineCandidate() const
     {
@@ -5985,6 +5992,16 @@ struct GenTreeQmark : public GenTreeOp
     {
         assert(thenLikelihood <= 100);
         gtThenLikelihood = thenLikelihood;
+    }
+
+    bool IsEarlyExpandableQmark() const
+    {
+        return gtFlags & GTF_QMARK_EARLY_EXPAND;
+    }
+
+    void SetEarlyExpandableQmark()
+    {
+        gtFlags |= GTF_QMARK_EARLY_EXPAND;
     }
 
 #if DEBUGGABLE_GENTREE

@@ -19,7 +19,11 @@
         const exports = {};
         libBrowserHost(exports);
 
-        let commonDeps = ["$libBrowserHostFn", "$DOTNET", "$DOTNET_INTEROP", "$ENV", "$FS", "$NODEFS", "wasm_load_icu_data", "BrowserHost_InitializeCoreCLR", "BrowserHost_ExecuteAssembly"];
+        let commonDeps = [
+            "$DOTNET", "$DOTNET_INTEROP", "$ENV", "$FS", "$NODEFS",
+            "$libBrowserHostFn",
+            "wasm_load_icu_data", "BrowserHost_InitializeCoreCLR", "BrowserHost_ExecuteAssembly"
+        ];
         const lib = {
             $BROWSER_HOST: {
                 selfInitialize: () => {
@@ -64,6 +68,11 @@
                         }
                     }
                 },
+                // libBrowserHostFn is too complex for acorn-optimizer.mjs to find the dependencies
+                AJSDCE_Deps: function () {
+                    _BrowserHost_InitializeCoreCLR();
+                    _BrowserHost_ExecuteAssembly();
+                },
             },
             $libBrowserHostFn: libBrowserHost,
             $BROWSER_HOST__postset: "BROWSER_HOST.selfInitialize()",
@@ -76,10 +85,6 @@
             if (name === "dotnetInitializeModule") continue;
             lib[name] = () => "dummy";
             assignExportsBuilder += `_${String(name)} = exports.${String(name)};\n`;
-            const fn = exports[name];
-            if (fn.__deps) {
-                lib[name + "__deps"] = fn.__deps;
-            }
         }
         lib.$BROWSER_HOST.assignExports = new Function("exports", assignExportsBuilder);
 

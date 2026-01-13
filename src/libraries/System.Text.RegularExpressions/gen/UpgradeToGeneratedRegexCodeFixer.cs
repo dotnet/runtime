@@ -45,7 +45,15 @@ namespace System.Text.RegularExpressions.Generator
         {
             // Fetch the node to fix, and register the codefix by invoking the ConvertToSourceGenerator method.
             if (await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false) is not SyntaxNode root ||
-                root.FindNode(context.Span, getInnermostNodeForTie: true) is not SyntaxNode nodeToFix)
+                root.FindNode(context.Span, getInnermostNodeForTie: true) is not SyntaxNode node)
+            {
+                return;
+            }
+
+            // The diagnostic span covers just the method/constructor name (e.g., "Regex.IsMatch" or "new Regex" or "new"),
+            // so we need to find the containing invocation or object creation expression.
+            SyntaxNode? nodeToFix = node.AncestorsAndSelf().FirstOrDefault(n => n is InvocationExpressionSyntax or ObjectCreationExpressionSyntax or ImplicitObjectCreationExpressionSyntax);
+            if (nodeToFix is null)
             {
                 return;
             }

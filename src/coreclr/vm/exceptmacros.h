@@ -223,11 +223,11 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 #define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(nativeRethrow) \
         }                                           \
         catch (PAL_SEHException& ex)                \
-        {                                           \
-            if (nativeRethrow)                      \
-            {                                       \
-                throw;                              \
-            }                                       \
+        {                        \
+            if (nativeRethrow || (ex.HasTargetFrame() && ex.TargetFrameSp > (SIZE_T)&exCopy))               \
+            { \
+                throw; \
+            } \
             exCopy = std::move(ex);                 \
             hasCaughtException = true;              \
         }                                           \

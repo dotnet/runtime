@@ -1133,6 +1133,11 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
                                 unsigned* mulPtr,
                                 ssize_t*  cnsPtr)
 {
+// TODO-WASM: Prove whether a given addressing mode obeys the Wasm rules.
+// See https://github.com/dotnet/runtime/pull/122897#issuecomment-3721304477 for more details.
+#if defined(TARGET_WASM)
+    return false;
+#endif // TARGET_WASM
     /*
         The following indirections are valid address modes on x86/x64:
 
@@ -2102,11 +2107,15 @@ void CodeGen::genEmitMachineCode()
 
 #ifdef TARGET_64BIT
     trackedStackPtrsContig = false;
-#elif defined(TARGET_ARM)
-    // On arm due to prespilling of arguments, tracked stk-ptrs may not be contiguous
-    trackedStackPtrsContig = !compiler->opts.compDbgEnC && !compiler->compIsProfilerHookNeeded();
 #else
-    trackedStackPtrsContig = !compiler->opts.compDbgEnC;
+    // We try to allocate GC pointers contiguously on the stack except for some special cases.
+    trackedStackPtrsContig = !compiler->opts.compDbgEnC && (compiler->lvaAsyncExecutionContextVar == BAD_VAR_NUM) &&
+                             (compiler->lvaAsyncSynchronizationContextVar == BAD_VAR_NUM);
+
+#ifdef TARGET_ARM
+    // On arm due to prespilling of arguments, tracked stk-ptrs may not be contiguous
+    trackedStackPtrsContig &= !compiler->compIsProfilerHookNeeded();
+#endif
 #endif
 
     if (compiler->opts.disAsm && compiler->opts.disTesting)

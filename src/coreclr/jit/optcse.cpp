@@ -5874,12 +5874,12 @@ bool Compiler::optSharedConstantCSEEnabled()
     {
         enableSharedConstCSE = true;
     }
-#if defined(TARGET_ARMARCH)
-    else if (configValue == CONST_CSE_ENABLE_ARM)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
+    else if (configValue == CONST_CSE_ENABLE_ARM_RISCV64)
     {
         enableSharedConstCSE = true;
     }
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_RISCV64
 
     return enableSharedConstCSE;
 }
@@ -5899,8 +5899,8 @@ bool Compiler::optConstantCSEEnabled()
     {
         enableConstCSE = true;
     }
-#if defined(TARGET_ARMARCH)
-    else if ((configValue == CONST_CSE_ENABLE_ARM) || (configValue == CONST_CSE_ENABLE_ARM_NO_SHARING))
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
+    else if ((configValue == CONST_CSE_ENABLE_ARM_RISCV64) || (configValue == CONST_CSE_ENABLE_ARM_RISCV64_NO_SHARING))
     {
         enableConstCSE = true;
     }

@@ -34,10 +34,10 @@ export function registerExit() {
 }
 
 function unregisterExit() {
-    if (Module.onAbort == onEmAbort) {
+    if (Module.onAbort === onEmAbort) {
         Module.onAbort = runtimeState.originalOnAbort;
     }
-    if (Module.onExit == onEmExit) {
+    if (Module.onExit === onEmExit) {
         Module.onExit = runtimeState.originalOnExit;
     }
 }

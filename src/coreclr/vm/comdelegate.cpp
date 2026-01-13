@@ -812,7 +812,9 @@ CLRToCOMCallInfo * COMDelegate::PopulateCLRToCOMCallInfo(MethodTable * pDelMT)
         CLRToCOMCallInfo *pTemp = (CLRToCOMCallInfo *)(void *)pHeap->AllocMem(S_SIZE_T(sizeof(CLRToCOMCallInfo)));
 
         pTemp->m_cachedComSlot = ComMethodTable::GetNumExtraSlots(ifVtable);
+#ifdef TARGET_X86
         pTemp->InitStackArgumentSize();
+#endif // TARGET_X86
 
         InterlockedCompareExchangeT(&pClass->m_pCLRToCOMCallInfo, pTemp, NULL);
     }
@@ -2792,13 +2794,6 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // that has the _methodBase field filled in with the LoaderAllocator of the collectible assembly
     // associated with the instantiation.
     BOOL fMaybeCollectibleAndStatic = FALSE;
-
-    // Do not allow static methods with [UnmanagedCallersOnlyAttribute] to be a delegate target.
-    // A method marked UnmanagedCallersOnly is special and allowing it to be delegate target will destabilize the runtime.
-    if (pTargetMethod->HasUnmanagedCallersOnlyAttribute())
-    {
-        COMPlusThrow(kNotSupportedException, W("NotSupported_UnmanagedCallersOnlyTarget"));
-    }
 
     if (isStatic)
     {
