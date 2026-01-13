@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NuGet.Frameworks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -231,31 +232,35 @@ namespace Wasm.Build.Tests
             """;
             UpdateFile(Path.Combine(_projectDir, "runtime-icall-table.h"), icallTable);
 
-            string tasksDir = Path.Combine(s_buildEnv.WorkloadPacksDir,
-                                                              "Microsoft.NET.Runtime.WebAssembly.Sdk",
-                                                              s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework),
-                                                              "tasks",
-                                                              BuildTestBase.TargetFrameworkForTasks); // not net472!
-            if (!Directory.Exists(tasksDir)) {
-                string? tasksDirParent = Path.GetDirectoryName (tasksDir);
-                if (!string.IsNullOrEmpty (tasksDirParent)) {
-                    if (!Directory.Exists(tasksDirParent)) {
-                        _testOutput.WriteLine($"Expected {tasksDirParent} to exist and contain TFM subdirectories");
-                    }
-                    _testOutput.WriteLine($"runtime pack tasks dir {tasksDir} contains subdirectories:");
-                    foreach (string subdir in Directory.EnumerateDirectories(tasksDirParent)) {
-                        _testOutput.WriteLine($"  - {subdir}");
-                    }
-                }
-                throw new DirectoryNotFoundException($"Could not find tasks directory {tasksDir}");
-            }
+            string tasksBaseDir = Path.Combine(s_buildEnv.WorkloadPacksDir,
+                                                "Microsoft.NET.Runtime.WebAssembly.Sdk",
+                                                s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework),
+                                                "tasks");
+            if (!Directory.Exists(tasksBaseDir))
+                throw new DirectoryNotFoundException($"Could not find tasks base directory {tasksBaseDir}");
+
+            string[] taskDirectories = Directory.GetDirectories(tasksBaseDir);
+            // Enumerate all TFM directories and select the one with the highest version
+            string? tasksDir = taskDirectories
+                .Select(dir => {
+                    string tfm = Path.GetFileName(dir);
+                    var framework = NuGetFramework.Parse(tfm);
+                    return new { Dir = dir, Framework = framework };
+                })
+                .Where(x => x.Framework.Framework == FrameworkConstants.FrameworkIdentifiers.NetCoreApp)
+                .OrderByDescending(x => x.Framework.Version)
+                .Select(x => x.Dir)
+                .FirstOrDefault();
+
+            if (string.IsNullOrEmpty(tasksDir))
+                throw new DirectoryNotFoundException($"Could not find any valid TFM directories in {tasksBaseDir} : {string.Join(", ", taskDirectories)}");
 
             string? taskPath = Directory.EnumerateFiles(tasksDir, "WasmAppBuilder.dll", SearchOption.AllDirectories)
                                             .FirstOrDefault();
             if (string.IsNullOrEmpty(taskPath))
                 throw new FileNotFoundException($"Could not find WasmAppBuilder.dll in {tasksDir}");
 
-            _testOutput.WriteLine ("Using WasmAppBuilder.dll from {0}", taskPath);
+            _testOutput.WriteLine("Using WasmAppBuilder.dll from {0}", taskPath);
 
             string AddAssembly(string assemblyLocation, string name) => $"<WasmPInvokeAssembly Include=\"{Path.Combine(assemblyLocation, name + ".dll")}\" />";
             string frameworkDir = Path.Combine(GetBinFrameworkDir(config, isPublish));
