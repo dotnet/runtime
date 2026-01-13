@@ -866,17 +866,6 @@
         "illumos-x64"
       ]
     },
-    "omnios.15": {
-      "#import": [
-        "omnios"
-      ]
-    },
-    "omnios.15-x64": {
-      "#import": [
-        "omnios.15",
-        "omnios-x64"
-      ]
-    },
     "openindiana": {
       "#import": [
         "illumos"

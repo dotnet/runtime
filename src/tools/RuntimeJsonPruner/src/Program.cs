@@ -100,6 +100,7 @@ public static class Program
         "freebsd",
         "illumos",
         "solaris",
+        "omnios",
     };
 
     // Apple OS families that might have versioned RIDs
