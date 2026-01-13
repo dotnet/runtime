@@ -13,7 +13,7 @@ public static class CUnionTests
     [Fact]
     public static void BlittablePrimitiveFieldsLayout()
     {
-        var c = default(CUnionBlittablePrimitiveFields);
+        CUnionBlittablePrimitiveFields c = default;
 
         // All fields should be at offset 0, size should be max field size (4 bytes for int/float)
         Assert.Equal(4, Unsafe.SizeOf<CUnionBlittablePrimitiveFields>());
@@ -25,7 +25,7 @@ public static class CUnionTests
     [Fact]
     public static void NonBlittableUnmanagedPrimitiveFields_TreatedAsBlittable()
     {
-        var c = default(CUnionNonBlittablePrimitiveFields);
+        CUnionNonBlittablePrimitiveFields c = default;
         Assert.Equal(Unsafe.SizeOf<CUnionNonBlittablePrimitiveFields>(), Marshal.SizeOf<CUnionNonBlittablePrimitiveFields>());
         // Size should be 2 (char is 2 bytes, bool is 1 byte)
         Assert.Equal(2, Unsafe.SizeOf<CUnionNonBlittablePrimitiveFields>());
@@ -44,7 +44,7 @@ public static class CUnionTests
     [Fact]
     public static void NestedCUnion()
     {
-        var nested = new CUnionCustomCUnionField();
+        CUnionCustomCUnionField nested = default;
 
         // Size should be the size of NestedCUnionType (8 bytes for int64)
         Assert.Equal(8, Unsafe.SizeOf<CUnionCustomCUnionField>());
@@ -53,7 +53,7 @@ public static class CUnionTests
     [Fact]
     public static void NestedNonCUnionNonAuto()
     {
-        var nested = new CUnionCustomSeqStructField();
+        CUnionCustomSeqStructField nested = default;
 
         Assert.Equal(4, Unsafe.SizeOf<CUnionCustomSeqStructField>());
     }
@@ -102,7 +102,7 @@ public static class CUnionTests
     [Fact]
     public static void MixedSizes_SizeIsLargestField()
     {
-        var c = default(CUnionMixedSizes);
+        CUnionMixedSizes c = default;
 
         // Size should be 8 (int64 is the largest field)
         Assert.Equal(8, Unsafe.SizeOf<CUnionMixedSizes>());
@@ -117,7 +117,7 @@ public static class CUnionTests
     [Fact]
     public static void TwoInts_ShareSameMemory()
     {
-        var c = default(CUnionTwoInts);
+        CUnionTwoInts c = default;
 
         // Size should be 4 (both fields are int32)
         Assert.Equal(4, Unsafe.SizeOf<CUnionTwoInts>());
@@ -127,11 +127,11 @@ public static class CUnionTests
         Assert.Equal(0, Unsafe.ByteOffset(ref Unsafe.As<CUnionTwoInts, byte>(ref c), ref Unsafe.As<int, byte>(ref c.second)));
 
         // Writing to one field should affect the other
-        c.first = 42;
-        Assert.Equal(42, c.second);
+        c.first = 0x55556666;
+        Assert.Equal(0x55556666, c.second);
 
-        c.second = 100;
-        Assert.Equal(100, c.first);
+        c.second = 0x77778888;
+        Assert.Equal(0x77778888, c.first);
     }
 
     [Fact]
