@@ -32,5 +32,12 @@ namespace System.PrivateUri.Tests
             Uri baseUri = new Uri("http://localhost/");
             Assert.Throws<ArgumentNullException>(() => baseUri.IsBaseOf((Uri)null));
         }
+
+        [Fact]
+        public void Uri_Ctor_NullRelativeUri_ThrowsArgumentNullException()
+        {
+            Uri baseUri = new Uri("http://localhost/");
+            Assert.Throws<ArgumentNullException>(() => new Uri(baseUri, (Uri)null));
+        }
     }
 }
