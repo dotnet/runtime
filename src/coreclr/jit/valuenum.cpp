@@ -2559,6 +2559,17 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
     assert(func != VNF_MemOpaque);
     assert(arg0VN == VNNormalValue(arg0VN)); // Arguments don't carry exceptions.
 
+    // Try to remove double-negation for NOT/NEG.
+    //
+    if ((func == VNF_NOT) || (func == VNF_NEG))
+    {
+        VNFuncApp arg0FuncApp;
+        if (GetVNFunc(arg0VN, &arg0FuncApp) && (arg0FuncApp.m_func == func))
+        {
+            return arg0FuncApp.m_args[0];
+        }
+    }
+
     // Have we already assigned a ValueNum for 'func'('arg0VN') ?
     //
     VNDefFuncApp<1> fstruct(func, arg0VN);
@@ -2658,17 +2669,6 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
         if ((*resultVN == NoVN) && VNEvalCanFoldUnaryFunc(typ, func, arg0VN))
         {
             *resultVN = EvalFuncForConstantArgs(typ, func, arg0VN);
-        }
-
-        // Try to remove double-negation for NOT/NEG.
-        //
-        if ((func == VNF_NOT) || (func == VNF_NEG))
-        {
-            VNFuncApp arg0FuncApp;
-            if (GetVNFunc(arg0VN, &arg0FuncApp) && (arg0FuncApp.m_func == func))
-            {
-                return arg0FuncApp.m_args[0];
-            }
         }
 
         // Otherwise, Allocate a new ValueNum for 'func'('arg0VN')
