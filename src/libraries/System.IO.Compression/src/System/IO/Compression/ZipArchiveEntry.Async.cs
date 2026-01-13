@@ -202,10 +202,15 @@ public partial class ZipArchiveEntry
                             (ushort)CompressionMethodValues.Deflate
                 };
                 await aesExtraField.WriteBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
-            }
 
-            // write extra fields (and any malformed trailing data).
-            await ZipGenericExtraField.WriteAllBlocksAsync(_cdUnknownExtraFields, _cdTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
+                // write extra fields excluding existing AES extra field (and any malformed trailing data).
+                await ZipGenericExtraField.WriteAllBlocksExcludingTagAsync(_cdUnknownExtraFields, _cdTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, WinZipAesExtraField.HeaderId, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                // write extra fields (and any malformed trailing data).
+                await ZipGenericExtraField.WriteAllBlocksAsync(_cdUnknownExtraFields, _cdTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
+            }
 
             if (_fileComment.Length > 0)
             {
@@ -397,9 +402,14 @@ public partial class ZipArchiveEntry
                             (ushort)CompressionMethodValues.Deflate
                 };
                 await aesExtraField.WriteBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
-            }
 
-            await ZipGenericExtraField.WriteAllBlocksAsync(_lhUnknownExtraFields, _lhTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
+                // Write other extra fields, excluding any existing AES extra field to avoid duplication
+                await ZipGenericExtraField.WriteAllBlocksExcludingTagAsync(_lhUnknownExtraFields, _lhTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, WinZipAesExtraField.HeaderId, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                await ZipGenericExtraField.WriteAllBlocksAsync(_lhUnknownExtraFields, _lhTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         return zip64ExtraField != null;
@@ -433,7 +443,29 @@ public partial class ZipArchiveEntry
                     _compressedSize = 0;
                 }
 
+                // For unchanged entries, we need to write the header correctly but avoid
+                // WriteLocalFileHeaderAsync creating NEW encryption structures (which would have
+                // wrong compression method from _compressionLevel).
+                // The original AES extra field is preserved in _lhUnknownExtraFields.
+                BitFlagValues savedFlags = _generalPurposeBitFlag;
+                EncryptionMethod savedEncryption = _encryptionMethod;
+                ZipCompressionMethod savedCompressionMethod = CompressionMethod;
+
+                // For AES entries: set CompressionMethod to Aes so header writes method 99,
+                // but clear _encryptionMethod so WriteLocalFileHeaderAsync doesn't create a new
+                // AES extra field (the original one in _lhUnknownExtraFields will be used).
+                if (savedEncryption is EncryptionMethod.Aes128 or EncryptionMethod.Aes192 or EncryptionMethod.Aes256)
+                {
+                    CompressionMethod = ZipCompressionMethod.Aes;
+                    _encryptionMethod = EncryptionMethod.None;
+                }
+
                 await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: true, cancellationToken).ConfigureAwait(false);
+
+                // Restore original state
+                _generalPurposeBitFlag = savedFlags;
+                _encryptionMethod = savedEncryption;
+                CompressionMethod = savedCompressionMethod;
 
                 // according to ZIP specs, zero-byte files MUST NOT include file data
                 if (_uncompressedSize != 0)
@@ -443,6 +475,12 @@ public partial class ZipArchiveEntry
                     {
                         await _archive.ArchiveStream.WriteAsync(compressedBytes, cancellationToken).ConfigureAwait(false);
                     }
+                }
+
+                // Write data descriptor if the original entry had one
+                if ((savedFlags & BitFlagValues.DataDescriptor) != 0)
+                {
+                    await WriteDataDescriptorAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
         }

@@ -1899,6 +1899,125 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        [SkipOnCI("Local development test - requires specific file paths")]
+        [Fact]
+        public async Task Debug_UpdateMode_MultipleEncryptedEntries_ModifyOne()
+        {
+            // Arrange - use a fixed path so you can hexdump it
+            Directory.CreateDirectory(DownloadsDir);
+            string archivePath = Path.Combine(DownloadsDir, "debug_update_mode_aes.zip");
+            string archiveAfterUpdatePath = Path.Combine(DownloadsDir, "debug_update_mode_aes_after_update.zip");
+
+            if (File.Exists(archivePath)) File.Delete(archivePath);
+            if (File.Exists(archiveAfterUpdatePath)) File.Delete(archiveAfterUpdatePath);
+
+            string password = "password123";
+            var encryptionMethod = ZipArchiveEntry.EncryptionMethod.Aes256;
+
+            // Step 1: Create initial archive with 3 encrypted entries
+            using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
+            {
+                var entries = new[]
+                {
+            ("file1.txt", "Content 1"),
+            ("file2.txt", "Content 2"),
+            ("file3.txt", "Content 3")
+        };
+
+                foreach (var (name, content) in entries)
+                {
+                    var entry = archive.CreateEntry(name);
+                    using var stream = entry.Open(password, encryptionMethod);
+                    using var writer = new StreamWriter(stream, Encoding.UTF8);
+                    await writer.WriteAsync(content);
+                }
+            }
+
+            // Copy the original archive for comparison
+            File.Copy(archivePath, Path.Combine(DownloadsDir, "debug_update_mode_aes_ORIGINAL.zip"), overwrite: true);
+
+            // Step 2: Open in Update mode and modify file2.txt
+            using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Update))
+            {
+                var entry = archive.GetEntry("file2.txt");
+                Assert.NotNull(entry);
+
+                // Log entry state before opening
+                System.Diagnostics.Debug.WriteLine($"Before Open - Entry: {entry.FullName}");
+                System.Diagnostics.Debug.WriteLine($"  IsEncrypted: {entry.IsEncrypted}");
+                System.Diagnostics.Debug.WriteLine($"  CompressionMethod: {entry.CompressionMethod}");
+                System.Diagnostics.Debug.WriteLine($"  CompressedLength: {entry.CompressedLength}");
+                System.Diagnostics.Debug.WriteLine($"  Length: {entry.Length}");
+
+                using (var stream = entry.Open(password))
+                {
+                    stream.SetLength(0);
+                    byte[] newContent = Encoding.UTF8.GetBytes("Modified Content 2");
+                    await stream.WriteAsync(newContent, 0, newContent.Length);
+                }
+
+                // Log all entries' state after modification
+                foreach (var e in archive.Entries)
+                {
+                    System.Diagnostics.Debug.WriteLine($"After Modify - Entry: {e.FullName}");
+                    System.Diagnostics.Debug.WriteLine($"  IsEncrypted: {e.IsEncrypted}");
+                    System.Diagnostics.Debug.WriteLine($"  CompressionMethod: {e.CompressionMethod}");
+                }
+            }
+
+            // Copy the modified archive for comparison
+            File.Copy(archivePath, archiveAfterUpdatePath, overwrite: true);
+
+            // Step 3: Try to read back all entries
+            System.Diagnostics.Debug.WriteLine("=== Reading back entries ===");
+
+            using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Read))
+            {
+                foreach (var entry in archive.Entries)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Reading Entry: {entry.FullName}");
+                    System.Diagnostics.Debug.WriteLine($"  IsEncrypted: {entry.IsEncrypted}");
+                    System.Diagnostics.Debug.WriteLine($"  CompressionMethod: {entry.CompressionMethod}");
+                    System.Diagnostics.Debug.WriteLine($"  CompressedLength: {entry.CompressedLength}");
+                    System.Diagnostics.Debug.WriteLine($"  Length: {entry.Length}");
+
+                    try
+                    {
+                        using var stream = entry.Open(password);
+                        using var reader = new StreamReader(stream, Encoding.UTF8);
+                        string content = await reader.ReadToEndAsync();
+                        System.Diagnostics.Debug.WriteLine($"  Content: '{content}'");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"  ERROR: {ex.GetType().Name}: {ex.Message}");
+                    }
+                }
+            }
+
+            // Assert - this is where the original test fails
+            using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Read))
+            {
+                using (var s1 = archive.GetEntry("file1.txt")!.Open(password))
+                using (var r1 = new StreamReader(s1))
+                {
+                    Assert.Equal("Content 1", await r1.ReadToEndAsync());
+                }
+
+                using (var s2 = archive.GetEntry("file2.txt")!.Open(password))
+                using (var r2 = new StreamReader(s2))
+                {
+                    Assert.Equal("Modified Content 2", await r2.ReadToEndAsync());
+                }
+
+                using (var s3 = archive.GetEntry("file3.txt")!.Open(password))
+                using (var r3 = new StreamReader(s3))
+                {
+                    Assert.Equal("Content 3", await r3.ReadToEndAsync());
+                }
+            }
+        }
+
     }
 
 

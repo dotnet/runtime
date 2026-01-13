@@ -38,6 +38,27 @@ internal sealed partial class ZipGenericExtraField
             await stream.WriteAsync(trailingExtraFieldData, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    public static async Task WriteAllBlocksExcludingTagAsync(List<ZipGenericExtraField>? fields, ReadOnlyMemory<byte> trailingExtraFieldData, Stream stream, ushort excludeTag, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (fields != null)
+        {
+            foreach (ZipGenericExtraField field in fields)
+            {
+                if (field.Tag != excludeTag)
+                {
+                    await field.WriteBlockAsync(stream, cancellationToken).ConfigureAwait(false);
+                }
+            }
+        }
+
+        if (!trailingExtraFieldData.IsEmpty)
+        {
+            await stream.WriteAsync(trailingExtraFieldData, cancellationToken).ConfigureAwait(false);
+        }
+    }
 }
 
 internal sealed partial class Zip64ExtraField

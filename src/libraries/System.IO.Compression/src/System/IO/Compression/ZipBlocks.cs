@@ -116,6 +116,43 @@ namespace System.IO.Compression
                 stream.Write(trailingExtraFieldData);
             }
         }
+
+        public static void WriteAllBlocksExcludingTag(List<ZipGenericExtraField>? fields, ReadOnlySpan<byte> trailingExtraFieldData, Stream stream, ushort excludeTag)
+        {
+            if (fields != null)
+            {
+                foreach (ZipGenericExtraField field in fields)
+                {
+                    if (field.Tag != excludeTag)
+                    {
+                        field.WriteBlock(stream);
+                    }
+                }
+            }
+
+            if (!trailingExtraFieldData.IsEmpty)
+            {
+                stream.Write(trailingExtraFieldData);
+            }
+        }
+
+        public static int TotalSizeExcludingTag(List<ZipGenericExtraField>? fields, int trailingDataLength, ushort excludeTag)
+        {
+            int size = trailingDataLength;
+
+            if (fields != null)
+            {
+                foreach (ZipGenericExtraField field in fields)
+                {
+                    if (field.Tag != excludeTag)
+                    {
+                        size += field.Size + ZipGenericExtraField.FieldLengths.Tag + ZipGenericExtraField.FieldLengths.Size;
+                    }
+                }
+            }
+
+            return size;
+        }
     }
 
     internal sealed partial class Zip64ExtraField

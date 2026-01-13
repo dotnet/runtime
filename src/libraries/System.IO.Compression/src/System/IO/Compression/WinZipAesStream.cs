@@ -789,8 +789,14 @@ namespace System.IO.Compression
             {
                 try
                 {
-                    if (_encrypting && !_authCodeValidated && _headerWritten)
+                    if (_encrypting && !_authCodeValidated)
                     {
+                        // Ensure header is written even for empty files
+                        if (!_headerWritten)
+                        {
+                            WriteHeader();
+                        }
+
                         // Encrypt remaining partial data
                         FinalizeEncryptionAsync(false, CancellationToken.None).GetAwaiter().GetResult();
 
@@ -804,7 +810,7 @@ namespace System.IO.Compression
                 {
                     _aesEncryptor?.Dispose();
                     _aes.Dispose();
-                    _hmac!.Dispose();
+                    _hmac?.Dispose();
 
                     if (!_leaveOpen) _baseStream.Dispose();
                 }
@@ -813,14 +819,21 @@ namespace System.IO.Compression
             _disposed = true;
             base.Dispose(disposing);
         }
+
         public override async ValueTask DisposeAsync()
         {
             if (_disposed) return;
 
             try
             {
-                if (_encrypting && !_authCodeValidated && _headerWritten)
+                if (_encrypting && !_authCodeValidated)
                 {
+                    // Ensure header is written even for empty files
+                    if (!_headerWritten)
+                    {
+                        await WriteHeaderAsync(CancellationToken.None).ConfigureAwait(false);
+                    }
+
                     // Encrypt remaining partial data
                     await FinalizeEncryptionAsync(true, CancellationToken.None).ConfigureAwait(false);
 
@@ -834,7 +847,7 @@ namespace System.IO.Compression
             {
                 _aesEncryptor?.Dispose();
                 _aes.Dispose();
-                _hmac!.Dispose();
+                _hmac?.Dispose();
 
                 if (!_leaveOpen) await _baseStream.DisposeAsync().ConfigureAwait(false);
             }
@@ -842,7 +855,6 @@ namespace System.IO.Compression
             _disposed = true;
             GC.SuppressFinalize(this);
         }
-
         public override bool CanRead => !_encrypting && !_disposed;
         public override bool CanSeek => false;
         public override bool CanWrite => _encrypting && !_disposed;
