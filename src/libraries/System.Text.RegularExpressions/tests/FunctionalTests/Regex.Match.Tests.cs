@@ -611,10 +611,47 @@ namespace System.Text.RegularExpressions.Tests
             // "x" option. Removes unescaped whitespace from the pattern. : Actual - "\x20([^/]+)\x20","x"
             yield return ("\x20([^/]+)\x20\x20\x20\x20\x20\x20\x20", " abc       ", RegexOptions.IgnorePatternWhitespace, 0, 10, true, " abc      ");
 
-            // "x" option. Vertical tab should be ignored as whitespace
+            // Comprehensive tests for IgnorePatternWhitespace - whitespace characters that should be ignored
+            // Tab (\t), newline (\n), form feed (\f), carriage return (\r), and space
+            yield return ("a\tb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+            yield return ("a\nb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+            yield return ("a\fb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+            yield return ("a\rb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+            yield return ("a b", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+
+            // Whitespace in various positions
+            yield return (" a", "a", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "a");
+            yield return ("a ", "a", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "a");
+            yield return (" a ", "a", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "a");
+
+            // Escaped whitespace should NOT be ignored - it should match literally
+            yield return (@"a\ b", "a b", RegexOptions.IgnorePatternWhitespace, 0, 3, true, "a b");
+            yield return ("a\\\tb", "a\tb", RegexOptions.IgnorePatternWhitespace, 0, 3, true, "a\tb");
+
+            // Comments with # should extend to end of line
+            yield return ("ab#comment", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+            yield return ("ab#comment\ncd", "abcd", RegexOptions.IgnorePatternWhitespace, 0, 4, true, "abcd");
+            yield return ("a#comment\nb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+
+            // Escaped # should match literally
+            yield return (@"a\#b", "a#b", RegexOptions.IgnorePatternWhitespace, 0, 3, true, "a#b");
+
+            // Whitespace inside character classes should NOT be ignored
+            yield return ("[ ]", " ", RegexOptions.IgnorePatternWhitespace, 0, 1, true, " ");
+            yield return ("[\t]", "\t", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "\t");
+            yield return ("[a b]", "a", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "a");
+            yield return ("[a b]", " ", RegexOptions.IgnorePatternWhitespace, 0, 1, true, " ");
+            yield return ("[a b]", "b", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "b");
+
+            // # inside character class should NOT start a comment
+            yield return ("[#]", "#", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "#");
+            yield return ("[a#b]", "#", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "#");
+
+            // Vertical tab (\v) tests - only on .NET Core (not .NET Framework)
             if (!PlatformDetection.IsNetFramework)
             {
                 yield return ("a\vb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+                yield return ("a \t\n\v\f\r b", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
             }
 
             // Turning on case insensitive option in mid-pattern : Actual - "aaa(?i:match this)bbb"
