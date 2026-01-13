@@ -54,7 +54,6 @@ else()
             coreclr_static
             System.IO.Compression.Native-Static
             System.Native-Static
-            System.Native.Browser-Static
             System.Native.TimeZoneData.Invariant)
 
         # additional requirements for System.IO.Compression.Native
@@ -63,6 +62,8 @@ else()
 
         # linker options for NodeJs, link in JavaScript helper, access to local filesystem
         if (CLR_CMAKE_TARGET_BROWSER)
+            target_link_libraries(corerun PRIVATE
+                System.Native.Browser-Static)
             set(JS_SYSTEM_NATIVE_BROWSER
                 "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.js")
             set(JS_SYSTEM_BROWSER_UTILS
