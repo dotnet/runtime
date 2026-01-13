@@ -58,16 +58,70 @@ namespace System.Text.Json.Serialization.Converters
             => _sourceConverter.OnTryWriteAsObject(writer, value, options, ref state);
 
         public override T ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            => JsonSerializer.UnboxOnRead<T>(_sourceConverter.ReadAsPropertyNameAsObject(ref reader, typeToConvert, options))!;
+        {
+            if (_sourceConverter.Type == typeof(T))
+            {
+                return JsonSerializer.UnboxOnRead<T>(_sourceConverter.ReadAsPropertyNameAsObject(ref reader, typeToConvert, options))!;
+            }
+            else
+            {
+                // The source converter's Type doesn't match T. Using the source converter's
+                // ReadAsPropertyName could fail or behave incorrectly: the source's fallback
+                // would look up a converter for its type (e.g. object), not T. Use our base
+                // class logic instead, which correctly uses the fallback for type T.
+                return base.ReadAsPropertyName(ref reader, typeToConvert, options);
+            }
+        }
 
         internal override T ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            => JsonSerializer.UnboxOnRead<T>(_sourceConverter.ReadAsPropertyNameCoreAsObject(ref reader, typeToConvert, options))!;
+        {
+            if (_sourceConverter.Type == typeof(T))
+            {
+                return JsonSerializer.UnboxOnRead<T>(_sourceConverter.ReadAsPropertyNameCoreAsObject(ref reader, typeToConvert, options))!;
+            }
+            else
+            {
+                // The source converter's Type doesn't match T. Using the source converter's
+                // ReadAsPropertyNameCore could fail or behave incorrectly: the source's fallback
+                // would look up a converter for its type (e.g. object), not T. Use our base
+                // class logic instead, which correctly uses the fallback for type T.
+                return base.ReadAsPropertyNameCore(ref reader, typeToConvert, options);
+            }
+        }
 
         public override void WriteAsPropertyName(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options)
-            => _sourceConverter.WriteAsPropertyNameAsObject(writer, value, options);
+        {
+            if (_sourceConverter.Type == typeof(T))
+            {
+                _sourceConverter.WriteAsPropertyNameAsObject(writer, value, options);
+            }
+            else
+            {
+                // The source converter's Type doesn't match T. Using the source converter's
+                // WriteAsPropertyName could cause infinite recursion: the source's fallback
+                // would look up a converter for its type (e.g. object), which might delegate
+                // back to us via the runtime type lookup. Use our base class logic instead,
+                // which correctly uses the fallback for type T.
+                base.WriteAsPropertyName(writer, value, options);
+            }
+        }
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
-            => _sourceConverter.WriteAsPropertyNameCoreAsObject(writer, value, options, isWritingExtensionDataProperty);
+        {
+            if (_sourceConverter.Type == typeof(T))
+            {
+                _sourceConverter.WriteAsPropertyNameCoreAsObject(writer, value, options, isWritingExtensionDataProperty);
+            }
+            else
+            {
+                // The source converter's Type doesn't match T. Using the source converter's
+                // WriteAsPropertyNameCore could cause infinite recursion: the source's fallback
+                // would look up a converter for its type (e.g. object), which might delegate
+                // back to us via the runtime type lookup. Use our base class logic instead,
+                // which correctly uses the fallback for type T.
+                base.WriteAsPropertyNameCore(writer, value!, options, isWritingExtensionDataProperty);
+            }
+        }
 
         internal override T ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options)
             => JsonSerializer.UnboxOnRead<T>(_sourceConverter.ReadNumberWithCustomHandlingAsObject(ref reader, handling, options))!;
