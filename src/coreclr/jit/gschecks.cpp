@@ -544,7 +544,10 @@ bool Compiler::gsCreateShadowingLocals()
         shadowVarDsc->lvType      = type;
         shadowVarDsc->lvRegStruct = varDsc->lvRegStruct;
         shadowVarDsc->SetAddressExposed(varDsc->IsAddressExposed() DEBUGARG(varDsc->GetAddrExposedReason()));
-        shadowVarDsc->lvDoNotEnregister = varDsc->lvDoNotEnregister;
+        shadowVarDsc->lvDoNotEnregister       = varDsc->lvDoNotEnregister;
+        shadowVarDsc->lvSingleDefRegCandidate = varDsc->lvSingleDefRegCandidate;
+        // The old variable will not be used in handlers anymore, allow it to stay enregistered
+        varDsc->lvLiveInOutOfHndlr = false;
 #ifdef DEBUG
         shadowVarDsc->SetDoNotEnregReason(varDsc->GetDoNotEnregReason());
         shadowVarDsc->SetDefinedViaAddress(varDsc->IsDefinedViaAddress());
@@ -567,9 +570,6 @@ bool Compiler::gsCreateShadowingLocals()
             shadowVarDsc->SetIsNeverNegative(true);
         }
 
-        // The old variable will not be used in handlers anymore, allow it to stay enregistered
-        varDsc->lvLiveInOutOfHndlr = false;
-
 #ifdef DEBUG
         if (verbose)
         {
@@ -578,7 +578,7 @@ bool Compiler::gsCreateShadowingLocals()
 #endif
 
         gsShadowVarInfo[lclNum].shadowCopy = shadowVarNum;
-        createdAny = true;
+        createdAny                         = true;
     }
 
     return createdAny;
