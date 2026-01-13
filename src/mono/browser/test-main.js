@@ -119,7 +119,7 @@ function initRunArgs(runArgs) {
     runArgs.debugging = runArgs.debugging === undefined ? false : runArgs.debugging;
     runArgs.configSrc = runArgs.configSrc === undefined ? './_framework/dotnet.boot.js' : runArgs.configSrc;
     // default'ing to true for tests, unless debugging
-    runArgs.forwardConsole = runArgs.forwardConsole === undefined ? !runArgs.debugging : runArgs.forwardConsole;
+    runArgs.forwardConsole = runArgs.forwardConsole === undefined ? (isFirefox && !runArgs.debugging) : runArgs.forwardConsole;
     runArgs.interpreterPgo = runArgs.interpreterPgo === undefined ? false : runArgs.interpreterPgo;
 
     return runArgs;
@@ -357,8 +357,9 @@ async function run() {
             try {
                 const main_assembly_name = runArgs.applicationArguments[1];
                 const app_args = runArgs.applicationArguments.slice(2);
+                const now = Date.now();
                 const result = await App.runtime.runMain(main_assembly_name, app_args);
-                console.log(`test-main.js exiting ${app_args.length > 1 ? main_assembly_name + " " + app_args[0] : main_assembly_name} with result ${result} and linear memory ${App.runtime.Module.HEAPU8.length} bytes`);
+                console.log(`test-main.js exiting ${app_args.length > 1 ? main_assembly_name + " " + app_args[0] : main_assembly_name} after ${(Date.now() - now) / 60000} minutes with result ${result} and linear memory ${App.runtime.Module.HEAPU8.length} bytes`);
                 mono_exit(result);
             } catch (error) {
                 if (error.name != "ExitStatus") {

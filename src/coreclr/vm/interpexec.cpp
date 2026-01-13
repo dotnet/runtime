@@ -504,7 +504,7 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
         ctx.ContextFlags = CONTEXT_FULL;
         SetSP(&ctx, (DWORD64)pFrame);
         SetFP(&ctx, (DWORD64)stack);
-        SetIP(&ctx, (DWORD64)ip); 
+        SetIP(&ctx, (DWORD64)ip);
         SetFirstArgReg(&ctx, dac_cast<TADDR>(pInterpreterFrame)); // Enable debugger to iterate over interpreter frames
 
         // We need to add a FaultingExceptionFrame because debugger checks for it
@@ -824,11 +824,7 @@ void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont,
     GCX_COOP();
 
     Thread *pThread = GetThread();
-    InterpThreadContext *threadContext = pThread->GetInterpThreadContext();
-    if (threadContext == nullptr || threadContext->pStackStart == nullptr)
-    {
-        COMPlusThrow(kOutOfMemoryException);
-    }
+    InterpThreadContext *threadContext = pThread->GetOrCreateInterpThreadContext();
     int8_t *sp = threadContext->pStackPointer;
 
     // This construct ensures that the InterpreterFrame is always stored at a higher address than the
@@ -3965,13 +3961,24 @@ do                                                                      \
 
                     InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[3]];
 
-                    THREADBASEREF threadBase = ((THREADBASEREF)GetThread()->GetExposedObject());
-                    continuation = LOCAL_VAR(ip[2], CONTINUATIONREF);
-                    OBJECTREF executionContext = threadBase->GetExecutionContext();
+                    OBJECTREF executionContext;
+                    {
+                        THREADBASEREF threadBase = (THREADBASEREF)GetThread()->GetExposedObject();
+                        executionContext = threadBase->GetExecutionContext();
+                    }
+
                     if (executionContext != NULL && ((EXECUTIONCONTEXTREF)executionContext)->IsFlowSuppressed())
                     {
-                        executionContext = NULL;
+                        executionContext = CallWithSEHWrapper(
+                            [] ()
+                            {
+                                FieldDesc *pFd = CoreLibBinder::GetField(FIELD__EXECUTIONCONTEXT__DEFAULT_FLOW_SUPPRESSED);
+                                pFd->CheckRunClassInitThrowing();
+                                return pFd->GetStaticOBJECTREF();
+                            }
+                        );
                     }
+                    continuation = LOCAL_VAR(ip[2], CONTINUATIONREF);
                     SetObjectReference((OBJECTREF *)((uint8_t*)(OBJECTREFToObject(continuation)) + pAsyncSuspendData->offsetIntoContinuationTypeForExecutionContext), executionContext);
                     continuation->SetFlags(pAsyncSuspendData->flags);
 
@@ -4021,7 +4028,7 @@ do                                                                      \
                     OBJECTREF syncContext = LOCAL_VAR(ip[4] + INTERP_STACK_SLOT_SIZE, OBJECTREF);
 
                     InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[5]];
-                    MethodDesc *restoreContextsMethod = pAsyncSuspendData->restoreContextsMethod;
+                    MethodDesc *restoreContextsMethod = pAsyncSuspendData->restoreContextsOnSuspensionMethod;
 
                     returnOffset = ip[1];
                     callArgsOffset = pMethod->allocaSize;

@@ -172,8 +172,10 @@ namespace System.Runtime.CompilerServices
     {
 #if FEATURE_INTERPRETER
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AsyncHelpers_ResumeInterpreterContinuation")]
+        [StackTraceHidden]
         private static partial void AsyncHelpers_ResumeInterpreterContinuation(ObjectHandleOnStack cont, ref byte resultStorage);
 
+        [StackTraceHidden]
         internal static Continuation? ResumeInterpreterContinuation(Continuation cont, ref byte resultStorage)
         {
             ObjectHandleOnStack contHandle = ObjectHandleOnStack.Create(ref cont);
