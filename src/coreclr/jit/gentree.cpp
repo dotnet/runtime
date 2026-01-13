@@ -2367,16 +2367,50 @@ int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
 //                              is devirtualized.
 //
 // Arguments:
-//     compiler - the compiler instance so that we can call eeFindHelper
+//     compiler    - [In]  the compiler instance so that we can call eeFindHelper
+//     pMethHandle - [Out] the method handle if the call is a devirtualization candidate
 //
 // Return Value:
 //     Returns true if this GT_CALL node is a devirtualization candidate.
 //
-bool GenTreeCall::IsDevirtualizationCandidate(Compiler* compiler) const
+bool GenTreeCall::IsDevirtualizationCandidate(Compiler* compiler, CORINFO_METHOD_HANDLE* pMethHandle) const
 {
-    return IsVirtual() ||
-           (gtCallType == CT_INDIRECT && (gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
-                                          gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_GVMLOOKUP_FOR_SLOT)));
+    CORINFO_METHOD_HANDLE methHandleToDevirt = NO_METHOD_HANDLE;
+    bool                  isDevirtCandidate  = false;
+
+    if (IsVirtual() && gtCallType == CT_USER_FUNC)
+    {
+        methHandleToDevirt = gtCallMethHnd;
+        isDevirtCandidate  = true;
+    }
+    else if (IsGenericVirtual(compiler) && (JitConfig.JitEnableGenericVirtualDevirtualization() != 0))
+    {
+        GenTree* runtimeMethHndNode =
+            gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle)->GetNode();
+        assert(runtimeMethHndNode != nullptr);
+        switch (runtimeMethHndNode->OperGet())
+        {
+            case GT_RUNTIMELOOKUP:
+                methHandleToDevirt = runtimeMethHndNode->AsRuntimeLookup()->GetMethodHandle();
+                isDevirtCandidate  = true;
+                break;
+            case GT_CNS_INT:
+                methHandleToDevirt = CORINFO_METHOD_HANDLE(runtimeMethHndNode->AsIntCon()->gtCompileTimeHandle);
+                isDevirtCandidate  = true;
+                break;
+            default:
+                // Unable to get method handle for devirtualization.
+                // This can happen if the method handle is not an RUNTIMELOOKUP or CNS_INT for generic virtuals,
+                break;
+        }
+    }
+
+    if (pMethHandle)
+    {
+        *pMethHandle = methHandleToDevirt;
+    }
+
+    return isDevirtCandidate;
 }
 
 //-------------------------------------------------------------------------
@@ -13837,6 +13871,50 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
                 return result;
             }
             break;
+        }
+
+        case NI_System_Enum_Equals:
+        {
+            assert(call->AsCall()->gtArgs.CountUserArgs() == 2);
+            GenTree* arg0 = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
+            GenTree* arg1 = call->AsCall()->gtArgs.GetArgByIndex(1)->GetNode();
+
+            bool isArg0Exact;
+            bool isArg1Exact;
+            bool isNonNull; // Unused here.
+
+            CORINFO_CLASS_HANDLE cls0 = gtGetClassHandle(arg0, &isArg0Exact, &isNonNull);
+            CORINFO_CLASS_HANDLE cls1 = gtGetClassHandle(arg1, &isArg1Exact, &isNonNull);
+            if ((cls0 != cls1) || (cls0 == NO_CLASS_HANDLE) || !isArg0Exact || !isArg1Exact)
+            {
+                break;
+            }
+
+            assert(info.compCompHnd->isEnum(cls1, nullptr) == TypeCompareState::Must);
+
+            CorInfoType corTyp = info.compCompHnd->getTypeForPrimitiveValueClass(cls1);
+            if (corTyp == CORINFO_TYPE_UNDEF)
+            {
+                break;
+            }
+
+            var_types typ = JITtype2varType(corTyp);
+            if (!varTypeIsIntegral(typ))
+            {
+                // Ignore non-integral enums e.g. enums based on float/double
+                break;
+            }
+
+            // Unbox both integral arguments and compare their underlying values
+            GenTree* offset  = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
+            GenTree* addr0   = gtNewOperNode(GT_ADD, TYP_BYREF, arg0, offset);
+            GenTree* addr1   = gtNewOperNode(GT_ADD, TYP_BYREF, arg1, gtCloneExpr(offset));
+            GenTree* cmpNode = gtNewOperNode(GT_EQ, TYP_INT, gtNewIndir(typ, addr0), gtNewIndir(typ, addr1));
+            JITDUMP("Optimized Enum.Equals call to comparison of underlying values:\n");
+            DISPTREE(cmpNode);
+            JITDUMP("\n");
+
+            return gtFoldExpr(cmpNode);
         }
 
         case NI_System_Type_op_Equality:

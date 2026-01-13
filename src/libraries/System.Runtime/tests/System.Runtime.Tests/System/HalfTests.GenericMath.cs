@@ -2454,6 +2454,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(HalfTests.Parse_Valid_TestData), MemberType = typeof(HalfTests))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void ParseValidStringTest(string value, NumberStyles style, IFormatProvider provider, Half expected)
         {
             bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
@@ -2528,6 +2529,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(HalfTests.Parse_ValidWithOffsetCount_TestData), MemberType = typeof(HalfTests))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void ParseValidSpanTest(string value, int offset, int count, NumberStyles style, IFormatProvider provider, Half expected)
         {
             bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
