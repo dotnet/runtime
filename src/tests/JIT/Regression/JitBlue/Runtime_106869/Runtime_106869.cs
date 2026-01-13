@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace Runtime_106869;
+
 using Xunit;
 using System.Runtime.CompilerServices;
 
@@ -33,23 +36,20 @@ public class Runtime_1068867
     public static S0 s_7;
     public static byte s_14;
 
-    [Fact]
+    [ConditionalFact(typeof(Sve), nameof(Sve.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Sve.IsSupported)
-        {
-            var vr12 = new C0();
-            var vr14 = vr12.F1;
-            var vr15 = Vector128.CreateScalar(vr14).AsVector();
-            var vr16 = Vector128.CreateScalar(0).AsVector();
-            var vr17 = Vector128.CreateScalar(0).AsVector();
-            var vr18 = Vector128.CreateScalar(0).AsVector();
-            var vr19 = Vector128.CreateScalar(1).AsVector();
-            var vr20 = Sve.ConditionalSelect(vr17, vr18, vr19);
-            var vr21 = Vector128.CreateScalar(0).AsVector();
-            var vr22 = Sve.ConditionalSelect(vr16, vr20, vr21);
-            Consume(vr22);
-        }
+        var vr12 = new C0();
+        var vr14 = vr12.F1;
+        var vr15 = Vector128.CreateScalar(vr14).AsVector();
+        var vr16 = Vector128.CreateScalar(0).AsVector();
+        var vr17 = Vector128.CreateScalar(0).AsVector();
+        var vr18 = Vector128.CreateScalar(0).AsVector();
+        var vr19 = Vector128.CreateScalar(1).AsVector();
+        var vr20 = Sve.ConditionalSelect(vr17, vr18, vr19);
+        var vr21 = Vector128.CreateScalar(0).AsVector();
+        var vr22 = Sve.ConditionalSelect(vr16, vr20, vr21);
+        Consume(vr22);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

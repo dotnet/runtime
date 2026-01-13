@@ -16,7 +16,7 @@ using System.Runtime.Intrinsics.Arm;
 using System.Numerics;
 using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace {Namespace}
 {
     public static partial class Program
     {

@@ -557,6 +557,14 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     {
         delta_PSP -= TARGET_POINTER_SIZE;
     }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta_PSP -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta_PSP -= TARGET_POINTER_SIZE;
+    }
 
     funcletFrameSize = funcletFrameSize - delta_PSP;
     funcletFrameSize = roundUp((unsigned)funcletFrameSize, STACK_ALIGN);
@@ -1710,7 +1718,7 @@ BAILOUT:
 // Arguments:
 //    tree - the node
 //
-void CodeGen::genCodeForNegNot(GenTree* tree)
+void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_NEG, GT_NOT));
 
@@ -2275,6 +2283,19 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     // to constant data, not a real static field.
     GetEmitter()->emitIns_R_C(INS_bl, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
                               compiler->eeFindJitDataOffs(jmpTabBase), 0);
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genAsyncResumeInfo: emits address of async resume info for a specific state
+//
+// Parameters:
+//   treeNode - the GT_ASYNC_RESUME_INFO node
+//
+void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
+{
+    GetEmitter()->emitIns_R_C(INS_bl, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
+                              genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1), 0);
     genProduceReg(treeNode);
 }
 
@@ -3692,6 +3713,14 @@ int CodeGenInterface::genSPtoFPdelta() const
     {
         delta -= TARGET_POINTER_SIZE;
     }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta -= TARGET_POINTER_SIZE;
+    }
 
     assert(delta >= 0);
     return delta;
@@ -4103,7 +4132,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_NOT:
         case GT_NEG:
-            genCodeForNegNot(treeNode);
+            genCodeForNegNot(treeNode->AsOp());
             break;
 
         case GT_BSWAP:
@@ -4367,6 +4396,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_ld_d, EA_PTRSIZE, genPendingCallLabel, targetReg);
             break;
 
+        case GT_ASYNC_RESUME_INFO:
+            genAsyncResumeInfo(treeNode->AsVal());
+            break;
+
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
             break;
@@ -4380,7 +4413,19 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_IL_OFFSET:
-            // Do nothing; these nodes are simply markers for debug info.
+            // Do nothing; this node is a marker for debug info.
+            break;
+
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
+            break;
+
+        case GT_ASYNC_CONTINUATION:
+            genCodeForAsyncContinuation(treeNode);
+            break;
+
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
             break;
 
         default:
@@ -4464,7 +4509,10 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 // genEmitGSCookieCheck: Generate code to check that the GS cookie
 // wasn't thrashed by a buffer overrun.
 //
-void CodeGen::genEmitGSCookieCheck(bool pushReg)
+// Parameters:
+//   tailCall - Whether or not this is being emitted for a tail call
+//
+void CodeGen::genEmitGSCookieCheck(bool tailCall)
 {
     noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
 
@@ -4474,8 +4522,9 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     // We don't have any IR node representing this check, so LSRA can't communicate registers
     // for us to use.
 
-    regNumber regGSConst = REG_GSCOOKIE_TMP_0;
-    regNumber regGSValue = REG_GSCOOKIE_TMP_1;
+    regMaskTP tmpRegs    = genGetGSCookieTempRegs(tailCall);
+    regNumber regGSConst = genFirstRegNumFromMaskAndToggle(tmpRegs);
+    regNumber regGSValue = genFirstRegNumFromMaskAndToggle(tmpRegs);
 
     if (compiler->gsGlobalSecurityCookieAddr == nullptr)
     {
@@ -5691,12 +5740,11 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         regMaskTP trashedByEpilog = RBM_CALLEE_SAVED;
 
-        // The epilog may use and trash REG_GSCOOKIE_TMP_0/1. Make sure we have no
+        // The epilog may use and trash REG_GSCOOKIE_TMP. Make sure we have no
         // non-standard args that may be trash if this is a tailcall.
         if (compiler->getNeedsGSSecurityCookie())
         {
-            trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_0);
-            trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_1);
+            trashedByEpilog |= genGetGSCookieTempRegs(/* tailCall */ true);
         }
 
         for (CallArg& arg : call->gtArgs.Args())
@@ -6085,6 +6133,16 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
             }
 
             preservedAreaSize += 1; // bool for synchronized methods
+        }
+
+        if (compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
+        }
+
+        if (compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
         }
 
         // Used to signal both that the method is compiled for EnC, and also the size of the block at the top of the
@@ -6732,6 +6790,14 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     {
         localFrameSize -= TARGET_POINTER_SIZE;
     }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
 
 #ifdef DEBUG
     if (compiler->opts.disAsm)
@@ -6795,6 +6861,14 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     int totalFrameSize = genTotalFrameSize();
     int localFrameSize = compiler->compLclFrameSize;
     if ((compiler->lvaMonAcquired != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
     {
         localFrameSize -= TARGET_POINTER_SIZE;
     }

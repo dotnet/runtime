@@ -212,7 +212,7 @@ namespace System.ComponentModel.Design
                     EnsurePopulated();
                     if (index < 0 || index >= _children.Count)
                     {
-                        throw new IndexOutOfRangeException(nameof(index));
+                        throw new IndexOutOfRangeException();
                     }
                     return (DesignerOptionCollection?)_children[index];
                 }

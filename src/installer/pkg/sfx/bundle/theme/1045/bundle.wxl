@@ -66,7 +66,7 @@ Wszystko gotowe? Gotowe? Zaczynajmy!"/>
   <String Id="WelcomeHeaderMessage" Value="Środowisko uruchomieniowe platformy .NET"/>
   <String Id="WelcomeDescription" Value="Środowisko uruchomieniowe platformy .NET służy do uruchamiania aplikacji platformy .NET na komputerze z systemem Windows. Platforma .NET jest oprogramowaniem typu open source, działa na różnych platformach i jest obsługiwana przez firmę Microsoft. Mamy nadzieję, że Ci się podoba!"/>
   <String Id="LearnMoreTitle" Value="Dowiedz się więcej o platformie .NET"/>
-  <String Id="SuccessInstallLocation" Value="Następujące elementy zainstalowano w [DOTNETHOME]"/>
+  <String Id="SuccessInstallLocation" Value="Zainstalowano następujące elementy:"/>
   <String Id="SuccessInstallProductName" Value=" - [BUNDLEMONIKER] "/>
   <String Id="ResourcesHeader" Value="Zasoby"/>
   <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;Dokumentacja&lt;/A&gt;"/>

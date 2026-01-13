@@ -344,7 +344,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-#if NET9_0_OR_GREATER
+#if NET
         [Fact]
         public void CollectionWithRefStructElement_Serialization()
         {
@@ -635,7 +635,7 @@ namespace System.Text.Json.Serialization.Tests
             public string Value { get; }
         }
 
-#if NET9_0_OR_GREATER
+#if NET
         public class CollectionWithRefStructElement : IEnumerable<ReadOnlySpan<char>>
         {
             private List<string> _values = new();

@@ -92,62 +92,39 @@ namespace System.IO.Compression.Tests
             string data2 = "more test data written to file.";
             DateTimeOffset lastWrite = new DateTimeOffset(1992, 4, 5, 12, 00, 30, new TimeSpan(-5, 0, 0));
 
-            var baseline = new LocalMemoryStream();
-            ZipArchive archive = await CreateZipArchive(async, baseline, mode);
+            async Task<byte[]> WriteTestArchive(bool openEntryStream, bool emptyEntryAtTheEnd)
+            {
+                var archiveStream = new LocalMemoryStream();
+                ZipArchive archive = await CreateZipArchive(async, archiveStream, mode);
 
-            await AddEntry(archive, "data1.txt", data1, lastWrite, async);
+                await AddEntry(archive, "data1.txt", data1, lastWrite, async);
 
-            ZipArchiveEntry e = archive.CreateEntry("empty.txt");
-            e.LastWriteTime = lastWrite;
+                ZipArchiveEntry e = archive.CreateEntry("empty.txt");
+                e.LastWriteTime = lastWrite;
 
-            Stream s = await OpenEntryStream(async, e);
-            await DisposeStream(async, s);
+                if (openEntryStream)
+                {
+                    Stream s = await OpenEntryStream(async, e);
+                    await DisposeStream(async, s);
+                }
 
-            await AddEntry(archive, "data2.txt", data2, lastWrite, async);
+                if (!emptyEntryAtTheEnd)
+                {
+                    await AddEntry(archive, "data2.txt", data2, lastWrite, async);
+                }
 
-            await DisposeZipArchive(async, archive);
+                await DisposeZipArchive(async, archive);
 
-            var test = new LocalMemoryStream();
-            archive = await CreateZipArchive(async, test, mode);
+                return archiveStream.ToArray();
+            }
 
-            await AddEntry(archive, "data1.txt", data1, lastWrite, async);
+            var baseline = await WriteTestArchive(openEntryStream: false, emptyEntryAtTheEnd: false);
+            var test = await WriteTestArchive(openEntryStream: true, emptyEntryAtTheEnd: false);
+            Assert.Equal(baseline, test);
 
-            e = archive.CreateEntry("empty.txt");
-            e.LastWriteTime = lastWrite;
-
-            await AddEntry(archive, "data2.txt", data2, lastWrite, async);
-
-            await DisposeZipArchive(async, archive);
-
-            //compare
-            Assert.True(ArraysEqual(baseline.ToArray(), test.ToArray()), "Arrays didn't match");
-
-            //second test, this time empty file at end
-            baseline = baseline.Clone();
-            archive = await CreateZipArchive(async, baseline, mode);
-
-            await AddEntry(archive, "data1.txt", data1, lastWrite, async);
-
-            e = archive.CreateEntry("empty.txt");
-            e.LastWriteTime = lastWrite;
-
-            s = await OpenEntryStream(async, e);
-            await DisposeStream(async, s);
-
-            await DisposeZipArchive(async, archive);
-
-            test = test.Clone();
-            archive = await CreateZipArchive(async, test, mode);
-
-            await AddEntry(archive, "data1.txt", data1, lastWrite, async);
-
-            e = archive.CreateEntry("empty.txt");
-            e.LastWriteTime = lastWrite;
-
-            await DisposeZipArchive(async, archive);
-
-            //compare
-            Assert.True(ArraysEqual(baseline.ToArray(), test.ToArray()), "Arrays didn't match after update");
+            baseline = await WriteTestArchive(openEntryStream: false, emptyEntryAtTheEnd: true);
+            test = await WriteTestArchive(openEntryStream: true, emptyEntryAtTheEnd: true);
+            Assert.Equal(baseline, test);
         }
 
         [Theory]
@@ -474,10 +451,10 @@ namespace System.IO.Compression.Tests
 
         public static IEnumerable<object[]> Get_Update_PerformMinimalWritesWhenFixedLengthEntryHeaderFieldChanged_Data()
         {
-            yield return [ 49, 1, 1, ];
-            yield return [ 40, 3, 2, ];
-            yield return [ 30, 5, 3, ];
-            yield return [ 0, 8, 1, ];
+            yield return [49, 1, 1,];
+            yield return [40, 3, 2,];
+            yield return [30, 5, 3,];
+            yield return [0, 8, 1,];
         }
 
         [Theory]
@@ -657,9 +634,9 @@ namespace System.IO.Compression.Tests
 
         public static IEnumerable<object[]> Get_PerformMinimalWritesWithDataAndHeaderChanges_Data()
         {
-            yield return [ 0, 0 ];
-            yield return [ 20, 40 ];
-            yield return [ 30, 10 ];
+            yield return [0, 0];
+            yield return [20, 40];
+            yield return [30, 10];
         }
 
         [Theory]
@@ -914,11 +891,11 @@ namespace System.IO.Compression.Tests
 
         public static IEnumerable<object[]> Get_Update_PerformMinimalWritesWhenEntriesModifiedAndDeleted_Data()
         {
-            yield return [ -1, 40 ];
-            yield return [ -1, 49 ];
-            yield return [ -1, 0 ];
-            yield return [ 42, 40 ];
-            yield return [ 38, 40 ];
+            yield return [-1, 40];
+            yield return [-1, 49];
+            yield return [-1, 0];
+            yield return [42, 40];
+            yield return [38, 40];
         }
 
         [Theory]
@@ -1109,10 +1086,10 @@ namespace System.IO.Compression.Tests
 
         public static IEnumerable<object[]> Get_Update_PerformMinimalWritesWhenEntriesModifiedAndAdded_Data()
         {
-            yield return [ 1 ];
-            yield return [ 5 ];
-            yield return [ 10 ];
-            yield return [ 12 ];
+            yield return [1];
+            yield return [5];
+            yield return [10];
+            yield return [12];
         }
 
         [Theory]

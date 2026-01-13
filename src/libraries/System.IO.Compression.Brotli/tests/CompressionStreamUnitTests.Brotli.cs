@@ -107,6 +107,52 @@ namespace System.IO.Compression
             Assert.Throws<ArgumentOutOfRangeException>("value", () => options.Quality = 12);
         }
 
+        [Fact]
+        public void InvalidBrotliCompressionWindowLog()
+        {
+            BrotliCompressionOptions options = new();
+
+            Assert.Equal(22, options.WindowLog); // default value
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowLog = -1);
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowLog = 9);
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowLog = 25);
+        }
+
+        [Theory]
+        [InlineData(10)]
+        [InlineData(15)]
+        [InlineData(22)]
+        [InlineData(24)]
+        public void BrotliCompressionWindowLog_RoundTrip(int windowLog)
+        {
+            byte[] testData = new byte[10000];
+            Random.Shared.NextBytes(testData);
+
+            // Compress with specific window size
+            byte[] compressed;
+            using (var ms = new MemoryStream())
+            {
+                using (var compressor = new BrotliStream(ms, new BrotliCompressionOptions() { WindowLog = windowLog }, leaveOpen: true))
+                {
+                    compressor.Write(testData);
+                }
+                compressed = ms.ToArray();
+            }
+
+            // Decompress and verify
+            byte[] decompressed;
+            using (var ms = new MemoryStream(compressed))
+            using (var decompressor = new BrotliStream(ms, CompressionMode.Decompress))
+            using (var resultStream = new MemoryStream())
+            {
+                decompressor.CopyTo(resultStream);
+                decompressed = resultStream.ToArray();
+            }
+
+            Assert.Equal(testData.Length, decompressed.Length);
+            Assert.Equal<byte>(testData, decompressed);
+        }
+
         [Theory]
         [MemberData(nameof(UncompressedTestFilesBrotli))]
         public async Task BrotliCompressionQuality_SizeInOrder(string testFile)

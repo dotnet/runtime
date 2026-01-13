@@ -971,6 +971,7 @@ BOOL ThePreStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 // Stub manager functions & globals
 // -------------------------------------------------------
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 SPTR_IMPL(PrecodeStubManager, PrecodeStubManager, g_pManager);
 
 #ifndef DACCESS_COMPILE
@@ -1105,12 +1106,10 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
             break;
         }
 
-        PCODE target = pPrecode->GetTarget();
-
         // check if the method has been jitted
-        if (!pPrecode->IsPointingToPrestub(target))
+        if (!pPrecode->IsPointingToPrestub())
         {
-            trace->InitForStub(target);
+            trace->InitForStub(pPrecode->GetTarget());
             LOG_TRACE_DESTINATION(trace, stubStartAddress, "PrecodeStubManager::DoTraceStub - code");
             return TRUE;
         }
@@ -1159,6 +1158,7 @@ BOOL PrecodeStubManager::TraceManager(Thread *thread,
     return FALSE;
 }
 #endif
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 // -------------------------------------------------------
 // StubLinkStubManager
@@ -1424,6 +1424,7 @@ BOOL StubLinkStubManager::TraceManager(Thread *thread,
 
 #endif // #ifndef DACCESS_COMPILE
 
+#ifdef FEATURE_JIT
 // -------------------------------------------------------
 // JumpStub stubs
 //
@@ -1472,6 +1473,7 @@ BOOL JumpStubStubManager::DoTraceStub(PCODE stubStartAddress,
 
     return TRUE;
 }
+#endif // FEATURE_JIT
 
 //
 // Stub manager for code sections. It forwards the query to the more appropriate
@@ -1535,8 +1537,10 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
 
     switch (GetStubKind(stubStartAddress))
     {
+#ifdef FEATURE_JIT
     case STUB_CODE_BLOCK_JUMPSTUB:
         return JumpStubStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
+#endif // FEATURE_JIT
 
     case STUB_CODE_BLOCK_STUBLINK:
         return StubLinkStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
@@ -1735,21 +1739,23 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         _ASSERTE(!"We should never get here. Multicast Delegates should not invoke TraceManager.");
         return FALSE;
     }
-    else if (pStubMD->IsReverseStub())
+    else if (pStubMD->IsReversePInvokeStub())
     {
-        if (pStubMD->IsStatic())
-        {
-            // This is reverse P/Invoke stub, the argument is UMEntryThunkData
-            UMEntryThunkData *pEntryThunk = (UMEntryThunkData*)arg;
-            target = pEntryThunk->GetManagedTarget();
-            LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Reverse P/Invoke case %p\n", target));
-        }
-        else
-        {
-            // This is COM-to-CLR stub, the argument is the target
-            target = (PCODE)arg;
-            LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: COM-to-CLR case %p\n", target));
-        }
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        UNREACHABLE_MSG("Reverse P/Invoke stubs not supported with FEATURE_PORTABLE_ENTRYPOINTS.");
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+        // This is reverse P/Invoke stub, the argument is UMEntryThunkData
+        UMEntryThunkData *pEntryThunk = (UMEntryThunkData*)arg;
+        target = pEntryThunk->GetManagedTarget();
+        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Reverse P/Invoke case %p\n", target));
+        trace->InitForManaged(target);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+    }
+    else if (pStubMD->IsCOMToCLRStub())
+    {
+        // This is COM-to-CLR stub, the argument is the target
+        target = (PCODE)arg;
+        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: COM-to-CLR case %p\n", target));
         trace->InitForManaged(target);
     }
     else if (pStubMD->IsPInvokeDelegateStub())
@@ -2146,6 +2152,7 @@ BOOL TailCallStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestination *
 
 #ifdef DACCESS_COMPILE
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 void
 PrecodeStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
@@ -2154,6 +2161,7 @@ PrecodeStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p PrecodeStubManager\n", dac_cast<TADDR>(this)));
 }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 void
 StubLinkStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
@@ -2165,6 +2173,7 @@ StubLinkStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     GetRangeList()->EnumMemoryRegions(flags);
 }
 
+#ifdef FEATURE_JIT
 void
 JumpStubStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
@@ -2173,6 +2182,7 @@ JumpStubStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p JumpStubStubManager\n", dac_cast<TADDR>(this)));
 }
+#endif // FEATURE_JIT
 
 void
 RangeSectionStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)

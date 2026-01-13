@@ -153,7 +153,7 @@ namespace CorUnix
             }
             else
             {
-                delete (char *)pNode;
+                delete pNode;
             }
             Unlock(pthrCurrent);
         }

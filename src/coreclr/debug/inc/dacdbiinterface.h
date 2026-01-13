@@ -2280,29 +2280,6 @@ public:
     virtual
     TargetBuffer GetObjectContents(VMPTR_Object obj) = 0;
 
-    // The callback used to enumerate blocking objects
-    typedef void (*FP_BLOCKINGOBJECT_ENUMERATION_CALLBACK)(DacBlockingObject blockingObject,
-                                                           CALLBACK_DATA pUserData);
-
-    //
-    // Enumerate all monitors blocking a thread
-    //
-    // Arguments:
-    //    vmThread     - the thread to get monitor data for
-    //    fpCallback   - callback to invoke on the blocking data for each monitor
-    //    pUserData    - user data to supply for each callback.
-    //
-    // Return Value:
-    //    Returns on success. Throws on error.
-    //
-    //
-    virtual
-    void EnumerateBlockingObjects(VMPTR_Thread                           vmThread,
-                                  FP_BLOCKINGOBJECT_ENUMERATION_CALLBACK fpCallback,
-                                  CALLBACK_DATA                          pUserData) = 0;
-
-
-
     //
     // Returns the thread which owns the monitor lock on an object and the acquisition
     // count
@@ -2602,6 +2579,7 @@ public:
     virtual
     HRESULT GetMDStructuresVersion(ULONG32* pMDStructuresVersion) = 0;
 
+#ifdef FEATURE_CODE_VERSIONING
     // Retrieves the active rejit ILCodeVersionNode for a given module/methodDef, if it exists.
     //     Active is defined as after GetReJitParameters returns from the profiler dll and
     //     no call to Revert has completed yet.
@@ -2666,6 +2644,7 @@ public:
     //
     virtual
         HRESULT GetILCodeVersionNodeData(VMPTR_ILCodeVersionNode ilCodeVersionNode, DacSharedReJitInfo* pData) = 0;
+#endif // FEATURE_CODE_VERSIONING
 
     // Enable or disable the GC notification events. The GC notification events are turned off by default
     // They will be delivered through ICorDebugManagedCallback4

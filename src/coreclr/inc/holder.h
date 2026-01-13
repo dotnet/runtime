@@ -1166,7 +1166,7 @@ public:
     ErrorModeHolder()
         : m_revert{ FALSE }
     {
-        DWORD newMode = SEM_NOOPENFILEERRORBOX | SEM_FAILCRITICALERRORS;
+        DWORD newMode = SEM_FAILCRITICALERRORS;
         m_revert = ::SetThreadErrorMode(newMode, &m_oldMode);
     }
     ~ErrorModeHolder() noexcept

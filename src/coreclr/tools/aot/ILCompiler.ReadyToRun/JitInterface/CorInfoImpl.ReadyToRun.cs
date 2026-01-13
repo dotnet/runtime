@@ -136,6 +136,7 @@ namespace Internal.JitInterface
         public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing, object context, TypeDesc devirtualizedMethodOwner = null)
         {
             Debug.Assert(!method.IsUnboxingThunk());
+            Debug.Assert(!method.IsAsyncVariant());
             Method = method;
             Token = token;
             ConstrainedType = constrainedType;
@@ -349,6 +350,8 @@ namespace Internal.JitInterface
             }
             if (Unboxing)
                 sb.Append("; UNBOXING"u8);
+            if (Method.IsAsyncVariant())
+                sb.Append("; ASYNC"u8);
         }
 
         public override string ToString()
@@ -365,6 +368,8 @@ namespace Internal.JitInterface
             debuggingName.Append(Token.ToString());
             if (Unboxing)
                 debuggingName.Append("; UNBOXING");
+            if (Method.IsAsyncVariant())
+                debuggingName.Append("; ASYNC");
 
             return debuggingName.ToString();
         }
@@ -515,10 +520,17 @@ namespace Internal.JitInterface
             {
                 return true;
             }
-            if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(methodNeedingCode))
+
+            // On platforms where we can JIT, we will rarely need the hardware intrinsic fallback implementations.
+            // On platforms where we cannot JIT, we need to ensure that we have a fallback implementation pre-compiled
+            // so any code that uses hardware intrinsics and is interpreted has an implementation to use.
+            // This allows us to avoid the high cost of manually implementing intrinsics in the interpreter.
+            if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(methodNeedingCode)
+                && ((ReadyToRunCompilerContext)methodNeedingCode.Context).TargetAllowsRuntimeCodeGeneration)
             {
                 return true;
             }
+
             if (methodNeedingCode.IsAbstract)
             {
                 return true;
@@ -1400,6 +1412,8 @@ namespace Internal.JitInterface
                 {
                     if (resultMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
                         resultMethod = rawPinvoke.Target;
+                    if (resultMethod is AsyncMethodVariant asyncVariant)
+                        resultMethod = asyncVariant.Target;
 
                     // It's okay to strip the instantiation away because we don't need a MethodSpec
                     // token - SignatureBuilder will generate the generic method signature
@@ -1407,7 +1421,11 @@ namespace Internal.JitInterface
                     resultMethod = resultMethod.GetTypicalMethodDefinition();
 
                     Debug.Assert(resultMethod is EcmaMethod);
-                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultMethod).OwningType));
+                    if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultMethod).OwningType))
+                    {
+                        ModuleToken result = _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(resultMethod, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
+                        return result;
+                    }
                     token = (mdToken)MetadataTokens.GetToken(((EcmaMethod)resultMethod).Handle);
                     module = ((EcmaMethod)resultMethod).Module;
                 }
@@ -1427,7 +1445,11 @@ namespace Internal.JitInterface
                 {
                     if (resultDef is EcmaType ecmaType)
                     {
-                        Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(ecmaType));
+                        if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(ecmaType))
+                        {
+                            ModuleToken result = _compilation.NodeFactory.Resolver.GetModuleTokenForType(ecmaType, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
+                            return result;
+                        }
                         token = (mdToken)MetadataTokens.GetToken(ecmaType.Handle);
                         module = ecmaType.Module;
                     }

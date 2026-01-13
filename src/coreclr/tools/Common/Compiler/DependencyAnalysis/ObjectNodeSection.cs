@@ -32,7 +32,6 @@ namespace ILCompiler.DependencyAnalysis
         public ObjectNodeSection(string name, SectionType type) : this(name, type, null)
         { }
 
-        public static readonly ObjectNodeSection XDataSection = new ObjectNodeSection("xdata", SectionType.ReadOnly);
         public static readonly ObjectNodeSection DataSection = new ObjectNodeSection("data", SectionType.Writeable);
         public static readonly ObjectNodeSection ReadOnlyDataSection = new ObjectNodeSection("rdata", SectionType.ReadOnly);
         public static readonly ObjectNodeSection FoldableReadOnlyDataSection = new ObjectNodeSection("rdata", SectionType.ReadOnly);

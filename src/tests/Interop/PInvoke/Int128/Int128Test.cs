@@ -115,7 +115,6 @@ public unsafe partial class Int128Native
         StructWithInt128 rhs = new StructWithInt128(new Int128(13, 14));
 
         Int128Native.AddStructWithInt128_ByRef(ref lhs, ref rhs);
-        // Interpreter-FIXME: Incorrect result. Tracked by https://github.com/dotnet/runtime/issues/118618
         Assert.Equal(new StructWithInt128(new Int128(24, 26)), lhs);
 
         Int128 value2;

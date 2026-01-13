@@ -19,7 +19,11 @@
         const exports = {};
         libBrowserHost(exports);
 
-        let commonDeps = ["$libBrowserHostFn", "$DOTNET", "$DOTNET_INTEROP", "$ENV"];
+        let commonDeps = [
+            "$DOTNET", "$DOTNET_INTEROP", "$ENV", "$FS", "$NODEFS",
+            "$libBrowserHostFn",
+            "wasm_load_icu_data", "BrowserHost_InitializeCoreCLR", "BrowserHost_ExecuteAssembly"
+        ];
         const lib = {
             $BROWSER_HOST: {
                 selfInitialize: () => {
@@ -45,16 +49,29 @@
                             !config.environmentVariables) {
                             throw new Error("Invalid runtime config, cannot initialize the runtime.");
                         }
-                        const assemblyPaths = config.resources.assembly.map(a => a.virtualPath);
-                        const coreAssemblyPaths = config.resources.coreAssembly.map(a => a.virtualPath);
-                        ENV[HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES] = config.environmentVariables[HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES] = [...coreAssemblyPaths, ...assemblyPaths].join(":");
-                        ENV[HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES] = config.environmentVariables[HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES] = config.virtualWorkingDirectory;
-                        ENV[HOST_PROPERTY_APP_PATHS] = config.environmentVariables[HOST_PROPERTY_APP_PATHS] = config.virtualWorkingDirectory;
-                        ENV[HOST_PROPERTY_ENTRY_ASSEMBLY_NAME] = config.environmentVariables[HOST_PROPERTY_ENTRY_ASSEMBLY_NAME] = config.mainAssemblyName;
+                        const assemblyPaths = config.resources.assembly.map(a => "/" + a.virtualPath);
+                        const coreAssemblyPaths = config.resources.coreAssembly.map(a => "/" + a.virtualPath);
+                        config.environmentVariables[HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES] = [...coreAssemblyPaths, ...assemblyPaths].join(":");
+                        config.environmentVariables[HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES] = config.virtualWorkingDirectory;
+                        config.environmentVariables[HOST_PROPERTY_APP_PATHS] = config.virtualWorkingDirectory;
+                        config.environmentVariables[HOST_PROPERTY_ENTRY_ASSEMBLY_NAME] = config.mainAssemblyName;
+                        for (const key in config.environmentVariables) {
+                            ENV[key] = config.environmentVariables[key];
+                        }
 
-                        // WASM-TODO: remove once globalization is loaded via ICU
-                        ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
+                        if (ENVIRONMENT_IS_NODE) {
+                            Module.preInit = [() => {
+                                FS.mkdir("/managed");
+                                FS.mount(NODEFS, { root: "." }, "/managed");
+                                FS.chdir("/managed");
+                            }];
+                        }
                     }
+                },
+                // libBrowserHostFn is too complex for acorn-optimizer.mjs to find the dependencies
+                AJSDCE_Deps: function () {
+                    _BrowserHost_InitializeCoreCLR();
+                    _BrowserHost_ExecuteAssembly();
                 },
             },
             $libBrowserHostFn: libBrowserHost,

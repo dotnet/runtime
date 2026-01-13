@@ -8,7 +8,9 @@
     <BuildAsStandalone>false</BuildAsStandalone>
     <!-- Unable to compile a project with the Library output type for apple mobile devices -->
     <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
-
+    <!-- Unable to build a library project with native dependencies for android mobile devices:
+         https://github.com/dotnet/runtime/issues/121210 -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsAndroid)' == 'true'">true</CLRTestTargetUnsupported>
     <!-- Regression test for https://github.com/dotnet/runtime/issues/105330: make sure the UnmanagedCallersOnly are completely unreferenced,
          not even from stack trace mapping data -->
     <StackTraceSupport>false</StackTraceSupport>

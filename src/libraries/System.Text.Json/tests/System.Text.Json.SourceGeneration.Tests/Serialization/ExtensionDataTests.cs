@@ -68,6 +68,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(int))]
         [JsonSerializable(typeof(DummyObj))]
         [JsonSerializable(typeof(DummyStruct))]
+        [JsonSerializable(typeof(ClassWithIReadOnlyDictionaryExtensionPropertyAsObject))]
+        [JsonSerializable(typeof(ClassWithIReadOnlyDictionaryExtensionPropertyAsJsonElement))]
+        [JsonSerializable(typeof(ClassWithIReadOnlyDictionaryExtensionPropertyAsObjectWithProperty))]
+        [JsonSerializable(typeof(ClassWithIReadOnlyDictionaryExtensionPropertyAsJsonElementWithProperty))]
+        [JsonSerializable(typeof(ClassWithIReadOnlyDictionaryAlreadyInstantiated))]
+        [JsonSerializable(typeof(ClassWithIReadOnlyDictionaryJsonElementAlreadyInstantiated))]
         internal sealed partial class ExtensionDataTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -132,6 +138,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(int))]
         [JsonSerializable(typeof(DummyObj))]
         [JsonSerializable(typeof(DummyStruct))]
+        [JsonSerializable(typeof(ClassWithIReadOnlyDictionaryExtensionPropertyAsObject))]
+        [JsonSerializable(typeof(ClassWithIReadOnlyDictionaryExtensionPropertyAsJsonElement))]
+        [JsonSerializable(typeof(ClassWithIReadOnlyDictionaryExtensionPropertyAsObjectWithProperty))]
+        [JsonSerializable(typeof(ClassWithIReadOnlyDictionaryExtensionPropertyAsJsonElementWithProperty))]
+        [JsonSerializable(typeof(ClassWithIReadOnlyDictionaryAlreadyInstantiated))]
+        [JsonSerializable(typeof(ClassWithIReadOnlyDictionaryJsonElementAlreadyInstantiated))]
         internal sealed partial class ExtensionDataTestsContext_Default : JsonSerializerContext
         {
         }

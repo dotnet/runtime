@@ -19,6 +19,8 @@ namespace System.Diagnostics
     {
         private static volatile DebugProvider s_provider = new DebugProvider();
 
+        public static DebugProvider GetProvider() => s_provider;
+
         public static DebugProvider SetProvider(DebugProvider provider)
         {
             ArgumentNullException.ThrowIfNull(provider);

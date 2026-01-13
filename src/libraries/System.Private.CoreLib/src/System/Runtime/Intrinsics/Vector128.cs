@@ -993,7 +993,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector128{T}" /> from a given array.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="values">The array from which the vector is created.</param>
-        /// <param name="index">The index in <paramref name="values" /> at which to being reading elements.</param>
+        /// <param name="index">The index in <paramref name="values" /> at which to begin reading elements.</param>
         /// <returns>A new <see cref="Vector128{T}" /> with its elements set to the first <see cref="Vector128{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" />, starting from <paramref name="index" />, is less than <see cref="Vector128{T}.Count" />.</exception>
         /// <exception cref="NotSupportedException">The type of <paramref name="values" /> (<typeparamref name="T" />) is not supported.</exception>

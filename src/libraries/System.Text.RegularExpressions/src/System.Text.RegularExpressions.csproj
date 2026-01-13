@@ -34,6 +34,7 @@
     <Compile Include="System\Text\RegularExpressions\RegexCaseEquivalences.Data.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCaseEquivalences.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCharClass.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexCharClass.Tables.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCompilationInfo.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexFindOptimizations.cs" />
     <Compile Include="System\Text\RegularExpressions\GeneratedRegexAttribute.cs" />

@@ -622,7 +622,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // to the next RefPosition in code order
 // THIS IS THE OPTION CURRENTLY BEING PURSUED
 
-class LinearScan : public LinearScanInterface
+class LinearScan : public RegAllocInterface
 {
     friend class RefPosition;
     friend class Interval;
@@ -634,7 +634,7 @@ public:
     LinearScan(Compiler* theCompiler);
 
     // This is the main driver
-    virtual PhaseStatus doLinearScan();
+    virtual PhaseStatus doRegisterAllocation();
 
     static bool isSingleRegister(SingleTypeRegSet regMask)
     {
@@ -988,6 +988,8 @@ public:
     bool isContainableMemoryOp(GenTree* node);
 
 private:
+    Compiler* GetCompiler() const;
+
     // Determine which locals are candidates for allocation
     template <bool localVarsEnregistered>
     void identifyCandidates();
@@ -2198,6 +2200,8 @@ private:
         return varTypeCalleeTrashRegs[rt].GetRegSetForType(rt);
     }
 };
+
+using RegAllocImpl = LinearScan;
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
