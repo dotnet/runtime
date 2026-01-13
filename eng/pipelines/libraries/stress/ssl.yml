@@ -42,6 +42,7 @@ extends:
         - checkout: self
           clean: true
           fetchDepth: 5
+          fetchTags: false
 
         - bash: |
             $(dockerfilesFolder)/build-docker-sdk.sh -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
@@ -72,6 +73,7 @@ extends:
         - checkout: self
           clean: true
           fetchDepth: 5
+          fetchTags: false
           lfs: false
 
         - powershell: |
