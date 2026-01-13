@@ -4,10 +4,8 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
-#endif
 using static System.Buffers.Text.Base64Helper;
 
 namespace System.Buffers.Text
@@ -295,7 +293,6 @@ namespace System.Buffers.Text
                 dest[3] = (ushort)EncodingPad;
             }
 
-#if NET
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public unsafe void StoreVector512ToDestination(ushort* dest, ushort* destStart, int destLength, Vector512<byte> str)
             {
@@ -336,7 +333,6 @@ namespace System.Buffers.Text
                 AdvSimd.Arm64.StoreVectorAndZip(dest, (utf16LowVector1, utf16LowVector2, utf16LowVector3, utf16LowVector4));
                 AdvSimd.Arm64.StoreVectorAndZip(dest + 32, (utf16HighVector1, utf16HighVector2, utf16HighVector3, utf16HighVector4));
             }
-#endif
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public unsafe void EncodeThreeAndWrite(byte* threeBytes, ushort* destination, ref byte encodingMap)

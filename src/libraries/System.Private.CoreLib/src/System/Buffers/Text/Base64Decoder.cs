@@ -4,11 +4,9 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
-#endif
 using System.Text;
 using static System.Buffers.Text.Base64Helper;
 
@@ -400,7 +398,6 @@ namespace System.Buffers.Text
 
             public int SrcLength(bool _, int sourceLength) => sourceLength & ~0x3;
 
-#if NET
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             [CompExactlyDependsOn(typeof(Ssse3))]
@@ -486,7 +483,6 @@ namespace System.Buffers.Text
 
                 return true;
             }
-#endif
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public unsafe int DecodeFourElements(ushort* source, ref sbyte decodingMap)
