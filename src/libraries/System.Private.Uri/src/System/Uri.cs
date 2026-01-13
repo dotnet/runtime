@@ -595,6 +595,7 @@ namespace System
         public Uri(Uri baseUri, Uri relativeUri)
         {
             ArgumentNullException.ThrowIfNull(baseUri);
+            ArgumentNullException.ThrowIfNull(relativeUri);
 
             if (!baseUri.IsAbsoluteUri)
                 throw new ArgumentOutOfRangeException(nameof(baseUri));
