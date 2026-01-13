@@ -417,16 +417,24 @@ namespace System.Net
         }
 
         // Pre-allocated arrays for RFC 6761 localhost handling to avoid allocations on hot path.
+        // IPv6 is listed first to match Windows resolver behavior.
         private static readonly IPAddress[] s_localhostIPv4 = [IPAddress.Loopback];
         private static readonly IPAddress[] s_localhostIPv6 = [IPAddress.IPv6Loopback];
-        private static readonly IPAddress[] s_localhostBoth = [IPAddress.Loopback, IPAddress.IPv6Loopback];
+        private static readonly IPAddress[] s_localhostBoth = [IPAddress.IPv6Loopback, IPAddress.Loopback];
 
         /// <summary>
         /// Checks if the given host name matches a reserved name or is a subdomain of it.
         /// For example, IsReservedName("foo.localhost", "localhost") returns true.
+        /// Returns false for malformed hostnames (starting with dot or containing consecutive dots).
         /// </summary>
         private static bool IsReservedName(string hostName, string reservedName)
         {
+            // Reject malformed hostnames - let OS resolver handle them (and reject them)
+            if (hostName.StartsWith('.') || hostName.Contains(".."))
+            {
+                return false;
+            }
+
             // Matches "reservedName" exactly, or "*.reservedName" (subdomain)
             return hostName.EndsWith(reservedName, StringComparison.OrdinalIgnoreCase) &&
                    (hostName.Length == reservedName.Length ||
