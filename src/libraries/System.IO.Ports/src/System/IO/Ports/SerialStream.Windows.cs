@@ -1329,9 +1329,9 @@ namespace System.IO.Ports
 
             int index = BitOperations.LeadingZeroCount((uint)baudBitMask);
 
+            // bit which has not defined macro
             if (index >= bauds.Length)
             {
-                // throw new Exception("??? Unsupported baudrate bitmask");
                 return 0;
             }
 
