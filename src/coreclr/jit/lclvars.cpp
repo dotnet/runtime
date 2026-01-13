@@ -3627,8 +3627,8 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block)
         }
     };
 
-    JITDUMP("\n*** marking local variables in block " FMT_BB " (weight=%s)\n",
-            block->bbNum, refCntWtd2str(block->getBBWeight(this)));
+    JITDUMP("\n*** marking local variables in block " FMT_BB " (weight=%s)\n", block->bbNum,
+            refCntWtd2str(block->getBBWeight(this)));
 
     for (Statement* const stmt : block->NonPhiStatements())
     {
