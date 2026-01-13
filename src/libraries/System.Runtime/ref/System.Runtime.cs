@@ -17038,6 +17038,7 @@ namespace System
     public partial class Uri : System.IEquatable<System.Uri>, System.IFormattable, System.ISpanFormattable, System.Runtime.Serialization.ISerializable
     {
         public static readonly string SchemeDelimiter;
+        public static readonly string UriSchemeData;
         public static readonly string UriSchemeFile;
         public static readonly string UriSchemeFtp;
         public static readonly string UriSchemeFtps;

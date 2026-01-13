@@ -35,6 +35,7 @@ namespace System
         public static readonly string UriSchemeTelnet = UriParser.TelnetUri.SchemeName;
         public static readonly string UriSchemeNetTcp = UriParser.NetTcpUri.SchemeName;
         public static readonly string UriSchemeNetPipe = UriParser.NetPipeUri.SchemeName;
+        public static readonly string UriSchemeData = "data";
         public static readonly string SchemeDelimiter = "://";
 
         private const int SchemeLengthLimit = 1024;
