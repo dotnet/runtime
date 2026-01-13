@@ -72,7 +72,7 @@ namespace System.IO.Ports
         {
             set
             {
-                int maxBaud = ConvertBaudBitMaskToBaudRate((uint)_commProp.dwMaxBaud);
+                int maxBaud = ConvertMaxBaudBitMaskToBaudRate(_commProp.dwMaxBaud);
                 if (value <= 0 || (value > maxBaud && maxBaud > 0))
                 {
                     // if no upper bound on baud rate imposed by serial driver, note that argument must be positive
@@ -625,7 +625,7 @@ namespace System.IO.Ports
                         throw Win32Marshal.GetExceptionForWin32Error(errorCode, string.Empty);
                 }
 
-                int maxBaud = ConvertBaudBitMaskToBaudRate((uint)_commProp.dwMaxBaud);
+                int maxBaud = ConvertMaxBaudBitMaskToBaudRate(_commProp.dwMaxBaud);
                 if (maxBaud != 0 && baudRate > maxBaud)
                     throw new ArgumentOutOfRangeException(nameof(baudRate), SR.Format(SR.Max_Baud, maxBaud));
 
@@ -1560,6 +1560,7 @@ namespace System.IO.Ports
 
             asyncResult._userCallback?.Invoke(asyncResult);
         }
+
 
         // ----SECTION: internal classes --------*
 
