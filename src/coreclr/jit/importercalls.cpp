@@ -5376,7 +5376,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             }
             else
             {
-                addr = impGetNodeAddr(op1, CHECK_SPILL_ALL, &indirFlags);
+                addr = impGetNodeAddr(op1, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, &indirFlags);
             }
 
             if (info.compCompHnd->getClassAlignmentRequirement(fromTypeHnd) <
