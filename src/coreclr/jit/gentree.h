@@ -5968,16 +5968,19 @@ struct GenTreeQmark : public GenTreeOp
 };
 
 #ifdef TARGET_ARM64
-struct GenTreeBfi : public GenTreeOp
+struct GenTreeBfm : public GenTreeOp
 {
     unsigned gtOffset;
     unsigned gtWidth;
 
-    GenTreeBfi(var_types type, GenTree* base, GenTree* src, unsigned offset, unsigned width)
-        : GenTreeOp(GT_BFI, type, base, src)
+    GenTreeBfm(genTreeOps oper, var_types type, GenTree* base, GenTree* src, unsigned offset, unsigned width)
+        : GenTreeOp(oper, type, base, src)
         , gtOffset(offset)
         , gtWidth(width)
     {
+        assert((oper == GT_BFI) || (oper == GT_BFX));
+        assert((oper != GT_BFX) || (src == nullptr));
+        assert((oper != GT_BFI) || (src != nullptr));
     }
 
     unsigned GetOffset() const
@@ -5994,7 +5997,7 @@ struct GenTreeBfi : public GenTreeOp
     }
 
 #if DEBUGGABLE_GENTREE
-    GenTreeBfi()
+    GenTreeBfm()
         : GenTreeOp()
     {
     }

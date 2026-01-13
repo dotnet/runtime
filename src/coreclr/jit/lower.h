@@ -123,6 +123,7 @@ private:
         uint64_t       width;
     };
     bool TryMatchOrToBfiPattern(GenTreeOp* orTree, BfiPattern* result);
+    bool TryLowerOrToBFX(GenTreeOp* tree, GenTree** next);
 #endif
 #ifdef TARGET_RISCV64
     bool TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next);

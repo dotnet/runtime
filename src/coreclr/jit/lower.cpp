@@ -12081,12 +12081,12 @@ bool Lowering::TryLowerOrToBFI(GenTreeOp* tree, GenTree** next)
         }
         else if (node->OperIs(GT_BFI))
         {
-            GenTreeBfi* bfi = node->AsBfi();
-            uint64_t    m   = bfi->GetMask() & regMask;
+            GenTreeBfm* bfm = node->AsBfm();
+            uint64_t    m   = bfm->GetMask() & regMask;
             baseMask |= m;
             baseMaskKnown = true;
 
-            node = bfi->gtGetOp1();
+            node = bfm->gtGetOp1();
             continue;
         }
         else if (node->OperIs(GT_OR))
@@ -12118,19 +12118,19 @@ bool Lowering::TryLowerOrToBFI(GenTreeOp* tree, GenTree** next)
     }
 
     var_types   ty = genActualType(tree->TypeGet());
-    GenTreeBfi* bfi =
+    GenTreeBfm* bfm =
         comp->gtNewBfiNode(ty, bfiPattern.base, bfiPattern.value, static_cast<unsigned>(bfiPattern.offset),
                            static_cast<unsigned>(bfiPattern.width));
-    bfi->CopyCosts(tree);
+    bfm->CopyCosts(tree);
 
-    ContainCheckNode(bfi);
+    ContainCheckNode(bfm);
 
-    BlockRange().InsertBefore(tree, bfi);
+    BlockRange().InsertBefore(tree, bfm);
 
     LIR::Use use;
     if (BlockRange().TryGetUse(tree, &use))
     {
-        use.ReplaceWith(bfi);
+        use.ReplaceWith(bfm);
     }
 
     // Remove old nodes depending on pattern kind
@@ -12162,7 +12162,7 @@ bool Lowering::TryLowerOrToBFI(GenTreeOp* tree, GenTree** next)
 
     BlockRange().Remove(tree);
 
-    *next = bfi->gtNext;
+    *next = bfm->gtNext;
     return true;
 }
 
@@ -12315,6 +12315,71 @@ bool Lowering::TryMatchOrToBfiPattern(GenTreeOp* tree, BfiPattern* result)
     result->lowMask       = lowMask;
     result->offset        = offset;
     result->width         = width;
+    return true;
+}
+
+//------------------------------------------------------------------------
+// TryLowerOrToBFX : Lower AND of left shift and constant
+//
+// Arguments:
+//    tree - pointer to the node
+//    next - [out] Next node to lower if this function returns true
+//
+// Return Value:
+//    false if no changes were made
+//
+bool Lowering::TryLowerOrToBFX(GenTreeOp* tree, GenTree** next)
+{
+    assert(tree->OperIs(GT_AND));
+
+    if (!comp->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
+    GenTree* shift    = tree->gtGetOp1();
+    GenTree* andConst = tree->gtGetOp2();
+    if (!shift->OperIs(GT_RSH, GT_RSZ) || !andConst->IsIntegralConst())
+    {
+        return false;
+    }
+
+    GenTree* shiftVar   = shift->gtGetOp1();
+    GenTree* shiftConst = shift->gtGetOp2();
+    if (!shiftConst->IsIntegralConst())
+    {
+        return false;
+    }
+
+    uint64_t mask     = (uint64_t)andConst->AsIntConCommon()->IntegralValue();
+    uint64_t shiftVal = (uint64_t)shiftConst->AsIntConCommon()->IntegralValue();
+    if ((mask & (mask + 1)) != 0)
+    {
+        return false;
+    }
+
+    uint64_t    width  = (uint64_t)BitOperations::PopCount(mask);
+    uint64_t    offset = (uint64_t)shiftVal;
+    var_types   ty     = genActualType(tree->TypeGet());
+    GenTreeBfm* bfm    = comp->gtNewBfxNode(ty, shiftVar, static_cast<unsigned>(offset), static_cast<unsigned>(width));
+    bfm->CopyCosts(tree);
+
+    ContainCheckNode(bfm);
+
+    BlockRange().InsertBefore(tree, bfm);
+
+    LIR::Use use;
+    if (BlockRange().TryGetUse(tree, &use))
+    {
+        use.ReplaceWith(bfm);
+    }
+
+    BlockRange().Remove(shiftConst);
+    BlockRange().Remove(shift);
+    BlockRange().Remove(andConst);
+    BlockRange().Remove(tree);
+
+    *next = bfm->gtNext;
     return true;
 }
 #endif
