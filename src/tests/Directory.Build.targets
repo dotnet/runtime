@@ -310,7 +310,7 @@
     </PropertyGroup>
 
     <!-- Generate a set of stress marker files to be used in stress scenarios in CI runs -->
-    <ItemGroup Condition="'$(NumberOfStripesToUseInStress)' != '' and '$(IsMergedTestRunnerAssembly)' == 'true'">
+    <ItemGroup Condition="'$(NumberOfStripesToUseInStress)' != '' and '$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' != 'true'">
       <SequenceOfIntegers Include="0"/>
       <SequenceOfIntegers Include="1"/>
       <SequenceOfIntegers Include="2"/>

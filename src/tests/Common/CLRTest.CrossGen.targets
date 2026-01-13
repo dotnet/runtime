@@ -61,8 +61,6 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       mkdir IL-CG2
       cp ./*.dll IL-CG2/
       rm IL-CG2/composite-r2r.* 2>/dev/null
-      rm IL-CG2/Coreclr.TestWrapper.dll 2>/dev/null
-      rm IL-CG2/*.XUnitWrapper.dll 2>/dev/null
 
       if [ ! -z ${CompositeBuildMode+x} ]%3B then
         # HACK: copy native shared shim libraries. Not needed on Windows.
@@ -254,8 +252,6 @@ if defined RunCrossGen2 (
     mkdir IL-CG2
     copy *.dll IL-CG2\
     del IL-CG2\composite-r2r.* 2>nul
-    del IL-CG2\Coreclr.TestWrapper.dll 2>nul
-    del IL-CG2\*.XUnitWrapper.dll 2>nul
 
     if defined CompositeBuildMode (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! --composite
