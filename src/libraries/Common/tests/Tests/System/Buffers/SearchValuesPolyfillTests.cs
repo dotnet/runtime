@@ -4,7 +4,7 @@
 using System.Buffers;
 using Xunit;
 
-namespace System.Collections.Immutable.Tests
+namespace System.Buffers.Tests
 {
     public class SearchValuesPolyfillTests
     {
