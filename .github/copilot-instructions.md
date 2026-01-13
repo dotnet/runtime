@@ -28,6 +28,7 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 - When writing tests, do not emit "Act", "Arrange" or "Assert" comments.
 - For markdown (`.md`) files, ensure there is no trailing whitespace at the end of any line.
 - When adding XML documentation to APIs, follow the guidelines at [`docs.prompt.md`](/.github/prompts/docs.prompt.md).
+- Ignore any pull request templates in the repository; they are intended for human use only.
 
 ---
 
