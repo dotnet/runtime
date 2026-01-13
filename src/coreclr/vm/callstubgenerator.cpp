@@ -592,6 +592,9 @@ extern "C" void Store_X6();
 extern "C" void Store_X6_X7();
 extern "C" void Store_X7();
 
+extern "C" void Load_SwiftSelf();
+extern "C" void Store_SwiftSelf();
+
 extern "C" void Load_Ref_X0();
 extern "C" void Load_Ref_X1();
 extern "C" void Load_Ref_X2();
@@ -1968,6 +1971,14 @@ PCODE CallStubGenerator::GetFPReg32RangeRoutine(int x1, int x2)
     int index = x1 * NUM_FLOAT_ARGUMENT_REGISTERS + x2;
     return m_interpreterToNative ? FPRegs32LoadRoutines[index] : FPRegs32StoreRoutines[index];
 }
+
+PCODE CallStubGenerator::GetSwiftSelfRoutine()
+{
+#if LOG_COMPUTE_CALL_STUB
+    printf("GetSwiftSelfRoutine\n");
+#endif
+    return m_interpreterToNative ? (PCODE)Load_SwiftSelf : (PCODE)Store_SwiftSelf;
+}
 #endif // TARGET_ARM64
 
 extern "C" void CallJittedMethodRetVoid(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
@@ -2441,6 +2452,11 @@ void CallStubGenerator::TerminateCurrentRoutineIfNotOfNewType(RoutineType type, 
         m_x1 = NoRange;
         m_currentRoutineType = RoutineType::None;
     }
+    else if ((m_currentRoutineType == RoutineType::SwiftSelf) && (type != RoutineType::SwiftSelf))
+    {
+        pRoutines[m_routineIndex++] = GetSwiftSelfRoutine();
+        m_currentRoutineType = RoutineType::None;
+    }
 #endif // TARGET_ARM64
     else if ((m_currentRoutineType == RoutineType::Stack) && (type != RoutineType::Stack))
     {
@@ -2487,6 +2503,37 @@ bool isNativePrimitiveStructType(MethodTable* pMT)
     return strcmp(typeName, "CLong") == 0 || strcmp(typeName, "CULong") == 0 || strcmp(typeName, "NFloat") == 0;
 }
 
+#ifdef TARGET_ARM64
+//---------------------------------------------------------------------------
+// isSwiftSelfType:
+//    Check if the given type is SwiftSelf or SwiftSelf<T>.
+//
+// Arguments:
+//    pMT - the handle for the type.
+//
+// Return Value:
+//    true if the given type is SwiftSelf or SwiftSelf<T>,
+//    false otherwise.
+//
+bool isSwiftSelfType(MethodTable* pMT)
+{
+    const char* namespaceName = nullptr;
+    const char* typeName      = pMT->GetFullyQualifiedNameInfo(&namespaceName);
+
+    if ((namespaceName == NULL) || (typeName == NULL))
+    {
+        return false;
+    }
+
+    if (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") != 0)
+    {
+        return false;
+    }
+
+    return strcmp(typeName, "SwiftSelf") == 0 || strcmp(typeName, "SwiftSelf`1") == 0;
+}
+#endif // TARGET_ARM64
+
 void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDesc *pMD)
 {
     bool rewriteMetaSigFromExplicitThisToHasThis = false;
@@ -2532,6 +2579,10 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
         }
     }
 
+#ifdef TARGET_ARM64
+    bool isSwiftCallConv = false;
+#endif
+
     if (hasUnmanagedCallConv)
     {
         switch (unmanagedCallConv)
@@ -2542,6 +2593,11 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
             case CorInfoCallConvExtension::FastcallMemberFunction:
                 unmanagedThisCallConv = true;
                 break;
+#ifdef TARGET_ARM64
+            case CorInfoCallConvExtension::Swift:
+                isSwiftCallConv = true;
+                break;
+#endif
             default:
                 break;
         }
@@ -2696,7 +2752,30 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
 
         // Each entry on the interpreter stack is always aligned to at least 8 bytes, but some arguments are 16 byte aligned
         TypeHandle thArgTypeHandle;
-        if ((argIt.GetArgType(&thArgTypeHandle) == ELEMENT_TYPE_VALUETYPE) && thArgTypeHandle.GetSize() > 8)
+        CorElementType argCorType = argIt.GetArgType(&thArgTypeHandle);
+
+#ifdef TARGET_ARM64
+        if (isSwiftCallConv)
+        {
+            if (argCorType == ELEMENT_TYPE_VALUETYPE && !thArgTypeHandle.IsNull())
+            {
+                MethodTable* pArgMT = thArgTypeHandle.IsTypeDesc() ? nullptr : thArgTypeHandle.AsMethodTable();
+                if (pArgMT != nullptr && isSwiftSelfType(pArgMT))
+                {
+#if LOG_COMPUTE_CALL_STUB
+                    printf("Swift Self argument detected\n");
+#endif
+
+                    TerminateCurrentRoutineIfNotOfNewType(RoutineType::SwiftSelf, pRoutines);
+                    m_currentRoutineType = RoutineType::SwiftSelf;
+                    interpreterStackOffset += interpStackSlotSize;
+                    continue;
+                }
+            }
+        }
+#endif // TARGET_ARM64
+
+        if ((argCorType == ELEMENT_TYPE_VALUETYPE) && thArgTypeHandle.GetSize() > 8)
         {
             unsigned align = CEEInfo::getClassAlignmentRequirementStatic(thArgTypeHandle);
             if (align < INTERP_STACK_SLOT_SIZE)
@@ -2836,7 +2915,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
     {
         argType = RoutineType::Stack;
     }
-    
+
     TerminateCurrentRoutineIfNotOfNewType(argType, pRoutines);
 
     if (argLocDesc.m_cGenReg != 0)
@@ -2907,7 +2986,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
         {
             // HFA Arguments using odd number of 32 bit FP registers cannot be merged with further ranges due to the
             // interpreter stack slot size alignment needs. The range copy routines for these registers
-            // ensure that the interpreter stack is properly aligned after the odd number of registers are 
+            // ensure that the interpreter stack is properly aligned after the odd number of registers are
             // loaded / stored.
             pRoutines[m_routineIndex++] = GetFPReg32RangeRoutine(m_x1, m_x2);
             argType = RoutineType::None;

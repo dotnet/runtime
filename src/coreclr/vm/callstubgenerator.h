@@ -117,6 +117,7 @@ class CallStubGenerator
 #ifdef TARGET_ARM64
         FPReg32,
         FPReg128,
+        SwiftSelf,
 #endif
         Stack
     };
@@ -157,7 +158,8 @@ class CallStubGenerator
 #ifdef TARGET_ARM64
     PCODE GetFPReg128RangeRoutine(int x1, int x2);
     PCODE GetFPReg32RangeRoutine(int x1, int x2);
-#endif    
+    PCODE GetSwiftSelfRoutine();
+#endif
     PCODE GetGPRegRangeRoutine(int r1, int r2);
     ReturnType GetReturnType(ArgIterator *pArgIt);
     CallStubHeader::InvokeFunctionPtr GetInvokeFunctionPtr(ReturnType returnType);

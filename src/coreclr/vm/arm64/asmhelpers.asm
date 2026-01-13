@@ -1445,6 +1445,18 @@ RefCopyDone$argReg
     Store_Ref X6
     Store_Ref X7
 
+    LEAF_ENTRY Load_SwiftSelf
+        ldr x20, [x9], #8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Load_SwiftSelf
+
+    LEAF_ENTRY Store_SwiftSelf
+        str x20, [x9], #8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Store_SwiftSelf
+
     LEAF_ENTRY Store_X0
         str x0, [x9], #8
         ldr x11, [x10], #8
