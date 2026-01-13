@@ -1,0 +1,101 @@
+parameters:
+  alwaysRun: false
+  extraBuildArgs: ''
+  extraHelixArguments: ''
+  isExtraPlatformsBuild: false
+  isWasmOnlyBuild: false
+  nameSuffix: ''
+  platforms: []
+  scenarios: ['WasmTestOnChrome']
+  shouldContinueOnError: false
+  shouldRunSmokeOnly: false
+
+jobs:
+
+#
+# Build for Browser/wasm and test it
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: coreclr
+    platforms: ${{ parameters.platforms }}
+    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+    variables:
+      # map dependencies variables to local variables
+      - name: alwaysRunVar
+        value: ${{ parameters.alwaysRun }}
+      # - wasm darc deps changed
+      # - any libs that can have wasm specific changes
+      # - any other wasm specific changes that are not wbt, or dbg
+      - name: shouldRunOnDefaultPipelines
+        value: $[
+          or(
+            eq(variables['wasmDarcDependenciesChanged'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_chrome.containsChange'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true))
+         ]
+      # run smoke tests only if:
+      # - explicitly requested
+      # - libraries or illink changed and no wasm specific changes
+      - name: shouldRunSmokeOnlyVar
+        value: $[
+          or(
+            eq('${{ parameters.shouldRunSmokeOnly }}', 'true'),
+            and(
+              eq('${{ parameters.shouldRunSmokeOnly }}', 'onLibrariesAndIllinkChanges'),
+              ne(variables['wasmDarcDependenciesChanged'], true),
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true)
+              ),
+              ne(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_chrome.containsChange'], true),
+              ne(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true)
+            )
+          )
+          ]
+      - name: _wasmRunSmokeTestsOnlyArg
+        value: /p:RunSmokeTestsOnly=$(shouldRunSmokeOnlyVar)
+      - name: chromeInstallArg
+        ${{ if containsValue(parameters.scenarios, 'WasmTestOnChrome') }}:
+          value: /p:InstallChromeForTests=true
+        ${{ else }}:
+          value: ''
+      - name: firefoxInstallArg
+        ${{ if containsValue(parameters.scenarios, 'WasmTestOnFirefox') }}:
+          value: /p:InstallFirefoxForTests=true
+        ${{ else }}:
+          value: ''
+      - name: v8InstallArg
+        ${{ if containsValue(parameters.scenarios, 'WasmTestOnV8') }}:
+          value: /p:InstallV8ForTests=true
+        ${{ else }}:
+          value: ''
+
+    jobParameters:
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+      testGroup: innerloop
+      nameSuffix: LibraryTestsCoreCLR${{ parameters.nameSuffix }}
+      buildArgs: -s clr+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) $(chromeInstallArg) $(firefoxInstallArg) $(v8InstallArg) /maxcpucount:1 ${{ parameters.extraBuildArgs }}
+      timeoutInMinutes: 240
+      # if !alwaysRun, then:
+      #   if this is runtime-wasm (isWasmOnlyBuild):
+      #     - then run only if it would not have run on default pipelines (based
+      #       on path changes)
+      #     - else run based on path changes
+      condition: >-
+        or(
+          eq(variables['alwaysRunVar'], true),
+          eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
+      # extra steps, run tests
+      postBuildSteps:
+        - template: /eng/pipelines/libraries/helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+            extraHelixArguments: /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) ${{ parameters.extraHelixArguments }}
+            scenarios: ${{ parameters.scenarios }}
