@@ -6,6 +6,11 @@ import { _ems_ } from "../../../libs/Common/JavaScript/ems-ambient";
 
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function registerPdbBytes(bytes: Uint8Array, asset: { name: string, virtualPath: string }) {
+    // WASM-TODO: https://github.com/dotnet/runtime/issues/122921
+}
+
 export function registerDllBytes(bytes: Uint8Array, asset: { name: string, virtualPath: string }) {
     const sp = _ems_.Module.stackSave();
     try {
@@ -70,7 +75,7 @@ export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
 
         _ems_.dotnetLogger.debug(`Creating directory '${parentDirectory}'`);
 
-        _ems_.Module.FS_createPath(
+        _ems_.FS.createPath(
             "/", parentDirectory, true, true // fixme: should canWrite be false?
         );
     } else {
@@ -79,7 +84,7 @@ export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
 
     _ems_.dotnetLogger.debug(`Creating file '${fileName}' in directory '${parentDirectory}'`);
 
-    _ems_.Module.FS_createDataFile(
+    _ems_.FS.createDataFile(
         parentDirectory, fileName,
         bytes, true /* canRead */, true /* canWrite */, true /* canOwn */
     );

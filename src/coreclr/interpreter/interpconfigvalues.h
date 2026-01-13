@@ -25,6 +25,7 @@ CONFIG_METHODSET(InterpHalt, "InterpHalt");
 CONFIG_METHODSET(InterpBreak, "InterpBreak"); // Break into the debugger when compiling this method
 CONFIG_METHODSET(InterpDump, "InterpDump");
 CONFIG_INTEGER(InterpList, "InterpList", 0); // List the methods which are compiled by the interpreter JIT
+CONFIG_INTEGER(JitOptimizeAwait, "JitOptimizeAwait", 1); // Enable optimizations for async/await state machines
 RELEASE_CONFIG_INTEGER(InterpMode, "InterpMode", 0); // Interpreter mode, one of the following:
 // 0: default, do not use interpreter except explicit opt-in via DOTNET_Interpreter
 // 1: use interpreter for everything except (1) methods that have R2R compiled code and (2) all code in System.Private.CoreLib. All code in System.Private.CoreLib falls back to JIT if there is no R2R available for it.
