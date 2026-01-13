@@ -375,6 +375,21 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAnyAsync<SocketException>(() => Dns.GetHostEntryAsync(hostName));
         }
 
+        // Malformed hostnames should not be treated as RFC 6761 reserved names.
+        // They should fall through to the OS resolver which will reject them.
+        [Theory]
+        [InlineData(".localhost")]
+        [InlineData("foo..localhost")]
+        [InlineData(".invalid")]
+        [InlineData("test..invalid")]
+        public async Task DnsGetHostEntry_MalformedReservedName_NotTreatedAsReserved(string hostName)
+        {
+            // Malformed hostnames should go to OS resolver, not be special-cased.
+            // OS resolver will typically reject them with ArgumentException or SocketException.
+            Assert.ThrowsAny<Exception>(() => Dns.GetHostEntry(hostName));
+            await Assert.ThrowsAnyAsync<Exception>(() => Dns.GetHostEntryAsync(hostName));
+        }
+
         // RFC 6761: "*.localhost" subdomains should respect AddressFamily parameter.
         [Theory]
         [InlineData(AddressFamily.InterNetwork)]
