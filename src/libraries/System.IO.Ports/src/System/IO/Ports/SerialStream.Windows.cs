@@ -1317,7 +1317,9 @@ namespace System.IO.Ports
             // bit coresponding to supported max baudrate (bits up to baud 128K are defined) or
             // BAUD_USER if device support arbitrary baudrate. But some device drivers (for example,
             // Silicon Labs USB to UART convertors) provides maximum baudrate value as decimal
-            // value instead.
+            // value instead. Because no common baudrate is power of 2, we assume that when we get
+            // single bit (power of two) it is bitmask, and if we get more bits set it is baudrate
+            // encoded as decimal.
             if (BitOperations.PopCount((uint)baudBitMask) != 1)
             {
                 return baudBitMask;
@@ -1329,7 +1331,8 @@ namespace System.IO.Ports
 
             int index = BitOperations.LeadingZeroCount((uint)baudBitMask);
 
-            // bit which has not defined macro
+            // bit which has not defined macro. Rather enforce no limitation and give a try rather
+            // then restricting usage of such device.
             if (index >= bauds.Length)
             {
                 return 0;
