@@ -196,16 +196,16 @@ struct TransitionBlock
     TADDR                   m_StackPointer;
     FloatArgumentRegisters  m_floatArgumentRegisters;
 #elif defined(TARGET_POWERPC64)
-    TADDR		    m_saveFrameAddress; 	//8
-    FloatCalleeSavedRegisters    m_floatCalleeSaveRegisters;		//8*18 = 144
-    CalleeSavedRegisters    m_calleeSavedRegisters; 	// r14-r31 8*18 = 144
-    FloatArgumentRegisters  m_floatArgumentRegisters; //f1-f13 8*13 = 104 
-    ArgumentRegisters       m_argumentRegisters;// 8*8 = 64 r3 - r10
-    TADDR		    m_tocPtr;		//8 = r2
-    TADDR		    m_ReturnAddress;	//8
-    DWORD                   m_reserved;		//4
-    DWORD                   m_crSaveWord;	//4
     TADDR                   m_backchain;	//8
+    DWORD                   m_crSaveWord;	//4
+    DWORD                   m_reserved;		//4
+    TADDR		    m_ReturnAddress;	//8
+    TADDR		    m_tocPtr;		//8 = r2
+    ArgumentRegisters       m_argumentRegisters;// 8*8 = 64 r3 - r10
+    FloatArgumentRegisters  m_floatArgumentRegisters; //f1-f13 8*13 = 104 
+    CalleeSavedRegisters    m_calleeSavedRegisters; 	// r14-r31 8*18 = 144
+    FloatCalleeSavedRegisters    m_floatCalleeSaveRegisters;		//8*18 = 144
+    TADDR		    m_saveFrameAddress; 	//8
 
 #else
     PORTABILITY_ASSERT("TransitionBlock");
@@ -321,7 +321,7 @@ struct TransitionBlock
                && offset < sizeof(TransitionBlock);
 #elif defined(TARGET_POWERPC64)
         return offset >= offsetof(TransitionBlock, m_floatArgumentRegisters)
-               && offset < offsetof(TransitionBlock, m_argumentRegisters);
+               && offset < offsetof(TransitionBlock, m_calleeSavedRegisters);
 #else
         return offset < 0;
 #endif
@@ -349,7 +349,7 @@ struct TransitionBlock
                && offset < sizeof(TransitionBlock);
     #elif defined(TARGET_POWERPC64)
         return offset >= offsetof(TransitionBlock, m_floatArgumentRegisters)
-               && offset < offsetof(TransitionBlock, m_argumentRegisters);
+               && offset < offsetof(TransitionBlock, m_calleeSavedRegisters);
     #endif
         return offset < 0;
     }
