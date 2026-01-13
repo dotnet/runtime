@@ -3398,7 +3398,7 @@ bool Compiler::impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedT
     // and calculate the type and layout of the 'value' field
     //
     GenTreeFlags indirFlags = GTF_EMPTY;
-    nullableObj             = impGetNodeAddr(nullableObj, CHECK_SPILL_ALL, &indirFlags);
+    nullableObj             = impGetNodeAddr(nullableObj, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, &indirFlags);
     GenTree* nullableObjClone;
     nullableObj = impCloneExpr(nullableObj, &nullableObjClone, CHECK_SPILL_ALL, nullptr DEBUGARG("nullable obj clone"));
 
