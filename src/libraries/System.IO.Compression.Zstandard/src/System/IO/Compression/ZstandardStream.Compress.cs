@@ -15,12 +15,20 @@ namespace System.IO.Compression
         /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream and compression level.</summary>
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
         /// <param name="compressionLevel">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
+        /// <exception cref="IOException">Failed to initialize the <see cref="ZstandardStream"/> instance.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="stream"/> does not support writing.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="compressionLevel"/> is not a valid <see cref="CompressionLevel"/> value.</exception>
         public ZstandardStream(Stream stream, CompressionLevel compressionLevel) : this(stream, compressionLevel, leaveOpen: false) { }
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream and compression level, and optionally leaves the stream open.</summary>
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
         /// <param name="compressionLevel">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
+        /// <exception cref="IOException">Failed to initialize the <see cref="ZstandardStream"/> instance.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="stream"/> does not support writing.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="compressionLevel"/> is not a valid <see cref="CompressionLevel"/> value.</exception>
         public ZstandardStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen)
         {
             Init(stream, CompressionMode.Compress);
@@ -34,6 +42,9 @@ namespace System.IO.Compression
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
         /// <param name="compressionOptions">The options to use for Zstandard compression or decompression.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
+        /// <exception cref="IOException">Failed to initialize the <see cref="ZstandardStream"/> instance.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="stream"/> does not support writing.</exception>
         public ZstandardStream(Stream stream, ZstandardCompressionOptions compressionOptions, bool leaveOpen = false)
         {
             Init(stream, CompressionMode.Compress);
@@ -210,10 +221,11 @@ namespace System.IO.Compression
         /// <param name="offset">The byte offset in <paramref name="buffer" /> from which the bytes will be read.</param>
         /// <param name="count">The maximum number of bytes to write.</param>
         /// <exception cref="ArgumentNullException"><paramref name="buffer" /> is <see langword="null" />.</exception>
-        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Decompress</c> when the object was created.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Decompress</c> when the object was created, or concurrent read operations were attempted.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset" /> or <paramref name="count" /> is less than zero.</exception>
         /// <exception cref="ArgumentException">The <paramref name="buffer" /> length minus the index starting point is less than <paramref name="count" />.</exception>
         /// <exception cref="ObjectDisposedException">The stream is closed.</exception>
+        /// <exception cref="IOException">Failed to compress data to the underlying stream.</exception>
         public override void Write(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
@@ -222,8 +234,9 @@ namespace System.IO.Compression
 
         /// <summary>Writes compressed bytes to the underlying stream from the specified span.</summary>
         /// <param name="buffer">The span that contains the data to compress.</param>
-        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Decompress</c> when the object was created.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Decompress</c> when the object was created, or concurrent read operations were attempted.</exception>
         /// <exception cref="ObjectDisposedException">The stream is closed.</exception>
+        /// <exception cref="IOException">Failed to compress data to the underlying stream.</exception>
         public override void Write(ReadOnlySpan<byte> buffer)
         {
             WriteCore(buffer);
@@ -231,8 +244,9 @@ namespace System.IO.Compression
 
         /// <summary>Writes a byte to the current position in the stream and advances the position within the stream by one byte.</summary>
         /// <param name="value">The byte to write to the stream.</param>
-        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Decompress</c> when the object was created.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Decompress</c> when the object was created, or concurrent read operations were attempted.</exception>
         /// <exception cref="ObjectDisposedException">The stream is closed.</exception>
+        /// <exception cref="IOException">Failed to compress data to the underlying stream.</exception>
         public override void WriteByte(byte value)
         {
             Write([value]);
@@ -245,10 +259,11 @@ namespace System.IO.Compression
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="buffer" /> is <see langword="null" />.</exception>
-        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Decompress</c> when the object was created.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Decompress</c> when the object was created, or concurrent read operations were attempted.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset" /> or <paramref name="count" /> is less than zero.</exception>
         /// <exception cref="ArgumentException">The <paramref name="buffer" /> length minus the index starting point is less than <paramref name="count" />.</exception>
         /// <exception cref="ObjectDisposedException">The stream is closed.</exception>
+        /// <exception cref="IOException">Failed to compress data to the underlying stream.</exception>
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
@@ -259,8 +274,9 @@ namespace System.IO.Compression
         /// <param name="buffer">The memory that contains the data to compress.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
-        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Decompress</c> when the object was created.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Decompress</c> when the object was created, or concurrent read operations were attempted.</exception>
         /// <exception cref="ObjectDisposedException">The stream is closed.</exception>
+        /// <exception cref="IOException">Failed to compress data to the underlying stream.</exception>
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (_mode != CompressionMode.Compress)
@@ -310,6 +326,9 @@ namespace System.IO.Compression
         /// <summary>Asynchronously flushes the internal buffer.</summary>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous flush operation.</returns>
+        /// <exception cref="InvalidOperationException">Concurrent write operations are not supported.</exception>
+        /// <exception cref="ObjectDisposedException">The stream is closed.</exception>
+        /// <exception cref="IOException">The flush operation failed.</exception>
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             EnsureNotDisposed();

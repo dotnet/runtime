@@ -81,11 +81,12 @@ namespace System.IO.Compression
         /// <param name="count">The maximum number of decompressed bytes to read.</param>
         /// <returns>The number of bytes that were read into the byte array.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="buffer" /> is <see langword="null" />.</exception>
-        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Compress</c> when the object was created.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Compress</c> when the object was created or concurrent read operations were attempted.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset" /> or <paramref name="count" /> is less than zero.</exception>
         /// <exception cref="ArgumentException">The <paramref name="buffer" /> length minus the index starting point is less than <paramref name="count" />.</exception>
         /// <exception cref="InvalidDataException">The data is in an invalid format.</exception>
         /// <exception cref="ObjectDisposedException">The stream is closed.</exception>
+        /// <exception cref="IOException">Failed to decompress data from the underlying stream.</exception>
         public override int Read(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
@@ -95,9 +96,10 @@ namespace System.IO.Compression
         /// <summary>Reads decompressed bytes from the underlying stream and places them in the specified span.</summary>
         /// <param name="buffer">The span to contain the decompressed bytes.</param>
         /// <returns>The number of bytes that were read into the span.</returns>
-        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Compress</c> when the object was created.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Compress</c> when the object was created or concurrent read operations were attempted.</exception>
         /// <exception cref="InvalidDataException">The data is in an invalid format.</exception>
         /// <exception cref="ObjectDisposedException">The stream is closed.</exception>
+        /// <exception cref="IOException">Failed to decompress data from the underlying stream.</exception>
         public override int Read(Span<byte> buffer)
         {
             if (_mode != CompressionMode.Decompress)
@@ -153,11 +155,12 @@ namespace System.IO.Compression
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous read operation, which wraps the number of bytes read from the underlying stream.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="buffer" /> is <see langword="null" />.</exception>
-        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Compress</c> when the object was created.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Compress</c> when the object was created or concurrent read operations were attempted.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset" /> or <paramref name="count" /> is less than zero.</exception>
         /// <exception cref="ArgumentException">The <paramref name="buffer" /> length minus the index starting point is less than <paramref name="count" />.</exception>
         /// <exception cref="InvalidDataException">The data is in an invalid format.</exception>
         /// <exception cref="ObjectDisposedException">The stream is closed.</exception>
+        /// <exception cref="IOException">Failed to decompress data from the underlying stream.</exception>
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
@@ -168,9 +171,10 @@ namespace System.IO.Compression
         /// <param name="buffer">The memory to contain the decompressed bytes.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous read operation, which wraps the number of bytes read from the underlying stream.</returns>
-        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Compress</c> when the object was created.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Compress</c> when the object was created or concurrent read operations were attempted.</exception>
         /// <exception cref="InvalidDataException">The data is in an invalid format.</exception>
         /// <exception cref="ObjectDisposedException">The stream is closed.</exception>
+        /// <exception cref="IOException">Failed to decompress data from the underlying stream.</exception>
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (_mode != CompressionMode.Decompress)

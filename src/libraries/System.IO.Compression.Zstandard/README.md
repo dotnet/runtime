@@ -1,13 +1,11 @@
 # System.IO.Compression.Zstandard
-
 This library provides support for Zstandard compression and decompression operations in .NET. Zstandard (zstd) is a fast compression algorithm that provides high compression ratios and is particularly effective for real-time compression scenarios.
 
-## Features
+## Contribution Bar
+- [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)
+- [x] [We consider PRs that target this library for new source code analyzers](../../libraries/README.md#secondary-bars)
 
-- **ZstandardStream**: A stream-based API for compressing and decompressing data using the Zstandard algorithm
-- **ZstandardOptions**: Configuration options for controlling compression parameters including compression level
-- **High Performance**: Optimized for both compression ratio and speed
-- **Wide Compression Level Range**: Supports compression levels from negative values (faster, less compression) to 22 (slower, better compression)
+See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aopen+is%3Aissue+label%3Aarea-System.IO.Compression+label%3A%22help+wanted%22) issues. We don't have a specific label for Zstandard issues so you will need to read through the list and see if something is available.
 
 ## Usage
 
@@ -25,10 +23,15 @@ using var zstdStream = new ZstandardStream(compressed, CompressionMode.Decompres
 zstdStream.CopyTo(decompressed);
 
 // Using custom options
-var options = new ZstandardOptions { CompressionLevel = 9 };
-using var zstdStream = new ZstandardStream(output, options, CompressionMode.Compress);
+var options = new ZstandardCompressionOptions { Quality = 9 };
+using var zstdStream = new ZstandardStream(output, options);
 ```
 
 ## Platform Support
-
 This library is supported on Windows, Linux, and macOS, but not on browser or WebAssembly platforms.
+
+## Deployment
+`System.IO.Compression.Zstandard` is included in the shared framework since .NET 11.0.
+
+## See also
+ - [`System.IO.Compression`](../System.IO.Compression#readme)

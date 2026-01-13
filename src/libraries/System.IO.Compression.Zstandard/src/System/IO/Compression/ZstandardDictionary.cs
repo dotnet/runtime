@@ -35,6 +35,7 @@ namespace System.IO.Compression
         /// <param name="quality">The quality level for dictionary creation.</param>
         /// <returns>A new <see cref="ZstandardDictionary"/> instance.</returns>
         /// <exception cref="ArgumentException">The buffer is empty.</exception>
+        /// <exception cref="IOException">Failed to create the <see cref="ZstandardDictionary"/> instance.</exception>
         public static ZstandardDictionary Create(ReadOnlySpan<byte> buffer, int quality)
         {
             if (buffer.IsEmpty)
@@ -77,6 +78,7 @@ namespace System.IO.Compression
         /// <param name="maxDictionarySize">The maximum size of the dictionary to create.</param>
         /// <returns>A new <see cref="ZstandardDictionary"/> instance.</returns>
         /// <exception cref="ArgumentException">Invalid sample data or lengths.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxDictionarySize"/> is not between the minimum and maximum allowed values.</exception>
         /// <exception cref="IOException">Failed to train the dictionary.</exception>
         /// <remarks>
         /// Recommended maximum dictionary size is 100KB, and that the size of the training data
@@ -99,48 +101,52 @@ namespace System.IO.Compression
             // This incidentally also protects against concurrent modifications of the sampleLengths that could cause
             // access violations later in native code.
             byte[] lengthsArray = ArrayPool<byte>.Shared.Rent(sampleLengths.Length * Unsafe.SizeOf<nuint>());
-            Span<nuint> lengthsAsNuint = MemoryMarshal.Cast<byte, nuint>(lengthsArray.AsSpan(0, sampleLengths.Length * Unsafe.SizeOf<nuint>()));
-            Debug.Assert(lengthsAsNuint.Length == sampleLengths.Length);
-
-            long totalLength = 0;
-            for (int i = 0; i < sampleLengths.Length; i++)
+            try
             {
-                int length = sampleLengths[i];
-                if (length <= 0)
+                Span<nuint> lengthsAsNuint = MemoryMarshal.Cast<byte, nuint>(lengthsArray.AsSpan(0, sampleLengths.Length * Unsafe.SizeOf<nuint>()));
+                Debug.Assert(lengthsAsNuint.Length == sampleLengths.Length);
+
+                long totalLength = 0;
+                for (int i = 0; i < sampleLengths.Length; i++)
                 {
-                    ArrayPool<byte>.Shared.Return(lengthsArray);
-                    throw new ArgumentException(SR.ZstandardDictionary_Train_InvalidSampleLength, nameof(sampleLengths));
-                }
-                totalLength += length;
-                lengthsAsNuint[i] = (nuint)length;
-            }
-
-            if (totalLength != samples.Length)
-            {
-                throw new ArgumentException(SR.ZstandardDictionary_SampleLengthsMismatch, nameof(sampleLengths));
-            }
-
-            ArgumentOutOfRangeException.ThrowIfLessThan(maxDictionarySize, 256, nameof(maxDictionarySize));
-
-            byte[] dictionaryBuffer = new byte[maxDictionarySize];
-
-            nuint dictSize;
-
-            unsafe
-            {
-                fixed (byte* samplesPtr = &MemoryMarshal.GetReference(samples))
-                fixed (byte* dictPtr = dictionaryBuffer)
-                fixed (nuint* lengthsAsNuintPtr = &MemoryMarshal.GetReference(lengthsAsNuint))
-                {
-                    dictSize = Interop.Zstd.ZDICT_trainFromBuffer(
-                            dictPtr, (nuint)maxDictionarySize,
-                            samplesPtr, lengthsAsNuintPtr, (uint)sampleLengths.Length);
+                    int length = sampleLengths[i];
+                    if (length <= 0)
+                    {
+                        throw new ArgumentException(SR.ZstandardDictionary_Train_InvalidSampleLength, nameof(sampleLengths));
+                    }
+                    totalLength += length;
+                    lengthsAsNuint[i] = (nuint)length;
                 }
 
+                if (totalLength != samples.Length)
+                {
+                    throw new ArgumentException(SR.ZstandardDictionary_SampleLengthsMismatch, nameof(sampleLengths));
+                }
+
+                ArgumentOutOfRangeException.ThrowIfLessThan(maxDictionarySize, 256, nameof(maxDictionarySize));
+
+                byte[] dictionaryBuffer = new byte[maxDictionarySize];
+
+                nuint dictSize;
+
+                unsafe
+                {
+                    fixed (byte* samplesPtr = &MemoryMarshal.GetReference(samples))
+                    fixed (byte* dictPtr = dictionaryBuffer)
+                    fixed (nuint* lengthsAsNuintPtr = &MemoryMarshal.GetReference(lengthsAsNuint))
+                    {
+                        dictSize = Interop.Zstd.ZDICT_trainFromBuffer(
+                                dictPtr, (nuint)maxDictionarySize,
+                                samplesPtr, lengthsAsNuintPtr, (uint)sampleLengths.Length);
+                    }
+
+                    ZstandardUtils.ThrowIfError(dictSize, SR.ZstandardDictionary_Train_Failure);
+                    return Create(dictionaryBuffer.AsSpan(0, (int)dictSize));
+                }
+            }
+            finally
+            {
                 ArrayPool<byte>.Shared.Return(lengthsArray);
-
-                ZstandardUtils.ThrowIfError(dictSize, SR.ZstandardDictionary_Train_Failure);
-                return Create(dictionaryBuffer.AsSpan(0, (int)dictSize));
             }
         }
 

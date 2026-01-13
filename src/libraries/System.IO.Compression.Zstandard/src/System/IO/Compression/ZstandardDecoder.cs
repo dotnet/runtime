@@ -56,6 +56,7 @@ namespace System.IO.Compression
         /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> class with the specified dictionary.</summary>
         /// <param name="dictionary">The decompression dictionary to use.</param>
         /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
+        /// <exception cref="IOException">Failed to create the <see cref="ZstandardDecoder"/> instance.</exception>
         public ZstandardDecoder(ZstandardDictionary dictionary)
         {
             ArgumentNullException.ThrowIfNull(dictionary);
@@ -122,6 +123,7 @@ namespace System.IO.Compression
         /// <param name="bytesWritten">The number of bytes written to the destination.</param>
         /// <returns>An <see cref="OperationStatus"/> indicating the result of the operation.</returns>
         /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
+        /// <exception cref="IOException">An error occurred during decompression.</exception>
         public OperationStatus Decompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten)
         {
             bytesWritten = 0;
@@ -322,6 +324,8 @@ namespace System.IO.Compression
 
         /// <summary>References a prefix for the next decompression operation.</summary>
         /// <remarks>The prefix will be used only for the next decompression frame and will be removed when <see cref="Reset"/> is called. The referenced data must remain valid and unmodified for the duration of the decompression operation.</remarks>
+        /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
+        /// <exception cref="InvalidOperationException">The decoder is in an invalid state for setting a prefix.</exception>
         public void SetPrefix(ReadOnlyMemory<byte> prefix)
         {
             EnsureNotDisposed();

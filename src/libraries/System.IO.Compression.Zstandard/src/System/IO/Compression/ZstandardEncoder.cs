@@ -104,6 +104,7 @@ namespace System.IO.Compression
         /// <param name="windowLog">The window size for compression, expressed as base 2 logarithm.</param>
         /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="windowLog"/> is not between the minimum and maximum allowed values.</exception>
+        /// <exception cref="IOException">Failed to create the <see cref="ZstandardEncoder"/> instance.</exception>
         public ZstandardEncoder(ZstandardDictionary dictionary, int windowLog)
         {
             ArgumentNullException.ThrowIfNull(dictionary);
@@ -195,6 +196,7 @@ namespace System.IO.Compression
         /// <param name="isFinalBlock">True if this is the final block of data to compress.</param>
         /// <returns>An <see cref="OperationStatus"/> indicating the result of the operation.</returns>
         /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
+        /// <exception cref="IOException">An error occurred during compression.</exception>
         public OperationStatus Compress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock)
         {
             EnsureNotDisposed();
@@ -216,6 +218,7 @@ namespace System.IO.Compression
         /// <param name="bytesWritten">The number of bytes written to the destination.</param>
         /// <returns>An <see cref="OperationStatus"/> indicating the result of the operation.</returns>
         /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
+        /// <exception cref="IOException">An error occurred during the operation.</exception>
         public OperationStatus Flush(Span<byte> destination, out int bytesWritten)
         {
             EnsureNotDisposed();
@@ -310,6 +313,7 @@ namespace System.IO.Compression
         /// <param name="destination">The buffer to write the compressed data to.</param>
         /// <param name="bytesWritten">The number of bytes written to the destination.</param>
         /// <returns><see langword="true" /> on success; <see langword="false" /> otherwise.</returns>
+        /// <exception cref="IOException">An error occurred during the operation.</exception>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
             return TryCompress(source, destination, out bytesWritten, ZstandardUtils.Quality_Default, 0);
@@ -323,6 +327,7 @@ namespace System.IO.Compression
         /// <param name="windowLog">The window size for compression, expressed as base 2 logarithm.</param>
         /// <returns><see langword="true" /> on success; <see langword="false" /> otherwise.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> or <paramref name="windowLog"/> is out of the valid range.</exception>
+        /// <exception cref="IOException">An error occurred during the operation.</exception>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog)
         {
             return TryCompressCore(source, destination, out bytesWritten, quality, windowLog, null);
@@ -337,6 +342,7 @@ namespace System.IO.Compression
         /// <returns><see langword="true" /> on success; <see langword="false" /> otherwise.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="windowLog"/> is out of the valid range.</exception>
+        /// <exception cref="IOException">An error occurred during the operation.</exception>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, ZstandardDictionary dictionary, int windowLog)
         {
             ArgumentNullException.ThrowIfNull(dictionary);
@@ -403,6 +409,8 @@ namespace System.IO.Compression
 
         /// <summary>References a prefix for the next compression operation.</summary>
         /// <remarks>The prefix will be used only for the next compression frame and will be removed when <see cref="Reset"/> is called. The referenced data must remain valid and unmodified for the duration of the compression operation.</remarks>
+        /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
+        /// <exception cref="InvalidOperationException">The encoder is in an invalid state for setting a prefix.</exception>
         public void SetPrefix(ReadOnlyMemory<byte> prefix)
         {
             EnsureNotDisposed();
