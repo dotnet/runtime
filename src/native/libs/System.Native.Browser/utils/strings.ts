@@ -4,7 +4,7 @@
 import type { CharPtr, VoidPtr } from "../types";
 import { dotnetApi } from "../utils/cross-module";
 import { getU16Local, setU16Local, viewOrCopy, zeroRegion } from "./memory";
-import { Module } from "./cross-module";
+import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 
 let textDecoderUtf16: TextDecoder | undefined | null;
 let stringsInitialized = false;
@@ -33,16 +33,16 @@ export function stringToUTF16(dstPtr: number, endPtr: number, text: string) {
 
 export function stringToUTF16Ptr(str: string): VoidPtr {
     const bytes = (str.length + 1) * 2;
-    const ptr = Module._malloc(bytes) as any;
+    const ptr = _ems_._malloc(bytes) as any;
     zeroRegion(ptr, str.length * 2);
     stringToUTF16(ptr, ptr + bytes, str);
     return ptr;
 }
 
 export function stringToUTF8Ptr(str: string): CharPtr {
-    const size = Module.lengthBytesUTF8(str) + 1;
-    const ptr = Module._malloc(size) as any;
-    Module.stringToUTF8Array(str, Module.HEAPU8, ptr, size);
+    const size = _ems_.lengthBytesUTF8(str) + 1;
+    const ptr = _ems_._malloc(size) as any;
+    _ems_.stringToUTF8Array(str, _ems_.HEAPU8, ptr, size);
     return ptr;
 }
 
