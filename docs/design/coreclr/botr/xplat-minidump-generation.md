@@ -126,7 +126,7 @@ export DOTNET_DbgCreateDumpToolPath=/path/to/directory
 ./myapp
 ```
 
-The runtime will look for the `createdump` binary in the specified directory. This allows you to "bring your own" dump generation tool. Note that this environment variable is only supported in NativeAOT applications only and ignored otherwise.
+The runtime will look for the `createdump` binary in the specified directory. This allows you to "bring your own" dump generation tool. Note that this environment variable is only supported in NativeAOT applications and ignored otherwise.
 
 # Testing #
 
