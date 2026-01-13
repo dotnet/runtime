@@ -791,19 +791,38 @@ void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 //---------------------------------------------------------------------
 // genCodeForNullCheck - generate code for a GT_NULLCHECK node
 //
-// Arguments
+// Arguments:
 //    tree - the GT_NULLCHECK node
 //
-// Return value:
-//    None
+// Notes:
+//    If throw helper calls are being emitted inline, we need
+//    to wrap the resulting codegen in a block/end pair.
 //
 void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 {
-    assert(compiler->fgUseThrowHelperBlocks());
     genConsumeAddress(tree->Addr());
-    // TODO-WASM: compare with the appropriate small value
-    GetEmitter()->emitIns(INS_i32_eqz);
-    genJumpToThrowHlpBlk(EJ_jmpif, SCK_NULL_CHECK);
+
+    // TODO-WASM: compare addr with the appropriate small value instead of zero
+    //
+    if (compiler->fgUseThrowHelperBlocks())
+    {
+        Compiler::AddCodeDsc* const add = compiler->fgFindExcptnTarget(SCK_NULL_CHECK, compiler->compCurBB);
+        assert((add != nullptr) && ("ERROR: failed to find exception throw block"));
+        assert(add->acdUsed);
+        GetEmitter()->emitIns(INS_i32_eqz);
+        inst_JMP(EJ_jmpif, add->acdDstBlk);
+    }
+    else
+    {
+        BasicBlock* const tgtBlk = genCreateTempLabel();
+        GetEmitter()->emitIns(INS_block);
+        // tgtBlock is not on our model control stack, so we note it is a temp label
+        inst_JMP(EJ_jmpif, tgtBlk, /* isTempLabel */ true);
+        // genEmitHelperCall(compiler->acdHelper(SCK_NULL_CHECK), 0, EA_UNKNOWN);
+        GetEmitter()->emitIns(INS_unreachable);
+        genDefineTempLabel(tgtBlk);
+        GetEmitter()->emitIns(INS_end);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1108,11 +1127,12 @@ void CodeGen::genSpillVar(GenTree* tree)
 // Arguments:
 //   jmp      - kind of jump to emit
 //   tgtBlock - target of the jump
+//   isTempLabel - true if target is a temp label (implicitly at top of control flow stack)
 //
-void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
+void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock, bool isTempLabel)
 {
     instruction    instr = emitter::emitJumpKindToIns(jmp);
-    unsigned const depth = findTargetDepth(tgtBlock);
+    unsigned const depth = isTempLabel ? 0 : findTargetDepth(tgtBlock);
     GetEmitter()->emitIns_J(instr, EA_4BYTE, depth, tgtBlock);
 }
 

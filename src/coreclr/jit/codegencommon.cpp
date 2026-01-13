@@ -1608,6 +1608,7 @@ void CodeGen::genExitCode(BasicBlock* block)
     genReserveEpilog(block);
 }
 
+#ifndef TARGET_WASM
 //------------------------------------------------------------------------
 // genJumpToThrowHlpBlk: Generate code for an out-of-line exception.
 //
@@ -1669,9 +1670,6 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
     }
     else
     {
-#if defined(TARGET_WASM)
-        NYI_WASM("genJumpToThrowHlpBlk: inline throw not yet implemented");
-#else
         // The code to throw the exception will be generated inline, and
         // we will jump around it in the normal non-exception case.
 
@@ -1691,11 +1689,9 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
             assert(reverseJumpKind != jumpKind);
             genDefineTempLabel(tgtBlk);
         }
-#endif // !defined (TARGET_WASM)
     }
 }
 
-#ifndef TARGET_WASM
 /*****************************************************************************
  *
  * The last operation done was generating code for "tree" and that would

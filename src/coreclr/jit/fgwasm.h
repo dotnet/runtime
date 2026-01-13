@@ -350,7 +350,6 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
                     // Make the block a successor.
                     //
                     Compiler::AddCodeDsc* acd = nullptr;
-                    ;
                     acdMap->Lookup(key, &acd);
                     RETURN_ON_ABORT(func(acd->acdDstBlk));
                 }
