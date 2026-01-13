@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using NuGet.Frameworks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -240,17 +239,12 @@ namespace Wasm.Build.Tests
                 throw new DirectoryNotFoundException($"Could not find tasks base directory {tasksBaseDir}");
 
             string[] taskDirectories = Directory.GetDirectories(tasksBaseDir);
-            // Enumerate all TFM directories and select the one with the highest version
-            string? tasksDir = taskDirectories
-                .Select(dir => {
-                    string tfm = Path.GetFileName(dir);
-                    var framework = NuGetFramework.Parse(tfm);
-                    return new { Dir = dir, Framework = framework };
-                })
-                .Where(x => x.Framework.Framework == FrameworkConstants.FrameworkIdentifiers.NetCoreApp)
-                .OrderByDescending(x => x.Framework.Version)
-                .Select(x => x.Dir)
-                .FirstOrDefault();
+            // select the first non-net4.x directory
+            string? tasksDir = taskDirectories.FirstOrDefault(dir =>
+            {
+                string tfm = Path.GetFileName(dir);
+                return tfm.StartsWith("net", StringComparison.OrdinalIgnoreCase) && !tfm.StartsWith("net4", StringComparison.OrdinalIgnoreCase);
+            });
 
             if (string.IsNullOrEmpty(tasksDir))
                 throw new DirectoryNotFoundException($"Could not find any valid TFM directories in {tasksBaseDir} : {string.Join(", ", taskDirectories)}");
