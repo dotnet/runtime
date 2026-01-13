@@ -470,7 +470,7 @@ public:
 
 //===================================================================================
 // AsyncLocalData serves as the Dbi equivalent of ICorDebugInfo::AsyncContinuationVarInfo.
-// It maps a the offset of a async variable within a continuation to its ILVarNum.
+// It maps the offset of an async variable within a continuation to its ILVarNum.
 //===================================================================================
 struct MSLAYOUT AsyncLocalData
 {
