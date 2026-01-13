@@ -2660,6 +2660,17 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
             *resultVN = EvalFuncForConstantArgs(typ, func, arg0VN);
         }
 
+        // Try to remove double-negation for NOT/NEG.
+        //
+        if ((func == VNF_NOT) || (func == VNF_NEG))
+        {
+            VNFuncApp arg0FuncApp;
+            if (GetVNFunc(arg0VN, &arg0FuncApp) && (arg0FuncApp.m_func == func))
+            {
+                return arg0FuncApp.m_args[0];
+            }
+        }
+
         // Otherwise, Allocate a new ValueNum for 'func'('arg0VN')
         //
         if (*resultVN == NoVN)
