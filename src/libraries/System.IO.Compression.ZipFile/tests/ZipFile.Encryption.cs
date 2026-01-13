@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.IO;
-using System.IO.Compression;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -252,7 +249,7 @@ namespace System.IO.Compression.Tests
             {
                 var entry = archive.GetEntry("test.txt");
                 string destFile = GetTestFilePath();
-                
+
                 if (async)
                 {
                     await entry.ExtractToFileAsync(destFile, overwrite: true, password: password);
@@ -721,6 +718,376 @@ namespace System.IO.Compression.Tests
                 Assert.NotNull(entry);
                 Assert.True(entry.IsEncrypted);
                 await AssertEntryTextEquals(entry, modifiedContent, password, async);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task UpdateMode_MixedEncryption_ModifyAllEntries(bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "password123";
+
+            var entries = new[]
+            {
+                ("plain1.txt", "Plain Content 1", (string?)null, (ZipArchiveEntry.EncryptionMethod?)null),
+                ("encrypted1.txt", "Encrypted Content 1", (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes256),
+                ("plain2.txt", "Plain Content 2", (string?)null, (ZipArchiveEntry.EncryptionMethod?)null),
+                ("encrypted2.txt", "Encrypted Content 2", (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.ZipCrypto)
+            };
+
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            // Modify all entries in Update mode
+            using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Update))
+            {
+                // Modify plain1.txt
+                ZipArchiveEntry plain1 = archive.GetEntry("plain1.txt");
+                Assert.NotNull(plain1);
+                Assert.False(plain1.IsEncrypted);
+                using (Stream stream = await OpenEntryStream(async, plain1))
+                {
+                    stream.SetLength(0);
+                    byte[] content = Encoding.UTF8.GetBytes("Modified Plain Content 1");
+                    if (async)
+                        await stream.WriteAsync(content, 0, content.Length);
+                    else
+                        stream.Write(content, 0, content.Length);
+                }
+
+                // Modify encrypted1.txt (AES)
+                ZipArchiveEntry encrypted1 = archive.GetEntry("encrypted1.txt");
+                Assert.NotNull(encrypted1);
+                Assert.True(encrypted1.IsEncrypted);
+                using (Stream stream = encrypted1.Open(password))
+                {
+                    stream.SetLength(0);
+                    byte[] content = Encoding.UTF8.GetBytes("Modified Encrypted Content 1");
+                    if (async)
+                        await stream.WriteAsync(content, 0, content.Length);
+                    else
+                        stream.Write(content, 0, content.Length);
+                }
+
+                // Modify plain2.txt
+                ZipArchiveEntry plain2 = archive.GetEntry("plain2.txt");
+                Assert.NotNull(plain2);
+                Assert.False(plain2.IsEncrypted);
+                using (Stream stream = await OpenEntryStream(async, plain2))
+                {
+                    stream.SetLength(0);
+                    byte[] content = Encoding.UTF8.GetBytes("Modified Plain Content 2");
+                    if (async)
+                        await stream.WriteAsync(content, 0, content.Length);
+                    else
+                        stream.Write(content, 0, content.Length);
+                }
+
+                // Modify encrypted2.txt (ZipCrypto)
+                ZipArchiveEntry encrypted2 = archive.GetEntry("encrypted2.txt");
+                Assert.NotNull(encrypted2);
+                Assert.True(encrypted2.IsEncrypted);
+                using (Stream stream = encrypted2.Open(password))
+                {
+                    stream.SetLength(0);
+                    byte[] content = Encoding.UTF8.GetBytes("Modified Encrypted Content 2");
+                    if (async)
+                        await stream.WriteAsync(content, 0, content.Length);
+                    else
+                        stream.Write(content, 0, content.Length);
+                }
+            }
+
+            // Verify all modifications
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                var plain1 = archive.GetEntry("plain1.txt");
+                Assert.NotNull(plain1);
+                Assert.False(plain1.IsEncrypted);
+                await AssertEntryTextEquals(plain1, "Modified Plain Content 1", null, async);
+
+                var encrypted1 = archive.GetEntry("encrypted1.txt");
+                Assert.NotNull(encrypted1);
+                Assert.True(encrypted1.IsEncrypted);
+                await AssertEntryTextEquals(encrypted1, "Modified Encrypted Content 1", password, async);
+
+                var plain2 = archive.GetEntry("plain2.txt");
+                Assert.NotNull(plain2);
+                Assert.False(plain2.IsEncrypted);
+                await AssertEntryTextEquals(plain2, "Modified Plain Content 2", null, async);
+
+                var encrypted2 = archive.GetEntry("encrypted2.txt");
+                Assert.NotNull(encrypted2);
+                Assert.True(encrypted2.IsEncrypted);
+                await AssertEntryTextEquals(encrypted2, "Modified Encrypted Content 2", password, async);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task UpdateMode_DeleteEntryAndModifyAnother(bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "password123";
+
+            var entries = new[]
+            {
+                ("keep.txt", "Keep This Content", (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes256),
+                ("delete.txt", "Delete This Content", (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes256),
+                ("modify.txt", "Original Content", (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes256)
+            };
+
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            // Verify initial state
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                Assert.Equal(3, archive.Entries.Count);
+            }
+
+            // Delete one entry and modify another
+            using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Update))
+            {
+                // Delete delete.txt
+                ZipArchiveEntry deleteEntry = archive.GetEntry("delete.txt");
+                Assert.NotNull(deleteEntry);
+                deleteEntry.Delete();
+
+                // Modify modify.txt
+                ZipArchiveEntry modifyEntry = archive.GetEntry("modify.txt");
+                Assert.NotNull(modifyEntry);
+                using (Stream stream = modifyEntry.Open(password))
+                {
+                    stream.SetLength(0);
+                    byte[] content = Encoding.UTF8.GetBytes("Modified Content");
+                    if (async)
+                        await stream.WriteAsync(content, 0, content.Length);
+                    else
+                        stream.Write(content, 0, content.Length);
+                }
+            }
+
+            // Verify final state
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                Assert.Equal(2, archive.Entries.Count);
+
+                // Verify deleted entry is gone
+                Assert.Null(archive.GetEntry("delete.txt"));
+
+                // Verify kept entry is unchanged
+                var keepEntry = archive.GetEntry("keep.txt");
+                Assert.NotNull(keepEntry);
+                Assert.True(keepEntry.IsEncrypted);
+                await AssertEntryTextEquals(keepEntry, "Keep This Content", password, async);
+
+                // Verify modified entry
+                var modifyEntry = archive.GetEntry("modify.txt");
+                Assert.NotNull(modifyEntry);
+                Assert.True(modifyEntry.IsEncrypted);
+                await AssertEntryTextEquals(modifyEntry, "Modified Content", password, async);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task UpdateMode_DeleteEncryptedAndModifyPlain(bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "password123";
+
+            var entries = new[]
+            {
+                ("plain.txt", "Plain Content", (string?)null, (ZipArchiveEntry.EncryptionMethod?)null),
+                ("encrypted.txt", "Encrypted Content", (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes256)
+            };
+
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            // Delete encrypted entry and modify plain entry
+            using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Update))
+            {
+                // Delete encrypted entry
+                ZipArchiveEntry encryptedEntry = archive.GetEntry("encrypted.txt");
+                Assert.NotNull(encryptedEntry);
+                encryptedEntry.Delete();
+
+                // Modify plain entry
+                ZipArchiveEntry plainEntry = archive.GetEntry("plain.txt");
+                Assert.NotNull(plainEntry);
+                using (Stream stream = await OpenEntryStream(async, plainEntry))
+                {
+                    stream.SetLength(0);
+                    byte[] content = Encoding.UTF8.GetBytes("Modified Plain Content");
+                    if (async)
+                        await stream.WriteAsync(content, 0, content.Length);
+                    else
+                        stream.Write(content, 0, content.Length);
+                }
+            }
+
+            // Verify
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                Assert.Single(archive.Entries);
+                Assert.Null(archive.GetEntry("encrypted.txt"));
+
+                var plainEntry = archive.GetEntry("plain.txt");
+                Assert.NotNull(plainEntry);
+                Assert.False(plainEntry.IsEncrypted);
+                await AssertEntryTextEquals(plainEntry, "Modified Plain Content", null, async);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task UpdateMode_DeletePlainAndModifyEncrypted(bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "password123";
+
+            var entries = new[]
+            {
+                ("plain.txt", "Plain Content", (string?)null, (ZipArchiveEntry.EncryptionMethod?)null),
+                ("encrypted.txt", "Encrypted Content", (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes256)
+            };
+
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            // Delete plain entry and modify encrypted entry
+            using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Update))
+            {
+                // Delete plain entry
+                ZipArchiveEntry plainEntry = archive.GetEntry("plain.txt");
+                Assert.NotNull(plainEntry);
+                plainEntry.Delete();
+
+                // Modify encrypted entry
+                ZipArchiveEntry encryptedEntry = archive.GetEntry("encrypted.txt");
+                Assert.NotNull(encryptedEntry);
+                using (Stream stream = encryptedEntry.Open(password))
+                {
+                    stream.SetLength(0);
+                    byte[] content = Encoding.UTF8.GetBytes("Modified Encrypted Content");
+                    if (async)
+                        await stream.WriteAsync(content, 0, content.Length);
+                    else
+                        stream.Write(content, 0, content.Length);
+                }
+            }
+
+            // Verify
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                Assert.Single(archive.Entries);
+                Assert.Null(archive.GetEntry("plain.txt"));
+
+                var encryptedEntry = archive.GetEntry("encrypted.txt");
+                Assert.NotNull(encryptedEntry);
+                Assert.True(encryptedEntry.IsEncrypted);
+                await AssertEntryTextEquals(encryptedEntry, "Modified Encrypted Content", password, async);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task UpdateMode_DeleteMultipleEntriesAndModifyRemaining(bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "password123";
+
+            var entries = new[]
+            {
+                ("keep1.txt", "Keep 1", (string?)null, (ZipArchiveEntry.EncryptionMethod?)null),
+                ("delete1.txt", "Delete 1", (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes256),
+                ("keep2.txt", "Keep 2", (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.ZipCrypto),
+                ("delete2.txt", "Delete 2", (string?)null, (ZipArchiveEntry.EncryptionMethod?)null),
+                ("modify.txt", "Original", (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes128)
+            };
+
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            // Delete some entries and modify one
+            using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Update))
+            {
+                archive.GetEntry("delete1.txt")?.Delete();
+                archive.GetEntry("delete2.txt")?.Delete();
+
+                ZipArchiveEntry modifyEntry = archive.GetEntry("modify.txt");
+                Assert.NotNull(modifyEntry);
+                using (Stream stream = modifyEntry.Open(password))
+                {
+                    stream.SetLength(0);
+                    byte[] content = Encoding.UTF8.GetBytes("Modified");
+                    if (async)
+                        await stream.WriteAsync(content, 0, content.Length);
+                    else
+                        stream.Write(content, 0, content.Length);
+                }
+            }
+
+            // Verify
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                Assert.Equal(3, archive.Entries.Count);
+
+                Assert.Null(archive.GetEntry("delete1.txt"));
+                Assert.Null(archive.GetEntry("delete2.txt"));
+
+                await AssertEntryTextEquals(archive.GetEntry("keep1.txt"), "Keep 1", null, async);
+                await AssertEntryTextEquals(archive.GetEntry("keep2.txt"), "Keep 2", password, async);
+                await AssertEntryTextEquals(archive.GetEntry("modify.txt"), "Modified", password, async);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        public async Task UpdateMode_AllEncryptionTypes_EditAllEntries(ZipArchiveEntry.EncryptionMethod encryptionMethod, bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "password123";
+
+            // Create archive with multiple entries using the same encryption method
+            var entries = new[]
+            {
+                ("entry1.txt", "Content 1", (string?)password, (ZipArchiveEntry.EncryptionMethod?)encryptionMethod),
+                ("entry2.txt", "Content 2", (string?)password, (ZipArchiveEntry.EncryptionMethod?)encryptionMethod),
+                ("entry3.txt", "Content 3", (string?)password, (ZipArchiveEntry.EncryptionMethod?)encryptionMethod)
+            };
+
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            // Edit all entries
+            using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Update))
+            {
+                for (int i = 1; i <= 3; i++)
+                {
+                    ZipArchiveEntry entry = archive.GetEntry($"entry{i}.txt");
+                    Assert.NotNull(entry);
+                    Assert.True(entry.IsEncrypted);
+
+                    using (Stream stream = entry.Open(password))
+                    {
+                        stream.SetLength(0);
+                        byte[] content = Encoding.UTF8.GetBytes($"Modified Content {i}");
+                        if (async)
+                            await stream.WriteAsync(content, 0, content.Length);
+                        else
+                            stream.Write(content, 0, content.Length);
+                    }
+                }
+            }
+
+            // Verify all modifications
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                for (int i = 1; i <= 3; i++)
+                {
+                    ZipArchiveEntry entry = archive.GetEntry($"entry{i}.txt");
+                    Assert.NotNull(entry);
+                    Assert.True(entry.IsEncrypted);
+                    await AssertEntryTextEquals(entry, $"Modified Content {i}", password, async);
+                }
             }
         }
 
