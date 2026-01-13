@@ -93,6 +93,12 @@ buffer_manager_release_buffer (
 // will delete that buffer from the pool. Once all buffers from a thread have been read and the
 // thread has been unregistered, the EventPipeThreadSessionState is cleaned up and removed.
 
+static
+void
+buffer_manager_snapshot_threads (
+	EventPipeBufferManager *buffer_manager,
+	ep_timestamp_t snapshot_timestamp);
+
 // Moves to the next oldest event searching across all snapshot threads. If there is no event older than
 // the buffer_manager->snapshot_timestamp then get_current_event() will return NULL.
 static
@@ -552,6 +558,30 @@ buffer_manager_deallocate_buffer (
 		buffer_manager->num_buffers_allocated--;
 #endif
 	}
+}
+
+static
+void
+buffer_manager_snapshot_threads (
+	EventPipeBufferManager *buffer_manager,
+	ep_timestamp_t snapshot_timestamp)
+{
+	EP_ASSERT (buffer_manager != NULL);
+	EP_ASSERT (dn_list_empty (buffer_manager->thread_session_state_list_snapshot));
+	EP_ASSERT (snapshot_timestamp != 0);
+
+	ep_buffer_manager_requires_lock_held (buffer_manager);
+
+	buffer_manager->snapshot_timestamp = snapshot_timestamp;
+
+	DN_LIST_FOREACH_BEGIN (EventPipeThreadSessionState *, thread_session_state, buffer_manager->thread_session_state_list) {
+		EventPipeBufferList *buffer_list = ep_thread_session_state_get_buffer_list (thread_session_state);
+		EventPipeBuffer *buffer = buffer_list->head_buffer;
+		if (buffer && ep_buffer_get_creation_timestamp (buffer) < snapshot_timestamp)
+			dn_list_push_back (buffer_manager->thread_session_state_list_snapshot, thread_session_state);
+	} DN_LIST_FOREACH_END;
+
+	ep_buffer_manager_requires_lock_held (buffer_manager);
 }
 
 static
@@ -1078,15 +1108,8 @@ ep_buffer_manager_write_all_buffers_to_file_v3 (
 
 	*events_written = false;
 
-	buffer_manager->snapshot_timestamp = stop_timestamp;
 	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
-		EP_ASSERT (dn_list_empty (buffer_manager->thread_session_state_list_snapshot));
-		DN_LIST_FOREACH_BEGIN (EventPipeThreadSessionState *, thread_session_state, buffer_manager->thread_session_state_list) {
-			EventPipeBufferList *buffer_list = ep_thread_session_state_get_buffer_list (thread_session_state);
-			EventPipeBuffer *buffer = buffer_list->head_buffer;
-			if (buffer && ep_buffer_get_creation_timestamp (buffer) < buffer_manager->snapshot_timestamp)
-				dn_list_push_back (buffer_manager->thread_session_state_list_snapshot, thread_session_state);
-		} DN_LIST_FOREACH_END;
+		buffer_manager_snapshot_threads (buffer_manager, stop_timestamp);
 	EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section1);
 
 	// Naively walk the circular buffer, writing the event stream in timestamp order.
@@ -1171,6 +1194,7 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 	*events_written = false;
 
 	EventPipeSequencePoint *sequence_point = NULL;
+	ep_timestamp_t current_timestamp_boundary = stop_timestamp;
 
 	DN_DEFAULT_LOCAL_ALLOCATOR (allocator, dn_vector_ptr_default_local_allocator_byte_size);
 
@@ -1183,18 +1207,12 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 
 	// loop across sequence points
 	while (true) {
-		buffer_manager->snapshot_timestamp = stop_timestamp;
+		current_timestamp_boundary = stop_timestamp;
 		EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
 			if (buffer_manager_try_peek_sequence_point (buffer_manager, &sequence_point))
-				buffer_manager->snapshot_timestamp = EP_MIN (buffer_manager->snapshot_timestamp, ep_sequence_point_get_timestamp (sequence_point));
+				current_timestamp_boundary = EP_MIN (current_timestamp_boundary, ep_sequence_point_get_timestamp (sequence_point));
 
-			EP_ASSERT (dn_list_empty (buffer_manager->thread_session_state_list_snapshot));
-			DN_LIST_FOREACH_BEGIN (EventPipeThreadSessionState *, thread_session_state, buffer_manager->thread_session_state_list) {
-				EventPipeBufferList *buffer_list = ep_thread_session_state_get_buffer_list (thread_session_state);
-				EventPipeBuffer *buffer = buffer_list->head_buffer;
-				if (buffer && ep_buffer_get_creation_timestamp (buffer) < buffer_manager->snapshot_timestamp)
-					dn_list_push_back (buffer_manager->thread_session_state_list_snapshot, thread_session_state);
-			} DN_LIST_FOREACH_END;
+			buffer_manager_snapshot_threads (buffer_manager, current_timestamp_boundary);
 		EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section1);
 
 		// loop across events within a sequence point boundary
@@ -1298,14 +1316,9 @@ ep_buffer_manager_get_next_event (EventPipeBufferManager *buffer_manager)
 
 	if (dn_list_empty (buffer_manager->thread_session_state_list_snapshot)) {
 		ep_timestamp_t snapshot_timestamp = ep_perf_timestamp_get ();
-		buffer_manager->snapshot_timestamp = snapshot_timestamp;
+
 		EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
-			DN_LIST_FOREACH_BEGIN (EventPipeThreadSessionState *, thread_session_state, buffer_manager->thread_session_state_list) {
-				EventPipeBufferList *buffer_list = ep_thread_session_state_get_buffer_list (thread_session_state);
-				EventPipeBuffer *buffer = buffer_list->head_buffer;
-				if (buffer && ep_buffer_get_creation_timestamp (buffer) < snapshot_timestamp)
-					dn_list_push_back (buffer_manager->thread_session_state_list_snapshot, thread_session_state);
-			} DN_LIST_FOREACH_END;
+			buffer_manager_snapshot_threads (buffer_manager, snapshot_timestamp);
 		EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section1)
 	}
 
