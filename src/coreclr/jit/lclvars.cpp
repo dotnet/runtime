@@ -2156,7 +2156,6 @@ void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
     if (!lvaEnregEHVars || !varDsc->lvSingleDefRegCandidate || varDsc->lvRefCnt() <= 1)
     {
         lvaSetVarDoNotEnregister(varNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
-        JITDUMP("Single def reg candidate: %d, ref cnt: %d\n", varDsc->lvSingleDefRegCandidate, varDsc->lvRefCnt());
     }
 #ifdef JIT32_GCENCODER
     else if (lvaKeepAliveAndReportThis() && (varNum == info.compThisArg))
