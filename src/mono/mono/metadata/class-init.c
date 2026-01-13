@@ -2768,7 +2768,8 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	/* Publish the data */
 	mono_loader_lock ();
 	if (!klass->rank)
-		klass->sizes.class_size = class_size;
+		if (klass_byval_arg->type != MONO_TYPE_VAR && klass_byval_arg->type != MONO_TYPE_MVAR)
+			klass->sizes.class_size = class_size;
 	klass->has_static_refs = has_static_refs;
 	klass->has_weak_fields = has_weak_fields;
 	for (i = 0; i < top; ++i) {
