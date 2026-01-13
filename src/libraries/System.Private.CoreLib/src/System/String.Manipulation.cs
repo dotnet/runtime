@@ -739,14 +739,14 @@ namespace System
 
         public static string Join(string? separator, params string?[] value)
         {
-            if (value == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
-            }
-
             if (RuntimeHelpers.IsKnownConstant(separator) && separator == "")
             {
                 return Concat(value);
+            }
+
+            if (value == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
 
             return JoinCore(separator.AsSpan(), new ReadOnlySpan<string?>(value));
@@ -866,14 +866,14 @@ namespace System
 
         public static string Join(string? separator, params object?[] values)
         {
-            if (values == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
-            }
-
             if (RuntimeHelpers.IsKnownConstant(separator) && separator == "")
             {
                 return Concat(values);
+            }
+
+            if (values == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
             }
 
             return JoinCore(separator.AsSpan(), (ReadOnlySpan<object?>)values);
