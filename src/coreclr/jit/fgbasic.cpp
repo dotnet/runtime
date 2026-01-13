@@ -1570,10 +1570,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_INTRINSIC);
                         handled = true;
                     }
-                    else if (ni == NI_System_Span_Slice || ni == NI_System_ReadOnlySpan_Slice)
-                    {
-                        // CI test, ignore diffs from these marked as intrinsics
-                    }
                     else if (ni != NI_Illegal)
                     {
                         // Otherwise note "intrinsic" (most likely will be lowered as single instructions)
