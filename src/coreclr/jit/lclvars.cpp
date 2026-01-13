@@ -4809,7 +4809,7 @@ void Compiler::lvaUpdateArgWithInitialReg(LclVarDsc* varDsc)
 //
 void Compiler::lvaUpdateArgsWithInitialReg()
 {
-    if (!compLSRADone)
+    if (!compRegAllocDone)
     {
         return;
     }
