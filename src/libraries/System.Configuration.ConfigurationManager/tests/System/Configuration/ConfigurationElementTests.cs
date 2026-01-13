@@ -145,6 +145,12 @@ namespace System.ConfigurationTests
             Assert.False(new SimpleElement().TestOnDeserializeUnrecognizedElement(null, null));
         }
 
+        [Fact]
+        public void IndexerWithUndefinedPropertyReturnsNull()
+        {
+            Assert.Null(new SimpleElement().TestGetPropertyValue("UndefinedProperty"));
+        }
+
         public class SimpleElement : ConfigurationElement
         {
             public ContextInformation TestEvaluationContext => EvaluationContext;
@@ -153,6 +159,7 @@ namespace System.ConfigurationTests
             public string TestGetTransformedAssemblyString(string assemblyName) => GetTransformedAssemblyString(assemblyName);
             public bool TestOnDeserializeUnrecognizedAttribute(string name, string value) => OnDeserializeUnrecognizedAttribute(name, value);
             public bool TestOnDeserializeUnrecognizedElement(string elementName, XmlReader reader) => OnDeserializeUnrecognizedElement(elementName, reader);
+            public object TestGetPropertyValue(string propertyName) => this[propertyName];
         }
     }
 }

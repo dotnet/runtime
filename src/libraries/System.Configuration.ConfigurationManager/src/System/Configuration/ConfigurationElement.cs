@@ -173,7 +173,7 @@ namespace System.Configuration
                 if (prop == null)
                 {
                     prop = Properties[DefaultCollectionPropertyName];
-                    if (prop.ProvidedName != propertyName) return null;
+                    if (prop is null || prop.ProvidedName != propertyName) return null;
                 }
                 return this[prop];
             }
