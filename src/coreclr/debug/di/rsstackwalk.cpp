@@ -883,6 +883,7 @@ HRESULT CordbAsyncStackWalk::PopulateFrame()
     if (m_continuationAddress == 0)
         return CORDBG_E_PAST_END_OF_STACK;
 
+    HRESULT hr;
     IDacDbiInterface* pDac = m_pProcess->GetDAC();
 
     PCODE diagnosticIP;
@@ -912,7 +913,7 @@ HRESULT CordbAsyncStackWalk::PopulateFrame()
         m_continuationAddress,
         state);
     
-    frame->Init();
+    IfFailRet(frame->Init());
     m_pCurrentFrame.Assign(frame);
 
     return S_OK;
