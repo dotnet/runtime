@@ -7651,21 +7651,21 @@ void CordbJITILFrame::LoadGenericArgs()
 
     UINT32 cTotalGenericTypeParams = rgGenericTypeParams.Count();
 
-    // @dbgtodo  reliability - This holder doesn't actually work in this case because it just deletes
-    // each element on error.  The RS classes are all expected to be neutered before the destructor is called.
-    NewArrayHolder<CordbType *> ppGenericArgs(new CordbType *[cTotalGenericTypeParams]);
+    NewInterfaceArrayHolder<CordbType> ppGenericArgs(new CordbType *[cTotalGenericTypeParams]);
+    ppGenericArgs.SetElementCount(cTotalGenericTypeParams);
 
     for (UINT32 i = 0; i < cTotalGenericTypeParams;i++)
     {
         // creates a CordbType object for the generic argument
-        HRESULT hr = CordbType::TypeDataToType(GetCurrentAppDomain(),
-                                               &(rgGenericTypeParams[i]),
-                                               &ppGenericArgs[i]);
-        IfFailThrow(hr);
+        CordbType *newType;
+        IfFailThrow(CordbType::TypeDataToType(GetCurrentAppDomain(),
+                                              &(rgGenericTypeParams[i]),
+                                              &newType));
 
         // We add a ref as the instantiation will be stored away in the
         // ref-counted data structure associated with the JITILFrame
-        ppGenericArgs[i]->AddRef();
+        newType->AddRef();
+        ppGenericArgs[i] = newType;
     }
 
     // initialize the generics information
@@ -11015,6 +11015,9 @@ CordbAsyncFrame::~CordbAsyncFrame()
 }
 void CordbAsyncFrame::Neuter()
 {
+    if (IsNeutered())
+        return;
+
     m_pCode.Clear();
     m_asyncVars.Dealloc();
     m_pModule.Clear();
@@ -11031,7 +11034,12 @@ void CordbAsyncFrame::Neuter()
     {
         m_genericArgs.m_ppInst[i]->Release();
     }
-    m_genericArgs = Instantiation();
+    
+    if (m_genericArgs.m_ppInst != NULL)
+    {
+        delete [] m_genericArgs.m_ppInst;
+        m_genericArgs.m_ppInst = NULL;
+    }
 
     CordbBase::Neuter();
 }
@@ -11533,21 +11541,21 @@ void CordbAsyncFrame::LoadGenericArgs()
 
     UINT32 cTotalGenericTypeParams = rgGenericTypeParams.Count();
 
-    // @dbgtodo  reliability - This holder doesn't actually work in this case because it just deletes
-    // each element on error.  The RS classes are all expected to be neutered before the destructor is called.
-    NewArrayHolder<CordbType *> ppGenericArgs(new CordbType *[cTotalGenericTypeParams]);
+    NewInterfaceArrayHolder<CordbType> ppGenericArgs(new CordbType *[cTotalGenericTypeParams]);
+    ppGenericArgs.SetElementCount(cTotalGenericTypeParams);
 
     for (UINT32 i = 0; i < cTotalGenericTypeParams;i++)
     {
         // creates a CordbType object for the generic argument
-        HRESULT hr = CordbType::TypeDataToType(m_pAppDomain,
-                                               &(rgGenericTypeParams[i]),
-                                               &ppGenericArgs[i]);
-        IfFailThrow(hr);
+        CordbType *newType;
+        IfFailThrow(CordbType::TypeDataToType(m_pAppDomain,
+                                              &(rgGenericTypeParams[i]),
+                                              &newType));
 
         // We add a ref as the instantiation will be stored away in the
         // ref-counted data structure associated with the CordbAsyncFrame
-        ppGenericArgs[i]->AddRef();
+        newType->AddRef();
+        ppGenericArgs[i] = newType;
     }
 
     // initialize the generics information

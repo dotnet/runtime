@@ -1025,6 +1025,13 @@ public:
         STATIC_CONTRACT_WRAPPER;
     }
 
+    NewInterfaceArrayHolder(INTERFACE ** value) :
+        NewArrayHolder<INTERFACE *>(value),
+        m_cElements(0)
+    {
+        STATIC_CONTRACT_WRAPPER;
+    }
+
     NewInterfaceArrayHolder& operator=(INTERFACE ** value)
     {
         STATIC_CONTRACT_WRAPPER;
