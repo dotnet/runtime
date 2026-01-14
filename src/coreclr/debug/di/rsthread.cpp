@@ -10955,7 +10955,6 @@ CordbAsyncFrame::CordbAsyncFrame(
   m_genericArgs(),
   m_genericArgsLoaded(false)
 {
-    GetProcess()->GetContinueNeuterList()->Add(GetProcess(), this);
 }
 
 HRESULT CordbAsyncFrame::Init()
@@ -10966,6 +10965,8 @@ HRESULT CordbAsyncFrame::Init()
     HRESULT hr = S_OK;
     EX_TRY
     {
+        GetProcess()->GetContinueNeuterList()->Add(GetProcess(), this);
+
         // Initialize module and appdomain
         VMPTR_DomainAssembly vmDomainAssembly;
         IfFailThrow(GetProcess()->GetDAC()->GetDomainAssemblyFromModule(m_vmModule, &vmDomainAssembly));
@@ -11025,6 +11026,12 @@ void CordbAsyncFrame::Neuter()
 #ifdef FEATURE_CODE_VERSIONING
     m_pReJitCode.Clear();
 #endif // FEATURE_CODE_VERSIONING
+
+    for (unsigned int i = 0; i < m_genericArgs.m_cInst; i++)
+    {
+        m_genericArgs.m_ppInst[i]->Release();
+    }
+    m_genericArgs = Instantiation();
 
     CordbBase::Neuter();
 }
@@ -11248,9 +11255,7 @@ HRESULT CordbAsyncFrame::GetArgument(DWORD dwIndex, ICorDebugValue ** ppValue)
         }
 
         if (!foundArg)
-        {
             ThrowHR(CORDBG_E_IL_VAR_NOT_AVAILABLE);
-        }
     }
     EX_CATCH_HRESULT(hr);
 
@@ -11429,9 +11434,7 @@ HRESULT CordbAsyncFrame::GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICo
         }
 
         if (!foundLocal)
-        {
             hr = CORDBG_E_IL_VAR_NOT_AVAILABLE;
-        }
     }
     EX_CATCH_HRESULT(hr);
 
@@ -11543,7 +11546,7 @@ void CordbAsyncFrame::LoadGenericArgs()
         IfFailThrow(hr);
 
         // We add a ref as the instantiation will be stored away in the
-        // ref-counted data structure associated with the JITILFrame
+        // ref-counted data structure associated with the CordbAsyncFrame
         ppGenericArgs[i]->AddRef();
     }
 
