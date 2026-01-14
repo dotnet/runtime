@@ -23,7 +23,6 @@ public class AssetCachingTests : BlazorWasmTestBase
     }
 
     [Fact, TestCategory("no-fingerprinting")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/122338")] // add it back to eng\testing\scenarios\BuildWasmAppsJobsList.txt
     public async Task BlazorApp_BasedOnFingerprinting_LoadsWasmAssetsFromCache()
     {
         var project = CopyTestAsset(
