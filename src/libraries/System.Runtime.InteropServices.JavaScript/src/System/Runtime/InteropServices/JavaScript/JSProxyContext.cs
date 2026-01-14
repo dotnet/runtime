@@ -23,7 +23,7 @@ namespace System.Runtime.InteropServices.JavaScript
         // they have negative values, so that they don't collide with JSHandles.
         private nint NextJSVHandle = -2;
         private readonly List<nint> JSVHandleFreeList = new();
-        internal Dictionary<int, Action<IntPtr>> s_JSExportByHandle = new Dictionary<int, Action<IntPtr>>();
+        internal Dictionary<int, Action<IntPtr>> JSExportByHandle = new Dictionary<int, Action<IntPtr>>();
         internal int NextJSExportHandle = 1;
 
 #if !FEATURE_WASM_MANAGED_THREADS
