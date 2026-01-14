@@ -28,7 +28,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _module = module;
         }
 
-        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.TextSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory)
+        {
+            if (factory.Target.IsWasm)
+            {
+                return ObjectNodeSection.ReadOnlyDataSection;
+            }
+
+            return ObjectNodeSection.TextSection;
+        }
 
         public override bool IsShareable => false;
 

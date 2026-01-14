@@ -457,7 +457,7 @@ namespace ILCompiler.ObjectWriter
                     // of this loop iteration.
                     RecordMethod((ISymbolDefinitionNode)node, methodNode.Method, logger);
                 }
-                else if (node is AssemblyStubNode or DebugDirectoryEntryNode && LayoutMode is CodeDataLayout.Separate)
+                else if (node is AssemblyStubNode && LayoutMode is CodeDataLayout.Separate)
                 {
                     // TODO-WASM: handle AssemblyStub and DebugDirectoryEntryNode properly here instead of skipping
                     continue;
