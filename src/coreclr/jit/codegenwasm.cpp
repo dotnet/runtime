@@ -623,9 +623,9 @@ void CodeGen::genIntToFloatCast(GenTree* tree)
 
 void CodeGen::genFloatToFloatCast(GenTree* tree)
 {
-    var_types    toType   = genActualType(tree->TypeGet());
-    var_types    fromType = genActualType(tree->AsCast()->CastFromType());
-    instruction ins = INS_none;
+    var_types   toType   = genActualType(tree->TypeGet());
+    var_types   fromType = genActualType(tree->AsCast()->CastFromType());
+    instruction ins      = INS_none;
 
     genConsumeRegs(tree->AsCast()->CastOp());
 
