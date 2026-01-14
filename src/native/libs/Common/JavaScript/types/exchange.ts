@@ -1,12 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { installVfsFile, registerDllBytes, loadIcuData } from "../../../../corehost/browserhost/host/host";
-import type { check, error, info, warn, debug } from "../../../../corehost/browserhost/loader/logging";
+import type { check, error, info, warn, debug, fastCheck } from "../../../../corehost/browserhost/loader/logging";
+import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise, abortStartup } from "../../../../corehost/browserhost/loader/run";
+import type { addOnExitListener, isExited, isRuntimeRunning, quitNow } from "../../../../corehost/browserhost/loader/exit";
+
+import type { installVfsFile, registerDllBytes, loadIcuData, initializeCoreCLR, registerPdbBytes } from "../../../../corehost/browserhost/host/host";
 import type { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "../../../../corehost/browserhost/loader/promise-completion-source";
-import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise } from "../../../../corehost/browserhost/loader/run";
+
 import type { isSharedArrayBuffer, zeroRegion } from "../../../System.Native.Browser/utils/memory";
 import type { stringToUTF16, stringToUTF16Ptr, stringToUTF8Ptr, utf16ToString } from "../../../System.Native.Browser/utils/strings";
+import type { abortPosix, abortTimers, getExitStatus } from "../../../System.Native.Browser/utils/host";
+
+import type { symbolicateStackTrace } from "../../../System.Native.Browser/diagnostics/symbolicate";
 
 export type RuntimeExports = {
 }
@@ -23,6 +29,7 @@ export type LoggerType = {
 
 export type AssertType = {
     check: typeof check,
+    fastCheck: typeof fastCheck,
 }
 
 export type LoaderExports = {
@@ -32,6 +39,11 @@ export type LoaderExports = {
     createPromiseCompletionSource: typeof createPromiseCompletionSource,
     isControllablePromise: typeof isControllablePromise,
     getPromiseCompletionSource: typeof getPromiseCompletionSource,
+    isExited: typeof isExited,
+    isRuntimeRunning: typeof isRuntimeRunning,
+    addOnExitListener: typeof addOnExitListener,
+    abortStartup: typeof abortStartup,
+    quitNow: typeof quitNow,
 }
 
 export type LoaderExportsTable = [
@@ -40,24 +52,34 @@ export type LoaderExportsTable = [
     typeof warn,
     typeof error,
     typeof check,
+    typeof fastCheck,
     typeof resolveRunMainPromise,
     typeof rejectRunMainPromise,
     typeof getRunMainPromise,
     typeof createPromiseCompletionSource,
     typeof isControllablePromise,
     typeof getPromiseCompletionSource,
+    typeof isExited,
+    typeof isRuntimeRunning,
+    typeof addOnExitListener,
+    typeof abortStartup,
+    typeof quitNow,
 ]
 
 export type BrowserHostExports = {
     registerDllBytes: typeof registerDllBytes
     installVfsFile: typeof installVfsFile
     loadIcuData: typeof loadIcuData
+    initializeCoreCLR: typeof initializeCoreCLR
+    registerPdbBytes: typeof registerPdbBytes
 }
 
 export type BrowserHostExportsTable = [
     typeof registerDllBytes,
     typeof installVfsFile,
     typeof loadIcuData,
+    typeof initializeCoreCLR,
+    typeof registerPdbBytes,
 ]
 
 export type InteropJavaScriptExports = {
@@ -79,6 +101,9 @@ export type BrowserUtilsExports = {
     stringToUTF8Ptr: typeof stringToUTF8Ptr,
     zeroRegion: typeof zeroRegion,
     isSharedArrayBuffer: typeof isSharedArrayBuffer
+    abortTimers: typeof abortTimers,
+    abortPosix: typeof abortPosix,
+    getExitStatus: typeof getExitStatus,
 }
 
 export type BrowserUtilsExportsTable = [
@@ -88,4 +113,15 @@ export type BrowserUtilsExportsTable = [
     typeof stringToUTF8Ptr,
     typeof zeroRegion,
     typeof isSharedArrayBuffer,
+    typeof abortTimers,
+    typeof abortPosix,
+    typeof getExitStatus,
 ]
+
+export type DiagnosticsExportsTable = [
+    typeof symbolicateStackTrace,
+]
+
+export type DiagnosticsExports = {
+    symbolicateStackTrace: typeof symbolicateStackTrace,
+}

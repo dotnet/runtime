@@ -212,7 +212,7 @@ namespace Microsoft.Extensions.Caching.Memory
             return PostProcessTryGetValue(coherentState, entry, out result);
         }
 
-#if NET9_0_OR_GREATER
+#if NET
         /// <summary>
         /// Gets the item associated with this key if present.
         /// </summary>
@@ -720,7 +720,7 @@ namespace Microsoft.Extensions.Caching.Memory
 #endif
             private readonly ConcurrentDictionary<object, CacheEntry> _nonStringEntries = [];
 
-#if NET9_0_OR_GREATER
+#if NET
             private readonly ConcurrentDictionary<string, CacheEntry>.AlternateLookup<ReadOnlySpan<char>> _stringAltLookup;
 
             public CoherentState()
@@ -734,7 +734,7 @@ namespace Microsoft.Extensions.Caching.Memory
             internal bool TryGetValue(object key, [NotNullWhen(true)] out CacheEntry? entry)
                 => key is string s ? _stringEntries.TryGetValue(s, out entry) : _nonStringEntries.TryGetValue(key, out entry);
 
-#if NET9_0_OR_GREATER
+#if NET
             internal bool TryGetValue(ReadOnlySpan<char> key, [NotNullWhen(true)] out CacheEntry? entry)
                 => _stringAltLookup.TryGetValue(key, out entry);
 #endif

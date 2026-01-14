@@ -241,6 +241,8 @@ struct InterfaceDispatchCell
     }
 };
 
+#define IDC_CACHE_POINTER_MASK (InterfaceDispatchCell::Flags::IDC_CachePointerMask)
+
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
 #ifdef TARGET_ARM

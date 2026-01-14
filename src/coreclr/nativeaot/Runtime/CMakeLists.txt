@@ -5,6 +5,7 @@ set(COMMON_RUNTIME_SOURCES
     rhassert.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
     CachedInterfaceDispatch_Aot.cpp
+    ${RUNTIME_DIR}/MiscNativeHelpers.cpp
     Crst.cpp
     DebugHeader.cpp
     MethodTable.cpp
@@ -57,7 +58,7 @@ set(COMMON_RUNTIME_SOURCES
 
 if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     list(APPEND COMMON_RUNTIME_SOURCES
-        ${RUNTIME_DIR}/asyncsafethreadmap.cpp
+        ${RUNTIME_DIR}/SignalSafeThreadMap.cpp
     )
 endif()
 
@@ -240,6 +241,14 @@ if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
     ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchAot.${ASM_SUFFIX}
   )
 endif ()
+
+if(CLR_CMAKE_TARGET_WIN32)
+  if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
+    list(APPEND RUNTIME_SOURCES_ARCH_ASM
+      ${ARCH_SOURCES_DIR}/DispatchResolve.${ASM_SUFFIX}
+    )
+  endif()
+endif()
 
 # Add architecture specific folder for looking up headers.
 convert_to_absolute_path(ARCH_SOURCES_DIR ${ARCH_SOURCES_DIR})

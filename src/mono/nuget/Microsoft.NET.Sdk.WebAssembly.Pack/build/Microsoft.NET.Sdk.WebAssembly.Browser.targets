@@ -304,6 +304,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup>
       <_WasmEmitSourceMapBuild>$(WasmEmitSourceMap)</_WasmEmitSourceMapBuild>
       <_WasmEmitSourceMapBuild Condition="'$(_WasmEmitSourceMapBuild)' == ''">true</_WasmEmitSourceMapBuild>
+      <_WasmEmitDiagnosticModuleBuild Condition="'$(EnableDiagnostics)' == 'true' or '$(WasmEmitSymbolMap)' == 'true' or '$(WasmTestSupport)' == 'true'">true</_WasmEmitDiagnosticModuleBuild>
+      <_WasmEmitDiagnosticModuleBuild Condition="'$(_WasmEmitDiagnosticModuleBuild)' == ''">false</_WasmEmitDiagnosticModuleBuild>
     </PropertyGroup>
 
     <ComputeWasmBuildAssets
@@ -319,7 +321,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       CopySymbols="$(_WasmCopyOutputSymbolsToOutputDirectory)"
       OutputPath="$(OutputPath)"
       EnableThreads="$(_WasmEnableThreads)"
-      EnableDiagnostics="$(EnableDiagnostics)"
+      EnableDiagnostics="$(_WasmEmitDiagnosticModuleBuild)"
       EmitSourceMap="$(_WasmEmitSourceMapBuild)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       FingerprintDotnetJs="$(_WasmFingerprintDotnetJs)"
@@ -472,7 +474,13 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
-      BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)" />
+      BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
+      ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
+      AppendElementOnExit="$(WasmTestAppendElementOnExit)"
+      LogExitCode="$(WasmTestLogExitCode)"
+      AsyncFlushOnExit="$(WasmTestAsyncFlushOnExit)"
+      ForwardConsole="$(WasmTestForwardConsole)"
+      />
 
     <ItemGroup>
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
@@ -651,6 +659,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup>
       <_WasmEmitSourceMapPublish>$(WasmEmitSourceMap)</_WasmEmitSourceMapPublish>
       <_WasmEmitSourceMapPublish Condition="'$(_WasmEmitSourceMapPublish)' == ''">false</_WasmEmitSourceMapPublish>
+      <_WasmEmitDiagnosticModulePublish Condition="'$(EnableDiagnostics)' == 'true' or '$(WasmEmitSymbolMap)' == 'true' or '$(WasmTestSupport)' == 'true'">true</_WasmEmitDiagnosticModulePublish>
+      <_WasmEmitDiagnosticModulePublish Condition="'$(_WasmEmitDiagnosticModulePublish)' == ''">false</_WasmEmitDiagnosticModulePublish>
     </PropertyGroup>
 
     <ItemGroup Condition="@(WasmAssembliesFinal->Count()) == 0 or '$(TargetFrameworkVersion)' == 'v6.0'">
@@ -677,7 +687,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       CopySymbols="$(CopyOutputSymbolsToPublishDirectory)"
       ExistingAssets="@(_WasmPublishPrefilteredAssets)"
       EnableThreads="$(_WasmEnableThreads)"
-      EnableDiagnostics="$(EnableDiagnostics)"
+      EnableDiagnostics="$(_WasmEmitDiagnosticModulePublish)"
       EmitSourceMap="$(_WasmEmitSourceMapPublish)"
       IsWebCilEnabled="$(_WasmEnableWebcil)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
@@ -885,7 +895,13 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
-      BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)" />
+      BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
+      ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
+      AppendElementOnExit="$(WasmTestAppendElementOnExit)"
+      LogExitCode="$(WasmTestLogExitCode)"
+      AsyncFlushOnExit="$(WasmTestAsyncFlushOnExit)"
+      ForwardConsole="$(WasmTestForwardConsole)"
+      />
 
     <ItemGroup>
       <FileWrites Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)" />
