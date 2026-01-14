@@ -888,7 +888,7 @@ HRESULT CordbAsyncStackWalk::PopulateFrame()
     PCODE diagnosticIP;
     CORDB_ADDRESS nextContinuation;
     UINT32 state;
-    IfFailRet(pDac->GetResumePointAndNextContinuation(
+    IfFailRet(pDac->ParseContinuation(
         m_continuationAddress,
         &diagnosticIP,
         &nextContinuation,
@@ -957,7 +957,7 @@ HRESULT CordbAsyncStackWalk::Next()
         PCODE diagnosticIP;
         CORDB_ADDRESS nextContinuation;
         UINT32 state;
-        IfFailThrow(m_pProcess->GetDAC()->GetResumePointAndNextContinuation(
+        IfFailThrow(m_pProcess->GetDAC()->ParseContinuation(
             m_continuationAddress,
             &diagnosticIP,
             &nextContinuation,

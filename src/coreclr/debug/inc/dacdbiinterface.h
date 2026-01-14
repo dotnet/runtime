@@ -2716,7 +2716,7 @@ public:
     HRESULT GetDomainAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_DomainAssembly *pVmDomainAssembly) = 0;
 
     virtual
-    HRESULT GetResumePointAndNextContinuation(
+    HRESULT ParseContinuation(
         CORDB_ADDRESS continuationAddress,
         OUT PCODE* pDiagnosticIP,
         OUT CORDB_ADDRESS* pNextContinuation,

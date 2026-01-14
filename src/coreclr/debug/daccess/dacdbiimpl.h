@@ -165,7 +165,7 @@ public:
     HRESULT GetMDStructuresVersion(ULONG32* pMDStructuresVersion);
     HRESULT EnableGCNotificationEvents(BOOL fEnable);
     HRESULT GetDomainAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_DomainAssembly *pVmDomainAssembly);
-    HRESULT GetResumePointAndNextContinuation(CORDB_ADDRESS continuationAddress,
+    HRESULT ParseContinuation(CORDB_ADDRESS continuationAddress,
                                               OUT PCODE *pDiagnosticIP,
                                               OUT CORDB_ADDRESS *pNextContinuation,
                                               OUT UINT32 *pState);

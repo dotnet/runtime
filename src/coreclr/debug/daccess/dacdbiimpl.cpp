@@ -7342,7 +7342,7 @@ HRESULT DacDbiInterfaceImpl::GetDomainAssemblyFromModule(VMPTR_Module vmModule, 
     return S_OK;
 }
 
-HRESULT DacDbiInterfaceImpl::GetResumePointAndNextContinuation(
+HRESULT DacDbiInterfaceImpl::ParseContinuation(
     CORDB_ADDRESS continuationAddress,
     OUT PCODE* pDiagnosticIP,
     OUT CORDB_ADDRESS* pNextContinuation,
