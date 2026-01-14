@@ -411,9 +411,9 @@ namespace System
                 return Array.Empty<T>();
             }
 
-            T[] array = new T[Length];
-            CopyTo(array);
-            return array;
+            var destination = new T[Length];
+            CopyTo(destination);
+            return destination;
         }
     }
 }
