@@ -2472,7 +2472,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_X86Base_BigMul:
             case NI_X86Base_X64_BigMul:
             {
                 assert(numArgs == 2);
@@ -3032,7 +3031,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         // above
         assert((dstCount == 0) ||
                ((dstCount == 2) && ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem) ||
-                                    (intrinsicId == NI_X86Base_BigMul) || (intrinsicId == NI_X86Base_X64_BigMul))));
+                                    (intrinsicId == NI_X86Base_X64_BigMul))));
     }
 
     *pDstCount = dstCount;

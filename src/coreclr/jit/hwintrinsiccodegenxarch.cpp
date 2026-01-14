@@ -2487,7 +2487,6 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
     switch (intrinsicId)
     {
-        case NI_X86Base_BigMul:
         case NI_X86Base_X64_BigMul:
         {
             assert(node->GetOperandCount() == 2);

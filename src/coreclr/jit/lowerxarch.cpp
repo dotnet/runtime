@@ -10197,7 +10197,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 break;
                             }
 
-                            case NI_X86Base_BigMul:
                             case NI_X86Base_X64_BigMul:
                             case NI_AVX2_MultiplyNoFlags:
                             case NI_AVX2_X64_MultiplyNoFlags:

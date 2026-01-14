@@ -151,26 +151,6 @@ namespace System.Runtime.Intrinsics.X86
         [Experimental(Experimentals.X86BaseDivRemDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static (nint Quotient, nint Remainder) DivRem(nuint lower, nint upper, nint divisor) => DivRem(lower, upper, divisor);
 
-#if !MONO
-        /// <summary>
-        ///   <para>  MUL reg/m32</para>
-        /// </summary>
-        internal static (uint Lower, uint Upper) BigMul(uint left, uint right) => BigMul(left, right);
-
-        /// <summary>
-        ///   <para>  IMUL reg/m32</para>
-        /// </summary>
-        internal static (int Lower, int Upper) BigMul(int left, int right) => BigMul(left, right);
-
-        /// <summary>  MUL reg/m</summary>
-        /// <remarks>Intented for UIntPtr.Bigmul https://github.com/dotnet/runtime/issues/114731 </remarks>
-        internal static (nuint Lower, nuint Upper) BigMul(nuint left, nuint right) => BigMul(left, right);
-
-        /// <summary>  IMUL reg/m</summary>
-        /// <remarks>Intented for IntPtr.Bigmul https://github.com/dotnet/runtime/issues/114731 </remarks>
-        internal static (nint Lower, nint Upper) BigMul(nint left, nint right) => BigMul(left, right);
-#endif
-
         /// <summary>
         ///   <para>void _mm_pause (void);</para>
         ///   <para>  PAUSE</para>

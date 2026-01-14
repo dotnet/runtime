@@ -28851,7 +28851,6 @@ ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
     switch (GetHWIntrinsicId())
     {
 #ifdef TARGET_XARCH
-        case NI_X86Base_BigMul:
         case NI_X86Base_DivRem:
             return compiler->typGetBlkLayout(genTypeSize(GetSimdBaseType()) * 2);
         case NI_X86Base_X64_BigMul:

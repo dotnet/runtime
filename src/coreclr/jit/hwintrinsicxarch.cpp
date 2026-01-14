@@ -4208,7 +4208,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_X86Base_BigMul:
         case NI_X86Base_X64_BigMul:
         {
             assert(sig->numArgs == 2);

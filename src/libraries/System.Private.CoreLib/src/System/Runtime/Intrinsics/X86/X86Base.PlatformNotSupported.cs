@@ -127,28 +127,6 @@ namespace System.Runtime.Intrinsics.X86
         public static (nint Quotient, nint Remainder) DivRem(nuint lower, nint upper, nint divisor) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>  MUL reg/m32</para>
-        /// </summary>
-        /// <remarks>
-        ///   <para>Its functionality is exposed in the public <see cref="Math" /> class.</para>
-        /// </remarks>
-        internal static (uint Lower, uint Upper) BigMul(uint left, uint right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>  IMUL reg/m32</para>
-        /// </summary>
-        /// <remarks>
-        ///   <para>Its functionality is exposed in the public <see cref="Math" /> class.</para>
-        /// </remarks>
-        internal static (int Lower, int Upper) BigMul(int left, int right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>  MUL reg/m</summary>
-        internal static (nuint Lower, nuint Upper) BigMul(nuint left, nuint right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>  IMUL reg/m</summary>
-        internal static (nint Lower, nint Upper) BigMul(nint left, nint right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
         ///   <para>void _mm_pause (void);</para>
         ///   <para>  PAUSE</para>
         /// </summary>
