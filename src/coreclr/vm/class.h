@@ -641,11 +641,11 @@ class EEClassOptionalFields
 
 #if defined(UNIX_AMD64_ABI)
     // Number of eightBytes in the following arrays
-    int m_numberEightBytes;
+    uint8_t m_numberEightBytes;
     // Classification of the eightBytes
     SystemVClassificationType m_eightByteClassifications[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
     // Size of data the eightBytes
-    unsigned int m_eightByteSizes[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+    uint8_t m_eightByteSizes[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
 #endif // UNIX_AMD64_ABI
 
     // Required alignment for this fields of this type (only set in auto-layout structures when different from pointer alignment)
@@ -1422,7 +1422,7 @@ public:
 
 #if defined(UNIX_AMD64_ABI)
     // Get number of eightbytes used by a struct passed in registers.
-    inline int GetNumberEightBytes()
+    inline uint8_t GetNumberEightBytes()
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasOptionalFields());
@@ -1438,7 +1438,7 @@ public:
     }
 
     // Get size of the data in the eightbyte with the specified index.
-    inline unsigned int GetEightByteSize(int index)
+    inline uint8_t GetEightByteSize(int index)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasOptionalFields());
@@ -1446,7 +1446,7 @@ public:
     }
 
     // Set the eightByte classification
-    inline void SetEightByteClassification(int eightByteCount, SystemVClassificationType *eightByteClassifications, unsigned int *eightByteSizes)
+    inline void SetEightByteClassification(uint8_t eightByteCount, SystemVClassificationType *eightByteClassifications, uint8_t *eightByteSizes)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasOptionalFields());

@@ -104,25 +104,54 @@ const BYTE MethodDesc::s_ClassificationSizeTable[] = {
 #ifndef FEATURE_COMINTEROP
 #undef CLRToCOMCallMethodDesc
 #endif
-
-class ArgIteratorBaseForPInvoke : public ArgIteratorBase
+BOOL ArgIteratorBaseForPInvoke::IsRegPassedStruct(TypeHandle th)
 {
-protected:
-    FORCEINLINE BOOL IsRegPassedStruct(MethodTable* pMT)
+    if (th.IsNativeValueType())
     {
-        return pMT->GetNativeLayoutInfo()->IsNativeStructPassedInRegisters();
+        return th.AsNativeValueType()->GetNativeLayoutInfo()->IsNativeStructPassedInRegisters();
     }
-};
-
-class PInvokeArgIterator : public ArgIteratorTemplate<ArgIteratorBaseForPInvoke>
+    else
+    {
+        return th.GetMethodTable()->IsRegPassedStruct();
+    }
+}
+#if defined(UNIX_AMD64_ABI)
+void ArgIteratorBaseForPInvoke::SetMTOfEightByteData(TypeHandle th)
 {
-public:
-    PInvokeArgIterator(MetaSig* pSig)
-    {
-        m_pSig = pSig;
-    }
-};
+    if (thOfEightByteData == th)
+        return;
 
+    thOfEightByteData = TypeHandle();
+    SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
+    MethodTable *pMT;
+    bool nativeLayout;
+    if (th.IsNativeValueType())
+    {
+        pMT = th.AsNativeValueType();
+        nativeLayout = true;
+    }
+    else
+    {
+        pMT = th.GetMethodTable();
+        nativeLayout = false;
+    }
+    bool result = pMT->ClassifyEightBytes(&helper, 0, 0, nativeLayout);
+
+    // The answer must be true at this point.
+    _ASSERTE(result);
+
+    eightByteCount = helper.eightByteCount;
+    _ASSERTE(eightByteCount <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
+
+    for (unsigned int i = 0; i < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
+    {
+        eightByteClassifications[i] = helper.eightByteClassifications[i];
+        eightByteSizes[i] = helper.eightByteSizes[i];
+    }
+
+    thOfEightByteData = th;
+}
+#endif
 
 //*******************************************************************************
 SIZE_T MethodDesc::SizeOf()

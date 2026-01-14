@@ -195,13 +195,12 @@ LPVOID ProfileArgIterator::CopyStructFromRegisters()
     int fieldBytes = th.AsMethodTable()->GetNumInstanceFieldBytes();
     INDEBUG(int remainingBytes = fieldBytes;)
 
-    EEClass* eeClass = argLocDesc->m_eeClass;
-    _ASSERTE(eeClass != NULL);
+    _ASSERTE(argLocDesc->m_numEightBytesOfStructInRegs > 0);
 
-    for (int i = 0; i < eeClass->GetNumberEightBytes(); i++)
+    for (int i = 0; i < argLocDesc->m_numEightBytesOfStructInRegs; i++)
     {
-        int eightByteSize = eeClass->GetEightByteSize(i);
-        SystemVClassificationType eightByteClassification = eeClass->GetEightByteClassification(i);
+        int eightByteSize = argLocDesc->m_eightByteSizes[i];
+        SystemVClassificationType eightByteClassification = argLocDesc->m_eightByteClassifications[i];
 
         _ASSERTE(remainingBytes >= eightByteSize);
 

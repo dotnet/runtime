@@ -51,8 +51,13 @@ struct ArgLocDesc
 
 #if defined(UNIX_AMD64_ABI)
 
-    EEClass* m_eeClass;           // For structs passed in register, it points to the EEClass of the struct
+#ifdef DEBUG
+    TypeHandle m_thStructInRegs;           // For structs passed in register, add a debug field to make it a bit easier to debug
+#endif // DEBUG
 
+    uint8_t  m_numEightBytesOfStructInRegs; // Number of eightbytes used by the struct passed in registers
+    SystemVClassificationType m_eightByteClassifications[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+    uint8_t m_eightByteSizes[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
 #endif // UNIX_AMD64_ABI
 
 #ifdef FEATURE_HFA
@@ -104,7 +109,7 @@ struct ArgLocDesc
         m_structFields = {};
 #endif
 #if defined(UNIX_AMD64_ABI)
-        m_eeClass = NULL;
+        m_numEightBytesOfStructInRegs = 0;
 #endif
     }
 };
@@ -1380,14 +1385,18 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     case ELEMENT_TYPE_VALUETYPE:
     {
-        MethodTable *pMT = m_argTypeHandle.GetMethodTable();
-        if (this->IsRegPassedStruct(pMT))
+        if (this->IsRegPassedStruct(m_argTypeHandle))
         {
-            EEClass* eeClass = pMT->GetClass();
             cGenRegs = 0;
-            for (int i = 0; i < eeClass->GetNumberEightBytes(); i++)
+            uint8_t numberEightBytes = this->GetNumberEightBytes(m_argTypeHandle);
+            SystemVClassificationType eightByteClassifications[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+            uint8_t eightByteSizes[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+            for (int i = 0; i < numberEightBytes; i++)
             {
-                switch (eeClass->GetEightByteClassification(i))
+                eightByteClassifications[i] = this->GetEightByteClassification(m_argTypeHandle, i);
+                eightByteSizes[i] = this->GetEightByteSize(m_argTypeHandle, i);
+
+                switch (eightByteClassifications[i])
                 {
                     case SystemVClassificationTypeInteger:
                     case SystemVClassificationTypeIntegerReference:
@@ -1411,7 +1420,13 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 m_argLocDescForStructInRegs.m_cFloatReg = cFPRegs;
                 m_argLocDescForStructInRegs.m_idxGenReg = m_idxGenReg;
                 m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
-                m_argLocDescForStructInRegs.m_eeClass = eeClass;
+                m_argLocDescForStructInRegs.m_thStructInRegs = m_argTypeHandle;
+                m_argLocDescForStructInRegs.m_numEightBytesOfStructInRegs = numberEightBytes;
+                for (int i = 0; i < numberEightBytes; i++)
+                {
+                    m_argLocDescForStructInRegs.m_eightByteClassifications[i] = eightByteClassifications[i];
+                    m_argLocDescForStructInRegs.m_eightByteSizes[i] = eightByteSizes[i];
+                }
 
                 m_hasArgLocDescForStructInRegs = true;
 
@@ -1953,15 +1968,12 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
             _ASSERTE(!thValueType.IsNull());
 
 #if defined(UNIX_AMD64_ABI)
-            MethodTable *pMT = thValueType.AsMethodTable();
-            if (pMT->IsRegPassedStruct())
+            if (this->IsRegPassedStruct(thValueType))
             {
-                EEClass* eeClass = pMT->GetClass();
-
-                if (eeClass->GetNumberEightBytes() == 1)
+                if (this->GetNumberEightBytes(thValueType) == 1)
                 {
                     // Structs occupying just one eightbyte are treated as int / double
-                    if (eeClass->GetEightByteClassification(0) == SystemVClassificationTypeSSE)
+                    if (this->GetEightByteClassification(thValueType, 0) == SystemVClassificationTypeSSE)
                     {
                         flags |= sizeof(double) << RETURN_FP_SIZE_SHIFT;
                     }
@@ -1971,12 +1983,12 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
                     // Size of the struct is 16 bytes
                     flags |= (16 << RETURN_FP_SIZE_SHIFT);
                     // The lowest two bits of the size encode the order of the int and SSE fields
-                    if (eeClass->GetEightByteClassification(0) == SystemVClassificationTypeSSE)
+                    if (this->GetEightByteClassification(thValueType, 0) == SystemVClassificationTypeSSE)
                     {
                         flags |= (1 << RETURN_FP_SIZE_SHIFT);
                     }
 
-                    if (eeClass->GetEightByteClassification(1) == SystemVClassificationTypeSSE)
+                    if (this->GetEightByteClassification(thValueType, 1) == SystemVClassificationTypeSSE)
                     {
                         flags |= (2 << RETURN_FP_SIZE_SHIFT);
                     }
@@ -2248,12 +2260,29 @@ protected:
         m_pSig->Reset();
     }
 
-    FORCEINLINE BOOL IsRegPassedStruct(MethodTable* pMT)
+public:
+    FORCEINLINE BOOL IsRegPassedStruct(TypeHandle th)
     {
-        return pMT->IsRegPassedStruct();
+        return th.AsMethodTable()->IsRegPassedStruct();
     }
 
-public:
+#if defined(UNIX_AMD64_ABI)
+    FORCEINLINE uint8_t GetNumberEightBytes(TypeHandle th)
+    {
+        return th.AsMethodTable()->GetClass()->GetNumberEightBytes();
+    }
+
+    FORCEINLINE SystemVClassificationType GetEightByteClassification(TypeHandle th, int index)
+    {
+        return th.AsMethodTable()->GetClass()->GetEightByteClassification(index);
+    }
+
+    FORCEINLINE uint8_t GetEightByteSize(TypeHandle th, int index)
+    {
+        return th.AsMethodTable()->GetClass()->GetEightByteSize(index);
+    }
+#endif // defined(UNIX_AMD64_ABI)
+
     BOOL HasThis()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2326,6 +2355,50 @@ public:
         // Enums are normalized to their underlying type when passing to and from functions.
         // This occurs in both managed and native calling conventions.
         return type == ELEMENT_TYPE_VALUETYPE && !thValueType.IsEnum();
+    }
+};
+
+class ArgIteratorBaseForPInvoke : public ArgIteratorBase
+{
+    TypeHandle thOfEightByteData = NULL;
+    uint8_t eightByteCount;
+    SystemVClassificationType eightByteClassifications[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+    uint8_t eightByteSizes[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+    
+public:
+    BOOL IsRegPassedStruct(TypeHandle th);
+
+#if defined(UNIX_AMD64_ABI)
+private:
+    void SetMTOfEightByteData(TypeHandle th);
+
+public:
+    uint8_t GetNumberEightBytes(TypeHandle th)
+    {
+        SetMTOfEightByteData(th);
+        return eightByteCount;
+    }
+
+    uint8_t GetEightByteSize(TypeHandle th, int index)
+    {
+        SetMTOfEightByteData(th);
+        return eightByteSizes[index];
+    }
+
+    SystemVClassificationType GetEightByteClassification(TypeHandle th, int index)
+    {
+        SetMTOfEightByteData(th);
+        return eightByteClassifications[index];
+    }
+#endif
+};
+
+class PInvokeArgIterator : public ArgIteratorTemplate<ArgIteratorBaseForPInvoke>
+{
+public:
+    PInvokeArgIterator(MetaSig* pSig)
+    {
+        m_pSig = pSig;
     }
 };
 

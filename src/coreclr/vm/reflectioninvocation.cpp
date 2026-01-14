@@ -225,10 +225,27 @@ protected:
         LIMITED_METHOD_CONTRACT;
     }
 
-    FORCEINLINE BOOL IsRegPassedStruct(MethodTable* pMT)
+    FORCEINLINE BOOL IsRegPassedStruct(TypeHandle th)
     {
-        return pMT->IsRegPassedStruct();
+        return th.AsMethodTable()->IsRegPassedStruct();
     }
+
+#if defined(UNIX_AMD64_ABI)
+    FORCEINLINE uint8_t GetNumberEightBytes(TypeHandle th)
+    {
+        return th.AsMethodTable()->GetClass()->GetNumberEightBytes();
+    }
+
+    FORCEINLINE SystemVClassificationType GetEightByteClassification(TypeHandle th, int index)
+    {
+        return th.AsMethodTable()->GetClass()->GetEightByteClassification(index);
+    }
+
+    FORCEINLINE uint8_t GetEightByteSize(TypeHandle th, int index)
+    {
+        return th.AsMethodTable()->GetClass()->GetEightByteSize(index);
+    }
+#endif // defined(UNIX_AMD64_ABI)
 
 public:
     BOOL HasThis()
