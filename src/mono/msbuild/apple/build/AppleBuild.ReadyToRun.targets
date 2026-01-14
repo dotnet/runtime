@@ -2,6 +2,12 @@
   <!-- Tracking issue: https://github.com/dotnet/runtime/issues/119006
        Override the ResolveReadyToRunCompilers target to use the in-build crossgen2.
        This needs to be imported after SDK targets, so any project requiring this should set AfterMicrosoftNETSdkTargets -->
+  <PropertyGroup Condition="'$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">
+    <PublishReadyToRun Condition="'$(PublishReadyToRun)' == ''">true</PublishReadyToRun>
+    <PublishReadyToRunComposite Condition="'$(PublishReadyToRun)' == 'true'">true</PublishReadyToRunComposite>
+    <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRun)' == 'true'">macho</PublishReadyToRunContainerFormat>
+  </PropertyGroup>
+
   <Target Name="ResolveReadyToRunCompilers" Condition="'$(PublishReadyToRun)' == true" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <PropertyGroup>
       <Crossgen2Path>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</Crossgen2Path>

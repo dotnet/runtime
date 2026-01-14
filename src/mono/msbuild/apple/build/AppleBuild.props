@@ -9,12 +9,6 @@
     <MonoForceInterpreter Condition="'$(MonoForceInterpreter)' == ''">true</MonoForceInterpreter>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">
-    <PublishReadyToRun Condition="'$(PublishReadyToRun)' == ''">true</PublishReadyToRun>
-    <PublishReadyToRunComposite Condition="'$(PublishReadyToRun)' == 'true'">true</PublishReadyToRunComposite>
-    <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRun)' == 'true'">macho</PublishReadyToRunContainerFormat>
-  </PropertyGroup>
-
   <ItemGroup Condition="'$(PublishReadyToRun)' != 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">
     <EnvironmentVariables Include="DOTNET_ReadyToRun=0" />
   </ItemGroup>
