@@ -221,10 +221,10 @@ namespace System.IO.Compression
         /// <param name="offset">The byte offset in <paramref name="buffer" /> from which the bytes will be read.</param>
         /// <param name="count">The maximum number of bytes to write.</param>
         /// <exception cref="ArgumentNullException"><paramref name="buffer" /> is <see langword="null" />.</exception>
-        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Decompress</c> when the object was created, or concurrent read operations were attempted.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <see cref="CompressionMode.Decompress"/> when the object was created, or concurrent read operations were attempted.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset" /> or <paramref name="count" /> is less than zero.</exception>
         /// <exception cref="ArgumentException">The <paramref name="buffer" /> length minus the index starting point is less than <paramref name="count" />.</exception>
-        /// <exception cref="ObjectDisposedException">The stream is closed.</exception>
+        /// <exception cref="ObjectDisposedException">The stream is disposed.</exception>
         /// <exception cref="IOException">Failed to compress data to the underlying stream.</exception>
         public override void Write(byte[] buffer, int offset, int count)
         {
@@ -234,8 +234,8 @@ namespace System.IO.Compression
 
         /// <summary>Writes compressed bytes to the underlying stream from the specified span.</summary>
         /// <param name="buffer">The span that contains the data to compress.</param>
-        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Decompress</c> when the object was created, or concurrent read operations were attempted.</exception>
-        /// <exception cref="ObjectDisposedException">The stream is closed.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <see cref="CompressionMode.Decompress"/> when the object was created, or concurrent read operations were attempted.</exception>
+        /// <exception cref="ObjectDisposedException">The stream is disposed.</exception>
         /// <exception cref="IOException">Failed to compress data to the underlying stream.</exception>
         public override void Write(ReadOnlySpan<byte> buffer)
         {
@@ -244,8 +244,8 @@ namespace System.IO.Compression
 
         /// <summary>Writes a byte to the current position in the stream and advances the position within the stream by one byte.</summary>
         /// <param name="value">The byte to write to the stream.</param>
-        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Decompress</c> when the object was created, or concurrent read operations were attempted.</exception>
-        /// <exception cref="ObjectDisposedException">The stream is closed.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <see cref="CompressionMode.Decompress"/> when the object was created, or concurrent read operations were attempted.</exception>
+        /// <exception cref="ObjectDisposedException">The stream is disposed.</exception>
         /// <exception cref="IOException">Failed to compress data to the underlying stream.</exception>
         public override void WriteByte(byte value)
         {
@@ -259,10 +259,10 @@ namespace System.IO.Compression
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="buffer" /> is <see langword="null" />.</exception>
-        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Decompress</c> when the object was created, or concurrent read operations were attempted.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset" /> or <paramref name="count" /> is less than zero.</exception>
         /// <exception cref="ArgumentException">The <paramref name="buffer" /> length minus the index starting point is less than <paramref name="count" />.</exception>
-        /// <exception cref="ObjectDisposedException">The stream is closed.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <see cref="CompressionMode.Decompress"/> when the object was created, or concurrent read operations were attempted.</exception>
+        /// <exception cref="ObjectDisposedException">The stream is disposed.</exception>
         /// <exception cref="IOException">Failed to compress data to the underlying stream.</exception>
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
@@ -274,8 +274,8 @@ namespace System.IO.Compression
         /// <param name="buffer">The memory that contains the data to compress.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
-        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <c>Decompress</c> when the object was created, or concurrent read operations were attempted.</exception>
-        /// <exception cref="ObjectDisposedException">The stream is closed.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <see cref="CompressionMode.Decompress"/> when the object was created, or concurrent read operations were attempted.</exception>
+        /// <exception cref="ObjectDisposedException">The stream is disposed.</exception>
         /// <exception cref="IOException">Failed to compress data to the underlying stream.</exception>
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
@@ -298,6 +298,12 @@ namespace System.IO.Compression
         /// <param name="callback">An optional asynchronous callback, to be called when the write is complete.</param>
         /// <param name="state">A user-provided object that distinguishes this particular asynchronous write request from other requests.</param>
         /// <returns>An object that represents the asynchronous write, which could still be pending.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="buffer" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset" /> or <paramref name="count" /> is less than zero.</exception>
+        /// <exception cref="ArgumentException">The <paramref name="buffer" /> length minus the index starting point is less than <paramref name="count" />.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="CompressionMode" /> value was <see cref="CompressionMode.Decompress"/> when the object was created, or concurrent read operations were attempted.</exception>
+        /// <exception cref="ObjectDisposedException">The stream is disposed.</exception>
+        /// <exception cref="IOException">Failed to compress data to the underlying stream.</exception>
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             return TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
@@ -311,6 +317,9 @@ namespace System.IO.Compression
         }
 
         /// <summary>Flushes the internal buffer.</summary>
+        /// <exception cref="InvalidOperationException">Concurrent write operations are not supported.</exception>
+        /// <exception cref="ObjectDisposedException">The stream is disposed.</exception>
+        /// <exception cref="IOException">The flush operation failed.</exception>
         public override void Flush()
         {
             EnsureNotDisposed();
@@ -327,7 +336,7 @@ namespace System.IO.Compression
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous flush operation.</returns>
         /// <exception cref="InvalidOperationException">Concurrent write operations are not supported.</exception>
-        /// <exception cref="ObjectDisposedException">The stream is closed.</exception>
+        /// <exception cref="ObjectDisposedException">The stream is disposed.</exception>
         /// <exception cref="IOException">The flush operation failed.</exception>
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
