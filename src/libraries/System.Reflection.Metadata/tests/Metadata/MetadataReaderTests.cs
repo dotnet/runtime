@@ -2776,10 +2776,13 @@ namespace System.Reflection.Metadata.Tests
             var reader = GetMetadataReader(Misc.Members);
             var entity = reader.GetAssemblyReference(default(AssemblyReferenceHandle));
 
-            Assert.Throws<BadImageFormatException>(() => entity.Version);
+            // Note: Version has special handling - when RowId == WinMDMscorlibRef (both 0 for regular assemblies),
+            // it returns a static version without accessing the table. So we only test properties that do throw.
             Assert.Throws<BadImageFormatException>(() => entity.Flags);
             Assert.Throws<BadImageFormatException>(() => entity.Name);
             Assert.Throws<BadImageFormatException>(() => entity.Culture);
+            Assert.Throws<BadImageFormatException>(() => entity.PublicKeyOrToken);
+            Assert.Throws<BadImageFormatException>(() => entity.HashValue);
         }
 
         [Fact]
