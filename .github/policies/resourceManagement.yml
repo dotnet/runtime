@@ -945,8 +945,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - sammonort
-            - roji
-            - cincuranet
+            - dotnet/efteam
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -959,8 +958,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - sammonort
-            - roji
-            - cincuranet
+            - dotnet/efteam
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -973,8 +971,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - sammonort
-            - roji
-            - cincuranet
+            - dotnet/efteam
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1472,8 +1469,6 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - bartonjs
-            - vcsjones
             - dotnet/area-system-runtime-intrinsics
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
