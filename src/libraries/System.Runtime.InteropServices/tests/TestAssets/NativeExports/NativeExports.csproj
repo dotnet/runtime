@@ -24,7 +24,7 @@
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(UseLocalAppHostPack)' != 'true' and '$(NetCoreAppToolCurrent)' != '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="'$(UseLocalAppHostPack)' != 'true' and '$(NetCoreAppCurrent)' != 'net$(BundledNETCoreAppTargetFrameworkVersion)'">
     <KnownAppHostPack Include="@(KnownAppHostPack->WithMetadataValue('Identity', 'Microsoft.NETCore.App')->WithMetadataValue('TargetFramework', '$(NetCoreAppToolCurrent)'))"
                       TargetFramework="$(NetCoreAppCurrent)" />
   </ItemGroup>

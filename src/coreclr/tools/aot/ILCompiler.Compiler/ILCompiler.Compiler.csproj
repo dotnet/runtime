@@ -62,12 +62,6 @@
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs">
       <Link>IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\EnumThunks.cs">
-      <Link>IL\Stubs\EnumThunks.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\EnumThunks.Sorting.cs">
-      <Link>IL\Stubs\EnumThunks.Sorting.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeLazyFixupField.cs">
       <Link>IL\Stubs\PInvokeLazyFixupField.cs</Link>
     </Compile>
@@ -397,7 +391,6 @@
     <Compile Include="Compiler\CompilerTypeSystemContext.DynamicInvoke.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.GeneratedAssembly.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.GeneratedAssembly.Sorting.cs" />
-    <Compile Include="Compiler\CompilerTypeSystemContext.EnumMethods.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.GetFieldMethodOverrides.cs" />
     <Compile Include="Compiler\CompilerGeneratedInteropStubManager.cs" />
     <Compile Include="Compiler\CustomAttributeExtensions.cs" />

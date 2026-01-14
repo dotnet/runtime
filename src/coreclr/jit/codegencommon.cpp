@@ -765,6 +765,11 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
         case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
             return RBM_VALIDATE_INDIRECT_CALL_TRASH;
 
+#ifdef RBM_INTERFACELOOKUP_FOR_SLOT_TRASH
+        case CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
+            return RBM_INTERFACELOOKUP_FOR_SLOT_TRASH;
+#endif
+
         default:
             return RBM_CALLEE_TRASH;
     }
@@ -1133,6 +1138,11 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
                                 unsigned* mulPtr,
                                 ssize_t*  cnsPtr)
 {
+// TODO-WASM: Prove whether a given addressing mode obeys the Wasm rules.
+// See https://github.com/dotnet/runtime/pull/122897#issuecomment-3721304477 for more details.
+#if defined(TARGET_WASM)
+    return false;
+#endif // TARGET_WASM
     /*
         The following indirections are valid address modes on x86/x64:
 
@@ -5825,6 +5835,7 @@ void CodeGen::genDefinePendingCallLabel(GenTreeCall* call)
         {
             case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
             case CORINFO_HELP_VIRTUAL_FUNC_PTR:
+            case CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
             case CORINFO_HELP_MEMSET:
             case CORINFO_HELP_MEMCPY:
                 return;

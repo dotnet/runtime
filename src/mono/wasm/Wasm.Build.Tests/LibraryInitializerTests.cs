@@ -38,7 +38,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
     }
 
     [GeneratedRegex("MONO_WASM: Failed to invoke 'onRuntimeConfigLoaded' on library initializer '../WasmBasicTestApp.[a-z0-9]+.lib.module.js': Error: Error thrown from library initializer")]
-    private static partial Regex AbortStartupOnErrorRegex();
+    private static partial Regex AbortStartupOnErrorRegex { get; }
 
     [Fact, TestCategory("bundler-friendly")]
     public async Task AbortStartupOnError()
@@ -53,6 +53,6 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
             BrowserQueryString: new NameValueCollection { {"throwError", "true" } },
             ExpectedExitCode: 1);
         RunResult result = await RunForPublishWithWebServer(options);
-        Assert.True(result.ConsoleOutput.Any(m => AbortStartupOnErrorRegex().IsMatch(m)), "The library initializer test didn't emit expected error message");
+        Assert.True(result.ConsoleOutput.Any(m => AbortStartupOnErrorRegex.IsMatch(m)), "The library initializer test didn't emit expected error message");
     }
 }
