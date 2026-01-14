@@ -2385,10 +2385,6 @@ PROCBuildCreateDumpCommandLine(
     argv[argc++] = *ppidarg;
     argv[argc++] = nullptr;
 
-    if (argc >= MAX_ARGV_ENTRIES)
-    {
-        return FALSE;
-    }
     _ASSERTE(argc < MAX_ARGV_ENTRIES);
 
     return TRUE;
