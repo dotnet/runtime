@@ -450,7 +450,7 @@ namespace System.Drawing
             0xFF101010, // FF000000 - FF101010: Desktop - Black
             0xFF969696, // FF6D6D6D - FF969696: GrayText - Prompt Text Focused TextBox
             0xFF2864B4, // FF0078D7 - FF2864B4: Highlight - Highlighted Panel in DarkMode
-            0xFF000000, // FFFFFFFF - FF000000: HighlightText - White
+            0xFFFFFFFF, // FFFFFFFF - FFFFFFFF: HighlightText - White
             0xFF2D5FAF, // FF0066CC - FF2D5FAF: HotTrack - Background of the ToggleSwitch
             0xFF3C3F41, // FFF4F7FC - FF3C3F41: InactiveBorder - Dark gray
             0xFF374B5A, // FFBFCBDD - FF374B5A: InactiveCaption - Highlighted Panel in DarkMode
@@ -458,13 +458,13 @@ namespace System.Drawing
             0xFF50503C, // FFFFFFE1 - FF50503C: Info - Link Label
             0xFFBEBEBE, // FF000000 - FFBEBEBE: InfoText - Prompt Text Color
             0xFF373737, // FFF0F0F0 - FF373737: Menu - Normal Menu Background
-            0xFFF0F0F0, // FF000000 - FFF0F0F0: MenuText - White
+            0xFFFFFFFF, // FF000000 - FFFFFFFF: MenuText - White
             0xFF505050, // FFC8C8C8 - FF505050: ScrollBar - Scrollbars and Scrollbar Arrows
             0xFF323232, // FFFFFFFF - FF323232: Window - Window Background
-            0xFF282828, // FF646464 - FF282828: WindowFrame - White
-            0xFFF0F0F0, // FF000000 - FFF0F0F0: WindowText - White
+            0xFFFFFFFF, // FF646464 - FFFFFFFF: WindowFrame - White
+            0xFFFFFFFF, // FF000000 - FFFFFFFF: WindowText - White
             0xFF202020, // FFF0F0F0 - FF373737: ButtonFace - Same as Window Background
-            0xFF101010, // FFFFFFFF - FF101010: ButtonHighlight - White
+            0xFFFFFFFF, // FFFFFFFF - FFFFFFFF: ButtonHighlight - White
             0xFF464646, // FFA0A0A0 - FF464646: ButtonShadow - Same as Scrollbar Elements
             0XFF416482, // FFB9D1EA - FF416482: GradientActiveCaption - Same as Highlighted Text Background
             0xFF557396, // FFD7E4F2 - FF557396: GradientInactiveCaption - Same as Highlighted Panel in DarkMode
