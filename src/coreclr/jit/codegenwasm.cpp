@@ -546,6 +546,8 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
                 case 2:
                     ins = INS_i32_extend16_s;
                     break;
+                default:
+                    unreached();
             }
             break;
         }
@@ -562,8 +564,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
             break;
         }
         default:
-            NYI_WASM("genIntToIntCast: unhandled ExtendKind");
-            break;
+            unreached();
     }
 
     if (ins != INS_none)
