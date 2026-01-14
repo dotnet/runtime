@@ -447,7 +447,7 @@ void Compiler::gsParamsToShadows()
                 GenTree* src   = gtNewLclVarNode(shadowVarNum);
                 GenTree* store = gtNewStoreLclVarNode(lclNum, src);
 
-                LIR::AsRange(fgFirstBB).InsertBefore(lastNode, LIR::SeqTree(this, store));
+                LIR::AsRange(block).InsertBefore(lastNode, LIR::SeqTree(this, store));
             }
         }
     }
