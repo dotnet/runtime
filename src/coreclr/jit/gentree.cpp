@@ -5515,8 +5515,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     // TODO-WASM: Better estimate of costs for these opcodes. Most of them are one op on x64 but may be
                     // multiple uops.
                     costEx = 2;
-                    // TODO-WASM: 1 byte opcodes except for the int->fp saturating casts which are 2 bytes.
-                    costSz = 1;
+                    costSz = varTypeIsFloating(op1) && !varTypeIsFloating(tree->TypeGet()) ? 2 : 1;
 #else
 #error "Unknown TARGET"
 #endif
