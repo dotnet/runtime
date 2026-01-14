@@ -35,7 +35,8 @@ public class AssetCachingTests : BlazorWasmTestBase
 
         (string projectDir, string output) = BlazorPublish(project, Configuration.Release, new PublishOptions(AssertAppBundle: false));
 
-        var counterLoaded = new TaskCompletionSource();
+        var firstCounterLoaded = new TaskCompletionSource();
+        var secondCounterLoaded = new TaskCompletionSource();
         var wasmRequestRecorder = new WasmRequestRecorder();
 
         var runOptions = new BlazorRunOptions(Configuration.Release)
@@ -45,23 +46,25 @@ public class AssetCachingTests : BlazorWasmTestBase
             OnConsoleMessage = (type, msg) =>
             {
                 if (msg.Contains("Counter.OnAfterRender"))
-                    counterLoaded.SetResult();
+                {
+                    firstCounterLoaded.TrySetResult();
+                    secondCounterLoaded.TrySetResult();
+                }
             },
             Test = async (page) =>
             {
-                await counterLoaded.Task;
+                await firstCounterLoaded.Task;
 
                 // Check server request logs after the first load.
                 Assert.NotEmpty(wasmRequestRecorder.ResponseCodes);
                 Assert.All(wasmRequestRecorder.ResponseCodes, r => Assert.Equal(200, r.ResponseCode));
 
                 wasmRequestRecorder.ResponseCodes.Clear();
-                counterLoaded = new();
 
                 // Perform browser navigation to cause resource reload.
                 // We use the initial base URL because the test server is not configured for SPA routing.
                 await page.ReloadAsync();
-                await counterLoaded.Task;
+                await secondCounterLoaded.Task;
 
                 // Check server logs after the second load.
                 if (EnvironmentVariables.UseFingerprinting)
