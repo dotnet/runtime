@@ -6,7 +6,8 @@ import { dotnetApi } from "../utils/cross-module";
 import { getU16Local, setU16Local, viewOrCopy, zeroRegion } from "./memory";
 import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 
-let textDecoderUtf16: TextDecoder | undefined | null;
+let textDecoderUtf16: TextDecoder | undefined = undefined;
+let textEncoderUtf8: TextEncoder | undefined = undefined;
 let stringsInitialized = false;
 
 export function stringsInit(): void {
@@ -14,6 +15,9 @@ export function stringsInit(): void {
         // V8 does not provide TextDecoder
         if (typeof TextDecoder !== "undefined") {
             textDecoderUtf16 = new TextDecoder("utf-16le");
+        }
+        if (typeof TextEncoder !== "undefined") {
+            textEncoderUtf8 = new TextEncoder();
         }
         stringsInitialized = true;
     }
@@ -46,12 +50,25 @@ export function stringToUTF8Ptr(str: string): CharPtr {
     return ptr;
 }
 
+export function stringToUTF8(str: string): Uint8Array {
+    if (textEncoderUtf8 === undefined) {
+        const len = _ems_.lengthBytesUTF8(str);
+        const buffer = new Uint8Array(len);
+        _ems_.stringToUTF8Array(str, buffer, 0, len);
+        return buffer;
+    }
+    return textEncoderUtf8.encode(str);
+}
+
 export function utf16ToString(startPtr: number, endPtr: number): string {
     startPtr = startPtr >>> 0;
     endPtr = endPtr >>> 0;
     stringsInit();
     if (textDecoderUtf16) {
         const subArray = viewOrCopy(dotnetApi.localHeapViewU8(), startPtr as any, endPtr as any);
+        // TODO-WASM: When threading is enabled, TextDecoder does not accept a view of a
+        // SharedArrayBuffer, we must make a copy of the array first.
+        // See https://github.com/whatwg/encoding/issues/172
         return textDecoderUtf16.decode(subArray);
     } else {
         return utf16ToStringLoop(startPtr, endPtr);

@@ -9,7 +9,7 @@ import type { installVfsFile, registerDllBytes, loadIcuData, initializeCoreCLR, 
 import type { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "../../../../corehost/browserhost/loader/promise-completion-source";
 
 import type { isSharedArrayBuffer, zeroRegion } from "../../../System.Native.Browser/utils/memory";
-import type { stringToUTF16, stringToUTF16Ptr, stringToUTF8Ptr, utf16ToString } from "../../../System.Native.Browser/utils/strings";
+import type { stringToUTF16, stringToUTF16Ptr, stringToUTF8, stringToUTF8Ptr, utf16ToString } from "../../../System.Native.Browser/utils/strings";
 import type { abortPosix, abortTimers, getExitStatus } from "../../../System.Native.Browser/utils/host";
 import type { bindJSImportST, invokeJSFunction, invokeJSImportST } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/invoke-js";
 import type { forceDisposeProxies, releaseCSOwnedObject } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/gc-handles";
@@ -130,6 +130,7 @@ export type BrowserUtilsExports = {
     stringToUTF16: typeof stringToUTF16,
     stringToUTF16Ptr: typeof stringToUTF16Ptr,
     stringToUTF8Ptr: typeof stringToUTF8Ptr,
+    stringToUTF8: typeof stringToUTF8,
     zeroRegion: typeof zeroRegion,
     isSharedArrayBuffer: typeof isSharedArrayBuffer
     abortTimers: typeof abortTimers,
@@ -142,6 +143,7 @@ export type BrowserUtilsExportsTable = [
     typeof stringToUTF16,
     typeof stringToUTF16Ptr,
     typeof stringToUTF8Ptr,
+    typeof stringToUTF8,
     typeof zeroRegion,
     typeof isSharedArrayBuffer,
     typeof abortTimers,

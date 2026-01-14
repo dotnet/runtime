@@ -188,11 +188,12 @@ export function dotnetUpdateInternalsSubscriber() {
             stringToUTF16: table[1],
             stringToUTF16Ptr: table[2],
             stringToUTF8Ptr: table[3],
-            zeroRegion: table[4],
-            isSharedArrayBuffer: table[5],
-            abortTimers: table[6],
-            abortPosix: table[7],
-            getExitStatus: table[8],
+            stringToUTF8: table[4],
+            zeroRegion: table[5],
+            isSharedArrayBuffer: table[6],
+            abortTimers: table[7],
+            abortPosix: table[8],
+            getExitStatus: table[9],
         };
         Object.assign(interop, interopLocal);
     }

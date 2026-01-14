@@ -67,7 +67,7 @@ namespace System.Runtime.InteropServices.JavaScript
             };
 
             int methodHandle = ctx.NextJSExportHandle++;
-            ctx.s_JSExportByHandle[methodHandle] = wrapper;
+            ctx.JSExportByHandle[methodHandle] = wrapper;
 
             var signature = GetMethodSignature(signatures, null, null);
 
