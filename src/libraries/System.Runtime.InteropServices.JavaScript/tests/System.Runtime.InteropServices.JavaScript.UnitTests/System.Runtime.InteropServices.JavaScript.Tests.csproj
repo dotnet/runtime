@@ -58,7 +58,8 @@
 
   <ItemGroup Condition="'$(FeatureWasmManagedThreads)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\HttpRequestMessageTest.cs" />
+    <!-- WASM-TODO: https://github.com/dotnet/runtime/issues/120216 -->
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\HttpRequestMessageTest.cs" Condition="'$(RuntimeFlavor)' == 'Mono'"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\TimerTests.cs" />
   </ItemGroup>
 
