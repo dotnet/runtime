@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
 using Xunit;
@@ -37,6 +38,7 @@ public class AssetCachingTests : BlazorWasmTestBase
 
         var firstCounterLoaded = new TaskCompletionSource();
         var secondCounterLoaded = new TaskCompletionSource();
+        var loadCount = 0;
         var wasmRequestRecorder = new WasmRequestRecorder();
 
         var runOptions = new BlazorRunOptions(Configuration.Release)
@@ -47,8 +49,10 @@ public class AssetCachingTests : BlazorWasmTestBase
             {
                 if (msg.Contains("Counter.OnAfterRender"))
                 {
-                    firstCounterLoaded.TrySetResult();
-                    secondCounterLoaded.TrySetResult();
+                    if (Interlocked.Increment(ref loadCount) == 1)
+                        firstCounterLoaded.SetResult();
+                    else
+                        secondCounterLoaded.SetResult();
                 }
             },
             Test = async (page) =>
