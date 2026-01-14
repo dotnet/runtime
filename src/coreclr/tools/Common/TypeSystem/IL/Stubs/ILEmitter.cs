@@ -456,14 +456,6 @@ namespace Internal.IL.Stubs
             builder._endTryOffset = _length;
         }
 
-        public void BeginFilter(ILExceptionRegionBuilder builder)
-        {
-            Debug.Assert(builder._exceptionRegionKind == ILExceptionRegionKind.Filter);
-            Debug.Assert(builder._beginFilterStream == null);
-            builder._beginFilterStream = this;
-            builder._beginFilterOffset = _length;
-        }
-
         public void BeginHandler(ILExceptionRegionBuilder builder)
         {
             Debug.Assert(builder._beginHandlerStream == null);
@@ -519,9 +511,6 @@ namespace Internal.IL.Stubs
         internal ILCodeStream _endTryStream;
         internal int _endTryOffset;
 
-        internal ILCodeStream _beginFilterStream;
-        internal int _beginFilterOffset;
-
         internal ILCodeStream _beginHandlerStream;
         internal int _beginHandlerOffset;
 
@@ -536,20 +525,17 @@ namespace Internal.IL.Stubs
             _exceptionRegionKind = exceptionRegionKind;
             _catchExceptionType = catchExceptionType;
             Debug.Assert((exceptionRegionKind == ILExceptionRegionKind.Catch && catchExceptionType != null)
-                || (exceptionRegionKind != ILExceptionRegionKind.Catch && exceptionRegionKind != ILExceptionRegionKind.Filter && catchExceptionType == null)
-                || (exceptionRegionKind == ILExceptionRegionKind.Filter && catchExceptionType == null));
+                || (exceptionRegionKind != ILExceptionRegionKind.Catch && catchExceptionType == null));
         }
 
         internal int TryOffset => _beginTryStream.RelativeToAbsoluteOffset(_beginTryOffset);
         internal int TryLength => _endTryStream.RelativeToAbsoluteOffset(_endTryOffset) - TryOffset;
-        internal int FilterOffset => _beginFilterStream?.RelativeToAbsoluteOffset(_beginFilterOffset) ?? 0;
         internal int HandlerOffset => _beginHandlerStream.RelativeToAbsoluteOffset(_beginHandlerOffset);
         internal int HandlerLength => _endHandlerStream.RelativeToAbsoluteOffset(_endHandlerOffset) - HandlerOffset;
 
         internal bool IsDefined =>
             _beginTryStream != null && _endTryStream != null
-            && _beginHandlerStream != null && _endHandlerStream != null
-            && (_exceptionRegionKind != ILExceptionRegionKind.Filter || _beginFilterStream != null);
+            && _beginHandlerStream != null && _endHandlerStream != null;
     }
 
     /// <summary>
@@ -762,13 +748,6 @@ namespace Internal.IL.Stubs
             return region;
         }
 
-        public ILExceptionRegionBuilder NewFilterRegion()
-        {
-            var region = new ILExceptionRegionBuilder(ILExceptionRegionKind.Filter);
-            _exceptionRegions.Add(region);
-            return region;
-        }
-
         public MethodIL Link(MethodDesc owningMethod)
         {
             int totalLength = 0;
@@ -831,7 +810,7 @@ namespace Internal.IL.Stubs
 
                     exceptionRegions[i] = new ILExceptionRegion(region._exceptionRegionKind,
                         region.TryOffset, region.TryLength, region.HandlerOffset, region.HandlerLength,
-                        classToken: exceptionTypeToken, filterOffset: region.FilterOffset);
+                        classToken: exceptionTypeToken, filterOffset: 0);
                 }
 
                 // Sort exception regions so that innermost (most nested) regions come first

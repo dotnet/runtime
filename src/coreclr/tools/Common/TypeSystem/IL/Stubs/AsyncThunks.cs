@@ -14,9 +14,7 @@ namespace Internal.IL.Stubs
         // it calls FinalizeTaskReturningThunk/FinalizeValueTaskReturningThunk method to get the Task/ValueTask.
 
         // The emitted code matches method EmitTaskReturningThunk in CoreCLR VM.
-        // When useFilterBasedCatch is true, a filter-based exception handler is used (required for ReadyToRun).
-        // When false, a type-based catch for System.Exception is used (preferred for NativeAOT).
-        public static MethodIL EmitTaskReturningThunk(MethodDesc taskReturningMethod, MethodDesc asyncMethod, bool useFilterBasedCatch = false)
+        public static MethodIL EmitTaskReturningThunk(MethodDesc taskReturningMethod, MethodDesc asyncMethod)
         {
             TypeSystemContext context = taskReturningMethod.Context;
 
@@ -53,11 +51,7 @@ namespace Internal.IL.Stubs
             {
                 codestream.BeginTry(tryFinallyRegion);
                 codestream.Emit(ILOpcode.nop);
-
-                TypeDesc exceptionType = context.GetWellKnownType(WellKnownType.Exception);
-                ILExceptionRegionBuilder tryCatchRegion = useFilterBasedCatch
-                    ? emitter.NewFilterRegion()
-                    : emitter.NewCatchRegion(exceptionType);
+                ILExceptionRegionBuilder tryCatchRegion = emitter.NewCatchRegion(context.GetWellKnownType(WellKnownType.Exception));
                 {
                     codestream.BeginTry(tryCatchRegion);
 
@@ -150,19 +144,11 @@ namespace Internal.IL.Stubs
 
                     codestream.EndTry(tryCatchRegion);
                 }
-                // Filter (only emitted when useFilterBasedCatch is true)
-                if (useFilterBasedCatch)
-                {
-                    codestream.BeginFilter(tryCatchRegion);
-                    // Exception object is on the stack
-                    codestream.Emit(ILOpcode.isinst, emitter.NewToken(exceptionType));
-                    codestream.Emit(ILOpcode.ldnull);
-                    codestream.Emit(ILOpcode.cgt_un);    // 1 if non-null (is Exception), 0 if null (not Exception)
-                    codestream.Emit(ILOpcode.endfilter); // End filter block and begin handler
-                }
-                // Handler
+                // Catch
                 {
                     codestream.BeginHandler(tryCatchRegion);
+
+                    TypeDesc exceptionType = context.GetWellKnownType(WellKnownType.Exception);
 
                     MethodDesc fromExceptionMd;
                     if (logicalReturnType != null)

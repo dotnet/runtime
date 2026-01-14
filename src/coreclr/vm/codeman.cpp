@@ -3490,6 +3490,11 @@ TypeHandle EECodeGenManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
         typeTok = pEHClause->ClassToken;
     }
 
+    if (pEHClause->ClassToken == mdTypeRefNil)
+    {
+        return TypeHandle(g_pExceptionClass);
+    }
+
     MethodDesc* pMD = pCf->GetFunction();
     Module* pModule = pMD->GetModule();
     _ASSERTE(pModule != NULL);
@@ -6486,6 +6491,11 @@ TypeHandle ReadyToRunJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClaus
     _ASSERTE(NULL != pCf);
     _ASSERTE(NULL != pEHClause);
     _ASSERTE(IsTypedHandler(pEHClause));
+
+    if (pEHClause->ClassToken == 0)
+    {
+        return TypeHandle(g_pExceptionClass);
+    }
 
     MethodDesc *pMD = PTR_MethodDesc(pCf->GetFunction());
 

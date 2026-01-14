@@ -300,7 +300,7 @@ namespace Internal.IL
                 {
                     if (ecmaMethod.Signature.ReturnsTaskOrValueTask())
                     {
-                        return AsyncThunkILEmitter.EmitTaskReturningThunk(ecmaMethod, ((CompilerTypeSystemContext)ecmaMethod.Context).GetAsyncVariantMethod(ecmaMethod), useFilterBasedCatch: false);
+                        return AsyncThunkILEmitter.EmitTaskReturningThunk(ecmaMethod, ((CompilerTypeSystemContext)ecmaMethod.Context).GetAsyncVariantMethod(ecmaMethod));
                     }
                     else
                     {
