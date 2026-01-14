@@ -101,7 +101,7 @@ namespace Profiler.Tests
             RuntimeHelpers.PrepareMethod(GetMainMethod(afterReenableInlining).MethodHandle);
             actual = GetInlineCount();
             Console.WriteLine($"After jitting third case, inline count is: {actual}");
-            if (!interpreterEnabledAndZeroInlinesInNormalPath)
+            if (!skipInlineChecksForInterpreter)
                 expected++;
 
             if (expected != actual)
