@@ -371,6 +371,16 @@ FCIMPL2(void *, RhNewInterfaceDispatchCell, MethodTable * pInterface, int32_t sl
     return pCell;
 }
 FCIMPLEND
+
+EXTERN_C void* g_pDispatchCache;
+void* g_pDispatchCache;
+
+FCIMPL1(void, RhpRegisterDispatchCache, void* pCache)
+{
+    ASSERT(g_pDispatchCache == NULL);
+    g_pDispatchCache = pCache;
+}
+FCIMPLEND
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
 #endif // DACCESS_COMPILE
