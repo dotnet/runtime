@@ -573,6 +573,76 @@ namespace System.Buffers.Text
         }
 #endif
 
+        // Shared helper methods for char (ushort) encoders
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe void StoreVector512ToDestinationChar(ushort* dest, ushort* destStart, int destLength, Vector512<byte> str)
+        {
+            AssertWrite<Vector512<ushort>>(dest, destStart, destLength);
+            (Vector512<ushort> utf16LowVector, Vector512<ushort> utf16HighVector) = Vector512.Widen(str);
+            utf16LowVector.Store(dest);
+            utf16HighVector.Store(dest + Vector512<ushort>.Count);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe void StoreVector256ToDestinationChar(ushort* dest, ushort* destStart, int destLength, Vector256<byte> str)
+        {
+            AssertWrite<Vector256<ushort>>(dest, destStart, destLength);
+            (Vector256<ushort> utf16LowVector, Vector256<ushort> utf16HighVector) = Vector256.Widen(str);
+            utf16LowVector.Store(dest);
+            utf16HighVector.Store(dest + Vector256<ushort>.Count);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe void StoreVector128ToDestinationChar(ushort* dest, ushort* destStart, int destLength, Vector128<byte> str)
+        {
+            AssertWrite<Vector128<ushort>>(dest, destStart, destLength);
+            (Vector128<ushort> utf16LowVector, Vector128<ushort> utf16HighVector) = Vector128.Widen(str);
+            utf16LowVector.Store(dest);
+            utf16HighVector.Store(dest + Vector128<ushort>.Count);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        internal static unsafe void StoreArmVector128x4ToDestinationChar(ushort* dest, ushort* destStart, int destLength,
+            Vector128<byte> res1, Vector128<byte> res2, Vector128<byte> res3, Vector128<byte> res4)
+        {
+            AssertWrite<Vector128<ushort>>(dest, destStart, destLength);
+            (Vector128<ushort> utf16LowVector1, Vector128<ushort> utf16HighVector1) = Vector128.Widen(res1);
+            (Vector128<ushort> utf16LowVector2, Vector128<ushort> utf16HighVector2) = Vector128.Widen(res2);
+            (Vector128<ushort> utf16LowVector3, Vector128<ushort> utf16HighVector3) = Vector128.Widen(res3);
+            (Vector128<ushort> utf16LowVector4, Vector128<ushort> utf16HighVector4) = Vector128.Widen(res4);
+            AdvSimd.Arm64.StoreVectorAndZip(dest, (utf16LowVector1, utf16LowVector2, utf16LowVector3, utf16LowVector4));
+            AdvSimd.Arm64.StoreVectorAndZip(dest + 32, (utf16HighVector1, utf16HighVector2, utf16HighVector3, utf16HighVector4));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe void EncodeThreeAndWriteChar(byte* threeBytes, ushort* destination, ref byte encodingMap)
+        {
+            uint t0 = threeBytes[0];
+            uint t1 = threeBytes[1];
+            uint t2 = threeBytes[2];
+
+            uint i = (t0 << 16) | (t1 << 8) | t2;
+
+            ulong i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
+            ulong i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
+            ulong i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
+            ulong i3 = Unsafe.Add(ref encodingMap, (IntPtr)(i & 0x3F));
+
+            ulong result;
+            if (BitConverter.IsLittleEndian)
+            {
+                result = i0 | (i1 << 16) | (i2 << 32) | (i3 << 48);
+            }
+            else
+            {
+                result = (i0 << 48) | (i1 << 32) | (i2 << 16) | i3;
+            }
+
+            Unsafe.WriteUnaligned(destination, result);
+        }
+
         internal static unsafe OperationStatus EncodeToUtf8InPlace<TBase64Encoder>(TBase64Encoder encoder, Span<byte> buffer, int dataLength, out int bytesWritten)
             where TBase64Encoder : IBase64Encoder<byte>
         {
