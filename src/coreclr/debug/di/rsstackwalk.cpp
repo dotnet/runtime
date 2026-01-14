@@ -843,16 +843,13 @@ CordbAsyncStackWalk::CordbAsyncStackWalk(CordbProcess* pProcess, CORDB_ADDRESS c
 CordbAsyncStackWalk::~CordbAsyncStackWalk()
 {
     _ASSERTE(IsNeutered());
-
     _ASSERTE(m_pCurrentFrame == NULL);
 }
 
 void CordbAsyncStackWalk::Neuter()
 {
     if (m_pCurrentFrame != NULL)
-    {
         m_pCurrentFrame.Clear();
-    }
 
     CordbBase::Neuter();
 }
@@ -878,31 +875,24 @@ HRESULT CordbAsyncStackWalk::QueryInterface(REFIID id, void **pInterface)
 
 HRESULT CordbAsyncStackWalk::PopulateFrame()
 {
+    // If we already found the current frame, no work is required
     if (m_pCurrentFrame != NULL)
-    {
-        // We already have a current frame.
         return S_OK;
-    }
 
+    // If we have reached the end of the stack, we can't populate any frame
     if (m_continuationAddress == 0)
-    {
         return CORDBG_E_PAST_END_OF_STACK;
-    }
 
     IDacDbiInterface* pDac = m_pProcess->GetDAC();
 
     PCODE diagnosticIP;
     CORDB_ADDRESS nextContinuation;
     UINT32 state;
-    HRESULT hr = pDac->GetResumePointAndNextContinuation(
+    IfFailRet(pDac->GetResumePointAndNextContinuation(
         m_continuationAddress,
         &diagnosticIP,
         &nextContinuation,
-        &state);
-    if (FAILED(hr))
-    {
-        return hr;
-    }
+        &state));
 
     NativeCodeFunctionData codeData;
     VMPTR_Module pModule;
@@ -923,7 +913,6 @@ HRESULT CordbAsyncStackWalk::PopulateFrame()
         state);
     
     frame->Init();
-
     m_pCurrentFrame.Assign(frame);
 
     return S_OK;
@@ -959,35 +948,25 @@ HRESULT CordbAsyncStackWalk::Next()
     HRESULT hr = S_OK;
     PUBLIC_REENTRANT_API_BEGIN(this)
     {
-        // When going to the next continuation, we discard the current frame.
+        // Discard the cached current frame.
         m_pCurrentFrame.Clear();
 
         if (m_continuationAddress == 0)
-        {
             ThrowHR(CORDBG_E_PAST_END_OF_STACK);
-        }
-
-        IDacDbiInterface* pDac = m_pProcess->GetDAC();
 
         PCODE diagnosticIP;
         CORDB_ADDRESS nextContinuation;
         UINT32 state;
-        hr = pDac->GetResumePointAndNextContinuation(
+        IfFailThrow(m_pProcess->GetDAC()->GetResumePointAndNextContinuation(
             m_continuationAddress,
             &diagnosticIP,
             &nextContinuation,
-            &state);
-        if (FAILED(hr))
-        {
-            ThrowHR(hr);
-        }
+            &state));
 
         m_continuationAddress = nextContinuation;
 
         if (m_continuationAddress == 0)
-        {
             hr = CORDBG_S_AT_END_OF_STACK;
-        }
     }
     PUBLIC_REENTRANT_API_END(hr);
     return hr;
@@ -1015,15 +994,9 @@ HRESULT CordbAsyncStackWalk::GetFrame(ICorDebugFrame ** ppFrame)
         RSLockHolder lockHolder(GetProcess()->GetProcessLock());
 
         if (ppFrame == NULL)
-        {
             ThrowHR(E_INVALIDARG);
-        }
 
-        hr = PopulateFrame();
-        if (FAILED(hr))
-        {
-            ThrowHR(hr);
-        }
+        IfFailThrow(PopulateFrame());
 
         RSInitHolder<CordbAsyncFrame> pResultFrame(m_pCurrentFrame);
         pResultFrame.TransferOwnershipExternal(ppFrame);
