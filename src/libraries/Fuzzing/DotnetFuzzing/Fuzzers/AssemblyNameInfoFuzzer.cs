@@ -64,7 +64,7 @@ namespace DotnetFuzzing.Fuzzers
                 Assert.Equal(fromTryParse.Name, fromParse.ToAssemblyName().Name);
                 Assert.Equal(fromTryParse.Version, fromParse.ToAssemblyName().Version);
 
-                if (fromTryParse.CultureName is not null)
+                if (!string.IsNullOrEmpty(fromTryParse.CultureName))
                 {
                     // When converting to AssemblyName, the culture name is normalized
                     // by the CultureInfo ctor which may change the culture name to its
@@ -81,7 +81,7 @@ namespace DotnetFuzzing.Fuzzers
                 }
                 else
                 {
-                    Assert.True(fromParse.ToAssemblyName().CultureName is null);
+                    Assert.True(fromParse.ToAssemblyName().CultureName is null or "");
                 }
 
                 // AssemblyNameInfo.FullName can be different than AssemblyName.FullName:
