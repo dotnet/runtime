@@ -331,6 +331,29 @@
         "unix-x64"
       ]
     },
+    "tizen": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "tizen-arm64": {
+      "#import": [
+        "tizen",
+        "linux-arm64"
+      ]
+    },
+    "tizen-armel": {
+      "#import": [
+        "tizen",
+        "linux-armel"
+      ]
+    },
+    "tizen-x86": {
+      "#import": [
+        "tizen",
+        "linux-x86"
+      ]
+    },
     "tvos": {
       "#import": [
         "unix"
