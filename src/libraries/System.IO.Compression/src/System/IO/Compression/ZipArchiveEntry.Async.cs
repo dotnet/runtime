@@ -108,7 +108,7 @@ public partial class ZipArchiveEntry
             case ZipArchiveMode.Update:
             default:
                 Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
-                return await OpenInUpdateModeAsync(cancellationToken).ConfigureAwait(false);
+                return await OpenInUpdateModeAsync(true, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -254,8 +254,8 @@ public partial class ZipArchiveEntry
                         _  /* EncryptionMethod.Aes256 */ => (byte)3
                     },
                     CompressionMethod = _compressionLevel == CompressionLevel.NoCompression ?
-                            (ushort)CompressionMethodValues.Stored :
-                            (ushort)CompressionMethodValues.Deflate
+                            (ushort)ZipCompressionMethod.Stored :
+                            (ushort)ZipCompressionMethod.Deflate
                 };
                 await aesExtraField.WriteBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
 
@@ -463,8 +463,8 @@ public partial class ZipArchiveEntry
                         _  /* EncryptionMethod.Aes256 */ => (byte)3
                     },
                     CompressionMethod = _compressionLevel == CompressionLevel.NoCompression ?
-                            (ushort)CompressionMethodValues.Stored :
-                            (ushort)CompressionMethodValues.Deflate
+                            (ushort)ZipCompressionMethod.Stored :
+                            (ushort)ZipCompressionMethod.Deflate
                 };
                 await aesExtraField.WriteBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
 

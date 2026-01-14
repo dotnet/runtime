@@ -2018,7 +2018,77 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        [SkipOnCI("Local development test - creates archive for manual inspection with WinRAR")]
+        [Fact]
+        public async Task Local_UpdateMode_EditAllEntries_MixedEncryption_ForWinRARInspection()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string archivePath = NewPath("update_all_entries_mixed_encryption.zip");
+            string archiveBeforeUpdatePath = NewPath("update_all_entries_mixed_encryption_BEFORE.zip");
+
+            if (File.Exists(archivePath)) File.Delete(archivePath);
+            if (File.Exists(archiveBeforeUpdatePath)) File.Delete(archiveBeforeUpdatePath);
+
+            string password = "password123";
+
+            var entries = new[]
+            {
+                ("entry_zipcrypto.txt", "Content ZipCrypto", ZipArchiveEntry.EncryptionMethod.ZipCrypto),
+                ("entry_aes128.txt", "Content AES-128", ZipArchiveEntry.EncryptionMethod.Aes128),
+                ("entry_aes192.txt", "Content AES-192", ZipArchiveEntry.EncryptionMethod.Aes192),
+                ("entry_aes256.txt", "Content AES-256", ZipArchiveEntry.EncryptionMethod.Aes256)
+            };
+
+            // Step 1: Create archive with entries using different encryption methods
+            using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
+            {
+                foreach (var (name, content, encryption) in entries)
+                {
+                    var entry = archive.CreateEntry(name);
+                    using var stream = entry.Open(password, encryption);
+                    using var writer = new StreamWriter(stream, Encoding.UTF8);
+                    await writer.WriteAsync(content);
+                }
+            }
+
+            // Save a copy before modifications
+            File.Copy(archivePath, archiveBeforeUpdatePath, overwrite: true);
+
+            // Step 2: Open in Update mode and edit ALL entries
+            using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Update))
+            {
+                foreach (var (name, _, _) in entries)
+                {
+                    var entry = archive.GetEntry(name);
+                    Assert.NotNull(entry);
+                    Assert.True(entry.IsEncrypted);
+
+                    using (var stream = entry.Open(password))
+                    {
+                        stream.SetLength(0);
+                        byte[] content = Encoding.UTF8.GetBytes($"Modified {name}");
+                        await stream.WriteAsync(content, 0, content.Length);
+                    }
+                }
+            }
+
+            // Step 3: Verify all entries can be read back
+            using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Read))
+            {
+                foreach (var (name, _, _) in entries)
+                {
+                    var entry = archive.GetEntry(name);
+                    Assert.NotNull(entry);
+                    Assert.True(entry.IsEncrypted);
+
+                    using var stream = entry.Open(password);
+                    using var reader = new StreamReader(stream, Encoding.UTF8);
+                    string content = await reader.ReadToEndAsync();
+                    Assert.Equal($"Modified {name}", content);
+                }
+            }
+
+        }
     }
-
-
 }

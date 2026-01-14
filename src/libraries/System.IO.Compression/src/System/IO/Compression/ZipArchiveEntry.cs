@@ -687,8 +687,8 @@ namespace System.IO.Compression
                         _  /* EncryptionMethod.Aes256 */ => (byte)3
                     },
                     CompressionMethod = _compressionLevel == CompressionLevel.NoCompression ?
-                        (ushort)CompressionMethodValues.Stored :
-                        (ushort)CompressionMethodValues.Deflate
+                        (ushort)ZipCompressionMethod.Stored :
+                        (ushort)ZipCompressionMethod.Deflate
                 };
                 aesExtraFieldSize = WinZipAesExtraField.TotalSize;
             }
@@ -802,8 +802,8 @@ namespace System.IO.Compression
                             _  /* EncryptionMethod.Aes256 */ => (byte)3
                         },
                         CompressionMethod = _compressionLevel == CompressionLevel.NoCompression ?
-                            (ushort)CompressionMethodValues.Stored :
-                            (ushort)CompressionMethodValues.Deflate
+                            (ushort)ZipCompressionMethod.Stored :
+                            (ushort)ZipCompressionMethod.Deflate
                     };
                     aesExtraField.WriteBlock(_archive.ArchiveStream);
 
@@ -961,11 +961,6 @@ namespace System.IO.Compression
             return _encryptionMethod is EncryptionMethod.Aes128 or EncryptionMethod.Aes192 or EncryptionMethod.Aes256;
         }
 
-        private void InvalidateKeyMaterialCache()
-        {
-            _derivedEncryptionKeyMaterial = null;
-        }
-
         private int GetAesKeySizeBits()
         {
             return _encryptionMethod switch
@@ -1112,10 +1107,10 @@ namespace System.IO.Compression
             // we assume that if another entry grabbed the archive stream, that it set this entry's _everOpenedForWrite property to true by calling WriteLocalFileHeaderAndDataIfNeeded
             _archive.DebugAssertIsStillArchiveStreamOwner(this);
 
-            return OpenInWriteModeCore();
+            return OpenInWriteModeCore(password, encryptionMethod);
         }
 
-        private WrappedStream OpenInWriteModeCore()
+        private WrappedStream OpenInWriteModeCore(string? password = null, EncryptionMethod encryptionMethod = EncryptionMethod.None)
         {
             _everOpenedForWrite = true;
             Changes |= ZipArchive.ChangeState.StoredData;
@@ -1529,8 +1524,8 @@ namespace System.IO.Compression
                             _  /* EncryptionMethod.Aes256 */ => (byte)3
                         },
                         CompressionMethod = _compressionLevel == CompressionLevel.NoCompression ?
-                            (ushort)CompressionMethodValues.Stored :
-                            (ushort)CompressionMethodValues.Deflate
+                            (ushort)ZipCompressionMethod.Stored :
+                            (ushort)ZipCompressionMethod.Deflate
                     };
                     aesExtraFieldSize = WinZipAesExtraField.TotalSize;
                 }
@@ -1663,8 +1658,8 @@ namespace System.IO.Compression
                             _  /* EncryptionMethod.Aes256 */ => (byte)3
                         },
                         CompressionMethod = _compressionLevel == CompressionLevel.NoCompression ?
-                            (ushort)CompressionMethodValues.Stored :
-                            (ushort)CompressionMethodValues.Deflate
+                            (ushort)ZipCompressionMethod.Stored :
+                            (ushort)ZipCompressionMethod.Deflate
                     };
                     aesExtraField.WriteBlock(_archive.ArchiveStream);
 
@@ -2349,17 +2344,6 @@ namespace System.IO.Compression
             Aes128 = 2,
             Aes192 = 3,
             Aes256 = 4
-        }
-
-
-        internal enum CompressionMethodValues : ushort
-        {
-            Stored = 0x0,
-            Deflate = 0x8,
-            Deflate64 = 0x9,
-            BZip2 = 0xC,
-            LZMA = 0xE,
-            Aes = 99
         }
 
         internal sealed class LocalHeaderOffsetComparer : Comparer<ZipArchiveEntry>
