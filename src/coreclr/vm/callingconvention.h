@@ -1415,7 +1415,9 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 m_argLocDescForStructInRegs.m_cFloatReg = cFPRegs;
                 m_argLocDescForStructInRegs.m_idxGenReg = m_idxGenReg;
                 m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
+#ifdef DEBUG
                 m_argLocDescForStructInRegs.m_thStructInRegs = m_argTypeHandle;
+#endif
                 m_argLocDescForStructInRegs.m_eightByteInfo = eightByteInfo;
 
                 m_hasArgLocDescForStructInRegs = true;
