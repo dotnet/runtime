@@ -2676,6 +2676,90 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
+        public void GetDocument_InvalidHandle()
+        {
+            using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(PortablePdbs.DocumentsPdb)))
+            {
+                var reader = provider.GetMetadataReader();
+                var doc = reader.GetDocument(default(DocumentHandle));
+
+                Assert.Throws<BadImageFormatException>(() => doc.Name);
+                Assert.Throws<BadImageFormatException>(() => doc.Language);
+                Assert.Throws<BadImageFormatException>(() => doc.HashAlgorithm);
+                Assert.Throws<BadImageFormatException>(() => doc.Hash);
+            }
+        }
+
+        [Fact]
+        public void GetLocalScope_InvalidHandle()
+        {
+            using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(PortablePdbs.DocumentsPdb)))
+            {
+                var reader = provider.GetMetadataReader();
+                var scope = reader.GetLocalScope(default(LocalScopeHandle));
+
+                Assert.Throws<BadImageFormatException>(() => scope.Method);
+                Assert.Throws<BadImageFormatException>(() => scope.ImportScope);
+                Assert.Throws<BadImageFormatException>(() => scope.StartOffset);
+                Assert.Throws<BadImageFormatException>(() => scope.Length);
+            }
+        }
+
+        [Fact]
+        public void GetCustomDebugInformation_InvalidHandle()
+        {
+            using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(PortablePdbs.DocumentsPdb)))
+            {
+                var reader = provider.GetMetadataReader();
+                var cdi = reader.GetCustomDebugInformation(default(CustomDebugInformationHandle));
+
+                Assert.Throws<BadImageFormatException>(() => cdi.Parent);
+                Assert.Throws<BadImageFormatException>(() => cdi.Kind);
+                Assert.Throws<BadImageFormatException>(() => cdi.Value);
+            }
+        }
+
+        [Fact]
+        public void GetLocalVariable_InvalidHandle()
+        {
+            using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(PortablePdbs.DocumentsPdb)))
+            {
+                var reader = provider.GetMetadataReader();
+                var localVar = reader.GetLocalVariable(default(LocalVariableHandle));
+
+                Assert.Throws<BadImageFormatException>(() => localVar.Attributes);
+                Assert.Throws<BadImageFormatException>(() => localVar.Index);
+                Assert.Throws<BadImageFormatException>(() => localVar.Name);
+            }
+        }
+
+        [Fact]
+        public void GetLocalConstant_InvalidHandle()
+        {
+            using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(PortablePdbs.DocumentsPdb)))
+            {
+                var reader = provider.GetMetadataReader();
+                var localConst = reader.GetLocalConstant(default(LocalConstantHandle));
+
+                Assert.Throws<BadImageFormatException>(() => localConst.Name);
+                Assert.Throws<BadImageFormatException>(() => localConst.Signature);
+            }
+        }
+
+        [Fact]
+        public void GetImportScope_InvalidHandle()
+        {
+            using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(PortablePdbs.DocumentsPdb)))
+            {
+                var reader = provider.GetMetadataReader();
+                var importScope = reader.GetImportScope(default(ImportScopeHandle));
+
+                Assert.Throws<BadImageFormatException>(() => importScope.Parent);
+                Assert.Throws<BadImageFormatException>(() => importScope.ImportsBlob);
+            }
+        }
+
+        [Fact]
         public void GetCustomDebugInformation()
         {
             using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(PortablePdbs.DocumentsPdb)))
