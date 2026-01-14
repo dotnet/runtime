@@ -15,6 +15,7 @@ endif (MSVC)
 
 # Set commonly used directory names
 set(CLR_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(RUNTIME_DIR ${CMAKE_CURRENT_SOURCE_DIR}/runtime)
 set(VM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vm)
 set(GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/inc)
 set(GENERATED_EVENTING_DIR ${CMAKE_CURRENT_BINARY_DIR}/Eventing)
@@ -34,10 +35,6 @@ if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CL
 endif()
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
-
-if (CLR_CMAKE_TARGET_ARCH_WASM)
-    add_compile_options(-fwasm-exceptions)
-endif()
 
 #----------------------------------------------------
 # Cross target Component build specific configuration
@@ -68,6 +65,7 @@ if(NOT CLR_CROSS_COMPONENTS_BUILD AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT C
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost/apphost/static Corehost.Static)
   add_dependencies(runtime singlefilehost)
 endif()
+
 #-------------------------
 # Enable C++ EH with SEH
 #-------------------------
@@ -80,6 +78,13 @@ endif()
 #-------------------------------
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
   set(STATIC_LIBS_ONLY 1)
+  if(CLR_CMAKE_TARGET_BROWSER)
+    # WASM-TODO set GEN_PINVOKE to 1 once we generate them. static entrypoint.c prevents C linker from trimming, when IL trimming trims PInvokes
+    set(GEN_PINVOKE 0)
+    set(BUILD_LIBS_NATIVE_BROWSER 1)
+    set(STATIC_LIB_DESTINATION ${CMAKE_BINARY_DIR}/libs-native)
+    set(CORERUN_LIBS_ONLY 1)
+  endif()
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
 endif()
 
@@ -115,7 +120,7 @@ endif()
 #----------------------------------------------------
 # Build the test watchdog alongside the CLR
 #----------------------------------------------------
-if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS AND NOT CLR_CMAKE_TARGET_BROWSER)
   add_subdirectory("${CLR_SRC_NATIVE_DIR}/watchdog" test-watchdog)
 endif()
 
@@ -196,8 +201,6 @@ include_directories("debug/inc")
 include_directories("debug/inc/${ARCH_SOURCES_DIR}")
 include_directories("debug/inc/dump")
 include_directories("md/inc")
-include_directories("classlibnative/bcltype")
-include_directories("classlibnative/inc")
 include_directories("${GENERATED_INCLUDE_DIR}")
 include_directories("hosts/inc")
 include_directories("interpreter/inc")
@@ -294,7 +297,6 @@ if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
 endif()
 
 add_subdirectory(binder)
-add_subdirectory(classlibnative)
 add_subdirectory(dlls)
 
 if (NOT CLR_CMAKE_TARGET_ARCH_WASM)

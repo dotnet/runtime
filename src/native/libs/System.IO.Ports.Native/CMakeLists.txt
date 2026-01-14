@@ -1,5 +1,9 @@
 project(System.IO.Ports.Native C)
 
+if(CLR_CMAKE_TARGET_ARCH_WASM)
+    message(FATAL_ERROR "Not implemented for WASM")
+endif()
+
 set(PORTS_SOURCES
     pal_termios.c
     pal_serial.c

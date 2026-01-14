@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -40,6 +41,23 @@ namespace System.Buffers.Binary
             return BitConverter.IsLittleEndian ?
                 BitConverter.Int16BitsToHalf(ReverseEndianness(MemoryMarshal.Read<short>(source))) :
                 MemoryMarshal.Read<Half>(source);
+        }
+
+        /// <summary>
+        /// Reads a <see cref="BFloat16" /> from the beginning of a read-only span of bytes, as big endian.
+        /// </summary>
+        /// <param name="source">The read-only span to read.</param>
+        /// <returns>The big endian value.</returns>
+        /// <remarks>Reads exactly 2 bytes from the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="source"/> is too small to contain a <see cref="BFloat16" />.
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BFloat16 ReadBFloat16BigEndian(ReadOnlySpan<byte> source)
+        {
+            return BitConverter.IsLittleEndian ?
+                BitConverter.Int16BitsToBFloat16(ReverseEndianness(MemoryMarshal.Read<short>(source))) :
+                MemoryMarshal.Read<BFloat16>(source);
         }
 
         /// <summary>
@@ -272,6 +290,28 @@ namespace System.Buffers.Binary
             {
                 bool success = MemoryMarshal.TryRead(source, out short tmp);
                 value = BitConverter.Int16BitsToHalf(ReverseEndianness(tmp));
+                return success;
+            }
+
+            return MemoryMarshal.TryRead(source, out value);
+        }
+
+        /// <summary>
+        /// Reads a <see cref="BFloat16" /> from the beginning of a read-only span of bytes, as big endian.
+        /// </summary>
+        /// <param name="source">The read-only span of bytes to read.</param>
+        /// <param name="value">When this method returns, contains the value read out of the read-only span of bytes, as big endian.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="BFloat16" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Reads exactly 2 bytes from the beginning of the span.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryReadBFloat16BigEndian(ReadOnlySpan<byte> source, out BFloat16 value)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                bool success = MemoryMarshal.TryRead(source, out short tmp);
+                value = BitConverter.Int16BitsToBFloat16(ReverseEndianness(tmp));
                 return success;
             }
 

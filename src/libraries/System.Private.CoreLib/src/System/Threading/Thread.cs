@@ -272,6 +272,18 @@ namespace System.Threading
             StartCore();
         }
 
+#if !MONO
+        public bool Join(int millisecondsTimeout)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, Timeout.Infinite);
+            if ((ThreadState & ThreadState.Unstarted) != 0)
+            {
+                throw new ThreadStateException(SR.ThreadState_NotStarted);
+            }
+            return JoinInternal(millisecondsTimeout);
+        }
+#endif
+
         private void RequireCurrentThread()
         {
             if (this != CurrentThread)
@@ -752,7 +764,6 @@ namespace System.Threading
         [ThreadStatic]
         public static bool WarnOnBlockingWaitOnJSInteropThread;
 
-#pragma warning disable CS3001
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe void WarnAboutBlockingWait(char* stack, int length);
 
@@ -771,8 +782,6 @@ namespace System.Threading
                 }
             }
         }
-
-#pragma warning restore CS3001
 
         public static void ForceBlockingWait(Action<object?> action, object? state = null)
         {

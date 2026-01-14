@@ -105,7 +105,7 @@ namespace Mono.Linker.Tests
             return entity switch
             {
                 MethodDesc method => (method.OwningType as MetadataType)?.Module,
-                FieldDesc field => (field.OwningType as MetadataType)?.Module,
+                FieldDesc field => field.OwningType?.Module,
                 MetadataType type => type.Module,
                 PropertyPseudoDesc property => property.OwningType.Module,
                 EventPseudoDesc @event => @event.OwningType.Module,
