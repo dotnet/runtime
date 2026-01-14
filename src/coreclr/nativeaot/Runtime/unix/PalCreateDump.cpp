@@ -191,10 +191,7 @@ BuildCreateDumpCommandLine(
     argv[argc++] = g_ppidarg;
     argv[argc++] = nullptr;
 
-    if (argc >= MAX_ARGV_ENTRIES)
-    {
-        return false;
-    }
+    assert(argc < MAX_ARGV_ENTRIES);
     return true;
 }
 
