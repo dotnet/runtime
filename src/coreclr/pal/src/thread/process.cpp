@@ -2795,7 +2795,7 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
                 argv[argc++] = crashThreadArg;
             }
 
-            if (siginfo != nullptr && argc < MAX_ARGV_ENTRIES)
+            if (siginfo != nullptr)
             {
                 signalCodeArg = PROCFormatInt(siginfo->si_code);
                 if (signalCodeArg != nullptr)
