@@ -243,17 +243,13 @@ public:
     //    its method desc
     //    whether it's an instantiated generic
     //    its EnC version number
-    //    hot and cold region information.
-    void GetNativeCodeInfoForAddr(VMPTR_MethodDesc         vmMethodDesc,
-                                  CORDB_ADDRESS            hotCodeStartAddr,
-                                  NativeCodeFunctionData * pCodeInfo);
-
-    // Gets information about a native code blob at a given code address
-    void LookupMethodFromCodeAddress(CORDB_ADDRESS codeAddress,
-                                     NativeCodeFunctionData* pCodeInfo,
-                                     VMPTR_Module* pModule,
-                                     mdMethodDef* pFuncMetadataToken,
-                                     CORDB_ADDRESS* pStartAddress);
+    //    hot and cold region information
+    //    its module
+    //    its metadata token.
+    void GetNativeCodeInfoForAddr(CORDB_ADDRESS            codeAddress,
+                                  NativeCodeFunctionData * pCodeInfo,
+                                  VMPTR_Module *           pVmModule,
+                                  mdToken *                pFunctionToken);
 
 private:
     // Get start addresses and sizes for hot and cold regions for a native code blob

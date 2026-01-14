@@ -907,19 +907,17 @@ HRESULT CordbAsyncStackWalk::PopulateFrame()
     NativeCodeFunctionData codeData;
     VMPTR_Module pModule;
     mdMethodDef methodDef;
-    CORDB_ADDRESS startAddress;
-    pDac->LookupMethodFromCodeAddress(
+    pDac->GetNativeCodeInfoForAddr(
         diagnosticIP,
         &codeData,
         &pModule,
-        &methodDef,
-        &startAddress);
+        &methodDef);
     CordbAsyncFrame * frame = new CordbAsyncFrame(
         GetProcess(),
         pModule,
         methodDef,
         codeData.vmNativeCodeMethodDescToken,
-        startAddress,
+        codeData.m_rgCodeRegions[kHot].pAddress,
         diagnosticIP,
         m_continuationAddress,
         state);

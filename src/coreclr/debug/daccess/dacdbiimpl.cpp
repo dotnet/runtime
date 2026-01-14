@@ -1206,12 +1206,17 @@ void DacDbiInterfaceImpl::GetNativeCodeInfo(VMPTR_DomainAssembly         vmDomai
     }
 } // GetNativeCodeInfo
 
-void DacDbiInterfaceImpl::LookupMethodFromCodeAddress(
-    CORDB_ADDRESS     codeAddress,
-    NativeCodeFunctionData * pCodeInfo,
-    VMPTR_Module* pModule,
-    mdMethodDef* pFuncMetadataToken,
-    CORDB_ADDRESS* pStartAddress)
+// Gets the following information about a native code blob:
+//    - its method desc
+//    - whether it's an instantiated generic
+//    - its EnC version number
+//    - hot and cold region information
+//    - its module
+//    - its metadata token.
+void DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(CORDB_ADDRESS            codeAddress,
+                                                   NativeCodeFunctionData * pCodeInfo,
+                                                   VMPTR_Module *           pVmModule,
+                                                   mdToken *                pFunctionToken)
 {
     DD_ENTER_MAY_THROW;
 
@@ -1246,6 +1251,11 @@ void DacDbiInterfaceImpl::LookupMethodFromCodeAddress(
     }
     EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY;
 
+    // Even if GetMethodRegionInfo() fails to retrieve the cold code region info,
+    // we should still be able to get the hot code region info.  We are counting on this for
+    // stackwalking to work in dump debugging scenarios.
+    _ASSERTE(methodRegionInfo.hotStartAddress == codeStartAddr);
+
     // now get the rest of the region information
     pCodeInfo->m_rgCodeRegions[kHot].Init(PCODEToPINSTR(methodRegionInfo.hotStartAddress),
                                           (ULONG)methodRegionInfo.hotSize);
@@ -1260,86 +1270,24 @@ void DacDbiInterfaceImpl::LookupMethodFromCodeAddress(
     pCodeInfo->vmNativeCodeMethodDescToken = vmMethodDesc;
 
     SIZE_T unusedLatestEncVersion;
-    Module * modulePointer = pMethodDesc->GetModule();
-    _ASSERTE(modulePointer != NULL);
-    LookupEnCVersions(modulePointer,
+    Module * pModule = pMethodDesc->GetModule();
+    _ASSERTE(pModule != NULL);
+    LookupEnCVersions(pModule,
                       vmMethodDesc,
                       pMethodDesc->GetMemberDef(),
                       codeStartAddr,
                       &unusedLatestEncVersion, //unused by caller
                       &(pCodeInfo->encVersion));
 
-    pModule->SetDacTargetPtr(dac_cast<TADDR>(modulePointer));
-    *pFuncMetadataToken = pMethodDesc->GetMemberDef();
-    *pStartAddress = codeStartAddr;
-}
-
-// Gets the following information about a native code blob:
-//    - its method desc
-//    - whether it's an instantiated generic
-//    - its EnC version number
-//    - hot and cold region information.
-void DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(VMPTR_MethodDesc         vmMethodDesc,
-                                                   CORDB_ADDRESS            hotCodeStartAddr,
-                                                   NativeCodeFunctionData * pCodeInfo)
-{
-    DD_ENTER_MAY_THROW;
-
-    _ASSERTE(pCodeInfo != NULL);
-
-    if (hotCodeStartAddr == (CORDB_ADDRESS)NULL)
+    if (pVmModule != NULL)
     {
-        // if the start address is NULL, the code isn't available yet, so just return
-        _ASSERTE(!pCodeInfo->IsValid());
-        return;
+        pVmModule->SetDacTargetPtr(dac_cast<TADDR>(pModule));
     }
 
-    IJitManager::MethodRegionInfo methodRegionInfo = {(TADDR)NULL, 0, (TADDR)NULL, 0};
-    TADDR codeAddr = CORDB_ADDRESS_TO_TADDR(hotCodeStartAddr);
-
-#ifdef TARGET_ARM
-    // TADDR should not have the thumb code bit set.
-    _ASSERTE((codeAddr & THUMB_CODE) == 0);
-    codeAddr &= ~THUMB_CODE;
-#endif
-
-    EECodeInfo codeInfo(codeAddr);
-    _ASSERTE(codeInfo.IsValid());
-
-    // We may not have the memory for the cold code region in a minidump.
-    // Do not fail stackwalking because of this.
-    EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
+    if (pFunctionToken != NULL)
     {
-        codeInfo.GetMethodRegionInfo(&methodRegionInfo);
+        *pFunctionToken = pMethodDesc->GetMemberDef();
     }
-    EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY;
-
-    // Even if GetMethodRegionInfo() fails to retrieve the cold code region info,
-    // we should still be able to get the hot code region info.  We are counting on this for
-    // stackwalking to work in dump debugging scenarios.
-    _ASSERTE(methodRegionInfo.hotStartAddress == codeAddr);
-
-    // now get the rest of the region information
-    pCodeInfo->m_rgCodeRegions[kHot].Init(PCODEToPINSTR(methodRegionInfo.hotStartAddress),
-                                          (ULONG)methodRegionInfo.hotSize);
-    pCodeInfo->m_rgCodeRegions[kCold].Init(PCODEToPINSTR(methodRegionInfo.coldStartAddress),
-                                               (ULONG)methodRegionInfo.coldSize);
-    _ASSERTE(pCodeInfo->IsValid());
-
-    MethodDesc* pMethodDesc = vmMethodDesc.GetDacPtr();
-    pCodeInfo->isInstantiatedGeneric = pMethodDesc->HasClassOrMethodInstantiation();
-    pCodeInfo->vmNativeCodeMethodDescToken = vmMethodDesc;
-
-    SIZE_T unusedLatestEncVersion;
-    Module * pModule = pMethodDesc->GetModule();
-    _ASSERTE(pModule != NULL);
-    LookupEnCVersions(pModule,
-                      vmMethodDesc,
-                      pMethodDesc->GetMemberDef(),
-                      codeAddr,
-                      &unusedLatestEncVersion, //unused by caller
-                      &(pCodeInfo->encVersion));
-
 } // GetNativeCodeInfo
 
 

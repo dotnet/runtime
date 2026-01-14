@@ -1715,36 +1715,18 @@ public:
     //    the most recent one
     // Arguments:
     //    Input:
-    //        hotCodeStartAddr  - the beginning of the code hot code region
+    //        codeAddress  - the beginning of the code hot code region
     //    Output (required):
     //        pCodeInfo     - data structure describing the native code regions.
+    //    Output (optional):
+    //        pVmModule     - module containing metadata for the method
+    //        pFunctionToken - metadata token for the function
 
     virtual
-    void GetNativeCodeInfoForAddr(VMPTR_MethodDesc    vmMethodDesc,
-                                  CORDB_ADDRESS hotCodeStartAddr,
-                                  NativeCodeFunctionData * pCodeInfo) = 0;
-
-    //
-    // Gets information about a native code blob at a given code address.
-    // This function looks up which method contains the specified code address and returns
-    // information about that method including its metadata and start address.
-    //
-    // Arguments:
-    //    Input:
-    //        codeAddress - the native code address to look up
-    //    Output (required):
-    //        pCodeInfo - data structure describing the native code regions for the method
-    //                    containing the specified address
-    //        pModule - the module containing the method
-    //        pFuncMetadataToken - the metadata token for the method
-    //        pStartAddress - the actual start address of the method containing the code address
-
-    virtual
-    void LookupMethodFromCodeAddress(CORDB_ADDRESS codeAddress,
-                                     NativeCodeFunctionData* pCodeInfo,
-                                     VMPTR_Module* pModule,
-                                     mdMethodDef* pFuncMetadataToken,
-                                     CORDB_ADDRESS* pStartAddress) = 0;
+    void GetNativeCodeInfoForAddr(CORDB_ADDRESS codeAddress,
+                                  NativeCodeFunctionData * pCodeInfo,
+                                  VMPTR_Module *           pVmModule,
+                                  mdToken * pFunctionToken) = 0;
 
     //-----------------------------------------------------------------------------
     // Functions to get information about types
