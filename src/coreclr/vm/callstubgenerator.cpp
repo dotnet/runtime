@@ -3090,8 +3090,9 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
                 // POD structs smaller than 64 bits are returned in rax
                 return ReturnTypeI8;
 #else // TARGET_WINDOWS
-                if (thReturnValueType.AsMethodTable()->IsRegPassedStruct())
+                if (!pArgIt->HasRetBuffArg())
                 {
+                    _ASSERTE(thReturnValueType.IsNativeValueType() ||  thReturnValueType.AsMethodTable()->IsRegPassedStruct());
                     UINT fpReturnSize = pArgIt->GetFPReturnSize();
                     if (fpReturnSize == 0)
                     {
