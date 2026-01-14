@@ -7,10 +7,9 @@
 //TYPES IN FORWARDER ASSEMBLIES:
 
 //TEST ASSEMBLY:
-.assembly Generated32 { .hash algorithm 0x00008004 }
 .assembly extern xunit.core {}
 
-.class public BaseClass0 
+.class public Generated32.BaseClass0 
 {
 	.method public hidebysig specialname rtspecialname instance void .ctor() cil managed { 
 		ldarg.0
@@ -18,18 +17,18 @@
 		ret
 	}
 }
-.class public BaseClass1 
-		extends BaseClass0
+.class public Generated32.BaseClass1 
+		extends Generated32.BaseClass0
 {
 	.method public hidebysig specialname rtspecialname instance void .ctor() cil managed { 
 		ldarg.0
-		call instance void BaseClass0::.ctor()
+		call instance void Generated32.BaseClass0::.ctor()
 		ret
 	}
 }
-.class public sequential sealed MyStruct82`1<T0> 
+.class public sequential sealed Generated32.MyStruct82`1<T0> 
 		extends [mscorlib]System.ValueType
-		implements class IBase1`1<class BaseClass1>, class IBase1`1<!T0> 
+		implements class Generated32.IBase1`1<class Generated32.BaseClass1>, class Generated32.IBase1`1<!T0> 
 {
 	.pack 0
 	.size 1
@@ -37,8 +36,8 @@
 		ldstr "MyStruct82::Method4.676()"
 		ret
 	}
-	.method public hidebysig newslot virtual instance string 'IBase1<class BaseClass1>.Method4'() cil managed noinlining { 
-		.override method instance string class IBase1`1<class BaseClass1>::Method4()
+	.method public hidebysig newslot virtual instance string 'IBase1<class Generated32.BaseClass1>.Method4'() cil managed noinlining { 
+		.override method instance string class Generated32.IBase1`1<class Generated32.BaseClass1>::Method4()
 		ldstr "MyStruct82::Method4.MI.677()"
 		ret
 	}
@@ -55,8 +54,8 @@
 		call string [mscorlib]System.String::Concat(object,object)
 		ret
 	}
-	.method public hidebysig newslot virtual instance string 'IBase1<class BaseClass1>.Method6'<M0>() cil managed noinlining { 
-		.override method instance string class IBase1`1<class BaseClass1>::Method6<[1]>()
+	.method public hidebysig newslot virtual instance string 'IBase1<class Generated32.BaseClass1>.Method6'<M0>() cil managed noinlining { 
+		.override method instance string class Generated32.IBase1`1<class Generated32.BaseClass1>::Method6<[1]>()
 		ldstr "MyStruct82::Method6.MI.680<"
 		ldtoken !!M0
 		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
@@ -66,17 +65,17 @@
 		ret
 	}
 	.method public hidebysig newslot virtual instance string 'IBase1<T0>.Method4'() cil managed noinlining { 
-		.override method instance string class IBase1`1<!T0>::Method4()
+		.override method instance string class Generated32.IBase1`1<!T0>::Method4()
 		ldstr "MyStruct82::Method4.MI.682()"
 		ret
 	}
 	.method public hidebysig newslot virtual instance string 'IBase1<T0>.Method5'() cil managed noinlining { 
-		.override method instance string class IBase1`1<!T0>::Method5()
+		.override method instance string class Generated32.IBase1`1<!T0>::Method5()
 		ldstr "MyStruct82::Method5.MI.684()"
 		ret
 	}
 	.method public hidebysig newslot virtual instance string 'IBase1<T0>.Method6'<M0>() cil managed noinlining { 
-		.override method instance string class IBase1`1<!T0>::Method6<[1]>()
+		.override method instance string class Generated32.IBase1`1<!T0>::Method6<[1]>()
 		ldstr "MyStruct82::Method6.MI.686<"
 		ldtoken !!M0
 		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
@@ -97,225 +96,225 @@
 	.method public hidebysig virtual instance int32 GetHashCode() cil managed { ldc.i4.0 ret }
 	.method public hidebysig virtual instance string ToString() cil managed { ldstr "" ret }
 }
-.class interface public abstract IBase1`1<+T0> 
+.class interface public abstract Generated32.IBase1`1<+T0> 
 {
 	.method public hidebysig newslot abstract virtual instance string Method4() cil managed { }
 	.method public hidebysig newslot abstract virtual instance string Method5() cil managed { }
 	.method public hidebysig newslot abstract virtual instance string Method6<M0>() cil managed { }
 }
-.class public auto ansi beforefieldinit Generated32 {
-	.method static void M.BaseClass0<(BaseClass0)W>(!!W inst, string exp) cil managed {
+.class public auto ansi beforefieldinit Generated32.Generated32 {
+	.method static void M.BaseClass0<(Generated32.BaseClass0)W>(!!W inst, string exp) cil managed {
 		.maxstack 5
 		.locals init (string[] actualResults)
 		ldc.i4.s    0
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.BaseClass0<(BaseClass0)W>(!!W inst, string exp)"
+		ldstr "M.BaseClass0<(Generated32.BaseClass0)W>(!!W inst, string exp)"
 		ldc.i4.s 0
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.BaseClass1<(BaseClass1)W>(!!W inst, string exp) cil managed {
+	.method static void M.BaseClass1<(Generated32.BaseClass1)W>(!!W inst, string exp) cil managed {
 		.maxstack 5
 		.locals init (string[] actualResults)
 		ldc.i4.s    0
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.BaseClass1<(BaseClass1)W>(!!W inst, string exp)"
+		ldstr "M.BaseClass1<(Generated32.BaseClass1)W>(!!W inst, string exp)"
 		ldc.i4.s 0
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.IBase1.T<T0,(class IBase1`1<!!T0>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.IBase1.T<T0,(class Generated32.IBase1`1<!!T0>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 8
 		.locals init (string[] actualResults)
 		ldc.i4.s    3
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.IBase1.T<T0,(class IBase1`1<!!T0>)W>(!!W 'inst', string exp)"
+		ldstr "M.IBase1.T<T0,(class Generated32.IBase1`1<!!T0>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 3
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase1`1<!!T0>::Method4()
+		callvirt     instance string class Generated32.IBase1`1<!!T0>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase1`1<!!T0>::Method5()
+		callvirt     instance string class Generated32.IBase1`1<!!T0>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase1`1<!!T0>::Method6<object>()
+		callvirt     instance string class Generated32.IBase1`1<!!T0>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.IBase1.A<(class IBase1`1<class BaseClass0>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.IBase1.A<(class Generated32.IBase1`1<class Generated32.BaseClass0>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 8
 		.locals init (string[] actualResults)
 		ldc.i4.s    3
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.IBase1.A<(class IBase1`1<class BaseClass0>)W>(!!W 'inst', string exp)"
+		ldstr "M.IBase1.A<(class Generated32.IBase1`1<class Generated32.BaseClass0>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 3
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase1`1<class BaseClass0>::Method4()
+		callvirt     instance string class Generated32.IBase1`1<class Generated32.BaseClass0>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase1`1<class BaseClass0>::Method5()
+		callvirt     instance string class Generated32.IBase1`1<class Generated32.BaseClass0>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase1`1<class BaseClass0>::Method6<object>()
+		callvirt     instance string class Generated32.IBase1`1<class Generated32.BaseClass0>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.IBase1.B<(class IBase1`1<class BaseClass1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.IBase1.B<(class Generated32.IBase1`1<class Generated32.BaseClass1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 8
 		.locals init (string[] actualResults)
 		ldc.i4.s    3
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.IBase1.B<(class IBase1`1<class BaseClass1>)W>(!!W 'inst', string exp)"
+		ldstr "M.IBase1.B<(class Generated32.IBase1`1<class Generated32.BaseClass1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 3
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase1`1<class BaseClass1>::Method4()
+		callvirt     instance string class Generated32.IBase1`1<class Generated32.BaseClass1>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase1`1<class BaseClass1>::Method5()
+		callvirt     instance string class Generated32.IBase1`1<class Generated32.BaseClass1>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase1`1<class BaseClass1>::Method6<object>()
+		callvirt     instance string class Generated32.IBase1`1<class Generated32.BaseClass1>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.MyStruct82.T<T0,(valuetype MyStruct82`1<!!T0>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.MyStruct82.T<T0,(valuetype Generated32.MyStruct82`1<!!T0>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 11
 		.locals init (string[] actualResults)
 		ldc.i4.s    6
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.MyStruct82.T<T0,(valuetype MyStruct82`1<!!T0>)W>(!!W 'inst', string exp)"
+		ldstr "M.MyStruct82.T<T0,(valuetype Generated32.MyStruct82`1<!!T0>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 6
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
-		constrained. valuetype MyStruct82`1<!!T0>
-		callvirt     instance string class IBase1`1<class BaseClass1>::Method4()
+		constrained. valuetype Generated32.MyStruct82`1<!!T0>
+		callvirt     instance string class Generated32.IBase1`1<class Generated32.BaseClass1>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
-		constrained. valuetype MyStruct82`1<!!T0>
-		callvirt     instance string class IBase1`1<class BaseClass1>::Method5()
+		constrained. valuetype Generated32.MyStruct82`1<!!T0>
+		callvirt     instance string class Generated32.IBase1`1<class Generated32.BaseClass1>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
-		constrained. valuetype MyStruct82`1<!!T0>
-		callvirt     instance string class IBase1`1<class BaseClass1>::Method6<object>()
+		constrained. valuetype Generated32.MyStruct82`1<!!T0>
+		callvirt     instance string class Generated32.IBase1`1<class Generated32.BaseClass1>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     3
 		ldarga.s     0
-		constrained. valuetype MyStruct82`1<!!T0>
-		callvirt     instance string class IBase1`1<!!T0>::Method4()
+		constrained. valuetype Generated32.MyStruct82`1<!!T0>
+		callvirt     instance string class Generated32.IBase1`1<!!T0>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     4
 		ldarga.s     0
-		constrained. valuetype MyStruct82`1<!!T0>
-		callvirt     instance string class IBase1`1<!!T0>::Method5()
+		constrained. valuetype Generated32.MyStruct82`1<!!T0>
+		callvirt     instance string class Generated32.IBase1`1<!!T0>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     5
 		ldarga.s     0
-		constrained. valuetype MyStruct82`1<!!T0>
-		callvirt     instance string class IBase1`1<!!T0>::Method6<object>()
+		constrained. valuetype Generated32.MyStruct82`1<!!T0>
+		callvirt     instance string class Generated32.IBase1`1<!!T0>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.MyStruct82.A<(valuetype MyStruct82`1<class BaseClass0>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.MyStruct82.A<(valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 11
 		.locals init (string[] actualResults)
 		ldc.i4.s    6
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.MyStruct82.A<(valuetype MyStruct82`1<class BaseClass0>)W>(!!W 'inst', string exp)"
+		ldstr "M.MyStruct82.A<(valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 6
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
-		constrained. valuetype MyStruct82`1<class BaseClass0>
-		callvirt     instance string class IBase1`1<class BaseClass1>::Method4()
+		constrained. valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		callvirt     instance string class Generated32.IBase1`1<class Generated32.BaseClass1>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
-		constrained. valuetype MyStruct82`1<class BaseClass0>
-		callvirt     instance string class IBase1`1<class BaseClass1>::Method5()
+		constrained. valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		callvirt     instance string class Generated32.IBase1`1<class Generated32.BaseClass1>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
-		constrained. valuetype MyStruct82`1<class BaseClass0>
-		callvirt     instance string class IBase1`1<class BaseClass1>::Method6<object>()
+		constrained. valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		callvirt     instance string class Generated32.IBase1`1<class Generated32.BaseClass1>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     3
 		ldarga.s     0
-		constrained. valuetype MyStruct82`1<class BaseClass0>
-		callvirt     instance string class IBase1`1<class BaseClass0>::Method4()
+		constrained. valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		callvirt     instance string class Generated32.IBase1`1<class Generated32.BaseClass0>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     4
 		ldarga.s     0
-		constrained. valuetype MyStruct82`1<class BaseClass0>
-		callvirt     instance string class IBase1`1<class BaseClass0>::Method5()
+		constrained. valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		callvirt     instance string class Generated32.IBase1`1<class Generated32.BaseClass0>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     5
 		ldarga.s     0
-		constrained. valuetype MyStruct82`1<class BaseClass0>
-		callvirt     instance string class IBase1`1<class BaseClass0>::Method6<object>()
+		constrained. valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		callvirt     instance string class Generated32.IBase1`1<class Generated32.BaseClass0>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
@@ -327,73 +326,73 @@
 		.locals init (object V_0)
 		ldstr "========================== Method Calling Test =========================="
 		call void [mscorlib]System.Console::WriteLine(string)
-		.locals init (valuetype MyStruct82`1<class BaseClass0> V_1)
+		.locals init (valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0> V_1)
 		ldloca V_1
-		initobj valuetype MyStruct82`1<class BaseClass0>
+		initobj valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
 		ldloca V_1
 		dup
-		call instance string valuetype MyStruct82`1<class BaseClass0>::Method4()
+		call instance string valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>::Method4()
 		ldstr "MyStruct82::Method4.676()"
-		ldstr "valuetype MyStruct82`1<class BaseClass0> on type MyStruct82"
+		ldstr "valuetype MyStruct82`1<class Generated32.BaseClass0> on type MyStruct82"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		call instance string valuetype MyStruct82`1<class BaseClass0>::Method5()
+		call instance string valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>::Method5()
 		ldstr "MyStruct82::Method5.678()"
-		ldstr "valuetype MyStruct82`1<class BaseClass0> on type MyStruct82"
+		ldstr "valuetype MyStruct82`1<class Generated32.BaseClass0> on type MyStruct82"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		call instance string valuetype MyStruct82`1<class BaseClass0>::Method6<object>()
+		call instance string valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>::Method6<object>()
 		ldstr "MyStruct82::Method6.679<System.Object>()"
-		ldstr "valuetype MyStruct82`1<class BaseClass0> on type MyStruct82"
+		ldstr "valuetype MyStruct82`1<class Generated32.BaseClass0> on type MyStruct82"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		call instance string valuetype MyStruct82`1<class BaseClass0>::ClassMethod162()
+		call instance string valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>::ClassMethod162()
 		ldstr "MyStruct82::ClassMethod162.687()"
-		ldstr "valuetype MyStruct82`1<class BaseClass0> on type MyStruct82"
+		ldstr "valuetype MyStruct82`1<class Generated32.BaseClass0> on type MyStruct82"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		call instance string valuetype MyStruct82`1<class BaseClass0>::ClassMethod163()
+		call instance string valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>::ClassMethod163()
 		ldstr "MyStruct82::ClassMethod163.688()"
-		ldstr "valuetype MyStruct82`1<class BaseClass0> on type MyStruct82"
+		ldstr "valuetype MyStruct82`1<class Generated32.BaseClass0> on type MyStruct82"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
-		dup ldnull call instance bool valuetype MyStruct82`1<class BaseClass0>::Equals(object) pop
-		dup call instance int32 valuetype MyStruct82`1<class BaseClass0>::GetHashCode() pop
-		dup call instance string valuetype MyStruct82`1<class BaseClass0>::ToString() pop
+		dup ldnull call instance bool valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>::Equals(object) pop
+		dup call instance int32 valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>::GetHashCode() pop
+		dup call instance string valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>::ToString() pop
 		pop
 		ldloc V_1
-		box valuetype MyStruct82`1<class BaseClass0>
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
 		dup
-		callvirt instance string class IBase1`1<class BaseClass1>::Method4()
+		callvirt instance string class Generated32.IBase1`1<class Generated32.BaseClass1>::Method4()
 		ldstr "MyStruct82::Method4.MI.677()"
-		ldstr "class IBase1`1<class BaseClass1> on type valuetype MyStruct82`1<class BaseClass0>"
+		ldstr "class IBase1`1<class Generated32.BaseClass1> on type valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string class IBase1`1<class BaseClass1>::Method5()
+		callvirt instance string class Generated32.IBase1`1<class Generated32.BaseClass1>::Method5()
 		ldstr "MyStruct82::Method5.678()"
-		ldstr "class IBase1`1<class BaseClass1> on type valuetype MyStruct82`1<class BaseClass0>"
+		ldstr "class IBase1`1<class Generated32.BaseClass1> on type valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string class IBase1`1<class BaseClass1>::Method6<object>()
+		callvirt instance string class Generated32.IBase1`1<class Generated32.BaseClass1>::Method6<object>()
 		ldstr "MyStruct82::Method6.MI.680<System.Object>()"
-		ldstr "class IBase1`1<class BaseClass1> on type valuetype MyStruct82`1<class BaseClass0>"
+		ldstr "class IBase1`1<class Generated32.BaseClass1> on type valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc V_1
-		box valuetype MyStruct82`1<class BaseClass0>
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
 		dup
-		callvirt instance string class IBase1`1<class BaseClass0>::Method4()
+		callvirt instance string class Generated32.IBase1`1<class Generated32.BaseClass0>::Method4()
 		ldstr "MyStruct82::Method4.MI.682()"
-		ldstr "class IBase1`1<class BaseClass0> on type valuetype MyStruct82`1<class BaseClass0>"
+		ldstr "class IBase1`1<class Generated32.BaseClass0> on type valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string class IBase1`1<class BaseClass0>::Method5()
+		callvirt instance string class Generated32.IBase1`1<class Generated32.BaseClass0>::Method5()
 		ldstr "MyStruct82::Method5.MI.684()"
-		ldstr "class IBase1`1<class BaseClass0> on type valuetype MyStruct82`1<class BaseClass0>"
+		ldstr "class IBase1`1<class Generated32.BaseClass0> on type valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string class IBase1`1<class BaseClass0>::Method6<object>()
+		callvirt instance string class Generated32.IBase1`1<class Generated32.BaseClass0>::Method6<object>()
 		ldstr "MyStruct82::Method6.MI.686<System.Object>()"
-		ldstr "class IBase1`1<class BaseClass0> on type valuetype MyStruct82`1<class BaseClass0>"
+		ldstr "class IBase1`1<class Generated32.BaseClass0> on type valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldstr "========================================================================\n\n"
@@ -406,24 +405,24 @@
 		.locals init (object V_0)
 		ldstr "========================== Constrained Calls Test =========================="
 		call void [mscorlib]System.Console::WriteLine(string)
-		.locals init (valuetype MyStruct82`1<class BaseClass0> V_3)
+		.locals init (valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0> V_3)
 		ldloca V_3
-		initobj valuetype MyStruct82`1<class BaseClass0>
+		initobj valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
 		.try {  ldloc V_3
 				ldstr "MyStruct82::Method4.MI.677()#MyStruct82::Method5.678()#MyStruct82::Method6.MI.680<System.Object>()#"
-				call void Generated32::M.IBase1.T<class BaseClass1,valuetype MyStruct82`1<class BaseClass0>>(!!1,string) leave.s LV0
+				call void Generated32.Generated32::M.IBase1.T<class Generated32.BaseClass1,valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>>(!!1,string) leave.s LV0
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV0} LV0:
 		.try {  ldloc V_3
 				ldstr "MyStruct82::Method4.MI.677()#MyStruct82::Method5.678()#MyStruct82::Method6.MI.680<System.Object>()#"
-				call void Generated32::M.IBase1.B<valuetype MyStruct82`1<class BaseClass0>>(!!0,string) leave.s LV1
+				call void Generated32.Generated32::M.IBase1.B<valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>>(!!0,string) leave.s LV1
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV1} LV1:
 		.try {  ldloc V_3
 				ldstr "MyStruct82::Method4.MI.682()#MyStruct82::Method5.MI.684()#MyStruct82::Method6.MI.686<System.Object>()#"
-				call void Generated32::M.IBase1.T<class BaseClass0,valuetype MyStruct82`1<class BaseClass0>>(!!1,string) leave.s LV2
+				call void Generated32.Generated32::M.IBase1.T<class Generated32.BaseClass0,valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>>(!!1,string) leave.s LV2
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV2} LV2:
 		.try {  ldloc V_3
 				ldstr "MyStruct82::Method4.MI.682()#MyStruct82::Method5.MI.684()#MyStruct82::Method6.MI.686<System.Object>()#"
-				call void Generated32::M.IBase1.A<valuetype MyStruct82`1<class BaseClass0>>(!!0,string) leave.s LV3
+				call void Generated32.Generated32::M.IBase1.A<valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>>(!!0,string) leave.s LV3
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV3} LV3:
 		ldstr "========================================================================\n\n"
 		call void [mscorlib]System.Console::WriteLine(string)
@@ -434,9 +433,9 @@
 		.maxstack  10
 		ldstr "===================== Struct Constrained Interface Calls Test ====================="
 		call void [mscorlib]System.Console::WriteLine(string)
-		.locals init (valuetype MyStruct82`1<class BaseClass0> V_5)
+		.locals init (valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0> V_5)
 		ldloca V_5
-		initobj valuetype MyStruct82`1<class BaseClass0>
+		initobj valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
 		.try {  ldloc V_5
 				ldstr "MyStruct82::Method4.MI.677()#" +
 				      "MyStruct82::Method5.678()#" +
@@ -444,7 +443,7 @@
 				      "MyStruct82::Method4.MI.682()#" +
 				      "MyStruct82::Method5.MI.684()#" +
 				      "MyStruct82::Method6.MI.686<System.Object>()#"
-				call void Generated32::M.MyStruct82.T<class BaseClass0,valuetype MyStruct82`1<class BaseClass0>>(!!1,string) leave.s LV0
+				call void Generated32.Generated32::M.MyStruct82.T<class Generated32.BaseClass0,valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>>(!!1,string) leave.s LV0
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV0} LV0:
 		.try {  ldloc V_5
 				ldstr "MyStruct82::Method4.MI.677()#" +
@@ -453,7 +452,7 @@
 				      "MyStruct82::Method4.MI.682()#" +
 				      "MyStruct82::Method5.MI.684()#" +
 				      "MyStruct82::Method6.MI.686<System.Object>()#"
-				call void Generated32::M.MyStruct82.A<valuetype MyStruct82`1<class BaseClass0>>(!!0,string) leave.s LV1
+				call void Generated32.Generated32::M.MyStruct82.A<valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>>(!!0,string) leave.s LV1
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV1} LV1:
 		ldstr "========================================================================\n\n"
 		call void [mscorlib]System.Console::WriteLine(string)
@@ -465,116 +464,116 @@
 		.locals init (object V_0)
 		ldstr "========================== Method Calli Test =========================="
 		call void [mscorlib]System.Console::WriteLine(string)
-		.locals init (valuetype MyStruct82`1<class BaseClass0> V_7)
+		.locals init (valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0> V_7)
 		ldloca V_7
-		initobj valuetype MyStruct82`1<class BaseClass0>
+		initobj valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
-		ldvirtftn instance string valuetype MyStruct82`1<class BaseClass0>::Method4()
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		ldvirtftn instance string valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>::Method4()
 		calli default string(object)
 		ldstr "MyStruct82::Method4.676()"
-		ldstr "valuetype MyStruct82`1<class BaseClass0> on type valuetype MyStruct82`1<class BaseClass0>"
+		ldstr "valuetype MyStruct82`1<class Generated32.BaseClass0> on type valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
-		ldvirtftn instance string valuetype MyStruct82`1<class BaseClass0>::Method5()
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		ldvirtftn instance string valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>::Method5()
 		calli default string(object)
 		ldstr "MyStruct82::Method5.678()"
-		ldstr "valuetype MyStruct82`1<class BaseClass0> on type valuetype MyStruct82`1<class BaseClass0>"
+		ldstr "valuetype MyStruct82`1<class Generated32.BaseClass0> on type valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
-		ldvirtftn instance string valuetype MyStruct82`1<class BaseClass0>::Method6<object>()
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		ldvirtftn instance string valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>::Method6<object>()
 		calli default string(object)
 		ldstr "MyStruct82::Method6.679<System.Object>()"
-		ldstr "valuetype MyStruct82`1<class BaseClass0> on type valuetype MyStruct82`1<class BaseClass0>"
+		ldstr "valuetype MyStruct82`1<class Generated32.BaseClass0> on type valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
-		ldvirtftn instance string valuetype MyStruct82`1<class BaseClass0>::ClassMethod162()
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		ldvirtftn instance string valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>::ClassMethod162()
 		calli default string(object)
 		ldstr "MyStruct82::ClassMethod162.687()"
-		ldstr "valuetype MyStruct82`1<class BaseClass0> on type valuetype MyStruct82`1<class BaseClass0>"
+		ldstr "valuetype MyStruct82`1<class Generated32.BaseClass0> on type valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
-		ldvirtftn instance string valuetype MyStruct82`1<class BaseClass0>::ClassMethod163()
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		ldvirtftn instance string valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>::ClassMethod163()
 		calli default string(object)
 		ldstr "MyStruct82::ClassMethod163.688()"
-		ldstr "valuetype MyStruct82`1<class BaseClass0> on type valuetype MyStruct82`1<class BaseClass0>"
+		ldstr "valuetype MyStruct82`1<class Generated32.BaseClass0> on type valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
-		ldloc V_7 box valuetype MyStruct82`1<class BaseClass0> ldnull 
-		ldloc V_7 box valuetype MyStruct82`1<class BaseClass0>
-		ldvirtftn instance bool valuetype MyStruct82`1<class BaseClass0>::Equals(object) calli default bool(object,object) pop
-		ldloc V_7 box valuetype MyStruct82`1<class BaseClass0>
-		ldloc V_7 box valuetype MyStruct82`1<class BaseClass0>
-		ldvirtftn instance int32 valuetype MyStruct82`1<class BaseClass0>::GetHashCode() calli default int32(object) pop
-		ldloc V_7 box valuetype MyStruct82`1<class BaseClass0>
-		ldloc V_7 box valuetype MyStruct82`1<class BaseClass0>
-		ldvirtftn instance string valuetype MyStruct82`1<class BaseClass0>::ToString() calli default string(object) pop
+		ldloc V_7 box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0> ldnull 
+		ldloc V_7 box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		ldvirtftn instance bool valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>::Equals(object) calli default bool(object,object) pop
+		ldloc V_7 box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		ldloc V_7 box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		ldvirtftn instance int32 valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>::GetHashCode() calli default int32(object) pop
+		ldloc V_7 box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		ldloc V_7 box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		ldvirtftn instance string valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>::ToString() calli default string(object) pop
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
-		ldvirtftn instance string class IBase1`1<class BaseClass1>::Method4()
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		ldvirtftn instance string class Generated32.IBase1`1<class Generated32.BaseClass1>::Method4()
 		calli default string(object)
 		ldstr "MyStruct82::Method4.MI.677()"
-		ldstr "class IBase1`1<class BaseClass1> on type valuetype MyStruct82`1<class BaseClass0>"
+		ldstr "class IBase1`1<class Generated32.BaseClass1> on type valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
-		ldvirtftn instance string class IBase1`1<class BaseClass1>::Method5()
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		ldvirtftn instance string class Generated32.IBase1`1<class Generated32.BaseClass1>::Method5()
 		calli default string(object)
 		ldstr "MyStruct82::Method5.678()"
-		ldstr "class IBase1`1<class BaseClass1> on type valuetype MyStruct82`1<class BaseClass0>"
+		ldstr "class IBase1`1<class Generated32.BaseClass1> on type valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
-		ldvirtftn instance string class IBase1`1<class BaseClass1>::Method6<object>()
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		ldvirtftn instance string class Generated32.IBase1`1<class Generated32.BaseClass1>::Method6<object>()
 		calli default string(object)
 		ldstr "MyStruct82::Method6.MI.680<System.Object>()"
-		ldstr "class IBase1`1<class BaseClass1> on type valuetype MyStruct82`1<class BaseClass0>"
+		ldstr "class IBase1`1<class Generated32.BaseClass1> on type valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
-		ldvirtftn instance string class IBase1`1<class BaseClass0>::Method4()
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		ldvirtftn instance string class Generated32.IBase1`1<class Generated32.BaseClass0>::Method4()
 		calli default string(object)
 		ldstr "MyStruct82::Method4.MI.682()"
-		ldstr "class IBase1`1<class BaseClass0> on type valuetype MyStruct82`1<class BaseClass0>"
+		ldstr "class IBase1`1<class Generated32.BaseClass0> on type valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
-		ldvirtftn instance string class IBase1`1<class BaseClass0>::Method5()
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		ldvirtftn instance string class Generated32.IBase1`1<class Generated32.BaseClass0>::Method5()
 		calli default string(object)
 		ldstr "MyStruct82::Method5.MI.684()"
-		ldstr "class IBase1`1<class BaseClass0> on type valuetype MyStruct82`1<class BaseClass0>"
+		ldstr "class IBase1`1<class Generated32.BaseClass0> on type valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
 		ldloc V_7
-		box valuetype MyStruct82`1<class BaseClass0>
-		ldvirtftn instance string class IBase1`1<class BaseClass0>::Method6<object>()
+		box valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>
+		ldvirtftn instance string class Generated32.IBase1`1<class Generated32.BaseClass0>::Method6<object>()
 		calli default string(object)
 		ldstr "MyStruct82::Method6.MI.686<System.Object>()"
-		ldstr "class IBase1`1<class BaseClass0> on type valuetype MyStruct82`1<class BaseClass0>"
+		ldstr "class IBase1`1<class Generated32.BaseClass0> on type valuetype Generated32.MyStruct82`1<class Generated32.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldstr "========================================================================\n\n"
 		call void [mscorlib]System.Console::WriteLine(string)
@@ -587,10 +586,10 @@
 		)
 		.entrypoint
 		.maxstack  10
-		call void Generated32::MethodCallingTest()
-		call void Generated32::ConstrainedCallsTest()
-		call void Generated32::StructConstrainedInterfaceCallsTest()
-		call void Generated32::CalliTest()
+		call void Generated32.Generated32::MethodCallingTest()
+		call void Generated32.Generated32::ConstrainedCallsTest()
+		call void Generated32.Generated32::StructConstrainedInterfaceCallsTest()
+		call void Generated32.Generated32::CalliTest()
 		ldc.i4 100
 		ret
 	}

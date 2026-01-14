@@ -7,36 +7,35 @@
 //TYPES IN FORWARDER ASSEMBLIES:
 
 //TEST ASSEMBLY:
-.assembly Generated0 { .hash algorithm 0x00008004 }
 .assembly extern xunit.core {}
 
-.class public BaseClass0 
+.class public Generated0.BaseClass0
 {
-	.method public hidebysig specialname rtspecialname instance void .ctor() cil managed { 
+	.method public hidebysig specialname rtspecialname instance void .ctor() cil managed {
 		ldarg.0
 		call instance void [mscorlib]System.Object::.ctor()
 		ret
 	}
 }
-.class public BaseClass1 
-		extends BaseClass0
+.class public Generated0.BaseClass1
+		extends Generated0.BaseClass0
 {
-	.method public hidebysig specialname rtspecialname instance void .ctor() cil managed { 
+	.method public hidebysig specialname rtspecialname instance void .ctor() cil managed {
 		ldarg.0
-		call instance void BaseClass0::.ctor()
+		call instance void Generated0.BaseClass0::.ctor()
 		ret
 	}
 }
-.class public sequential sealed MyStruct50`1<T0> 
+.class public sequential sealed Generated0.MyStruct50`1<T0>
 		extends [mscorlib]System.ValueType
 {
 	.pack 0
 	.size 1
-	.method public hidebysig newslot instance string ClassMethod108() cil managed noinlining { 
+	.method public hidebysig newslot instance string ClassMethod108() cil managed noinlining {
 		ldstr "MyStruct50::ClassMethod108.403()"
 		ret
 	}
-	.method public hidebysig newslot instance string ClassMethod109() cil managed noinlining { 
+	.method public hidebysig newslot instance string ClassMethod109() cil managed noinlining {
 		ldstr "MyStruct50::ClassMethod109.404()"
 		ret
 	}
@@ -44,28 +43,28 @@
 	.method public hidebysig virtual instance int32 GetHashCode() cil managed { ldc.i4.0 ret }
 	.method public hidebysig virtual instance string ToString() cil managed { ldstr "" ret }
 }
-.class public auto ansi beforefieldinit Generated0 {
-	.method static void M.BaseClass0<(BaseClass0)W>(!!W inst, string exp) cil managed {
+.class public auto ansi beforefieldinit Generated0.Generated0 {
+	.method static void M.BaseClass0<(Generated0.BaseClass0)W>(!!W inst, string exp) cil managed {
 		.maxstack 5
 		.locals init (string[] actualResults)
 		ldc.i4.s    0
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.BaseClass0<(BaseClass0)W>(!!W inst, string exp)"
+		ldstr "M.BaseClass0<(Generated0.BaseClass0)W>(!!W inst, string exp)"
 		ldc.i4.s 0
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.BaseClass1<(BaseClass1)W>(!!W inst, string exp) cil managed {
+	.method static void M.BaseClass1<(Generated0.BaseClass1)W>(!!W inst, string exp) cil managed {
 		.maxstack 5
 		.locals init (string[] actualResults)
 		ldc.i4.s    0
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.BaseClass1<(BaseClass1)W>(!!W inst, string exp)"
+		ldstr "M.BaseClass1<(Generated0.BaseClass1)W>(!!W inst, string exp)"
 		ldc.i4.s 0
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
@@ -77,41 +76,41 @@
 		.locals init (object V_0)
 		ldstr "========================== Method Calling Test =========================="
 		call void [mscorlib]System.Console::WriteLine(string)
-		.locals init (valuetype MyStruct50`1<class BaseClass0> V_1)
+		.locals init (valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0> V_1)
 		ldloca V_1
-		initobj valuetype MyStruct50`1<class BaseClass0>
+		initobj valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>
 		ldloca V_1
 		dup
-		call instance string valuetype MyStruct50`1<class BaseClass0>::ClassMethod108()
+		call instance string valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>::ClassMethod108()
 		ldstr "MyStruct50::ClassMethod108.403()"
-		ldstr "valuetype MyStruct50`1<class BaseClass0> on type MyStruct50"
+		ldstr "valuetype MyStruct50`1<class Generated0.BaseClass0> on type MyStruct50"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		call instance string valuetype MyStruct50`1<class BaseClass0>::ClassMethod109()
+		call instance string valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>::ClassMethod109()
 		ldstr "MyStruct50::ClassMethod109.404()"
-		ldstr "valuetype MyStruct50`1<class BaseClass0> on type MyStruct50"
+		ldstr "valuetype MyStruct50`1<class Generated0.BaseClass0> on type MyStruct50"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
-		dup ldnull call instance bool valuetype MyStruct50`1<class BaseClass0>::Equals(object) pop
-		dup call instance int32 valuetype MyStruct50`1<class BaseClass0>::GetHashCode() pop
-		dup call instance string valuetype MyStruct50`1<class BaseClass0>::ToString() pop
+		dup ldnull call instance bool valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>::Equals(object) pop
+		dup call instance int32 valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>::GetHashCode() pop
+		dup call instance string valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>::ToString() pop
 		pop
-		.locals init (valuetype MyStruct50`1<class BaseClass1> V_2)
+		.locals init (valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1> V_2)
 		ldloca V_2
-		initobj valuetype MyStruct50`1<class BaseClass1>
+		initobj valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>
 		ldloca V_2
 		dup
-		call instance string valuetype MyStruct50`1<class BaseClass1>::ClassMethod108()
+		call instance string valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>::ClassMethod108()
 		ldstr "MyStruct50::ClassMethod108.403()"
-		ldstr "valuetype MyStruct50`1<class BaseClass1> on type MyStruct50"
+		ldstr "valuetype MyStruct50`1<class Generated0.BaseClass1> on type MyStruct50"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		call instance string valuetype MyStruct50`1<class BaseClass1>::ClassMethod109()
+		call instance string valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>::ClassMethod109()
 		ldstr "MyStruct50::ClassMethod109.404()"
-		ldstr "valuetype MyStruct50`1<class BaseClass1> on type MyStruct50"
+		ldstr "valuetype MyStruct50`1<class Generated0.BaseClass1> on type MyStruct50"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
-		dup ldnull call instance bool valuetype MyStruct50`1<class BaseClass1>::Equals(object) pop
-		dup call instance int32 valuetype MyStruct50`1<class BaseClass1>::GetHashCode() pop
-		dup call instance string valuetype MyStruct50`1<class BaseClass1>::ToString() pop
+		dup ldnull call instance bool valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>::Equals(object) pop
+		dup call instance int32 valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>::GetHashCode() pop
+		dup call instance string valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>::ToString() pop
 		pop
 		ldstr "========================================================================\n\n"
 		call void [mscorlib]System.Console::WriteLine(string)
@@ -123,12 +122,12 @@
 		.locals init (object V_0)
 		ldstr "========================== Constrained Calls Test =========================="
 		call void [mscorlib]System.Console::WriteLine(string)
-		.locals init (valuetype MyStruct50`1<class BaseClass0> V_3)
+		.locals init (valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0> V_3)
 		ldloca V_3
-		initobj valuetype MyStruct50`1<class BaseClass0>
-		.locals init (valuetype MyStruct50`1<class BaseClass1> V_4)
+		initobj valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>
+		.locals init (valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1> V_4)
 		ldloca V_4
-		initobj valuetype MyStruct50`1<class BaseClass1>
+		initobj valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>
 		ldstr "========================================================================\n\n"
 		call void [mscorlib]System.Console::WriteLine(string)
 		ret
@@ -148,66 +147,66 @@
 		.locals init (object V_0)
 		ldstr "========================== Method Calli Test =========================="
 		call void [mscorlib]System.Console::WriteLine(string)
-		.locals init (valuetype MyStruct50`1<class BaseClass0> V_5)
+		.locals init (valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0> V_5)
 		ldloca V_5
-		initobj valuetype MyStruct50`1<class BaseClass0>
+		initobj valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>
 		ldloc V_5
-		box valuetype MyStruct50`1<class BaseClass0>
+		box valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>
 		ldloc V_5
-		box valuetype MyStruct50`1<class BaseClass0>
-		ldvirtftn instance string valuetype MyStruct50`1<class BaseClass0>::ClassMethod108()
+		box valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>
+		ldvirtftn instance string valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>::ClassMethod108()
 		calli default string(object)
 		ldstr "MyStruct50::ClassMethod108.403()"
-		ldstr "valuetype MyStruct50`1<class BaseClass0> on type valuetype MyStruct50`1<class BaseClass0>"
+		ldstr "valuetype MyStruct50`1<class Generated0.BaseClass0> on type valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_5
-		box valuetype MyStruct50`1<class BaseClass0>
+		box valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>
 		ldloc V_5
-		box valuetype MyStruct50`1<class BaseClass0>
-		ldvirtftn instance string valuetype MyStruct50`1<class BaseClass0>::ClassMethod109()
+		box valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>
+		ldvirtftn instance string valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>::ClassMethod109()
 		calli default string(object)
 		ldstr "MyStruct50::ClassMethod109.404()"
-		ldstr "valuetype MyStruct50`1<class BaseClass0> on type valuetype MyStruct50`1<class BaseClass0>"
+		ldstr "valuetype MyStruct50`1<class Generated0.BaseClass0> on type valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
-		ldloc V_5 box valuetype MyStruct50`1<class BaseClass0> ldnull 
-		ldloc V_5 box valuetype MyStruct50`1<class BaseClass0>
-		ldvirtftn instance bool valuetype MyStruct50`1<class BaseClass0>::Equals(object) calli default bool(object,object) pop
-		ldloc V_5 box valuetype MyStruct50`1<class BaseClass0>
-		ldloc V_5 box valuetype MyStruct50`1<class BaseClass0>
-		ldvirtftn instance int32 valuetype MyStruct50`1<class BaseClass0>::GetHashCode() calli default int32(object) pop
-		ldloc V_5 box valuetype MyStruct50`1<class BaseClass0>
-		ldloc V_5 box valuetype MyStruct50`1<class BaseClass0>
-		ldvirtftn instance string valuetype MyStruct50`1<class BaseClass0>::ToString() calli default string(object) pop
-		.locals init (valuetype MyStruct50`1<class BaseClass1> V_6)
+		ldloc V_5 box valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0> ldnull
+		ldloc V_5 box valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>
+		ldvirtftn instance bool valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>::Equals(object) calli default bool(object,object) pop
+		ldloc V_5 box valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>
+		ldloc V_5 box valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>
+		ldvirtftn instance int32 valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>::GetHashCode() calli default int32(object) pop
+		ldloc V_5 box valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>
+		ldloc V_5 box valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>
+		ldvirtftn instance string valuetype Generated0.MyStruct50`1<class Generated0.BaseClass0>::ToString() calli default string(object) pop
+		.locals init (valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1> V_6)
 		ldloca V_6
-		initobj valuetype MyStruct50`1<class BaseClass1>
+		initobj valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>
 		ldloc V_6
-		box valuetype MyStruct50`1<class BaseClass1>
+		box valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>
 		ldloc V_6
-		box valuetype MyStruct50`1<class BaseClass1>
-		ldvirtftn instance string valuetype MyStruct50`1<class BaseClass1>::ClassMethod108()
+		box valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>
+		ldvirtftn instance string valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>::ClassMethod108()
 		calli default string(object)
 		ldstr "MyStruct50::ClassMethod108.403()"
-		ldstr "valuetype MyStruct50`1<class BaseClass1> on type valuetype MyStruct50`1<class BaseClass1>"
+		ldstr "valuetype MyStruct50`1<class Generated0.BaseClass1> on type valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_6
-		box valuetype MyStruct50`1<class BaseClass1>
+		box valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>
 		ldloc V_6
-		box valuetype MyStruct50`1<class BaseClass1>
-		ldvirtftn instance string valuetype MyStruct50`1<class BaseClass1>::ClassMethod109()
+		box valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>
+		ldvirtftn instance string valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>::ClassMethod109()
 		calli default string(object)
 		ldstr "MyStruct50::ClassMethod109.404()"
-		ldstr "valuetype MyStruct50`1<class BaseClass1> on type valuetype MyStruct50`1<class BaseClass1>"
+		ldstr "valuetype MyStruct50`1<class Generated0.BaseClass1> on type valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
-		ldloc V_6 box valuetype MyStruct50`1<class BaseClass1> ldnull 
-		ldloc V_6 box valuetype MyStruct50`1<class BaseClass1>
-		ldvirtftn instance bool valuetype MyStruct50`1<class BaseClass1>::Equals(object) calli default bool(object,object) pop
-		ldloc V_6 box valuetype MyStruct50`1<class BaseClass1>
-		ldloc V_6 box valuetype MyStruct50`1<class BaseClass1>
-		ldvirtftn instance int32 valuetype MyStruct50`1<class BaseClass1>::GetHashCode() calli default int32(object) pop
-		ldloc V_6 box valuetype MyStruct50`1<class BaseClass1>
-		ldloc V_6 box valuetype MyStruct50`1<class BaseClass1>
-		ldvirtftn instance string valuetype MyStruct50`1<class BaseClass1>::ToString() calli default string(object) pop
+		ldloc V_6 box valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1> ldnull
+		ldloc V_6 box valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>
+		ldvirtftn instance bool valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>::Equals(object) calli default bool(object,object) pop
+		ldloc V_6 box valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>
+		ldloc V_6 box valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>
+		ldvirtftn instance int32 valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>::GetHashCode() calli default int32(object) pop
+		ldloc V_6 box valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>
+		ldloc V_6 box valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>
+		ldvirtftn instance string valuetype Generated0.MyStruct50`1<class Generated0.BaseClass1>::ToString() calli default string(object) pop
 		ldstr "========================================================================\n\n"
 		call void [mscorlib]System.Console::WriteLine(string)
 		ret
@@ -219,10 +218,10 @@
 		)
 		.entrypoint
 		.maxstack  10
-		call void Generated0::MethodCallingTest()
-		call void Generated0::ConstrainedCallsTest()
-		call void Generated0::StructConstrainedInterfaceCallsTest()
-		call void Generated0::CalliTest()
+		call void Generated0.Generated0::MethodCallingTest()
+		call void Generated0.Generated0::ConstrainedCallsTest()
+		call void Generated0.Generated0::StructConstrainedInterfaceCallsTest()
+		call void Generated0.Generated0::CalliTest()
 		ldc.i4 100
 		ret
 	}

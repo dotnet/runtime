@@ -7,10 +7,9 @@
 //TYPES IN FORWARDER ASSEMBLIES:
 
 //TEST ASSEMBLY:
-.assembly Generated428 { .hash algorithm 0x00008004 }
 .assembly extern xunit.core {}
 
-.class public BaseClass0 
+.class public Generated428.BaseClass0 
 {
 	.method public hidebysig specialname rtspecialname instance void .ctor() cil managed { 
 		ldarg.0
@@ -18,18 +17,18 @@
 		ret
 	}
 }
-.class public BaseClass1 
-		extends BaseClass0
+.class public Generated428.BaseClass1 
+		extends Generated428.BaseClass0
 {
 	.method public hidebysig specialname rtspecialname instance void .ctor() cil managed { 
 		ldarg.0
-		call instance void BaseClass0::.ctor()
+		call instance void Generated428.BaseClass0::.ctor()
 		ret
 	}
 }
-.class public sequential sealed MyStruct478`2<T0, T1> 
+.class public sequential sealed Generated428.MyStruct478`2<T0, T1> 
 		extends [mscorlib]System.ValueType
-		implements class IBase2`2<class BaseClass0,!T1>, class IBase2`2<!T1,class BaseClass0> 
+		implements class Generated428.IBase2`2<class Generated428.BaseClass0,!T1>, class Generated428.IBase2`2<!T1,class Generated428.BaseClass0> 
 {
 	.pack 0
 	.size 1
@@ -63,290 +62,290 @@
 	.method public hidebysig virtual instance int32 GetHashCode() cil managed { ldc.i4.0 ret }
 	.method public hidebysig virtual instance string ToString() cil managed { ldstr "" ret }
 }
-.class interface public abstract IBase2`2<+T0, -T1> 
+.class interface public abstract Generated428.IBase2`2<+T0, -T1> 
 {
 	.method public hidebysig newslot abstract virtual instance string Method7<M0>() cil managed { }
 }
-.class public auto ansi beforefieldinit Generated428 {
-	.method static void M.BaseClass0<(BaseClass0)W>(!!W inst, string exp) cil managed {
+.class public auto ansi beforefieldinit Generated428.Generated428 {
+	.method static void M.BaseClass0<(Generated428.BaseClass0)W>(!!W inst, string exp) cil managed {
 		.maxstack 5
 		.locals init (string[] actualResults)
 		ldc.i4.s    0
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.BaseClass0<(BaseClass0)W>(!!W inst, string exp)"
+		ldstr "M.BaseClass0<(Generated428.BaseClass0)W>(!!W inst, string exp)"
 		ldc.i4.s 0
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.BaseClass1<(BaseClass1)W>(!!W inst, string exp) cil managed {
+	.method static void M.BaseClass1<(Generated428.BaseClass1)W>(!!W inst, string exp) cil managed {
 		.maxstack 5
 		.locals init (string[] actualResults)
 		ldc.i4.s    0
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.BaseClass1<(BaseClass1)W>(!!W inst, string exp)"
+		ldstr "M.BaseClass1<(Generated428.BaseClass1)W>(!!W inst, string exp)"
 		ldc.i4.s 0
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.IBase2.T.T<T0,T1,(class IBase2`2<!!T0,!!T1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.IBase2.T.T<T0,T1,(class Generated428.IBase2`2<!!T0,!!T1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 6
 		.locals init (string[] actualResults)
 		ldc.i4.s    1
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.IBase2.T.T<T0,T1,(class IBase2`2<!!T0,!!T1>)W>(!!W 'inst', string exp)"
+		ldstr "M.IBase2.T.T<T0,T1,(class Generated428.IBase2`2<!!T0,!!T1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 1
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase2`2<!!T0,!!T1>::Method7<object>()
+		callvirt     instance string class Generated428.IBase2`2<!!T0,!!T1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.IBase2.A.T<T1,(class IBase2`2<class BaseClass0,!!T1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.IBase2.A.T<T1,(class Generated428.IBase2`2<class Generated428.BaseClass0,!!T1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 6
 		.locals init (string[] actualResults)
 		ldc.i4.s    1
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.IBase2.A.T<T1,(class IBase2`2<class BaseClass0,!!T1>)W>(!!W 'inst', string exp)"
+		ldstr "M.IBase2.A.T<T1,(class Generated428.IBase2`2<class Generated428.BaseClass0,!!T1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 1
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase2`2<class BaseClass0,!!T1>::Method7<object>()
+		callvirt     instance string class Generated428.IBase2`2<class Generated428.BaseClass0,!!T1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.IBase2.A.A<(class IBase2`2<class BaseClass0,class BaseClass0>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.IBase2.A.A<(class Generated428.IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass0>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 6
 		.locals init (string[] actualResults)
 		ldc.i4.s    1
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.IBase2.A.A<(class IBase2`2<class BaseClass0,class BaseClass0>)W>(!!W 'inst', string exp)"
+		ldstr "M.IBase2.A.A<(class Generated428.IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass0>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 1
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase2`2<class BaseClass0,class BaseClass0>::Method7<object>()
+		callvirt     instance string class Generated428.IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass0>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.IBase2.A.B<(class IBase2`2<class BaseClass0,class BaseClass1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.IBase2.A.B<(class Generated428.IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 6
 		.locals init (string[] actualResults)
 		ldc.i4.s    1
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.IBase2.A.B<(class IBase2`2<class BaseClass0,class BaseClass1>)W>(!!W 'inst', string exp)"
+		ldstr "M.IBase2.A.B<(class Generated428.IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 1
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase2`2<class BaseClass0,class BaseClass1>::Method7<object>()
+		callvirt     instance string class Generated428.IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.IBase2.B.T<T1,(class IBase2`2<class BaseClass1,!!T1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.IBase2.B.T<T1,(class Generated428.IBase2`2<class Generated428.BaseClass1,!!T1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 6
 		.locals init (string[] actualResults)
 		ldc.i4.s    1
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.IBase2.B.T<T1,(class IBase2`2<class BaseClass1,!!T1>)W>(!!W 'inst', string exp)"
+		ldstr "M.IBase2.B.T<T1,(class Generated428.IBase2`2<class Generated428.BaseClass1,!!T1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 1
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase2`2<class BaseClass1,!!T1>::Method7<object>()
+		callvirt     instance string class Generated428.IBase2`2<class Generated428.BaseClass1,!!T1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.IBase2.B.A<(class IBase2`2<class BaseClass1,class BaseClass0>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.IBase2.B.A<(class Generated428.IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass0>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 6
 		.locals init (string[] actualResults)
 		ldc.i4.s    1
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.IBase2.B.A<(class IBase2`2<class BaseClass1,class BaseClass0>)W>(!!W 'inst', string exp)"
+		ldstr "M.IBase2.B.A<(class Generated428.IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass0>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 1
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase2`2<class BaseClass1,class BaseClass0>::Method7<object>()
+		callvirt     instance string class Generated428.IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass0>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.IBase2.B.B<(class IBase2`2<class BaseClass1,class BaseClass1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.IBase2.B.B<(class Generated428.IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 6
 		.locals init (string[] actualResults)
 		ldc.i4.s    1
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.IBase2.B.B<(class IBase2`2<class BaseClass1,class BaseClass1>)W>(!!W 'inst', string exp)"
+		ldstr "M.IBase2.B.B<(class Generated428.IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 1
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase2`2<class BaseClass1,class BaseClass1>::Method7<object>()
+		callvirt     instance string class Generated428.IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.MyStruct478.T.T<T0,T1,(valuetype MyStruct478`2<!!T0,!!T1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.MyStruct478.T.T<T0,T1,(valuetype Generated428.MyStruct478`2<!!T0,!!T1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 7
 		.locals init (string[] actualResults)
 		ldc.i4.s    2
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.MyStruct478.T.T<T0,T1,(valuetype MyStruct478`2<!!T0,!!T1>)W>(!!W 'inst', string exp)"
+		ldstr "M.MyStruct478.T.T<T0,T1,(valuetype Generated428.MyStruct478`2<!!T0,!!T1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 2
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
-		constrained. valuetype MyStruct478`2<!!T0,!!T1>
-		callvirt     instance string class IBase2`2<class BaseClass0,!!T1>::Method7<object>()
+		constrained. valuetype Generated428.MyStruct478`2<!!T0,!!T1>
+		callvirt     instance string class Generated428.IBase2`2<class Generated428.BaseClass0,!!T1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
-		constrained. valuetype MyStruct478`2<!!T0,!!T1>
-		callvirt     instance string class IBase2`2<!!T1,class BaseClass0>::Method7<object>()
+		constrained. valuetype Generated428.MyStruct478`2<!!T0,!!T1>
+		callvirt     instance string class Generated428.IBase2`2<!!T1,class Generated428.BaseClass0>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.MyStruct478.A.T<T1,(valuetype MyStruct478`2<class BaseClass0,!!T1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.MyStruct478.A.T<T1,(valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,!!T1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 7
 		.locals init (string[] actualResults)
 		ldc.i4.s    2
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.MyStruct478.A.T<T1,(valuetype MyStruct478`2<class BaseClass0,!!T1>)W>(!!W 'inst', string exp)"
+		ldstr "M.MyStruct478.A.T<T1,(valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,!!T1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 2
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
-		constrained. valuetype MyStruct478`2<class BaseClass0,!!T1>
-		callvirt     instance string class IBase2`2<class BaseClass0,!!T1>::Method7<object>()
+		constrained. valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,!!T1>
+		callvirt     instance string class Generated428.IBase2`2<class Generated428.BaseClass0,!!T1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
-		constrained. valuetype MyStruct478`2<class BaseClass0,!!T1>
-		callvirt     instance string class IBase2`2<!!T1,class BaseClass0>::Method7<object>()
+		constrained. valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,!!T1>
+		callvirt     instance string class Generated428.IBase2`2<!!T1,class Generated428.BaseClass0>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.MyStruct478.A.B<(valuetype MyStruct478`2<class BaseClass0,class BaseClass1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.MyStruct478.A.B<(valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 7
 		.locals init (string[] actualResults)
 		ldc.i4.s    2
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.MyStruct478.A.B<(valuetype MyStruct478`2<class BaseClass0,class BaseClass1>)W>(!!W 'inst', string exp)"
+		ldstr "M.MyStruct478.A.B<(valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 2
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
-		constrained. valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
-		callvirt     instance string class IBase2`2<class BaseClass0,class BaseClass1>::Method7<object>()
+		constrained. valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
+		callvirt     instance string class Generated428.IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
-		constrained. valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
-		callvirt     instance string class IBase2`2<class BaseClass1,class BaseClass0>::Method7<object>()
+		constrained. valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
+		callvirt     instance string class Generated428.IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass0>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.MyStruct478.B.T<T1,(valuetype MyStruct478`2<class BaseClass1,!!T1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.MyStruct478.B.T<T1,(valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,!!T1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 7
 		.locals init (string[] actualResults)
 		ldc.i4.s    2
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.MyStruct478.B.T<T1,(valuetype MyStruct478`2<class BaseClass1,!!T1>)W>(!!W 'inst', string exp)"
+		ldstr "M.MyStruct478.B.T<T1,(valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,!!T1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 2
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
-		constrained. valuetype MyStruct478`2<class BaseClass1,!!T1>
-		callvirt     instance string class IBase2`2<class BaseClass0,!!T1>::Method7<object>()
+		constrained. valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,!!T1>
+		callvirt     instance string class Generated428.IBase2`2<class Generated428.BaseClass0,!!T1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
-		constrained. valuetype MyStruct478`2<class BaseClass1,!!T1>
-		callvirt     instance string class IBase2`2<!!T1,class BaseClass0>::Method7<object>()
+		constrained. valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,!!T1>
+		callvirt     instance string class Generated428.IBase2`2<!!T1,class Generated428.BaseClass0>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.MyStruct478.B.B<(valuetype MyStruct478`2<class BaseClass1,class BaseClass1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.MyStruct478.B.B<(valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 7
 		.locals init (string[] actualResults)
 		ldc.i4.s    2
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.MyStruct478.B.B<(valuetype MyStruct478`2<class BaseClass1,class BaseClass1>)W>(!!W 'inst', string exp)"
+		ldstr "M.MyStruct478.B.B<(valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 2
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
-		constrained. valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
-		callvirt     instance string class IBase2`2<class BaseClass0,class BaseClass1>::Method7<object>()
+		constrained. valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
+		callvirt     instance string class Generated428.IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
-		constrained. valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
-		callvirt     instance string class IBase2`2<class BaseClass1,class BaseClass0>::Method7<object>()
+		constrained. valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
+		callvirt     instance string class Generated428.IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass0>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
@@ -358,124 +357,124 @@
 		.locals init (object V_0)
 		ldstr "========================== Method Calling Test =========================="
 		call void [mscorlib]System.Console::WriteLine(string)
-		.locals init (valuetype MyStruct478`2<class BaseClass0,class BaseClass1> V_2)
+		.locals init (valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1> V_2)
 		ldloca V_2
-		initobj valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
+		initobj valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
 		ldloca V_2
 		dup
-		call instance string valuetype MyStruct478`2<class BaseClass0,class BaseClass1>::Method7<object>()
+		call instance string valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>::Method7<object>()
 		ldstr "MyStruct478::Method7.3775<System.Object>()"
-		ldstr "valuetype MyStruct478`2<class BaseClass0,class BaseClass1> on type MyStruct478"
+		ldstr "valuetype MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1> on type MyStruct478"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		call instance string valuetype MyStruct478`2<class BaseClass0,class BaseClass1>::ClassMethod938()
+		call instance string valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>::ClassMethod938()
 		ldstr "MyStruct478::ClassMethod938.3777()"
-		ldstr "valuetype MyStruct478`2<class BaseClass0,class BaseClass1> on type MyStruct478"
+		ldstr "valuetype MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1> on type MyStruct478"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		call instance string valuetype MyStruct478`2<class BaseClass0,class BaseClass1>::ClassMethod939()
+		call instance string valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>::ClassMethod939()
 		ldstr "MyStruct478::ClassMethod939.3778()"
-		ldstr "valuetype MyStruct478`2<class BaseClass0,class BaseClass1> on type MyStruct478"
+		ldstr "valuetype MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1> on type MyStruct478"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		call instance string valuetype MyStruct478`2<class BaseClass0,class BaseClass1>::ClassMethod940<object>()
+		call instance string valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>::ClassMethod940<object>()
 		ldstr "MyStruct478::ClassMethod940.3779<System.Object>()"
-		ldstr "valuetype MyStruct478`2<class BaseClass0,class BaseClass1> on type MyStruct478"
+		ldstr "valuetype MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1> on type MyStruct478"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
-		dup ldnull call instance bool valuetype MyStruct478`2<class BaseClass0,class BaseClass1>::Equals(object) pop
-		dup call instance int32 valuetype MyStruct478`2<class BaseClass0,class BaseClass1>::GetHashCode() pop
-		dup call instance string valuetype MyStruct478`2<class BaseClass0,class BaseClass1>::ToString() pop
+		dup ldnull call instance bool valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>::Equals(object) pop
+		dup call instance int32 valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>::GetHashCode() pop
+		dup call instance string valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>::ToString() pop
 		pop
 		ldloc V_2
-		box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
 		dup
-		callvirt instance string class IBase2`2<class BaseClass0,class BaseClass1>::Method7<object>()
+		callvirt instance string class Generated428.IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass1>::Method7<object>()
 		ldstr "MyStruct478::Method7.3775<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass1> on type valuetype MyStruct478`2<class BaseClass0,class BaseClass1>"
-		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
-		pop
-		ldloc V_2
-		box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
-		dup
-		callvirt instance string class IBase2`2<class BaseClass1,class BaseClass0>::Method7<object>()
-		ldstr "MyStruct478::Method7.3775<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass1,class BaseClass0> on type valuetype MyStruct478`2<class BaseClass0,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass1> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc V_2
-		box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
 		dup
-		callvirt instance string class IBase2`2<class BaseClass0,class BaseClass0>::Method7<object>()
+		callvirt instance string class Generated428.IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass0>::Method7<object>()
 		ldstr "MyStruct478::Method7.3775<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass0> on type valuetype MyStruct478`2<class BaseClass0,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass0> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc V_2
-		box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
 		dup
-		callvirt instance string class IBase2`2<class BaseClass1,class BaseClass1>::Method7<object>()
+		callvirt instance string class Generated428.IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass0>::Method7<object>()
 		ldstr "MyStruct478::Method7.3775<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass1,class BaseClass1> on type valuetype MyStruct478`2<class BaseClass0,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass0> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
-		.locals init (valuetype MyStruct478`2<class BaseClass1,class BaseClass1> V_4)
+		ldloc V_2
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
+		dup
+		callvirt instance string class Generated428.IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass1>::Method7<object>()
+		ldstr "MyStruct478::Method7.3775<System.Object>()"
+		ldstr "class IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass1> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		.locals init (valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1> V_4)
 		ldloca V_4
-		initobj valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
+		initobj valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
 		ldloca V_4
 		dup
-		call instance string valuetype MyStruct478`2<class BaseClass1,class BaseClass1>::Method7<object>()
+		call instance string valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>::Method7<object>()
 		ldstr "MyStruct478::Method7.3775<System.Object>()"
-		ldstr "valuetype MyStruct478`2<class BaseClass1,class BaseClass1> on type MyStruct478"
+		ldstr "valuetype MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1> on type MyStruct478"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		call instance string valuetype MyStruct478`2<class BaseClass1,class BaseClass1>::ClassMethod938()
+		call instance string valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>::ClassMethod938()
 		ldstr "MyStruct478::ClassMethod938.3777()"
-		ldstr "valuetype MyStruct478`2<class BaseClass1,class BaseClass1> on type MyStruct478"
+		ldstr "valuetype MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1> on type MyStruct478"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		call instance string valuetype MyStruct478`2<class BaseClass1,class BaseClass1>::ClassMethod939()
+		call instance string valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>::ClassMethod939()
 		ldstr "MyStruct478::ClassMethod939.3778()"
-		ldstr "valuetype MyStruct478`2<class BaseClass1,class BaseClass1> on type MyStruct478"
+		ldstr "valuetype MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1> on type MyStruct478"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		call instance string valuetype MyStruct478`2<class BaseClass1,class BaseClass1>::ClassMethod940<object>()
+		call instance string valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>::ClassMethod940<object>()
 		ldstr "MyStruct478::ClassMethod940.3779<System.Object>()"
-		ldstr "valuetype MyStruct478`2<class BaseClass1,class BaseClass1> on type MyStruct478"
+		ldstr "valuetype MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1> on type MyStruct478"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
-		dup ldnull call instance bool valuetype MyStruct478`2<class BaseClass1,class BaseClass1>::Equals(object) pop
-		dup call instance int32 valuetype MyStruct478`2<class BaseClass1,class BaseClass1>::GetHashCode() pop
-		dup call instance string valuetype MyStruct478`2<class BaseClass1,class BaseClass1>::ToString() pop
+		dup ldnull call instance bool valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>::Equals(object) pop
+		dup call instance int32 valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>::GetHashCode() pop
+		dup call instance string valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>::ToString() pop
 		pop
 		ldloc V_4
-		box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
 		dup
-		callvirt instance string class IBase2`2<class BaseClass0,class BaseClass1>::Method7<object>()
+		callvirt instance string class Generated428.IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass1>::Method7<object>()
 		ldstr "MyStruct478::Method7.3775<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass1> on type valuetype MyStruct478`2<class BaseClass1,class BaseClass1>"
-		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
-		pop
-		ldloc V_4
-		box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
-		dup
-		callvirt instance string class IBase2`2<class BaseClass1,class BaseClass0>::Method7<object>()
-		ldstr "MyStruct478::Method7.3775<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass1,class BaseClass0> on type valuetype MyStruct478`2<class BaseClass1,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass1> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc V_4
-		box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
 		dup
-		callvirt instance string class IBase2`2<class BaseClass0,class BaseClass0>::Method7<object>()
+		callvirt instance string class Generated428.IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass0>::Method7<object>()
 		ldstr "MyStruct478::Method7.3775<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass0> on type valuetype MyStruct478`2<class BaseClass1,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass0> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc V_4
-		box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
 		dup
-		callvirt instance string class IBase2`2<class BaseClass1,class BaseClass1>::Method7<object>()
+		callvirt instance string class Generated428.IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass0>::Method7<object>()
 		ldstr "MyStruct478::Method7.3775<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass1,class BaseClass1> on type valuetype MyStruct478`2<class BaseClass1,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass0> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc V_4
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
+		dup
+		callvirt instance string class Generated428.IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass1>::Method7<object>()
+		ldstr "MyStruct478::Method7.3775<System.Object>()"
+		ldstr "class IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass1> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldstr "========================================================================\n\n"
@@ -488,107 +487,107 @@
 		.locals init (object V_0)
 		ldstr "========================== Constrained Calls Test =========================="
 		call void [mscorlib]System.Console::WriteLine(string)
-		.locals init (valuetype MyStruct478`2<class BaseClass0,class BaseClass1> V_6)
+		.locals init (valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1> V_6)
 		ldloca V_6
-		initobj valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
+		initobj valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
 		.try {  ldloc V_6
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.T.T<class BaseClass0,class BaseClass1,valuetype MyStruct478`2<class BaseClass0,class BaseClass1>>(!!2,string) leave.s LV0
+				call void Generated428.Generated428::M.IBase2.T.T<class Generated428.BaseClass0,class Generated428.BaseClass1,valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>>(!!2,string) leave.s LV0
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV0} LV0:
 		.try {  ldloc V_6
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.A.T<class BaseClass1,valuetype MyStruct478`2<class BaseClass0,class BaseClass1>>(!!1,string) leave.s LV1
+				call void Generated428.Generated428::M.IBase2.A.T<class Generated428.BaseClass1,valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>>(!!1,string) leave.s LV1
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV1} LV1:
 		.try {  ldloc V_6
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.A.B<valuetype MyStruct478`2<class BaseClass0,class BaseClass1>>(!!0,string) leave.s LV2
+				call void Generated428.Generated428::M.IBase2.A.B<valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>>(!!0,string) leave.s LV2
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV2} LV2:
 		.try {  ldloc V_6
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.T.T<class BaseClass1,class BaseClass0,valuetype MyStruct478`2<class BaseClass0,class BaseClass1>>(!!2,string) leave.s LV3
+				call void Generated428.Generated428::M.IBase2.T.T<class Generated428.BaseClass1,class Generated428.BaseClass0,valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>>(!!2,string) leave.s LV3
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV3} LV3:
 		.try {  ldloc V_6
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.B.T<class BaseClass0,valuetype MyStruct478`2<class BaseClass0,class BaseClass1>>(!!1,string) leave.s LV4
+				call void Generated428.Generated428::M.IBase2.B.T<class Generated428.BaseClass0,valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>>(!!1,string) leave.s LV4
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV4} LV4:
 		.try {  ldloc V_6
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.B.A<valuetype MyStruct478`2<class BaseClass0,class BaseClass1>>(!!0,string) leave.s LV5
+				call void Generated428.Generated428::M.IBase2.B.A<valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>>(!!0,string) leave.s LV5
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV5} LV5:
 		.try {  ldloc V_6
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.T.T<class BaseClass0,class BaseClass0,valuetype MyStruct478`2<class BaseClass0,class BaseClass1>>(!!2,string) leave.s LV6
+				call void Generated428.Generated428::M.IBase2.T.T<class Generated428.BaseClass0,class Generated428.BaseClass0,valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>>(!!2,string) leave.s LV6
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV6} LV6:
 		.try {  ldloc V_6
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.A.T<class BaseClass0,valuetype MyStruct478`2<class BaseClass0,class BaseClass1>>(!!1,string) leave.s LV7
+				call void Generated428.Generated428::M.IBase2.A.T<class Generated428.BaseClass0,valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>>(!!1,string) leave.s LV7
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV7} LV7:
 		.try {  ldloc V_6
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.A.A<valuetype MyStruct478`2<class BaseClass0,class BaseClass1>>(!!0,string) leave.s LV8
+				call void Generated428.Generated428::M.IBase2.A.A<valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>>(!!0,string) leave.s LV8
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV8} LV8:
 		.try {  ldloc V_6
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.T.T<class BaseClass1,class BaseClass1,valuetype MyStruct478`2<class BaseClass0,class BaseClass1>>(!!2,string) leave.s LV9
+				call void Generated428.Generated428::M.IBase2.T.T<class Generated428.BaseClass1,class Generated428.BaseClass1,valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>>(!!2,string) leave.s LV9
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV9} LV9:
 		.try {  ldloc V_6
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.B.T<class BaseClass1,valuetype MyStruct478`2<class BaseClass0,class BaseClass1>>(!!1,string) leave.s LV10
+				call void Generated428.Generated428::M.IBase2.B.T<class Generated428.BaseClass1,valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>>(!!1,string) leave.s LV10
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV10} LV10:
 		.try {  ldloc V_6
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.B.B<valuetype MyStruct478`2<class BaseClass0,class BaseClass1>>(!!0,string) leave.s LV11
+				call void Generated428.Generated428::M.IBase2.B.B<valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>>(!!0,string) leave.s LV11
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV11} LV11:
-		.locals init (valuetype MyStruct478`2<class BaseClass1,class BaseClass1> V_8)
+		.locals init (valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1> V_8)
 		ldloca V_8
-		initobj valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
+		initobj valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
 		.try {  ldloc V_8
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.T.T<class BaseClass0,class BaseClass1,valuetype MyStruct478`2<class BaseClass1,class BaseClass1>>(!!2,string) leave.s LV12
+				call void Generated428.Generated428::M.IBase2.T.T<class Generated428.BaseClass0,class Generated428.BaseClass1,valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>>(!!2,string) leave.s LV12
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV12} LV12:
 		.try {  ldloc V_8
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.A.T<class BaseClass1,valuetype MyStruct478`2<class BaseClass1,class BaseClass1>>(!!1,string) leave.s LV13
+				call void Generated428.Generated428::M.IBase2.A.T<class Generated428.BaseClass1,valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>>(!!1,string) leave.s LV13
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV13} LV13:
 		.try {  ldloc V_8
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.A.B<valuetype MyStruct478`2<class BaseClass1,class BaseClass1>>(!!0,string) leave.s LV14
+				call void Generated428.Generated428::M.IBase2.A.B<valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>>(!!0,string) leave.s LV14
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV14} LV14:
 		.try {  ldloc V_8
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.T.T<class BaseClass1,class BaseClass0,valuetype MyStruct478`2<class BaseClass1,class BaseClass1>>(!!2,string) leave.s LV15
+				call void Generated428.Generated428::M.IBase2.T.T<class Generated428.BaseClass1,class Generated428.BaseClass0,valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>>(!!2,string) leave.s LV15
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV15} LV15:
 		.try {  ldloc V_8
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.B.T<class BaseClass0,valuetype MyStruct478`2<class BaseClass1,class BaseClass1>>(!!1,string) leave.s LV16
+				call void Generated428.Generated428::M.IBase2.B.T<class Generated428.BaseClass0,valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>>(!!1,string) leave.s LV16
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV16} LV16:
 		.try {  ldloc V_8
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.B.A<valuetype MyStruct478`2<class BaseClass1,class BaseClass1>>(!!0,string) leave.s LV17
+				call void Generated428.Generated428::M.IBase2.B.A<valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>>(!!0,string) leave.s LV17
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV17} LV17:
 		.try {  ldloc V_8
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.T.T<class BaseClass0,class BaseClass0,valuetype MyStruct478`2<class BaseClass1,class BaseClass1>>(!!2,string) leave.s LV18
+				call void Generated428.Generated428::M.IBase2.T.T<class Generated428.BaseClass0,class Generated428.BaseClass0,valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>>(!!2,string) leave.s LV18
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV18} LV18:
 		.try {  ldloc V_8
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.A.T<class BaseClass0,valuetype MyStruct478`2<class BaseClass1,class BaseClass1>>(!!1,string) leave.s LV19
+				call void Generated428.Generated428::M.IBase2.A.T<class Generated428.BaseClass0,valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>>(!!1,string) leave.s LV19
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV19} LV19:
 		.try {  ldloc V_8
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.A.A<valuetype MyStruct478`2<class BaseClass1,class BaseClass1>>(!!0,string) leave.s LV20
+				call void Generated428.Generated428::M.IBase2.A.A<valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>>(!!0,string) leave.s LV20
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV20} LV20:
 		.try {  ldloc V_8
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.T.T<class BaseClass1,class BaseClass1,valuetype MyStruct478`2<class BaseClass1,class BaseClass1>>(!!2,string) leave.s LV21
+				call void Generated428.Generated428::M.IBase2.T.T<class Generated428.BaseClass1,class Generated428.BaseClass1,valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>>(!!2,string) leave.s LV21
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV21} LV21:
 		.try {  ldloc V_8
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.B.T<class BaseClass1,valuetype MyStruct478`2<class BaseClass1,class BaseClass1>>(!!1,string) leave.s LV22
+				call void Generated428.Generated428::M.IBase2.B.T<class Generated428.BaseClass1,valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>>(!!1,string) leave.s LV22
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV22} LV22:
 		.try {  ldloc V_8
 				ldstr "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.IBase2.B.B<valuetype MyStruct478`2<class BaseClass1,class BaseClass1>>(!!0,string) leave.s LV23
+				call void Generated428.Generated428::M.IBase2.B.B<valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>>(!!0,string) leave.s LV23
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV23} LV23:
 		ldstr "========================================================================\n\n"
 		call void [mscorlib]System.Console::WriteLine(string)
@@ -599,41 +598,41 @@
 		.maxstack  10
 		ldstr "===================== Struct Constrained Interface Calls Test ====================="
 		call void [mscorlib]System.Console::WriteLine(string)
-		.locals init (valuetype MyStruct478`2<class BaseClass0,class BaseClass1> V_10)
+		.locals init (valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1> V_10)
 		ldloca V_10
-		initobj valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
+		initobj valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
 		.try {  ldloc V_10
 				ldstr "MyStruct478::Method7.3775<System.Object>()#" +
 				      "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.MyStruct478.T.T<class BaseClass0,class BaseClass1,valuetype MyStruct478`2<class BaseClass0,class BaseClass1>>(!!2,string) leave.s LV0
+				call void Generated428.Generated428::M.MyStruct478.T.T<class Generated428.BaseClass0,class Generated428.BaseClass1,valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>>(!!2,string) leave.s LV0
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV0} LV0:
 		.try {  ldloc V_10
 				ldstr "MyStruct478::Method7.3775<System.Object>()#" +
 				      "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.MyStruct478.A.T<class BaseClass1,valuetype MyStruct478`2<class BaseClass0,class BaseClass1>>(!!1,string) leave.s LV1
+				call void Generated428.Generated428::M.MyStruct478.A.T<class Generated428.BaseClass1,valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>>(!!1,string) leave.s LV1
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV1} LV1:
 		.try {  ldloc V_10
 				ldstr "MyStruct478::Method7.3775<System.Object>()#" +
 				      "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.MyStruct478.A.B<valuetype MyStruct478`2<class BaseClass0,class BaseClass1>>(!!0,string) leave.s LV2
+				call void Generated428.Generated428::M.MyStruct478.A.B<valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>>(!!0,string) leave.s LV2
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV2} LV2:
-		.locals init (valuetype MyStruct478`2<class BaseClass1,class BaseClass1> V_12)
+		.locals init (valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1> V_12)
 		ldloca V_12
-		initobj valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
+		initobj valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
 		.try {  ldloc V_12
 				ldstr "MyStruct478::Method7.3775<System.Object>()#" +
 				      "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.MyStruct478.T.T<class BaseClass1,class BaseClass1,valuetype MyStruct478`2<class BaseClass1,class BaseClass1>>(!!2,string) leave.s LV3
+				call void Generated428.Generated428::M.MyStruct478.T.T<class Generated428.BaseClass1,class Generated428.BaseClass1,valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>>(!!2,string) leave.s LV3
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV3} LV3:
 		.try {  ldloc V_12
 				ldstr "MyStruct478::Method7.3775<System.Object>()#" +
 				      "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.MyStruct478.B.T<class BaseClass1,valuetype MyStruct478`2<class BaseClass1,class BaseClass1>>(!!1,string) leave.s LV4
+				call void Generated428.Generated428::M.MyStruct478.B.T<class Generated428.BaseClass1,valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>>(!!1,string) leave.s LV4
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV4} LV4:
 		.try {  ldloc V_12
 				ldstr "MyStruct478::Method7.3775<System.Object>()#" +
 				      "MyStruct478::Method7.3775<System.Object>()#"
-				call void Generated428::M.MyStruct478.B.B<valuetype MyStruct478`2<class BaseClass1,class BaseClass1>>(!!0,string) leave.s LV5
+				call void Generated428.Generated428::M.MyStruct478.B.B<valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>>(!!0,string) leave.s LV5
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV5} LV5:
 		ldstr "========================================================================\n\n"
 		call void [mscorlib]System.Console::WriteLine(string)
@@ -645,173 +644,173 @@
 		.locals init (object V_0)
 		ldstr "========================== Method Calli Test =========================="
 		call void [mscorlib]System.Console::WriteLine(string)
-		.locals init (valuetype MyStruct478`2<class BaseClass0,class BaseClass1> V_14)
+		.locals init (valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1> V_14)
 		ldloca V_14
-		initobj valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
+		initobj valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
 		ldloc V_14
-		box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
 		ldloc V_14
-		box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
-		ldvirtftn instance string valuetype MyStruct478`2<class BaseClass0,class BaseClass1>::Method7<object>()
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
+		ldvirtftn instance string valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>::Method7<object>()
 		calli default string(object)
 		ldstr "MyStruct478::Method7.3775<System.Object>()"
-		ldstr "valuetype MyStruct478`2<class BaseClass0,class BaseClass1> on type valuetype MyStruct478`2<class BaseClass0,class BaseClass1>"
+		ldstr "valuetype MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_14
-		box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
 		ldloc V_14
-		box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
-		ldvirtftn instance string valuetype MyStruct478`2<class BaseClass0,class BaseClass1>::ClassMethod938()
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
+		ldvirtftn instance string valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>::ClassMethod938()
 		calli default string(object)
 		ldstr "MyStruct478::ClassMethod938.3777()"
-		ldstr "valuetype MyStruct478`2<class BaseClass0,class BaseClass1> on type valuetype MyStruct478`2<class BaseClass0,class BaseClass1>"
+		ldstr "valuetype MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_14
-		box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
 		ldloc V_14
-		box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
-		ldvirtftn instance string valuetype MyStruct478`2<class BaseClass0,class BaseClass1>::ClassMethod939()
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
+		ldvirtftn instance string valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>::ClassMethod939()
 		calli default string(object)
 		ldstr "MyStruct478::ClassMethod939.3778()"
-		ldstr "valuetype MyStruct478`2<class BaseClass0,class BaseClass1> on type valuetype MyStruct478`2<class BaseClass0,class BaseClass1>"
+		ldstr "valuetype MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_14
-		box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
 		ldloc V_14
-		box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
-		ldvirtftn instance string valuetype MyStruct478`2<class BaseClass0,class BaseClass1>::ClassMethod940<object>()
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
+		ldvirtftn instance string valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>::ClassMethod940<object>()
 		calli default string(object)
 		ldstr "MyStruct478::ClassMethod940.3779<System.Object>()"
-		ldstr "valuetype MyStruct478`2<class BaseClass0,class BaseClass1> on type valuetype MyStruct478`2<class BaseClass0,class BaseClass1>"
+		ldstr "valuetype MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
-		ldloc V_14 box valuetype MyStruct478`2<class BaseClass0,class BaseClass1> ldnull 
-		ldloc V_14 box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
-		ldvirtftn instance bool valuetype MyStruct478`2<class BaseClass0,class BaseClass1>::Equals(object) calli default bool(object,object) pop
-		ldloc V_14 box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
-		ldloc V_14 box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
-		ldvirtftn instance int32 valuetype MyStruct478`2<class BaseClass0,class BaseClass1>::GetHashCode() calli default int32(object) pop
-		ldloc V_14 box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
-		ldloc V_14 box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
-		ldvirtftn instance string valuetype MyStruct478`2<class BaseClass0,class BaseClass1>::ToString() calli default string(object) pop
+		ldloc V_14 box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1> ldnull 
+		ldloc V_14 box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
+		ldvirtftn instance bool valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>::Equals(object) calli default bool(object,object) pop
+		ldloc V_14 box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
+		ldloc V_14 box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
+		ldvirtftn instance int32 valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>::GetHashCode() calli default int32(object) pop
+		ldloc V_14 box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
+		ldloc V_14 box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
+		ldvirtftn instance string valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>::ToString() calli default string(object) pop
 		ldloc V_14
-		box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
 		ldloc V_14
-		box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
-		ldvirtftn instance string class IBase2`2<class BaseClass0,class BaseClass1>::Method7<object>()
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
+		ldvirtftn instance string class Generated428.IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass1>::Method7<object>()
 		calli default string(object)
 		ldstr "MyStruct478::Method7.3775<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass1> on type valuetype MyStruct478`2<class BaseClass0,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass1> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_14
-		box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
 		ldloc V_14
-		box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
-		ldvirtftn instance string class IBase2`2<class BaseClass1,class BaseClass0>::Method7<object>()
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
+		ldvirtftn instance string class Generated428.IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass0>::Method7<object>()
 		calli default string(object)
 		ldstr "MyStruct478::Method7.3775<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass1,class BaseClass0> on type valuetype MyStruct478`2<class BaseClass0,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass0> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_14
-		box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
 		ldloc V_14
-		box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
-		ldvirtftn instance string class IBase2`2<class BaseClass0,class BaseClass0>::Method7<object>()
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
+		ldvirtftn instance string class Generated428.IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass0>::Method7<object>()
 		calli default string(object)
 		ldstr "MyStruct478::Method7.3775<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass0> on type valuetype MyStruct478`2<class BaseClass0,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass0> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_14
-		box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
 		ldloc V_14
-		box valuetype MyStruct478`2<class BaseClass0,class BaseClass1>
-		ldvirtftn instance string class IBase2`2<class BaseClass1,class BaseClass1>::Method7<object>()
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>
+		ldvirtftn instance string class Generated428.IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass1>::Method7<object>()
 		calli default string(object)
 		ldstr "MyStruct478::Method7.3775<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass1,class BaseClass1> on type valuetype MyStruct478`2<class BaseClass0,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass1> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass0,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
-		.locals init (valuetype MyStruct478`2<class BaseClass1,class BaseClass1> V_16)
+		.locals init (valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1> V_16)
 		ldloca V_16
-		initobj valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
+		initobj valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
 		ldloc V_16
-		box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
 		ldloc V_16
-		box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
-		ldvirtftn instance string valuetype MyStruct478`2<class BaseClass1,class BaseClass1>::Method7<object>()
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
+		ldvirtftn instance string valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>::Method7<object>()
 		calli default string(object)
 		ldstr "MyStruct478::Method7.3775<System.Object>()"
-		ldstr "valuetype MyStruct478`2<class BaseClass1,class BaseClass1> on type valuetype MyStruct478`2<class BaseClass1,class BaseClass1>"
+		ldstr "valuetype MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_16
-		box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
 		ldloc V_16
-		box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
-		ldvirtftn instance string valuetype MyStruct478`2<class BaseClass1,class BaseClass1>::ClassMethod938()
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
+		ldvirtftn instance string valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>::ClassMethod938()
 		calli default string(object)
 		ldstr "MyStruct478::ClassMethod938.3777()"
-		ldstr "valuetype MyStruct478`2<class BaseClass1,class BaseClass1> on type valuetype MyStruct478`2<class BaseClass1,class BaseClass1>"
+		ldstr "valuetype MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_16
-		box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
 		ldloc V_16
-		box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
-		ldvirtftn instance string valuetype MyStruct478`2<class BaseClass1,class BaseClass1>::ClassMethod939()
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
+		ldvirtftn instance string valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>::ClassMethod939()
 		calli default string(object)
 		ldstr "MyStruct478::ClassMethod939.3778()"
-		ldstr "valuetype MyStruct478`2<class BaseClass1,class BaseClass1> on type valuetype MyStruct478`2<class BaseClass1,class BaseClass1>"
+		ldstr "valuetype MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_16
-		box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
 		ldloc V_16
-		box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
-		ldvirtftn instance string valuetype MyStruct478`2<class BaseClass1,class BaseClass1>::ClassMethod940<object>()
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
+		ldvirtftn instance string valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>::ClassMethod940<object>()
 		calli default string(object)
 		ldstr "MyStruct478::ClassMethod940.3779<System.Object>()"
-		ldstr "valuetype MyStruct478`2<class BaseClass1,class BaseClass1> on type valuetype MyStruct478`2<class BaseClass1,class BaseClass1>"
+		ldstr "valuetype MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
-		ldloc V_16 box valuetype MyStruct478`2<class BaseClass1,class BaseClass1> ldnull 
-		ldloc V_16 box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
-		ldvirtftn instance bool valuetype MyStruct478`2<class BaseClass1,class BaseClass1>::Equals(object) calli default bool(object,object) pop
-		ldloc V_16 box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
-		ldloc V_16 box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
-		ldvirtftn instance int32 valuetype MyStruct478`2<class BaseClass1,class BaseClass1>::GetHashCode() calli default int32(object) pop
-		ldloc V_16 box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
-		ldloc V_16 box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
-		ldvirtftn instance string valuetype MyStruct478`2<class BaseClass1,class BaseClass1>::ToString() calli default string(object) pop
+		ldloc V_16 box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1> ldnull 
+		ldloc V_16 box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
+		ldvirtftn instance bool valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>::Equals(object) calli default bool(object,object) pop
+		ldloc V_16 box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
+		ldloc V_16 box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
+		ldvirtftn instance int32 valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>::GetHashCode() calli default int32(object) pop
+		ldloc V_16 box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
+		ldloc V_16 box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
+		ldvirtftn instance string valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>::ToString() calli default string(object) pop
 		ldloc V_16
-		box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
 		ldloc V_16
-		box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
-		ldvirtftn instance string class IBase2`2<class BaseClass0,class BaseClass1>::Method7<object>()
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
+		ldvirtftn instance string class Generated428.IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass1>::Method7<object>()
 		calli default string(object)
 		ldstr "MyStruct478::Method7.3775<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass1> on type valuetype MyStruct478`2<class BaseClass1,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass1> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_16
-		box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
 		ldloc V_16
-		box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
-		ldvirtftn instance string class IBase2`2<class BaseClass1,class BaseClass0>::Method7<object>()
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
+		ldvirtftn instance string class Generated428.IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass0>::Method7<object>()
 		calli default string(object)
 		ldstr "MyStruct478::Method7.3775<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass1,class BaseClass0> on type valuetype MyStruct478`2<class BaseClass1,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass0> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_16
-		box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
 		ldloc V_16
-		box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
-		ldvirtftn instance string class IBase2`2<class BaseClass0,class BaseClass0>::Method7<object>()
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
+		ldvirtftn instance string class Generated428.IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass0>::Method7<object>()
 		calli default string(object)
 		ldstr "MyStruct478::Method7.3775<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass0> on type valuetype MyStruct478`2<class BaseClass1,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated428.BaseClass0,class Generated428.BaseClass0> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc V_16
-		box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
 		ldloc V_16
-		box valuetype MyStruct478`2<class BaseClass1,class BaseClass1>
-		ldvirtftn instance string class IBase2`2<class BaseClass1,class BaseClass1>::Method7<object>()
+		box valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>
+		ldvirtftn instance string class Generated428.IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass1>::Method7<object>()
 		calli default string(object)
 		ldstr "MyStruct478::Method7.3775<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass1,class BaseClass1> on type valuetype MyStruct478`2<class BaseClass1,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated428.BaseClass1,class Generated428.BaseClass1> on type valuetype Generated428.MyStruct478`2<class Generated428.BaseClass1,class Generated428.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldstr "========================================================================\n\n"
 		call void [mscorlib]System.Console::WriteLine(string)
@@ -824,10 +823,10 @@
 		)
 		.entrypoint
 		.maxstack  10
-		call void Generated428::MethodCallingTest()
-		call void Generated428::ConstrainedCallsTest()
-		call void Generated428::StructConstrainedInterfaceCallsTest()
-		call void Generated428::CalliTest()
+		call void Generated428.Generated428::MethodCallingTest()
+		call void Generated428.Generated428::ConstrainedCallsTest()
+		call void Generated428.Generated428::StructConstrainedInterfaceCallsTest()
+		call void Generated428.Generated428::CalliTest()
 		ldc.i4 100
 		ret
 	}

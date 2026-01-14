@@ -7,10 +7,9 @@
 //TYPES IN FORWARDER ASSEMBLIES:
 
 //TEST ASSEMBLY:
-.assembly Generated988 { .hash algorithm 0x00008004 }
 .assembly extern xunit.core {}
 
-.class public BaseClass0 
+.class public Generated988.BaseClass0 
 {
 	.method public hidebysig specialname rtspecialname instance void .ctor() cil managed { 
 		ldarg.0
@@ -18,18 +17,18 @@
 		ret
 	}
 }
-.class public BaseClass1 
-		extends BaseClass0
+.class public Generated988.BaseClass1 
+		extends Generated988.BaseClass0
 {
 	.method public hidebysig specialname rtspecialname instance void .ctor() cil managed { 
 		ldarg.0
-		call instance void BaseClass0::.ctor()
+		call instance void Generated988.BaseClass0::.ctor()
 		ret
 	}
 }
-.class public G3_C1460`1<T0> 
-		extends class G2_C487`2<!T0,class BaseClass1>
-		implements IBase0 
+.class public Generated988.G3_C1460`1<T0> 
+		extends class Generated988.G2_C487`2<!T0,class Generated988.BaseClass1>
+		implements Generated988.IBase0 
 {
 	.method public hidebysig newslot virtual instance string Method0() cil managed noinlining { 
 		ldstr "G3_C1460::Method0.16275()"
@@ -40,7 +39,7 @@
 		ret
 	}
 	.method public hidebysig newslot virtual instance string 'IBase0.Method1'() cil managed noinlining { 
-		.override method instance string IBase0::Method1()
+		.override method instance string Generated988.IBase0::Method1()
 		ldstr "G3_C1460::Method1.MI.16277()"
 		ret
 	}
@@ -54,7 +53,7 @@
 		ret
 	}
 	.method public hidebysig newslot virtual instance string 'IBase0.Method2'<M0>() cil managed noinlining { 
-		.override method instance string IBase0::Method2<[1]>()
+		.override method instance string Generated988.IBase0::Method2<[1]>()
 		ldstr "G3_C1460::Method2.MI.16279<"
 		ldtoken !!M0
 		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
@@ -73,7 +72,7 @@
 		ret
 	}
 	.method public hidebysig newslot virtual instance string 'IBase0.Method3'<M0>() cil managed noinlining { 
-		.override method instance string IBase0::Method3<[1]>()
+		.override method instance string Generated988.IBase0::Method3<[1]>()
 		ldstr "G3_C1460::Method3.MI.16281<"
 		ldtoken !!M0
 		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
@@ -101,20 +100,20 @@
 	}
 	.method public hidebysig specialname rtspecialname instance void .ctor() cil managed { 
 		ldarg.0
-		call instance void class G2_C487`2<!T0,class BaseClass1>::.ctor()
+		call instance void class Generated988.G2_C487`2<!T0,class Generated988.BaseClass1>::.ctor()
 		ret
 	}
 }
-.class public G2_C487`2<T0, T1> 
-		extends class G1_C9`2<class BaseClass1,!T0>
-		implements class IBase1`1<class BaseClass0>, class IBase2`2<!T1,!T0> 
+.class public Generated988.G2_C487`2<T0, T1> 
+		extends class Generated988.G1_C9`2<class Generated988.BaseClass1,!T0>
+		implements class Generated988.IBase1`1<class Generated988.BaseClass0>, class Generated988.IBase2`2<!T1,!T0> 
 {
 	.method public hidebysig newslot virtual instance string Method4() cil managed noinlining { 
 		ldstr "G2_C487::Method4.9424()"
 		ret
 	}
-	.method public hidebysig newslot virtual instance string 'IBase1<class BaseClass0>.Method4'() cil managed noinlining { 
-		.override method instance string class IBase1`1<class BaseClass0>::Method4()
+	.method public hidebysig newslot virtual instance string 'IBase1<class Generated988.BaseClass0>.Method4'() cil managed noinlining { 
+		.override method instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method4()
 		ldstr "G2_C487::Method4.MI.9425()"
 		ret
 	}
@@ -122,8 +121,8 @@
 		ldstr "G2_C487::Method5.9426()"
 		ret
 	}
-	.method public hidebysig newslot virtual instance string 'IBase1<class BaseClass0>.Method5'() cil managed noinlining { 
-		.override method instance string class IBase1`1<class BaseClass0>::Method5()
+	.method public hidebysig newslot virtual instance string 'IBase1<class Generated988.BaseClass0>.Method5'() cil managed noinlining { 
+		.override method instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method5()
 		ldstr "G2_C487::Method5.MI.9427()"
 		ret
 	}
@@ -136,8 +135,8 @@
 		call string [mscorlib]System.String::Concat(object,object)
 		ret
 	}
-	.method public hidebysig newslot virtual instance string 'IBase1<class BaseClass0>.Method6'<M0>() cil managed noinlining { 
-		.override method instance string class IBase1`1<class BaseClass0>::Method6<[1]>()
+	.method public hidebysig newslot virtual instance string 'IBase1<class Generated988.BaseClass0>.Method6'<M0>() cil managed noinlining { 
+		.override method instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method6<[1]>()
 		ldstr "G2_C487::Method6.MI.9429<"
 		ldtoken !!M0
 		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
@@ -159,18 +158,18 @@
 		ldstr "G2_C487::ClassMethod2328.9431()"
 		ret
 	}
-	.method public hidebysig newslot virtual instance string 'G1_C9<class BaseClass1,T0>.ClassMethod1336'() cil managed noinlining { 
-		.override method instance string class G1_C9`2<class BaseClass1,!T0>::ClassMethod1336()
+	.method public hidebysig newslot virtual instance string 'G1_C9<class Generated988.BaseClass1,T0>.ClassMethod1336'() cil managed noinlining { 
+		.override method instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,!T0>::ClassMethod1336()
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
 		ret
 	}
-	.method public hidebysig newslot virtual instance string 'G1_C9<class BaseClass1,T0>.ClassMethod1337'() cil managed noinlining { 
-		.override method instance string class G1_C9`2<class BaseClass1,!T0>::ClassMethod1337()
+	.method public hidebysig newslot virtual instance string 'G1_C9<class Generated988.BaseClass1,T0>.ClassMethod1337'() cil managed noinlining { 
+		.override method instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,!T0>::ClassMethod1337()
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
 		ret
 	}
-	.method public hidebysig newslot virtual instance string 'G1_C9<class BaseClass1,T0>.ClassMethod1338'<M0>() cil managed noinlining { 
-		.override method instance string class G1_C9`2<class BaseClass1,!T0>::ClassMethod1338<[1]>()
+	.method public hidebysig newslot virtual instance string 'G1_C9<class Generated988.BaseClass1,T0>.ClassMethod1338'<M0>() cil managed noinlining { 
+		.override method instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,!T0>::ClassMethod1338<[1]>()
 		ldstr "G2_C487::ClassMethod1338.MI.9434<"
 		ldtoken !!M0
 		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
@@ -181,19 +180,19 @@
 	}
 	.method public hidebysig specialname rtspecialname instance void .ctor() cil managed { 
 		ldarg.0
-		call instance void class G1_C9`2<class BaseClass1,!T0>::.ctor()
+		call instance void class Generated988.G1_C9`2<class Generated988.BaseClass1,!T0>::.ctor()
 		ret
 	}
 }
-.class interface public abstract IBase0 
+.class interface public abstract Generated988.IBase0 
 {
 	.method public hidebysig newslot abstract virtual instance string Method0() cil managed { }
 	.method public hidebysig newslot abstract virtual instance string Method1() cil managed { }
 	.method public hidebysig newslot abstract virtual instance string Method2<M0>() cil managed { }
 	.method public hidebysig newslot abstract virtual instance string Method3<M0>() cil managed { }
 }
-.class public abstract G1_C9`2<T0, T1> 
-		implements class IBase2`2<class BaseClass0,!T0>, class IBase1`1<class BaseClass0> 
+.class public abstract Generated988.G1_C9`2<T0, T1> 
+		implements class Generated988.IBase2`2<class Generated988.BaseClass0,!T0>, class Generated988.IBase1`1<class Generated988.BaseClass0> 
 {
 	.method public hidebysig virtual instance string Method7<M0>() cil managed noinlining { 
 		ldstr "G1_C9::Method7.4833<"
@@ -208,8 +207,8 @@
 		ldstr "G1_C9::Method4.4834()"
 		ret
 	}
-	.method public hidebysig newslot virtual instance string 'IBase1<class BaseClass0>.Method4'() cil managed noinlining { 
-		.override method instance string class IBase1`1<class BaseClass0>::Method4()
+	.method public hidebysig newslot virtual instance string 'IBase1<class Generated988.BaseClass0>.Method4'() cil managed noinlining { 
+		.override method instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method4()
 		ldstr "G1_C9::Method4.MI.4835()"
 		ret
 	}
@@ -217,8 +216,8 @@
 		ldstr "G1_C9::Method5.4836()"
 		ret
 	}
-	.method public hidebysig newslot virtual instance string 'IBase1<class BaseClass0>.Method5'() cil managed noinlining { 
-		.override method instance string class IBase1`1<class BaseClass0>::Method5()
+	.method public hidebysig newslot virtual instance string 'IBase1<class Generated988.BaseClass0>.Method5'() cil managed noinlining { 
+		.override method instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method5()
 		ldstr "G1_C9::Method5.MI.4837()"
 		ret
 	}
@@ -231,8 +230,8 @@
 		call string [mscorlib]System.String::Concat(object,object)
 		ret
 	}
-	.method public hidebysig newslot virtual instance string 'IBase1<class BaseClass0>.Method6'<M0>() cil managed noinlining { 
-		.override method instance string class IBase1`1<class BaseClass0>::Method6<[1]>()
+	.method public hidebysig newslot virtual instance string 'IBase1<class Generated988.BaseClass0>.Method6'<M0>() cil managed noinlining { 
+		.override method instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method6<[1]>()
 		ldstr "G1_C9::Method6.MI.4839<"
 		ldtoken !!M0
 		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
@@ -273,1524 +272,1524 @@
 		ret
 	}
 }
-.class interface public abstract IBase1`1<+T0> 
+.class interface public abstract Generated988.IBase1`1<+T0> 
 {
 	.method public hidebysig newslot abstract virtual instance string Method4() cil managed { }
 	.method public hidebysig newslot abstract virtual instance string Method5() cil managed { }
 	.method public hidebysig newslot abstract virtual instance string Method6<M0>() cil managed { }
 }
-.class interface public abstract IBase2`2<+T0, -T1> 
+.class interface public abstract Generated988.IBase2`2<+T0, -T1> 
 {
 	.method public hidebysig newslot abstract virtual instance string Method7<M0>() cil managed { }
 }
-.class public auto ansi beforefieldinit Generated988 {
-	.method static void M.BaseClass0<(BaseClass0)W>(!!W inst, string exp) cil managed {
+.class public auto ansi beforefieldinit Generated988.Generated988 {
+	.method static void M.BaseClass0<(Generated988.BaseClass0)W>(!!W inst, string exp) cil managed {
 		.maxstack 5
 		.locals init (string[] actualResults)
 		ldc.i4.s    0
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.BaseClass0<(BaseClass0)W>(!!W inst, string exp)"
+		ldstr "M.BaseClass0<(Generated988.BaseClass0)W>(!!W inst, string exp)"
 		ldc.i4.s 0
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.BaseClass1<(BaseClass1)W>(!!W inst, string exp) cil managed {
+	.method static void M.BaseClass1<(Generated988.BaseClass1)W>(!!W inst, string exp) cil managed {
 		.maxstack 5
 		.locals init (string[] actualResults)
 		ldc.i4.s    0
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.BaseClass1<(BaseClass1)W>(!!W inst, string exp)"
+		ldstr "M.BaseClass1<(Generated988.BaseClass1)W>(!!W inst, string exp)"
 		ldc.i4.s 0
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.G3_C1460.T<T0,(class G3_C1460`1<!!T0>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.G3_C1460.T<T0,(class Generated988.G3_C1460`1<!!T0>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 21
 		.locals init (string[] actualResults)
 		ldc.i4.s    16
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.G3_C1460.T<T0,(class G3_C1460`1<!!T0>)W>(!!W 'inst', string exp)"
+		ldstr "M.G3_C1460.T<T0,(class Generated988.G3_C1460`1<!!T0>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 16
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<!!T0>::ClassMethod1336()
+		callvirt     instance string class Generated988.G3_C1460`1<!!T0>::ClassMethod1336()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<!!T0>::ClassMethod1337()
+		callvirt     instance string class Generated988.G3_C1460`1<!!T0>::ClassMethod1337()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<!!T0>::ClassMethod1338<object>()
+		callvirt     instance string class Generated988.G3_C1460`1<!!T0>::ClassMethod1338<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     3
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<!!T0>::ClassMethod1339<object>()
+		callvirt     instance string class Generated988.G3_C1460`1<!!T0>::ClassMethod1339<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     4
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<!!T0>::ClassMethod2328()
+		callvirt     instance string class Generated988.G3_C1460`1<!!T0>::ClassMethod2328()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     5
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<!!T0>::ClassMethod4307()
+		callvirt     instance string class Generated988.G3_C1460`1<!!T0>::ClassMethod4307()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     6
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<!!T0>::ClassMethod4308()
+		callvirt     instance string class Generated988.G3_C1460`1<!!T0>::ClassMethod4308()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     7
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<!!T0>::ClassMethod4309<object>()
+		callvirt     instance string class Generated988.G3_C1460`1<!!T0>::ClassMethod4309<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     8
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<!!T0>::Method0()
+		callvirt     instance string class Generated988.G3_C1460`1<!!T0>::Method0()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     9
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<!!T0>::Method1()
+		callvirt     instance string class Generated988.G3_C1460`1<!!T0>::Method1()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     10
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<!!T0>::Method2<object>()
+		callvirt     instance string class Generated988.G3_C1460`1<!!T0>::Method2<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     11
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<!!T0>::Method3<object>()
+		callvirt     instance string class Generated988.G3_C1460`1<!!T0>::Method3<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     12
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<!!T0>::Method4()
+		callvirt     instance string class Generated988.G3_C1460`1<!!T0>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     13
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<!!T0>::Method5()
+		callvirt     instance string class Generated988.G3_C1460`1<!!T0>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     14
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<!!T0>::Method6<object>()
+		callvirt     instance string class Generated988.G3_C1460`1<!!T0>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     15
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<!!T0>::Method7<object>()
+		callvirt     instance string class Generated988.G3_C1460`1<!!T0>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.G3_C1460.A<(class G3_C1460`1<class BaseClass0>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.G3_C1460.A<(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 21
 		.locals init (string[] actualResults)
 		ldc.i4.s    16
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.G3_C1460.A<(class G3_C1460`1<class BaseClass0>)W>(!!W 'inst', string exp)"
+		ldstr "M.G3_C1460.A<(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 16
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass0>::ClassMethod1336()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod1336()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass0>::ClassMethod1337()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod1337()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass0>::ClassMethod1338<object>()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod1338<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     3
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass0>::ClassMethod1339<object>()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod1339<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     4
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass0>::ClassMethod2328()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod2328()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     5
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass0>::ClassMethod4307()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod4307()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     6
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass0>::ClassMethod4308()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod4308()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     7
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass0>::ClassMethod4309<object>()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod4309<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     8
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass0>::Method0()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method0()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     9
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass0>::Method1()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method1()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     10
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass0>::Method2<object>()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method2<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     11
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass0>::Method3<object>()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method3<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     12
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass0>::Method4()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     13
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass0>::Method5()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     14
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass0>::Method6<object>()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     15
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass0>::Method7<object>()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.G3_C1460.B<(class G3_C1460`1<class BaseClass1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.G3_C1460.B<(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 21
 		.locals init (string[] actualResults)
 		ldc.i4.s    16
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.G3_C1460.B<(class G3_C1460`1<class BaseClass1>)W>(!!W 'inst', string exp)"
+		ldstr "M.G3_C1460.B<(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 16
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass1>::ClassMethod1336()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod1336()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass1>::ClassMethod1337()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod1337()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass1>::ClassMethod1338<object>()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod1338<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     3
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass1>::ClassMethod1339<object>()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod1339<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     4
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass1>::ClassMethod2328()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod2328()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     5
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass1>::ClassMethod4307()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod4307()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     6
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass1>::ClassMethod4308()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod4308()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     7
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass1>::ClassMethod4309<object>()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod4309<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     8
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass1>::Method0()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method0()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     9
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass1>::Method1()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method1()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     10
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass1>::Method2<object>()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method2<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     11
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass1>::Method3<object>()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method3<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     12
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass1>::Method4()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     13
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass1>::Method5()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     14
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass1>::Method6<object>()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     15
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G3_C1460`1<class BaseClass1>::Method7<object>()
+		callvirt     instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.G2_C487.T.T<T0,T1,(class G2_C487`2<!!T0,!!T1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.G2_C487.T.T<T0,T1,(class Generated988.G2_C487`2<!!T0,!!T1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 14
 		.locals init (string[] actualResults)
 		ldc.i4.s    9
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.G2_C487.T.T<T0,T1,(class G2_C487`2<!!T0,!!T1>)W>(!!W 'inst', string exp)"
+		ldstr "M.G2_C487.T.T<T0,T1,(class Generated988.G2_C487`2<!!T0,!!T1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 9
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<!!T0,!!T1>::ClassMethod1336()
+		callvirt     instance string class Generated988.G2_C487`2<!!T0,!!T1>::ClassMethod1336()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<!!T0,!!T1>::ClassMethod1337()
+		callvirt     instance string class Generated988.G2_C487`2<!!T0,!!T1>::ClassMethod1337()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<!!T0,!!T1>::ClassMethod1338<object>()
+		callvirt     instance string class Generated988.G2_C487`2<!!T0,!!T1>::ClassMethod1338<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     3
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<!!T0,!!T1>::ClassMethod1339<object>()
+		callvirt     instance string class Generated988.G2_C487`2<!!T0,!!T1>::ClassMethod1339<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     4
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<!!T0,!!T1>::ClassMethod2328()
+		callvirt     instance string class Generated988.G2_C487`2<!!T0,!!T1>::ClassMethod2328()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     5
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<!!T0,!!T1>::Method4()
+		callvirt     instance string class Generated988.G2_C487`2<!!T0,!!T1>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     6
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<!!T0,!!T1>::Method5()
+		callvirt     instance string class Generated988.G2_C487`2<!!T0,!!T1>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     7
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<!!T0,!!T1>::Method6<object>()
+		callvirt     instance string class Generated988.G2_C487`2<!!T0,!!T1>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     8
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<!!T0,!!T1>::Method7<object>()
+		callvirt     instance string class Generated988.G2_C487`2<!!T0,!!T1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.G2_C487.A.T<T1,(class G2_C487`2<class BaseClass0,!!T1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.G2_C487.A.T<T1,(class Generated988.G2_C487`2<class Generated988.BaseClass0,!!T1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 14
 		.locals init (string[] actualResults)
 		ldc.i4.s    9
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.G2_C487.A.T<T1,(class G2_C487`2<class BaseClass0,!!T1>)W>(!!W 'inst', string exp)"
+		ldstr "M.G2_C487.A.T<T1,(class Generated988.G2_C487`2<class Generated988.BaseClass0,!!T1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 9
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,!!T1>::ClassMethod1336()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,!!T1>::ClassMethod1336()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,!!T1>::ClassMethod1337()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,!!T1>::ClassMethod1337()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,!!T1>::ClassMethod1338<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,!!T1>::ClassMethod1338<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     3
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,!!T1>::ClassMethod1339<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,!!T1>::ClassMethod1339<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     4
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,!!T1>::ClassMethod2328()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,!!T1>::ClassMethod2328()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     5
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,!!T1>::Method4()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,!!T1>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     6
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,!!T1>::Method5()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,!!T1>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     7
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,!!T1>::Method6<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,!!T1>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     8
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,!!T1>::Method7<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,!!T1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.G2_C487.A.A<(class G2_C487`2<class BaseClass0,class BaseClass0>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.G2_C487.A.A<(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 14
 		.locals init (string[] actualResults)
 		ldc.i4.s    9
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.G2_C487.A.A<(class G2_C487`2<class BaseClass0,class BaseClass0>)W>(!!W 'inst', string exp)"
+		ldstr "M.G2_C487.A.A<(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 9
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,class BaseClass0>::ClassMethod1336()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::ClassMethod1336()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,class BaseClass0>::ClassMethod1337()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::ClassMethod1337()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,class BaseClass0>::ClassMethod1338<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::ClassMethod1338<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     3
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,class BaseClass0>::ClassMethod1339<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::ClassMethod1339<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     4
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,class BaseClass0>::ClassMethod2328()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::ClassMethod2328()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     5
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,class BaseClass0>::Method4()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     6
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,class BaseClass0>::Method5()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     7
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,class BaseClass0>::Method6<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     8
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,class BaseClass0>::Method7<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.G2_C487.A.B<(class G2_C487`2<class BaseClass0,class BaseClass1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.G2_C487.A.B<(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 14
 		.locals init (string[] actualResults)
 		ldc.i4.s    9
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.G2_C487.A.B<(class G2_C487`2<class BaseClass0,class BaseClass1>)W>(!!W 'inst', string exp)"
+		ldstr "M.G2_C487.A.B<(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 9
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod1336()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1336()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod1337()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1337()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod1338<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1338<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     3
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod1339<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1339<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     4
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod2328()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod2328()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     5
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,class BaseClass1>::Method4()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     6
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,class BaseClass1>::Method5()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     7
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,class BaseClass1>::Method6<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     8
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass0,class BaseClass1>::Method7<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.G2_C487.B.T<T1,(class G2_C487`2<class BaseClass1,!!T1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.G2_C487.B.T<T1,(class Generated988.G2_C487`2<class Generated988.BaseClass1,!!T1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 14
 		.locals init (string[] actualResults)
 		ldc.i4.s    9
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.G2_C487.B.T<T1,(class G2_C487`2<class BaseClass1,!!T1>)W>(!!W 'inst', string exp)"
+		ldstr "M.G2_C487.B.T<T1,(class Generated988.G2_C487`2<class Generated988.BaseClass1,!!T1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 9
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,!!T1>::ClassMethod1336()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,!!T1>::ClassMethod1336()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,!!T1>::ClassMethod1337()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,!!T1>::ClassMethod1337()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,!!T1>::ClassMethod1338<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,!!T1>::ClassMethod1338<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     3
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,!!T1>::ClassMethod1339<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,!!T1>::ClassMethod1339<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     4
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,!!T1>::ClassMethod2328()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,!!T1>::ClassMethod2328()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     5
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,!!T1>::Method4()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,!!T1>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     6
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,!!T1>::Method5()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,!!T1>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     7
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,!!T1>::Method6<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,!!T1>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     8
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,!!T1>::Method7<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,!!T1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.G2_C487.B.A<(class G2_C487`2<class BaseClass1,class BaseClass0>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.G2_C487.B.A<(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 14
 		.locals init (string[] actualResults)
 		ldc.i4.s    9
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.G2_C487.B.A<(class G2_C487`2<class BaseClass1,class BaseClass0>)W>(!!W 'inst', string exp)"
+		ldstr "M.G2_C487.B.A<(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 9
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,class BaseClass0>::ClassMethod1336()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1336()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,class BaseClass0>::ClassMethod1337()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1337()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,class BaseClass0>::ClassMethod1338<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1338<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     3
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,class BaseClass0>::ClassMethod1339<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1339<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     4
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,class BaseClass0>::ClassMethod2328()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod2328()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     5
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,class BaseClass0>::Method4()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     6
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,class BaseClass0>::Method5()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     7
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,class BaseClass0>::Method6<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     8
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,class BaseClass0>::Method7<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.G2_C487.B.B<(class G2_C487`2<class BaseClass1,class BaseClass1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.G2_C487.B.B<(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 14
 		.locals init (string[] actualResults)
 		ldc.i4.s    9
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.G2_C487.B.B<(class G2_C487`2<class BaseClass1,class BaseClass1>)W>(!!W 'inst', string exp)"
+		ldstr "M.G2_C487.B.B<(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 9
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod1336()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1336()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod1337()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1337()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod1338<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1338<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     3
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod1339<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1339<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     4
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod2328()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod2328()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     5
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,class BaseClass1>::Method4()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     6
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,class BaseClass1>::Method5()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     7
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,class BaseClass1>::Method6<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     8
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G2_C487`2<class BaseClass1,class BaseClass1>::Method7<object>()
+		callvirt     instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.IBase0<(IBase0)W>(!!W inst, string exp) cil managed {
+	.method static void M.IBase0<(Generated988.IBase0)W>(!!W inst, string exp) cil managed {
 		.maxstack 9
 		.locals init (string[] actualResults)
 		ldc.i4.s    4
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.IBase0<(IBase0)W>(!!W inst, string exp)"
+		ldstr "M.IBase0<(Generated988.IBase0)W>(!!W inst, string exp)"
 		ldc.i4.s 4
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string IBase0::Method0()
+		callvirt     instance string Generated988.IBase0::Method0()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string IBase0::Method1()
+		callvirt     instance string Generated988.IBase0::Method1()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string IBase0::Method2<object>()
+		callvirt     instance string Generated988.IBase0::Method2<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     3
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string IBase0::Method3<object>()
+		callvirt     instance string Generated988.IBase0::Method3<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.G1_C9.T.T<T0,T1,(class G1_C9`2<!!T0,!!T1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.G1_C9.T.T<T0,T1,(class Generated988.G1_C9`2<!!T0,!!T1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 13
 		.locals init (string[] actualResults)
 		ldc.i4.s    8
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.G1_C9.T.T<T0,T1,(class G1_C9`2<!!T0,!!T1>)W>(!!W 'inst', string exp)"
+		ldstr "M.G1_C9.T.T<T0,T1,(class Generated988.G1_C9`2<!!T0,!!T1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 8
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<!!T0,!!T1>::ClassMethod1336()
+		callvirt     instance string class Generated988.G1_C9`2<!!T0,!!T1>::ClassMethod1336()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<!!T0,!!T1>::ClassMethod1337()
+		callvirt     instance string class Generated988.G1_C9`2<!!T0,!!T1>::ClassMethod1337()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<!!T0,!!T1>::ClassMethod1338<object>()
+		callvirt     instance string class Generated988.G1_C9`2<!!T0,!!T1>::ClassMethod1338<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     3
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<!!T0,!!T1>::ClassMethod1339<object>()
+		callvirt     instance string class Generated988.G1_C9`2<!!T0,!!T1>::ClassMethod1339<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     4
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<!!T0,!!T1>::Method4()
+		callvirt     instance string class Generated988.G1_C9`2<!!T0,!!T1>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     5
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<!!T0,!!T1>::Method5()
+		callvirt     instance string class Generated988.G1_C9`2<!!T0,!!T1>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     6
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<!!T0,!!T1>::Method6<object>()
+		callvirt     instance string class Generated988.G1_C9`2<!!T0,!!T1>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     7
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<!!T0,!!T1>::Method7<object>()
+		callvirt     instance string class Generated988.G1_C9`2<!!T0,!!T1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.G1_C9.A.T<T1,(class G1_C9`2<class BaseClass0,!!T1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.G1_C9.A.T<T1,(class Generated988.G1_C9`2<class Generated988.BaseClass0,!!T1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 13
 		.locals init (string[] actualResults)
 		ldc.i4.s    8
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.G1_C9.A.T<T1,(class G1_C9`2<class BaseClass0,!!T1>)W>(!!W 'inst', string exp)"
+		ldstr "M.G1_C9.A.T<T1,(class Generated988.G1_C9`2<class Generated988.BaseClass0,!!T1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 8
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,!!T1>::ClassMethod1336()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,!!T1>::ClassMethod1336()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,!!T1>::ClassMethod1337()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,!!T1>::ClassMethod1337()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,!!T1>::ClassMethod1338<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,!!T1>::ClassMethod1338<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     3
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,!!T1>::ClassMethod1339<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,!!T1>::ClassMethod1339<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     4
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,!!T1>::Method4()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,!!T1>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     5
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,!!T1>::Method5()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,!!T1>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     6
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,!!T1>::Method6<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,!!T1>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     7
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,!!T1>::Method7<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,!!T1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.G1_C9.A.A<(class G1_C9`2<class BaseClass0,class BaseClass0>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.G1_C9.A.A<(class Generated988.G1_C9`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 13
 		.locals init (string[] actualResults)
 		ldc.i4.s    8
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.G1_C9.A.A<(class G1_C9`2<class BaseClass0,class BaseClass0>)W>(!!W 'inst', string exp)"
+		ldstr "M.G1_C9.A.A<(class Generated988.G1_C9`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 8
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,class BaseClass0>::ClassMethod1336()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::ClassMethod1336()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,class BaseClass0>::ClassMethod1337()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::ClassMethod1337()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,class BaseClass0>::ClassMethod1338<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::ClassMethod1338<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     3
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,class BaseClass0>::ClassMethod1339<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::ClassMethod1339<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     4
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,class BaseClass0>::Method4()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     5
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,class BaseClass0>::Method5()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     6
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,class BaseClass0>::Method6<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     7
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,class BaseClass0>::Method7<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.G1_C9.A.B<(class G1_C9`2<class BaseClass0,class BaseClass1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.G1_C9.A.B<(class Generated988.G1_C9`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 13
 		.locals init (string[] actualResults)
 		ldc.i4.s    8
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.G1_C9.A.B<(class G1_C9`2<class BaseClass0,class BaseClass1>)W>(!!W 'inst', string exp)"
+		ldstr "M.G1_C9.A.B<(class Generated988.G1_C9`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 8
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,class BaseClass1>::ClassMethod1336()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1336()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,class BaseClass1>::ClassMethod1337()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1337()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,class BaseClass1>::ClassMethod1338<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1338<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     3
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,class BaseClass1>::ClassMethod1339<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1339<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     4
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,class BaseClass1>::Method4()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     5
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,class BaseClass1>::Method5()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     6
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,class BaseClass1>::Method6<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     7
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass0,class BaseClass1>::Method7<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.G1_C9.B.T<T1,(class G1_C9`2<class BaseClass1,!!T1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.G1_C9.B.T<T1,(class Generated988.G1_C9`2<class Generated988.BaseClass1,!!T1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 13
 		.locals init (string[] actualResults)
 		ldc.i4.s    8
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.G1_C9.B.T<T1,(class G1_C9`2<class BaseClass1,!!T1>)W>(!!W 'inst', string exp)"
+		ldstr "M.G1_C9.B.T<T1,(class Generated988.G1_C9`2<class Generated988.BaseClass1,!!T1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 8
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,!!T1>::ClassMethod1336()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,!!T1>::ClassMethod1336()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,!!T1>::ClassMethod1337()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,!!T1>::ClassMethod1337()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,!!T1>::ClassMethod1338<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,!!T1>::ClassMethod1338<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     3
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,!!T1>::ClassMethod1339<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,!!T1>::ClassMethod1339<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     4
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,!!T1>::Method4()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,!!T1>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     5
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,!!T1>::Method5()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,!!T1>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     6
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,!!T1>::Method6<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,!!T1>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     7
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,!!T1>::Method7<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,!!T1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.G1_C9.B.A<(class G1_C9`2<class BaseClass1,class BaseClass0>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.G1_C9.B.A<(class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 13
 		.locals init (string[] actualResults)
 		ldc.i4.s    8
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.G1_C9.B.A<(class G1_C9`2<class BaseClass1,class BaseClass0>)W>(!!W 'inst', string exp)"
+		ldstr "M.G1_C9.B.A<(class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 8
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1336()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1336()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1337()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1337()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1338<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1338<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     3
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1339<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1339<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     4
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method4()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     5
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method5()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     6
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method6<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     7
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method7<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.G1_C9.B.B<(class G1_C9`2<class BaseClass1,class BaseClass1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.G1_C9.B.B<(class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 13
 		.locals init (string[] actualResults)
 		ldc.i4.s    8
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.G1_C9.B.B<(class G1_C9`2<class BaseClass1,class BaseClass1>)W>(!!W 'inst', string exp)"
+		ldstr "M.G1_C9.B.B<(class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 8
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1336()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1336()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1337()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1337()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1338<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1338<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     3
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1339<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1339<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     4
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method4()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     5
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method5()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     6
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method6<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     7
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method7<object>()
+		callvirt     instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.IBase1.T<T0,(class IBase1`1<!!T0>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.IBase1.T<T0,(class Generated988.IBase1`1<!!T0>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 8
 		.locals init (string[] actualResults)
 		ldc.i4.s    3
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.IBase1.T<T0,(class IBase1`1<!!T0>)W>(!!W 'inst', string exp)"
+		ldstr "M.IBase1.T<T0,(class Generated988.IBase1`1<!!T0>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 3
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase1`1<!!T0>::Method4()
+		callvirt     instance string class Generated988.IBase1`1<!!T0>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase1`1<!!T0>::Method5()
+		callvirt     instance string class Generated988.IBase1`1<!!T0>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase1`1<!!T0>::Method6<object>()
+		callvirt     instance string class Generated988.IBase1`1<!!T0>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.IBase1.A<(class IBase1`1<class BaseClass0>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.IBase1.A<(class Generated988.IBase1`1<class Generated988.BaseClass0>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 8
 		.locals init (string[] actualResults)
 		ldc.i4.s    3
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.IBase1.A<(class IBase1`1<class BaseClass0>)W>(!!W 'inst', string exp)"
+		ldstr "M.IBase1.A<(class Generated988.IBase1`1<class Generated988.BaseClass0>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 3
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase1`1<class BaseClass0>::Method4()
+		callvirt     instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase1`1<class BaseClass0>::Method5()
+		callvirt     instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase1`1<class BaseClass0>::Method6<object>()
+		callvirt     instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.IBase1.B<(class IBase1`1<class BaseClass1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.IBase1.B<(class Generated988.IBase1`1<class Generated988.BaseClass1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 8
 		.locals init (string[] actualResults)
 		ldc.i4.s    3
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.IBase1.B<(class IBase1`1<class BaseClass1>)W>(!!W 'inst', string exp)"
+		ldstr "M.IBase1.B<(class Generated988.IBase1`1<class Generated988.BaseClass1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 3
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase1`1<class BaseClass1>::Method4()
+		callvirt     instance string class Generated988.IBase1`1<class Generated988.BaseClass1>::Method4()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     1
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase1`1<class BaseClass1>::Method5()
+		callvirt     instance string class Generated988.IBase1`1<class Generated988.BaseClass1>::Method5()
 		stelem.ref
 		ldloc.s      actualResults
 		ldc.i4.s     2
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase1`1<class BaseClass1>::Method6<object>()
+		callvirt     instance string class Generated988.IBase1`1<class Generated988.BaseClass1>::Method6<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.IBase2.T.T<T0,T1,(class IBase2`2<!!T0,!!T1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.IBase2.T.T<T0,T1,(class Generated988.IBase2`2<!!T0,!!T1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 6
 		.locals init (string[] actualResults)
 		ldc.i4.s    1
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.IBase2.T.T<T0,T1,(class IBase2`2<!!T0,!!T1>)W>(!!W 'inst', string exp)"
+		ldstr "M.IBase2.T.T<T0,T1,(class Generated988.IBase2`2<!!T0,!!T1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 1
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase2`2<!!T0,!!T1>::Method7<object>()
+		callvirt     instance string class Generated988.IBase2`2<!!T0,!!T1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.IBase2.A.T<T1,(class IBase2`2<class BaseClass0,!!T1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.IBase2.A.T<T1,(class Generated988.IBase2`2<class Generated988.BaseClass0,!!T1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 6
 		.locals init (string[] actualResults)
 		ldc.i4.s    1
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.IBase2.A.T<T1,(class IBase2`2<class BaseClass0,!!T1>)W>(!!W 'inst', string exp)"
+		ldstr "M.IBase2.A.T<T1,(class Generated988.IBase2`2<class Generated988.BaseClass0,!!T1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 1
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase2`2<class BaseClass0,!!T1>::Method7<object>()
+		callvirt     instance string class Generated988.IBase2`2<class Generated988.BaseClass0,!!T1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.IBase2.A.A<(class IBase2`2<class BaseClass0,class BaseClass0>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.IBase2.A.A<(class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 6
 		.locals init (string[] actualResults)
 		ldc.i4.s    1
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.IBase2.A.A<(class IBase2`2<class BaseClass0,class BaseClass0>)W>(!!W 'inst', string exp)"
+		ldstr "M.IBase2.A.A<(class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 1
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase2`2<class BaseClass0,class BaseClass0>::Method7<object>()
+		callvirt     instance string class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.IBase2.A.B<(class IBase2`2<class BaseClass0,class BaseClass1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.IBase2.A.B<(class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 6
 		.locals init (string[] actualResults)
 		ldc.i4.s    1
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.IBase2.A.B<(class IBase2`2<class BaseClass0,class BaseClass1>)W>(!!W 'inst', string exp)"
+		ldstr "M.IBase2.A.B<(class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 1
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase2`2<class BaseClass0,class BaseClass1>::Method7<object>()
+		callvirt     instance string class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.IBase2.B.T<T1,(class IBase2`2<class BaseClass1,!!T1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.IBase2.B.T<T1,(class Generated988.IBase2`2<class Generated988.BaseClass1,!!T1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 6
 		.locals init (string[] actualResults)
 		ldc.i4.s    1
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.IBase2.B.T<T1,(class IBase2`2<class BaseClass1,!!T1>)W>(!!W 'inst', string exp)"
+		ldstr "M.IBase2.B.T<T1,(class Generated988.IBase2`2<class Generated988.BaseClass1,!!T1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 1
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase2`2<class BaseClass1,!!T1>::Method7<object>()
+		callvirt     instance string class Generated988.IBase2`2<class Generated988.BaseClass1,!!T1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.IBase2.B.A<(class IBase2`2<class BaseClass1,class BaseClass0>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.IBase2.B.A<(class Generated988.IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 6
 		.locals init (string[] actualResults)
 		ldc.i4.s    1
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.IBase2.B.A<(class IBase2`2<class BaseClass1,class BaseClass0>)W>(!!W 'inst', string exp)"
+		ldstr "M.IBase2.B.A<(class Generated988.IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 1
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase2`2<class BaseClass1,class BaseClass0>::Method7<object>()
+		callvirt     instance string class Generated988.IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
 		ret
 	}
-	.method static void M.IBase2.B.B<(class IBase2`2<class BaseClass1,class BaseClass1>)W>(!!W 'inst', string exp) cil managed {
+	.method static void M.IBase2.B.B<(class Generated988.IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)W>(!!W 'inst', string exp) cil managed {
 		.maxstack 6
 		.locals init (string[] actualResults)
 		ldc.i4.s    1
 		newarr      string
 		stloc.s     actualResults
 		ldarg.1
-		ldstr "M.IBase2.B.B<(class IBase2`2<class BaseClass1,class BaseClass1>)W>(!!W 'inst', string exp)"
+		ldstr "M.IBase2.B.B<(class Generated988.IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)W>(!!W 'inst', string exp)"
 		ldc.i4.s 1
 		ldloc.s      actualResults
 		ldc.i4.s     0
 		ldarga.s     0
 		constrained. !!W
-		callvirt     instance string class IBase2`2<class BaseClass1,class BaseClass1>::Method7<object>()
+		callvirt     instance string class Generated988.IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method7<object>()
 		stelem.ref
 		ldloc.s      actualResults
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
@@ -1802,1099 +1801,1099 @@
 		.locals init (object V_0)
 		ldstr "========================== Method Calling Test =========================="
 		call void [mscorlib]System.Console::WriteLine(string)
-		newobj instance void class G3_C1460`1<class BaseClass0>::.ctor()
+		newobj instance void class Generated988.G3_C1460`1<class Generated988.BaseClass0>::.ctor()
 		stloc.0
 		ldloc.0
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1339<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1339<object>()
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1338<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1338<object>()
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1337()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1337()
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1336()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1336()
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method6<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method6<object>()
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method5()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method5()
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method4()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method4()
 		ldstr "G1_C9::Method4.4834()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method7<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method7<object>()
 		ldstr "G1_C9::Method7.4833<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string class IBase2`2<class BaseClass0,class BaseClass1>::Method7<object>()
+		callvirt instance string class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string class IBase1`1<class BaseClass0>::Method4()
+		callvirt instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method4()
 		ldstr "G2_C487::Method4.MI.9425()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string class IBase1`1<class BaseClass0>::Method5()
+		callvirt instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method5()
 		ldstr "G2_C487::Method5.MI.9427()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string class IBase1`1<class BaseClass0>::Method6<object>()
+		callvirt instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method6<object>()
 		ldstr "G2_C487::Method6.MI.9429<System.Object>()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod2328()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod2328()
 		ldstr "G2_C487::ClassMethod2328.9431()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass1>::Method7<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass1>::Method6<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method6<object>()
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass1>::Method5()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method5()
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass1>::Method4()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method4()
 		ldstr "G2_C487::Method4.9424()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod1339<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1339<object>()
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod1338<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1338<object>()
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod1337()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1337()
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod1336()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1336()
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string class IBase2`2<class BaseClass1,class BaseClass0>::Method7<object>()
+		callvirt instance string class Generated988.IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass1,class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string class IBase2`2<class BaseClass0,class BaseClass0>::Method7<object>()
+		callvirt instance string class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string class IBase2`2<class BaseClass1,class BaseClass1>::Method7<object>()
+		callvirt instance string class Generated988.IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		castclass class G3_C1460`1<class BaseClass0>
-		callvirt instance string class G3_C1460`1<class BaseClass0>::ClassMethod4309<object>()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod4309<object>()
 		ldstr "G3_C1460::ClassMethod4309.16284<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass0>
-		callvirt instance string class G3_C1460`1<class BaseClass0>::ClassMethod4308()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod4308()
 		ldstr "G3_C1460::ClassMethod4308.16283()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass0>
-		callvirt instance string class G3_C1460`1<class BaseClass0>::ClassMethod4307()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod4307()
 		ldstr "G3_C1460::ClassMethod4307.16282()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass0>
-		callvirt instance string class G3_C1460`1<class BaseClass0>::Method3<object>()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method3<object>()
 		ldstr "G3_C1460::Method3.16280<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass0>
-		callvirt instance string class G3_C1460`1<class BaseClass0>::Method2<object>()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method2<object>()
 		ldstr "G3_C1460::Method2.16278<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass0>
-		callvirt instance string class G3_C1460`1<class BaseClass0>::Method1()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method1()
 		ldstr "G3_C1460::Method1.16276()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass0>
-		callvirt instance string class G3_C1460`1<class BaseClass0>::Method0()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method0()
 		ldstr "G3_C1460::Method0.16275()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass0>
-		callvirt instance string class G3_C1460`1<class BaseClass0>::ClassMethod2328()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod2328()
 		ldstr "G2_C487::ClassMethod2328.9431()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass0>
-		callvirt instance string class G3_C1460`1<class BaseClass0>::Method7<object>()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass0>
-		callvirt instance string class G3_C1460`1<class BaseClass0>::Method6<object>()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method6<object>()
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass0>
-		callvirt instance string class G3_C1460`1<class BaseClass0>::Method5()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method5()
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass0>
-		callvirt instance string class G3_C1460`1<class BaseClass0>::Method4()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method4()
 		ldstr "G2_C487::Method4.9424()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass0>
-		callvirt instance string class G3_C1460`1<class BaseClass0>::ClassMethod1339<object>()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod1339<object>()
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass0>
-		callvirt instance string class G3_C1460`1<class BaseClass0>::ClassMethod1338<object>()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod1338<object>()
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass0>
-		callvirt instance string class G3_C1460`1<class BaseClass0>::ClassMethod1337()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod1337()
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass0>
-		callvirt instance string class G3_C1460`1<class BaseClass0>::ClassMethod1336()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod1336()
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string IBase0::Method0()
+		callvirt instance string Generated988.IBase0::Method0()
 		ldstr "G3_C1460::Method0.16275()"
-		ldstr "IBase0 on type class G3_C1460`1<class BaseClass0>"
+		ldstr "IBase0 on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string IBase0::Method1()
+		callvirt instance string Generated988.IBase0::Method1()
 		ldstr "G3_C1460::Method1.MI.16277()"
-		ldstr "IBase0 on type class G3_C1460`1<class BaseClass0>"
+		ldstr "IBase0 on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string IBase0::Method2<object>()
+		callvirt instance string Generated988.IBase0::Method2<object>()
 		ldstr "G3_C1460::Method2.MI.16279<System.Object>()"
-		ldstr "IBase0 on type class G3_C1460`1<class BaseClass0>"
+		ldstr "IBase0 on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string IBase0::Method3<object>()
+		callvirt instance string Generated988.IBase0::Method3<object>()
 		ldstr "G3_C1460::Method3.MI.16281<System.Object>()"
-		ldstr "IBase0 on type class G3_C1460`1<class BaseClass0>"
+		ldstr "IBase0 on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
-		newobj instance void class G3_C1460`1<class BaseClass1>::.ctor()
+		newobj instance void class Generated988.G3_C1460`1<class Generated988.BaseClass1>::.ctor()
 		stloc.0
 		ldloc.0
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1339<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1339<object>()
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1338<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1338<object>()
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1337()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1337()
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1336()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1336()
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method6<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method6<object>()
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method5()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method5()
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method4()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method4()
 		ldstr "G1_C9::Method4.4834()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method7<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method7<object>()
 		ldstr "G1_C9::Method7.4833<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string class IBase2`2<class BaseClass0,class BaseClass1>::Method7<object>()
+		callvirt instance string class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string class IBase1`1<class BaseClass0>::Method4()
+		callvirt instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method4()
 		ldstr "G2_C487::Method4.MI.9425()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string class IBase1`1<class BaseClass0>::Method5()
+		callvirt instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method5()
 		ldstr "G2_C487::Method5.MI.9427()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string class IBase1`1<class BaseClass0>::Method6<object>()
+		callvirt instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method6<object>()
 		ldstr "G2_C487::Method6.MI.9429<System.Object>()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod2328()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod2328()
 		ldstr "G2_C487::ClassMethod2328.9431()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass1>::Method7<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass1>::Method6<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method6<object>()
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass1>::Method5()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method5()
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass1>::Method4()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method4()
 		ldstr "G2_C487::Method4.9424()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod1339<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1339<object>()
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod1338<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1338<object>()
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod1337()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1337()
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod1336()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1336()
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string class IBase2`2<class BaseClass1,class BaseClass1>::Method7<object>()
+		callvirt instance string class Generated988.IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		castclass class G3_C1460`1<class BaseClass1>
-		callvirt instance string class G3_C1460`1<class BaseClass1>::ClassMethod4309<object>()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod4309<object>()
 		ldstr "G3_C1460::ClassMethod4309.16284<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass1>
-		callvirt instance string class G3_C1460`1<class BaseClass1>::ClassMethod4308()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod4308()
 		ldstr "G3_C1460::ClassMethod4308.16283()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass1>
-		callvirt instance string class G3_C1460`1<class BaseClass1>::ClassMethod4307()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod4307()
 		ldstr "G3_C1460::ClassMethod4307.16282()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass1>
-		callvirt instance string class G3_C1460`1<class BaseClass1>::Method3<object>()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method3<object>()
 		ldstr "G3_C1460::Method3.16280<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass1>
-		callvirt instance string class G3_C1460`1<class BaseClass1>::Method2<object>()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method2<object>()
 		ldstr "G3_C1460::Method2.16278<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass1>
-		callvirt instance string class G3_C1460`1<class BaseClass1>::Method1()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method1()
 		ldstr "G3_C1460::Method1.16276()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass1>
-		callvirt instance string class G3_C1460`1<class BaseClass1>::Method0()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method0()
 		ldstr "G3_C1460::Method0.16275()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass1>
-		callvirt instance string class G3_C1460`1<class BaseClass1>::ClassMethod2328()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod2328()
 		ldstr "G2_C487::ClassMethod2328.9431()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass1>
-		callvirt instance string class G3_C1460`1<class BaseClass1>::Method7<object>()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass1>
-		callvirt instance string class G3_C1460`1<class BaseClass1>::Method6<object>()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method6<object>()
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass1>
-		callvirt instance string class G3_C1460`1<class BaseClass1>::Method5()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method5()
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass1>
-		callvirt instance string class G3_C1460`1<class BaseClass1>::Method4()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method4()
 		ldstr "G2_C487::Method4.9424()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass1>
-		callvirt instance string class G3_C1460`1<class BaseClass1>::ClassMethod1339<object>()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod1339<object>()
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass1>
-		callvirt instance string class G3_C1460`1<class BaseClass1>::ClassMethod1338<object>()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod1338<object>()
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass1>
-		callvirt instance string class G3_C1460`1<class BaseClass1>::ClassMethod1337()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod1337()
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G3_C1460`1<class BaseClass1>
-		callvirt instance string class G3_C1460`1<class BaseClass1>::ClassMethod1336()
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod1336()
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string IBase0::Method0()
+		callvirt instance string Generated988.IBase0::Method0()
 		ldstr "G3_C1460::Method0.16275()"
-		ldstr "IBase0 on type class G3_C1460`1<class BaseClass1>"
+		ldstr "IBase0 on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string IBase0::Method1()
+		callvirt instance string Generated988.IBase0::Method1()
 		ldstr "G3_C1460::Method1.MI.16277()"
-		ldstr "IBase0 on type class G3_C1460`1<class BaseClass1>"
+		ldstr "IBase0 on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string IBase0::Method2<object>()
+		callvirt instance string Generated988.IBase0::Method2<object>()
 		ldstr "G3_C1460::Method2.MI.16279<System.Object>()"
-		ldstr "IBase0 on type class G3_C1460`1<class BaseClass1>"
+		ldstr "IBase0 on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string IBase0::Method3<object>()
+		callvirt instance string Generated988.IBase0::Method3<object>()
 		ldstr "G3_C1460::Method3.MI.16281<System.Object>()"
-		ldstr "IBase0 on type class G3_C1460`1<class BaseClass1>"
+		ldstr "IBase0 on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
-		newobj instance void class G2_C487`2<class BaseClass0,class BaseClass0>::.ctor()
+		newobj instance void class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::.ctor()
 		stloc.0
 		ldloc.0
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1339<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1339<object>()
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1338<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1338<object>()
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1337()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1337()
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1336()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1336()
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method6<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method6<object>()
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method5()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method5()
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method4()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method4()
 		ldstr "G1_C9::Method4.4834()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method7<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method7<object>()
 		ldstr "G1_C9::Method7.4833<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string class IBase2`2<class BaseClass0,class BaseClass1>::Method7<object>()
+		callvirt instance string class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string class IBase1`1<class BaseClass0>::Method4()
+		callvirt instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method4()
 		ldstr "G2_C487::Method4.MI.9425()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string class IBase1`1<class BaseClass0>::Method5()
+		callvirt instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method5()
 		ldstr "G2_C487::Method5.MI.9427()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string class IBase1`1<class BaseClass0>::Method6<object>()
+		callvirt instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method6<object>()
 		ldstr "G2_C487::Method6.MI.9429<System.Object>()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass0>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass0>::ClassMethod2328()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::ClassMethod2328()
 		ldstr "G2_C487::ClassMethod2328.9431()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass0>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass0>::Method7<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass0>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass0>::Method6<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method6<object>()
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass0>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass0>::Method5()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method5()
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass0>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass0>::Method4()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method4()
 		ldstr "G2_C487::Method4.9424()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass0>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass0>::ClassMethod1339<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::ClassMethod1339<object>()
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass0>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass0>::ClassMethod1338<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::ClassMethod1338<object>()
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass0>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass0>::ClassMethod1337()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::ClassMethod1337()
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass0>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass0>::ClassMethod1336()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::ClassMethod1336()
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string class IBase2`2<class BaseClass0,class BaseClass0>::Method7<object>()
+		callvirt instance string class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
-		newobj instance void class G2_C487`2<class BaseClass0,class BaseClass1>::.ctor()
+		newobj instance void class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::.ctor()
 		stloc.0
 		ldloc.0
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1339<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1339<object>()
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1338<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1338<object>()
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1337()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1337()
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1336()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1336()
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method6<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method6<object>()
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method5()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method5()
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method4()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method4()
 		ldstr "G1_C9::Method4.4834()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method7<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method7<object>()
 		ldstr "G1_C9::Method7.4833<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string class IBase2`2<class BaseClass0,class BaseClass1>::Method7<object>()
+		callvirt instance string class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string class IBase1`1<class BaseClass0>::Method4()
+		callvirt instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method4()
 		ldstr "G2_C487::Method4.MI.9425()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string class IBase1`1<class BaseClass0>::Method5()
+		callvirt instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method5()
 		ldstr "G2_C487::Method5.MI.9427()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string class IBase1`1<class BaseClass0>::Method6<object>()
+		callvirt instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method6<object>()
 		ldstr "G2_C487::Method6.MI.9429<System.Object>()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod2328()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod2328()
 		ldstr "G2_C487::ClassMethod2328.9431()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass1>::Method7<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass1>::Method6<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method6<object>()
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass1>::Method5()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method5()
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass1>::Method4()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method4()
 		ldstr "G2_C487::Method4.9424()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod1339<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1339<object>()
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod1338<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1338<object>()
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod1337()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1337()
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod1336()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1336()
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string class IBase2`2<class BaseClass1,class BaseClass0>::Method7<object>()
+		callvirt instance string class Generated988.IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string class IBase2`2<class BaseClass0,class BaseClass0>::Method7<object>()
+		callvirt instance string class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string class IBase2`2<class BaseClass1,class BaseClass1>::Method7<object>()
+		callvirt instance string class Generated988.IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
-		newobj instance void class G2_C487`2<class BaseClass1,class BaseClass0>::.ctor()
+		newobj instance void class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::.ctor()
 		stloc.0
 		ldloc.0
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1339<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1339<object>()
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1338<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1338<object>()
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1337()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1337()
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1336()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1336()
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method6<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method6<object>()
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method5()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method5()
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method4()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method4()
 		ldstr "G1_C9::Method4.4834()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method7<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method7<object>()
 		ldstr "G1_C9::Method7.4833<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string class IBase2`2<class BaseClass0,class BaseClass1>::Method7<object>()
+		callvirt instance string class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string class IBase1`1<class BaseClass0>::Method4()
+		callvirt instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method4()
 		ldstr "G2_C487::Method4.MI.9425()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string class IBase1`1<class BaseClass0>::Method5()
+		callvirt instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method5()
 		ldstr "G2_C487::Method5.MI.9427()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string class IBase1`1<class BaseClass0>::Method6<object>()
+		callvirt instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method6<object>()
 		ldstr "G2_C487::Method6.MI.9429<System.Object>()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass0>::ClassMethod2328()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod2328()
 		ldstr "G2_C487::ClassMethod2328.9431()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass0>::Method7<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass0>::Method6<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method6<object>()
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass0>::Method5()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method5()
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass0>::Method4()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method4()
 		ldstr "G2_C487::Method4.9424()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass0>::ClassMethod1339<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1339<object>()
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass0>::ClassMethod1338<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1338<object>()
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass0>::ClassMethod1337()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1337()
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass0>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass0>::ClassMethod1336()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1336()
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
-		newobj instance void class G2_C487`2<class BaseClass1,class BaseClass1>::.ctor()
+		newobj instance void class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::.ctor()
 		stloc.0
 		ldloc.0
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1339<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1339<object>()
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1338<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1338<object>()
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1337()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1337()
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1336()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1336()
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method6<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method6<object>()
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method5()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method5()
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method4()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method4()
 		ldstr "G1_C9::Method4.4834()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method7<object>()
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method7<object>()
 		ldstr "G1_C9::Method7.4833<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string class IBase2`2<class BaseClass0,class BaseClass1>::Method7<object>()
+		callvirt instance string class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string class IBase1`1<class BaseClass0>::Method4()
+		callvirt instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method4()
 		ldstr "G2_C487::Method4.MI.9425()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string class IBase1`1<class BaseClass0>::Method5()
+		callvirt instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method5()
 		ldstr "G2_C487::Method5.MI.9427()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		callvirt instance string class IBase1`1<class BaseClass0>::Method6<object>()
+		callvirt instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method6<object>()
 		ldstr "G2_C487::Method6.MI.9429<System.Object>()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod2328()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod2328()
 		ldstr "G2_C487::ClassMethod2328.9431()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass1>::Method7<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass1>::Method6<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method6<object>()
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass1>::Method5()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method5()
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass1>::Method4()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method4()
 		ldstr "G2_C487::Method4.9424()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod1339<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1339<object>()
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod1338<object>()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1338<object>()
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod1337()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1337()
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		dup
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
-		callvirt instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod1336()
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
+		callvirt instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1336()
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldloc.0
 		dup
-		callvirt instance string class IBase2`2<class BaseClass1,class BaseClass1>::Method7<object>()
+		callvirt instance string class Generated988.IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method7<object>()
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		pop
 		ldstr "========================================================================\n\n"
@@ -2907,315 +2906,315 @@
 		.locals init (object V_0)
 		ldstr "========================== Constrained Calls Test =========================="
 		call void [mscorlib]System.Console::WriteLine(string)
-		newobj instance void class G3_C1460`1<class BaseClass0>::.ctor()
+		newobj instance void class Generated988.G3_C1460`1<class Generated988.BaseClass0>::.ctor()
 		stloc.0
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G1_C9::Method4.4834()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G1_C9::Method7.4833<System.Object>()#"
-		call void Generated988::M.G1_C9.T.T<class BaseClass1,class BaseClass0,class G3_C1460`1<class BaseClass0>>(!!2,string)
+		call void Generated988.Generated988::M.G1_C9.T.T<class Generated988.BaseClass1,class Generated988.BaseClass0,class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G1_C9::Method4.4834()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G1_C9::Method7.4833<System.Object>()#"
-		call void Generated988::M.G1_C9.B.T<class BaseClass0,class G3_C1460`1<class BaseClass0>>(!!1,string)
+		call void Generated988.Generated988::M.G1_C9.B.T<class Generated988.BaseClass0,class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G1_C9::Method4.4834()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G1_C9::Method7.4833<System.Object>()#"
-		call void Generated988::M.G1_C9.B.A<class G3_C1460`1<class BaseClass0>>(!!0,string)
+		call void Generated988.Generated988::M.G1_C9.B.A<class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G3_C1460`1<class BaseClass0>>(!!2,string)
+		call void Generated988.Generated988::M.IBase2.T.T<class Generated988.BaseClass0,class Generated988.BaseClass1,class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.A.T<class BaseClass1,class G3_C1460`1<class BaseClass0>>(!!1,string)
+		call void Generated988.Generated988::M.IBase2.A.T<class Generated988.BaseClass1,class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.A.B<class G3_C1460`1<class BaseClass0>>(!!0,string)
+		call void Generated988.Generated988::M.IBase2.A.B<class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::Method4.MI.9425()#G2_C487::Method5.MI.9427()#G2_C487::Method6.MI.9429<System.Object>()#"
-		call void Generated988::M.IBase1.T<class BaseClass0,class G3_C1460`1<class BaseClass0>>(!!1,string)
+		call void Generated988.Generated988::M.IBase1.T<class Generated988.BaseClass0,class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::Method4.MI.9425()#G2_C487::Method5.MI.9427()#G2_C487::Method6.MI.9429<System.Object>()#"
-		call void Generated988::M.IBase1.A<class G3_C1460`1<class BaseClass0>>(!!0,string)
+		call void Generated988.Generated988::M.IBase1.A<class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G2_C487.T.T<class BaseClass0,class BaseClass1,class G3_C1460`1<class BaseClass0>>(!!2,string)
+		call void Generated988.Generated988::M.G2_C487.T.T<class Generated988.BaseClass0,class Generated988.BaseClass1,class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G2_C487.A.T<class BaseClass1,class G3_C1460`1<class BaseClass0>>(!!1,string)
+		call void Generated988.Generated988::M.G2_C487.A.T<class Generated988.BaseClass1,class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G2_C487.A.B<class G3_C1460`1<class BaseClass0>>(!!0,string)
+		call void Generated988.Generated988::M.G2_C487.A.B<class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.T.T<class BaseClass1,class BaseClass0,class G3_C1460`1<class BaseClass0>>(!!2,string)
+		call void Generated988.Generated988::M.IBase2.T.T<class Generated988.BaseClass1,class Generated988.BaseClass0,class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.B.T<class BaseClass0,class G3_C1460`1<class BaseClass0>>(!!1,string)
+		call void Generated988.Generated988::M.IBase2.B.T<class Generated988.BaseClass0,class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.B.A<class G3_C1460`1<class BaseClass0>>(!!0,string)
+		call void Generated988.Generated988::M.IBase2.B.A<class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.T.T<class BaseClass0,class BaseClass0,class G3_C1460`1<class BaseClass0>>(!!2,string)
+		call void Generated988.Generated988::M.IBase2.T.T<class Generated988.BaseClass0,class Generated988.BaseClass0,class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.A.T<class BaseClass0,class G3_C1460`1<class BaseClass0>>(!!1,string)
+		call void Generated988.Generated988::M.IBase2.A.T<class Generated988.BaseClass0,class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.A.A<class G3_C1460`1<class BaseClass0>>(!!0,string)
+		call void Generated988.Generated988::M.IBase2.A.A<class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G3_C1460`1<class BaseClass0>>(!!2,string)
+		call void Generated988.Generated988::M.IBase2.T.T<class Generated988.BaseClass1,class Generated988.BaseClass1,class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.B.T<class BaseClass1,class G3_C1460`1<class BaseClass0>>(!!1,string)
+		call void Generated988.Generated988::M.IBase2.B.T<class Generated988.BaseClass1,class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.B.B<class G3_C1460`1<class BaseClass0>>(!!0,string)
+		call void Generated988.Generated988::M.IBase2.B.B<class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G3_C1460::ClassMethod4307.16282()#G3_C1460::ClassMethod4308.16283()#G3_C1460::ClassMethod4309.16284<System.Object>()#G3_C1460::Method0.16275()#G3_C1460::Method1.16276()#G3_C1460::Method2.16278<System.Object>()#G3_C1460::Method3.16280<System.Object>()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G3_C1460.T<class BaseClass0,class G3_C1460`1<class BaseClass0>>(!!1,string)
+		call void Generated988.Generated988::M.G3_C1460.T<class Generated988.BaseClass0,class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G3_C1460::ClassMethod4307.16282()#G3_C1460::ClassMethod4308.16283()#G3_C1460::ClassMethod4309.16284<System.Object>()#G3_C1460::Method0.16275()#G3_C1460::Method1.16276()#G3_C1460::Method2.16278<System.Object>()#G3_C1460::Method3.16280<System.Object>()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G3_C1460.A<class G3_C1460`1<class BaseClass0>>(!!0,string)
+		call void Generated988.Generated988::M.G3_C1460.A<class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G3_C1460::Method0.16275()#G3_C1460::Method1.MI.16277()#G3_C1460::Method2.MI.16279<System.Object>()#G3_C1460::Method3.MI.16281<System.Object>()#"
-		call void Generated988::M.IBase0<class G3_C1460`1<class BaseClass0>>(!!0,string)
-		newobj instance void class G3_C1460`1<class BaseClass1>::.ctor()
+		call void Generated988.Generated988::M.IBase0<class Generated988.G3_C1460`1<class Generated988.BaseClass0>>(!!0,string)
+		newobj instance void class Generated988.G3_C1460`1<class Generated988.BaseClass1>::.ctor()
 		stloc.0
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G1_C9::Method4.4834()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G1_C9::Method7.4833<System.Object>()#"
-		call void Generated988::M.G1_C9.T.T<class BaseClass1,class BaseClass1,class G3_C1460`1<class BaseClass1>>(!!2,string)
+		call void Generated988.Generated988::M.G1_C9.T.T<class Generated988.BaseClass1,class Generated988.BaseClass1,class Generated988.G3_C1460`1<class Generated988.BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G1_C9::Method4.4834()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G1_C9::Method7.4833<System.Object>()#"
-		call void Generated988::M.G1_C9.B.T<class BaseClass1,class G3_C1460`1<class BaseClass1>>(!!1,string)
+		call void Generated988.Generated988::M.G1_C9.B.T<class Generated988.BaseClass1,class Generated988.G3_C1460`1<class Generated988.BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G1_C9::Method4.4834()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G1_C9::Method7.4833<System.Object>()#"
-		call void Generated988::M.G1_C9.B.B<class G3_C1460`1<class BaseClass1>>(!!0,string)
+		call void Generated988.Generated988::M.G1_C9.B.B<class Generated988.G3_C1460`1<class Generated988.BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G3_C1460`1<class BaseClass1>>(!!2,string)
+		call void Generated988.Generated988::M.IBase2.T.T<class Generated988.BaseClass0,class Generated988.BaseClass1,class Generated988.G3_C1460`1<class Generated988.BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.A.T<class BaseClass1,class G3_C1460`1<class BaseClass1>>(!!1,string)
+		call void Generated988.Generated988::M.IBase2.A.T<class Generated988.BaseClass1,class Generated988.G3_C1460`1<class Generated988.BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.A.B<class G3_C1460`1<class BaseClass1>>(!!0,string)
+		call void Generated988.Generated988::M.IBase2.A.B<class Generated988.G3_C1460`1<class Generated988.BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::Method4.MI.9425()#G2_C487::Method5.MI.9427()#G2_C487::Method6.MI.9429<System.Object>()#"
-		call void Generated988::M.IBase1.T<class BaseClass0,class G3_C1460`1<class BaseClass1>>(!!1,string)
+		call void Generated988.Generated988::M.IBase1.T<class Generated988.BaseClass0,class Generated988.G3_C1460`1<class Generated988.BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::Method4.MI.9425()#G2_C487::Method5.MI.9427()#G2_C487::Method6.MI.9429<System.Object>()#"
-		call void Generated988::M.IBase1.A<class G3_C1460`1<class BaseClass1>>(!!0,string)
+		call void Generated988.Generated988::M.IBase1.A<class Generated988.G3_C1460`1<class Generated988.BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G2_C487.T.T<class BaseClass1,class BaseClass1,class G3_C1460`1<class BaseClass1>>(!!2,string)
+		call void Generated988.Generated988::M.G2_C487.T.T<class Generated988.BaseClass1,class Generated988.BaseClass1,class Generated988.G3_C1460`1<class Generated988.BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G2_C487.B.T<class BaseClass1,class G3_C1460`1<class BaseClass1>>(!!1,string)
+		call void Generated988.Generated988::M.G2_C487.B.T<class Generated988.BaseClass1,class Generated988.G3_C1460`1<class Generated988.BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G2_C487.B.B<class G3_C1460`1<class BaseClass1>>(!!0,string)
+		call void Generated988.Generated988::M.G2_C487.B.B<class Generated988.G3_C1460`1<class Generated988.BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G3_C1460`1<class BaseClass1>>(!!2,string)
+		call void Generated988.Generated988::M.IBase2.T.T<class Generated988.BaseClass1,class Generated988.BaseClass1,class Generated988.G3_C1460`1<class Generated988.BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.B.T<class BaseClass1,class G3_C1460`1<class BaseClass1>>(!!1,string)
+		call void Generated988.Generated988::M.IBase2.B.T<class Generated988.BaseClass1,class Generated988.G3_C1460`1<class Generated988.BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.B.B<class G3_C1460`1<class BaseClass1>>(!!0,string)
+		call void Generated988.Generated988::M.IBase2.B.B<class Generated988.G3_C1460`1<class Generated988.BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G3_C1460::ClassMethod4307.16282()#G3_C1460::ClassMethod4308.16283()#G3_C1460::ClassMethod4309.16284<System.Object>()#G3_C1460::Method0.16275()#G3_C1460::Method1.16276()#G3_C1460::Method2.16278<System.Object>()#G3_C1460::Method3.16280<System.Object>()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G3_C1460.T<class BaseClass1,class G3_C1460`1<class BaseClass1>>(!!1,string)
+		call void Generated988.Generated988::M.G3_C1460.T<class Generated988.BaseClass1,class Generated988.G3_C1460`1<class Generated988.BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G3_C1460::ClassMethod4307.16282()#G3_C1460::ClassMethod4308.16283()#G3_C1460::ClassMethod4309.16284<System.Object>()#G3_C1460::Method0.16275()#G3_C1460::Method1.16276()#G3_C1460::Method2.16278<System.Object>()#G3_C1460::Method3.16280<System.Object>()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G3_C1460.B<class G3_C1460`1<class BaseClass1>>(!!0,string)
+		call void Generated988.Generated988::M.G3_C1460.B<class Generated988.G3_C1460`1<class Generated988.BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G3_C1460::Method0.16275()#G3_C1460::Method1.MI.16277()#G3_C1460::Method2.MI.16279<System.Object>()#G3_C1460::Method3.MI.16281<System.Object>()#"
-		call void Generated988::M.IBase0<class G3_C1460`1<class BaseClass1>>(!!0,string)
-		newobj instance void class G2_C487`2<class BaseClass0,class BaseClass0>::.ctor()
+		call void Generated988.Generated988::M.IBase0<class Generated988.G3_C1460`1<class Generated988.BaseClass1>>(!!0,string)
+		newobj instance void class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::.ctor()
 		stloc.0
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G1_C9::Method4.4834()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G1_C9::Method7.4833<System.Object>()#"
-		call void Generated988::M.G1_C9.T.T<class BaseClass1,class BaseClass0,class G2_C487`2<class BaseClass0,class BaseClass0>>(!!2,string)
+		call void Generated988.Generated988::M.G1_C9.T.T<class Generated988.BaseClass1,class Generated988.BaseClass0,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G1_C9::Method4.4834()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G1_C9::Method7.4833<System.Object>()#"
-		call void Generated988::M.G1_C9.B.T<class BaseClass0,class G2_C487`2<class BaseClass0,class BaseClass0>>(!!1,string)
+		call void Generated988.Generated988::M.G1_C9.B.T<class Generated988.BaseClass0,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G1_C9::Method4.4834()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G1_C9::Method7.4833<System.Object>()#"
-		call void Generated988::M.G1_C9.B.A<class G2_C487`2<class BaseClass0,class BaseClass0>>(!!0,string)
+		call void Generated988.Generated988::M.G1_C9.B.A<class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G2_C487`2<class BaseClass0,class BaseClass0>>(!!2,string)
+		call void Generated988.Generated988::M.IBase2.T.T<class Generated988.BaseClass0,class Generated988.BaseClass1,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.A.T<class BaseClass1,class G2_C487`2<class BaseClass0,class BaseClass0>>(!!1,string)
+		call void Generated988.Generated988::M.IBase2.A.T<class Generated988.BaseClass1,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.A.B<class G2_C487`2<class BaseClass0,class BaseClass0>>(!!0,string)
+		call void Generated988.Generated988::M.IBase2.A.B<class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::Method4.MI.9425()#G2_C487::Method5.MI.9427()#G2_C487::Method6.MI.9429<System.Object>()#"
-		call void Generated988::M.IBase1.T<class BaseClass0,class G2_C487`2<class BaseClass0,class BaseClass0>>(!!1,string)
+		call void Generated988.Generated988::M.IBase1.T<class Generated988.BaseClass0,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::Method4.MI.9425()#G2_C487::Method5.MI.9427()#G2_C487::Method6.MI.9429<System.Object>()#"
-		call void Generated988::M.IBase1.A<class G2_C487`2<class BaseClass0,class BaseClass0>>(!!0,string)
+		call void Generated988.Generated988::M.IBase1.A<class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G2_C487.T.T<class BaseClass0,class BaseClass0,class G2_C487`2<class BaseClass0,class BaseClass0>>(!!2,string)
+		call void Generated988.Generated988::M.G2_C487.T.T<class Generated988.BaseClass0,class Generated988.BaseClass0,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G2_C487.A.T<class BaseClass0,class G2_C487`2<class BaseClass0,class BaseClass0>>(!!1,string)
+		call void Generated988.Generated988::M.G2_C487.A.T<class Generated988.BaseClass0,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G2_C487.A.A<class G2_C487`2<class BaseClass0,class BaseClass0>>(!!0,string)
+		call void Generated988.Generated988::M.G2_C487.A.A<class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.T.T<class BaseClass0,class BaseClass0,class G2_C487`2<class BaseClass0,class BaseClass0>>(!!2,string)
+		call void Generated988.Generated988::M.IBase2.T.T<class Generated988.BaseClass0,class Generated988.BaseClass0,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.A.T<class BaseClass0,class G2_C487`2<class BaseClass0,class BaseClass0>>(!!1,string)
+		call void Generated988.Generated988::M.IBase2.A.T<class Generated988.BaseClass0,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.A.A<class G2_C487`2<class BaseClass0,class BaseClass0>>(!!0,string)
-		newobj instance void class G2_C487`2<class BaseClass0,class BaseClass1>::.ctor()
+		call void Generated988.Generated988::M.IBase2.A.A<class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>>(!!0,string)
+		newobj instance void class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::.ctor()
 		stloc.0
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G1_C9::Method4.4834()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G1_C9::Method7.4833<System.Object>()#"
-		call void Generated988::M.G1_C9.T.T<class BaseClass1,class BaseClass0,class G2_C487`2<class BaseClass0,class BaseClass1>>(!!2,string)
+		call void Generated988.Generated988::M.G1_C9.T.T<class Generated988.BaseClass1,class Generated988.BaseClass0,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G1_C9::Method4.4834()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G1_C9::Method7.4833<System.Object>()#"
-		call void Generated988::M.G1_C9.B.T<class BaseClass0,class G2_C487`2<class BaseClass0,class BaseClass1>>(!!1,string)
+		call void Generated988.Generated988::M.G1_C9.B.T<class Generated988.BaseClass0,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G1_C9::Method4.4834()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G1_C9::Method7.4833<System.Object>()#"
-		call void Generated988::M.G1_C9.B.A<class G2_C487`2<class BaseClass0,class BaseClass1>>(!!0,string)
+		call void Generated988.Generated988::M.G1_C9.B.A<class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G2_C487`2<class BaseClass0,class BaseClass1>>(!!2,string)
+		call void Generated988.Generated988::M.IBase2.T.T<class Generated988.BaseClass0,class Generated988.BaseClass1,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.A.T<class BaseClass1,class G2_C487`2<class BaseClass0,class BaseClass1>>(!!1,string)
+		call void Generated988.Generated988::M.IBase2.A.T<class Generated988.BaseClass1,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.A.B<class G2_C487`2<class BaseClass0,class BaseClass1>>(!!0,string)
+		call void Generated988.Generated988::M.IBase2.A.B<class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::Method4.MI.9425()#G2_C487::Method5.MI.9427()#G2_C487::Method6.MI.9429<System.Object>()#"
-		call void Generated988::M.IBase1.T<class BaseClass0,class G2_C487`2<class BaseClass0,class BaseClass1>>(!!1,string)
+		call void Generated988.Generated988::M.IBase1.T<class Generated988.BaseClass0,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::Method4.MI.9425()#G2_C487::Method5.MI.9427()#G2_C487::Method6.MI.9429<System.Object>()#"
-		call void Generated988::M.IBase1.A<class G2_C487`2<class BaseClass0,class BaseClass1>>(!!0,string)
+		call void Generated988.Generated988::M.IBase1.A<class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G2_C487.T.T<class BaseClass0,class BaseClass1,class G2_C487`2<class BaseClass0,class BaseClass1>>(!!2,string)
+		call void Generated988.Generated988::M.G2_C487.T.T<class Generated988.BaseClass0,class Generated988.BaseClass1,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G2_C487.A.T<class BaseClass1,class G2_C487`2<class BaseClass0,class BaseClass1>>(!!1,string)
+		call void Generated988.Generated988::M.G2_C487.A.T<class Generated988.BaseClass1,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G2_C487.A.B<class G2_C487`2<class BaseClass0,class BaseClass1>>(!!0,string)
+		call void Generated988.Generated988::M.G2_C487.A.B<class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.T.T<class BaseClass1,class BaseClass0,class G2_C487`2<class BaseClass0,class BaseClass1>>(!!2,string)
+		call void Generated988.Generated988::M.IBase2.T.T<class Generated988.BaseClass1,class Generated988.BaseClass0,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.B.T<class BaseClass0,class G2_C487`2<class BaseClass0,class BaseClass1>>(!!1,string)
+		call void Generated988.Generated988::M.IBase2.B.T<class Generated988.BaseClass0,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.B.A<class G2_C487`2<class BaseClass0,class BaseClass1>>(!!0,string)
+		call void Generated988.Generated988::M.IBase2.B.A<class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.T.T<class BaseClass0,class BaseClass0,class G2_C487`2<class BaseClass0,class BaseClass1>>(!!2,string)
+		call void Generated988.Generated988::M.IBase2.T.T<class Generated988.BaseClass0,class Generated988.BaseClass0,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.A.T<class BaseClass0,class G2_C487`2<class BaseClass0,class BaseClass1>>(!!1,string)
+		call void Generated988.Generated988::M.IBase2.A.T<class Generated988.BaseClass0,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.A.A<class G2_C487`2<class BaseClass0,class BaseClass1>>(!!0,string)
+		call void Generated988.Generated988::M.IBase2.A.A<class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G2_C487`2<class BaseClass0,class BaseClass1>>(!!2,string)
+		call void Generated988.Generated988::M.IBase2.T.T<class Generated988.BaseClass1,class Generated988.BaseClass1,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.B.T<class BaseClass1,class G2_C487`2<class BaseClass0,class BaseClass1>>(!!1,string)
+		call void Generated988.Generated988::M.IBase2.B.T<class Generated988.BaseClass1,class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.B.B<class G2_C487`2<class BaseClass0,class BaseClass1>>(!!0,string)
-		newobj instance void class G2_C487`2<class BaseClass1,class BaseClass0>::.ctor()
+		call void Generated988.Generated988::M.IBase2.B.B<class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>>(!!0,string)
+		newobj instance void class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::.ctor()
 		stloc.0
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G1_C9::Method4.4834()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G1_C9::Method7.4833<System.Object>()#"
-		call void Generated988::M.G1_C9.T.T<class BaseClass1,class BaseClass1,class G2_C487`2<class BaseClass1,class BaseClass0>>(!!2,string)
+		call void Generated988.Generated988::M.G1_C9.T.T<class Generated988.BaseClass1,class Generated988.BaseClass1,class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G1_C9::Method4.4834()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G1_C9::Method7.4833<System.Object>()#"
-		call void Generated988::M.G1_C9.B.T<class BaseClass1,class G2_C487`2<class BaseClass1,class BaseClass0>>(!!1,string)
+		call void Generated988.Generated988::M.G1_C9.B.T<class Generated988.BaseClass1,class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G1_C9::Method4.4834()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G1_C9::Method7.4833<System.Object>()#"
-		call void Generated988::M.G1_C9.B.B<class G2_C487`2<class BaseClass1,class BaseClass0>>(!!0,string)
+		call void Generated988.Generated988::M.G1_C9.B.B<class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G2_C487`2<class BaseClass1,class BaseClass0>>(!!2,string)
+		call void Generated988.Generated988::M.IBase2.T.T<class Generated988.BaseClass0,class Generated988.BaseClass1,class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.A.T<class BaseClass1,class G2_C487`2<class BaseClass1,class BaseClass0>>(!!1,string)
+		call void Generated988.Generated988::M.IBase2.A.T<class Generated988.BaseClass1,class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.A.B<class G2_C487`2<class BaseClass1,class BaseClass0>>(!!0,string)
+		call void Generated988.Generated988::M.IBase2.A.B<class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::Method4.MI.9425()#G2_C487::Method5.MI.9427()#G2_C487::Method6.MI.9429<System.Object>()#"
-		call void Generated988::M.IBase1.T<class BaseClass0,class G2_C487`2<class BaseClass1,class BaseClass0>>(!!1,string)
+		call void Generated988.Generated988::M.IBase1.T<class Generated988.BaseClass0,class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::Method4.MI.9425()#G2_C487::Method5.MI.9427()#G2_C487::Method6.MI.9429<System.Object>()#"
-		call void Generated988::M.IBase1.A<class G2_C487`2<class BaseClass1,class BaseClass0>>(!!0,string)
+		call void Generated988.Generated988::M.IBase1.A<class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G2_C487.T.T<class BaseClass1,class BaseClass0,class G2_C487`2<class BaseClass1,class BaseClass0>>(!!2,string)
+		call void Generated988.Generated988::M.G2_C487.T.T<class Generated988.BaseClass1,class Generated988.BaseClass0,class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G2_C487.B.T<class BaseClass0,class G2_C487`2<class BaseClass1,class BaseClass0>>(!!1,string)
+		call void Generated988.Generated988::M.G2_C487.B.T<class Generated988.BaseClass0,class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G2_C487.B.A<class G2_C487`2<class BaseClass1,class BaseClass0>>(!!0,string)
-		newobj instance void class G2_C487`2<class BaseClass1,class BaseClass1>::.ctor()
+		call void Generated988.Generated988::M.G2_C487.B.A<class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>>(!!0,string)
+		newobj instance void class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::.ctor()
 		stloc.0
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G1_C9::Method4.4834()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G1_C9::Method7.4833<System.Object>()#"
-		call void Generated988::M.G1_C9.T.T<class BaseClass1,class BaseClass1,class G2_C487`2<class BaseClass1,class BaseClass1>>(!!2,string)
+		call void Generated988.Generated988::M.G1_C9.T.T<class Generated988.BaseClass1,class Generated988.BaseClass1,class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G1_C9::Method4.4834()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G1_C9::Method7.4833<System.Object>()#"
-		call void Generated988::M.G1_C9.B.T<class BaseClass1,class G2_C487`2<class BaseClass1,class BaseClass1>>(!!1,string)
+		call void Generated988.Generated988::M.G1_C9.B.T<class Generated988.BaseClass1,class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G1_C9::Method4.4834()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G1_C9::Method7.4833<System.Object>()#"
-		call void Generated988::M.G1_C9.B.B<class G2_C487`2<class BaseClass1,class BaseClass1>>(!!0,string)
+		call void Generated988.Generated988::M.G1_C9.B.B<class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G2_C487`2<class BaseClass1,class BaseClass1>>(!!2,string)
+		call void Generated988.Generated988::M.IBase2.T.T<class Generated988.BaseClass0,class Generated988.BaseClass1,class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.A.T<class BaseClass1,class G2_C487`2<class BaseClass1,class BaseClass1>>(!!1,string)
+		call void Generated988.Generated988::M.IBase2.A.T<class Generated988.BaseClass1,class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.A.B<class G2_C487`2<class BaseClass1,class BaseClass1>>(!!0,string)
+		call void Generated988.Generated988::M.IBase2.A.B<class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::Method4.MI.9425()#G2_C487::Method5.MI.9427()#G2_C487::Method6.MI.9429<System.Object>()#"
-		call void Generated988::M.IBase1.T<class BaseClass0,class G2_C487`2<class BaseClass1,class BaseClass1>>(!!1,string)
+		call void Generated988.Generated988::M.IBase1.T<class Generated988.BaseClass0,class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::Method4.MI.9425()#G2_C487::Method5.MI.9427()#G2_C487::Method6.MI.9429<System.Object>()#"
-		call void Generated988::M.IBase1.A<class G2_C487`2<class BaseClass1,class BaseClass1>>(!!0,string)
+		call void Generated988.Generated988::M.IBase1.A<class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G2_C487.T.T<class BaseClass1,class BaseClass1,class G2_C487`2<class BaseClass1,class BaseClass1>>(!!2,string)
+		call void Generated988.Generated988::M.G2_C487.T.T<class Generated988.BaseClass1,class Generated988.BaseClass1,class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G2_C487.B.T<class BaseClass1,class G2_C487`2<class BaseClass1,class BaseClass1>>(!!1,string)
+		call void Generated988.Generated988::M.G2_C487.B.T<class Generated988.BaseClass1,class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::ClassMethod1336.MI.9432()#G2_C487::ClassMethod1337.MI.9433()#G2_C487::ClassMethod1338.MI.9434<System.Object>()#G1_C9::ClassMethod1339.4843<System.Object>()#G2_C487::ClassMethod2328.9431()#G2_C487::Method4.9424()#G2_C487::Method5.9426()#G2_C487::Method6.9428<System.Object>()#G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.G2_C487.B.B<class G2_C487`2<class BaseClass1,class BaseClass1>>(!!0,string)
+		call void Generated988.Generated988::M.G2_C487.B.B<class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G2_C487`2<class BaseClass1,class BaseClass1>>(!!2,string)
+		call void Generated988.Generated988::M.IBase2.T.T<class Generated988.BaseClass1,class Generated988.BaseClass1,class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.B.T<class BaseClass1,class G2_C487`2<class BaseClass1,class BaseClass1>>(!!1,string)
+		call void Generated988.Generated988::M.IBase2.B.T<class Generated988.BaseClass1,class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C487::Method7.9430<System.Object>()#"
-		call void Generated988::M.IBase2.B.B<class G2_C487`2<class BaseClass1,class BaseClass1>>(!!0,string)
+		call void Generated988.Generated988::M.IBase2.B.B<class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>>(!!0,string)
 		ldstr "========================================================================\n\n"
 		call void [mscorlib]System.Console::WriteLine(string)
 		ret
@@ -3235,1376 +3234,1376 @@
 		.locals init (object V_0)
 		ldstr "========================== Method Calli Test =========================="
 		call void [mscorlib]System.Console::WriteLine(string)
-		newobj instance void class G3_C1460`1<class BaseClass0>::.ctor()
+		newobj instance void class Generated988.G3_C1460`1<class Generated988.BaseClass0>::.ctor()
 		stloc.0
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1339<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1339<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1338<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1338<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1337()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1337()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1336()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1336()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method6<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method6<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method5()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method5()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method4()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method4()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G1_C9::Method4.4834()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method7<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method7<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G1_C9::Method7.4833<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase2`2<class BaseClass0,class BaseClass1>::Method7<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method7<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase1`1<class BaseClass0>::Method4()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method4()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method4.MI.9425()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase1`1<class BaseClass0>::Method5()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method5()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method5.MI.9427()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase1`1<class BaseClass0>::Method6<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method6<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method6.MI.9429<System.Object>()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod2328()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod2328()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod2328.9431()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass1>::Method7<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method7<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass1>::Method6<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method6<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass1>::Method5()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method5()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass1>::Method4()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method4()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method4.9424()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod1339<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1339<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod1338<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1338<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod1337()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1337()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod1336()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1336()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase2`2<class BaseClass1,class BaseClass0>::Method7<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method7<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass1,class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase2`2<class BaseClass0,class BaseClass0>::Method7<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method7<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase2`2<class BaseClass1,class BaseClass1>::Method7<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method7<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass0>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass0>::ClassMethod4309<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod4309<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G3_C1460::ClassMethod4309.16284<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass0>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass0>::ClassMethod4308()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod4308()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G3_C1460::ClassMethod4308.16283()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass0>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass0>::ClassMethod4307()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod4307()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G3_C1460::ClassMethod4307.16282()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass0>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass0>::Method3<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method3<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G3_C1460::Method3.16280<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass0>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass0>::Method2<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method2<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G3_C1460::Method2.16278<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass0>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass0>::Method1()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method1()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G3_C1460::Method1.16276()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass0>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass0>::Method0()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method0()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G3_C1460::Method0.16275()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass0>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass0>::ClassMethod2328()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod2328()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod2328.9431()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass0>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass0>::Method7<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method7<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass0>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass0>::Method6<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method6<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass0>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass0>::Method5()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method5()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass0>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass0>::Method4()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::Method4()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method4.9424()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass0>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass0>::ClassMethod1339<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod1339<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass0>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass0>::ClassMethod1338<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod1338<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass0>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass0>::ClassMethod1337()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod1337()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass0>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass0>::ClassMethod1336()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass0>::ClassMethod1336()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G3_C1460`1<class BaseClass0> on type class G3_C1460`1<class BaseClass0>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string IBase0::Method0()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string Generated988.IBase0::Method0()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G3_C1460::Method0.16275()"
-		ldstr "IBase0 on type class G3_C1460`1<class BaseClass0>"
+		ldstr "IBase0 on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string IBase0::Method1()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string Generated988.IBase0::Method1()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G3_C1460::Method1.MI.16277()"
-		ldstr "IBase0 on type class G3_C1460`1<class BaseClass0>"
+		ldstr "IBase0 on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string IBase0::Method2<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string Generated988.IBase0::Method2<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G3_C1460::Method2.MI.16279<System.Object>()"
-		ldstr "IBase0 on type class G3_C1460`1<class BaseClass0>"
+		ldstr "IBase0 on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string IBase0::Method3<object>()
-		calli default string(class G3_C1460`1<class BaseClass0>)
+		ldvirtftn instance string Generated988.IBase0::Method3<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass0>)
 		ldstr "G3_C1460::Method3.MI.16281<System.Object>()"
-		ldstr "IBase0 on type class G3_C1460`1<class BaseClass0>"
+		ldstr "IBase0 on type class Generated988.G3_C1460`1<class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
-		newobj instance void class G3_C1460`1<class BaseClass1>::.ctor()
+		newobj instance void class Generated988.G3_C1460`1<class Generated988.BaseClass1>::.ctor()
 		stloc.0
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1339<object>()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1339<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1338<object>()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1338<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1337()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1337()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1336()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1336()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method6<object>()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method6<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method5()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method5()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method4()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method4()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G1_C9::Method4.4834()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method7<object>()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method7<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G1_C9::Method7.4833<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase2`2<class BaseClass0,class BaseClass1>::Method7<object>()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method7<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase1`1<class BaseClass0>::Method4()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method4()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method4.MI.9425()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase1`1<class BaseClass0>::Method5()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method5()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method5.MI.9427()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase1`1<class BaseClass0>::Method6<object>()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method6<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method6.MI.9429<System.Object>()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod2328()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod2328()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod2328.9431()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass1>::Method7<object>()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method7<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass1>::Method6<object>()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method6<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass1>::Method5()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method5()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass1>::Method4()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method4()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method4.9424()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod1339<object>()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1339<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod1338<object>()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1338<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod1337()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1337()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod1336()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1336()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase2`2<class BaseClass1,class BaseClass1>::Method7<object>()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method7<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass1,class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass1>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass1>::ClassMethod4309<object>()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod4309<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G3_C1460::ClassMethod4309.16284<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass1>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass1>::ClassMethod4308()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod4308()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G3_C1460::ClassMethod4308.16283()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass1>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass1>::ClassMethod4307()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod4307()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G3_C1460::ClassMethod4307.16282()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass1>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass1>::Method3<object>()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method3<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G3_C1460::Method3.16280<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass1>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass1>::Method2<object>()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method2<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G3_C1460::Method2.16278<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass1>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass1>::Method1()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method1()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G3_C1460::Method1.16276()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass1>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass1>::Method0()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method0()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G3_C1460::Method0.16275()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass1>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass1>::ClassMethod2328()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod2328()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod2328.9431()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass1>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass1>::Method7<object>()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method7<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass1>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass1>::Method6<object>()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method6<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass1>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass1>::Method5()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method5()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass1>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass1>::Method4()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::Method4()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method4.9424()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass1>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass1>::ClassMethod1339<object>()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod1339<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass1>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass1>::ClassMethod1338<object>()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod1338<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass1>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass1>::ClassMethod1337()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod1337()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G3_C1460`1<class BaseClass1>
+		castclass class Generated988.G3_C1460`1<class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G3_C1460`1<class BaseClass1>::ClassMethod1336()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string class Generated988.G3_C1460`1<class Generated988.BaseClass1>::ClassMethod1336()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G3_C1460`1<class BaseClass1> on type class G3_C1460`1<class BaseClass1>"
+		ldstr "class G3_C1460`1<class Generated988.BaseClass1> on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string IBase0::Method0()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string Generated988.IBase0::Method0()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G3_C1460::Method0.16275()"
-		ldstr "IBase0 on type class G3_C1460`1<class BaseClass1>"
+		ldstr "IBase0 on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string IBase0::Method1()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string Generated988.IBase0::Method1()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G3_C1460::Method1.MI.16277()"
-		ldstr "IBase0 on type class G3_C1460`1<class BaseClass1>"
+		ldstr "IBase0 on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string IBase0::Method2<object>()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string Generated988.IBase0::Method2<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G3_C1460::Method2.MI.16279<System.Object>()"
-		ldstr "IBase0 on type class G3_C1460`1<class BaseClass1>"
+		ldstr "IBase0 on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string IBase0::Method3<object>()
-		calli default string(class G3_C1460`1<class BaseClass1>)
+		ldvirtftn instance string Generated988.IBase0::Method3<object>()
+		calli default string(class Generated988.G3_C1460`1<class Generated988.BaseClass1>)
 		ldstr "G3_C1460::Method3.MI.16281<System.Object>()"
-		ldstr "IBase0 on type class G3_C1460`1<class BaseClass1>"
+		ldstr "IBase0 on type class Generated988.G3_C1460`1<class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
-		newobj instance void class G2_C487`2<class BaseClass0,class BaseClass0>::.ctor()
+		newobj instance void class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::.ctor()
 		stloc.0
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1339<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1339<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1338<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1338<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1337()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1337()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1336()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1336()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method6<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method6<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method5()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method5()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method4()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method4()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G1_C9::Method4.4834()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method7<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method7<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G1_C9::Method7.4833<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase2`2<class BaseClass0,class BaseClass1>::Method7<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method7<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase1`1<class BaseClass0>::Method4()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method4()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method4.MI.9425()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase1`1<class BaseClass0>::Method5()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method5()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method5.MI.9427()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase1`1<class BaseClass0>::Method6<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method6<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method6.MI.9429<System.Object>()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass0>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass0>::ClassMethod2328()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::ClassMethod2328()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod2328.9431()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass0>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass0>::Method7<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method7<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass0>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass0>::Method6<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method6<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass0>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass0>::Method5()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method5()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass0>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass0>::Method4()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method4()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method4.9424()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass0>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass0>::ClassMethod1339<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::ClassMethod1339<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass0>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass0>::ClassMethod1338<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::ClassMethod1338<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass0>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass0>::ClassMethod1337()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::ClassMethod1337()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass0>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass0>::ClassMethod1336()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::ClassMethod1336()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase2`2<class BaseClass0,class BaseClass0>::Method7<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass0>)
+		ldvirtftn instance string class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method7<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass0>"
+		ldstr "class IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
-		newobj instance void class G2_C487`2<class BaseClass0,class BaseClass1>::.ctor()
+		newobj instance void class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::.ctor()
 		stloc.0
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1339<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1339<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1338<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1338<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1337()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1337()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::ClassMethod1336()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1336()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method6<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method6<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method5()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method5()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method4()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method4()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G1_C9::Method4.4834()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass0>::Method7<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method7<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G1_C9::Method7.4833<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase2`2<class BaseClass0,class BaseClass1>::Method7<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method7<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase1`1<class BaseClass0>::Method4()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method4()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method4.MI.9425()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase1`1<class BaseClass0>::Method5()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method5()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method5.MI.9427()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase1`1<class BaseClass0>::Method6<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method6<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method6.MI.9429<System.Object>()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod2328()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod2328()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod2328.9431()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass1>::Method7<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method7<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass1>::Method6<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method6<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass1>::Method5()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method5()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass1>::Method4()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method4()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method4.9424()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod1339<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1339<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod1338<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1338<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod1337()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1337()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass0,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass0,class BaseClass1>::ClassMethod1336()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::ClassMethod1336()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G2_C487`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase2`2<class BaseClass1,class BaseClass0>::Method7<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method7<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase2`2<class BaseClass0,class BaseClass0>::Method7<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass0>::Method7<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass0> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase2`2<class BaseClass1,class BaseClass1>::Method7<object>()
-		calli default string(class G2_C487`2<class BaseClass0,class BaseClass1>)
+		ldvirtftn instance string class Generated988.IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method7<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass0,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass0,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
-		newobj instance void class G2_C487`2<class BaseClass1,class BaseClass0>::.ctor()
+		newobj instance void class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::.ctor()
 		stloc.0
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1339<object>()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1339<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1338<object>()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1338<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1337()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1337()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1336()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1336()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method6<object>()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method6<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method5()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method5()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method4()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method4()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)
 		ldstr "G1_C9::Method4.4834()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method7<object>()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method7<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)
 		ldstr "G1_C9::Method7.4833<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase2`2<class BaseClass0,class BaseClass1>::Method7<object>()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass0>)
+		ldvirtftn instance string class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method7<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase1`1<class BaseClass0>::Method4()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass0>)
+		ldvirtftn instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method4()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method4.MI.9425()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase1`1<class BaseClass0>::Method5()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass0>)
+		ldvirtftn instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method5()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method5.MI.9427()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase1`1<class BaseClass0>::Method6<object>()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass0>)
+		ldvirtftn instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method6<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method6.MI.9429<System.Object>()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass0>::ClassMethod2328()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod2328()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod2328.9431()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass0>::Method7<object>()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method7<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass0>::Method6<object>()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method6<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass0>::Method5()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method5()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass0>::Method4()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::Method4()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)
 		ldstr "G2_C487::Method4.9424()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass0>::ClassMethod1339<object>()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1339<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass0>::ClassMethod1338<object>()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1338<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass0>::ClassMethod1337()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1337()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass0>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass0>::ClassMethod1336()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass0>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>::ClassMethod1336()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>)
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass0>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass0>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
-		newobj instance void class G2_C487`2<class BaseClass1,class BaseClass1>::.ctor()
+		newobj instance void class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::.ctor()
 		stloc.0
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1339<object>()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1339<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1338<object>()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1338<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1337()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1337()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::ClassMethod1336()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1336()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method6<object>()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method6<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method5()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method5()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method4()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method4()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G1_C9::Method4.4834()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G1_C9`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G1_C9`2<class BaseClass1,class BaseClass1>::Method7<object>()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method7<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G1_C9::Method7.4833<System.Object>()"
-		ldstr "class G1_C9`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G1_C9`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase2`2<class BaseClass0,class BaseClass1>::Method7<object>()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1>::Method7<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass0,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated988.BaseClass0,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase1`1<class BaseClass0>::Method4()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method4()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method4.MI.9425()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase1`1<class BaseClass0>::Method5()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method5()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method5.MI.9427()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase1`1<class BaseClass0>::Method6<object>()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.IBase1`1<class Generated988.BaseClass0>::Method6<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method6.MI.9429<System.Object>()"
-		ldstr "class IBase1`1<class BaseClass0> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class IBase1`1<class Generated988.BaseClass0> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod2328()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod2328()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod2328.9431()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass1>::Method7<object>()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method7<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass1>::Method6<object>()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method6<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method6.9428<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass1>::Method5()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method5()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method5.9426()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass1>::Method4()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method4()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method4.9424()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod1339<object>()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1339<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G1_C9::ClassMethod1339.4843<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod1338<object>()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1338<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod1338.MI.9434<System.Object>()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod1337()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1337()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod1337.MI.9433()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
-		castclass class G2_C487`2<class BaseClass1,class BaseClass1>
+		castclass class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>
 		ldloc.0
-		ldvirtftn instance string class G2_C487`2<class BaseClass1,class BaseClass1>::ClassMethod1336()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::ClassMethod1336()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G2_C487::ClassMethod1336.MI.9432()"
-		ldstr "class G2_C487`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldloc.0
 		ldloc.0
-		ldvirtftn instance string class IBase2`2<class BaseClass1,class BaseClass1>::Method7<object>()
-		calli default string(class G2_C487`2<class BaseClass1,class BaseClass1>)
+		ldvirtftn instance string class Generated988.IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass1>::Method7<object>()
+		calli default string(class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>)
 		ldstr "G2_C487::Method7.9430<System.Object>()"
-		ldstr "class IBase2`2<class BaseClass1,class BaseClass1> on type class G2_C487`2<class BaseClass1,class BaseClass1>"
+		ldstr "class IBase2`2<class Generated988.BaseClass1,class Generated988.BaseClass1> on type class Generated988.G2_C487`2<class Generated988.BaseClass1,class Generated988.BaseClass1>"
 		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
 		ldstr "========================================================================\n\n"
 		call void [mscorlib]System.Console::WriteLine(string)
@@ -4617,10 +4616,10 @@
 		)
 		.entrypoint
 		.maxstack  10
-		call void Generated988::MethodCallingTest()
-		call void Generated988::ConstrainedCallsTest()
-		call void Generated988::StructConstrainedInterfaceCallsTest()
-		call void Generated988::CalliTest()
+		call void Generated988.Generated988::MethodCallingTest()
+		call void Generated988.Generated988::ConstrainedCallsTest()
+		call void Generated988.Generated988::StructConstrainedInterfaceCallsTest()
+		call void Generated988.Generated988::CalliTest()
 		ldc.i4 100
 		ret
 	}
