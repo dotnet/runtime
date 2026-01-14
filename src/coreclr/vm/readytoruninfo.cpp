@@ -16,6 +16,7 @@
 #include "method.hpp"
 #include "wellknownattributes.h"
 #include "nativeimage.h"
+#include "dn-stdio.h"
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
@@ -365,7 +366,7 @@ PTR_MethodDesc ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage(PCODE ent
     }
     CONTRACTL_END;
 
-#if defined(TARGET_AMD64) || (defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS))
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
     // A normal method entry point is always 8 byte aligned, but a funclet can start at an odd address.
     // Since PtrHashMap can't handle odd pointers, check for this case and return NULL.
     if ((entryPoint & 0x1) != 0)
@@ -429,7 +430,8 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
             DWORD pid = GetCurrentProcessId();
             FormatInteger(pidSuffix + 1, ARRAY_SIZE(pidSuffix) - 1, "%u", pid);
             fullname.Append(pidSuffix);
-            r2rLogFile = _wfopen(fullname.GetUnicode(), W("w"));
+            if (fopen_lp(&r2rLogFile, fullname.GetUnicode(), W("w")) != 0)
+                r2rLogFile = NULL;
         }
         else
             r2rLogFile = NULL;
@@ -1118,7 +1120,7 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
     if (ReadyToRunCodeDisabled())
         return false;
 
-    // TODO: (async) PGO support for async variants
+    // TODO: (async) PGO support for async variants (https://github.com/dotnet/runtime/issues/121755)
     if (pMD->IsAsyncVariantMethod())
         return false;
 
@@ -1194,7 +1196,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     if (ReadyToRunCodeDisabled())
         goto done;
 
-    // TODO: (async) R2R support for async variants
+    // TODO: (async) R2R support for async variants (https://github.com/dotnet/runtime/issues/121559)
     if (pMD->IsAsyncVariantMethod())
         goto done;
 

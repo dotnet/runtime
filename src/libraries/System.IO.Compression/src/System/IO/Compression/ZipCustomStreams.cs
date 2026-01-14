@@ -216,6 +216,20 @@ namespace System.IO.Compression
             }
             base.Dispose(disposing);
         }
+
+        public override async ValueTask DisposeAsync()
+        {
+            if (!_isDisposed)
+            {
+                _onClosed?.Invoke(_zipArchiveEntry);
+
+                if (_closeBaseStream)
+                    await _baseStream.DisposeAsync().ConfigureAwait(false);
+
+                _isDisposed = true;
+            }
+            await base.DisposeAsync().ConfigureAwait(false);
+        }
     }
 
     internal sealed class SubReadStream : Stream

@@ -88,9 +88,16 @@ namespace ILCompiler.DependencyAnalysis
                     factory.NecessaryTypeSymbol(method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific)),
                     "Reflection virtual invoke owning type");
 
-                if (!method.HasInstantiation)
+                MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
+                if (method.HasInstantiation)
                 {
-                    MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
+                    // FindSlotDefiningMethod might uninstantiate. We might want to fix the method not to do that.
+                    if (slotDefiningMethod.IsMethodDefinition)
+                        slotDefiningMethod = factory.TypeSystemContext.GetInstantiatedMethod(slotDefiningMethod, method.Instantiation);
+                    dependencies.Add(factory.GVMDependencies(slotDefiningMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "GVM callable reflectable method");
+                }
+                else
+                {
                     if (!factory.VTable(slotDefiningMethod.OwningType).HasKnownVirtualMethodUse)
                     {
                         dependencies.Add(factory.VirtualMethodUse(slotDefiningMethod), "Reflection virtual invoke method");

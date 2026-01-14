@@ -9,6 +9,7 @@
 #include "jithost.h"
 #include "genanalysis.h"
 #include "eventpipeadapter.h"
+#include "dn-stdio.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -146,11 +147,17 @@ static void DoExtraWorkForFinalizer(Thread* finalizerThread)
         SystemDomain::System()->ProcessDelayedUnloadLoaderAllocators();
     }
 
-    if (Thread::m_DetachCount > 0
-        || Thread::CleanupNeededForFinalizedThread())
+    if (Thread::m_DetachCount > 0)
     {
         Thread::CleanupDetachedThreads();
     }
+
+    if (Thread::CleanupNeededForFinalizedThread())
+    {
+        Thread::CleanupFinalizedThreads();
+    }
+
+    ThreadStore::s_pThreadStore->TriggerGCForDeadThreadsIfNecessary();
 
     if (YieldProcessorNormalization::IsMeasurementScheduled())
     {
@@ -163,8 +170,6 @@ static void DoExtraWorkForFinalizer(Thread* finalizerThread)
         GCX_PREEMP();
         CleanupDelayedDynamicMethods();
     }
-
-    ThreadStore::s_pThreadStore->TriggerGCForDeadThreadsIfNecessary();
 }
 
 OBJECTREF FinalizerThread::GetNextFinalizableObject()
@@ -287,12 +292,10 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
     {
     case (WAIT_OBJECT_0):
         return;
-    case (WAIT_ABANDONED):
-        return;
     case (WAIT_TIMEOUT):
         break;
     }
-    MHandles[kFinalizer] = event->GetHandleUNHOSTED();
+    MHandles[kFinalizer] = event->GetOSEvent();
     while (1)
     {
         // WaitForMultipleObjects will wait on the event handles in MHandles
@@ -349,8 +352,6 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
             switch (event->Wait(2000, FALSE))
             {
             case (WAIT_OBJECT_0):
-                return;
-            case (WAIT_ABANDONED):
                 return;
             case (WAIT_TIMEOUT):
                 break;
@@ -448,7 +449,11 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             // Writing an empty file to indicate completion
             WCHAR outputPath[MAX_PATH];
             ReplacePid(GENAWARE_COMPLETION_FILE_NAME, outputPath, MAX_PATH);
-            fclose(_wfopen(outputPath, W("w+")));
+            FILE* fp = NULL;
+            if (fopen_lp(&fp, outputPath, W("w+")) == 0)
+            {
+                fclose(fp);
+            }
         }
 
         if (!bPriorityBoosted)
@@ -521,8 +526,6 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 
     _ASSERTE(s_FinalizerThreadOK);
     _ASSERTE(GetThread() == GetFinalizerThread());
-
-    // finalizer should always park in default domain
 
     if (s_FinalizerThreadOK)
     {

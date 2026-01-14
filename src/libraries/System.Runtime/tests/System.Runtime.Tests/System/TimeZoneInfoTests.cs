@@ -2435,7 +2435,7 @@ namespace System.Tests
                 Assert.True(match.Success);
 
                 // see https://github.com/dotnet/corefx/pull/33204#issuecomment-438782500
-                if (PlatformDetection.IsNotWindowsNanoServer && !PlatformDetection.IsWindows7)
+                if (PlatformDetection.IsNotWindowsNanoServer)
                 {
                     string offset = (match.Groups["sign"].Value == "-" ? "-" : "") + match.Groups["amount"].Value;
                     TimeSpan ts = TimeSpan.Parse(offset);
@@ -2808,6 +2808,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/90269", TestPlatforms.Android)]
         public static void TestGetSystemTimeZones()
         {
             TimeZoneInfo.ClearCachedData(); // Start clean

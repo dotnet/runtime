@@ -27,6 +27,11 @@ namespace System.Security.Cryptography.Cose
 #endif
         }
 
+        internal override void AppendToBeSigned(byte[] data, int offset, int length)
+        {
+            _stream.Write(data, offset, length);
+        }
+
         internal override void WithDataAndResetAfterOperation(Span<byte> arg, ToBeSignedOperation operation)
         {
 #if NETSTANDARD2_0 || NETFRAMEWORK

@@ -18,10 +18,13 @@ namespace TestLibrary
 
         public static bool IsWindows => OperatingSystem.IsWindows();
 
-        public static bool IsBuiltInComEnabled => IsWindows
+        public static bool IsBuiltInComEnabled => IsWindows && !Utilities.IsCoreClrInterpreter
                                             && (AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool isEnabled)
                                                 ? isEnabled
                                                 : true);
+
+        public static bool IsICorProfilerEnabled => !Utilities.IsNativeAot && !IsMonoRuntime;
+        public static bool IsICorProfilerEnterLeaveHooksEnabled => IsICorProfilerEnabled && !Utilities.IsCoreClrInterpreter;
 
         public static bool IsRareEnumsSupported => !Utilities.IsNativeAot;
 
