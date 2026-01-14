@@ -15,9 +15,6 @@ namespace System.Reflection.Metadata
 
         internal MethodSpecification(MetadataReader reader, MethodSpecificationHandle handle)
         {
-            Debug.Assert(reader != null);
-            Debug.Assert(!handle.IsNil);
-
             _reader = reader;
             _rowId = handle.RowId;
         }
