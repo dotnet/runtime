@@ -2385,6 +2385,10 @@ PROCBuildCreateDumpCommandLine(
     argv[argc++] = *ppidarg;
     argv[argc++] = nullptr;
 
+    if (argc >= MAX_ARGV_ENTRIES)
+    {
+        return FALSE;
+    }
     _ASSERTE(argc < MAX_ARGV_ENTRIES);
 
     return TRUE;
@@ -2773,7 +2777,7 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
             argv[argc] = g_argvCreateDump[argc];
         }
 
-        if (signal != 0 && argc < MAX_ARGV_ENTRIES)
+        if (signal != 0)
         {
             // Add the signal number to the command line
             signalArg = PROCFormatInt(signal);
