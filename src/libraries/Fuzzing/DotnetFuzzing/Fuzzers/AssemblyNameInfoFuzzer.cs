@@ -75,10 +75,10 @@ namespace DotnetFuzzing.Fuzzers
                     // - fromTryParse.CultureName == fromParse.CultureName (asserted earlier)
                     // - Both this condition and the earlier condition check !string.IsNullOrEmpty
                     //   on the same CultureName value, so cultureInfo was assigned above
-                    string expectedCultureName = cultureInfo!.Name;
-                    Assert.Equal(expectedCultureName, fromParse.ToAssemblyName().CultureName);
+                    string normalizedCultureName = cultureInfo!.Name;
+                    Assert.Equal(normalizedCultureName, fromParse.ToAssemblyName().CultureName);
 
-                    if (string.IsNullOrEmpty(expectedCultureName))
+                    if (string.IsNullOrEmpty(normalizedCultureName))
                     {
                         Assert.Equal(CultureInfo.InvariantCulture, fromParse.ToAssemblyName().CultureInfo);
                     }
