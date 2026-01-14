@@ -2396,17 +2396,12 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             // Check to see if the entrypoint is into the interpreter. If so, grab the interpreter codes from the stub and put that directly
             // into the MethodDesc
             TADDR functionAddress = GetOrCreatePrecode()->GetTarget();
-            RangeSection * pRS = ExecutionManager::FindCodeRange(functionAddress, ExecutionManager::GetScanFlags());
-            if (pRS != NULL && pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
+            TADDR byteCodeStartOrFunctionAddress = GetInterpreterCodeFromInterpreterPrecodeIfPresent(functionAddress);
+            if (byteCodeStartOrFunctionAddress != functionAddress)
             {
-                if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
-                {
-                    if (((StubPrecode*)functionAddress)->GetType() == PRECODE_INTERPRETER)
-                    {
-                        InterpByteCodeStart* ilStubInterpData = (InterpByteCodeStart*)((InterpreterPrecode*)PCODEToPINSTR(functionAddress))->GetData()->ByteCodeAddr;
-                        SetInterpreterCode(ilStubInterpData);
-                    }
-                }
+                // Then we must have an InterpByteCodeStart
+                InterpByteCodeStart* ilStubInterpData = (InterpByteCodeStart*)byteCodeStartOrFunctionAddress;
+                SetInterpreterCode(ilStubInterpData);
             }
         }
 #endif // FEATURE_INTERPRETER
