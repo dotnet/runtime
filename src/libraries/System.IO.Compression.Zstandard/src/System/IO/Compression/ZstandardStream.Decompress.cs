@@ -119,7 +119,7 @@ namespace System.IO.Compression
                     int bytesRead = _stream.Read(_buffer.AvailableSpan);
                     if (bytesRead <= 0)
                     {
-                        if (s_useStrictValidation && _nonEmptyInput && !buffer.IsEmpty)
+                        if (_nonEmptyInput && !buffer.IsEmpty)
                             ThrowTruncatedInvalidData();
                         break;
                     }
@@ -194,7 +194,7 @@ namespace System.IO.Compression
                     int bytesRead = await _stream.ReadAsync(_buffer.AvailableMemory, cancellationToken).ConfigureAwait(false);
                     if (bytesRead <= 0)
                     {
-                        if (s_useStrictValidation && _nonEmptyInput && !buffer.IsEmpty)
+                        if (_nonEmptyInput && !buffer.IsEmpty)
                             ThrowTruncatedInvalidData();
                         break;
                     }
@@ -282,9 +282,6 @@ namespace System.IO.Compression
                 _buffer.Discard(unconsumedBytes);
             }
         }
-
-        private static readonly bool s_useStrictValidation =
-            AppContext.TryGetSwitch("System.IO.Compression.UseStrictValidation", out bool strictValidation) ? strictValidation : false;
 
         private static void ThrowInvalidStream() =>
             // The stream is either malicious or poorly implemented and returned a number of
