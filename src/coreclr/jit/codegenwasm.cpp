@@ -580,7 +580,6 @@ void CodeGen::genFloatToIntCast(GenTree* tree)
     bool        isUnsigned = varTypeIsUnsigned(tree->AsCast()->CastToType());
     instruction ins        = INS_none;
     assert(varTypeIsFloating(fromType) && (toType == TYP_INT || toType == TYP_LONG));
-    printf("genFloatToIntCast from %s to %s, unsigned=%d\n", varTypeName(fromType), varTypeName(toType), isUnsigned);
 
     switch (PackTypes(toType, fromType))
     {
@@ -614,8 +613,6 @@ void CodeGen::genFloatToFloatCast(GenTree* cast)
     GenTreeCast* castOp   = cast->AsCast();
     var_types    toType   = genActualType(cast->TypeGet());
     var_types    fromType = genActualType(castOp->CastFromType());
-
-    printf("genFloatToFloatCast from %s to %s\n", varTypeName(fromType), varTypeName(toType));
 
     instruction ins = INS_none;
     switch (PackTypes(toType, fromType))
