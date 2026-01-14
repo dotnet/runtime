@@ -342,11 +342,100 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 }
 
 //------------------------------------------------------------------------
-// ContainCheckSelect : determine whether the source of a select should be contained.
+// ContainCheckSelect: determine whether the source of a select should be contained.
 //
 // Arguments:
 //    node - pointer to the node
 //
 void Lowering::ContainCheckSelect(GenTreeOp* node)
 {
+}
+
+//------------------------------------------------------------------------
+// AfterLowerBlock: stackify the nodes in this block.
+//
+// Stackification involves moving nodes around and inserting temporaries
+// as necessary. We expect the vast majority of IR to already be in correct
+// shape as our frontend is itself tree-based.
+//
+// It is done right after lowering, thus before RA and liveness, so that
+// the introduced temporaries can get enregistered and the last-use info
+// on LCL_VAR nodes in RA is readily correct.
+//
+void Lowering::AfterLowerBlock()
+{
+    class Stackifier
+    {
+        Lowering* m_lower;
+        bool      m_anyChanges = false;
+
+    public:
+        Stackifier(Lowering* lower)
+            : m_lower(lower)
+        {
+        }
+
+        void StackifyCurrentBlock()
+        {
+            GenTree* node = m_lower->BlockRange().LastNode();
+            while (node != nullptr)
+            {
+                assert(IsDataFlowRoot(node));
+                node = StackifyTree(node);
+            }
+
+            if (!m_anyChanges)
+            {
+                JITDUMP(FMT_BB ": already in WASM value stack order\n", m_lower->m_block->bbNum);
+            }
+        }
+
+        GenTree* StackifyTree(GenTree* root)
+        {
+            ArrayStack<GenTree*>* stack        = &m_lower->m_stackificationStack;
+            int                   initialDepth = stack->Height();
+
+            // Simple greedy algorithm working backwards. The invariant is that the stack top must be placed right next
+            // to (in normal linear order - before) the node we last stackified.
+            stack->Push(root);
+            GenTree* current = root->gtNext;
+            while (stack->Height() != initialDepth)
+            {
+                GenTree* node = stack->Pop();
+                GenTree* prev = (current != nullptr) ? current->gtPrev : root;
+                while (node != prev)
+                {
+                    // Maybe this is an intervening void-equivalent node that we can also just stackify.
+                    if (IsDataFlowRoot(prev))
+                    {
+                        prev = StackifyTree(prev);
+                        continue;
+                    }
+
+                    // At this point, we'll have to modify the IR in some way. In general, these cases should be quite
+                    // rare, introduced in lowering only. All HIR-induced cases (such as from "gtSetEvalOrder") should
+                    // instead be ifdef-ed out for WASM.
+                    m_anyChanges = true;
+                    NYI_WASM("IR not in a stackified form");
+                }
+
+                // In stack order, the last operand is closest to its parent, thus put on top here.
+                node->VisitOperands([stack](GenTree* operand) {
+                    stack->Push(operand);
+                    return GenTree::VisitResult::Continue;
+                });
+                current = node;
+            }
+
+            return current->gtPrev;
+        }
+
+        bool IsDataFlowRoot(GenTree* node)
+        {
+            return !node->IsValue() || node->IsUnusedValue();
+        }
+    };
+
+    Stackifier stackifier(this);
+    stackifier.StackifyCurrentBlock();
 }

@@ -99,6 +99,29 @@ namespace System.IO.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [OuterLoop]
+        public async Task WriteAsyncFromMemory_InputSizeLargerThanHalfOfMaxInt_ShouldSuccess()
+        {
+            const int InputSize = int.MaxValue / 2 + 1;
+            byte[] bytes;
+            try
+            {
+                bytes = new byte[InputSize];
+            }
+            catch (OutOfMemoryException)
+            {
+                throw new SkipTestException("Not enough memory");
+            }
+
+            var writableStream = new WriteOnlyStream();
+            using (var bs = new BufferedStream(writableStream))
+            {
+                await bs.WriteAsync(new ReadOnlyMemory<byte>(bytes));
+                Assert.Equal(InputSize, writableStream.Position);
+            }
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

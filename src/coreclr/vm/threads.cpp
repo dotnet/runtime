@@ -2356,20 +2356,6 @@ void Thread::BaseCoUninitialize()
     ::CoUninitialize();
 }// BaseCoUninitialize
 
-#ifdef FEATURE_COMINTEROP
-void Thread::BaseWinRTUninitialize()
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_PREEMPTIVE;
-
-    _ASSERTE(GetThread() == this);
-    _ASSERTE(IsWinRTInitialized());
-
-    RoUninitialize();
-}
-#endif // FEATURE_COMINTEROP
-
 void Thread::CoUninitialize()
 {
     CONTRACTL {
@@ -2380,30 +2366,14 @@ void Thread::CoUninitialize()
 
     // Running threads might have performed a CoInitialize which must
     // now be balanced.
-    BOOL needsUninitialize = IsCoInitialized()
-#ifdef FEATURE_COMINTEROP
-        || IsWinRTInitialized()
-#endif // FEATURE_COMINTEROP
-        ;
 
-    if (!IsAtProcessExit() && needsUninitialize)
+    if (!IsAtProcessExit() && IsCoInitialized())
     {
         GCX_PREEMP();
         CONTRACT_VIOLATION(ThrowsViolation);
 
-        if (IsCoInitialized())
-        {
-            BaseCoUninitialize();
-            ResetThreadState(TS_CoInitialized);
-        }
-
-#ifdef FEATURE_COMINTEROP
-        if (IsWinRTInitialized())
-        {
-            BaseWinRTUninitialize();
-            ResetWinRTInitialized();
-        }
-#endif // FEATURE_COMNITEROP
+        BaseCoUninitialize();
+        ResetThreadState(TS_CoInitialized);
     }
 }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -2590,30 +2560,13 @@ void Thread::CleanupCOMState()
     // now be balanced. However only the thread that called COInitialize can
     // call CoUninitialize.
 
-    BOOL needsUninitialize = IsCoInitialized()
-#ifdef FEATURE_COMINTEROP
-        || IsWinRTInitialized()
-#endif // FEATURE_COMINTEROP
-        ;
-
-    if (needsUninitialize)
+    if (IsCoInitialized())
     {
         GCX_PREEMP();
         CONTRACT_VIOLATION(ThrowsViolation);
 
-        if (IsCoInitialized())
-        {
-            BaseCoUninitialize();
-            ResetCoInitialized();
-        }
-
-#ifdef FEATURE_COMINTEROP
-        if (IsWinRTInitialized())
-        {
-            BaseWinRTUninitialize();
-            ResetWinRTInitialized();
-        }
-#endif // FEATURE_COMINTEROP
+        BaseCoUninitialize();
+        ResetCoInitialized();
     }
 }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -3757,33 +3710,15 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
     // the thread.
     if (state == AS_Unknown)
     {
-        BOOL needUninitialize = (m_State & TS_CoInitialized)
-#ifdef FEATURE_COMINTEROP
-            || IsWinRTInitialized()
-#endif // FEATURE_COMINTEROP
-            ;
-
-        if (needUninitialize)
+        if (m_State & TS_CoInitialized)
         {
             GCX_PREEMP();
 
-            // If we haven't CoInitialized the thread, then we don't have anything to do.
-            if (m_State & TS_CoInitialized)
-            {
-                // CoUninitialize the thread and reset the STA/MTA/CoInitialized state bits.
-                ::CoUninitialize();
+            // CoUninitialize the thread and reset the STA/MTA/CoInitialized state bits.
+            ::CoUninitialize();
 
-                ThreadState uninitialized = static_cast<ThreadState>(TS_InSTA | TS_InMTA | TS_CoInitialized);
-                ResetThreadState(uninitialized);
-            }
-
-#ifdef FEATURE_COMINTEROP
-            if (IsWinRTInitialized())
-            {
-                BaseWinRTUninitialize();
-                ResetWinRTInitialized();
-            }
-#endif // FEATURE_COMINTEROP
+            ThreadState uninitialized = static_cast<ThreadState>(TS_InSTA | TS_InMTA | TS_CoInitialized);
+            ResetThreadState(uninitialized);
         }
         return GetApartment();
     }
@@ -3869,47 +3804,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
     else
     {
         _ASSERTE(!"Unexpected HRESULT returned from CoInitializeEx!");
-    }
-
-    // Since WinRT sits on top of COM we need to make sure that it is initialized
-    // in the same threading mode as we just started COM itself
-    // with (or that we detected COM had already been started with).
-    if (!IsWinRTInitialized())
-    {
-        GCX_PREEMP();
-
-        BOOL isSTA = m_State & TS_InSTA;
-        _ASSERTE(isSTA || (m_State & TS_InMTA));
-
-        HRESULT hrWinRT = RoInitialize(isSTA ? RO_INIT_SINGLETHREADED : RO_INIT_MULTITHREADED);
-
-        if (SUCCEEDED(hrWinRT))
-        {
-            if (hrWinRT == S_OK)
-            {
-                SetThreadStateNC(TSNC_WinRTInitialized);
-            }
-            else
-            {
-                _ASSERTE(hrWinRT == S_FALSE);
-
-                // If the thread has already been initialized, back it out. We may not
-                // always be able to call RoUninitialize on shutdown so if there's
-                // a way to avoid having to, we should take advantage of that.
-                RoUninitialize();
-            }
-        }
-        else if (hrWinRT == E_OUTOFMEMORY)
-        {
-            COMPlusThrowOM();
-        }
-        else
-        {
-            // We don't check for RPC_E_CHANGEDMODE, since we're using the mode that was read in by
-            // initializing COM above.  COM and WinRT need to always be in the same mode, so we should never
-            // see that return code at this point.
-            _ASSERTE(!"Unexpected HRESULT From RoInitialize");
-        }
     }
 
     return GetApartment();
