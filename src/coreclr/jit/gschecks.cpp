@@ -402,7 +402,6 @@ void Compiler::gsParamsToShadows()
     }
 
     // Now insert code to copy the params to their shadow copy at the beginning of the function.
-    LIR::Range range;
     for (unsigned lclNum = 0; lclNum < gsShadowVarInfoCount; lclNum++)
     {
         const LclVarDsc* varDsc = lvaGetDesc(lclNum);
@@ -413,60 +412,7 @@ void Compiler::gsParamsToShadows()
             continue;
         }
 
-        gsCopyIntoShadow(lclNum, shadowLclNum, range);
-    }
-
-    // Mark some of the new locals as having explicit inits.
-    if (opts.OptimizationEnabled())
-    {
-        bool hasGCSafePoint = false;
-        for (GenTree* node : range)
-        {
-            hasGCSafePoint |= IsPotentialGCSafePoint(node);
-            if (node->OperIsLocalStore())
-            {
-                LclVarDsc* lclDsc = lvaGetDesc(node->AsLclVarCommon());
-                // Keep this in sync with optRemoveRedundantZeroInits
-                if (!lclDsc->HasGCPtr() || (!GetInterruptible() && !hasGCSafePoint))
-                {
-                    lclDsc->lvHasExplicitInit = true;
-                    node->gtFlags |= GTF_VAR_EXPLICIT_INIT;
-                    JITDUMP("Marking V%02u has having an explicit init\n", node->AsLclVarCommon()->GetLclNum());
-                }
-            }
-        }
-    }
-
-    // Insert the IR
-    if (opts.IsReversePInvoke())
-    {
-        GenTree* insertAfter = nullptr;
-        // If we are in a reverse P/Invoke then insert after the GC transition.
-        // Struct stores can turn into calls, and x86 can use special copy
-        // helpers, so take care to transition to coop first.
-        //
-        // TODO-Cleanup: We should be inserting reverse pinvoke transitions way
-        // later in the JIT to avoid having to search like this.
-
-        for (GenTree* node : LIR::AsRange(fgFirstBB))
-        {
-            if (node->IsHelperCall(this, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER) ||
-                node->IsHelperCall(this, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS))
-            {
-                insertAfter = node;
-                break;
-            }
-        }
-
-        noway_assert(insertAfter != nullptr);
-
-        JITDUMP("Inserting IR after Reverse P/Invoke transition [%06u]\n", dspTreeID(insertAfter));
-        LIR::AsRange(fgFirstBB).InsertAfter(insertAfter, std::move(range));
-    }
-    else
-    {
-        JITDUMP("Inserting IR at beginning of fgFirstBB\n");
-        LIR::AsRange(fgFirstBB).InsertAtBeginning(std::move(range));
+        gsCopyIntoShadow(lclNum, shadowLclNum);
     }
 
     // If the method has "Jmp CalleeMethod", then we need to copy shadow params back to original
@@ -637,7 +583,7 @@ void Compiler::gsRewriteTreeForShadowParam(GenTree* tree)
 //   lclNum         - The original vulnerable local
 //   shadowLclNum   - The shadowing local
 //
-void Compiler::gsCopyIntoShadow(unsigned lclNum, unsigned shadowLclNum, LIR::Range& range)
+void Compiler::gsCopyIntoShadow(unsigned lclNum, unsigned shadowLclNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
     if (varDsc->lvPromoted && !varDsc->lvDoNotEnregister)
@@ -663,8 +609,38 @@ void Compiler::gsCopyIntoShadow(unsigned lclNum, unsigned shadowLclNum, LIR::Ran
         compCurBB = fgFirstBB; // Needed by some morphing
         fgMorphTree(call);
         compCurBB = nullptr;
-        range.InsertAtEnd(LIR::SeqTree(this, call));
-        DISPTREERANGE(range, call);
+
+        // Insert the IR
+        if (opts.IsReversePInvoke())
+        {
+            GenTree* insertAfter = nullptr;
+            // If we are in a reverse P/Invoke then insert after the GC transition.
+            //
+            // TODO-Cleanup: We should be inserting reverse pinvoke transitions way
+            // later in the JIT to avoid having to search like this.
+
+            for (GenTree* node : LIR::AsRange(fgFirstBB))
+            {
+                if (node->IsHelperCall(this, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER) ||
+                    node->IsHelperCall(this, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS))
+                {
+                    insertAfter = node;
+                    break;
+                }
+            }
+
+            noway_assert(insertAfter != nullptr);
+
+            JITDUMP("Inserting IR after Reverse P/Invoke transition [%06u]\n", dspTreeID(insertAfter));
+            LIR::AsRange(fgFirstBB).InsertAfter(insertAfter, LIR::SeqTree(this, call));
+            DISPTREERANGE(LIR::AsRange(fgFirstBB), call);
+        }
+        else
+        {
+            LIR::AsRange(fgFirstBB).InsertAtBeginning(LIR::SeqTree(this, call));
+            DISPTREERANGE(LIR::AsRange(fgFirstBB), call);
+        }
+
         return;
     }
 #endif
@@ -672,7 +648,7 @@ void Compiler::gsCopyIntoShadow(unsigned lclNum, unsigned shadowLclNum, LIR::Ran
     GenTree* src   = gtNewLclvNode(lclNum, varDsc->TypeGet());
     GenTree* store = gtNewStoreLclVarNode(shadowLclNum, src);
 
-    range.InsertAtBeginning(src, store);
+    LIR::AsRange(fgFirstBB).InsertAtBeginning(src, store);
     JITDUMP("Created shadow param copy for V%02u to V%02u\n", lclNum, shadowLclNum);
-    DISPTREERANGE(range, store);
+    DISPTREERANGE(LIR::AsRange(fgFirstBB), store);
 }

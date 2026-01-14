@@ -11261,7 +11261,7 @@ public:
     void gsMarkPointers(GenTree* tree);
     void gsUnionAssignGroups(unsigned lclNum1, unsigned lclNum2, GenTree* reason);
     void gsParamsToShadows(); // Insert copy code and replace param uses by shadow
-    void gsCopyIntoShadow(unsigned lclNum, unsigned shadowLclNum, LIR::Range& range);
+    void gsCopyIntoShadow(unsigned lclNum, unsigned shadowLclNum);
     bool gsCreateShadowingLocals();
     void gsRewriteTreeForShadowParam(GenTree* tree);
 
