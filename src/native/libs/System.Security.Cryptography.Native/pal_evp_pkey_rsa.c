@@ -79,7 +79,7 @@ static bool ConfigureEncryption(EVP_PKEY_CTX* ctx, RsaPaddingMode padding, const
 
         EVP_PKEY_CTX_ctrl_str(ctx, "rsa_pkcs1_implicit_rejection", "0");
 
-        // Undo any changes to the error queue that may have occured while configuring implicit rejection if the
+        // Undo any changes to the error queue that may have occurred while configuring implicit rejection if the
         // current version does not support implicit rejection.
         ERR_pop_to_mark();
     }
@@ -119,6 +119,8 @@ int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
     assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
     assert(digest != NULL || padding == RsaPaddingPkcs1);
 
+    size_t written;
+
     ERR_clear_error();
 
     EVP_PKEY_CTX* ctx = EvpPKeyCtxCreateFromPKey(pkey, extraHandle);
@@ -151,7 +153,7 @@ int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
         }
     }
 
-    size_t written = Int32ToSizeT(destinationLen);
+    written = Int32ToSizeT(destinationLen);
 
     if (EVP_PKEY_decrypt(ctx, destination, &written, source, Int32ToSizeT(sourceLen)) > 0)
     {
@@ -181,6 +183,8 @@ int32_t CryptoNative_RsaEncrypt(EVP_PKEY* pkey,
     assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
     assert(digest != NULL || padding == RsaPaddingPkcs1);
 
+    size_t written;
+
     ERR_clear_error();
 
     EVP_PKEY_CTX* ctx = EvpPKeyCtxCreateFromPKey(pkey, extraHandle);
@@ -197,7 +201,7 @@ int32_t CryptoNative_RsaEncrypt(EVP_PKEY* pkey,
         goto done;
     }
 
-    size_t written = Int32ToSizeT(destinationLen);
+    written = Int32ToSizeT(destinationLen);
 
     if (EVP_PKEY_encrypt(ctx, destination, &written, source, Int32ToSizeT(sourceLen)) > 0)
     {
@@ -259,6 +263,8 @@ int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
     assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
     assert(digest != NULL || padding == RsaPaddingPkcs1);
 
+    size_t written;
+
     ERR_clear_error();
 
     EVP_PKEY_CTX* ctx = EvpPKeyCtxCreateFromPKey(pkey, extraHandle);
@@ -291,7 +297,7 @@ int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
         }
     }
 
-    size_t written = Int32ToSizeT(destinationLen);
+    written = Int32ToSizeT(destinationLen);
 
     if (EVP_PKEY_sign(ctx, destination, &written, hash, Int32ToSizeT(hashLen)) > 0)
     {

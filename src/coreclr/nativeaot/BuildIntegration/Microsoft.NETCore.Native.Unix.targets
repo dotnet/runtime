@@ -78,8 +78,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(_IsiOSLikePlatform)' == 'true'">
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_targetOS)' == 'maccatalyst'">15.0</AppleMinOSVersion>
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and ($(_targetOS.StartsWith('ios')) or $(_targetOS.StartsWith('tvos')))">12.2</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_targetOS)' == 'maccatalyst'">15.2</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and ($(_targetOS.StartsWith('ios')) or $(_targetOS.StartsWith('tvos')))">13.0</AppleMinOSVersion>
 
       <_AppleSdkName Condition="'$(_targetOS)' == 'ios'">iphoneos</_AppleSdkName>
       <_AppleSdkName Condition="'$(_targetOS)' == 'iossimulator'">iphonesimulator</_AppleSdkName>
@@ -160,7 +160,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Condition="'$(NativeLib)' != '' or '$(CustomNativeMain)' == 'true'" Include="$(IlcSdkPath)libbootstrapperdll.o" />
       <NativeLibrary Include="$(IlcSdkPath)$(FullRuntimeName).a" />
       <NativeLibrary Include="$(IlcSdkPath)$(EventPipeName)$(LibFileExt)" />
-      <NativeLibrary Condition="'$(_targetArchitecture)' == 'x64'" Include="$(IlcSdkPath)$(VxSortSupportName)$(LibFileExt)" />
+      <NativeLibrary Condition="('$(_targetArchitecture)' == 'x64' or '$(_targetArchitecture)' == 'arm64')" Include="$(IlcSdkPath)$(VxSortSupportName)$(LibFileExt)" />
       <NativeLibrary Include="$(IlcSdkPath)$(StandaloneGCSupportName)$(LibFileExt)" />
       <NativeLibrary Include="$(IlcSdkPath)libaotminipal.a" />
       <NativeLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' != 'true' and '$(StaticICULinking)' != 'true'" Include="$(IlcSdkPath)libstdc++compat.a" />
@@ -283,7 +283,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </PropertyGroup>
 
     <ItemGroup Condition="'$(UseLdClassicXCodeLinker)' != 'false' and '$(_IsApplePlatform)' == 'true'">
-      <CustomLinkerArg Condition="'$(_XcodeVersion)' == '15'" Include="-ld_classic" />
+      <CustomLinkerArg Condition="'$(UseLdClassicXCodeLinker)' == 'true' or '$(_XcodeVersion)' == '15' or '$(_XcodeVersion)' == '16'" Include="-ld_classic" />
     </ItemGroup>
 
     <PropertyGroup>

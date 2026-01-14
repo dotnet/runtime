@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b565808;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
@@ -25,6 +28,7 @@ public class ContentType
 public class My
 {
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

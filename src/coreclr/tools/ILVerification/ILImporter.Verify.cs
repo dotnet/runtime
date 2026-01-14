@@ -1875,7 +1875,22 @@ namespace Internal.IL
 
             var declaredReturnType = _method.Signature.ReturnType;
 
-            if (declaredReturnType.IsVoid)
+            // For async methods, unwrap Task/ValueTask return types
+            TypeDesc expectedReturnType = declaredReturnType;
+            if (_method.IsAsync)
+            {
+                if (IsTaskOrValueTaskType(declaredReturnType, out TypeDesc unwrappedType))
+                {
+                    expectedReturnType = unwrappedType;
+                }
+                else
+                {
+                    // Async methods must return Task or ValueTask
+                    VerificationError(VerifierError.StackUnexpected);
+                }
+            }
+
+            if (expectedReturnType.IsVoid)
             {
                 Debug.Assert(_stackTop >= 0);
 
@@ -1891,11 +1906,49 @@ namespace Internal.IL
                     Check(_stackTop == 1, VerifierError.ReturnEmpty);
 
                     var actualReturnType = Pop();
-                    CheckIsAssignable(actualReturnType, StackValue.CreateFromType(declaredReturnType));
+                    CheckIsAssignable(actualReturnType, StackValue.CreateFromType(expectedReturnType));
 
-                    Check((!declaredReturnType.IsByRef && !declaredReturnType.IsByRefLike) || actualReturnType.IsPermanentHome, VerifierError.ReturnPtrToStack);
+                    Check((!expectedReturnType.IsByRef && !expectedReturnType.IsByRefLike) || actualReturnType.IsPermanentHome, VerifierError.ReturnPtrToStack);
                 }
             }
+        }
+
+        bool IsTaskOrValueTaskType(TypeDesc type, out TypeDesc unwrappedType)
+        {
+            unwrappedType = null;
+
+            if (type is not MetadataType metadataType)
+                return false;
+
+            if (!metadataType.Namespace.SequenceEqual("System.Threading.Tasks"u8))
+                return false;
+
+            // Check for Task (non-generic)
+            if (metadataType.Name.SequenceEqual("Task"u8) && !metadataType.HasInstantiation)
+            {
+                unwrappedType = _typeSystemContext.GetWellKnownType(WellKnownType.Void);
+                return true;
+            }
+
+            // Check for ValueTask (non-generic)
+            if (metadataType.Name.SequenceEqual("ValueTask"u8) && !metadataType.HasInstantiation)
+            {
+                unwrappedType = _typeSystemContext.GetWellKnownType(WellKnownType.Void);
+                return true;
+            }
+
+            // Check for Task<T> and ValueTask<T>
+            if (metadataType.HasInstantiation && metadataType.Instantiation.Length == 1)
+            {
+                if (metadataType.Name.SequenceEqual("Task`1"u8) || 
+                    metadataType.Name.SequenceEqual("ValueTask`1"u8))
+                {
+                    unwrappedType = metadataType.Instantiation[0];
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         void ImportFallthrough(BasicBlock next)

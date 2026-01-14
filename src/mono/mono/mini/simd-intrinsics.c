@@ -7135,7 +7135,7 @@ mono_simd_unsupported_aggressive_inline_intrinsic_type (MonoCompile *cfg, MonoMe
 
 #if defined(TARGET_AMD64)
 void
-ves_icall_System_Runtime_Intrinsics_X86_X86Base___cpuidex (int abcd[4], int function_id, int subfunction_id)
+ves_icall_System_Runtime_Intrinsics_X86_X86Base_CpuId (int abcd[4], int function_id, int subfunction_id)
 {
 #ifndef MONO_CROSS_COMPILE
 	mono_hwcap_x86_call_cpuidex (function_id, subfunction_id,

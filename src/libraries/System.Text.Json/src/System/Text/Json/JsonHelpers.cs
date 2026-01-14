@@ -190,37 +190,12 @@ namespace System.Text.Json
             return reader.TrySkipPartial(reader.CurrentDepth);
         }
 
-        /// <summary>
-        /// Calls Encoding.UTF8.GetString that supports netstandard.
-        /// </summary>
-        /// <param name="bytes">The utf8 bytes to convert.</param>
-        /// <returns></returns>
-        public static string Utf8GetString(ReadOnlySpan<byte> bytes)
-        {
-#if NET
-            return Encoding.UTF8.GetString(bytes);
-#else
-            if (bytes.Length == 0)
-            {
-                return string.Empty;
-            }
-
-            unsafe
-            {
-                fixed (byte* bytesPtr = bytes)
-                {
-                    return Encoding.UTF8.GetString(bytesPtr, bytes.Length);
-                }
-            }
-#endif
-        }
-
         public static bool TryLookupUtf8Key<TValue>(
             this Dictionary<string, TValue> dictionary,
             ReadOnlySpan<byte> utf8Key,
             [MaybeNullWhen(false)] out TValue result)
         {
-#if NET9_0_OR_GREATER
+#if NET
             Debug.Assert(dictionary.Comparer is IAlternateEqualityComparer<ReadOnlySpan<char>, string>);
 
             Dictionary<string, TValue>.AlternateLookup<ReadOnlySpan<char>> spanLookup =
@@ -245,7 +220,7 @@ namespace System.Text.Json
 
             return success;
 #else
-            string key = Utf8GetString(utf8Key);
+            string key = Encoding.UTF8.GetString(utf8Key);
             return dictionary.TryGetValue(key, out result);
 #endif
         }
@@ -317,15 +292,14 @@ namespace System.Text.Json
         /// <summary>
         /// Gets a Regex instance for recognizing integer representations of enums.
         /// </summary>
-        public static readonly Regex IntegerRegex = CreateIntegerRegex();
         private const string IntegerRegexPattern = @"^\s*(?:\+|\-)?[0-9]+\s*$";
         private const int IntegerRegexTimeoutMs = 200;
 
 #if NET
         [GeneratedRegex(IntegerRegexPattern, RegexOptions.None, matchTimeoutMilliseconds: IntegerRegexTimeoutMs)]
-        private static partial Regex CreateIntegerRegex();
+        public static partial Regex IntegerRegex { get; }
 #else
-        private static Regex CreateIntegerRegex() => new(IntegerRegexPattern, RegexOptions.Compiled, TimeSpan.FromMilliseconds(IntegerRegexTimeoutMs));
+        public static Regex IntegerRegex { get; } = new(IntegerRegexPattern, RegexOptions.Compiled, TimeSpan.FromMilliseconds(IntegerRegexTimeoutMs));
 #endif
 
         /// <summary>

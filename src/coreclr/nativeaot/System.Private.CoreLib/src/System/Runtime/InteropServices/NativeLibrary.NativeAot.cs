@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
@@ -128,27 +128,6 @@ namespace System.Runtime.InteropServices
             }
 
             return IntPtr.Zero;
-        }
-
-        private static IntPtr LoadFromPath(string libraryName, bool throwOnError)
-        {
-            LoadLibErrorTracker errorTracker = default;
-            IntPtr ret = LoadLibraryHelper(libraryName, LoadWithAlteredSearchPathFlag, ref errorTracker);
-            if (throwOnError && ret == IntPtr.Zero)
-            {
-                errorTracker.Throw(libraryName);
-            }
-
-            return ret;
-        }
-
-        private static unsafe IntPtr GetSymbol(IntPtr handle, string symbolName, bool throwOnError)
-        {
-            IntPtr ret = GetSymbolOrNull(handle, symbolName);
-            if (throwOnError && ret == IntPtr.Zero)
-                throw new EntryPointNotFoundException(SR.Format(SR.Arg_EntryPointNotFoundExceptionParameterizedNoLibrary, symbolName));
-
-            return ret;
         }
     }
 }

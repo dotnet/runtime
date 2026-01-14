@@ -141,8 +141,6 @@ extern size_t gc_global_mechanisms[MAX_GLOBAL_GC_MECHANISMS_COUNT];
 class DacHeapWalker;
 #endif
 
-#define MP_LOCKS
-
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
 extern "C" uint32_t* g_gc_card_bundle_table;
 #endif
@@ -243,11 +241,11 @@ struct alloc_context : gc_alloc_context
     }
 
     // How the alloc_count field is organized -
-    // 
+    //
     // high 16-bits are for the handle info, out of which
-    // high 10 bits store the cpu index. 
+    // high 10 bits store the cpu index.
     // low 6 bits store the number of handles allocated so far (before the next reset).
-    // 
+    //
     // low 16-bits are for the actual alloc_count used by balance_heaps
     inline void init_alloc_count()
     {

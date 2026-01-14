@@ -722,6 +722,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             assert(intrin.op3->IsVectorZero());
                             break;
 
+                        case NI_Sve2_ConvertToSingleOdd:
+                        case NI_Sve2_ConvertToSingleOddRoundToOdd:
+                            embOpt = INS_OPTS_D_TO_S;
+                            break;
+
                         default:
                             break;
                     }
@@ -783,6 +788,31 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
                                 break;
 
+                            case NI_Sve2_AddPairwise:
+                            case NI_Sve2_MaxNumberPairwise:
+                            case NI_Sve2_MaxPairwise:
+                            case NI_Sve2_MinNumberPairwise:
+                            case NI_Sve2_MinPairwise:
+                                // These instructions have unpredictable behaviour when using predicated movprfx,
+                                // so the unpredicated variant must be used here.
+                                assert(!intrin.op3->isContained() && falseReg != REG_NA);
+                                GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, embMaskOp1Reg);
+                                GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
+                                                            embOpt, sopt);
+                                GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
+                                                              falseReg, opt);
+                                break;
+
+                            case NI_Sve2_ConvertToSingleOdd:
+                            case NI_Sve2_ConvertToSingleOddRoundToOdd:
+                                // TODO-SVE: Optimise away the explicit copying of `embMaskOp1Reg` to `targetReg`.
+                                // For these intrinsics we cannot use movprfx instruction to populate `targetReg` with
+                                // `embMaskOp1Reg`. Thus, we need to perform move before the operation.
+                                GetEmitter()->emitIns_Mov(INS_sve_mov, emitSize, targetReg, embMaskOp1Reg,
+                                                          /* canSkip */ true, INS_OPTS_SCALABLE_S);
+                                emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
+                                break;
+
                             default:
                                 assert(targetReg != embMaskOp2Reg);
 
@@ -810,12 +840,26 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 break;
                         }
                     }
+                    // If `targetReg` and `falseReg` are not same, then we need to move it to `targetReg` first
+                    // so the `insEmbMask` operation can be merged on top of it.
                     else if (targetReg != falseReg)
                     {
-                        // If `targetReg` and `falseReg` are not same, then we need to move it to `targetReg` first
-                        // so the `insEmbMask` operation can be merged on top of it.
 
-                        if (falseReg != embMaskOp1Reg)
+                        if ((intrinEmbMask.id == NI_Sve2_ConvertToSingleOdd) ||
+                            (intrinEmbMask.id == NI_Sve2_ConvertToSingleOddRoundToOdd))
+                        {
+                            // TODO-SVE: Optimise away the explicit copying of `embMaskOp1Reg` to `targetReg`.
+                            // For these intrinsics we cannot use movprfx instruction to populate `targetReg` with
+                            // `embMaskOp1Reg`. Thus, we need to perform move before the operation, and then "sel" to
+                            // select the active lanes.
+                            assert((targetReg != embMaskOp2Reg) || (embMaskOp1Reg == targetReg));
+                            GetEmitter()->emitIns_Mov(INS_sve_mov, emitSize, targetReg, embMaskOp1Reg,
+                                                      /* canSkip */ true, INS_OPTS_SCALABLE_S);
+                            emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
+                            GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
+                                                          falseReg, opt);
+                        }
+                        else if (falseReg != embMaskOp1Reg)
                         {
                             // At the point, targetReg != embMaskOp1Reg != falseReg
                             if (HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrinEmbMask.id))
@@ -2223,11 +2267,20 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     // GatherVector...(Vector<T> mask, T* address, Vector<T2> indices)
 
                     emitAttr baseSize = emitActualTypeSize(intrin.baseType);
-                    bool     isLoadingBytes =
-                        ((ins == INS_sve_ld1b) || (ins == INS_sve_ld1sb) || (ins == INS_sve_ldff1b) ||
-                         (ins == INS_sve_ldff1sb) || (intrin.id == NI_Sve_GatherVectorWithByteOffsetFirstFaulting) ||
+                    bool     isLoadingFromOffsets =
+                        ((intrin.id == NI_Sve_GatherVectorByteZeroExtend) ||
+                         (intrin.id == NI_Sve_GatherVectorByteZeroExtendFirstFaulting) ||
+                         (intrin.id == NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend) ||
+                         (intrin.id == NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting) ||
+                         (intrin.id == NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend) ||
+                         (intrin.id == NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting) ||
+                         (intrin.id == NI_Sve_GatherVectorSByteSignExtend) ||
+                         (intrin.id == NI_Sve_GatherVectorSByteSignExtendFirstFaulting) ||
+                         (intrin.id == NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend) ||
+                         (intrin.id == NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting) ||
+                         (intrin.id == NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend) ||
                          (intrin.id == NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting) ||
-                         (intrin.id == NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting));
+                         (intrin.id == NI_Sve_GatherVectorWithByteOffsetFirstFaulting));
                     insScalableOpts sopt = INS_SCALABLE_OPTS_NONE;
 
                     if (baseSize == EA_4BYTE)
@@ -2236,13 +2289,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         opt = varTypeIsUnsigned(node->GetAuxiliaryType()) ? INS_OPTS_SCALABLE_S_UXTW
                                                                           : INS_OPTS_SCALABLE_S_SXTW;
 
-                        sopt = isLoadingBytes ? INS_SCALABLE_OPTS_NONE : INS_SCALABLE_OPTS_MOD_N;
+                        sopt = isLoadingFromOffsets ? INS_SCALABLE_OPTS_NONE : INS_SCALABLE_OPTS_MOD_N;
                     }
                     else
                     {
                         // Index is multiplied.
                         assert(baseSize == EA_8BYTE);
-                        sopt = isLoadingBytes ? INS_SCALABLE_OPTS_NONE : INS_SCALABLE_OPTS_LSL_N;
+                        sopt = isLoadingFromOffsets ? INS_SCALABLE_OPTS_NONE : INS_SCALABLE_OPTS_LSL_N;
                     }
 
                     GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, opt, sopt);
@@ -2285,12 +2338,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_Sve_Scatter:
             case NI_Sve_Scatter16BitNarrowing:
-            case NI_Sve_Scatter16BitWithByteOffsetsNarrowing:
             case NI_Sve_Scatter32BitNarrowing:
-            case NI_Sve_Scatter32BitWithByteOffsetsNarrowing:
             case NI_Sve_Scatter8BitNarrowing:
-            case NI_Sve_Scatter8BitWithByteOffsetsNarrowing:
-            case NI_Sve_ScatterWithByteOffsets:
             {
                 if (!varTypeIsSIMD(intrin.op2->gtType))
                 {
@@ -2322,6 +2371,23 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     assert(intrin.numOperands == 3);
                     GetEmitter()->emitIns_R_R_R_I(ins, emitSize, op3Reg, op1Reg, op2Reg, 0, opt);
                 }
+                break;
+            }
+
+            case NI_Sve_Scatter16BitWithByteOffsetsNarrowing:
+            case NI_Sve_Scatter32BitWithByteOffsetsNarrowing:
+            case NI_Sve_Scatter8BitWithByteOffsetsNarrowing:
+            case NI_Sve_ScatterWithByteOffsets:
+            {
+                emitAttr baseSize = emitActualTypeSize(intrin.baseType);
+
+                if (baseSize == EA_4BYTE)
+                {
+                    opt = varTypeIsUnsigned(node->GetAuxiliaryType()) ? INS_OPTS_SCALABLE_S_UXTW
+                                                                      : INS_OPTS_SCALABLE_S_SXTW;
+                }
+
+                GetEmitter()->emitIns_R_R_R_R(ins, emitSize, op4Reg, op1Reg, op2Reg, op3Reg, opt);
                 break;
             }
 

@@ -289,6 +289,9 @@ public:
     // occurs.
     void RecordGap(WORD StartMTSlot, WORD NumSkipSlots);
 
+    // Record that the method table slot at MTSlot is excluded from the VT slots.
+    void RecordExcludedMethod(WORD MTSlot);
+
     // Then call FinalizeMapping to create the actual mapping list.
     void FinalizeMapping(WORD TotalMTSlots);
 
@@ -339,7 +342,8 @@ class EEClassLayoutInfo
             Auto = 0, // Make sure Auto is the default value as the default-constructed value represents the "auto layout" case
             Sequential,
             Explicit,
-            CStruct
+            CStruct,
+            CUnion
         };
     private:
         enum {
@@ -488,6 +492,12 @@ class EEClassLayoutInfo
         );
 
         ULONG InitializeCStructFieldLayout(
+            FieldDesc* pFields,
+            MethodTable** pByValueClassCache,
+            ULONG cFields
+        );
+
+        ULONG InitializeCUnionFieldLayout(
             FieldDesc* pFields,
             MethodTable** pByValueClassCache,
             ULONG cFields

@@ -85,6 +85,7 @@ Contracts used:
 | --- |
 | `ExecutionManager` |
 | `Thread` |
+| `RuntimeTypeSystem` |
 
 
 ### Stackwalk Algorithm
@@ -359,10 +360,21 @@ string GetFrameName(TargetPointer frameIdentifier);
 TargetPointer GetMethodDescPtr(TargetPointer framePtr)
 ```
 
-`GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle)` returns the method desc pointer associated with a `IStackDataFrameHandle`. Note this can either be at a capital 'F' frame or a managed frame unlike the above API which works only at capital 'F' frames.
+`GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle)` returns the method desc pointer associated with a `IStackDataFrameHandle`. Note there are two major differences between this API and the one above that operates on a TargetPointer.
+* This API can either be at a capital 'F' frame or a managed frame unlike the TargetPointer overload which only works at capital 'F' frames.
+* This API handles the special ReportInteropMD case which happens under the following conditions
+    1. The dataFrame is at an `InlinedCallFrame`
+    2. The dataFrame is in a `SW_SKIPPED_FRAME` state
+    3. The InlinedCallFrame's return address is managed code
+    4. The InlinedCallFrame's return address method has a MDContext arg
+
+  In this case, we report the actual interop MethodDesc. A pointer to the MethodDesc immediately follows the InlinedCallFrame in memory.
 This API is implemeted as follows:
-1. Try to get the current frame address with `GetFrameAddress`. If the address is not null, return `GetMethodDescPtr(<frameAddress>)`.
-2. Check if the current context IP is a managed context using the ExecutionManager contract. If it is a managed contet, use the ExecutionManager context to find the related MethodDesc and return the pointer to it.
+1. Try to get the current frame address `framePtr` with `GetFrameAddress`.
+2. If the address is not null, compute `reportInteropMD` as listed above. Otherwise skip to step 5.
+3. If `reportInteropMD`, dereference the pointer immediately following the InlinedCallFrame and return that value.
+4. If `!reportIteropMD`, return `GetMethodDescPtr(framePtr)`.
+5. Check if the current context IP is a managed context using the ExecutionManager contract. If it is a managed context, use the ExecutionManager context to find the related MethodDesc and return the pointer to it.
 ```csharp
 TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle)
 ```

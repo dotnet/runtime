@@ -5,18 +5,12 @@
 #define _UNWIND_X86_H
 
 // This file is shared between CoreCLR and NativeAOT. Some of the differences are handled
-// with the FEATURE_NATIVEAOT and FEATURE_EH_FUNCLETS defines. There are three main methods
-// that are used by both runtimes - DecodeGCHdrInfo, UnwindStackFrameX86, and EnumGcRefsX86.
+// with the FEATURE_NATIVEAOT define. There are three main methods that are used by both
+// runtimes - DecodeGCHdrInfo, UnwindStackFrameX86, and EnumGcRefsX86.
 //
-// The IN_EH_FUNCLETS and IN_EH_FUNCLETS_COMMA macros are used to specify some parameters
-// for the above methods that are specific for a certain runtime or configuration.
-#ifdef FEATURE_EH_FUNCLETS
-#define IN_EH_FUNCLETS(a) a
+// The IN_EH_FUNCLETS_COMMA macro is used to specify some parameters for the above methods
+// that are specific for a certain runtime or configuration.
 #define IN_EH_FUNCLETS_COMMA(a) a,
-#else
-#define IN_EH_FUNCLETS(a)
-#define IN_EH_FUNCLETS_COMMA(a)
-#endif
 
 enum regNum
 {

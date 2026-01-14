@@ -35,7 +35,7 @@ thread_local bool t_triedToCreateThreadStressLog;
    variable-speed CPUs (for power management), this is not accurate, but may
    be good enough.
 */
-__forceinline
+FORCEINLINE
 #ifdef HOST_WINDOWS
 __declspec(naked)
 #else
@@ -251,7 +251,7 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
 
     theLog.tickFrequency = getTickFrequency();
 
-    GetSystemTimeAsFileTime(&theLog.startTime);
+    theLog.startTime = minipal_get_system_time();
     theLog.startTimeStamp = getTimeStamp();
     theLog.moduleOffset = (SIZE_T)moduleBase;
 

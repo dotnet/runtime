@@ -45,7 +45,7 @@ namespace Internal.IL
             }
         }
 
-        public override MethodDesc OwningMethod
+        public override EcmaMethod OwningMethod
         {
             get
             {
