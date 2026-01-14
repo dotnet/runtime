@@ -396,6 +396,7 @@ InterpBasicBlock* InterpCompiler::AllocBB(int32_t ilOffset)
 
     new (bb) InterpBasicBlock (m_BBCount, ilOffset);
     m_BBCount++;
+
     return bb;
 }
 
@@ -406,6 +407,31 @@ InterpBasicBlock* InterpCompiler::GetBB(int32_t ilOffset)
     if (!bb)
     {
         bb = AllocBB(ilOffset);
+
+        uint32_t stackHeight;
+        StackInfo* stack;
+        // In some cases while linearly processing the IL, we may discover that we predicted the wrong stack state for a given IL merge point.
+        // In those cases, we will restart the compilation, and on the retry we will have the correct stack state information available here.
+        if (m_pRetryData->GetOverrideILMergePointStackType(ilOffset, &stackHeight, &stack))
+        {
+            bb->stackHeight = stackHeight;
+            bb->pStackState = (StackInfo*)AllocMemPool(sizeof(StackInfo) * stackHeight);
+            memcpy(bb->pStackState, stack, sizeof(StackInfo) * stackHeight);
+            for (uint32_t i = 0; i < stackHeight; i++)
+            {
+                int size = INTERP_STACK_SLOT_SIZE;
+                if (bb->pStackState[i].GetStackType() == StackTypeVT)
+                {
+                    size = m_compHnd->getClassSize(bb->pStackState[i].clsHnd);
+                }
+                int32_t var = CreateVarExplicit(g_interpTypeFromStackType[bb->pStackState[i].GetStackType()], bb->pStackState[i].clsHnd, size);
+                AllocGlobalVarOffset(var);
+                m_pVars[var].global = true;
+
+                bb->pStackState[i].var = var;
+                INTERP_DUMP("Using StackType %s for stack height %d with var %d\n", g_stackTypeString[bb->pStackState[i].GetStackType()], (int)i, var);
+            }
+        }
 
         m_ppOffsetToBB[ilOffset] = bb;
     }
@@ -561,6 +587,8 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
     if (pTargetBB->stackHeight <= 0)
         return;
 
+    assert(m_ppOffsetToBB[pTargetBB->ilOffset] == pTargetBB);
+
     for (int i = 0; i < pTargetBB->stackHeight; i++)
     {
         int sVar = m_pStackBase[i].var;
@@ -578,11 +606,23 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
                 }
                 else if (interpType == InterpTypeR8 && interpDestType == InterpTypeR4)
                 {
+                    // Data-loss conversion on IL stack merge point. We will need to restart compilation, but for now, emit a conv to continue processing, but update the stack data to reflect the change we need to make.
+                    // in the next retry of compilation.
                     movOp = INTOP_CONV_R4_R8;
+                    pTargetBB->pStackState[i] = StackInfo(StackTypeR8, nullptr, pTargetBB->pStackState[i].var);
+                    m_pRetryData->SetOverrideILMergePointStack(pTargetBB->ilOffset, pTargetBB->stackHeight, pTargetBB->pStackState);
                 }
                 else if (interpType == InterpTypeI && interpDestType == InterpTypeByRef)
                 {
                     movOp = InterpGetMovForType(interpDestType, false);
+                }
+                else if (interpType == InterpTypeByRef && interpDestType == InterpTypeI)
+                {
+                    // GC pointer conversion on IL stack merge point. We will need to restart compilation, but for now, emit a mov to continue processing, but update the stack data to reflect the change we need to make.
+                    // in the next retry of compilation.
+                    movOp = InterpGetMovForType(interpType, false);
+                    pTargetBB->pStackState[i] = StackInfo(StackTypeByRef, nullptr, pTargetBB->pStackState[i].var);
+                    m_pRetryData->SetOverrideILMergePointStack(pTargetBB->ilOffset, pTargetBB->stackHeight, pTargetBB->pStackState);
                 }
 #ifdef TARGET_64BIT
                 // nint and int32 can be used interchangeably. Add implicit conversions.
@@ -590,9 +630,13 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
                 {
                     movOp = INTOP_CONV_I8_I4;
                 }
-                else if (interpType == InterpTypeI8 && interpDestType == InterpTypeI4)
+                else if ((interpType == InterpTypeI8 || interpType == InterpTypeByRef) && interpDestType == InterpTypeI4)
                 {
-                    movOp = InterpGetMovForType(interpDestType, false);
+                    // Data-loss conversion on IL stack merge point. We will need to restart compilation, but for now, emit a mov to continue processing, but update the stack data to reflect the change we need to make.
+                    // in the next retry of compilation.
+                    movOp = INTOP_MOV_8;
+                    pTargetBB->pStackState[i] = StackInfo(g_stackTypeFromInterpType[interpType], nullptr, pTargetBB->pStackState[i].var);
+                    m_pRetryData->SetOverrideILMergePointStack(pTargetBB->ilOffset, pTargetBB->stackHeight, pTargetBB->pStackState);
                 }
 #endif // TARGET_64BIT
                 else
@@ -1053,13 +1097,21 @@ void InterpCompiler::EmitCode()
         getEHinfo(m_methodInfo, i, &clause);
         for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
         {
+            if (bb->isLeaveChainIsland && clause.HandlerOffset == (uint32_t)bb->ilOffset)
+            {
+                // Leave chain islands are not part of any EH clause, but their IL offset may be
+               continue;
+            }
+
             if (clause.HandlerOffset <= (uint32_t)bb->ilOffset && (clause.HandlerOffset + clause.HandlerLength) > (uint32_t)bb->ilOffset)
             {
+                INTERP_DUMP("BB %d with ilOffset %x overlaps EH clause %d (handler)\n", bb->index, bb->ilOffset, i);
                 bb->overlappingEHClauseCount++;
             }
 
             if (clause.Flags == CORINFO_EH_CLAUSE_FILTER && clause.FilterOffset <= (uint32_t)bb->ilOffset && clause.HandlerOffset > (uint32_t)bb->ilOffset)
             {
+                INTERP_DUMP("BB %d with ilOffset %x overlaps EH clause %d (filter)\n", bb->index, bb->ilOffset, i);
                 bb->overlappingEHClauseCount++;
             }
         }
@@ -1525,6 +1577,7 @@ void InterpCompiler::GetNativeRangeForClause(uint32_t startILOffset, uint32_t en
     assert(pStartBB != NULL);
 
     InterpBasicBlock* pEndBB = pStartBB;
+
     for (InterpBasicBlock* pBB = pStartBB->pNextBB; (pBB != NULL) && ((uint32_t)pBB->ilOffset < endILOffset); pBB = pBB->pNextBB)
     {
         if (pBB->overlappingEHClauseCount == pStartBB->overlappingEHClauseCount)
@@ -1638,6 +1691,18 @@ void InterpCompiler::BuildEHInfo()
     m_compHnd->setEHcount(nativeEHCount);
 
     unsigned int nativeEHIndex = 0;
+
+#ifdef DEBUG
+    INTERP_DUMP("   BB overlapping EH clause counts:\n");
+    if (t_interpDump)
+    {
+        for (InterpBasicBlock* pBB = GetBB(0); (pBB != NULL); pBB = pBB->pNextBB)
+        {
+            INTERP_DUMP("BB:%d has overlappingEHClauseCount=%d and ilOffset=%x\n", pBB->index, pBB->overlappingEHClauseCount, pBB->ilOffset);
+        }
+    }
+#endif
+
     for (unsigned int i = 0; i < getEHcount(m_methodInfo); i++)
     {
         CORINFO_EH_CLAUSE clause;
@@ -1719,13 +1784,11 @@ InterpMethod* InterpCompiler::CreateInterpMethod()
         pDataItems[i] = m_dataItems.Get(i);
 
     bool initLocals = (m_methodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0;
-    CORJIT_FLAGS corJitFlags;
-    DWORD jitFlagsSize = m_compHnd->getJitFlags(&corJitFlags, sizeof(corJitFlags));
-    assert(jitFlagsSize == sizeof(corJitFlags));
 
-    bool unmanagedCallersOnly = corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
+    bool unmanagedCallersOnly = m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
+    bool publishSecretStubParam = m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM);
 
-    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems, initLocals, unmanagedCallersOnly);
+    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems, initLocals, unmanagedCallersOnly, publishSecretStubParam);
 
     return pMethod;
 }
@@ -1758,8 +1821,9 @@ static void InterpreterCompilerBreak()
 }
 
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
-                                CORINFO_METHOD_INFO* methodInfo)
+                                CORINFO_METHOD_INFO* methodInfo, InterpreterRetryData* pRetryData)
     : m_stackmapsByClass(FreeInterpreterStackMap)
+    , m_pRetryData(pRetryData)
     , m_pInitLocalsIns(nullptr)
     , m_hiddenArgumentVar(-1)
     , m_nextCallGenericContextVar(-1)
@@ -1784,6 +1848,8 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     m_compHnd = compHnd;
     m_methodInfo = methodInfo;
     m_classHnd   = compHnd->getMethodClass(m_methodHnd);
+    DWORD jitFlagsSize = m_compHnd->getJitFlags(&m_corJitFlags, sizeof(m_corJitFlags));
+    assert(jitFlagsSize == sizeof(m_corJitFlags));
 
 #ifdef DEBUG
     m_methodName = ::PrintMethodName(compHnd, m_classHnd, m_methodHnd, &m_methodInfo->args,
@@ -1812,6 +1878,11 @@ InterpMethod* InterpCompiler::CompileMethod()
     }
 #endif
 
+    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE))
+    {
+        NO_WAY("Interpreter does not support profiling enter/leave hooks\n");
+    }
+
     m_isSynchronized = m_compHnd->getMethodAttribs(m_methodHnd) & CORINFO_FLG_SYNCH;
     if (m_isSynchronized)
     {
@@ -1826,6 +1897,12 @@ InterpMethod* InterpCompiler::CompileMethod()
     CreateILVars();
 
     GenerateCode(m_methodInfo);
+
+    if (m_pRetryData->NeedsRetry())
+    {
+        INTERP_DUMP("Retrying compilation due to %s\n", m_pRetryData->GetReasonString());
+        return nullptr;
+    }
 
 #ifdef DEBUG
     if (IsInterpDumpActive())
@@ -2216,8 +2293,9 @@ void InterpCompiler::CreateLeaveChainIslandBasicBlocks(CORINFO_METHOD_INFO* meth
 
         if (pLeaveChainIslandBB == NULL)
         {
-            pLeaveChainIslandBB = AllocBB(clause.HandlerOffset + clause.HandlerLength);
+            pLeaveChainIslandBB = AllocBB(clause.HandlerOffset);
             pLeaveChainIslandBB->pLeaveTargetBB = pLeaveTargetBB;
+            pLeaveChainIslandBB->isLeaveChainIsland = true;
             *ppLastBBNext = pLeaveChainIslandBB;
         }
 
@@ -2271,6 +2349,9 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
                     // This is a ret instruction coming from the initial IL of a synchronized or async method.
                     CreateLeaveChainIslandBasicBlocks(methodInfo, insOffset, GetBB(m_synchronizedOrAsyncPostFinallyOffset));
                 }
+
+                // The instruction AFTER a ret is always a different basic block if it exists.
+                GetBB((int32_t)(ip - codeStart));
             }
             break;
         case InlineString:
@@ -2502,6 +2583,26 @@ void InterpCompiler::EmitOneArgBranch(InterpOpcode opcode, int32_t ilOffset, int
     }
 }
 
+// Determines whether I4 to I8 promotion should use zero-extension (for unsigned operations)
+// or sign-extension (for signed operations), based on the opcode.
+InterpOpcode InterpOpForWideningArgForImplicitUpcast(InterpOpcode opcode)
+{
+    switch (opcode)
+    {
+        case INTOP_BNE_UN_I4:
+        case INTOP_BLE_UN_I4:
+        case INTOP_BLT_UN_I4:
+        case INTOP_BGE_UN_I4:
+        case INTOP_BGT_UN_I4:
+        case INTOP_ADD_OVF_UN_I4:
+        case INTOP_SUB_OVF_UN_I4:
+        case INTOP_MUL_OVF_UN_I4:
+            return INTOP_CONV_U8_U4;
+        default:
+            return INTOP_CONV_I8_I4;
+    }
+}
+
 void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int insSize)
 {
     CHECK_STACK(2);
@@ -2512,12 +2613,12 @@ void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int
     // emitting the conditional branch
     if (argType1 == StackTypeI4 && argType2 == StackTypeI8)
     {
-        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+        EmitConv(m_pStackPointer - 1, StackTypeI8, InterpOpForWideningArgForImplicitUpcast(opcode));
         argType1 = StackTypeI8;
     }
     else if (argType1 == StackTypeI8 && argType2 == StackTypeI4)
     {
-        EmitConv(m_pStackPointer - 2, StackTypeI8, INTOP_CONV_I8_I4);
+        EmitConv(m_pStackPointer - 2, StackTypeI8, InterpOpForWideningArgForImplicitUpcast(opcode));
     }
     else if (argType1 == StackTypeR4 && argType2 == StackTypeR8)
     {
@@ -2753,12 +2854,12 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
 #if TARGET_64BIT
         if (type1 == StackTypeI8 && type2 == StackTypeI4)
         {
-            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+            EmitConv(m_pStackPointer - 1, StackTypeI8, InterpOpForWideningArgForImplicitUpcast((InterpOpcode)opBase));
             type2 = StackTypeI8;
         }
         else if (type1 == StackTypeI4 && type2 == StackTypeI8)
         {
-            EmitConv(m_pStackPointer - 2, StackTypeI8, INTOP_CONV_I8_I4);
+            EmitConv(m_pStackPointer - 2, StackTypeI8, InterpOpForWideningArgForImplicitUpcast((InterpOpcode)opBase));
             type1 = StackTypeI8;
         }
 #endif
@@ -3141,7 +3242,9 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             if (g_stackTypeFromInterpType[targetType] != StackTypeI4 &&
                 g_stackTypeFromInterpType[targetType] != StackTypeI8)
             {
-                goto FAIL_TO_EXPAND_INTRINSIC;
+                // The intrinsic is must expand only when the target type is primitive. For other types (e.g. int128),
+                // use the compiled method.
+                return false;
             }
 
             InterpOpcode convOp;
@@ -3923,7 +4026,7 @@ void InterpCompiler::EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pRes
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 }
 
-static bool DisallowTailCall(CORINFO_SIG_INFO* callerSig, CORINFO_SIG_INFO* calleeSig)
+bool InterpCompiler::DisallowTailCall(CORINFO_SIG_INFO* callerSig, CORINFO_SIG_INFO* calleeSig)
 {
     // We allow only the return value types to differ between caller and callee as long as their stack types are the same.
     // In principle we could allow more differences (e.g. I8 coercion to I4, or O to I) but for now we keep it simple.
@@ -3943,6 +4046,16 @@ static bool DisallowTailCall(CORINFO_SIG_INFO* callerSig, CORINFO_SIG_INFO* call
         // Disallow tail calls from async methods for now
         return true;
     }
+    if (m_isSynchronized)
+    {
+        // Disallow tail calls from synchronized methods
+        return true;
+    }
+    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE))
+    {
+        // Disallow tail calls from reverse pinvoke methods
+        return true;
+    }
     return false;
 }
 
@@ -3958,6 +4071,8 @@ void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunc
     {
         if (m_compHnd->pInvokeMarshalingRequired(NULL, callSiteSig))
         {
+            // If we remove this restriction, we should handle the track transitions scenario by forcing a 
+            // p/invoke marshaling calli stub even when not needed.
             BADCODE("PInvoke marshalling for calli is not supported in interpreted code");
         }
         m_compHnd->getUnmanagedCallConv(nullptr, callSiteSig, &suppressGCTransition);
@@ -3979,6 +4094,8 @@ void InterpCompiler::EmitCanAccessCallout(CORINFO_RESOLVED_TOKEN *pResolvedToken
 
 void InterpCompiler::EmitCallsiteCallout(CorInfoIsAccessAllowedResult accessAllowed, CORINFO_HELPER_DESC* calloutDesc)
 {
+// WASM-TODO: https://github.com/dotnet/runtime/issues/121955
+#ifndef TARGET_WASM
     if (accessAllowed == CORINFO_ACCESS_ILLEGAL)
     {
         int32_t svars[CORINFO_ACCESS_ALLOWED_MAX_ARGS];
@@ -4049,6 +4166,7 @@ void InterpCompiler::EmitCallsiteCallout(CorInfoIsAccessAllowedResult accessAllo
         }
         m_pLastNewIns->data[0] = GetDataForHelperFtn(calloutDesc->helperNum);
     }
+#endif // !TARGET_WASM
 }
 
 static OpcodePeepElement peepRuntimeAsyncCall[] = {
@@ -4151,9 +4269,144 @@ public:
 
     bool FindAndApplyPeep(InterpCompiler* compiler)
     {
+#ifdef DEBUG
+        if (!InterpConfig.JitOptimizeAwait())
+            return false;
+#endif // DEBUG
         return compiler->FindAndApplyPeep(Peeps);
     }
 } AsyncCallPeeps;
+
+void InterpCompiler::EmitDup()
+{
+    CHECK_STACK(1);
+    int32_t svar = m_pStackPointer[-1].var;
+    InterpType interpType = m_pVars[svar].interpType;
+    if (interpType == InterpTypeVT)
+    {
+        int32_t size = m_pVars[svar].size;
+        AddIns(INTOP_MOV_VT);
+        m_pLastNewIns->SetSVar(svar);
+        PushTypeVT(m_pVars[svar].clsHnd, size);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+        m_pLastNewIns->data[0] = size;
+    }
+    else
+    {
+        AddIns(InterpGetMovForType(interpType, false));
+        m_pLastNewIns->SetSVar(svar);
+        PushInterpType(interpType, m_pVars[svar].clsHnd);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+    }
+}
+
+void InterpCompiler::EmitLdftn(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isVirtual)
+{
+    if (isVirtual)
+    {
+        CHECK_STACK(1);
+    }
+
+    CORINFO_CALL_INFO callInfo;
+    memset(&callInfo, 0, sizeof(callInfo));
+
+    CORINFO_CALLINFO_FLAGS callInfoFlags;
+    if (isVirtual)
+    {
+        callInfoFlags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_CALLVIRT | CORINFO_CALLINFO_LDFTN);
+    }
+    else
+    {
+        callInfoFlags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN);
+    }
+    m_compHnd->getCallInfo(pResolvedToken, m_pConstrainedToken, m_methodInfo->ftn, callInfoFlags, &callInfo);
+    m_pConstrainedToken = NULL;
+
+    // This check really only applies to intrinsic Array.Address methods
+    if (callInfo.sig.callConv & CORINFO_CALLCONV_PARAMTYPE)
+    {
+        NO_WAY("Currently do not support LDFTN of Parameterized functions");
+    }
+
+    // Inject call to callsite callout helper
+    EmitCallsiteCallout(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
+
+    if (isVirtual)
+    {
+        m_pStackPointer--;
+        int thisVar = m_pStackPointer[0].var;
+
+        if (!(callInfo.methodFlags & (CORINFO_FLG_FINAL | CORINFO_FLG_STATIC) || !(callInfo.methodFlags & CORINFO_FLG_VIRTUAL)))
+        {
+            EmitPushLdvirtftn(thisVar, pResolvedToken, &callInfo);
+            return;
+        }
+    }
+
+    // Fall through to non-virtual case
+
+    if (callInfo.kind == CORINFO_CALL)
+    {
+        CORINFO_CONST_LOOKUP embedInfo;
+        m_compHnd->getFunctionFixedEntryPoint(callInfo.hMethod, true, &embedInfo);
+
+        switch (embedInfo.accessType)
+        {
+        case IAT_VALUE:
+            AddIns(INTOP_LDPTR);
+            break;
+        case IAT_PVALUE:
+            AddIns(INTOP_LDPTR_DEREF);
+            break;
+        default:
+            assert(!"Unexpected access type for function pointer");
+        }
+        PushInterpType(InterpTypeI, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+        m_pLastNewIns->data[0] = GetDataItemIndex(embedInfo.handle);
+    }
+    else
+    {
+        EmitPushCORINFO_LOOKUP(callInfo.codePointerLookup);
+    }
+}
+
+void InterpCompiler::EmitLoadPointer(intptr_t ptrValue)
+{
+    if (sizeof(intptr_t) == 4)
+    {
+        AddIns(INTOP_LDC_I4);
+        m_pLastNewIns->data[0] = (int32_t)ptrValue;
+        PushStackType(StackTypeI4, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+    }
+    else
+    {
+        AddIns(INTOP_LDC_I8);
+        m_pLastNewIns->data[0] = (int32_t)(ptrValue & 0xFFFFFFFF);
+        m_pLastNewIns->data[1] = (int32_t)((ptrValue >> 32) & 0xFFFFFFFF);
+        PushStackType(StackTypeI8, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+    }
+}
+
+void InterpCompiler::CheckForPInvokeThisCallWithNoArgs(CORINFO_SIG_INFO* sigInfo, CORINFO_METHOD_HANDLE methodHnd)
+{
+    if (sigInfo->numArgs == 0)
+    {
+        CorInfoCallConv callConv = (CorInfoCallConv)(sigInfo->callConv & IMAGE_CEE_CS_CALLCONV_MASK);
+        bool isPInvoke = methodHnd != NULL || (callConv != CORINFO_CALLCONV_DEFAULT && callConv != CORINFO_CALLCONV_VARARG);
+        if (isPInvoke)
+        {
+            bool suppressGCTransition = false;
+            CorInfoCallConvExtension unmanagedCallConv = m_compHnd->getUnmanagedCallConv(methodHnd, sigInfo, &suppressGCTransition);
+            if (callConvIsInstanceMethodCallConv(unmanagedCallConv))
+            {
+                BADCODE("thiscall with 0 arguments");
+            }
+        }
+    }
+}
 
 void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli)
 {
@@ -4286,6 +4539,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             BADCODE("Vararg methods are not supported in interpreted code");
         }
 
+        CheckForPInvokeThisCallWithNoArgs(&callInfo.sig, NULL);
+
         callIFunctionPointerVar = m_pStackPointer[-1].var;
         m_pStackPointer--;
         calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
@@ -4305,6 +4560,12 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             m_ip += 5;
         }
 
+        if (newObj)
+        {
+            // The jit is expected to call the getNewHelper api to trigger a set of validations
+            bool hasSideEffects = false;
+            m_compHnd->getNewHelper(resolvedCallToken.hClass, &hasSideEffects);
+        }
 
         CORINFO_CALLINFO_FLAGS flags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_DISALLOW_STUB);
         if (isVirtual)
@@ -4399,7 +4660,14 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 #endif
     }
 
-    if (tailcall && DisallowTailCall(&m_methodInfo->args, &callInfo.sig))
+    if (tailcall && (
+        DisallowTailCall(&m_methodInfo->args, &callInfo.sig) // Disallow tail-calls for code gen reasons
+        || !m_compHnd->canTailCall(m_methodHnd, // Disallow tail calls due to rules specified by the VM
+                                   isCalli ? (CORINFO_METHOD_HANDLE)NULL : callInfo.hMethod, // The method we are attempting to call logically
+                                   isCalli ? (CORINFO_METHOD_HANDLE)NULL : (callInfo.kind == CORINFO_CALL ? callInfo.hMethod : (CORINFO_METHOD_HANDLE)NULL),
+                                   true) // The method we are calling exactly. We only know this if it's a non-virtual call
+        || (!isJmp && *m_ip != CEE_RET) // Disallow tailcalls that are not immediately before a ret
+        ))
     {
         if (isJmp)
         {
@@ -4417,6 +4685,21 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     bool isPInvoke = callInfo.methodFlags & CORINFO_FLG_PINVOKE;
     bool isMarshaledPInvoke = isPInvoke && m_compHnd->pInvokeMarshalingRequired(callInfo.hMethod, &callInfo.sig);
+
+    if (isPInvoke && m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE))
+    {
+        // If the method is a pinvoke il stub, we can inline pinvokes
+        if (!(m_compHnd->getMethodAttribs(m_methodInfo->ftn) & CORINFO_FLG_PINVOKE))
+        {
+            // Otherwise, we have to treat it as a marshaled pinvoke
+            isMarshaledPInvoke = true;
+        }
+    }
+
+    if (isPInvoke && !isMarshaledPInvoke)
+    {
+        CheckForPInvokeThisCallWithNoArgs(&callInfo.sig, callInfo.hMethod);
+    }
 
     // Process sVars
     int numArgsFromStack = callInfo.sig.numArgs + (newObj ? 0 : callInfo.sig.hasImplicitThis());
@@ -4666,8 +4949,18 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         m_pStackPointer--;
         int32_t continuationArg = m_pStackPointer[0].var;
 
-        AddIns(INTOP_LDNULL);
-        m_pLastNewIns->SetDVar(continuationArg);
+        if (m_nextCallAsyncContinuationVar == -1)
+        {
+            AddIns(INTOP_LDNULL);
+            m_pLastNewIns->SetDVar(continuationArg);
+        }
+        else
+        {
+            AddIns(INTOP_MOV_P);
+            m_pLastNewIns->SetSVar(m_nextCallAsyncContinuationVar);
+            m_pLastNewIns->SetDVar(continuationArg);
+            m_nextCallAsyncContinuationVar = -1;
+        }
         callArgs[continuationArgLocation] = continuationArg;
     }
 
@@ -5267,7 +5560,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     suspendData->keepAliveOffset = keepAliveOffset + OFFSETOF__CORINFO_Continuation__data;
     suspendData->captureSyncContextMethod = asyncInfo.captureContinuationContextMethHnd;
     suspendData->restoreExecutionContextMethod = asyncInfo.restoreExecutionContextMethHnd;
-    suspendData->restoreContextsMethod = asyncInfo.restoreContextsMethHnd;
+    suspendData->restoreContextsOnSuspensionMethod = asyncInfo.restoreContextsOnSuspensionMethHnd;
     suspendData->resumeInfo.Resume = (size_t)m_asyncResumeFuncPtr;
     suspendData->resumeInfo.DiagnosticIP = (size_t)NULL;
     suspendData->methodStartIP = 0; // This is filled in by logic later in emission once we know the final address of the method
@@ -5961,6 +6254,12 @@ static OpcodePeepElement peepTypeEqualityCheckOpcodes[] = {
     { 25, CEE_ILLEGAL } // End marker
 };
 
+static OpcodePeepElement peepConvRUn_R4Opcodes[] = {
+    { 0, CEE_CONV_R_UN },
+    { 1, CEE_CONV_R4 },
+    { 2, CEE_ILLEGAL } // End marker
+};
+
 static OpcodePeepElement peepStLdLoc0[] = {
     { 0, CEE_STLOC_0 },
     { 1, CEE_LDLOC_0 },
@@ -6083,10 +6382,24 @@ static OpcodePeepElement peepTypeValueTypeOpcodesOpcodes[] =  {
     { 15, CEE_ILLEGAL } // End marker
 };
 
+static OpcodePeepElement peepInstanceLdftnDelegateOpcodes[] = {
+    { 0, CEE_LDFTN },
+    { 6, CEE_NEWOBJ},
+    { 11, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepInstanceLdVirtftnDelegateOpcodes[] = {
+    { 0, CEE_DUP },
+    { 1, CEE_LDVIRTFTN },
+    { 7, CEE_NEWOBJ},
+    { 12, CEE_ILLEGAL } // End marker
+};
+
 class InterpILOpcodePeeps
 {
 public:
     OpcodePeep peepTypeEqualityCheck = { peepTypeEqualityCheckOpcodes, &InterpCompiler::IsTypeEqualityCheckPeep, &InterpCompiler::ApplyTypeEqualityCheckPeep, "TypeEqualityCheck" };
+    OpcodePeep peepConvRUn_R4 = { peepConvRUn_R4Opcodes, &InterpCompiler::IsConvRUnR4Peep, &InterpCompiler::ApplyConvRUnR4Peep, "ConvRUn_R4" };
     OpcodePeep peepStoreLoad0 = { peepStLdLoc0, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad0" };
     OpcodePeep peepStoreLoad1 = { peepStLdLoc1, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad1" };
     OpcodePeep peepStoreLoad2 = { peepStLdLoc2, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad2" };
@@ -6106,10 +6419,13 @@ public:
     OpcodePeep peepBoxIsInstLdNullCgtUn = { peepBoxIsInstLdNullCgtUnOpcodes, &InterpCompiler::IsBoxIsInstLdNullCgtUnPeep, &InterpCompiler::ApplyBoxIsInstLdNullCgtUnPeep, "BoxIsInstLdNullCgtUn" };
     OpcodePeep peepBoxIsInstUnboxAny = { peepBoxIsInstUnboxAnyOpcodes, &InterpCompiler::IsBoxIsInstUnboxAnyPeep, &InterpCompiler::ApplyBoxIsInstUnboxAnyPeep, "BoxIsInstUnboxAny" };
     OpcodePeep peepTypeValueType = { peepTypeValueTypeOpcodesOpcodes, &InterpCompiler::IsTypeValueTypePeep, &InterpCompiler::ApplyTypeValueTypePeep, "TypeValueType" };
+    OpcodePeep peepLdftnDelegateCtor = { peepInstanceLdftnDelegateOpcodes, &InterpCompiler::IsLdftnDelegateCtorPeep, &InterpCompiler::ApplyLdftnDelegateCtorPeep, "LdftnDelegateCtor" };
+    OpcodePeep peepLdvirtftnDelegateCtor = { peepInstanceLdVirtftnDelegateOpcodes, &InterpCompiler::IsLdftnDelegateCtorPeep, &InterpCompiler::ApplyLdftnDelegateCtorPeep, "LdvirtftnDelegateCtor" };
 
 public:
-    OpcodePeep* Peeps[21] = {
+    OpcodePeep* Peeps[24] = {
         &peepTypeEqualityCheck,
+        &peepConvRUn_R4, // This peep is not an optimization. It is for correctness.
         &peepStoreLoad,
         &peepStoreLoad1,
         &peepStoreLoad2,
@@ -6131,6 +6447,8 @@ public:
         &peepBoxIsInstLdNullCgtUn,
         &peepBoxIsInstUnboxAny,
         &peepTypeValueType,
+        &peepLdftnDelegateCtor,
+        &peepLdvirtftnDelegateCtor,
         NULL };
 
     bool FindAndApplyPeep(InterpCompiler* compiler)
@@ -6139,6 +6457,151 @@ public:
     }
 } ILOpcodePeeps;
 
+struct LdftnDelegateCtorPeepInfo
+{
+    CORINFO_RESOLVED_TOKEN ldftnResolvedToken;
+    CORINFO_RESOLVED_TOKEN newObjResolvedToken;
+    bool isLdVirtFtn = false;
+    DelegateCtorArgs ctorData;
+    CORINFO_METHOD_HANDLE alternateCtor = NULL;
+};
+
+bool InterpCompiler::IsLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    LdftnDelegateCtorPeepInfo peepInfo;
+    int ldftnOpcodeIndex = 0;
+
+    if (pattern[0].opcode == CEE_DUP)
+    {
+        peepInfo.isLdVirtFtn = true;
+        ldftnOpcodeIndex = 1;
+    }
+    ResolveToken(getU4LittleEndian(ip + pattern[ldftnOpcodeIndex].offsetIntoPeep + 2), CORINFO_TOKENKIND_Method, &peepInfo.ldftnResolvedToken);
+    if (peepInfo.ldftnResolvedToken.hMethod == NULL)
+    {
+        return false;
+    }
+
+    ResolveToken(getU4LittleEndian(ip + pattern[ldftnOpcodeIndex + 1].offsetIntoPeep + 1), CORINFO_TOKENKIND_NewObj, &peepInfo.newObjResolvedToken);
+    if (peepInfo.newObjResolvedToken.hMethod == NULL)
+    {
+        return false;
+    }
+
+    if ((m_compHnd->getClassAttribs(peepInfo.newObjResolvedToken.hClass) & CORINFO_FLG_DELEGATE) == 0)
+    {
+        return false;
+    }
+
+    // The jit is expected to call the getNewHelper api to trigger a set of validations
+    bool hasSideEffects = false;
+    m_compHnd->getNewHelper(peepInfo.newObjResolvedToken.hClass, &hasSideEffects);
+
+    peepInfo.ctorData.pMethod = m_methodInfo->ftn;
+    peepInfo.ctorData.pArg3   = nullptr;
+    peepInfo.ctorData.pArg4   = nullptr;
+    peepInfo.ctorData.pArg5   = nullptr;
+
+    peepInfo.alternateCtor = m_compHnd->GetDelegateCtor(peepInfo.newObjResolvedToken.hMethod, peepInfo.newObjResolvedToken.hClass, peepInfo.ldftnResolvedToken.hMethod, &peepInfo.ctorData);
+    if (peepInfo.alternateCtor == peepInfo.newObjResolvedToken.hMethod)
+    {
+        return false;
+    }
+
+    LdftnDelegateCtorPeepInfo *pPeepInfo = (LdftnDelegateCtorPeepInfo*)AllocMemPool(sizeof(LdftnDelegateCtorPeepInfo));
+    *pPeepInfo = peepInfo;
+    *ppComputedInfo = pPeepInfo;
+    return true;
+}
+
+int InterpCompiler::ApplyLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* pComputedInfo)
+{
+    LdftnDelegateCtorPeepInfo *peepInfo = (LdftnDelegateCtorPeepInfo*)pComputedInfo;
+    // If there is a virtual load scenario, implement the dup
+    if (pattern[0].opcode == CEE_DUP)
+    {
+        EmitDup();
+    }
+
+    // Do the function pointer load
+    EmitLdftn(&peepInfo->ldftnResolvedToken, peepInfo->isLdVirtFtn);
+
+    // Load any extra args needed for the alternate delegate constructor
+    int extraArgCount = 0;
+    if (peepInfo->ctorData.pArg3 != NULL)
+    {
+        EmitLoadPointer((intptr_t)peepInfo->ctorData.pArg3);
+        extraArgCount++;
+        if (peepInfo->ctorData.pArg4 != NULL)
+        {
+            EmitLoadPointer((intptr_t)peepInfo->ctorData.pArg4);
+            extraArgCount++;
+            if (peepInfo->ctorData.pArg5 != NULL)
+            {
+                EmitLoadPointer((intptr_t)peepInfo->ctorData.pArg5);
+                extraArgCount++;
+            }
+        }
+    }
+
+    // Then emit the call to the alternate constructor
+
+    CORINFO_CALL_INFO callInfo;
+    CORINFO_CALLINFO_FLAGS flags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_DISALLOW_STUB);
+    m_compHnd->getCallInfo(&peepInfo->newObjResolvedToken, NULL, m_methodInfo->ftn, flags, &callInfo);
+
+    // Inject call to callsite callout helper
+    EmitCallsiteCallout(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
+
+    // Setup the arguments for the call
+    int *callArgs = (int*) AllocMemPool((3 + extraArgCount + 1) * sizeof(int));
+    callArgs[3 + extraArgCount] = CALL_ARGS_TERMINATOR;
+    for (int i = 0; i < 2 + extraArgCount; i++)
+    {
+        callArgs[2 + extraArgCount - i] = m_pStackPointer[-1].var;
+        m_pStackPointer--;
+    }
+
+    PushInterpType(InterpTypeO, NULL);
+    PushInterpType(InterpTypeO, NULL);
+    CORINFO_GENERICHANDLE_RESULT newObjGenericHandleEmbedInfo;
+    m_compHnd->embedGenericHandle(&peepInfo->newObjResolvedToken, true, m_methodInfo->ftn, &newObjGenericHandleEmbedInfo);
+    GenericHandleData newObjData = GenericHandleToGenericHandleData(newObjGenericHandleEmbedInfo);
+
+    int32_t newObjDVar = m_pStackPointer[-2].var;
+    int32_t newObjThisVar = m_pStackPointer[-1].var;
+    m_pStackPointer--;
+    AddIns(INTOP_DEF);
+    m_pLastNewIns->SetDVar(newObjThisVar);
+    callArgs[0] = newObjThisVar;
+
+    if (newObjData.argType == HelperArgType::GenericResolution)
+    {
+        // newobj of type known only through a generic dictionary lookup.
+        AddIns(INTOP_NEWOBJ_GENERIC);
+        m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, newObjData.genericVar);
+        m_pLastNewIns->data[1] = newObjData.dataItemIndex;
+    }
+    else
+    {
+        // Normal newobj call
+        AddIns(INTOP_NEWOBJ);
+        m_pLastNewIns->data[1] = newObjData.dataItemIndex;
+    }
+
+    m_pLastNewIns->data[0] = GetDataItemIndex(peepInfo->alternateCtor);
+    // Ensure that the dvar does not overlap with the svars; it is incorrect for it to overlap because
+    //  the process of initializing the result may trample the args.
+    m_pVars[newObjDVar].noCallArgs = true;
+    m_pLastNewIns->SetDVar(newObjDVar);
+    m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
+
+    m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
+    m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof (InterpCallInfo));
+    m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
+
+    return -1;
+}
 
 bool InterpCompiler::IsRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
 {
@@ -6340,6 +6803,32 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip
     return true;
 }
 
+int InterpCompiler::ApplyConvRUnR4Peep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo)
+{
+    // Replace with CONV_R4_UN
+    CHECK_STACK(1);
+    m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+    switch (m_pStackPointer[-1].GetStackType())
+    {
+    case StackTypeR4:
+        break;
+    case StackTypeR8:
+        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
+        break;
+    case StackTypeI8:
+        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_UN_I8);
+        break;
+    case StackTypeI4:
+        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_UN_I4);
+        break;
+    default:
+        BADCODE("conv.r.un operand must be R4, R8, I4 or I8");
+        break;
+    }
+
+    return -1;
+}
+
 bool InterpCompiler::FindAndApplyPeep(OpcodePeep* Peeps[])
 {
     const uint8_t* ip = m_ip;
@@ -6497,6 +6986,11 @@ int InterpCompiler::ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElem
 
 bool InterpCompiler::IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
 {
+    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
+    {
+        return false; // Don't optimize in debug code, this can remove needed sequence points
+    }
+
     int localVar = 0;
 
     switch(pattern[0].opcode)
@@ -7022,9 +7516,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     bool readonly = false;
     bool tailcall = false;
     bool volatile_ = false;
-    CORINFO_RESOLVED_TOKEN* pConstrainedToken = NULL;
     CORINFO_RESOLVED_TOKEN constrainedToken;
-    CORINFO_CALL_INFO callInfo;
     const uint8_t *codeEnd;
     if (m_methodInfo->args.hasExplicitThis())
     {
@@ -7140,7 +7632,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 
 #if DEBUG
     if (InterpConfig.InterpHalt().contains(m_compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args))
-        AddIns(INTOP_BREAKPOINT);
+        AddIns(INTOP_HALT);
 #endif
 
     // We need to always generate this opcode because even if we have no IL locals, we may have
@@ -7163,11 +7655,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         m_pLastNewIns->SetSVar(m_continuationArgIndex);
     }
 
-    CORJIT_FLAGS corJitFlags;
-    DWORD jitFlagsSize = m_compHnd->getJitFlags(&corJitFlags, sizeof(corJitFlags));
-    assert(jitFlagsSize == sizeof(corJitFlags));
-
-    if (corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM))
+    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM))
     {
         m_hiddenArgumentVar = CreateVarExplicit(InterpTypeI, NULL, sizeof(void *));
         AddIns(INTOP_STORESTUBCONTEXT);
@@ -8115,10 +8603,10 @@ retry_emit:
                 case StackTypeR8:
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R_UN_I8);
+                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_UN_I8);
                     break;
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R_UN_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_UN_I4);
                     break;
                 default:
                     BADCODE("conv.r8 operand must be R4, R8, I4 or I8");
@@ -8672,6 +9160,14 @@ retry_emit:
                     }
                 }
 
+#ifdef TARGET_64BIT
+                if (m_pStackPointer->GetStackType() == StackTypeI)
+                {
+                    // Emit a saturating conversion from U8 to U4
+                    EmitConv(m_pStackPointer, StackTypeI4, INTOP_CONV_U4_U8_SAT);
+                }
+#endif // TARGET_64BIT
+
                 AddInsExplicit(INTOP_SWITCH, n + 3);
                 m_pLastNewIns->data[0] = n;
                 m_pLastNewIns->SetSVar(m_pStackPointer->var);
@@ -8889,52 +9385,34 @@ retry_emit:
                     // CEE_JMP inside a funclet is not allowed
                     BADCODE("CEE_JMP inside funclet");
                 }
-                EmitCall(pConstrainedToken, readonly, true /* tailcall */, false /*newObj*/, false /*isCalli*/);
+                EmitCall(m_pConstrainedToken, readonly, true /* tailcall */, false /*newObj*/, false /*isCalli*/);
                 linkBBlocks = false;
                 break;
             }
             case CEE_CALLVIRT:
             case CEE_CALL:
-                EmitCall(pConstrainedToken, readonly, tailcall, false /*newObj*/, false /*isCalli*/);
-                pConstrainedToken = NULL;
+                EmitCall(m_pConstrainedToken, readonly, tailcall, false /*newObj*/, false /*isCalli*/);
+                m_pConstrainedToken = NULL;
                 readonly = false;
                 tailcall = false;
                 break;
             case CEE_CALLI:
-                EmitCall(NULL /*pConstrainedToken*/, false /* readonly*/, false /* tailcall*/, false /*newObj*/, true /*isCalli*/);
-                pConstrainedToken = NULL;
+                EmitCall(NULL /*pConstrainedToken*/, false /* readonly*/, tailcall /* tailcall*/, false /*newObj*/, true /*isCalli*/);
+                m_pConstrainedToken = NULL;
                 readonly = false;
                 tailcall = false;
                 break;
             case CEE_NEWOBJ:
             {
                 EmitCall(NULL /*pConstrainedToken*/, false /* readonly*/, false /* tailcall*/, true /*newObj*/, false /*isCalli*/);
-                pConstrainedToken = NULL;
+                m_pConstrainedToken = NULL;
                 readonly = false;
                 tailcall = false;
                 break;
             }
             case CEE_DUP:
             {
-                CHECK_STACK(1);
-                int32_t svar = m_pStackPointer[-1].var;
-                InterpType interpType = m_pVars[svar].interpType;
-                if (interpType == InterpTypeVT)
-                {
-                    int32_t size = m_pVars[svar].size;
-                    AddIns(INTOP_MOV_VT);
-                    m_pLastNewIns->SetSVar(svar);
-                    PushTypeVT(m_pVars[svar].clsHnd, size);
-                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-                    m_pLastNewIns->data[0] = size;
-                }
-                else
-                {
-                    AddIns(InterpGetMovForType(interpType, false));
-                    m_pLastNewIns->SetSVar(svar);
-                    PushInterpType(interpType, m_pVars[svar].clsHnd);
-                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-                }
+                EmitDup();
                 m_ip++;
                 break;
             }
@@ -9408,7 +9886,7 @@ retry_emit:
 
                         ResolveToken(token, CORINFO_TOKENKIND_Constrained, &constrainedToken);
 
-                        pConstrainedToken = &constrainedToken;
+                        m_pConstrainedToken = &constrainedToken;
                         m_ip += 5;
                         break;
                     }
@@ -9509,79 +9987,16 @@ retry_emit:
                         CORINFO_RESOLVED_TOKEN resolvedToken;
                         uint32_t token = getU4LittleEndian(m_ip + 1);
                         ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedToken);
-
-                        memset(&callInfo, 0, sizeof(callInfo));
-                        m_compHnd->getCallInfo(&resolvedToken, pConstrainedToken, m_methodInfo->ftn, (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_SECURITYCHECKS| CORINFO_CALLINFO_LDFTN | CORINFO_CALLINFO_CALLVIRT), &callInfo);
-                        pConstrainedToken = NULL;
-
-                        // This check really only applies to intrinsic Array.Address methods
-                        if (callInfo.sig.callConv & CORINFO_CALLCONV_PARAMTYPE)
-                        {
-                            NO_WAY("Currently do not support LDFTN of Parameterized functions");
-                        }
-
-                        // Inject call to callsite callout helper
-                        EmitCallsiteCallout(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
-
-                        m_pStackPointer--;
-                        int thisVar = m_pStackPointer[0].var;
-
-                        if (callInfo.methodFlags & (CORINFO_FLG_FINAL | CORINFO_FLG_STATIC) || !(callInfo.methodFlags & CORINFO_FLG_VIRTUAL))
-                        {
-                            goto DO_LDFTN;
-                        }
-
-                        EmitPushLdvirtftn(thisVar, &resolvedToken, &callInfo);
+                        EmitLdftn(&resolvedToken, true);
                         m_ip += 5;
                         break;
                     }
                     case CEE_LDFTN:
                     {
-                        {
-                            CORINFO_RESOLVED_TOKEN resolvedToken;
-                            uint32_t token = getU4LittleEndian(m_ip + 1);
-                            ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedToken);
-
-                            memset(&callInfo, 0, sizeof(callInfo));
-                            m_compHnd->getCallInfo(&resolvedToken, pConstrainedToken, m_methodInfo->ftn, (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_SECURITYCHECKS| CORINFO_CALLINFO_LDFTN), &callInfo);
-                        }
-                        pConstrainedToken = NULL;
-
-                        // This check really only applies to intrinsic Array.Address methods
-                        if (callInfo.sig.callConv & CORINFO_CALLCONV_PARAMTYPE)
-                        {
-                            NO_WAY("Currently do not support LDFTN of Parameterized functions");
-                        }
-
-                        // Inject call to callsite callout helper
-                        EmitCallsiteCallout(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
-
-DO_LDFTN:
-                        if (callInfo.kind == CORINFO_CALL)
-                        {
-                            CORINFO_CONST_LOOKUP embedInfo;
-                            m_compHnd->getFunctionFixedEntryPoint(callInfo.hMethod, true, &embedInfo);
-
-                            switch (embedInfo.accessType)
-                            {
-                            case IAT_VALUE:
-                                AddIns(INTOP_LDPTR);
-                                break;
-                            case IAT_PVALUE:
-                                AddIns(INTOP_LDPTR_DEREF);
-                                break;
-                            default:
-                                assert(!"Unexpected access type for function pointer");
-                            }
-                            PushInterpType(InterpTypeI, NULL);
-                            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-                            m_pLastNewIns->data[0] = GetDataItemIndex(embedInfo.handle);
-                        }
-                        else
-                        {
-                            EmitPushCORINFO_LOOKUP(callInfo.codePointerLookup);
-                        }
-
+                        CORINFO_RESOLVED_TOKEN resolvedToken;
+                        uint32_t token = getU4LittleEndian(m_ip + 1);
+                        ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedToken);
+                        EmitLdftn(&resolvedToken, false);
                         m_ip += 5;
                         break;
                     }
@@ -10328,6 +10743,65 @@ void InterpCompiler::UpdateWithFinalMethodByteCodeAddress(InterpByteCodeStart *p
     for (int32_t i = 0; i < m_asyncSuspendDataItems.GetSize(); i++)
     {
         m_asyncSuspendDataItems.Get(i)->methodStartIP = pByteCodeStart;
+    }
+}
+
+void InterpreterRetryData::SetOverrideILMergePointStack(int32_t ilOffset, uint32_t stackHeight, StackInfo *pStackInfo)
+{
+    assert(stackHeight > 0);
+    SetNeedsRetry("IL stack type override change at merge point");
+
+    INTERP_DUMP("  Override IL merge point stack at IL offset 0x%X, stack depth %u: ", ilOffset, stackHeight);
+
+    uint32_t key = (uint32_t)ilOffset;
+    StackInfo* value = (StackInfo*)malloc(sizeof(StackInfo) * stackHeight);
+    if (value == nullptr)
+    {
+        NOMEM();
+    }
+
+    for (uint32_t i = 0; i < stackHeight; i++)
+    {
+        value[i] = pStackInfo[i];
+        value[i].var = (int)stackHeight; // Encode the stack depth in the var field
+    }
+
+    void* oldValue;
+    if (dn_simdhash_u32_ptr_try_get_value(m_ilMergePointStackTypes.GetValue(), key, &oldValue))
+    {
+        assert(((StackInfo*)oldValue)[0].var == (int)stackHeight);
+        FreeStackInfo(key, oldValue, nullptr);
+        uint8_t success = dn_simdhash_u32_ptr_try_replace_value(m_ilMergePointStackTypes.GetValue(), key, value);
+        if (!success)
+        {
+            NOMEM();
+        }
+    }
+    else
+    {
+        checkAddedNew(dn_simdhash_u32_ptr_try_add(m_ilMergePointStackTypes.GetValue(), key, value));
+    }
+}
+
+bool InterpreterRetryData::GetOverrideILMergePointStackType(int32_t ilOffset, uint32_t* stackHeight, StackInfo** stack)
+{
+    if (!m_ilMergePointStackTypes.HasValue())
+    {
+        return false;
+    }
+
+    uint32_t key = (uint32_t)ilOffset;
+    void* value;
+    if (dn_simdhash_u32_ptr_try_get_value(m_ilMergePointStackTypes.GetValue(), key, &value))
+    {
+        INTERP_DUMP("  Found override IL merge point stack at IL offset 0x%X, stack depth %u\n", ilOffset, (uint32_t)((StackInfo*)value)[0].var);
+        *stack = (StackInfo*)value;
+        *stackHeight = (uint32_t)((StackInfo*)value)[0].var;
+        return true;
+    }
+    else
+    {
+        return false;
     }
 }
 

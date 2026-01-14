@@ -5,27 +5,19 @@
   </PropertyGroup>
 
   <!-- iOS/tvOS arm64 simulators do not support JIT, so force interpreter fallback, devices should FullAOT -->
-  <PropertyGroup Condition="('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') And '$(TargetArchitecture)' == 'arm64' and '$(UseNativeAOTRuntime)' != 'true'">
+  <PropertyGroup Condition="('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') And '$(TargetArchitecture)' == 'arm64' and '$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' == 'true'">
     <MonoForceInterpreter Condition="'$(MonoForceInterpreter)' == ''">true</MonoForceInterpreter>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true'">
-    <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
-    <PublishReadyToRunContainerFormat>macho</PublishReadyToRunContainerFormat>
+  <PropertyGroup Condition="'$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">
+    <PublishReadyToRun Condition="'$(PublishReadyToRun)' == ''">true</PublishReadyToRun>
+    <PublishReadyToRunComposite Condition="'$(PublishReadyToRun)' == 'true'">true</PublishReadyToRunComposite>
+    <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRun)' == 'true'">macho</PublishReadyToRunContainerFormat>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(PublishReadyToRun)' != 'true' and '$(UseMonoRuntime)' != 'true'">
+  <ItemGroup Condition="'$(PublishReadyToRun)' != 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">
     <EnvironmentVariables Include="DOTNET_ReadyToRun=0" />
   </ItemGroup>
-
-  <!-- Tracking issue: https://github.com/dotnet/runtime/issues/119006
-       ReadyToRun settings for CoreCLR on Apple platforms.
-       This can be removed once we upstream Mach-O support in the targets to the SDK -->
-  <Import Project="$(Crossgen2SdkOverridePropsPath)" Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(Crossgen2SdkOverridePropsPath)' != ''" />
-  <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true'">
-    <AfterMicrosoftNETSdkTargets Condition="'$(Crossgen2SdkOverrideTargetsPath)' != ''">$(AfterMicrosoftNETSdkTargets);$(Crossgen2SdkOverrideTargetsPath)</AfterMicrosoftNETSdkTargets>
-    <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.ReadyToRun.targets</AfterMicrosoftNETSdkTargets>
-  </PropertyGroup>
 
   <PropertyGroup>
     <iOSLikeDedup Condition="'$(iOSLikeDedup)' == '' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</iOSLikeDedup>
@@ -38,7 +30,7 @@
     <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''">false</StripDebugSymbols>
 
     <!-- TODO: We currently do not support bundling a static iOS-library with NativeAOT -->
-    <_IsLibraryMode Condition="('$(UseNativeAOTRuntime)' != 'true' and '$(NativeLib)' != '') or ('$(UseNativeAOTRuntime)' == 'true' and '$(NativeLib)' == 'Shared')">true</_IsLibraryMode>
+    <_IsLibraryMode Condition="'$(UseMonoRuntime)' == 'true' and (('$(UseNativeAOTRuntime)' != 'true' and '$(NativeLib)' != '') or ('$(UseNativeAOTRuntime)' == 'true' and '$(NativeLib)' == 'Shared'))">true</_IsLibraryMode>
     <ShouldILStrip Condition="'$(ShouldILStrip)' == '' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true' and '$(_IsLibraryMode)' != 'true'">true</ShouldILStrip>
 
     <_AotCompileTargetName Condition="'$(UseNativeAOTRuntime)' == 'true'">_AppleNativeAotCompile</_AotCompileTargetName>
@@ -62,6 +54,15 @@
 
     <!-- When building on Helix $(_CommonTargetsDir) will be properly set, otherwise we have to set it to a in-tree location -->
     <_CommonTargetsDir Condition="'$(_CommonTargetsDir)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', '..', 'common'))</_CommonTargetsDir>
+  </PropertyGroup>
+
+  <!-- Tracking issue: https://github.com/dotnet/runtime/issues/119006
+       ReadyToRun settings for CoreCLR on Apple platforms.
+       This can be removed once we upstream Mach-O support in the targets to the SDK -->
+  <Import Project="$(Crossgen2SdkOverridePropsPath)" Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true' and '$(Crossgen2SdkOverridePropsPath)' != '' and Exists('$(Crossgen2SdkOverridePropsPath)')" />
+  <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">
+    <AfterMicrosoftNETSdkTargets Condition="'$(Crossgen2SdkOverrideTargetsPath)' != '' and Exists('$(Crossgen2SdkOverrideTargetsPath)')">$(AfterMicrosoftNETSdkTargets);$(Crossgen2SdkOverrideTargetsPath)</AfterMicrosoftNETSdkTargets>
+    <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.ReadyToRun.targets</AfterMicrosoftNETSdkTargets>
   </PropertyGroup>
 
   <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' != 'false'" Project="$(_CommonTargetsDir)CommonMobileBuild.props" />

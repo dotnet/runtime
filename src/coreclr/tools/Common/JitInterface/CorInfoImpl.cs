@@ -163,7 +163,7 @@ namespace Internal.JitInterface
 
         public static void Startup(CORINFO_OS os)
         {
-            jitStartup(GetJitHost(JitConfigProvider.Instance.UnmanagedInstance));
+            jitStartup(GetJitHost(JitConfigProvider.UnmanagedInstance));
             JitSetOs(JitPointerAccessor.Get(), os);
         }
 
@@ -1324,7 +1324,7 @@ namespace Internal.JitInterface
             info->exactContext = null;
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN;
             info->isInstantiatingStub = false;
-            info->wasArrayInterfaceDevirt = false;
+            info->needsMethodContext = false;
 
             TypeDesc objType = HandleToObject(info->objClass);
 
@@ -1340,7 +1340,12 @@ namespace Internal.JitInterface
             // Transform from the unboxing thunk to the normal method
             decl = decl.IsUnboxingThunk() ? decl.GetUnboxedMethod() : decl;
 
-            Debug.Assert(!decl.HasInstantiation);
+            if (decl.HasInstantiation)
+            {
+                // We cannot devirtualize generic virtual methods in AOT yet
+                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_GENERIC_VIRTUAL;
+                return false;
+            }
 
             if ((info->context != null) && decl.OwningType.IsInterface)
             {
@@ -1851,7 +1856,12 @@ namespace Internal.JitInterface
                     // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
                     // we cannot resolve to an Async variant in such case.
                     // return NULL, so that caller would re-resolve as a regular method call
-                    method = method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask()
+                    bool allowAsyncVariant = method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask();
+
+                    // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
+                    allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
+
+                    method = allowAsyncVariant
                         ? _compilation.TypeSystemContext.GetAsyncVariantMethod(method)
                         : null;
                 }
@@ -2113,6 +2123,14 @@ namespace Internal.JitInterface
 
                 if (metadataType.IsInlineArray)
                     result |= CorInfoFlag.CORINFO_FLG_INDEXABLE_FIELDS;
+
+                if (metadataType.IsExtendedLayout)
+                {
+                    if (metadataType.GetClassLayout().Kind == MetadataLayoutKind.CUnion)
+                    {
+                        result |= CorInfoFlag.CORINFO_FLG_OVERLAPPING_FIELDS;
+                    }
+                }
             }
 
             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
@@ -3655,14 +3673,6 @@ namespace Internal.JitInterface
         private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
         { throw new NotImplementedException("getFunctionFixedEntryPoint"); }
 
-#pragma warning disable CA1822 // Mark members as static
-        private CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_STRUCT_* handle)
-#pragma warning restore CA1822 // Mark members as static
-        {
-            // TODO: Lazy string literal helper
-            return CorInfoHelpFunc.CORINFO_HELP_UNDEF;
-        }
-
         private CORINFO_MODULE_STRUCT_* embedModuleHandle(CORINFO_MODULE_STRUCT_* handle, ref void* ppIndirection)
         { throw new NotImplementedException("embedModuleHandle"); }
 
@@ -4285,6 +4295,11 @@ namespace Internal.JitInterface
                 if (this.MethodBeingCompiled.HasInstantiation || this.MethodBeingCompiled.OwningType.HasInstantiation) // No generics involved
                 {
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramGenericMethod, this.MethodBeingCompiled);
+                }
+
+                if (this.MethodBeingCompiled.IsAsync)
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramAsync, this.MethodBeingCompiled);
                 }
 
 #if READYTORUN

@@ -1667,12 +1667,22 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         saveRegsSize += MAX_REG_ARG * REGSIZE_BYTES;
     }
 
-    if (compiler->lvaMonAcquired != BAD_VAR_NUM && !compiler->opts.IsOSR())
+    if ((compiler->lvaMonAcquired != BAD_VAR_NUM) && !compiler->opts.IsOSR())
     {
         // We furthermore allocate the "monitor acquired" bool between PSP and
         // the saved registers because this is part of the EnC header.
         // Note that OSR methods reuse the monitor bool created by tier 0.
         saveRegsSize += compiler->lvaLclStackHomeSize(compiler->lvaMonAcquired);
+    }
+
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        saveRegsSize += compiler->lvaLclStackHomeSize(compiler->lvaAsyncExecutionContextVar);
+    }
+
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        saveRegsSize += compiler->lvaLclStackHomeSize(compiler->lvaAsyncSynchronizationContextVar);
     }
 
     unsigned const saveRegsSizeAligned = roundUp(saveRegsSize, STACK_ALIGN);
@@ -3303,7 +3313,7 @@ BAILOUT:
 // Arguments:
 //    tree - the node
 //
-void CodeGen::genCodeForNegNot(GenTree* tree)
+void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_NEG, GT_NOT));
 
