@@ -595,6 +595,9 @@ extern "C" void Store_X7();
 extern "C" void Load_SwiftSelf();
 extern "C" void Store_SwiftSelf();
 
+extern "C" void Load_SwiftError();
+extern "C" void Store_SwiftError();
+
 extern "C" void Load_Ref_X0();
 extern "C" void Load_Ref_X1();
 extern "C" void Load_Ref_X2();
@@ -1873,7 +1876,7 @@ PCODE GPRegsRefStoreRoutines[] =
 
 #endif // TARGET_RISCV64
 
-#define LOG_COMPUTE_CALL_STUB 0
+#define LOG_COMPUTE_CALL_STUB 1
 
 PCODE CallStubGenerator::GetStackRoutine()
 {
@@ -1978,6 +1981,14 @@ PCODE CallStubGenerator::GetSwiftSelfRoutine()
     printf("GetSwiftSelfRoutine\n");
 #endif
     return m_interpreterToNative ? (PCODE)Load_SwiftSelf : (PCODE)Store_SwiftSelf;
+}
+
+PCODE CallStubGenerator::GetSwiftErrorRoutine()
+{
+#if LOG_COMPUTE_CALL_STUB
+    printf("GetSwiftErrorRoutine\n");
+#endif
+    return m_interpreterToNative ? (PCODE)Load_SwiftError : (PCODE)Store_SwiftError;
 }
 #endif // TARGET_ARM64
 
@@ -2457,6 +2468,11 @@ void CallStubGenerator::TerminateCurrentRoutineIfNotOfNewType(RoutineType type, 
         pRoutines[m_routineIndex++] = GetSwiftSelfRoutine();
         m_currentRoutineType = RoutineType::None;
     }
+    else if ((m_currentRoutineType == RoutineType::SwiftError) && (type != RoutineType::SwiftError))
+    {
+        pRoutines[m_routineIndex++] = GetSwiftErrorRoutine();
+        m_currentRoutineType = RoutineType::None;
+    }
 #endif // TARGET_ARM64
     else if ((m_currentRoutineType == RoutineType::Stack) && (type != RoutineType::Stack))
     {
@@ -2531,6 +2547,36 @@ bool isSwiftSelfType(MethodTable* pMT)
     }
 
     return strcmp(typeName, "SwiftSelf") == 0 || strcmp(typeName, "SwiftSelf`1") == 0;
+}
+
+
+//---------------------------------------------------------------------------
+// isSwiftErrorType:
+//    Check if the given type is SwiftError.
+//
+// Arguments:
+//    pMT - the handle for the type.
+//
+// Return Value:
+//    true if the given type is SwiftError
+//    false otherwise.
+//
+bool isSwiftErrorType(MethodTable* pMT)
+{
+    const char* namespaceName = nullptr;
+    const char* typeName      = pMT->GetFullyQualifiedNameInfo(&namespaceName);
+
+    if ((namespaceName == NULL) || (typeName == NULL))
+    {
+        return false;
+    }
+
+    if (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") != 0)
+    {
+        return false;
+    }
+
+    return strcmp(typeName, "SwiftError") == 0;
 }
 #endif // TARGET_ARM64
 
@@ -2757,7 +2803,12 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
 #ifdef TARGET_ARM64
         if (isSwiftCallConv)
         {
-            if (argCorType == ELEMENT_TYPE_VALUETYPE && !thArgTypeHandle.IsNull())
+            if (argCorType == ELEMENT_TYPE_BYREF)
+            {
+                sig.GetByRefType(&thArgTypeHandle);
+            }
+
+            if ((argCorType == ELEMENT_TYPE_VALUETYPE || argCorType == ELEMENT_TYPE_BYREF) && !thArgTypeHandle.IsNull())
             {
                 MethodTable* pArgMT = thArgTypeHandle.IsTypeDesc() ? nullptr : thArgTypeHandle.AsMethodTable();
                 if (pArgMT != nullptr && isSwiftSelfType(pArgMT))
@@ -2768,6 +2819,17 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
 
                     TerminateCurrentRoutineIfNotOfNewType(RoutineType::SwiftSelf, pRoutines);
                     m_currentRoutineType = RoutineType::SwiftSelf;
+                    interpreterStackOffset += interpStackSlotSize;
+                    continue;
+                }
+                if (pArgMT != nullptr && isSwiftErrorType(pArgMT))
+                {
+#if LOG_COMPUTE_CALL_STUB
+                    printf("Swift Error argument detected\n");
+#endif
+
+                    TerminateCurrentRoutineIfNotOfNewType(RoutineType::SwiftError, pRoutines);
+                    m_currentRoutineType = RoutineType::SwiftError;
                     interpreterStackOffset += interpStackSlotSize;
                     continue;
                 }

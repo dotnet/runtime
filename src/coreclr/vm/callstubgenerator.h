@@ -118,6 +118,7 @@ class CallStubGenerator
         FPReg32,
         FPReg128,
         SwiftSelf,
+        SwiftError,
 #endif
         Stack
     };
@@ -159,6 +160,7 @@ class CallStubGenerator
     PCODE GetFPReg128RangeRoutine(int x1, int x2);
     PCODE GetFPReg32RangeRoutine(int x1, int x2);
     PCODE GetSwiftSelfRoutine();
+    PCODE GetSwiftErrorRoutine();
 #endif
     PCODE GetGPRegRangeRoutine(int r1, int r2);
     ReturnType GetReturnType(ArgIterator *pArgIt);
