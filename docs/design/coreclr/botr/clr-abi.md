@@ -767,9 +767,7 @@ As an optimization, for vtable-based virtual managed calls, codegen may fetch th
 
 As an optimization, if it is known that the callee is also compiled R2R, the caller can invoke the callee directly. Since R2R method bodies may be invalidated at runtime, validation of that the callee's R2R must be done when validating the caller's R2R.
 
-Helper calls (FCalls) may be implemented as managed or native code. The `$__stack_pointer` global before calling any natively implemented FCall. We are still discussing how this may be done:
-* Re-establish `$__stack_pointer` at each helper call site (or just once, in prolog of any method with helper calls)
-* Write a custom Wasm wrapper for each helper that re-establishes `$__stack_pointer`, or find a clever way to to this with inline assembly or similar.
+FCalls implemented in native code will follow the same managed calling convention. FCall implementation macros (`FCIMPL`) will be modified to produce a small inline assembly wrapper that re-establishes `$__stack_pointer`.
 
 ## GC References at Call Sites
 
@@ -847,11 +845,13 @@ and similarly for indirect managed calls.
 
 ## PInvoke
 
-TBD
+PInvoke will re-establish `$__stack_pointer` before calling the target.
 
 ## Reverse PInvoke
 
-TBD
+Reverse PInvoke prolog will load the global `$__stack_pointer` and use it as the managed `sp`.
+
+On return the global `$__stack_pointer` is reset to the value it had on stub entry.
 
 ## Async
 
