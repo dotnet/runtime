@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using System.Text;
 #endif
 
 namespace System.Buffers.Text
@@ -666,6 +667,167 @@ namespace System.Buffers.Text
             }
 
             return padding;
+        }
+
+        // Shared helper methods for char (ushort) decoders
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe bool TryLoadVector512Char(ushort* src, ushort* srcStart, int sourceLength, out Vector512<sbyte> str)
+        {
+            AssertRead<Vector512<ushort>>(src, srcStart, sourceLength);
+            Vector512<ushort> utf16VectorLower = Vector512.Load(src);
+            Vector512<ushort> utf16VectorUpper = Vector512.Load(src + 32);
+            if (Ascii.VectorContainsNonAsciiChar(utf16VectorLower | utf16VectorUpper))
+            {
+                str = default;
+                return false;
+            }
+
+            str = Ascii.ExtractAsciiVector(utf16VectorLower, utf16VectorUpper).AsSByte();
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
+        internal static unsafe bool TryLoadAvxVector256Char(ushort* src, ushort* srcStart, int sourceLength, out Vector256<sbyte> str)
+        {
+            AssertRead<Vector256<sbyte>>(src, srcStart, sourceLength);
+            Vector256<ushort> utf16VectorLower = Avx.LoadVector256(src);
+            Vector256<ushort> utf16VectorUpper = Avx.LoadVector256(src + 16);
+
+            if (Ascii.VectorContainsNonAsciiChar(utf16VectorLower | utf16VectorUpper))
+            {
+                str = default;
+                return false;
+            }
+
+            str = Ascii.ExtractAsciiVector(utf16VectorLower, utf16VectorUpper).AsSByte();
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe bool TryLoadVector128Char(ushort* src, ushort* srcStart, int sourceLength, out Vector128<byte> str)
+        {
+            AssertRead<Vector128<sbyte>>(src, srcStart, sourceLength);
+            Vector128<ushort> utf16VectorLower = Vector128.LoadUnsafe(ref *src);
+            Vector128<ushort> utf16VectorUpper = Vector128.LoadUnsafe(ref *src, 8);
+            if (Ascii.VectorContainsNonAsciiChar(utf16VectorLower | utf16VectorUpper))
+            {
+                str = default;
+                return false;
+            }
+
+            str = Ascii.ExtractAsciiVector(utf16VectorLower, utf16VectorUpper);
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        internal static unsafe bool TryLoadArmVector128x4Char(ushort* src, ushort* srcStart, int sourceLength,
+            out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4)
+        {
+            AssertRead<Vector128<sbyte>>(src, srcStart, sourceLength);
+            var (s11, s12, s21, s22) = AdvSimd.Arm64.Load4xVector128AndUnzip(src);
+            var (s31, s32, s41, s42) = AdvSimd.Arm64.Load4xVector128AndUnzip(src + 32);
+
+            if (Ascii.VectorContainsNonAsciiChar(s11 | s12 | s21 | s22 | s31 | s32 | s41 | s42))
+            {
+                str1 = str2 = str3 = str4 = default;
+                return false;
+            }
+
+            str1 = Ascii.ExtractAsciiVector(s11, s31);
+            str2 = Ascii.ExtractAsciiVector(s12, s32);
+            str3 = Ascii.ExtractAsciiVector(s21, s41);
+            str4 = Ascii.ExtractAsciiVector(s22, s42);
+
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe int DecodeFourElementsChar(ushort* source, ref sbyte decodingMap)
+        {
+            uint t0 = source[0];
+            uint t1 = source[1];
+            uint t2 = source[2];
+            uint t3 = source[3];
+
+            if (((t0 | t1 | t2 | t3) & 0xffffff00) != 0)
+            {
+                return -1;
+            }
+
+            int i0 = Unsafe.Add(ref decodingMap, (int)t0);
+            int i1 = Unsafe.Add(ref decodingMap, (int)t1);
+            int i2 = Unsafe.Add(ref decodingMap, (int)t2);
+            int i3 = Unsafe.Add(ref decodingMap, (int)t3);
+
+            i0 <<= 18;
+            i1 <<= 12;
+            i2 <<= 6;
+
+            i0 |= i3;
+            i1 |= i2;
+
+            i0 |= i1;
+            return i0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe int DecodeRemainingChar(ushort* srcEnd, ref sbyte decodingMap, long remaining, out uint t2, out uint t3)
+        {
+            uint t0;
+            uint t1;
+            t2 = EncodingPad;
+            t3 = EncodingPad;
+            switch (remaining)
+            {
+                case 2:
+                    t0 = srcEnd[-2];
+                    t1 = srcEnd[-1];
+                    break;
+                case 3:
+                    t0 = srcEnd[-3];
+                    t1 = srcEnd[-2];
+                    t2 = srcEnd[-1];
+                    break;
+                case 4:
+                    t0 = srcEnd[-4];
+                    t1 = srcEnd[-3];
+                    t2 = srcEnd[-2];
+                    t3 = srcEnd[-1];
+                    break;
+                default:
+                    return -1;
+            }
+
+            if (((t0 | t1 | t2 | t3) & 0xffffff00) != 0)
+            {
+                return -1;
+            }
+
+            int i0 = Unsafe.Add(ref decodingMap, (IntPtr)t0);
+            int i1 = Unsafe.Add(ref decodingMap, (IntPtr)t1);
+
+            i0 <<= 18;
+            i1 <<= 12;
+
+            i0 |= i1;
+            return i0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int IndexOfAnyExceptWhiteSpaceChar(ReadOnlySpan<ushort> span)
+        {
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (!IsWhiteSpace(span[i]))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
 
         private static OperationStatus DecodeWithWhiteSpaceFromUtf8InPlace<TBase64Decoder>(TBase64Decoder decoder, Span<byte> source, ref int destIndex, uint sourceIndex)
