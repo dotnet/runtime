@@ -9,9 +9,9 @@ namespace System.Collections.Generic
     internal ref partial struct ValueListBuilder<T>
     {
         public int Capacity => _span.Length;
-        public string ToStringAndDispose()
+        public T[] ToArrayAndDispose()
         {
-            string s = this.AsSpan().ToString();
+            T[] s = this.AsSpan().ToArray();
             Dispose();
             return s;
         }
@@ -23,7 +23,7 @@ namespace System.Collections.Generic.Tests
     /// <summary>
     /// Copied from <see cref="System.Text.Tests.ValueStringBuilderTests"/>.
     /// </summary>
-    public class ValueListBuilderCharsTests
+    public class ValueListBuilderTests
     {
         [Fact]
         public void Ctor_Default_CanAppend()
@@ -33,7 +33,7 @@ namespace System.Collections.Generic.Tests
 
             vsb.Append('a');
             Assert.Equal(1, vsb.Length);
-            Assert.Equal("a", vsb.ToStringAndDispose());
+            Assert.Equal("a", vsb.ToArrayAndDispose());
         }
 
         [Fact]
@@ -44,7 +44,7 @@ namespace System.Collections.Generic.Tests
 
             vsb.Append('a');
             Assert.Equal(1, vsb.Length);
-            Assert.Equal("a", vsb.ToStringAndDispose());
+            Assert.Equal("a", vsb.ToArrayAndDispose());
         }
 
         [Fact]
@@ -55,7 +55,7 @@ namespace System.Collections.Generic.Tests
 
             vsb.Append('a');
             Assert.Equal(1, vsb.Length);
-            Assert.Equal("a", vsb.ToStringAndDispose());
+            Assert.Equal("a", vsb.ToArrayAndDispose());
         }
 
         [Fact]
@@ -70,7 +70,7 @@ namespace System.Collections.Generic.Tests
             }
 
             Assert.Equal(sb.Length, vsb.Length);
-            Assert.Equal(sb.ToString(), vsb.ToStringAndDispose());
+            Assert.Equal(sb.ToString(), vsb.ToArrayAndDispose());
         }
 
         [Fact]
@@ -86,7 +86,7 @@ namespace System.Collections.Generic.Tests
             }
 
             Assert.Equal(sb.Length, vsb.Length);
-            Assert.Equal(sb.ToString(), vsb.ToStringAndDispose());
+            Assert.Equal(sb.ToString(), vsb.ToArrayAndDispose());
         }
 
         [Theory]
@@ -103,7 +103,7 @@ namespace System.Collections.Generic.Tests
             vsb.Append(s);
 
             Assert.Equal(sb.Length, vsb.Length);
-            Assert.Equal(sb.ToString(), vsb.ToStringAndDispose());
+            Assert.Equal(sb.ToString(), vsb.ToArrayAndDispose());
         }
 
         [Fact]
@@ -137,7 +137,7 @@ namespace System.Collections.Generic.Tests
             }
 
             Assert.Equal(sb.Length, vsb.Length);
-            Assert.Equal(sb.ToString(), vsb.ToStringAndDispose());
+            Assert.Equal(sb.ToString(), vsb.ToArrayAndDispose());
         }
 
 
@@ -171,7 +171,7 @@ namespace System.Collections.Generic.Tests
             Assert.Equal(64, vsb.Capacity);
 
             Assert.Equal(sb.Length, vsb.Length);
-            Assert.Equal(sb.ToString(), vsb.ToStringAndDispose());
+            Assert.Equal(sb.ToString(), vsb.ToArrayAndDispose());
         }
 
         [Fact]
@@ -192,7 +192,7 @@ namespace System.Collections.Generic.Tests
 
             Assert.NotEqual(0, sb.Length);
             Assert.Equal(sb.Length, vsb.Length);
-            Assert.Equal(sb.ToString(), vsb.ToStringAndDispose());
+            Assert.Equal(sb.ToString(), vsb.ToArrayAndDispose());
         }
 
         [Fact]
@@ -204,16 +204,16 @@ namespace System.Collections.Generic.Tests
             vsb.Append(Text1);
             Assert.Equal(Text1.Length, vsb.Length);
 
-            string s = vsb.ToStringAndDispose();
+            char[] s = vsb.ToArrayAndDispose();
             Assert.Equal(Text1, s);
 
             Assert.Equal(0, vsb.Length);
-            Assert.Equal(string.Empty, vsb.ToStringAndDispose());
+            Assert.Equal(string.Empty, vsb.ToArrayAndDispose());
 
             const string Text2 = "another test";
             vsb.Append(Text2);
             Assert.Equal(Text2.Length, vsb.Length);
-            Assert.Equal(Text2, vsb.ToStringAndDispose());
+            Assert.Equal(Text2, vsb.ToArrayAndDispose());
         }
 
         [Fact]
@@ -228,12 +228,12 @@ namespace System.Collections.Generic.Tests
             vsb.Dispose();
 
             Assert.Equal(0, vsb.Length);
-            Assert.Equal(string.Empty, vsb.ToStringAndDispose());
+            Assert.Equal(string.Empty, vsb.ToArrayAndDispose());
 
             const string Text2 = "another test";
             vsb.Append(Text2);
             Assert.Equal(Text2.Length, vsb.Length);
-            Assert.Equal(Text2, vsb.ToStringAndDispose());
+            Assert.Equal(Text2, vsb.ToArrayAndDispose());
         }
 
         [Fact]
