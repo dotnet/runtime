@@ -502,8 +502,10 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
     var_types      fromType   = genActualType(cast->CastOp()->TypeGet());
     int            extendSize = desc.ExtendSrcSize();
     instruction    ins        = INS_none;
-
     assert(fromType == TYP_INT || fromType == TYP_LONG);
+
+    genConsumeRegs(cast->CastOp());
+
     switch (desc.ExtendKind())
     {
         case GenIntCastDesc::ExtendKind::COPY:
@@ -582,6 +584,8 @@ void CodeGen::genFloatToIntCast(GenTree* tree)
     instruction ins        = INS_none;
     assert(varTypeIsFloating(fromType) && (toType == TYP_INT || toType == TYP_LONG));
 
+    genConsumeRegs(tree->AsCast()->CastOp());
+
     switch (PackTypes(toType, fromType))
     {
         case PackTypes(TYP_INT, TYP_FLOAT):
@@ -604,18 +608,19 @@ void CodeGen::genFloatToIntCast(GenTree* tree)
     genProduceReg(tree);
 }
 
-void CodeGen::genIntToFloatCast(GenTree* cast)
+void CodeGen::genIntToFloatCast(GenTree* tree)
 {
     NYI_WASM("genIntToFloatCast");
 }
 
-void CodeGen::genFloatToFloatCast(GenTree* cast)
+void CodeGen::genFloatToFloatCast(GenTree* tree)
 {
-    GenTreeCast* castOp   = cast->AsCast();
-    var_types    toType   = genActualType(cast->TypeGet());
-    var_types    fromType = genActualType(castOp->CastFromType());
-
+    var_types    toType   = genActualType(tree->TypeGet());
+    var_types    fromType = genActualType(tree->AsCast()->CastFromType());
     instruction ins = INS_none;
+
+    genConsumeRegs(tree->AsCast()->CastOp());
+
     switch (PackTypes(toType, fromType))
     {
         case PackTypes(TYP_FLOAT, TYP_DOUBLE):
@@ -629,15 +634,14 @@ void CodeGen::genFloatToFloatCast(GenTree* cast)
             ins = INS_none;
             break;
         default:
-            NYI_WASM("genFloatToFloatCast: unhandled type pair");
-            break;
+            unreached();
     }
 
     if (ins != INS_none)
     {
         GetEmitter()->emitIns(ins);
     }
-    genProduceReg(cast);
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
