@@ -84,7 +84,8 @@ namespace DotnetFuzzing.Fuzzers
                 }
                 else
                 {
-                    Assert.True(fromParse.ToAssemblyName().CultureName is null or "");
+                    // CultureName is null or empty string - both should be preserved by ToAssemblyName
+                    Assert.True(string.IsNullOrEmpty(fromParse.ToAssemblyName().CultureName));
                 }
 
                 // AssemblyNameInfo.FullName can be different than AssemblyName.FullName:
