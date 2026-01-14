@@ -5457,9 +5457,9 @@ void DumpMetadataHeader(const char *szName, IMAGE_DATA_DIRECTORY *pDir, void* GU
         printLine(GUICookie,szStr);
         sprintf_s(szString,SZSTRING_SIZE,"//                    0x%02x Rid", pMDSH->Rid);
         printLine(GUICookie,szStr);
-        sprintf_s(szString,SZSTRING_SIZE,"//      0x%016I64x MaskValid", (ULONGLONG)GET_UNALIGNED_VAL64(&(pMDSH->MaskValid)));
+        sprintf_s(szString,SZSTRING_SIZE,"//      0x%016" PRIx64 " MaskValid", (uint64_t)GET_UNALIGNED_VAL64(&(pMDSH->MaskValid)));
         printLine(GUICookie,szStr);
-        sprintf_s(szString,SZSTRING_SIZE,"//      0x%016I64x Sorted", (ULONGLONG)GET_UNALIGNED_VAL64(&(pMDSH->Sorted)));
+        sprintf_s(szString,SZSTRING_SIZE,"//      0x%016" PRIx64 " Sorted", (uint64_t)GET_UNALIGNED_VAL64(&(pMDSH->Sorted)));
         printLine(GUICookie,szStr);
     }
 }
@@ -5677,7 +5677,7 @@ void DumpHeader(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
         dwEntryPointSize = 12;
         sprintf_s(szString,SZSTRING_SIZE,"// Base of code:                   0x%08x", VAL32(pOptHeader->BaseOfCode));
         printLine(GUICookie,szStr);
-        sprintf_s(szString,SZSTRING_SIZE,"// Image base:                     0x%016I64x", VAL64(pOptHeader->ImageBase));
+        sprintf_s(szString,SZSTRING_SIZE,"// Image base:                     0x%016" PRIx64, (uint64_t)VAL64(pOptHeader->ImageBase));
         printLine(GUICookie,szStr);
         sprintf_s(szString,SZSTRING_SIZE,"// Section alignment:              0x%08x", VAL32(pOptHeader->SectionAlignment));
         printLine(GUICookie,szStr);
@@ -5705,13 +5705,13 @@ void DumpHeader(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
         printLine(GUICookie,szStr);
         sprintf_s(szString,SZSTRING_SIZE,"// DLL characteristics:            0x%04x", VAL16(pOptHeader->DllCharacteristics));
         printLine(GUICookie,szStr);
-        sprintf_s(szString,SZSTRING_SIZE,"// Size of stack reserve:          0x%016I64x", VAL64(pOptHeader->SizeOfStackReserve));
+        sprintf_s(szString,SZSTRING_SIZE,"// Size of stack reserve:          0x%016" PRIx64, (uint64_t)VAL64(pOptHeader->SizeOfStackReserve));
         printLine(GUICookie,szStr);
-        sprintf_s(szString,SZSTRING_SIZE,"// Size of stack commit:           0x%016I64x", VAL64(pOptHeader->SizeOfStackCommit));
+        sprintf_s(szString,SZSTRING_SIZE,"// Size of stack commit:           0x%016" PRIx64, (uint64_t)VAL64(pOptHeader->SizeOfStackCommit));
         printLine(GUICookie,szStr);
-        sprintf_s(szString,SZSTRING_SIZE,"// Size of heap reserve:           0x%016I64x", VAL64(pOptHeader->SizeOfHeapReserve));
+        sprintf_s(szString,SZSTRING_SIZE,"// Size of heap reserve:           0x%016" PRIx64, (uint64_t)VAL64(pOptHeader->SizeOfHeapReserve));
         printLine(GUICookie,szStr);
-        sprintf_s(szString,SZSTRING_SIZE,"// Size of heap commit:            0x%016I64x", VAL64(pOptHeader->SizeOfHeapCommit));
+        sprintf_s(szString,SZSTRING_SIZE,"// Size of heap commit:            0x%016" PRIx64, (uint64_t)VAL64(pOptHeader->SizeOfHeapCommit));
         printLine(GUICookie,szStr);
         sprintf_s(szString,SZSTRING_SIZE,"// Loader flags:                   0x%08x", VAL32(pOptHeader->LoaderFlags));
         printLine(GUICookie,szStr);
@@ -6599,12 +6599,12 @@ void DumpVtable(void* GUICookie)
         pNTHeader64 = g_pPELoader->ntHeaders64();
         pOptHeader64 = &pNTHeader64->OptionalHeader;
 
-        sprintf_s(szString,SZSTRING_SIZE,"%s%s 0x%016I64x", g_szAsmCodeIndent,KEYWORD(".imagebase"),VAL64(pOptHeader64->ImageBase));
+        sprintf_s(szString,SZSTRING_SIZE,"%s%s 0x%016" PRIx64, g_szAsmCodeIndent,KEYWORD(".imagebase"),(uint64_t)VAL64(pOptHeader64->ImageBase));
         printLine(GUICookie,szString);
         j = VAL16(pOptHeader64->Subsystem);
         sprintf_s(szString,SZSTRING_SIZE,"%s%s 0x%08x", g_szAsmCodeIndent,KEYWORD(".file alignment"),VAL32(pOptHeader64->FileAlignment));
         printLine(GUICookie,szString);
-        sprintf_s(szString,SZSTRING_SIZE,"%s%s 0x%016I64x", g_szAsmCodeIndent,KEYWORD(".stackreserve"),VAL64(pOptHeader64->SizeOfStackReserve));
+        sprintf_s(szString,SZSTRING_SIZE,"%s%s 0x%016" PRIx64, g_szAsmCodeIndent,KEYWORD(".stackreserve"),(uint64_t)VAL64(pOptHeader64->SizeOfStackReserve));
         printLine(GUICookie,szString);
     }
     szptr = &szString[0];
@@ -6648,9 +6648,6 @@ void DumpVtable(void* GUICookie)
         szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),COMMENT(sz));
     }
     printLine(GUICookie,szString);
-
-    sprintf_s(szString,SZSTRING_SIZE,"%s// Image base: 0x%p",g_szAsmCodeIndent,g_pPELoader->base());
-    printLine(GUICookie,COMMENT(szString));
 
     DumpEATEntriesWrapper(GUICookie, pNTHeader32, pOptHeader32, pNTHeader64, pOptHeader64);
 
@@ -6719,7 +6716,7 @@ void DumpVtable(void* GUICookie)
                                 }
                                 else
                                 {
-                                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," %016I64X", VAL64(*(uint64_t *)pSlot));
+                                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," %016" PRIX64, (uint64_t)VAL64(*(uint64_t *)pSlot));
                                     pSlot += sizeof(uint64_t);
                                 }
                                 if (g_prVTableRef == NULL)

@@ -254,6 +254,42 @@ public:
         m_cgFrameRequired = value;
     }
 
+#if !HAS_FIXED_REGISTER_SET
+private:
+    // For targets without a fixed SP/FP, these are the registers with which they are associated.
+    PhasedVar<regNumber> m_cgStackPointerReg = REG_NA;
+    PhasedVar<regNumber> m_cgFramePointerReg = REG_NA;
+
+public:
+    void SetStackPointerReg(regNumber reg)
+    {
+        assert(reg != REG_NA);
+        m_cgStackPointerReg = reg;
+    }
+    void SetFramePointerReg(regNumber reg)
+    {
+        assert(reg != REG_NA);
+        m_cgFramePointerReg = reg;
+    }
+    regNumber GetStackPointerReg() const
+    {
+        return m_cgStackPointerReg;
+    }
+    regNumber GetFramePointerReg() const
+    {
+        return m_cgFramePointerReg;
+    }
+#else  // HAS_FIXED_REGISTER_SET
+    regNumber GetStackPointerReg() const
+    {
+        return REG_SPBASE;
+    }
+    regNumber GetFramePointerReg() const
+    {
+        return REG_FPBASE;
+    }
+#endif // HAS_FIXED_REGISTER_SET
+
 public:
     int genCallerSPtoFPdelta() const;
     int genCallerSPtoInitialSPdelta() const;
@@ -270,7 +306,7 @@ public:
 #ifdef TARGET_XARCH
 #ifdef TARGET_AMD64
     // There are no reloc hints on x86
-    unsigned short genAddrRelocTypeHint(size_t addr);
+    CorInfoReloc genAddrRelocTypeHint(size_t addr);
 #endif
     bool genDataIndirAddrCanBeEncodedAsPCRelOffset(size_t addr);
     bool genCodeIndirAddrCanBeEncodedAsPCRelOffset(size_t addr);

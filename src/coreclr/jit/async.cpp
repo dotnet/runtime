@@ -73,6 +73,12 @@ PhaseStatus Compiler::SaveAsyncContexts()
     lvaAsyncSynchronizationContextVar                     = lvaGrabTemp(false DEBUGARG("Async SynchronizationContext"));
     lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvType = TYP_REF;
 
+    if (opts.IsOSR())
+    {
+        lvaGetDesc(lvaAsyncExecutionContextVar)->lvIsOSRLocal       = true;
+        lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvIsOSRLocal = true;
+    }
+
     // Create try-fault structure. This is actually a try-finally, but we
     // manually insert the restore code in a (merged) return block, so EH wise
     // we only need to restore on fault.
@@ -153,23 +159,28 @@ PhaseStatus Compiler::SaveAsyncContexts()
     CORINFO_ASYNC_INFO* asyncInfo = eeGetAsyncInfo();
 
     // Insert CaptureContexts call before the try (keep it before so the
-    // try/finally can be removed if there is no exception side effects)
-    GenTreeCall* captureCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->captureContextsMethHnd, TYP_VOID);
-    captureCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncSynchronizationContextVar, 0)));
-    captureCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncExecutionContextVar, 0)));
-    lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvHasLdAddrOp = true;
-    lvaGetDesc(lvaAsyncExecutionContextVar)->lvHasLdAddrOp       = true;
+    // try/finally can be removed if there is no exception side effects).
+    // For OSR, we did this in the tier0 method.
+    if (!opts.IsOSR())
+    {
+        GenTreeCall* captureCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->captureContextsMethHnd, TYP_VOID);
+        captureCall->gtArgs.PushFront(this,
+                                      NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncSynchronizationContextVar, 0)));
+        captureCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncExecutionContextVar, 0)));
+        lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvHasLdAddrOp = true;
+        lvaGetDesc(lvaAsyncExecutionContextVar)->lvHasLdAddrOp       = true;
 
-    CORINFO_CALL_INFO callInfo = {};
-    callInfo.hMethod           = captureCall->gtCallMethHnd;
-    callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
-    impMarkInlineCandidate(captureCall, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
+        CORINFO_CALL_INFO callInfo = {};
+        callInfo.hMethod           = captureCall->gtCallMethHnd;
+        callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
+        impMarkInlineCandidate(captureCall, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
 
-    Statement* captureStmt = fgNewStmtFromTree(captureCall);
-    fgInsertStmtAtBeg(fgFirstBB, captureStmt);
+        Statement* captureStmt = fgNewStmtFromTree(captureCall);
+        fgInsertStmtAtBeg(fgFirstBB, captureStmt);
 
-    JITDUMP("Inserted capture\n");
-    DISPSTMT(captureStmt);
+        JITDUMP("Inserted capture\n");
+        DISPSTMT(captureStmt);
+    }
 
     // Insert RestoreContexts call in fault (exceptional case)
     // First argument: started = (continuation == null)
@@ -480,14 +491,6 @@ bool AsyncLiveness::IsLocalCaptureUnnecessary(unsigned lclNum)
     {
         return true;
     }
-
-#ifdef FEATURE_EH_WINDOWS_X86
-    if (lclNum == m_comp->lvaShadowSPslotsVar)
-    {
-        // Only expected to be live in handlers
-        return true;
-    }
-#endif
 
     if (lclNum == m_comp->lvaRetAddrVar)
     {
@@ -1100,7 +1103,7 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
 
             if (layout->IsCustomLayout())
             {
-                inf.Alignment = 1;
+                inf.Alignment = layout->HasGCPtr() ? TARGET_POINTER_SIZE : 1;
                 inf.Size      = layout->GetSize();
             }
             else
@@ -1121,6 +1124,11 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
             inf.Alignment = genTypeAlignments[dsc->TypeGet()];
             inf.Size      = genTypeSize(dsc);
         }
+
+        // Saving/storing of longs here may be the first place we introduce
+        // long IR. We need to potentially decompose this on x86, so indicate
+        // that to the backend.
+        m_comp->compLongUsed |= dsc->TypeIs(TYP_LONG);
     }
 
     jitstd::sort(liveLocals.begin(), liveLocals.end(), [=](const LiveLocalInfo& lhs, const LiveLocalInfo& rhs) {
@@ -1342,7 +1350,34 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
             bool     gotUse = LIR::AsRange(block).TryGetUse(call, &use);
             assert(gotUse);
 
-            use.ReplaceWithLclVar(m_comp);
+            unsigned newLclNum = use.ReplaceWithLclVar(m_comp);
+
+            // In some cases we may have been assigning a multireg promoted local from the call.
+            // That's not supported with a LCL_VAR source. We need to decompose.
+            if (call->IsMultiRegCall() && use.User()->OperIs(GT_STORE_LCL_VAR))
+            {
+                LclVarDsc* dsc = m_comp->lvaGetDesc(use.User()->AsLclVar());
+                if (m_comp->lvaGetPromotionType(dsc) == Compiler::PROMOTION_TYPE_INDEPENDENT)
+                {
+                    m_comp->lvaSetVarDoNotEnregister(newLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+                    JITDUMP("  Call is multi-reg stored to an independently promoted local; decomposing store\n");
+                    for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
+                    {
+                        unsigned   fieldLclNum = dsc->lvFieldLclStart + i;
+                        LclVarDsc* fieldDsc    = m_comp->lvaGetDesc(fieldLclNum);
+
+                        GenTree* value = m_comp->gtNewLclFldNode(newLclNum, fieldDsc->TypeGet(), fieldDsc->lvFldOffset);
+                        GenTree* store = m_comp->gtNewStoreLclVarNode(fieldLclNum, value);
+                        LIR::AsRange(block).InsertBefore(use.User(), value, store);
+                        DISPTREERANGE(LIR::AsRange(block), store);
+                    }
+
+                    // Remove the local and store that were created by ReplaceWithLclVar above
+                    assert(use.Def()->OperIs(GT_LCL_VAR));
+                    LIR::AsRange(block).Remove(use.Def());
+                    LIR::AsRange(block).Remove(use.User());
+                }
+            }
         }
         else
         {
@@ -1676,7 +1711,8 @@ void AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* call, 
     GenTree*     resumedPlaceholder     = m_comp->gtNewIconNode(0);
     GenTree*     execContextPlaceholder = m_comp->gtNewNull();
     GenTree*     syncContextPlaceholder = m_comp->gtNewNull();
-    GenTreeCall* restoreCall = m_comp->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->restoreContextsMethHnd, TYP_VOID);
+    GenTreeCall* restoreCall =
+        m_comp->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->restoreContextsOnSuspensionMethHnd, TYP_VOID);
 
     restoreCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(syncContextPlaceholder));
     restoreCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(execContextPlaceholder));
@@ -1939,6 +1975,14 @@ void AsyncTransformation::RestoreFromDataOnResumption(const ContinuationLayout& 
 
         LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
     }
+
+    if (layout.KeepAliveOffset != UINT_MAX)
+    {
+        // Ensure that the continuation remains alive until we finished loading the generic context
+        GenTree* continuation = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
+        GenTree* keepAlive    = m_comp->gtNewKeepAliveNode(continuation);
+        LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, keepAlive));
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1972,6 +2016,8 @@ BasicBlock* AsyncTransformation::RethrowExceptionOnResumption(BasicBlock*       
     if ((rethrowExceptionBB->Prev() == block) && !block->HasFlag(BBF_INTERNAL))
     {
         rethrowExceptionBB->RemoveFlags(BBF_INTERNAL);
+        // Non-internal blocks must be marked imported
+        rethrowExceptionBB->SetFlags(BBF_IMPORTED);
     }
 
     BasicBlock* storeResultBB = m_comp->fgNewBBafter(BBJ_ALWAYS, resumeBB, true);

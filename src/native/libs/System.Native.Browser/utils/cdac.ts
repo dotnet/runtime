@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { RuntimeAPI } from "./types";
-import { Module } from "./cross-module";
+import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 
 export function registerCDAC(runtimeApi: RuntimeAPI): void {
-    runtimeApi.INTERNAL.GetDotNetRuntimeContractDescriptor = () => _GetDotNetRuntimeContractDescriptor();
-    runtimeApi.INTERNAL.GetDotNetRuntimeHeap = (ptr: number, length: number) => Module.HEAPU8.subarray(ptr >>> 0, (ptr >>> 0) + length);
+    runtimeApi.INTERNAL.GetDotNetRuntimeContractDescriptor = () => _ems_._GetDotNetRuntimeContractDescriptor();
+    runtimeApi.INTERNAL.GetDotNetRuntimeHeap = (ptr: number, length: number) => _ems_.Module.HEAPU8.subarray(ptr >>> 0, (ptr >>> 0) + length);
 }

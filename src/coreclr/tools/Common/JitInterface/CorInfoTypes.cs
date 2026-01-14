@@ -461,6 +461,47 @@ namespace Internal.JitInterface
         IAT_RELPVALUE   // The value needs to be accessed via a relative indirection
     }
 
+    public enum CorInfoReloc
+    {
+        NONE,
+
+        // General relocation types
+        DIRECT,                                // Direct/absolute pointer sized address
+        RELATIVE32,                            // 32-bit relative address from byte following reloc
+
+        // Arm64 relocs
+        ARM64_BRANCH26,                        // Arm64: B, BL
+        ARM64_PAGEBASE_REL21,                  // ADRP
+        ARM64_PAGEOFFSET_12A,                  // ADD/ADDS (immediate) with zero shift, for page offset
+        // Linux arm64
+        ARM64_LIN_TLSDESC_ADR_PAGE21,
+        ARM64_LIN_TLSDESC_LD64_LO12,
+        ARM64_LIN_TLSDESC_ADD_LO12,
+        ARM64_LIN_TLSDESC_CALL,
+        // Windows arm64
+        ARM64_WIN_TLS_SECREL_HIGH12A,          // ADD high 12-bit offset for tls
+        ARM64_WIN_TLS_SECREL_LOW12A,           // ADD low 12-bit offset for tls
+
+        // Windows x64
+        AMD64_WIN_SECREL,
+        // Linux x64
+        AMD64_LIN_TLSGD,
+
+        // Arm32 relocs
+        ARM32_THUMB_BRANCH24,                  // Thumb2: based B, BL
+        ARM32_THUMB_MOV32,                     // Thumb2: based MOVW/MOVT
+        ARM32_THUMB_MOV32_PCREL,               // Thumb2: based MOVW/MOVT
+
+        // LoongArch64 relocs
+        LOONGARCH64_PC,                        // LoongArch64: pcalau12i+imm12
+        LOONGARCH64_JIR,                       // LoongArch64: pcaddu18i+jirl
+
+        // RISCV64 relocs
+        RISCV64_CALL_PLT,                      // RiscV64: auipc + jalr
+        RISCV64_PCREL_I,                       // RiscV64: auipc + I-type
+        RISCV64_PCREL_S,                       // RiscV64: auipc + S-type
+    }
+
     public enum CorInfoGCType
     {
         TYPE_GC_NONE,   // no embedded objectrefs
@@ -811,6 +852,16 @@ namespace Internal.JitInterface
         public CORINFO_HELPER_ARG args3;
     }
 
+    public enum CorInfoArch
+    {
+        CORINFO_ARCH_X86,
+        CORINFO_ARCH_X64,
+        CORINFO_ARCH_ARM,
+        CORINFO_ARCH_ARM64,
+        CORINFO_ARCH_LOONGARCH64,
+        CORINFO_ARCH_RISCV64,
+        CORINFO_ARCH_WASM32,
+    }
 
     public enum CORINFO_OS
     {
@@ -895,6 +946,7 @@ namespace Internal.JitInterface
         public CORINFO_METHOD_STRUCT_* captureContinuationContextMethHnd;
         public CORINFO_METHOD_STRUCT_* captureContextsMethHnd;
         public CORINFO_METHOD_STRUCT_* restoreContextsMethHnd;
+        public CORINFO_METHOD_STRUCT_* restoreContextsOnSuspensionMethHnd;
     }
 
     // Flags passed from JIT to runtime.
@@ -1086,6 +1138,7 @@ namespace Internal.JitInterface
         CORINFO_DEVIRTUALIZATION_FAILED_DUPLICATE_INTERFACE,           // crossgen2 virtual method algorithm and runtime algorithm differ in the presence of duplicate interface implementations
         CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE,        // Decl method cannot be represented in R2R image
         CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE,              // Support for type equivalence in devirtualization is not yet implemented in crossgen2
+        CORINFO_DEVIRTUALIZATION_FAILED_GENERIC_VIRTUAL,               // Devirtualization of generic virtual methods is not yet implemented in crossgen2
         CORINFO_DEVIRTUALIZATION_COUNT,                                // sentinel for maximum value
     }
 
@@ -1106,7 +1159,7 @@ namespace Internal.JitInterface
         // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
         // - detail describes the computation done by the jit host
         // - isInstantiatingStub is set to TRUE if the devirtualized method is a method instantiation stub
-        // - wasArrayInterfaceDevirt is set TRUE for array interface method devirtualization
+        // - needsMethodContext is set TRUE if the devirtualized method may require a method context
         //     (in which case the method handle and context will be a generic method)
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
@@ -1116,8 +1169,8 @@ namespace Internal.JitInterface
         public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
         public byte _isInstantiatingStub;
         public bool isInstantiatingStub { get { return _isInstantiatingStub != 0; } set { _isInstantiatingStub = value ? (byte)1 : (byte)0; } }
-        public byte _wasArrayInterfaceDevirt;
-        public bool wasArrayInterfaceDevirt { get { return _wasArrayInterfaceDevirt != 0; } set { _wasArrayInterfaceDevirt = value ? (byte)1 : (byte)0; } }
+        public byte _needsMethodContext;
+        public bool needsMethodContext { get { return _needsMethodContext != 0; } set { _needsMethodContext = value ? (byte)1 : (byte)0; } }
     }
 
     //----------------------------------------------------------------------------

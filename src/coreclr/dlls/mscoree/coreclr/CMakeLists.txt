@@ -21,12 +21,6 @@ if (CLR_CMAKE_HOST_WIN32)
     # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).
     add_linker_flag("/INCREMENTAL:NO")
 
-    # Delay load libraries required for WinRT as that is not supported on all platforms
-    add_linker_flag("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
-
-    # Delay load version.dll so that we can specify how to search when loading it as it is not part of Windows' known DLLs
-    add_linker_flag("/DELAYLOAD:version.dll")
-
     # No library groups for Win32
     set(START_LIBRARY_GROUP)
     set(END_LIBRARY_GROUP)
@@ -82,6 +76,7 @@ endif (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 # order dependent and changing the order can result in undefined symbols in the shared
 # library.
 set(CORECLR_LIBRARIES
+    mscorrc
     utilcode
     ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
     ${LIB_CORDBEE}
@@ -92,9 +87,7 @@ set(CORECLR_LIBRARIES
     mdcompiler_wks
     mdruntime_wks
     mdruntimerw_wks
-    bcltype
     ceefgen
-    comfloat_wks
     corguids
     utilcode
     v3binder
@@ -131,13 +124,10 @@ if(CLR_CMAKE_TARGET_WIN32)
         version.lib
         shlwapi.lib
         bcrypt.lib
-        RuntimeObject.lib
-        delayimp.lib
     )
 else()
     list(APPEND CORECLR_LIBRARIES
         coreclrpal
-        mscorrc
     )
 endif(CLR_CMAKE_TARGET_WIN32)
 

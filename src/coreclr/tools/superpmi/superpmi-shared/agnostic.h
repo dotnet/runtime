@@ -205,6 +205,7 @@ struct Agnostic_CORINFO_ASYNC_INFO
     DWORDLONG captureContinuationContextMethHnd;
     DWORDLONG captureContextsMethHnd;
     DWORDLONG restoreContextsMethHnd;
+    DWORDLONG restoreContextsOnSuspensionMethHnd;
 };
 
 struct Agnostic_GetOSRInfo
@@ -680,7 +681,7 @@ struct Agnostic_ResolveVirtualMethodResult
     bool                            returnValue;
     DWORDLONG                       devirtualizedMethod;
     bool                            isInstantiatingStub;
-    bool                            wasArrayInterfaceDevirt;
+    bool                            needsMethodContext;
     DWORDLONG                       exactContext;
     DWORD                           detail;
     Agnostic_CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;

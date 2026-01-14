@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-
 using Internal.TypeSystem;
-
 using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
@@ -82,6 +80,12 @@ namespace ILCompiler.DependencyAnalysis
                     riscv64Emitter.Builder.AddSymbol(this);
                     return riscv64Emitter.Builder.ToObjectData();
 
+                case TargetArchitecture.Wasm32:
+                    Wasm.WasmEmitter wasmEmitter = new Wasm.WasmEmitter(factory, relocsOnly);
+                    EmitCode(factory, ref wasmEmitter, relocsOnly);
+                    wasmEmitter.Builder.AddSymbol(this);
+                    return wasmEmitter.Builder.ToObjectData();
+
                 default:
                     throw new NotImplementedException();
             }
@@ -93,5 +97,6 @@ namespace ILCompiler.DependencyAnalysis
         protected abstract void EmitCode(NodeFactory factory, ref ARM64.ARM64Emitter instructionEncoder, bool relocsOnly);
         protected abstract void EmitCode(NodeFactory factory, ref LoongArch64.LoongArch64Emitter instructionEncoder, bool relocsOnly);
         protected abstract void EmitCode(NodeFactory factory, ref RiscV64.RiscV64Emitter instructionEncoder, bool relocsOnly);
+        protected abstract void EmitCode(NodeFactory factory, ref Wasm.WasmEmitter instructionEncoder, bool relocsOnly);
     }
 }

@@ -46,6 +46,12 @@ ABIPassingInformation WasmClassifier::Classify(Compiler*    comp,
                                                ClassLayout* structLayout,
                                                WellKnownArg wellKnownParam)
 {
-    NYI_WASM("WasmClassifier::Classify");
-    return {};
+    if (type == TYP_STRUCT)
+    {
+        NYI_WASM("WasmClassifier::Classify - structs");
+    }
+
+    regNumber         reg = MakeWasmReg(m_localIndex++, genActualType(type));
+    ABIPassingSegment seg = ABIPassingSegment::InRegister(reg, 0, genTypeSize(type));
+    return ABIPassingInformation::FromSegmentByValue(comp, seg);
 }

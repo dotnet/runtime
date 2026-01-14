@@ -13,6 +13,10 @@
 #include <pinvoke_override.hpp>
 #endif // TARGET_WASM
 
+#ifdef TARGET_BROWSER
+#include <emscripten/emscripten.h>
+#endif // TARGET_BROWSER
+
 #include <fstream>
 
 #if defined(TARGET_UNIX)
@@ -129,9 +133,7 @@ static string_t build_tpa(const string_t& core_root, const string_t& core_librar
 {
     static const char_t* const tpa_extensions[] =
     {
-        W(".ni.dll"),  // Probe for .ni.dll first so that it's preferred if ni and il coexist in the same dir
         W(".dll"),
-        W(".ni.exe"),
         W(".exe"),
         nullptr
     };
@@ -362,6 +364,20 @@ static bool HOST_CONTRACT_CALLTYPE external_assembly_probe(
 
     return false;
 }
+
+#ifdef TARGET_BROWSER
+bool is_node()
+{
+    return EM_ASM_INT({
+        if (typeof process !== 'undefined' &&
+            process.versions &&
+            process.versions.node) {
+            return 1;
+        }
+        return 0;
+    });
+}
+#endif // TARGET_BROWSER
 
 static int run(const configuration& config)
 {
@@ -603,7 +619,14 @@ static int run(const configuration& config)
         actions.after_execute_assembly();
     }
 
-#if !defined(TARGET_BROWSER)
+#ifdef TARGET_BROWSER
+    if (!is_node())
+    {
+        // In browser we don't shutdown the runtime here as we want to keep it alive
+        return 0;
+    }
+#endif // TARGET_BROWSER
+
     int latched_exit_code = 0;
     result = coreclr_shutdown2_func(CurrentClrInstance, CurrentAppDomainId, &latched_exit_code);
     if (FAILED(result))
@@ -618,10 +641,6 @@ static int run(const configuration& config)
     ::free((void*)s_core_libs_path);
     ::free((void*)s_core_root_path);
     return exit_code;
-#else // TARGET_BROWSER
-    // In browser we don't shutdown the runtime here as we want to keep it alive
-    return 0;
-#endif // TARGET_BROWSER
 }
 
 // Display the command line options

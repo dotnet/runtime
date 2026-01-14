@@ -7,6 +7,8 @@
 #endif
 
 // clang-format off
+  #define CORINFO_ARCH_TARGET      CORINFO_ARCH_ARM
+
   // TODO-ARM-CQ: Use shift for division by power of 2
   // TODO-ARM-CQ: Check for sdiv/udiv at runtime and generate it if available
   #define USE_HELPERS_FOR_INT_DIV  1       // BeagleBoard (ARMv7A) doesn't support SDIV/UDIV
