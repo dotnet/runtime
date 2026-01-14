@@ -1457,6 +1457,20 @@ RefCopyDone$argReg
         EPILOG_BRANCH_REG x11
     LEAF_END Store_SwiftSelf
 
+    LEAF_ENTRY Load_SwiftError
+        ldr x11, [x9], #8
+        str x11, [fp, #40]
+        mov x21, xzr
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Load_SwiftError
+
+    LEAF_ENTRY Store_SwiftError
+        str x21, [x9], #8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Store_SwiftError
+
     LEAF_ENTRY Store_X0
         str x0, [x9], #8
         ldr x11, [x10], #8

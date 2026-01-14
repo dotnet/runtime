@@ -3,6 +3,7 @@
 
 #if defined(FEATURE_INTERPRETER) && !defined(TARGET_WASM)
 
+#include "common.h"
 #include "callstubgenerator.h"
 #include "callconvbuilder.hpp"
 #include "ecall.h"
@@ -2546,7 +2547,7 @@ bool isSwiftSelfType(MethodTable* pMT)
         return false;
     }
 
-    return strcmp(typeName, "SwiftSelf") == 0 || strcmp(typeName, "SwiftSelf`1") == 0;
+    return strcmp(typeName, "SwiftSelf") == 0;
 }
 
 
@@ -2577,6 +2578,156 @@ bool isSwiftErrorType(MethodTable* pMT)
     }
 
     return strcmp(typeName, "SwiftError") == 0;
+}
+
+//---------------------------------------------------------------------------
+// isSwiftIndirectResultType:
+//    Check if the given type is SwiftIndirectResult.
+//
+// Arguments:
+//    pMT - the handle for the type.
+//
+// Return Value:
+//    true if the given type is SwiftIndirectResult,
+//    false otherwise.
+//
+bool isSwiftIndirectResultType(MethodTable* pMT)
+{
+    const char* namespaceName = nullptr;
+    const char* typeName      = pMT->GetFullyQualifiedNameInfo(&namespaceName);
+
+    if ((namespaceName == NULL) || (typeName == NULL))
+    {
+        return false;
+    }
+
+    if (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") != 0)
+    {
+        return false;
+    }
+
+    return strcmp(typeName, "SwiftIndirectResult") == 0;
+}
+
+//---------------------------------------------------------------------------
+// isIntrinsicSIMDType:
+//    Check if the given type is a SIMD type (Vector<T>, Vector64<T>, Vector128<T>, etc.).
+//
+// Arguments:
+//    pMT - the handle for the type.
+//
+// Return Value:
+//    true if the given type is a SIMD type,
+//    false otherwise.
+//
+bool isIntrinsicSIMDType(MethodTable* pMT)
+{
+    if (!pMT->IsIntrinsicType())
+    {
+        return false;
+    }
+
+    const char* namespaceName = nullptr;
+    const char* typeName      = pMT->GetFullyQualifiedNameInfo(&namespaceName);
+
+    if ((namespaceName == NULL) || (typeName == NULL))
+    {
+        return false;
+    }
+
+    if (strcmp(namespaceName, "System.Runtime.Intrinsics") == 0)
+    {
+        return true;
+    }
+
+    if (strcmp(namespaceName, "System.Numerics") == 0)
+    {
+        return true;
+    }
+
+    return false;
+}
+
+//---------------------------------------------------------------------------
+// ValidateSwiftCallSignature:
+//    Validates that a Swift calling convention signature is valid.
+//    Throws InvalidProgramException if the signature is invalid.
+//
+// Arguments:
+//    sig - the method signature to validate.
+//
+// Throws:
+//    InvalidProgramException
+//
+void ValidateSwiftCallSignature(MetaSig &sig)
+{
+    int swiftSelfCount = 0;
+    int swiftErrorCount = 0;
+    int swiftIndirectResultCount = 0;
+
+    sig.Reset();
+
+    CorElementType argCorType;
+    while ((argCorType = sig.NextArg()) != ELEMENT_TYPE_END)
+    {
+        TypeHandle thArgTypeHandle = sig.GetLastTypeHandleThrowing();
+        bool isByRef = (argCorType == ELEMENT_TYPE_BYREF);
+
+        if (isByRef)
+        {
+            sig.GetByRefType(&thArgTypeHandle);
+        }
+
+        if (thArgTypeHandle.IsNull() || thArgTypeHandle.IsTypeDesc())
+        {
+            continue;
+        }
+
+        MethodTable* pArgMT = thArgTypeHandle.AsMethodTable();
+
+        if (!pArgMT->IsValueType())
+        {
+            COMPlusThrow(kInvalidProgramException);
+        }
+
+        if (isIntrinsicSIMDType(pArgMT))
+        {
+            COMPlusThrow(kInvalidProgramException);
+        }
+
+        if (isSwiftSelfType(pArgMT))
+        {
+            swiftSelfCount++;
+            if (swiftSelfCount > 1)
+            {
+                COMPlusThrow(kInvalidProgramException);
+            }
+        }
+
+        if (isSwiftErrorType(pArgMT))
+        {
+            if (!isByRef)
+            {
+                COMPlusThrow(kInvalidProgramException);
+            }
+            swiftErrorCount++;
+            if (swiftErrorCount > 1)
+            {
+                COMPlusThrow(kInvalidProgramException);
+            }
+        }
+
+        if (isSwiftIndirectResultType(pArgMT))
+        {
+            swiftIndirectResultCount++;
+            if (swiftIndirectResultCount > 1)
+            {
+                COMPlusThrow(kInvalidProgramException);
+            }
+        }
+    }
+
+    sig.Reset();
 }
 #endif // TARGET_ARM64
 
@@ -2642,6 +2793,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
 #ifdef TARGET_ARM64
             case CorInfoCallConvExtension::Swift:
                 isSwiftCallConv = true;
+                ValidateSwiftCallSignature(sig);
                 break;
 #endif
             default:
