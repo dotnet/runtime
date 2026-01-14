@@ -2565,13 +2565,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
-            unsafe
-            {
-                fixed (char* sPtr = s)
-                {
-                    return FromBase64CharPtr(sPtr, s.Length);
-                }
-            }
+            return Base64.DecodeFromChars(s);
         }
 
         public static bool TryFromBase64String(string s, Span<byte> bytes, out int bytesWritten)
@@ -2586,121 +2580,14 @@ namespace System
 
         public static bool TryFromBase64Chars(ReadOnlySpan<char> chars, Span<byte> bytes, out int bytesWritten)
         {
-            // This is actually local to one of the nested blocks but is being declared at the top as we don't want multiple stackallocs
-            // for each iteraton of the loop.
-            Span<char> tempBuffer = stackalloc char[4];  // Note: The tempBuffer size could be made larger than 4 but the size must be a multiple of 4.
-
-            bytesWritten = 0;
-
-            while (chars.Length != 0)
+            OperationStatus status = Base64.DecodeFromChars(chars, bytes, out _, out bytesWritten);
+            if (status != OperationStatus.Done)
             {
-                // Attempt to decode a segment that doesn't contain whitespace.
-                bool complete = TryDecodeFromUtf16(chars, bytes, out int consumedInThisIteration, out int bytesWrittenInThisIteration);
-                bytesWritten += bytesWrittenInThisIteration;
-                if (complete)
-                    return true;
-
-                chars = chars.Slice(consumedInThisIteration);
-                bytes = bytes.Slice(bytesWrittenInThisIteration);
-
-                Debug.Assert(chars.Length != 0); // If TryDecodeFromUtf16() consumed the entire buffer, it could not have returned false.
-                if (chars[0].IsSpace())
-                {
-                    // If we got here, the very first character not consumed was a whitespace. We can skip past any consecutive whitespace, then continue decoding.
-
-                    int indexOfFirstNonSpace = 1;
-                    while (true)
-                    {
-                        if (indexOfFirstNonSpace == chars.Length)
-                            break;
-                        if (!chars[indexOfFirstNonSpace].IsSpace())
-                            break;
-                        indexOfFirstNonSpace++;
-                    }
-
-                    chars = chars.Slice(indexOfFirstNonSpace);
-
-                    if ((bytesWrittenInThisIteration % 3) != 0 && chars.Length != 0)
-                    {
-                        // If we got here, the last successfully decoded block encountered an end-marker, yet we have trailing non-whitespace characters.
-                        // That is not allowed.
-                        bytesWritten = default;
-                        return false;
-                    }
-
-                    // We now loop again to decode the next run of non-space characters.
-                }
-                else
-                {
-                    Debug.Assert(chars.Length != 0 && !chars[0].IsSpace());
-
-                    // If we got here, it is possible that there is whitespace that occurred in the middle of a 4-byte chunk. That is, we still have
-                    // up to three Base64 characters that were left undecoded by the fast-path helper because they didn't form a complete 4-byte chunk.
-                    // This is hopefully the rare case (multiline-formatted base64 message with a non-space character width that's not a multiple of 4.)
-                    // We'll filter out whitespace and copy the remaining characters into a temporary buffer.
-                    CopyToTempBufferWithoutWhiteSpace(chars, tempBuffer, out int consumedFromChars, out int charsWritten);
-                    if ((charsWritten & 0x3) != 0)
-                    {
-                        // Even after stripping out whitespace, the number of characters is not divisible by 4. This cannot be a legal Base64 string.
-                        bytesWritten = default;
-                        return false;
-                    }
-
-                    tempBuffer = tempBuffer.Slice(0, charsWritten);
-                    if (!TryDecodeFromUtf16(tempBuffer, bytes, out int consumedFromTempBuffer, out int bytesWrittenFromTempBuffer))
-                    {
-                        bytesWritten = default;
-                        return false;
-                    }
-                    bytesWritten += bytesWrittenFromTempBuffer;
-                    chars = chars.Slice(consumedFromChars);
-                    bytes = bytes.Slice(bytesWrittenFromTempBuffer);
-
-                    if ((bytesWrittenFromTempBuffer % 3) != 0)
-                    {
-                        // If we got here, this decode contained one or more padding characters ('='). We can accept trailing whitespace after this
-                        // but nothing else.
-                        for (int i = 0; i < chars.Length; i++)
-                        {
-                            if (!chars[i].IsSpace())
-                            {
-                                bytesWritten = default;
-                                return false;
-                            }
-                        }
-                        return true;
-                    }
-
-                    // We now loop again to decode the next run of non-space characters.
-                }
+                bytesWritten = default;
+                return false;
             }
-
             return true;
         }
-
-        private static void CopyToTempBufferWithoutWhiteSpace(ReadOnlySpan<char> chars, Span<char> tempBuffer, out int consumed, out int charsWritten)
-        {
-            Debug.Assert(tempBuffer.Length != 0); // We only bound-check after writing a character to the tempBuffer.
-
-            charsWritten = 0;
-            for (int i = 0; i < chars.Length; i++)
-            {
-                char c = chars[i];
-                if (!c.IsSpace())
-                {
-                    tempBuffer[charsWritten++] = c;
-                    if (charsWritten == tempBuffer.Length)
-                    {
-                        consumed = i + 1;
-                        return;
-                    }
-                }
-            }
-            consumed = chars.Length;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsSpace(this char c) => c == ' ' || c == '\t' || c == '\r' || c == '\n';
 
         /// <summary>
         /// Converts the specified range of a Char array, which encodes binary data as Base64 digits, to the equivalent byte array.
@@ -2716,121 +2603,7 @@ namespace System
             ArgumentOutOfRangeException.ThrowIfNegative(offset);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, inArray.Length - length);
 
-            if (length == 0)
-            {
-                return Array.Empty<byte>();
-            }
-
-            unsafe
-            {
-                fixed (char* inArrayPtr = &inArray[0])
-                {
-                    return FromBase64CharPtr(inArrayPtr + offset, length);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Convert Base64 encoding characters to bytes:
-        ///  - Compute result length exactly by actually walking the input;
-        ///  - Allocate new result array based on computation;
-        ///  - Decode input into the new array;
-        /// </summary>
-        /// <param name="inputPtr">Pointer to the first input char</param>
-        /// <param name="inputLength">Number of input chars</param>
-        /// <returns></returns>
-        private static unsafe byte[] FromBase64CharPtr(char* inputPtr, int inputLength)
-        {
-            // The validity of parameters much be checked by callers, thus we are Critical here.
-
-            Debug.Assert(0 <= inputLength);
-
-            // We need to get rid of any trailing white spaces.
-            // Otherwise we would be rejecting input such as "abc= ":
-            while (inputLength > 0)
-            {
-                int lastChar = inputPtr[inputLength - 1];
-                if (lastChar != (int)' ' && lastChar != (int)'\n' && lastChar != (int)'\r' && lastChar != (int)'\t')
-                    break;
-                inputLength--;
-            }
-
-            // Compute the output length:
-            int resultLength = FromBase64_ComputeResultLength(inputPtr, inputLength);
-
-            Debug.Assert(0 <= resultLength);
-
-            // resultLength can be zero. We will still enter FromBase64_Decode and process the input.
-            // It may either simply write no bytes (e.g. input = " ") or throw (e.g. input = "ab").
-
-            // Create result byte blob:
-            byte[] decodedBytes = new byte[resultLength];
-
-            // Convert Base64 chars into bytes:
-            if (!TryFromBase64Chars(new ReadOnlySpan<char>(inputPtr, inputLength), decodedBytes, out int _))
-                throw new FormatException(SR.Format_BadBase64Char);
-
-            // Note that the number of bytes written can differ from resultLength if the caller is modifying the array
-            // as it is being converted. Silently ignore the failure.
-            // Consider throwing exception in an non in-place release.
-
-            // We are done:
-            return decodedBytes;
-        }
-
-        /// <summary>
-        /// Compute the number of bytes encoded in the specified Base 64 char array:
-        /// Walk the entire input counting white spaces and padding chars, then compute result length
-        /// based on 3 bytes per 4 chars.
-        /// </summary>
-        private static unsafe int FromBase64_ComputeResultLength(char* inputPtr, int inputLength)
-        {
-            const uint intEq = (uint)'=';
-            const uint intSpace = (uint)' ';
-
-            Debug.Assert(0 <= inputLength);
-
-            char* inputEndPtr = inputPtr + inputLength;
-            int usefulInputLength = inputLength;
-            int padding = 0;
-
-            while (inputPtr < inputEndPtr)
-            {
-                uint c = (uint)(*inputPtr);
-                inputPtr++;
-
-                // We want to be as fast as possible and filter out spaces with as few comparisons as possible.
-                // We end up accepting a number of illegal chars as legal white-space chars.
-                // This is ok: as soon as we hit them during actual decode we will recognise them as illegal and throw.
-                if (c <= intSpace)
-                    usefulInputLength--;
-                else if (c == intEq)
-                {
-                    usefulInputLength--;
-                    padding++;
-                }
-            }
-
-            Debug.Assert(0 <= usefulInputLength);
-
-            // For legal input, we can assume that 0 <= padding < 3. But it may be more for illegal input.
-            // We will notice it at decode when we see a '=' at the wrong place.
-            Debug.Assert(0 <= padding);
-
-            // Perf: reuse the variable that stored the number of '=' to store the number of bytes encoded by the
-            // last group that contains the '=':
-            if (padding != 0)
-            {
-                if (padding == 1)
-                    padding = 2;
-                else if (padding == 2)
-                    padding = 1;
-                else
-                    throw new FormatException(SR.Format_BadBase64Char);
-            }
-
-            // Done:
-            return (usefulInputLength / 4) * 3 + padding;
+            return Base64.DecodeFromChars(new ReadOnlySpan<char>(inArray, offset, length));
         }
 
         /// <summary>Converts the specified string, which encodes binary data as hex characters, to an equivalent 8-bit unsigned integer array.</summary>
