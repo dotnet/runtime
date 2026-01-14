@@ -573,112 +573,6 @@ namespace System.Buffers.Text
         }
 #endif
 
-#if NET
-        // Shared helper methods for char (ushort) encoders
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void StoreVector512ToDestinationChar(ushort* dest, ushort* destStart, int destLength, Vector512<byte> str)
-        {
-            AssertWrite<Vector512<ushort>>(dest, destStart, destLength);
-            (Vector512<ushort> utf16LowVector, Vector512<ushort> utf16HighVector) = Vector512.Widen(str);
-            utf16LowVector.Store(dest);
-            utf16HighVector.Store(dest + Vector512<ushort>.Count);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void StoreVector256ToDestinationChar(ushort* dest, ushort* destStart, int destLength, Vector256<byte> str)
-        {
-            AssertWrite<Vector256<ushort>>(dest, destStart, destLength);
-            (Vector256<ushort> utf16LowVector, Vector256<ushort> utf16HighVector) = Vector256.Widen(str);
-            utf16LowVector.Store(dest);
-            utf16HighVector.Store(dest + Vector256<ushort>.Count);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void StoreVector128ToDestinationChar(ushort* dest, ushort* destStart, int destLength, Vector128<byte> str)
-        {
-            AssertWrite<Vector128<ushort>>(dest, destStart, destLength);
-            (Vector128<ushort> utf16LowVector, Vector128<ushort> utf16HighVector) = Vector128.Widen(str);
-            utf16LowVector.Store(dest);
-            utf16HighVector.Store(dest + Vector128<ushort>.Count);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-        internal static unsafe void StoreArmVector128x4ToDestinationChar(ushort* dest, ushort* destStart, int destLength,
-            Vector128<byte> res1, Vector128<byte> res2, Vector128<byte> res3, Vector128<byte> res4)
-        {
-            AssertWrite<Vector128<ushort>>(dest, destStart, destLength);
-            (Vector128<ushort> utf16LowVector1, Vector128<ushort> utf16HighVector1) = Vector128.Widen(res1);
-            (Vector128<ushort> utf16LowVector2, Vector128<ushort> utf16HighVector2) = Vector128.Widen(res2);
-            (Vector128<ushort> utf16LowVector3, Vector128<ushort> utf16HighVector3) = Vector128.Widen(res3);
-            (Vector128<ushort> utf16LowVector4, Vector128<ushort> utf16HighVector4) = Vector128.Widen(res4);
-            AdvSimd.Arm64.StoreVectorAndZip(dest, (utf16LowVector1, utf16LowVector2, utf16LowVector3, utf16LowVector4));
-            AdvSimd.Arm64.StoreVectorAndZip(dest + 32, (utf16HighVector1, utf16HighVector2, utf16HighVector3, utf16HighVector4));
-        }
-#endif
-
-        // Shared char encoding helpers for EncodeOne and EncodeTwo
-        // These are shared between Base64EncoderChar and Base64UrlEncoderChar
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void EncodeOneAndWriteTwoChars(byte* oneByte, ushort* dest, ref byte encodingMap)
-        {
-            uint t0 = oneByte[0];
-
-            uint i = t0 << 8;
-
-            uint i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
-            uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
-
-            dest[0] = (ushort)i0;
-            dest[1] = (ushort)i1;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void EncodeTwoAndWriteThreeChars(byte* twoBytes, ushort* dest, ref byte encodingMap)
-        {
-            uint t0 = twoBytes[0];
-            uint t1 = twoBytes[1];
-
-            uint i = (t0 << 16) | (t1 << 8);
-
-            ushort i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
-            ushort i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
-            ushort i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
-
-            dest[0] = i0;
-            dest[1] = i1;
-            dest[2] = i2;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void EncodeThreeAndWriteChar(byte* threeBytes, ushort* destination, ref byte encodingMap)
-        {
-            uint t0 = threeBytes[0];
-            uint t1 = threeBytes[1];
-            uint t2 = threeBytes[2];
-
-            uint i = (t0 << 16) | (t1 << 8) | t2;
-
-            ulong i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
-            ulong i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
-            ulong i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
-            ulong i3 = Unsafe.Add(ref encodingMap, (IntPtr)(i & 0x3F));
-
-            ulong result;
-            if (BitConverter.IsLittleEndian)
-            {
-                result = i0 | (i1 << 16) | (i2 << 32) | (i3 << 48);
-            }
-            else
-            {
-                result = (i0 << 48) | (i1 << 32) | (i2 << 16) | i3;
-            }
-
-            Unsafe.WriteUnaligned(destination, result);
-        }
-
         internal static unsafe OperationStatus EncodeToUtf8InPlace<TBase64Encoder>(TBase64Encoder encoder, Span<byte> buffer, int dataLength, out int bytesWritten)
             where TBase64Encoder : IBase64Encoder<byte>
         {
@@ -733,7 +627,7 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe uint Encode(byte* threeBytes, ref byte encodingMap)
+        private static unsafe uint Encode(byte* threeBytes, ref byte encodingMap)
         {
             uint t0 = threeBytes[0];
             uint t1 = threeBytes[1];
@@ -750,7 +644,7 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static uint ConstructResult(uint i0, uint i1, uint i2, uint i3)
+        private static uint ConstructResult(uint i0, uint i1, uint i2, uint i3)
         {
             if (BitConverter.IsLittleEndian)
             {
@@ -765,5 +659,101 @@ namespace System.Buffers.Text
         internal const uint EncodingPad = '='; // '=', for padding
 
         internal const int MaximumEncodeLength = (int.MaxValue / 4) * 3; // 1610612733
+
+        internal readonly struct Base64EncoderByte : IBase64Encoder<byte>
+        {
+            public ReadOnlySpan<byte> EncodingMap => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"u8;
+
+            public sbyte Avx2LutChar62 => -19;  // char '+' diff
+
+            public sbyte Avx2LutChar63 => -16;   // char '/' diff
+
+            public ReadOnlySpan<byte> AdvSimdLut4 => "wxyz0123456789+/"u8;
+
+            public uint Ssse3AdvSimdLutE3 => 0x0000F0ED;
+
+            public int IncrementPadTwo => 4;
+
+            public int IncrementPadOne => 4;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int GetMaxSrcLength(int srcLength, int destLength) =>
+                srcLength <= MaximumEncodeLength && destLength >= Base64.GetMaxEncodedToUtf8Length(srcLength) ?
+                srcLength : (destLength >> 2) * 3;
+
+            public uint GetInPlaceDestinationLength(int encodedLength, int _) => (uint)(encodedLength - 4);
+
+            public int GetMaxEncodedLength(int srcLength) => Base64.GetMaxEncodedToUtf8Length(srcLength);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public unsafe void EncodeOneOptionallyPadTwo(byte* oneByte, byte* dest, ref byte encodingMap)
+            {
+                uint t0 = oneByte[0];
+
+                uint i = t0 << 8;
+
+                uint i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
+                uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
+
+                uint result = ConstructResult(i0, i1, EncodingPad, EncodingPad);
+                Unsafe.WriteUnaligned(dest, result);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public unsafe void EncodeTwoOptionallyPadOne(byte* twoBytes, byte* dest, ref byte encodingMap)
+            {
+                uint t0 = twoBytes[0];
+                uint t1 = twoBytes[1];
+
+                uint i = (t0 << 16) | (t1 << 8);
+
+                uint i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
+                uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
+                uint i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
+
+                uint result = ConstructResult(i0, i1, i2, EncodingPad);
+                Unsafe.WriteUnaligned(dest, result);
+            }
+
+#if NET
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public unsafe void StoreVector512ToDestination(byte* dest, byte* destStart, int destLength, Vector512<byte> str)
+            {
+                AssertWrite<Vector512<sbyte>>(dest, destStart, destLength);
+                str.Store(dest);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [CompExactlyDependsOn(typeof(Avx2))]
+            public unsafe void StoreVector256ToDestination(byte* dest, byte* destStart, int destLength, Vector256<byte> str)
+            {
+                AssertWrite<Vector256<sbyte>>(dest, destStart, destLength);
+                Avx.Store(dest, str.AsByte());
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public unsafe void StoreVector128ToDestination(byte* dest, byte* destStart, int destLength, Vector128<byte> str)
+            {
+                AssertWrite<Vector128<sbyte>>(dest, destStart, destLength);
+                str.Store(dest);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+            public unsafe void StoreArmVector128x4ToDestination(byte* dest, byte* destStart, int destLength,
+                Vector128<byte> res1, Vector128<byte> res2, Vector128<byte> res3, Vector128<byte> res4)
+            {
+                AssertWrite<Vector128<byte>>(dest, destStart, destLength);
+                AdvSimd.Arm64.StoreVectorAndZip(dest, (res1, res2, res3, res4));
+            }
+#endif // NET
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public unsafe void EncodeThreeAndWrite(byte* threeBytes, byte* destination, ref byte encodingMap)
+            {
+                uint result = Encode(threeBytes, ref encodingMap);
+                Unsafe.WriteUnaligned(destination, result);
+            }
+        }
     }
 }
