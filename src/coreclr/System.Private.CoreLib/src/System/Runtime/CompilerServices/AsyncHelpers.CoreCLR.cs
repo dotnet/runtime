@@ -228,8 +228,8 @@ namespace System.Runtime.CompilerServices
 
         [ThreadStatic]
         private static RuntimeAsyncAwaitState t_runtimeAsyncAwaitState;
-#if !NATIVEAOT
 
+#if !NATIVEAOT
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AsyncHelpers_AddContinuationToExInternal")]
         private static unsafe partial void AddContinuationToExInternal(void* diagnosticIP, ObjectHandleOnStack ex);
 
@@ -534,14 +534,14 @@ namespace System.Runtime.CompilerServices
                 while (true)
                 {
                     if (continuation != null && continuation.ResumeInfo != null && continuation.ResumeInfo->DiagnosticIP != null)
+                    {
 #if !NATIVEAOT
                         AddContinuationToExInternal(continuation.ResumeInfo->DiagnosticIP, ex);
 #else
-                    {
                         IntPtr ip = (IntPtr)continuation.ResumeInfo->DiagnosticIP;
                         System.Exception.AppendExceptionStackFrame(ex, ip, 0);
-                    }
 #endif
+                    }
                     if (continuation == null || (continuation.Flags & ContinuationFlags.HasException) != 0)
                         return continuation;
 
