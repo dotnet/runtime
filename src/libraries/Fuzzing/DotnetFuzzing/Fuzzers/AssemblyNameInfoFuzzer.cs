@@ -71,6 +71,8 @@ namespace DotnetFuzzing.Fuzzers
                     // canonical form (e.g., "tur" → "tr", "bul" → "bg").
                     // Culture "c" or "C" gets mapped to Invariant Culture.
 
+                    // cultureInfo is non-null because we checked !string.IsNullOrEmpty above,
+                    // matching the condition on line 46 where cultureInfo is assigned.
                     string expectedCultureName = cultureInfo!.Name;
                     Assert.Equal(expectedCultureName, fromParse.ToAssemblyName().CultureName);
 
