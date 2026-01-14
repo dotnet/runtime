@@ -2776,8 +2776,10 @@ namespace System.Reflection.Metadata.Tests
             var reader = GetMetadataReader(Misc.Members);
             var entity = reader.GetAssemblyReference(default(AssemblyReferenceHandle));
 
-            // Note: Version has special handling - when RowId == WinMDMscorlibRef (both 0 for regular assemblies),
-            // it returns a static version without accessing the table. So we only test properties that do throw.
+            // Version has special handling - when RowId == WinMDMscorlibRef (both 0 for regular assemblies),
+            // it returns a static version without accessing the table.
+            Assert.Equal(new Version(4, 0, 0, 0), entity.Version);
+
             Assert.Throws<BadImageFormatException>(() => entity.Flags);
             Assert.Throws<BadImageFormatException>(() => entity.Name);
             Assert.Throws<BadImageFormatException>(() => entity.Culture);
