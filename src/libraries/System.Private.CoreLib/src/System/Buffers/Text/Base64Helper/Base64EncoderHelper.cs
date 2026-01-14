@@ -573,6 +573,7 @@ namespace System.Buffers.Text
         }
 #endif
 
+#if NET
         // Shared helper methods for char (ushort) encoders
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -615,6 +616,7 @@ namespace System.Buffers.Text
             AdvSimd.Arm64.StoreVectorAndZip(dest, (utf16LowVector1, utf16LowVector2, utf16LowVector3, utf16LowVector4));
             AdvSimd.Arm64.StoreVectorAndZip(dest + 32, (utf16HighVector1, utf16HighVector2, utf16HighVector3, utf16HighVector4));
         }
+#endif
 
         // Shared char encoding helpers for EncodeOne and EncodeTwo
         // These are shared between Base64EncoderChar and Base64UrlEncoderChar

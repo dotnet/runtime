@@ -669,6 +669,7 @@ namespace System.Buffers.Text
             return padding;
         }
 
+#if NET
         // Shared helper methods for char (ushort) decoders
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -743,6 +744,7 @@ namespace System.Buffers.Text
 
             return true;
         }
+#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe int DecodeFourElementsChar(ushort* source, ref sbyte decodingMap)
