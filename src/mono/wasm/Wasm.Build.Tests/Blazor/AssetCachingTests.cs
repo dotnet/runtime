@@ -49,9 +49,10 @@ public class AssetCachingTests : BlazorWasmTestBase
             {
                 if (msg.Contains("Counter.OnAfterRender"))
                 {
-                    if (Interlocked.Increment(ref loadCount) == 1)
+                    var count = Interlocked.Increment(ref loadCount);
+                    if (count == 1)
                         firstCounterLoaded.SetResult();
-                    else
+                    else if (count == 2)
                         secondCounterLoaded.SetResult();
                 }
             },
