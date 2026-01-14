@@ -688,14 +688,14 @@ namespace Internal.TypeSystem.Ecma
             else
             if (resolutionScope is MetadataType)
             {
-                ReadOnlySpan<byte> typeName = _metadataReader.GetStringBytes(typeReference.Name);
+                string typeName = _metadataReader.GetString(typeReference.Name);
                 if (!typeReference.Namespace.IsNil)
-                    typeName = _metadataReader.GetStringBytes(typeReference.Namespace).Append("."u8, typeName);
+                    typeName = _metadataReader.GetString(typeReference.Namespace) + "." + typeName;
                 MetadataType result = ((MetadataType)(resolutionScope)).GetNestedType(typeName);
                 if (result != null)
                     return result;
 
-                return ResolutionFailure.GetTypeLoadResolutionFailure(Encoding.UTF8.GetString(typeName), ((MetadataType)resolutionScope).Module);
+                return ResolutionFailure.GetTypeLoadResolutionFailure(typeName, ((MetadataType)resolutionScope).Module);
             }
 
             // TODO
@@ -736,10 +736,10 @@ namespace Internal.TypeSystem.Ecma
             else
             if (implementation is MetadataType type)
             {
-                ReadOnlySpan<byte> name = _metadataReader.GetStringBytes(exportedType.Name);
+                string name = _metadataReader.GetString(exportedType.Name);
                 var nestedType = type.GetNestedType(name);
                 if (nestedType == null)
-                    return ResolutionFailure.GetTypeLoadResolutionFailure(Encoding.UTF8.GetString(name), this);
+                    return ResolutionFailure.GetTypeLoadResolutionFailure(name, this);
                 return nestedType;
             }
             else if (implementation is ResolutionFailure)

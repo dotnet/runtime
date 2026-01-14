@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -93,7 +92,7 @@ namespace Internal.TypeSystem
             return _typeDef.HasCustomAttribute(attributeNamespace, attributeName);
         }
 
-        public override MetadataType GetNestedType(ReadOnlySpan<byte> name)
+        public override MetadataType GetNestedType(string name)
         {
             // Return the result from the typical type definition.
             return _typeDef.GetNestedType(name);

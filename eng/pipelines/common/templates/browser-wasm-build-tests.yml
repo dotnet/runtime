@@ -112,7 +112,6 @@ jobs:
           /p:WasmSkipMissingRuntimePackBuild=true
           /p:PreparePackagesForWorkloadInstall=false
           /p:WorkloadsTestPreviousVersions=$(workloadsTestPreviousVersionsVar)
-          /p:RuntimeFlavor=Mono
         timeoutInMinutes: 180
         condition: >-
           or(

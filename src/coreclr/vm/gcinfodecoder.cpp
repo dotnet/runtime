@@ -388,17 +388,18 @@ TGcInfoDecoder<GcInfoEncoding>::TGcInfoDecoder(
     {
         if(m_NumSafePoints)
         {
-            UINT32 offset = m_InstructionOffset;
 #ifdef DECODE_OLD_FORMATS
-            if (Version() < 4 && (flags & DECODE_INTERRUPTIBILITY))
+            if (Version() < 4)
             {
                 // Safepoints are encoded with a -1 adjustment
                 // DECODE_GC_LIFETIMES adjusts the offset accordingly, but DECODE_INTERRUPTIBILITY does not
                 // adjust here
-                offset--;
+                UINT32 offset = flags & DECODE_INTERRUPTIBILITY ? m_InstructionOffset - 1 : m_InstructionOffset;
+                m_SafePointIndex = FindSafePoint(offset);
             }
+#else
+            m_SafePointIndex = FindSafePoint(m_InstructionOffset);
 #endif
-            m_SafePointIndex = FindSafePoint(offset);
         }
     }
     else if(flags & DECODE_FOR_RANGES_CALLBACK)

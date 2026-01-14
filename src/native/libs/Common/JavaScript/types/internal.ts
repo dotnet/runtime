@@ -57,20 +57,21 @@ export type EmscriptenModuleInternal = EmscriptenModule & DotnetModuleConfig & {
 }
 
 export interface AssetEntryInternal extends AssetEntry {
-    integrity?: string
-    cache?: RequestCache
+    // this could have multiple values in time, because of re-try download logic
+    pendingDownloadInternal?: LoadingResource
+    noCache?: boolean
     useCredentials?: boolean
+    isCore?: boolean
 }
 
 export type LoaderConfigInternal = LoaderConfig & {
+    linkerEnabled?: boolean,
     runtimeOptions?: string[], // array of runtime options as strings
     appendElementOnExit?: boolean
     logExitCode?: boolean
     exitOnUnhandledError?: boolean
     loadAllSatelliteResources?: boolean
-    forwardConsole?: boolean,
-    asyncFlushOnExit?: boolean
-    interopCleanupOnExit?: boolean
+    resourcesHash?: string,
 };
 
 
@@ -100,7 +101,6 @@ export type InternalExchange = [
     InteropJavaScriptExportsTable, //6
     NativeBrowserExportsTable, //7
     BrowserUtilsExportsTable, //8
-    DiagnosticsExportsTable, //9
 ]
 export const enum InternalExchangeIndex {
     RuntimeAPI = 0,
@@ -112,11 +112,9 @@ export const enum InternalExchangeIndex {
     InteropJavaScriptExportsTable = 6,
     NativeBrowserExportsTable = 7,
     BrowserUtilsExportsTable = 8,
-    DiagnosticsExportsTable = 9,
 }
 
 export type JsModuleExports = {
     dotnetInitializeModule<T>(internals: InternalExchange): Promise<T>;
 };
 
-export type OnExitListener = (exitCode: number, reason: any, silent: boolean) => boolean;

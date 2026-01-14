@@ -187,6 +187,7 @@ namespace System
 
         public static bool IsAsyncFileIOSupported => !IsBrowser && !IsWasi;
 
+        public static bool IsLineNumbersSupported => !IsNativeAot;
         public static bool IsILOffsetsSupported => !IsNativeAot;
 
         public static bool IsInContainer => GetIsInContainer();

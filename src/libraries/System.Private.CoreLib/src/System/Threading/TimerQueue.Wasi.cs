@@ -18,6 +18,7 @@ namespace System.Threading
     //
     internal sealed partial class TimerQueue
     {
+        private static long TickCount64 => Environment.TickCount64;
         private static List<TimerQueue>? s_scheduledTimers;
         private static List<TimerQueue>? s_scheduledTimersToFire;
         private static long s_shortestDueTimeMs = long.MaxValue;
@@ -35,7 +36,7 @@ namespace System.Threading
             {
                 s_shortestDueTimeMs = long.MaxValue;
 
-                long currentTimeMs = Environment.TickCount64;
+                long currentTimeMs = TickCount64;
                 SetNextTimer(PumpTimerQueue(currentTimeMs), currentTimeMs);
             }
             catch (Exception e)
@@ -48,7 +49,7 @@ namespace System.Threading
         private bool SetTimer(uint actualDuration)
         {
             Debug.Assert((int)actualDuration >= 0);
-            long currentTimeMs = Environment.TickCount64;
+            long currentTimeMs = TickCount64;
             if (!_isScheduled)
             {
                 s_scheduledTimers ??= new List<TimerQueue>(Instances.Length);

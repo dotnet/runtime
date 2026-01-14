@@ -9,7 +9,6 @@ namespace System.Net.NetworkInformation
     {
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
-        [UnsupportedOSPlatform("haiku")]
         public static IPGlobalProperties GetIPGlobalProperties()
         {
             throw new PlatformNotSupportedException();

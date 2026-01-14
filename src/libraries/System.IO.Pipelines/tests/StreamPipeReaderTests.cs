@@ -151,14 +151,10 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task ReadAsyncAfterReceivingCompletedReadResultDoesNotThrow()
         {
-            byte[] helloBytes = "Hello World"u8.ToArray();
-            var stream = new MemoryStream(helloBytes);
+            var stream = new ThrowAfterZeroByteReadStream();
             PipeReader reader = PipeReader.Create(stream);
             ReadResult readResult = await reader.ReadAsync();
-            Assert.Equal(helloBytes.Length, readResult.Buffer.Length);
-            reader.AdvanceTo(readResult.Buffer.End);
-
-            readResult = await reader.ReadAsync();
+            Assert.True(readResult.Buffer.IsEmpty);
             Assert.True(readResult.IsCompleted);
             reader.AdvanceTo(readResult.Buffer.End);
 
@@ -170,38 +166,12 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public async Task ReadAsyncAfterReceivingCompletedReadResultAndResettingStreamPositionWorks()
-        {
-            byte[] helloBytes = "Hello World"u8.ToArray();
-            var stream = new MemoryStream(helloBytes);
-            PipeReader reader = PipeReader.Create(stream);
-            ReadResult readResult = await reader.ReadAsync();
-            Assert.Equal(helloBytes, readResult.Buffer.ToArray());
-            Assert.False(readResult.IsCompleted);
-            reader.AdvanceTo(readResult.Buffer.End);
-
-            readResult = await reader.ReadAsync();
-            Assert.True(readResult.IsCompleted);
-
-            // Reset the stream position to the beginning
-            stream.Position = 0;
-
-            readResult = await reader.ReadAsync();
-            Assert.Equal(helloBytes, readResult.Buffer.ToArray());
-            Assert.False(readResult.IsCompleted);
-            reader.AdvanceTo(readResult.Buffer.End);
-
-            readResult = await reader.ReadAsync();
-            Assert.True(readResult.IsCompleted);
-            reader.Complete();
-        }
-
-        [Fact]
         public async Task BufferingDataPastEndOfStreamCanBeReadAgain()
         {
             byte[] helloBytes = "Hello World"u8.ToArray();
-            var stream = new MemoryStream(helloBytes);
+            var stream = new ThrowAfterZeroByteReadStream(helloBytes);
             PipeReader reader = PipeReader.Create(stream);
+
 
             ReadResult readResult = await reader.ReadAsync();
             ReadOnlySequence<byte> buffer = readResult.Buffer;
@@ -695,6 +665,50 @@ namespace System.IO.Pipelines.Tests
             public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
             {
                 throw new OperationCanceledException();
+            }
+#endif
+        }
+
+        private class ThrowAfterZeroByteReadStream : MemoryStream
+        {
+            public ThrowAfterZeroByteReadStream()
+            {
+
+            }
+
+            public ThrowAfterZeroByteReadStream(byte[] buffer) : base(buffer)
+            {
+
+            }
+
+            private bool _throwOnNextCallToRead;
+            public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                if (_throwOnNextCallToRead)
+                {
+                    throw new Exception();
+                }
+                var bytes = await base.ReadAsync(buffer, offset, count, cancellationToken);
+                if (bytes == 0)
+                {
+                    _throwOnNextCallToRead = true;
+                }
+                return bytes;
+            }
+
+#if NET
+            public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
+            {
+                if (_throwOnNextCallToRead)
+                {
+                    throw new Exception();
+                }
+                var bytes = await base.ReadAsync(destination, cancellationToken);
+                if (bytes == 0)
+                {
+                    _throwOnNextCallToRead = true;
+                }
+                return bytes;
             }
 #endif
         }

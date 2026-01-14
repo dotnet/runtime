@@ -340,7 +340,6 @@ typedef struct
 	GPtrArray *relocs;
 	gboolean verbose_level;
 	GArray *line_numbers;
-	int total_il_size;
 	gboolean prof_coverage;
 	MonoProfilerCoverageInfo *coverage_info;
 	GList *dont_inline;

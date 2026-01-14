@@ -102,7 +102,7 @@ export class HostBuilder implements DotnetHostBuilder {
     async download(): Promise<void> {
         try {
             validateLoaderConfig();
-            return createRuntime(true);
+            return createRuntime(true, loadBootResourceCallback);
         } catch (err) {
             exit(1, err);
             throw err;
@@ -112,7 +112,7 @@ export class HostBuilder implements DotnetHostBuilder {
     async create(): Promise<RuntimeAPI> {
         try {
             validateLoaderConfig();
-            await createRuntime(false);
+            await createRuntime(false, loadBootResourceCallback);
             this.dotnetApi = dotnetApi;
             return this.dotnetApi;
         } catch (err) {

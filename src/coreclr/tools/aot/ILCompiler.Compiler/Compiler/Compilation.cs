@@ -11,7 +11,6 @@ using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.IL;
 using Internal.IL.Stubs;
-using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -139,7 +138,7 @@ namespace ILCompiler
             }
             else if (field is ExternSymbolMappedField externField)
             {
-                return NodeFactory.ExternVariable(new Utf8String(externField.SymbolName));
+                return NodeFactory.ExternVariable(externField.SymbolName);
             }
             else
             {
@@ -204,11 +203,6 @@ namespace ILCompiler
             {
                 if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name.SequenceEqual("GetCurrentMethod"u8))
                 {
-                    if (callsiteMethod.IsAsyncVariant())
-                    {
-                        // For async methods, we need to get the MethodBase for the thunk variant.
-                        callsiteMethod = TypeSystemContext.GetTargetOfAsyncVariantMethod(callsiteMethod);
-                    }
                     return _methodBaseGetCurrentMethodThunks.GetHelper(callsiteMethod).InstantiateAsOpen();
                 }
             }
@@ -301,7 +295,7 @@ namespace ILCompiler
                 MetadataType activatorType = type.Context.SystemModule.GetKnownType("System"u8, "Activator"u8);
                 if (type.IsValueType && type.GetParameterlessConstructor() == null)
                 {
-                    ctor = activatorType.GetKnownNestedType("StructWithNoConstructor"u8).GetKnownMethod(".ctor"u8, null);
+                    ctor = activatorType.GetKnownNestedType("StructWithNoConstructor").GetKnownMethod(".ctor"u8, null);
                 }
                 else
                 {
@@ -362,7 +356,7 @@ namespace ILCompiler
                 case ReadyToRunHelperId.ObjectAllocator:
                     {
                         var type = (TypeDesc)targetOfLookup;
-                        return NodeFactory.ExternFunctionSymbol(new Utf8String(JitHelper.GetNewObjectHelperForType(type)));
+                        return NodeFactory.ExternFunctionSymbol(JitHelper.GetNewObjectHelperForType(type));
                     }
 
                 default:

@@ -8,11 +8,9 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 using InvalidCSharp;
 
-[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public unsafe class Program
 {
     public static class UnmanagedCallersOnlyDll
@@ -28,6 +26,37 @@ public unsafe class Program
     private delegate int IntNativeMethodInvoker();
     private delegate void NativeMethodInvoker();
 
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    public static int TestEntryPoint()
+    {
+        try
+        {
+            NegativeTest_NonStaticMethod();
+            NegativeTest_ViaDelegate();
+            NegativeTest_NonBlittable();
+            NegativeTest_InstantiatedGenericArguments();
+            NegativeTest_FromInstantiatedGenericClass();
+            TestUnmanagedCallersOnlyViaUnmanagedCalli();
+            TestPInvokeMarkedWithUnmanagedCallersOnly();
+            TestUnmanagedCallersOnlyWithGeneric();
+
+            // Exception handling interop is only supported on CoreCLR Windows.
+            if (TestLibrary.Utilities.IsWindows && !TestLibrary.Utilities.IsMonoRuntime && !TestLibrary.Utilities.IsCoreClrInterpreter)
+            {
+                TestUnmanagedCallersOnlyValid_ThrowException();
+                TestUnmanagedCallersOnlyViaUnmanagedCalli_ThrowException();
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Test Failure: {e}");
+            return 101;
+        }
+
+        return 100;
+    }
+
     private static int DoubleImpl(int n)
     {
         return 2 * n;
@@ -41,7 +70,6 @@ public unsafe class Program
         throw new Exception() { HResult = CallbackThrowsErrorCode };
     }
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsExceptionInteropSupported))]
     public static void TestUnmanagedCallersOnlyValid_ThrowException()
     {
         Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_ThrowException)}...");
@@ -67,7 +95,6 @@ public unsafe class Program
         return -1;
     }
 
-    [Fact]
     public static void NegativeTest_NonBlittable()
     {
         Console.WriteLine($"Running {nameof(NegativeTest_NonBlittable)}...");
@@ -80,7 +107,6 @@ public unsafe class Program
         Assert.Throws<InvalidProgramException>(() => { UnmanagedCallersOnlyDll.CallManagedProc(UnmanagedCallersOnlyWithByRefs.GetWithByRefOutFunctionPointer(), n); });
     }
 
-    [Fact]
     public static void NegativeTest_InstantiatedGenericArguments()
     {
         Console.WriteLine($"Running {nameof(NegativeTest_InstantiatedGenericArguments)}...");
@@ -90,7 +116,6 @@ public unsafe class Program
         Assert.Throws<InvalidProgramException>(() => { UnmanagedCallersOnlyDll.CallManagedProc((IntPtr)(delegate* unmanaged<int, int>)&Callbacks.CallbackMethodGeneric<int>, n); });
     }
 
-    [Fact]
     public static void NegativeTest_FromInstantiatedGenericClass()
     {
         Console.WriteLine($"Running {nameof(NegativeTest_FromInstantiatedGenericClass)}...");
@@ -106,7 +131,6 @@ public unsafe class Program
         return DoubleImpl(val);
     }
 
-    [Fact]
     public static void TestUnmanagedCallersOnlyViaUnmanagedCalli()
     {
         Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyViaUnmanagedCalli)}...");
@@ -123,7 +147,6 @@ public unsafe class Program
         throw new Exception() { HResult = CallbackThrowsErrorCode };
     }
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsExceptionInteropSupported))]
     public static void TestUnmanagedCallersOnlyViaUnmanagedCalli_ThrowException()
     {
         Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyViaUnmanagedCalli_ThrowException)}...");
@@ -142,7 +165,6 @@ public unsafe class Program
         }
     }
 
-    [Fact]
     public static void TestPInvokeMarkedWithUnmanagedCallersOnly()
     {
         Console.WriteLine($"Running {nameof(TestPInvokeMarkedWithUnmanagedCallersOnly)}...");
@@ -159,7 +181,6 @@ public unsafe class Program
         Assert.Throws<NotSupportedException>(() => ((delegate* unmanaged<int, int>)&CallingUnmanagedCallersOnlyDirectly.PInvokeMarkedWithUnmanagedCallersOnly)(n));
     }
 
-    [Fact]
     public static void TestUnmanagedCallersOnlyWithGeneric()
     {
         Assert.Equal(0, ((delegate* unmanaged<Blittable<nint>, int>)&BlittableGenericStruct)(new Blittable<nint>()));
@@ -172,20 +193,6 @@ public unsafe class Program
 
         Assert.Throws<InvalidProgramException>(()
             => ((delegate* unmanaged<nint, int>)(void*)(delegate* unmanaged<MaybeBlittable<object>, int>)&InvalidGenericUnmanagedCallersOnlyParameters.GenericStructWithObjectField)((nint)1));
-    }
-
-    [Fact]
-    [SkipOnMono("Mono doesn't support runtime async and doesn't check the async bit.")]
-    public static void TestUnmanagedCallersOnlyWithRuntimeAsync()
-    {
-        AssertExtensions.ThrowsAny<InvalidProgramException, TypeLoadException>(() =>
-        {
-            ((delegate* unmanaged<Task>)&RuntimeAsyncUnmanagedCallersOnly.AsyncMethodReturningTask)();
-        });
-        AssertExtensions.ThrowsAny<InvalidProgramException, TypeLoadException>(() =>
-        {
-            ((delegate* unmanaged<int>)&RuntimeAsyncUnmanagedCallersOnly.AsyncMethodWithBlittableReturnType)();
-        });
     }
 
     internal struct Blittable<T> where T : unmanaged

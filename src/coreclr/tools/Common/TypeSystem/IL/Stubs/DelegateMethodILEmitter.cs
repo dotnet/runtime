@@ -55,20 +55,19 @@ namespace Internal.IL.Stubs
                 // Store the function pointer into local variable to avoid unnecessary register usage by JIT
                 ILLocalVariable functionPointer = emit.NewLocal(context.GetWellKnownType(WellKnownType.IntPtr));
 
-                MethodSignature signature = method.Signature;
-
                 codeStream.EmitLdArg(0);
                 codeStream.Emit(ILOpcode.ldfld, emit.NewToken(functionPointerField.InstantiateAsOpen()));
                 codeStream.EmitStLoc(functionPointer);
 
                 codeStream.EmitLdArg(0);
                 codeStream.Emit(ILOpcode.ldfld, emit.NewToken(firstParameterField.InstantiateAsOpen()));
-                for (int i = 0; i < signature.Length; i++)
+                for (int i = 0; i < method.Signature.Length; i++)
                 {
                     codeStream.EmitLdArg(i + 1);
                 }
                 codeStream.EmitLdLoc(functionPointer);
 
+                MethodSignature signature = method.Signature;
                 if (method.OwningType.HasInstantiation)
                 {
                     // If the owning type is generic, the signature will contain T's and U's.

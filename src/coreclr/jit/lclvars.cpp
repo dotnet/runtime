@@ -4631,14 +4631,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
         JITDUMP("--- delta bump %d for FP frame\n", delta);
     }
-#elif defined(TARGET_WASM)
-    else
-    {
-        // The FP always points at the bottom of the fixed portion of the frame.
-        JITDUMP("--- delta bump %d for FP frame\n", codeGen->genTotalFrameSize());
-        delta += codeGen->genTotalFrameSize();
-    }
-#endif
+#endif // !TARGET_LOONGARCH64 || !TARGET_RISCV64
 
     if (opts.IsOSR())
     {
@@ -6319,7 +6312,7 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum, int minLength)
 #else
     bool EBPbased;
     offset  = lvaFrameAddress(lclNum, &EBPbased);
-    baseReg = EBPbased ? codeGen->GetFramePointerReg() : codeGen->GetStackPointerReg();
+    baseReg = EBPbased ? REG_FPBASE : REG_SPBASE;
 #endif
 
     int printed =

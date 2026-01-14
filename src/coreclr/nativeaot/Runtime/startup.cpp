@@ -25,7 +25,6 @@
 #include "yieldprocessornormalized.h"
 #include <minipal/cpufeatures.h>
 #include <minipal/time.h>
-#include <minipal/random.h>
 
 #ifdef FEATURE_PERFTRACING
 #include "EventPipeInterface.h"
@@ -225,9 +224,8 @@ bool InitGSCookie()
     }
 #endif
 
-    GSCookie val;
-
-    minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&val, sizeof(val));
+    // REVIEW: Need something better for PAL...
+    GSCookie val = (GSCookie)minipal_lowres_ticks();
 
 #ifdef _DEBUG
     // In _DEBUG, always use the same value to make it easier to search for the cookie

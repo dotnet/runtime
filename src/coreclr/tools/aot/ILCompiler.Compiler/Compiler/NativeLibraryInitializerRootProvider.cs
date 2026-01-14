@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-
-using Internal.IL.Stubs.StartupCode;
-using Internal.Text;
 using Internal.TypeSystem;
+using Internal.IL.Stubs.StartupCode;
 
 namespace ILCompiler
 {
@@ -32,7 +30,7 @@ namespace ILCompiler
         {
             TypeDesc owningType = _module.GetGlobalModuleType();
             NativeLibraryStartupMethod nativeLibStartupCode = new NativeLibraryStartupMethod(owningType, _libraryInitializers);
-            rootProvider.AddCompilationRoot(nativeLibStartupCode, "Startup Code Main Method", new Utf8String(ManagedEntryPointMethodName));
+            rootProvider.AddCompilationRoot(nativeLibStartupCode, "Startup Code Main Method", ManagedEntryPointMethodName);
         }
     }
 }

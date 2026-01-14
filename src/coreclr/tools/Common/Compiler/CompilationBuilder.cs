@@ -8,7 +8,6 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.IL;
-using Internal.Text;
 
 namespace ILCompiler
 {
@@ -52,7 +51,7 @@ namespace ILCompiler
 
         public CompilationBuilder UseCompilationUnitPrefix(string prefix)
         {
-            _nameMangler.CompilationUnitPrefix = new Utf8String(prefix);
+            _nameMangler.CompilationUnitPrefix = prefix;
             return this;
         }
 

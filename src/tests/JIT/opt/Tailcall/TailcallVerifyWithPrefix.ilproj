@@ -15,6 +15,5 @@
     <Compile Include="TailcallVerifyWithPrefix.il" />
     <Compile Include="TailcallVerifyTransparentLibraryWithPrefix.il" />
     <Compile Include="TailcallVerifyVerifiableLibraryWithPrefix.il" />
-    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

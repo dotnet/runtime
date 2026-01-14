@@ -162,7 +162,6 @@ set( JIT_SOURCES
   rangecheckcloning.cpp
   rationalize.cpp
   redundantbranchopts.cpp
-  regalloc.cpp
   regset.cpp
   scev.cpp
   scopeinfo.cpp
@@ -183,6 +182,7 @@ set( JIT_SOURCES
 set ( JIT_NATIVE_TARGET_SOURCES
   lsra.cpp
   lsrabuild.cpp
+  regalloc.cpp
   regMaskTPOps.cpp
   gcdecode.cpp
   gcencode.cpp
@@ -385,7 +385,6 @@ set( JIT_HEADERS
   rangecheckcloning.h
   rationalize.h
   regalloc.h
-  regallocimpl.h
   register.h
   regset.h
   scev.h

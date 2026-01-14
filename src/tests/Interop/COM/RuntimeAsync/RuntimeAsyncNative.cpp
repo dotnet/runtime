@@ -79,9 +79,3 @@ extern "C" DLL_EXPORT bool STDMETHODCALLTYPE ValidateSlotLayoutForInterface(IUnk
 
     return true;
 }
-
-extern "C" DLL_EXPORT IUnknown* STDMETHODCALLTYPE PassThroughTask(IUnknown* pUnk)
-{
-    pUnk->AddRef();
-    return pUnk;
-}

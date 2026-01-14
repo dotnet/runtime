@@ -314,16 +314,8 @@ namespace ILCompiler
                     compilationRoots.Add(new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode(linkTrimFilePath));
                 }
 
-                // Get TypeMappingEntryAssembly from command-line option if specified
-                string typeMappingEntryAssembly = Get(_command.TypeMapEntryAssembly);
-                if (typeMappingEntryAssembly is not null)
+                if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
                 {
-                    var typeMapEntryAssembly = (EcmaAssembly)typeSystemContext.ResolveAssembly(AssemblyNameInfo.Parse(typeMappingEntryAssembly), throwIfNotFound: true);
-                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(typeMapEntryAssembly, typeSystemContext));
-                }
-                else if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
-                {
-                    // Fall back to entryassembly if not specified
                     typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(entryAssembly, typeSystemContext));
                 }
             }
@@ -420,16 +412,8 @@ namespace ILCompiler
             ILProvider unsubstitutedILProvider = ilProvider;
             ilProvider = new SubstitutedILProvider(ilProvider, substitutionProvider, new DevirtualizationManager());
 
-            (bool emitStackTraceData, bool stackTraceLineNumbers) = Get(_command.StackTraceData) switch
-            {
-                null or "none" => (false, false),
-                "frames" => (true, false),
-                "lines" => (true, true),
-                _ => throw new CommandLineException($"Unknown stack trace data: {Get(_command.StackTraceData)}"),
-            };
-
-            var stackTracePolicy = emitStackTraceData ?
-                (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy(stackTraceLineNumbers) : new NoStackTraceEmissionPolicy();
+            var stackTracePolicy = Get(_command.EmitStackTraceData) ?
+                (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
 
             MetadataBlockingPolicy mdBlockingPolicy;
             ManifestResourceBlockingPolicy resBlockingPolicy;

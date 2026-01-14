@@ -281,32 +281,28 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
 
             switch (pParam->pThis->mc->repGetExpectedTargetArchitecture())
             {
-                case CORINFO_ARCH_X64:
+                case IMAGE_FILE_MACHINE_AMD64:
                     matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_AMD64);
                     break;
 
-                case CORINFO_ARCH_X86:
+                case IMAGE_FILE_MACHINE_I386:
                     matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_X86);
                     break;
 
-                case CORINFO_ARCH_ARM:
+                case IMAGE_FILE_MACHINE_ARMNT:
                     matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_ARM);
                     break;
 
-                case CORINFO_ARCH_ARM64:
+                case IMAGE_FILE_MACHINE_ARM64:
                     matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_ARM64);
                     break;
 
-                case CORINFO_ARCH_LOONGARCH64:
+                case IMAGE_FILE_MACHINE_LOONGARCH64:
                     matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_LOONGARCH64);
                     break;
 
-                case CORINFO_ARCH_RISCV64:
+                case IMAGE_FILE_MACHINE_RISCV64:
                     matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_RISCV64);
-                    break;
-
-                case CORINFO_ARCH_WASM32:
-                    matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_WASM32);
                     break;
 
                 default:

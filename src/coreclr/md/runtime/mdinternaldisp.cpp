@@ -13,6 +13,7 @@
 #include "mdinternalro.h"
 #include "posterror.h"
 #include "corpriv.h"
+#include "assemblymdinternaldisp.h"
 #include "pedecoder.h"
 #include "metamodel.h"
 

@@ -4,8 +4,11 @@
 /***
 *strcpy_s.c - contains wcscpy_s()
 *
+
+*
 *Purpose:
 *   wcscpy_s() copies one string onto another.
+*
 *******************************************************************************/
 
 #define _SECURECRT_FILL_BUFFER 1
@@ -18,6 +21,7 @@
 
 #include "mbusafecrt_internal.h"
 
+#define _FUNC_PROLOGUE
 #define _FUNC_NAME wcscpy_s
 #define _CHAR char16_t
 #define _DEST _Dst
@@ -25,3 +29,4 @@
 #define _SRC _Src
 
 #include "tcscpy_s.inl"
+

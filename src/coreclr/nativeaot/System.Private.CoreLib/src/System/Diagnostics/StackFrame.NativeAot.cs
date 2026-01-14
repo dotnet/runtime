@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.IO;
 using System.Reflection;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Text;
 
+using Internal.DeveloperExperience;
 using Internal.Reflection.Augments;
-using Internal.Runtime.Augments;
 
 namespace System.Diagnostics
 {
@@ -37,18 +35,6 @@ namespace System.Diagnostics
         /// Will be true if we attempted to retrieve the associated MethodBase but couldn't.
         /// </summary>
         private bool _noMethodBaseAvailable;
-
-        private bool _isStackTraceHidden;
-
-        // If stack trace metadata is available, _methodOwningType is the namespace-qualified name of the owning type,
-        // _methodName is the name of the method, _methodGenericArgs are generic arguments, and _methodSignature is the list of parameters
-        // without braces. StackTrace will format this as `{_methodOwningType}.{_methodName}<{_genericArgs}>({_methodSignature}).
-        // We keep this separate because StackFrame.ToString is defined as returning _methodName[{_genericArgs}].
-        // If stack trace metadata is unavailable, only _methodName is populated and contains the "{fileNameWithoutExtension}!<BaseAddress>+0x{rva:x}"
-        private string _methodOwningType;
-        private string _methodName;
-        private string _methodGenericArgs;
-        private string _methodSignature;
 
         /// <summary>
         /// Returns the method the frame is executing
@@ -117,30 +103,16 @@ namespace System.Diagnostics
                 IntPtr methodStartAddress = RuntimeImports.RhFindMethodStartAddress(ipAddress);
 
                 _nativeOffset = (int)((nint)_ipAddress - (nint)methodStartAddress);
-                _ilOffset = StackFrame.OFFSET_UNKNOWN;
 
-                StackTraceMetadataCallbacks stackTraceCallbacks = RuntimeAugments.StackTraceCallbacksIfAvailable;
-                if (stackTraceCallbacks != null)
+                DeveloperExperience.Default.TryGetILOffsetWithinMethod(_ipAddress, out _ilOffset);
+
+                if (needFileInfo)
                 {
-                    _methodName = stackTraceCallbacks.TryGetMethodStackFrameInfo(methodStartAddress, _nativeOffset, needFileInfo, out _methodOwningType, out _methodGenericArgs, out _methodSignature, out _isStackTraceHidden, out _fileName, out _lineNumber);
-                }
-
-                if (_methodName == null)
-                {
-                    // If we don't have precise information, try to map it at least back to the right module.
-                    string moduleFullFileName = RuntimeAugments.TryGetFullPathToApplicationModule(_ipAddress, out IntPtr moduleBase);
-
-                    // Without any callbacks or the ability to map ip correctly we better admit that we don't know
-                    if (string.IsNullOrEmpty(moduleFullFileName))
-                    {
-                        _methodName = "<unknown>";
-                    }
-                    else
-                    {
-                        ReadOnlySpan<char> fileNameWithoutExtension = Path.GetFileNameWithoutExtension(moduleFullFileName.AsSpan());
-                        int rva = (int)(_ipAddress - moduleBase);
-                        _methodName = $"{fileNameWithoutExtension}!<BaseAddress>+0x{rva:x}";
-                    }
+                    DeveloperExperience.Default.TryGetSourceLineInfo(
+                        _ipAddress,
+                        out _fileName,
+                        out _lineNumber,
+                        out _columnNumber);
                 }
             }
         }
@@ -184,13 +156,7 @@ namespace System.Diagnostics
         /// </summary>
         private bool AppendStackFrameWithoutMethodBase(StringBuilder builder)
         {
-            builder.Append(_methodName);
-            if (_methodGenericArgs != null)
-            {
-                builder.Append('<');
-                builder.Append(_methodGenericArgs);
-                builder.Append('>');
-            }
+            builder.Append(DeveloperExperience.Default.CreateStackTraceString(_ipAddress, includeFileInfo: false, out _));
             return true;
         }
 
@@ -209,25 +175,14 @@ namespace System.Diagnostics
         {
             if (_ipAddress != Exception.EdiSeparator)
             {
-                if (!_isStackTraceHidden)
+                string s = DeveloperExperience.Default.CreateStackTraceString(_ipAddress, _needFileInfo, out bool isStackTraceHidden);
+                if (!isStackTraceHidden)
                 {
                     // Passing a default string for "at" in case SR.UsingResourceKeys() is true
                     // as this is a special case and we don't want to have "Word_At" on stack traces.
                     string word_At = SR.UsingResourceKeys() ? "at" : SR.Word_At;
-                    // We also want to pass in a default for inFileLineNumber.
-                    string inFileLineNum = SR.UsingResourceKeys() ? "in {0}:line {1}" : SR.StackTrace_InFileLineNumber;
                     builder.Append("   ").Append(word_At).Append(' ');
-
-                    AppendCommonStringRepresenation(builder, allowFallback: true);
-
-                    if (_fileName != null)
-                    {
-                        // tack on " in c:\tmp\MyFile.cs:line 5"
-                        builder.Append(' ');
-                        builder.AppendFormat(CultureInfo.InvariantCulture, inFileLineNum, _fileName, _lineNumber);
-                    }
-
-                    builder.AppendLine();
+                    builder.AppendLine(s);
                 }
             }
             if (_isLastFrameFromForeignExceptionStackTrace)
@@ -237,37 +192,6 @@ namespace System.Diagnostics
                     "--- End of stack trace from previous location ---" :
                     SR.Exception_EndStackTraceFromPreviousThrow);
             }
-        }
-
-        private void AppendCommonStringRepresenation(StringBuilder builder, bool allowFallback)
-        {
-            if (_methodOwningType != null)
-            {
-                builder.Append(_methodOwningType);
-                builder.Append('.');
-                builder.Append(_methodName);
-                if (_methodGenericArgs != null)
-                {
-                    builder.Append('[');
-                    builder.Append(_methodGenericArgs);
-                    builder.Append(']');
-                }
-                builder.Append('(');
-                builder.Append(_methodSignature);
-                builder.Append(')');
-            }
-            else if (allowFallback)
-            {
-                Debug.Assert(_methodSignature == null);
-                builder.Append(_methodName);
-            }
-        }
-
-        internal string GetCrashInfoString()
-        {
-            StringBuilder sb = new StringBuilder();
-            AppendCommonStringRepresenation(sb, allowFallback: false);
-            return sb.Length > 0 ? sb.ToString() : null;
         }
     }
 }

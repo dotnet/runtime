@@ -11,6 +11,7 @@ import { getIcuResourceName } from "./icu";
 import { loaderConfig } from "./config";
 import { fetchDll, fetchIcu, fetchPdb, fetchVfs, fetchWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded } from "./assets";
 
+let CoreCLRInitialized = false;
 const runMainPromiseController = createPromiseCompletionSource<number>();
 
 // WASM-TODO: webCIL
@@ -100,7 +101,6 @@ function initializeCoreCLR(): void {
         runMainPromiseController.reject(reason);
         exit(res, reason);
     }
-    runtimeState.runtimeReady = true;
 }
 
 export function resolveRunMainPromise(exitCode: number): void {
@@ -120,7 +120,7 @@ export async function selfHostNodeJS(dotnet: DotnetHostBuilder): Promise<void> {
     try {
         if (isNodeHosted()) {
             await findResources(dotnet);
-            await dotnet.runMainAndExit();
+            await dotnet.run();
         } else if (isShellHosted()) {
             // because in V8 we can't probe directories to find assemblies
             throw new Error("Shell/V8 hosting is not supported");

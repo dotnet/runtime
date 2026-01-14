@@ -99,8 +99,6 @@ namespace ILCompiler.DependencyAnalysis
             ArrayOfEmbeddedPointersNode,
             ExternalTypeMapObjectNode,
             ProxyTypeMapObjectNode,
-            StackTraceLineNumbersNode,
-            StackTraceDocumentsNode,
             ExternalReferencesTableNode,
             StackTraceEmbeddedMetadataNode,
             StackTraceMethodMappingNode,

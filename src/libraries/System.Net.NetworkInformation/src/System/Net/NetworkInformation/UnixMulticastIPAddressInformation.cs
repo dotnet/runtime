@@ -23,7 +23,6 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("freebsd")]
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
-        [UnsupportedOSPlatform("haiku")]
         public override bool IsDnsEligible { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         [UnsupportedOSPlatform("linux")]
@@ -33,7 +32,6 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("freebsd")]
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
-        [UnsupportedOSPlatform("haiku")]
         public override bool IsTransient { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         [UnsupportedOSPlatform("linux")]
@@ -43,7 +41,6 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("freebsd")]
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
-        [UnsupportedOSPlatform("haiku")]
         public override long AddressPreferredLifetime { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         [UnsupportedOSPlatform("linux")]
@@ -53,7 +50,6 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("freebsd")]
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
-        [UnsupportedOSPlatform("haiku")]
         public override long AddressValidLifetime { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         [UnsupportedOSPlatform("linux")]
@@ -63,7 +59,6 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("freebsd")]
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
-        [UnsupportedOSPlatform("haiku")]
         public override long DhcpLeaseLifetime { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         [UnsupportedOSPlatform("linux")]
@@ -73,7 +68,6 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("freebsd")]
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
-        [UnsupportedOSPlatform("haiku")]
         public override DuplicateAddressDetectionState DuplicateAddressDetectionState { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         [UnsupportedOSPlatform("linux")]
@@ -83,7 +77,6 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("freebsd")]
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
-        [UnsupportedOSPlatform("haiku")]
         public override PrefixOrigin PrefixOrigin { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         [UnsupportedOSPlatform("linux")]
@@ -93,7 +86,6 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("freebsd")]
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
-        [UnsupportedOSPlatform("haiku")]
         public override SuffixOrigin SuffixOrigin { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
     }
 }

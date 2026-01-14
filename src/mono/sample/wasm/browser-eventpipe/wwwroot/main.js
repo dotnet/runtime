@@ -27,7 +27,8 @@ try {
             "--no-jiterpreter-interp-entry-enabled",
             "--no-jiterpreter-jit-call-enabled",
         ])*/
-        .withConfig({ appendElementOnExit: true, exitOnUnhandledError: true })
+        .withElementOnExit()
+        .withExitOnUnhandledError()
         .create();
 
     setModuleImports("main.js", {

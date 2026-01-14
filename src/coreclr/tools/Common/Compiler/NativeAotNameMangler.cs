@@ -189,11 +189,7 @@ namespace ILCompiler
                     hash = SHA256.HashData(literal.AsSpan());
                 }
 
-                mangledName = new Utf8StringBuilder()
-                    .Append(mangledName)
-                    .Append('_')
-                    .AppendAscii(Convert.ToHexString(hash))
-                    .ToUtf8String();
+                mangledName += "_" + Convert.ToHexString(hash);
             }
 
             return mangledName;
@@ -297,7 +293,7 @@ namespace ILCompiler
                         // This problem needs a better fix.
                         if (isSystemPrivate)
                             assemblyName = string.Concat("S.P.", assemblyName.AsSpan(15));
-                        Utf8String prependAssemblyName = new Utf8String(SanitizeName(assemblyName));
+                        Utf8String prependAssemblyName = SanitizeName(assemblyName);
 
                         var deduplicator = new HashSet<Utf8String>();
 
@@ -382,17 +378,17 @@ namespace ILCompiler
                     break;
                 case TypeFlags.SzArray:
                     mangledName = new Utf8StringBuilder().Append("__Array"u8)
-                        .Append(EnterNameScopeSequence).Append(GetMangledTypeName(((ArrayType)type).ElementType)).Append(ExitNameScopeSequence).ToUtf8String();
+                        .Append(NestMangledName(GetMangledTypeName(((ArrayType)type).ElementType))).ToUtf8String();
                     break;
                 case TypeFlags.ByRef:
                     mangledName = new Utf8StringBuilder()
                         .Append(GetMangledTypeName(((ByRefType)type).ParameterType))
-                        .Append(EnterNameScopeSequence).Append("ByRef"u8).Append(ExitNameScopeSequence).ToUtf8String();
+                        .Append(NestMangledName("ByRef")).ToUtf8String();
                     break;
                 case TypeFlags.Pointer:
                     mangledName = new Utf8StringBuilder()
                         .Append(GetMangledTypeName(((PointerType)type).ParameterType))
-                        .Append(EnterNameScopeSequence).Append("Pointer"u8).Append(ExitNameScopeSequence).ToUtf8String();
+                        .Append(NestMangledName("Pointer")).ToUtf8String();
                     break;
                 case TypeFlags.FunctionPointer:
                 {
@@ -437,23 +433,17 @@ namespace ILCompiler
                     }
                     else if (type is IPrefixMangledMethod)
                     {
-                        mangledName = GetPrefixMangledMethodName((IPrefixMangledMethod)type);
+                        mangledName = GetPrefixMangledMethodName((IPrefixMangledMethod)type).ToString();
                     }
                     else if (type is IPrefixMangledType)
                     {
-                        mangledName = GetPrefixMangledTypeName((IPrefixMangledType)type);
+                        mangledName = GetPrefixMangledTypeName((IPrefixMangledType)type).ToString();
                     }
                     else
                     {
                         // This is a type definition. Since we didn't fall in the `is EcmaType` case above,
                         // it's likely a compiler-generated type.
-                        var defType = (DefType)type;
-                        var sb = new Utf8StringBuilder();
-                        if (defType.Namespace.Length > 0)
-                            sb.Append(SanitizeName(defType.Namespace)).Append('_');
-
-                        sb.Append(SanitizeName(defType.Name));
-                        mangledName = sb.ToUtf8String();
+                        mangledName = SanitizeName(((DefType)type).GetFullName());
                     }
                     break;
             }

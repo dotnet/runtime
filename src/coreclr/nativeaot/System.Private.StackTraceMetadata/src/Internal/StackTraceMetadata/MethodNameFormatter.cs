@@ -51,69 +51,83 @@ namespace Internal.StackTraceMetadata
             return formatter._outputBuilder.ToString();
         }
 
-        public static (string, string, string, string) FormatMethodName(MetadataReader metadataReader, Handle owningType, ConstantStringValueHandle name, MethodSignatureHandle signature, ConstantStringArrayHandle genericArguments)
+        public static string FormatMethodName(MetadataReader metadataReader, Handle owningType, ConstantStringValueHandle name, MethodSignatureHandle signature, ConstantStringArrayHandle genericArguments)
         {
             MethodNameFormatter formatter = new MethodNameFormatter(metadataReader, SigTypeContext.FromMethod(metadataReader, owningType, genericArguments));
             formatter.EmitTypeName(owningType, Flags.NamespaceQualify);
+            formatter._outputBuilder.Append('.');
+            formatter.EmitString(name);
 
-            string owningTypeString = formatter._outputBuilder.ToString();
-            formatter._outputBuilder.Clear();
-
-            string methodName = metadataReader.GetString(name);
-            string genericArgs = null;
             if (!genericArguments.IsNil)
             {
                 var args = metadataReader.GetConstantStringArray(genericArguments);
                 bool first = true;
                 foreach (Handle handle in args.Value)
                 {
-                    if (!first)
-                        formatter._outputBuilder.Append(',');
-                    else
+                    if (first)
+                    {
                         first = false;
+                        formatter._outputBuilder.Append('[');
+                    }
+                    else
+                    {
+                        formatter._outputBuilder.Append(',');
+                    }
                     formatter.EmitString(handle.ToConstantStringValueHandle(metadataReader));
                 }
-                genericArgs = formatter._outputBuilder.ToString();
-                formatter._outputBuilder.Clear();
+                if (!first)
+                {
+                    formatter._outputBuilder.Append(']');
+                }
             }
 
-            formatter.EmitTypeVector(metadataReader.GetMethodSignature(signature).Parameters);
-            string signatureString = formatter._outputBuilder.ToString();
+            formatter.EmitMethodParameters(metadataReader.GetMethodSignature(signature));
 
-            return (owningTypeString, genericArgs, methodName, signatureString);
+            return formatter._outputBuilder.ToString();
         }
 
-        public static (string, string, string, string) FormatMethodName(MetadataReader metadataReader, TypeDefinitionHandle enclosingTypeHandle, MethodHandle methodHandle)
+        public static string FormatMethodName(MetadataReader metadataReader, TypeDefinitionHandle enclosingTypeHandle, MethodHandle methodHandle)
         {
             MethodNameFormatter formatter = new MethodNameFormatter(metadataReader, SigTypeContext.FromMethod(metadataReader, enclosingTypeHandle, methodHandle));
 
             Method method = metadataReader.GetMethod(methodHandle);
             formatter.EmitTypeName(enclosingTypeHandle, Flags.NamespaceQualify);
+            formatter._outputBuilder.Append('.');
+            formatter.EmitString(method.Name);
 
-            string owningTypeString = formatter._outputBuilder.ToString();
-            formatter._outputBuilder.Clear();
-
-            string methodName = metadataReader.GetString(method.Name);
-            string genericArgs = null;
-            if (method.GenericParameters.Count > 0)
+            bool first = true;
+            foreach (GenericParameterHandle handle in method.GenericParameters)
             {
-                bool first = true;
-                foreach (GenericParameterHandle handle in method.GenericParameters)
+                if (first)
                 {
-                    if (first)
-                        first = false;
-                    else
-                        formatter._outputBuilder.Append(',');
-                    formatter.EmitTypeName(handle, Flags.None);
+                    first = false;
+                    formatter._outputBuilder.Append('[');
                 }
-                genericArgs = formatter._outputBuilder.ToString();
-                formatter._outputBuilder.Clear();
+                else
+                {
+                    formatter._outputBuilder.Append(',');
+                }
+                formatter.EmitTypeName(handle, Flags.None);
+            }
+            if (!first)
+            {
+                formatter._outputBuilder.Append(']');
             }
 
             formatter.EmitMethodParameters(methodHandle);
-            string signatureString = formatter._outputBuilder.ToString();
 
-            return (owningTypeString, genericArgs, methodName, signatureString);
+            return formatter._outputBuilder.ToString();
+        }
+
+        /// <summary>
+        /// Emit parenthesized method argument type list.
+        /// </summary>
+        /// <param name="methodSignature">Method signature to use for parameter formatting</param>
+        private void EmitMethodParameters(MethodSignature methodSignature)
+        {
+            _outputBuilder.Append('(');
+            EmitTypeVector(methodSignature.Parameters);
+            _outputBuilder.Append(')');
         }
 
         /// <summary>
@@ -139,6 +153,8 @@ namespace Internal.StackTraceMetadata
                 hasParameter = TryGetNextParameter(ref parameters, out parameter);
             }
 
+            _outputBuilder.Append('(');
+
             uint typeIndex = 0;
             foreach (Handle type in typeVector)
             {
@@ -161,6 +177,8 @@ namespace Internal.StackTraceMetadata
                     }
                 }
             }
+
+            _outputBuilder.Append(')');
         }
 
         /// <summary>

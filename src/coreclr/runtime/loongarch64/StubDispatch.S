@@ -6,7 +6,7 @@
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
     .extern RhpCidResolve
-    .extern RhpUniversalTransitionTailCall
+    .extern RhpUniversalTransition_DebugStepTailCall
 
     // Macro that generates code to check a single cache entry.
     .macro CHECK_CACHE_ENTRY entry
@@ -91,7 +91,7 @@
         // t7: target address for the thunk to call
         // t8: parameter of the thunk's target
         PREPARE_EXTERNAL_VAR RhpCidResolve, $t7
-        b  C_FUNC(RhpUniversalTransitionTailCall)
+        b  C_FUNC(RhpUniversalTransition_DebugStepTailCall)
     LEAF_END RhpInterfaceDispatchSlow, _TEXT
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH

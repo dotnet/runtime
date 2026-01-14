@@ -15,12 +15,11 @@ namespace Wasm.Build.Tests;
 
 public class WasmSdkBasedProjectProvider : ProjectProviderBase
 {
-    public string DefaultTargetFramework { get; }
-
+    private readonly string _defaultTargetFramework;
     public WasmSdkBasedProjectProvider(ITestOutputHelper _testOutput, string defaultTargetFramework, string? _projectDir = null)
             : base(_testOutput, _projectDir)
     {
-        DefaultTargetFramework = defaultTargetFramework;
+        _defaultTargetFramework = defaultTargetFramework;
     }
 
     protected override string BundleDirName { get { return "wwwroot"; } }
@@ -97,7 +96,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
     public void AssertBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild = null, bool? wasmFingerprintDotnetJs = null)
     {
         string frameworkDir = string.IsNullOrEmpty(buildOptions.NonDefaultFrameworkDir) ?
-            GetBinFrameworkDir(config, buildOptions.IsPublish, DefaultTargetFramework) :
+            GetBinFrameworkDir(config, buildOptions.IsPublish, _defaultTargetFramework) :
             buildOptions.NonDefaultFrameworkDir;
 
         AssertBundle(new AssertBundleOptions(
@@ -182,7 +181,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         if (isUsingWorkloads && buildOutput is not null)
         {
             // In no-workload case, the path would be from a restored nuget
-            ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? DefaultTargetFramework, buildOptions.RuntimeType);
+            ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? _defaultTargetFramework, buildOptions.RuntimeType);
         }
         AssertBundle(config, buildOptions, isUsingWorkloads, isNativeBuild, wasmFingerprintDotnetJs);
     }
@@ -192,9 +191,9 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         projectDir ??= ProjectDir!;
         Assert.NotNull(projectDir);
         string configStr = configuration.ToString();
-        string objDir = Path.Combine(projectDir, "obj", configStr, DefaultTargetFramework);
-        string binDir = Path.Combine(projectDir, "bin", configStr, DefaultTargetFramework);
-        string binFrameworkDir = GetBinFrameworkDir(configuration, forPublish, DefaultTargetFramework);
+        string objDir = Path.Combine(projectDir, "obj", configStr, _defaultTargetFramework);
+        string binDir = Path.Combine(projectDir, "bin", configStr, _defaultTargetFramework);
+        string binFrameworkDir = GetBinFrameworkDir(configuration, forPublish, _defaultTargetFramework);
 
         string objWasmDir = Path.Combine(objDir, "wasm", forPublish ? "for-publish" : "for-build");
         // for build: we should take from runtime pack?

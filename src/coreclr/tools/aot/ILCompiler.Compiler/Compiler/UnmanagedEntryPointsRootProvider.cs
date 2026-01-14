@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 
-using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -67,12 +66,12 @@ namespace ILCompiler
             {
                 if (ecmaMethod.IsUnmanagedCallersOnly)
                 {
-                    Utf8String unmanagedCallersOnlyExportName = new(ecmaMethod.GetUnmanagedCallersOnlyExportName());
+                    string unmanagedCallersOnlyExportName = ecmaMethod.GetUnmanagedCallersOnlyExportName();
                     rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Native callable", unmanagedCallersOnlyExportName, Hidden);
                 }
                 else
                 {
-                    Utf8String runtimeExportName = new(ecmaMethod.GetRuntimeExportName());
+                    string runtimeExportName = ecmaMethod.GetRuntimeExportName();
                     rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Runtime export", runtimeExportName, Hidden);
                 }
             }

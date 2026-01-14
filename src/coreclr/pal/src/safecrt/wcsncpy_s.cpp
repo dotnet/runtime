@@ -4,8 +4,11 @@
 /***
 *wcsncpy_s.c - copy at most n characters of wide-character string
 *
+
+*
 *Purpose:
 *   defines wcsncpy_s() - copy at most n characters of char16_t string
+*
 *******************************************************************************/
 
 #define _SECURECRT_FILL_BUFFER 1
@@ -18,6 +21,7 @@
 
 #include "mbusafecrt_internal.h"
 
+#define _FUNC_PROLOGUE
 #define _FUNC_NAME wcsncpy_s
 #define _CHAR char16_t
 #define _DEST _Dst
@@ -26,3 +30,4 @@
 #define _COUNT _Count
 
 #include "tcsncpy_s.inl"
+

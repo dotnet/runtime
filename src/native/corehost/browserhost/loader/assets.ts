@@ -24,6 +24,7 @@ export let wasmBinaryPromise: Promise<Response> | undefined = undefined;
 export const nativeModulePromiseController = createPromiseCompletionSource<EmscriptenModuleInternal>(() => {
     dotnetUpdateInternals(dotnetInternals);
 });
+let wasmBinaryPromise: any = undefined;
 
 export async function loadDotnetModule(asset: JsAsset): Promise<JsModuleExports> {
     return loadJSModule(asset);
@@ -59,15 +60,14 @@ export function fetchWasm(asset: WasmAsset): Promise<Response> {
     if (assetInternal.name && !asset.resolvedUrl) {
         asset.resolvedUrl = locateFile(assetInternal.name);
     }
-    assetInternal.behavior = "dotnetwasm";
     if (!asset.resolvedUrl) throw new Error("Invalid config, resources is not set");
-    wasmBinaryPromise = loadResource(assetInternal);
+    wasmBinaryPromise = fetchLike(asset.resolvedUrl);
     return wasmBinaryPromise;
 }
 
 export async function instantiateWasm(imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback): Promise<void> {
     if (wasmBinaryPromise instanceof globalThis.Response === false || !WebAssembly.instantiateStreaming) {
-        const res = await checkResponseOk();
+        const res = await wasmBinaryPromise;
         const data = await res.arrayBuffer();
         const module = await WebAssembly.compile(data);
         const instance = await WebAssembly.instantiate(module, imports);
@@ -100,8 +100,7 @@ export async function fetchIcu(asset: IcuAsset): Promise<void> {
     if (assetInternal.name && !asset.resolvedUrl) {
         asset.resolvedUrl = locateFile(assetInternal.name);
     }
-    assetInternal.behavior = "icu";
-    const bytes = await fetchBytes(assetInternal);
+    const bytes = await fetchBytes(asset);
     await nativeModulePromiseController.promise;
     onDownloadedAsset();
     if (bytes) {
@@ -115,8 +114,7 @@ export async function fetchDll(asset: AssemblyAsset): Promise<void> {
     if (assetInternal.name && !asset.resolvedUrl) {
         asset.resolvedUrl = locateFile(assetInternal.name);
     }
-    assetInternal.behavior = "assembly";
-    const bytes = await fetchBytes(assetInternal);
+    const bytes = await fetchBytes(asset);
     await nativeModulePromiseController.promise;
 
     onDownloadedAsset();
@@ -148,8 +146,7 @@ export async function fetchVfs(asset: AssemblyAsset): Promise<void> {
     if (assetInternal.name && !asset.resolvedUrl) {
         asset.resolvedUrl = locateFile(assetInternal.name);
     }
-    assetInternal.behavior = "vfs";
-    const bytes = await fetchBytes(assetInternal);
+    const bytes = await fetchBytes(asset);
     await nativeModulePromiseController.promise;
     onDownloadedAsset();
     if (bytes) {

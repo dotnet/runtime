@@ -21,7 +21,7 @@ namespace Internal.IL.Stubs
         /// </summary>
         public static MethodIL EmitComparerCreate(MethodDesc target)
         {
-            return EmitComparerAndEqualityComparerCreateCommon(target, "Comparer"u8, "IComparable`1"u8);
+            return EmitComparerAndEqualityComparerCreateCommon(target, "Comparer", "IComparable`1");
         }
 
         /// <summary>
@@ -29,7 +29,7 @@ namespace Internal.IL.Stubs
         /// </summary>
         public static MethodIL EmitEqualityComparerCreate(MethodDesc target)
         {
-            return EmitComparerAndEqualityComparerCreateCommon(target, "EqualityComparer"u8, "IEquatable`1"u8);
+            return EmitComparerAndEqualityComparerCreateCommon(target, "EqualityComparer", "IEquatable`1");
         }
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace Internal.IL.Stubs
         /// </summary>
         public static TypeDesc GetComparerForType(TypeDesc comparand)
         {
-            return GetComparerForType(comparand, "Comparer"u8, "IComparable`1"u8);
+            return GetComparerForType(comparand, "Comparer", "IComparable`1");
         }
 
         /// <summary>
@@ -45,10 +45,10 @@ namespace Internal.IL.Stubs
         /// </summary>
         public static TypeDesc GetEqualityComparerForType(TypeDesc comparand)
         {
-            return GetComparerForType(comparand, "EqualityComparer"u8, "IEquatable`1"u8);
+            return GetComparerForType(comparand, "EqualityComparer", "IEquatable`1");
         }
 
-        private static MethodIL EmitComparerAndEqualityComparerCreateCommon(MethodDesc methodBeingGenerated, ReadOnlySpan<byte> flavor, ReadOnlySpan<byte> interfaceName)
+        private static MethodIL EmitComparerAndEqualityComparerCreateCommon(MethodDesc methodBeingGenerated, string flavor, string interfaceName)
         {
             // We expect the method to be fully instantiated
             Debug.Assert(!methodBeingGenerated.IsTypicalMethodDefinition);
@@ -77,7 +77,7 @@ namespace Internal.IL.Stubs
         /// Gets the comparer type that is suitable to compare instances of <paramref name="type"/>
         /// or null if such comparer cannot be determined at compile time.
         /// </summary>
-        private static TypeDesc GetComparerForType(TypeDesc type, ReadOnlySpan<byte> flavor, ReadOnlySpan<byte> interfaceName)
+        private static TypeDesc GetComparerForType(TypeDesc type, string flavor, string interfaceName)
         {
             TypeSystemContext context = type.Context;
 
@@ -90,11 +90,11 @@ namespace Internal.IL.Stubs
 
             if (type.IsNullable)
             {
-                return context.SystemModule.GetKnownType("System.Collections.Generic"u8, "Nullable"u8.Append(flavor, "`1"u8))
+                return context.SystemModule.GetKnownType("System.Collections.Generic"u8, $"Nullable{flavor}`1")
                     .MakeInstantiatedType(type.Instantiation[0]);
             }
 
-            if (type.IsString && flavor.SequenceEqual("EqualityComparer"u8))
+            if (type.IsString && flavor == "EqualityComparer")
             {
                 return context.SystemModule.GetKnownType("System.Collections.Generic"u8, "StringEqualityComparer"u8);
             }
@@ -102,7 +102,7 @@ namespace Internal.IL.Stubs
             if (type.IsEnum)
             {
                 // Enums have a specialized comparer that avoids boxing
-                return context.SystemModule.GetKnownType("System.Collections.Generic"u8, "Enum"u8.Append(flavor, "`1"u8))
+                return context.SystemModule.GetKnownType("System.Collections.Generic"u8, $"Enum{flavor}`1")
                     .MakeInstantiatedType(type);
             }
 
@@ -112,25 +112,24 @@ namespace Internal.IL.Stubs
                 return null;
             }
 
-            return context.SystemModule.GetKnownType("System.Collections.Generic"u8,
-                implementsInterfaceOfSelf.Value ? "Generic"u8.Append(flavor, "`1"u8) : "Object"u8.Append(flavor, "`1"u8))
+            return context.SystemModule.GetKnownType("System.Collections.Generic"u8, implementsInterfaceOfSelf.Value ? $"Generic{flavor}`1" : $"Object{flavor}`1")
                 .MakeInstantiatedType(type);
         }
 
         public static TypeDesc[] GetPotentialComparersForType(TypeDesc type)
         {
-            return GetPotentialComparersForTypeCommon(type, "Comparer"u8, "IComparable`1"u8);
+            return GetPotentialComparersForTypeCommon(type, "Comparer", "IComparable`1");
         }
 
         public static TypeDesc[] GetPotentialEqualityComparersForType(TypeDesc type)
         {
-            return GetPotentialComparersForTypeCommon(type, "EqualityComparer"u8, "IEquatable`1"u8);
+            return GetPotentialComparersForTypeCommon(type, "EqualityComparer", "IEquatable`1");
         }
 
         /// <summary>
         /// Gets the set of template types needed to support loading comparers for the give canonical type at runtime.
         /// </summary>
-        private static TypeDesc[] GetPotentialComparersForTypeCommon(TypeDesc type, ReadOnlySpan<byte> flavor, ReadOnlySpan<byte> interfaceName)
+        private static TypeDesc[] GetPotentialComparersForTypeCommon(TypeDesc type, string flavor, string interfaceName)
         {
             Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
 
@@ -151,16 +150,16 @@ namespace Internal.IL.Stubs
 
                 ArrayBuilder<TypeDesc> universalComparers = default(ArrayBuilder<TypeDesc>);
 
-                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic"u8, "Nullable"u8.Append(flavor, "`1"u8))
+                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic"u8, $"Nullable{flavor}`1")
                         .MakeInstantiatedType(type));
 
-                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic"u8, "Enum"u8.Append(flavor, "`1"u8))
+                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic"u8, $"Enum{flavor}`1")
                     .MakeInstantiatedType(type));
 
-                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic"u8, "Generic"u8.Append(flavor, "`1"u8))
+                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic"u8, $"Generic{flavor}`1")
                     .MakeInstantiatedType(type));
 
-                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic"u8, "Object"u8.Append(flavor, "`1"u8))
+                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic"u8, $"Object{flavor}`1")
                     .MakeInstantiatedType(type));
 
                 return universalComparers.ToArray();
@@ -180,26 +179,26 @@ namespace Internal.IL.Stubs
 
                 return new TypeDesc[]
                 {
-                    context.SystemModule.GetKnownType("System.Collections.Generic"u8, "Nullable"u8.Append(flavor, "`1"u8))
+                    context.SystemModule.GetKnownType("System.Collections.Generic"u8, $"Nullable{flavor}`1")
                         .MakeInstantiatedType(nullableType),
-                    context.SystemModule.GetKnownType("System.Collections.Generic"u8, "Object"u8.Append(flavor, "`1"u8))
+                    context.SystemModule.GetKnownType("System.Collections.Generic"u8, $"Object{flavor}`1")
                         .MakeInstantiatedType(type),
                 };
             }
 
             return new TypeDesc[]
             {
-                context.SystemModule.GetKnownType("System.Collections.Generic"u8, "Generic"u8.Append(flavor, "`1"u8))
+                context.SystemModule.GetKnownType("System.Collections.Generic"u8, $"Generic{flavor}`1")
                     .MakeInstantiatedType(type),
-                context.SystemModule.GetKnownType("System.Collections.Generic"u8, "Object"u8.Append(flavor, "`1"u8))
+                context.SystemModule.GetKnownType("System.Collections.Generic"u8, $"Object{flavor}`1")
                     .MakeInstantiatedType(type),
             };
         }
 
         public static bool? ImplementsIEquatable(TypeDesc type)
-            => ImplementsInterfaceOfSelf(type, "IEquatable`1"u8);
+            => ImplementsInterfaceOfSelf(type, "IEquatable`1");
 
-        private static bool? ImplementsInterfaceOfSelf(TypeDesc type, ReadOnlySpan<byte> interfaceName)
+        private static bool? ImplementsInterfaceOfSelf(TypeDesc type, string interfaceName)
         {
             MetadataType interfaceType = null;
 
@@ -362,5 +361,11 @@ namespace Internal.IL.Stubs
                 return false;
             }
         }
+    }
+
+    file static class Extensions
+    {
+        public static MetadataType GetKnownType(this ModuleDesc module, ReadOnlySpan<byte> @namespace, string name)
+            => module.GetKnownType(@namespace, System.Text.Encoding.UTF8.GetBytes(name));
     }
 }

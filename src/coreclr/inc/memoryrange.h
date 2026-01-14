@@ -10,7 +10,6 @@
 #define _memory_range_h
 
 #include "daccess.h"
-#include "contract.h"
 
 // MemoryRange is a descriptor of a memory range. This groups (pointer + size).
 //
@@ -49,6 +48,8 @@ public:
     }
 
     // Note: use compiler-default copy ctor and assignment operator
+
+
 
     // Check whether a pointer is in the memory range represented by this instance.
     BOOL IsInRange(PTR_VOID pAddress) const
@@ -93,3 +94,4 @@ private:
 typedef ArrayDPTR(MemoryRange) ARRAY_PTR_MemoryRange;
 
 #endif // _memory_range_h
+

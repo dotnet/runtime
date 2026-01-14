@@ -699,6 +699,19 @@ namespace Internal.Runtime.Augments
             }
         }
 
+        public static string TryGetMethodDisplayStringFromIp(IntPtr ip)
+        {
+            StackTraceMetadataCallbacks callbacks = StackTraceCallbacksIfAvailable;
+            if (callbacks == null)
+                return null;
+
+            ip = RuntimeImports.RhFindMethodStartAddress(ip);
+            if (ip == IntPtr.Zero)
+                return null;
+
+            return callbacks.TryGetMethodNameFromStartAddress(ip, out _);
+        }
+
         private static TypeLoaderCallbacks s_typeLoaderCallbacks;
 
         public static object CreateThunksHeap(IntPtr commonStubAddress)

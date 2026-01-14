@@ -75,11 +75,6 @@ export interface DotnetHostBuilder {
     create(): Promise<RuntimeAPI>;
 
     /**
-     * @deprecated use runMain() or runMainAndExit() instead.
-     */
-    run(): Promise<number>;
-
-    /**
      * Runs the Main() method of the application and exits the runtime.
      * You can provide "command line" arguments for the Main() method using
      * - dotnet.withApplicationArguments("A", "B", "C")
@@ -87,15 +82,7 @@ export interface DotnetHostBuilder {
      * Note: after the runtime exits, it would reject all further calls to the API.
      * You can use runMain() if you want to keep the runtime alive.
      */
-
-    runMainAndExit (): Promise<number>;
-    /**
-     * Runs the Main() method of the application and keeps the runtime alive.
-     * You can provide "command line" arguments for the Main() method using
-     * - dotnet.withApplicationArguments("A", "B", "C")
-     * - dotnet.withApplicationArgumentsFromQuery()
-     */
-    runMain (): Promise<number>;
+    run(): Promise<number>;
 }
 
 // when adding new fields, please consider if it should be impacting the config hash. If not, please drop it in the getCacheKey()

@@ -21,7 +21,10 @@ function countChars(str) {
 }
 
 // Prepare base runtime parameters
-dotnet.withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, logExitCode: true });
+dotnet
+    .withElementOnExit()
+    .withExitCodeLogging()
+    .withExitOnUnhandledError();
 
 const logLevel = params.get("MONO_LOG_LEVEL");
 const logMask = params.get("MONO_LOG_MASK");
@@ -112,7 +115,7 @@ switch (testCase) {
         break;
     case "InterpPgoTest":
         dotnet
-            .withConfig({ forwardConsole: true })
+            .withConsoleForwarding()
             .withRuntimeOptions(['--interp-pgo-logging'])
             .withInterpreterPgo(true);
         break;
@@ -371,7 +374,5 @@ try {
             break;
     }
 } catch (e) {
-    if (e.name != "ExitStatus") {
-        exit(1, e);
-    }
+    exit(1, e);
 }

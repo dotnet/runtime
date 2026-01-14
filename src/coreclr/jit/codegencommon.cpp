@@ -5636,7 +5636,7 @@ void CodeGen::genFnProlog()
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
 #else  // defined(TARGET_WASM)
-    genWasmLocals();
+    // TODO-WASM: prolog zeroing, shadow stack maintenance
     GetEmitter()->emitMarkPrologEnd();
 #endif // !defined(TARGET_WASM)
 

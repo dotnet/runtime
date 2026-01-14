@@ -152,7 +152,6 @@ namespace ILCompiler
             private readonly TypeDesc _owningType;
             private readonly int _interfaceIndex;
             private readonly bool _useContextFromRuntime;
-            private readonly byte[] _prefix;
 
             public DefaultInterfaceMethodImplementationInstantiationThunk(TypeDesc owningType, MethodDesc targetMethod, int interfaceIndex, bool useContextFromRuntime)
             {
@@ -163,9 +162,6 @@ namespace ILCompiler
                 _targetMethod = targetMethod;
                 _interfaceIndex = interfaceIndex;
                 _useContextFromRuntime = useContextFromRuntime;
-
-                string prefixString = $"__InstantiatingStub_{(uint)interfaceIndex}_{(useContextFromRuntime ? "_FromRuntime" : "")}_";
-                _prefix = System.Text.Encoding.UTF8.GetBytes(prefixString);
             }
 
             public override TypeSystemContext Context => _targetMethod.Context;
@@ -198,7 +194,7 @@ namespace ILCompiler
 
             public MethodDesc BaseMethod => _targetMethod;
 
-            public ReadOnlySpan<byte> Prefix => _prefix;
+            public string Prefix => $"__InstantiatingStub_{(uint)_interfaceIndex}_{(_useContextFromRuntime ? "_FromRuntime" : "")}_";
 
             public override MethodIL EmitIL()
             {

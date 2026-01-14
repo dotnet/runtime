@@ -14,7 +14,6 @@ public partial class Foo
     public static int Bar()
     {
         Console.WriteLine("Hello from Foo.Bar!");
-        Console.Out.Flush();
         return 42;
     }
 }

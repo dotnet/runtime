@@ -103,7 +103,7 @@ namespace Internal.TypeSystem
         {
             Debug.Assert(method.IsPInvoke);
 
-            UnmanagedCallingConventions result = 0;
+            UnmanagedCallingConventions result;
 
             if (method is Internal.IL.Stubs.PInvokeTargetNativeMethod pinvokeTarget)
                 method = pinvokeTarget.Target;
@@ -116,9 +116,9 @@ namespace Internal.TypeSystem
                     && (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)UnmanagedCallingConventions.Thiscall);
                 result = (UnmanagedCallingConventions)unmanagedCallConv;
             }
-            else if (method is EcmaMethod ecmaMethod)
+            else
             {
-                CustomAttributeValue<TypeDesc>? unmanagedCallConvAttribute = ecmaMethod.GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallConvAttribute");
+                CustomAttributeValue<TypeDesc>? unmanagedCallConvAttribute = ((EcmaMethod)method).GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallConvAttribute");
                 if (unmanagedCallConvAttribute != null)
                 {
                     result = GetUnmanagedCallingConventionFromAttribute(unmanagedCallConvAttribute.Value, method.Context);
@@ -192,22 +192,17 @@ namespace Internal.TypeSystem
             if (!newConvention.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
                 return existing;
 
-            UnmanagedCallingConventions? addedCallConv = null;
-
-            if (newConvention.Name.SequenceEqual("CallConvCdecl"u8))
-                addedCallConv = UnmanagedCallingConventions.Cdecl;
-            else if (newConvention.Name.SequenceEqual("CallConvStdcall"u8))
-                addedCallConv = UnmanagedCallingConventions.Stdcall;
-            else if (newConvention.Name.SequenceEqual("CallConvFastcall"u8))
-                addedCallConv = UnmanagedCallingConventions.Fastcall;
-            else if (newConvention.Name.SequenceEqual("CallConvThiscall"u8))
-                addedCallConv = UnmanagedCallingConventions.Thiscall;
-            else if (newConvention.Name.SequenceEqual("CallConvSuppressGCTransition"u8))
-                addedCallConv = UnmanagedCallingConventions.IsSuppressGcTransition;
-            else if (newConvention.Name.SequenceEqual("CallConvMemberFunction"u8))
-                addedCallConv = UnmanagedCallingConventions.IsMemberFunction;
-            else if (newConvention.Name.SequenceEqual("CallConvSwift"u8))
-                addedCallConv = UnmanagedCallingConventions.Swift;
+            UnmanagedCallingConventions? addedCallConv = newConvention.GetName() switch
+            {
+                "CallConvCdecl" => UnmanagedCallingConventions.Cdecl,
+                "CallConvStdcall" => UnmanagedCallingConventions.Stdcall,
+                "CallConvFastcall" => UnmanagedCallingConventions.Fastcall,
+                "CallConvThiscall" => UnmanagedCallingConventions.Thiscall,
+                "CallConvSuppressGCTransition" => UnmanagedCallingConventions.IsSuppressGcTransition,
+                "CallConvMemberFunction" => UnmanagedCallingConventions.IsMemberFunction,
+                "CallConvSwift" => UnmanagedCallingConventions.Swift,
+                _ => null
+            };
 
             if (addedCallConv == null)
                 return existing;

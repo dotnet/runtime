@@ -15,6 +15,9 @@ set(UTILCODE_COMMON_SOURCES
   collections.cpp
   posterror.cpp
   clrhelpers.cpp
+  stgpool.cpp
+  stgpooli.cpp
+  stgpoolreadonly.cpp
   utsem.cpp
   check.cpp
   log.cpp
@@ -22,7 +25,6 @@ set(UTILCODE_COMMON_SOURCES
   comex.cpp
   guidfromname.cpp
   memorypool.cpp
-  memorystreams.cpp
   loaderheap.cpp
   interleavedloaderheap.cpp
   loaderheap_shared.cpp

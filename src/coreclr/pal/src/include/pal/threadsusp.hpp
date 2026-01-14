@@ -48,12 +48,9 @@ Abstract:
 #include <semaphore.h>
 #endif // HAVE_SYS_SEMAPHORE_H
 
-#elif HAS_PTHREAD_MUTEXES && (HAVE_MACH_EXCEPTIONS || defined(TARGET_TVOS))
+#elif HAS_PTHREAD_MUTEXES && HAVE_MACH_EXCEPTIONS
 
 // Can only use the pthread solution if we're not using signals since pthread mutexes are not signal safe.
-
-// On tvOS, HAVE_MACH_EXCEPTIONS is 0 because thread_set_exception_ports is not available in the SDK.
-// However, System V IPC (semget) is also not available due to sandbox restrictions so we use pthread instead.
 #define USE_PTHREAD_CONDVARS 1
 
 #include <pthread.h>

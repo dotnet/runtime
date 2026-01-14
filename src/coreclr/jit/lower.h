@@ -17,7 +17,14 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "compiler.h"
 #include "phase.h"
 #include "sideeffects.h"
-#include "regallocimpl.h"
+
+#if HAS_FIXED_REGISTER_SET
+#include "lsra.h"
+#endif
+
+#ifdef TARGET_WASM
+#include "regallocwasm.h"
+#endif
 
 class Lowering final : public Phase
 {

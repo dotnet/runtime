@@ -33,7 +33,6 @@ export const dotnetBrowserHostExports: BrowserHostExports = {} as any;
 export const dotnetInteropJSExports: InteropJavaScriptExports = {} as any;
 export const dotnetNativeBrowserExports: NativeBrowserExports = {} as any;
 export const dotnetBrowserUtilsExports: BrowserUtilsExports = {} as any;
-export const dotnetDiagnosticsExports: DiagnosticsExports = {} as any;
 
 export function dotnetGetInternals(): InternalExchange {
     return dotnetInternals;
@@ -88,9 +87,6 @@ export function dotnetUpdateInternalsSubscriber() {
     }
     if (Object.keys(dotnetNativeBrowserExports).length === 0 && dotnetInternals[InternalExchangeIndex.NativeBrowserExportsTable]) {
         nativeBrowserExportsFromTable(dotnetInternals[InternalExchangeIndex.NativeBrowserExportsTable], dotnetNativeBrowserExports);
-    }
-    if (Object.keys(dotnetDiagnosticsExports).length === 0 && dotnetInternals[InternalExchangeIndex.DiagnosticsExportsTable]) {
-        diagnosticsExportsFromTable(dotnetInternals[InternalExchangeIndex.DiagnosticsExportsTable], dotnetDiagnosticsExports);
     }
 
     // keep in sync with runtimeExportsToTable()
@@ -156,14 +152,6 @@ export function dotnetUpdateInternalsSubscriber() {
         Object.assign(interop, interopLocal);
     }
 
-    // keep in sync with nativeBrowserExportsToTable()
-    function diagnosticsExportsFromTable(table: DiagnosticsExportsTable, interop: DiagnosticsExports): void {
-        const interopLocal: DiagnosticsExports = {
-            symbolicateStackTrace: table[0],
-        };
-        Object.assign(interop, interopLocal);
-    }
-
     // keep in sync with nativeHelperExportsToTable()
     function nativeHelperExportsFromTable(table: BrowserUtilsExportsTable, interop: BrowserUtilsExports): void {
         const interopLocal: BrowserUtilsExports = {
@@ -173,9 +161,6 @@ export function dotnetUpdateInternalsSubscriber() {
             stringToUTF8Ptr: table[3],
             zeroRegion: table[4],
             isSharedArrayBuffer: table[5],
-            abortTimers: table[6],
-            abortPosix: table[7],
-            getExitStatus: table[8],
         };
         Object.assign(interop, interopLocal);
     }

@@ -1091,21 +1091,7 @@ int64_t GCToOSInterface::QueryPerformanceFrequency()
 //  Time stamp in milliseconds
 uint64_t GCToOSInterface::GetLowPrecisionTimeStamp()
 {
-    // GetTickCount64 uses fixed resolution of 10-16ms for backward compatibility. Use
-    // QueryUnbiasedInterruptTime instead which becomes more accurate if the underlying system
-    // resolution is improved. This helps responsiveness in the case an app is trying to opt
-    // into things like multimedia scenarios and additionally does not include "bias" from time
-    // the system is spent asleep or in hibernation.
-
-    const ULONGLONG TicksPerMillisecond = 10000;
-
-    ULONGLONG unbiasedTime;
-    if (!::QueryUnbiasedInterruptTime(&unbiasedTime))
-    {
-        assert(false && "Failed to query unbiased interrupt time");
-    }
-
-    return (uint64_t)(unbiasedTime / TicksPerMillisecond);
+    return ::GetTickCount64();
 }
 
 // Gets the total number of processors on the machine, not taking

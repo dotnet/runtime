@@ -48,7 +48,6 @@ enum CORINFO_InstructionSet
     InstructionSet_RiscV64Base=1,
     InstructionSet_Zba=2,
     InstructionSet_Zbb=3,
-    InstructionSet_Zbs=4,
 #endif // TARGET_RISCV64
 #ifdef TARGET_AMD64
     InstructionSet_X86Base=1,
@@ -384,8 +383,6 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_Zbb);
         if (resultflags.HasInstructionSet(InstructionSet_Zba) && !resultflags.HasInstructionSet(InstructionSet_RiscV64Base))
             resultflags.RemoveInstructionSet(InstructionSet_Zba);
-        if (resultflags.HasInstructionSet(InstructionSet_Zbs) && !resultflags.HasInstructionSet(InstructionSet_RiscV64Base))
-            resultflags.RemoveInstructionSet(InstructionSet_Zbs);
 #endif // TARGET_RISCV64
 #ifdef TARGET_AMD64
         if (resultflags.HasInstructionSet(InstructionSet_X86Base) && !resultflags.HasInstructionSet(InstructionSet_X86Base_X64))
@@ -656,8 +653,6 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "Zba";
         case InstructionSet_Zbb :
             return "Zbb";
-        case InstructionSet_Zbs :
-            return "Zbs";
 #endif // TARGET_RISCV64
 #ifdef TARGET_AMD64
         case InstructionSet_X86Base :
@@ -849,7 +844,6 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_RiscV64Base: return InstructionSet_RiscV64Base;
         case READYTORUN_INSTRUCTION_Zba: return InstructionSet_Zba;
         case READYTORUN_INSTRUCTION_Zbb: return InstructionSet_Zbb;
-        case READYTORUN_INSTRUCTION_Zbs: return InstructionSet_Zbs;
 #endif // TARGET_RISCV64
 #ifdef TARGET_AMD64
         case READYTORUN_INSTRUCTION_X86Base: return InstructionSet_X86Base;

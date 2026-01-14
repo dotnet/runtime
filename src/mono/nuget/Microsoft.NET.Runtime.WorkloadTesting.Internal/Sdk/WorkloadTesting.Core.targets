@@ -197,7 +197,6 @@
     </ItemGroup>
 
     <Message Text="Packages found in $(BuiltNugetsDir): @(_BuiltNuGets)" Importance="Low" />
-    <Message Text="Skipping 'InstallWorkloadFromArtifacts' as no workloads selected for installation" Importance="Low" Condition="@(_SdkWithWorkloadToInstall->Count()) == 0" />
 
     <InstallWorkloadFromArtifacts
                      WorkloadIds="@(WorkloadIdForTesting)"
@@ -213,7 +212,6 @@
                      WorkloadInstallCommandOutputImportance="$(WorkloadInstallCommandOutputImportance)"
                      IntermediateOutputPath="$(ArtifactsObjDir)"
                      SkipTempDirectoryCleanup="$(SkipTempDirectoryCleanup)"
-                     Condition="@(_SdkWithWorkloadToInstall->Count()) > 0"
       />
 
     <Touch Files="$(_SdkWithNoWorkloadStampPath)" AlwaysCreate="true" />

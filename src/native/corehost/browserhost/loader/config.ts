@@ -3,17 +3,17 @@
 
 import type { Assets, LoaderConfig, LoaderConfigInternal } from "./types";
 
-export const loaderConfig: LoaderConfigInternal = {};
+export const netLoaderConfig: LoaderConfigInternal = {};
 
 export function getLoaderConfig(): LoaderConfig {
-    return loaderConfig;
+    return netLoaderConfig;
 }
 
 export function validateLoaderConfig(): void {
-    if (!loaderConfig.mainAssemblyName) {
+    if (!netLoaderConfig.mainAssemblyName) {
         throw new Error("Loader configuration error: 'mainAssemblyName' is required.");
     }
-    if (!loaderConfig.resources || !loaderConfig.resources.coreAssembly || loaderConfig.resources.coreAssembly.length === 0) {
+    if (!netLoaderConfig.resources || !netLoaderConfig.resources.coreAssembly || netLoaderConfig.resources.coreAssembly.length === 0) {
         throw new Error("Loader configuration error: 'resources.coreAssembly' is required and must contain at least one assembly.");
     }
 }
@@ -22,7 +22,7 @@ export function validateLoaderConfig(): void {
 export function mergeLoaderConfig(source: Partial<LoaderConfigInternal>): void {
     defaultConfig(loaderConfig);
     normalizeConfig(source);
-    mergeConfigs(loaderConfig, source);
+    mergeConfigs(netLoaderConfig, source);
 }
 
 function mergeConfigs(target: LoaderConfigInternal, source: Partial<LoaderConfigInternal>): LoaderConfigInternal {

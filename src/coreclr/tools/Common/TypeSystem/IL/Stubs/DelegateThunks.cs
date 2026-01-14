@@ -308,7 +308,7 @@ namespace Internal.IL.Stubs
             ILEmitter emitter = new ILEmitter();
             ILCodeStream codeStream = emitter.NewCodeStream();
 
-            TypeDesc delegateWrapperType = ((MetadataType)SystemDelegateType).GetKnownNestedType("Wrapper"u8);
+            TypeDesc delegateWrapperType = ((MetadataType)SystemDelegateType).GetKnownNestedType("Wrapper");
             ArrayType invocationListArrayType = delegateWrapperType.MakeArrayType();
 
             ILLocalVariable delegateArrayLocal = emitter.NewLocal(invocationListArrayType);

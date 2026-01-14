@@ -23,9 +23,6 @@ export function registerDllBytes(bytes: Uint8Array, asset: { name: string, virtu
         const ptr = _ems_.Module.HEAPU32[ptrPtr as any >>> 2];
         _ems_.Module.HEAPU8.set(bytes, ptr >>> 0);
         loadedAssemblies.set(asset.virtualPath, { ptr, length: bytes.length });
-        if (!asset.virtualPath.startsWith("/")) {
-            loadedAssemblies.set("/" + asset.virtualPath, { ptr, length: bytes.length });
-        }
     } finally {
         _ems_.Module.stackRestore(sp);
     }
@@ -113,13 +110,27 @@ export function BrowserHost_ExternalAssemblyProbe(pathPtr: CharPtr, outDataStart
 }
 
 export async function runMain(mainAssemblyName?: string, args?: string[]): Promise<number> {
+    const config = dotnetApi.getConfig();
+    if (!mainAssemblyName) {
+        mainAssemblyName = config.mainAssemblyName!;
+    }
+    const mainAssemblyNamePtr = dotnetBrowserUtilsExports.stringToUTF8Ptr(mainAssemblyName) as any;
+
+    if (!args) {
+        args = [];
+    }
+
+    const sp = Module.stackSave();
+    const argsvPtr: number = Module.stackAlloc((args.length + 1) * 4) as any;
+    const ptrs: VoidPtr[] = [];
     try {
         const config = _ems_.dotnetApi.getConfig();
         if (!mainAssemblyName) {
             mainAssemblyName = config.mainAssemblyName!;
         }
-        if (!mainAssemblyName.endsWith(".dll")) {
-            mainAssemblyName += ".dll";
+        const res = _BrowserHost_ExecuteAssembly(mainAssemblyNamePtr, args.length, argsvPtr);
+        for (const ptr of ptrs) {
+            Module._free(ptr);
         }
         const mainAssemblyNamePtr = _ems_.dotnetBrowserUtilsExports.stringToUTF8Ptr(mainAssemblyName) as any;
 
@@ -161,7 +172,6 @@ export async function runMain(mainAssemblyName?: string, args?: string[]): Promi
 }
 
 export async function runMainAndExit(mainAssemblyName?: string, args?: string[]): Promise<number> {
-    const res = await runMain(mainAssemblyName, args);
     try {
         _ems_.dotnetApi.exit(0, null);
     } catch (error: any) {
@@ -171,6 +181,7 @@ export async function runMainAndExit(mainAssemblyName?: string, args?: string[])
             throw error;
         }
     }
-    return res;
+    dotnetApi.exit(0, null);
+    return 0;
 }
 

@@ -78,10 +78,5 @@ namespace ILCompiler
         {
             return method.GetTypicalMethodDefinition() is AsyncMethodVariant;
         }
-
-        public static bool IsAsyncThunk(this MethodDesc method)
-        {
-            return method.IsAsyncVariant() ^ method.IsAsync;
-        }
     }
 }

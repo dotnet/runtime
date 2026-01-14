@@ -8,7 +8,6 @@ import { exceptions, simd } from "wasm-feature-detect";
 import { GlobalizationMode } from "./types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL } from "./per-module";
 import { nodeFs } from "./polyfills";
-import { dotnetAssert } from "./cross-module";
 
 const scriptUrlQuery = /*! webpackIgnore: true */import.meta.url;
 const queryIndex = scriptUrlQuery.indexOf("?");
@@ -31,11 +30,8 @@ export function locateFile(path: string, isModule = false): string {
         res = scriptDirectory + path;
     }
 
-    if (isModule) {
-        res += modulesUniqueQuery;
-    }
-
-    return res;
+    if (isPathAbsolute(path)) return path;
+    return scriptDirectory + path + modulesUniqueQuery;
 }
 
 function normalizeFileUrl(filename: string) {
@@ -65,15 +61,6 @@ function isPathAbsolute(path: string): boolean {
     return protocolRx.test(path);
 }
 
-export function makeURLAbsoluteWithApplicationBase(url: string) {
-    dotnetAssert.check(typeof url === "string", "url must be a string");
-    if (!isPathAbsolute(url) && url.indexOf("./") !== 0 && url.indexOf("../") !== 0 && globalThis.URL && globalThis.document && globalThis.document.baseURI) {
-        const absoluteUrl = new URL(url, globalThis.document.baseURI);
-        return absoluteUrl.href;
-    }
-    return url;
-}
-
 export function isShellHosted(): boolean {
     return ENVIRONMENT_IS_SHELL && typeof (globalThis as any).arguments !== "undefined";
 }
@@ -89,7 +76,6 @@ export function isNodeHosted(): boolean {
     return argScript === importScript;
 }
 
-// Finds resources when running in NodeJS environment without explicit configuration
 export async function findResources(dotnet: DotnetHostBuilder): Promise<void> {
     if (!ENVIRONMENT_IS_NODE) {
         return;

@@ -14,8 +14,6 @@
 #include <crtwrap.h>
 #include <winwrap.h>
 #include <algorithm>
-using std::min;
-using std::max;
 #include <utilcode.h>
 
 #include <cor.h>

@@ -50,7 +50,7 @@ namespace System.Threading
         private bool SetTimerPortable(uint actualDuration)
         {
             Debug.Assert((int)actualDuration >= 0);
-            long dueTimeMs = Environment.TickCount64 + (int)actualDuration;
+            long dueTimeMs = TickCount64 + (int)actualDuration;
             AutoResetEvent timerEvent = s_timerEvent;
             Lock timerEventLock = s_timerEventLock;
 
@@ -92,7 +92,7 @@ namespace System.Threading
             {
                 timerEvent.WaitOne(shortestWaitDurationMs);
 
-                long currentTimeMs = Environment.TickCount64;
+                long currentTimeMs = TickCount64;
                 shortestWaitDurationMs = int.MaxValue;
                 lock (timerEventLock)
                 {

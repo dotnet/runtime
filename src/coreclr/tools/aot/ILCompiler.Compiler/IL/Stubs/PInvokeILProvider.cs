@@ -25,10 +25,6 @@ namespace Internal.IL
 
         public override MethodIL GetMethodIL(MethodDesc method)
         {
-            if (method.IsAsync)
-            {
-                ThrowHelper.ThrowBadImageFormatException();
-            }
             return PInvokeILEmitter.EmitIL(method, _pInvokeILEmitterConfiguration, _interopStateManager);
         }
 

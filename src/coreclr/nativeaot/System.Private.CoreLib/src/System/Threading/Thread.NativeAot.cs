@@ -272,12 +272,24 @@ namespace System.Threading
 
         private int SetThreadStateBit(ThreadState bit)
         {
-            return Interlocked.Or(ref _threadState, (int)bit);
+            int oldState, newState;
+            do
+            {
+                oldState = _threadState;
+                newState = oldState | (int)bit;
+            } while (Interlocked.CompareExchange(ref _threadState, newState, oldState) != oldState);
+            return oldState;
         }
 
         private int ClearThreadStateBit(ThreadState bit)
         {
-            return Interlocked.And(ref _threadState, ~(int)bit);
+            int oldState, newState;
+            do
+            {
+                oldState = _threadState;
+                newState = oldState & ~(int)bit;
+            } while (Interlocked.CompareExchange(ref _threadState, newState, oldState) != oldState);
+            return oldState;
         }
 
         internal void SetWaitSleepJoinState()

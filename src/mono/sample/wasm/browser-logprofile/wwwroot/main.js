@@ -19,7 +19,7 @@ function saveProfile(Module) {
 }
 
 function readProfileFile(Module) {
-    let profileFilePath = "output.mlpd";
+    let profileFilePath="output.mlpd";
 
     var stat = Module.FS.stat(profileFilePath);
 
@@ -33,11 +33,10 @@ function readProfileFile(Module) {
 }
 
 try {
-    const { Module, getAssemblyExports: getAssemblyExports } = await dotnet
+    const { INTERNAL, Module, getAssemblyExports: getAssemblyExports } = await dotnet
+        .withElementOnExit()
+        .withExitCodeLogging()
         .withConfig({
-            appendElementOnExit: true,
-            exitOnUnhandledError: true,
-            logExitCode: true,
             logProfilerOptions: {
                 takeHeapshot: "Sample.Test::TakeHeapshot",
                 configuration: "log:alloc,output=output.mlpd"

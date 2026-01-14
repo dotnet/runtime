@@ -13,7 +13,7 @@
 #ifndef __CAPARSER_H__
 #define __CAPARSER_H__
 
-#include "mdfileformat.h"
+#include "stgpooli.h"
 
 class CustomAttributeParser {
 public:

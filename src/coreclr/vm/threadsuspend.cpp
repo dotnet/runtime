@@ -5873,11 +5873,8 @@ bool Thread::InjectActivation(ActivationReason reason)
             hThread,
             (ULONG_PTR)reason,
             SpecialUserModeApcWithContextFlags);
-    if (!success)
-    {
-        m_hasPendingActivation = false;
-    }
-    return success;
+    _ASSERTE(success);
+    return true;
 #elif defined(TARGET_UNIX)
     _ASSERTE((reason == ActivationReason::SuspendForGC) || (reason == ActivationReason::ThreadAbort) || (reason == ActivationReason::SuspendForDebugger));
 
