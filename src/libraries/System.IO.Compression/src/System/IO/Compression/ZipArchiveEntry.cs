@@ -579,11 +579,10 @@ namespace System.IO.Compression
             {
                 offsetOfLocalHeaderTruncated = ZipHelper.Mask32Bit;
 
-                // If we have one of the sizes, the other must go in there as speced for LH, but not necessarily for CH, but we do it anyways
-                zip64ExtraField = new()
-                {
-                    LocalHeaderOffset = _offsetOfLocalHeader
-                };
+                // If we already created a zip64 extra field for sizes, add the offset to it
+                // Otherwise, create a new one for just the offset
+                zip64ExtraField ??= new();
+                zip64ExtraField.LocalHeaderOffset = _offsetOfLocalHeader;
             }
             else
             {
