@@ -40,7 +40,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        int ISymbolDefinitionNode.Offset => OffsetFromBeginningOfArray;
+        int ISymbolDefinitionNode.Offset => OffsetFromBeginningOfArray + 2 * _targetMethod.Context.Target.PointerSize;
 
         int ISymbolNode.Offset => 0;
 
@@ -84,39 +84,18 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void EncodeData(ref ObjectDataBuilder objData, NodeFactory factory, bool relocsOnly)
         {
-            objData.EmitPointerReloc(factory.InitialInterfaceDispatchStub);
-
             IEETypeNode interfaceType = GetInterfaceTypeNode(factory);
-            if (factory.Target.SupportsRelativePointers)
-            {
-                if (interfaceType.RepresentsIndirectionCell)
-                {
-                    objData.EmitReloc(interfaceType, RelocType.IMAGE_REL_BASED_RELPTR32,
-                        (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsIndirectedInterfaceRelativePointer);
-                }
-                else
-                {
-                    objData.EmitReloc(interfaceType, RelocType.IMAGE_REL_BASED_RELPTR32,
-                        (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsInterfaceRelativePointer);
-                }
 
-                if (objData.TargetPointerSize == 8)
-                {
-                    // IMAGE_REL_BASED_RELPTR is a 32-bit relocation. However, the cell needs a full pointer
-                    // width there since a pointer to the cache will be written into the cell. Emit additional
-                    // 32 bits on targets whose pointer size is 64 bit.
-                    objData.EmitInt(0);
-                }
-            }
-            else
-            {
-                // There are no free bits in the cache flags, but we could support the indirection cell case
-                // by repurposing "CachePointerIsIndirectedInterfaceRelativePointer" to mean "relative indirect
-                // if the target supports it, simple indirect otherwise".
-                Debug.Assert(!interfaceType.RepresentsIndirectionCell);
-                objData.EmitPointerReloc(interfaceType,
-                    (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsInterfacePointerOrMetadataToken);
-            }
+            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, _targetMethod, _targetMethod.OwningType);
+            Debug.Assert(slot >= 0);
+
+            // TODO: move this out-of-line
+            objData.EmitPointerReloc(interfaceType);
+            objData.EmitNaturalInt(slot);
+
+            // Cached monomorphic case - MethodTable and code address
+            objData.EmitZeroPointer();
+            objData.EmitZeroPointer();
         }
 
         public override int ClassCode => -2023802120;

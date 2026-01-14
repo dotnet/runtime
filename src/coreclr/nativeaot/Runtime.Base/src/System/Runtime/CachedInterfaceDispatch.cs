@@ -5,13 +5,96 @@ using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 using Internal.Runtime;
 
 namespace System.Runtime
 {
+    // Initialize the cache eagerly to avoid null checks.
+    [EagerStaticClassConstruction]
     internal static unsafe class CachedInterfaceDispatch
     {
+#if SYSTEM_PRIVATE_CORELIB
+#if DEBUG
+        // use smaller numbers to hit resizing/preempting logic in debug
+        private const int InitialCacheSize = 8; // MUST BE A POWER OF TWO
+        private const int MaximumCacheSize = 512;
+#else
+        private const int InitialCacheSize = 128; // MUST BE A POWER OF TWO
+        private const int MaximumCacheSize = 128 * 1024;
+#endif // DEBUG
+
+        private static GenericCache<Key, nint> s_cache
+            = new GenericCache<Key, nint>(InitialCacheSize, MaximumCacheSize);
+
+        static CachedInterfaceDispatch()
+        {
+            RuntimeImports.RhpRegisterDispatchCache(ref Unsafe.As<GenericCache<Key, nint>, byte>(ref s_cache));
+
+            Lookup1234(new object(), 0x123456, ref s_cache);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static nint Lookup1234(object thisobj, nint cell, ref GenericCache<Key, nint> cache)
+        {
+            if (cache.TryGet(new Key(cell, (nint)thisobj.GetMethodTable()), out nint result))
+                return result;
+
+            return SlowPath(thisobj, cell);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static nint SlowPath(object thisobj, nint cell)
+        {
+            return 0;
+        }
+
+        private struct Key : IEquatable<Key>
+        {
+            public IntPtr _dispatchCell;
+            public IntPtr _objectType;
+
+            public Key(nint dispatchCell, nint objectType)
+            {
+                _dispatchCell = dispatchCell;
+                _objectType = objectType;
+            }
+
+            public bool Equals(Key other)
+            {
+                return _dispatchCell == other._dispatchCell && _objectType == other._objectType;
+            }
+
+            public override int GetHashCode()
+            {
+                // pointers will likely match and cancel out in the upper bits
+                // we will rotate context by 16 bit to keep more varying bits in the hash
+                IntPtr context = (IntPtr)System.Numerics.BitOperations.RotateLeft((nuint)_dispatchCell, 16);
+                return (context ^ _objectType).GetHashCode();
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is Key && Equals((Key)obj);
+            }
+        }
+#endif
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct DispatchCell
+        {
+            public nint MT;
+            public nint Code;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct DispatchCellPrefix
+        {
+            public MethodTable* InterfaceType;
+            public nint Slot;
+        }
+
         [RuntimeExport("RhpCidResolve")]
         private static unsafe IntPtr RhpCidResolve(IntPtr callerTransitionBlockParam, IntPtr pCell)
         {
@@ -23,18 +106,45 @@ namespace System.Runtime
 
         private static IntPtr RhpCidResolve_Worker(object pObject, IntPtr pCell)
         {
-            DispatchCellInfo cellInfo;
+            DispatchCellPrefix* prefix = ((DispatchCellPrefix*)pCell) - 1;
 
-            InternalCalls.RhpGetDispatchCellInfo(pCell, out cellInfo);
+            DispatchCellInfo cellInfo = new DispatchCellInfo()
+            {
+                CellType = DispatchCellType.InterfaceAndSlot,
+                InterfaceType = prefix->InterfaceType,
+                InterfaceSlot = (ushort)prefix->Slot,
+            };
+
             IntPtr pTargetCode = RhResolveDispatchWorker(pObject, (void*)pCell, ref cellInfo);
             if (pTargetCode != IntPtr.Zero)
             {
-                return InternalCalls.RhpUpdateDispatchCellCache(pCell, pTargetCode, pObject.GetMethodTable(), ref cellInfo);
+                return UpdateDispatchCellCache(pCell, pTargetCode, pObject.GetMethodTable());
             }
 
             // "Valid method implementation was not found."
             EH.FallbackFailFast(RhFailFastReason.InternalError, null);
             return IntPtr.Zero;
+        }
+
+        private static IntPtr UpdateDispatchCellCache(IntPtr pCell, IntPtr pTargetCode, MethodTable* pInstanceType)
+        {
+            DispatchCell* pDispatchCell = (DispatchCell*)pCell;
+
+            // If the dispatch cell doesn't cache anything yet, cache in the dispatch cell
+            if (Interlocked.CompareExchange(ref pDispatchCell->MT, (nint)pInstanceType, 0) == 0)
+            {
+                // TODO: Michal doing lockfree code danger
+                pDispatchCell->Code = pTargetCode;
+            }
+            else
+            {
+                // Otherwise cache in the hashtable
+#if SYSTEM_PRIVATE_CORELIB
+                s_cache.TrySet(new Key(pCell, (nint)pInstanceType), pTargetCode);
+#endif
+            }
+
+            return pTargetCode;
         }
 
         [RuntimeExport("RhpResolveInterfaceMethod")]
