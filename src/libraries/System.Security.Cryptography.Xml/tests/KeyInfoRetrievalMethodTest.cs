@@ -77,5 +77,57 @@ namespace System.Security.Cryptography.Xml.Tests
             uri1.LoadXml(doc.DocumentElement);
             AssertCrypto.AssertXmlEquals("invalid", "<RetrievalMethod xmlns=\"http://www.w3.org/2000/09/xmldsig#\" />", (uri1.GetXml().OuterXml));
         }
+
+        [Fact]
+        public void Constructor_WithUri()
+        {
+            string uri = "#KeyInfo1";
+            KeyInfoRetrievalMethod kirm = new KeyInfoRetrievalMethod(uri);
+            Assert.Equal(uri, kirm.Uri);
+        }
+
+        [Fact]
+        public void Constructor_WithUriAndType()
+        {
+            string uri = "#KeyInfo1";
+            string type = "http://www.w3.org/2000/09/xmldsig#KeyValue";
+            KeyInfoRetrievalMethod kirm = new KeyInfoRetrievalMethod(uri, type);
+            Assert.Equal(uri, kirm.Uri);
+            Assert.Equal(type, kirm.Type);
+        }
+
+        [Fact]
+        public void Properties()
+        {
+            KeyInfoRetrievalMethod kirm = new KeyInfoRetrievalMethod();
+            
+            kirm.Uri = "#key";
+            Assert.Equal("#key", kirm.Uri);
+
+            kirm.Type = "http://www.w3.org/2000/09/xmldsig#KeyName";
+            Assert.Equal("http://www.w3.org/2000/09/xmldsig#KeyName", kirm.Type);
+        }
+
+        [Fact]
+        public void GetXml_WithType()
+        {
+            KeyInfoRetrievalMethod kirm = new KeyInfoRetrievalMethod("#key1", "http://www.w3.org/2000/09/xmldsig#KeyValue");
+            XmlElement xml = kirm.GetXml();
+            Assert.Contains("Type=", xml.OuterXml);
+            Assert.Contains("#key1", xml.OuterXml);
+        }
+
+        [Fact]
+        public void LoadXml_WithType()
+        {
+            string xml = @"<RetrievalMethod URI=""#key1"" Type=""http://www.w3.org/2000/09/xmldsig#KeyValue"" xmlns=""http://www.w3.org/2000/09/xmldsig#"" />";
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            KeyInfoRetrievalMethod kirm = new KeyInfoRetrievalMethod();
+            kirm.LoadXml(doc.DocumentElement);
+            Assert.Equal("#key1", kirm.Uri);
+            Assert.Equal("http://www.w3.org/2000/09/xmldsig#KeyValue", kirm.Type);
+        }
     }
 }
