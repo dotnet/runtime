@@ -38,19 +38,7 @@
     <NetCoreAppCurrentTestHostSharedFrameworkPath Condition="'$(UseDefaultTestHost)' != 'true'">$([MSBuild]::NormalizeDirectory('$(NetCoreAppCurrentTestHostPath)', 'shared', '$(MicrosoftNetCoreAppFrameworkName)', '$(ProductVersion)'))</NetCoreAppCurrentTestHostSharedFrameworkPath>
   </PropertyGroup>
 
-  <!--
-  When .NET gets built from source, make the SDK aware there are bootstrap packages
-  for Microsoft.NETCore.App.Runtime.<rid> and Microsoft.NETCore.App.Crossgen2.<rid>.
-  -->
   <ItemGroup Condition="'$(DotNetBuildSourceOnly)' == 'true'">
-    <KnownFrameworkReference Update="Microsoft.NETCore.App">
-      <RuntimePackRuntimeIdentifiers
-        Condition="'%(TargetFramework)' == '$(NetCoreAppCurrent)'">%(RuntimePackRuntimeIdentifiers);$(NETCoreSdkRuntimeIdentifier)</RuntimePackRuntimeIdentifiers>
-    </KnownFrameworkReference>
-    <KnownCrossgen2Pack Update="Microsoft.NETCore.App.Crossgen2">
-      <Crossgen2RuntimeIdentifiers
-        Condition="'%(TargetFramework)' == '$(NetCoreAppCurrent)'" >%(Crossgen2RuntimeIdentifiers);$(NETCoreSdkRuntimeIdentifier)</Crossgen2RuntimeIdentifiers>
-    </KnownCrossgen2Pack>
     <!-- Avoid references to Microsoft.AspNetCore.App.Runtime.<rid> -->
     <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
   </ItemGroup>
@@ -106,13 +94,6 @@
     <Description>$(PackageDescription)</Description>
     <!-- Until we update the TFM to match the Major version, we need to patch in support for RequiresPreviewFeatures -->
     <GenerateRequiresPreviewFeaturesAttribute Condition="'$(TargetFrameworkMoniker)' == '$(NetCoreAppCurrentTargetFrameworkMoniker)'">true</GenerateRequiresPreviewFeaturesAttribute>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- when building from source we need to use the current version of various packages as the toolset version, but source-build imports
-         another props file which overrides the versions from Version.props so we can't set it there -->
-    <SystemReflectionMetadataLoadContextToolsetVersion Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(SystemReflectionMetadataLoadContextVersion)</SystemReflectionMetadataLoadContextToolsetVersion>
-    <SystemTextJsonToolsetVersion Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(SystemTextJsonVersion)</SystemTextJsonToolsetVersion>
   </PropertyGroup>
 
   <Target Name="ValidateTargetOSLowercase"
@@ -216,6 +197,4 @@
       <Analyzer Remove="@(_targetingPackExcludedAnalyzerReferenceWithProjectName->Metadata('OriginalIdentity'))" />
     </ItemGroup>
   </Target>
-
-  <Import Project="$(RepositoryEngineeringDir)pruning.targets" />
 </Project>

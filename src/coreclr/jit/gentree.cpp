@@ -1534,6 +1534,7 @@ bool CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, We
 {
     switch (arg)
     {
+#if HAS_FIXED_REGISTER_SET
 #if defined(TARGET_X86) || defined(TARGET_ARM)
         // The x86 and arm32 CORINFO_HELP_INIT_PINVOKE_FRAME helpers have a custom calling convention.
         case WellKnownArg::PInvokeFrame:
@@ -1598,7 +1599,7 @@ bool CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, We
 
             break;
 
-#ifdef REG_DISPATCH_INDIRECT_CELL_ADDR
+#ifdef REG_DISPATCH_INDIRECT_CALL_ADDR
         case WellKnownArg::DispatchIndirectCallTarget:
             *reg = REG_DISPATCH_INDIRECT_CALL_ADDR;
             return true;
@@ -1615,6 +1616,7 @@ bool CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, We
             *reg = REG_SWIFT_SELF;
             return true;
 #endif // SWIFT_SUPPORT
+#endif // HAS_FIXED_REGISTER_SET
 
         case WellKnownArg::StackArrayLocal:
         case WellKnownArg::AsyncExecutionContext:
@@ -2367,16 +2369,50 @@ int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
 //                              is devirtualized.
 //
 // Arguments:
-//     compiler - the compiler instance so that we can call eeFindHelper
+//     compiler    - [In]  the compiler instance so that we can call eeFindHelper
+//     pMethHandle - [Out] the method handle if the call is a devirtualization candidate
 //
 // Return Value:
 //     Returns true if this GT_CALL node is a devirtualization candidate.
 //
-bool GenTreeCall::IsDevirtualizationCandidate(Compiler* compiler) const
+bool GenTreeCall::IsDevirtualizationCandidate(Compiler* compiler, CORINFO_METHOD_HANDLE* pMethHandle) const
 {
-    return IsVirtual() ||
-           (gtCallType == CT_INDIRECT && (gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
-                                          gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_GVMLOOKUP_FOR_SLOT)));
+    CORINFO_METHOD_HANDLE methHandleToDevirt = NO_METHOD_HANDLE;
+    bool                  isDevirtCandidate  = false;
+
+    if (IsVirtual() && gtCallType == CT_USER_FUNC)
+    {
+        methHandleToDevirt = gtCallMethHnd;
+        isDevirtCandidate  = true;
+    }
+    else if (IsGenericVirtual(compiler) && (JitConfig.JitEnableGenericVirtualDevirtualization() != 0))
+    {
+        GenTree* runtimeMethHndNode =
+            gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle)->GetNode();
+        assert(runtimeMethHndNode != nullptr);
+        switch (runtimeMethHndNode->OperGet())
+        {
+            case GT_RUNTIMELOOKUP:
+                methHandleToDevirt = runtimeMethHndNode->AsRuntimeLookup()->GetMethodHandle();
+                isDevirtCandidate  = true;
+                break;
+            case GT_CNS_INT:
+                methHandleToDevirt = CORINFO_METHOD_HANDLE(runtimeMethHndNode->AsIntCon()->gtCompileTimeHandle);
+                isDevirtCandidate  = true;
+                break;
+            default:
+                // Unable to get method handle for devirtualization.
+                // This can happen if the method handle is not an RUNTIMELOOKUP or CNS_INT for generic virtuals,
+                break;
+        }
+    }
+
+    if (pMethHandle)
+    {
+        *pMethHandle = methHandleToDevirt;
+    }
+
+    return isDevirtCandidate;
 }
 
 //-------------------------------------------------------------------------
@@ -13436,8 +13472,22 @@ void Compiler::gtPrintABILocation(const ABIPassingInformation& abiInfo, char** b
                 }
             }
 #else  // !HAS_FIXED_REGISTER_SET
-       // TODO-WASM: refactor this code to not rely on register masks.
-            NYI_WASM("gtPrintABILocation");
+            regNumber reg = segment.GetRegister();
+            if (firstReg == REG_NA)
+            {
+                firstReg = reg;
+                lastReg  = reg;
+            }
+            else if (REG_NEXT(lastReg) == reg)
+            {
+                lastReg = reg;
+            }
+            else
+            {
+                printRegs();
+                firstReg = reg;
+                lastReg  = reg;
+            }
 #endif // !HAS_FIXED_REGISTER_SET
         }
         else
