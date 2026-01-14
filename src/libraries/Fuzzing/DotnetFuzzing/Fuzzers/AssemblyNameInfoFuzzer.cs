@@ -72,8 +72,8 @@ namespace DotnetFuzzing.Fuzzers
                     // Culture "c" or "C" gets mapped to Invariant Culture.
 
                     // cultureInfo is non-null because:
-                    // - fromTryParse.CultureName == fromParse.CultureName (asserted on line 40)
-                    // - The condition here matches the condition on line 46 where cultureInfo is assigned
+                    // - fromTryParse.CultureName == fromParse.CultureName (asserted above)
+                    // - This condition matches the one where cultureInfo is assigned above
                     string expectedCultureName = cultureInfo!.Name;
                     Assert.Equal(expectedCultureName, fromParse.ToAssemblyName().CultureName);
 
