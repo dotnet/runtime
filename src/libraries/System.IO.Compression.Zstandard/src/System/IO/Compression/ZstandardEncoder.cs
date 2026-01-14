@@ -184,7 +184,7 @@ namespace System.IO.Compression
             _context = Interop.Zstd.ZSTD_createCCtx();
             if (_context.IsInvalid)
             {
-                throw new IOException(SR.ZstandardEncoder_Create);
+                throw new OutOfMemoryException();
             }
         }
 
@@ -253,19 +253,20 @@ namespace System.IO.Compression
                     };
 
                     nuint result = Interop.Zstd.ZSTD_compressStream2(_context, ref output, ref input, endDirective);
-                    if (ZstandardUtils.IsError(result))
+
+                    if (ZstandardUtils.IsError(result, out var error))
                     {
                         if (ZstandardEventSource.Log.IsEnabled())
                         {
-                            ZstandardEventSource.Error(_context, $"Compression error: {Interop.Zstd.ZSTD_getErrorName(result)}");
+                            ZstandardEventSource.Error(_context, error);
                         }
 
-                        if ((Interop.Zstd.ZSTD_error)result == Interop.Zstd.ZSTD_error.srcSize_wrong)
+                        if (error == Interop.Zstd.ZSTD_error.srcSize_wrong)
                         {
                             return OperationStatus.InvalidData;
                         }
 
-                        ZstandardUtils.Throw(result, SR.ZstandardEncoder_CompressError);
+                        ZstandardUtils.Throw(error, SR.ZstandardEncoder_CompressError);
                     }
 
                     bytesConsumed = (int)input.pos;
@@ -295,8 +296,13 @@ namespace System.IO.Compression
             ArgumentOutOfRangeException.ThrowIfGreaterThan(inputLength, nint.MaxValue);
 
             nuint result = Interop.Zstd.ZSTD_compressBound((nuint)inputLength);
-            if (ZstandardUtils.IsError(result))
+            if (ZstandardUtils.IsError(result, out var error))
             {
+                if (ZstandardEventSource.Log.IsEnabled())
+                {
+                    ZstandardEventSource.Error(null, error);
+                }
+
                 throw new ArgumentOutOfRangeException(nameof(inputLength));
             }
 
@@ -312,8 +318,7 @@ namespace System.IO.Compression
         /// <param name="source">The data to compress.</param>
         /// <param name="destination">The buffer to write the compressed data to.</param>
         /// <param name="bytesWritten">The number of bytes written to the destination.</param>
-        /// <returns><see langword="true" /> on success; <see langword="false" /> otherwise.</returns>
-        /// <exception cref="IOException">An error occurred during the operation.</exception>
+        /// <returns><see langword="true" /> on success; <see langword="false" /> if the destination buffer is too small.</returns>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
             return TryCompress(source, destination, out bytesWritten, ZstandardUtils.Quality_Default, 0);
@@ -325,9 +330,8 @@ namespace System.IO.Compression
         /// <param name="bytesWritten">The number of bytes written to the destination.</param>
         /// <param name="quality">The compression quality level.</param>
         /// <param name="windowLog">The window size for compression, expressed as base 2 logarithm.</param>
-        /// <returns><see langword="true" /> on success; <see langword="false" /> otherwise.</returns>
+        /// <returns><see langword="true" /> on success; <see langword="false" /> if the destination buffer is too small.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> or <paramref name="windowLog"/> is out of the valid range.</exception>
-        /// <exception cref="IOException">An error occurred during the operation.</exception>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog)
         {
             return TryCompressCore(source, destination, out bytesWritten, quality, windowLog, null);
@@ -339,10 +343,9 @@ namespace System.IO.Compression
         /// <param name="bytesWritten">The number of bytes written to the destination.</param>
         /// <param name="dictionary">The compression dictionary to use.</param>
         /// <param name="windowLog">The window size for compression, expressed as base 2 logarithm.</param>
-        /// <returns><see langword="true" /> on success; <see langword="false" /> otherwise.</returns>
+        /// <returns><see langword="true" /> on success; <see langword="false" /> if the destination buffer is too small.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="windowLog"/> is out of the valid range.</exception>
-        /// <exception cref="IOException">An error occurred during the operation.</exception>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, ZstandardDictionary dictionary, int windowLog)
         {
             ArgumentNullException.ThrowIfNull(dictionary);
@@ -356,7 +359,7 @@ namespace System.IO.Compression
             using SafeZstdCompressHandle ctx = Interop.Zstd.ZSTD_createCCtx();
             if (ctx.IsInvalid)
             {
-                throw new IOException(SR.ZstandardEncoder_Create);
+                throw new OutOfMemoryException();
             }
 
             if (dictionary != null)
@@ -380,11 +383,11 @@ namespace System.IO.Compression
                 {
                     nuint result = Interop.Zstd.ZSTD_compress2(ctx, outBytes, (nuint)destination.Length, inBytes, (nuint)source.Length, quality);
 
-                    if (ZstandardUtils.IsError(result))
+                    if (ZstandardUtils.IsError(result, out var error))
                     {
                         if (ZstandardEventSource.Log.IsEnabled())
                         {
-                            ZstandardEventSource.Error(null, $"Compression error: {Interop.Zstd.ZSTD_getErrorName(result)}");
+                            ZstandardEventSource.Error(null, error);
                         }
 
                         return false;
@@ -417,24 +420,19 @@ namespace System.IO.Compression
 
             if (_finished)
             {
-                throw new InvalidOperationException(SR.ZstandardEncoder_InvalidState);
+                throw new InvalidOperationException(SR.ZstandardEncoderDecoder_InvalidState);
             }
 
             nuint result = _context.SetPrefix(prefix);
 
-            if (ZstandardUtils.IsError(result))
+            if (ZstandardUtils.IsError(result, out var error))
             {
                 if (ZstandardEventSource.Log.IsEnabled())
                 {
-                    ZstandardEventSource.Error(_context, $"SetPrefix error: {Interop.Zstd.ZSTD_getErrorName(result)}");
+                    ZstandardEventSource.Error(_context, error);
                 }
 
-                if ((Interop.Zstd.ZSTD_error)result == Interop.Zstd.ZSTD_error.stage_wrong)
-                {
-                    throw new InvalidOperationException(SR.ZstandardEncoder_InvalidState);
-                }
-
-                ZstandardUtils.Throw(result);
+                ZstandardUtils.Throw(error);
             }
         }
 
@@ -453,9 +451,19 @@ namespace System.IO.Compression
 
             EnsureNotDisposed();
 
-            if (_finished || ZstandardUtils.IsError(Interop.Zstd.ZSTD_CCtx_setPledgedSrcSize(_context, (ulong)length)))
+            if (_finished)
             {
-                throw new InvalidOperationException(SR.ZstandardEncoder_InvalidState);
+                throw new InvalidOperationException(SR.ZstandardEncoderDecoder_InvalidState);
+            }
+
+            if (ZstandardUtils.IsError(Interop.Zstd.ZSTD_CCtx_setPledgedSrcSize(_context, (ulong)length), out var error))
+            {
+                if (error != Interop.Zstd.ZSTD_error.no_error && ZstandardEventSource.Log.IsEnabled())
+                {
+                    ZstandardEventSource.Error(_context, error);
+                }
+
+                ZstandardUtils.Throw(error);
             }
         }
 

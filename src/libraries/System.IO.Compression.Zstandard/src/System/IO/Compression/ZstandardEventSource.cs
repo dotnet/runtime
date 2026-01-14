@@ -31,15 +31,15 @@ namespace System.IO.Compression
         }
 
         [NonEvent]
-        public static void Error(object? thisOrContextObject, FormattableString? formattableString = null, [CallerMemberName] string? memberName = null)
+        public static void Error(object? thisOrContextObject, Interop.Zstd.ZSTD_error error, [CallerMemberName] string? memberName = null)
         {
-            Log.Error(IdOf(thisOrContextObject), memberName, formattableString != null ? Format(formattableString) : null);
+            Log.Error(IdOf(thisOrContextObject), memberName, error.ToString());
         }
 
         [Event(ErrorEventId, Level = EventLevel.Informational)]
-        public void Error(string thisOrContextObject, string? memberName, string? message)
+        public void Error(string thisOrContextObject, string? memberName, string error)
         {
-            WriteEvent(ErrorEventId, thisOrContextObject, memberName, message);
+            WriteEvent(ErrorEventId, thisOrContextObject, memberName, error);
         }
 
         [NonEvent]

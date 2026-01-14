@@ -15,7 +15,6 @@ namespace System.IO.Compression
         /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream and compression level.</summary>
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
         /// <param name="compressionLevel">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
-        /// <exception cref="IOException">Failed to initialize the <see cref="ZstandardStream"/> instance.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="stream"/> does not support writing.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="compressionLevel"/> is not a valid <see cref="CompressionLevel"/> value.</exception>
@@ -25,7 +24,6 @@ namespace System.IO.Compression
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
         /// <param name="compressionLevel">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
-        /// <exception cref="IOException">Failed to initialize the <see cref="ZstandardStream"/> instance.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="stream"/> does not support writing.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="compressionLevel"/> is not a valid <see cref="CompressionLevel"/> value.</exception>
@@ -42,7 +40,6 @@ namespace System.IO.Compression
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
         /// <param name="compressionOptions">The options to use for Zstandard compression or decompression.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
-        /// <exception cref="IOException">Failed to initialize the <see cref="ZstandardStream"/> instance.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="stream"/> does not support writing.</exception>
         public ZstandardStream(Stream stream, ZstandardCompressionOptions compressionOptions, bool leaveOpen = false)

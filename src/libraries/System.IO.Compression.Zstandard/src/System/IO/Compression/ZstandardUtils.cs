@@ -26,34 +26,55 @@ namespace System.IO.Compression
 
         /// <summary>Checks if a Zstandard operation result indicates an error.</summary>
         internal static bool IsError(nuint result) => Interop.Zstd.ZSTD_isError(result) != 0;
+        internal static bool IsError(nuint result, out Interop.Zstd.ZSTD_error error)
+        {
+            if (IsError(result))
+            {
+                error = (Interop.Zstd.ZSTD_error)result;
+                return true;
+            }
+
+            error = Interop.Zstd.ZSTD_error.no_error;
+            return false;
+        }
 
         /// <summary>Gets the error message for a Zstandard error code.</summary>
-        internal static string GetErrorMessage(nuint errorCode)
+        internal static string GetErrorMessage(Interop.Zstd.ZSTD_error error)
         {
-            IntPtr errorNamePtr = Interop.Zstd.ZSTD_getErrorName(errorCode);
-            return System.Runtime.InteropServices.Marshal.PtrToStringAnsi(errorNamePtr) ?? $"Unknown error {errorCode}";
+            IntPtr errorNamePtr = Interop.Zstd.ZSTD_getErrorName((nuint)error);
+            return System.Runtime.InteropServices.Marshal.PtrToStringAnsi(errorNamePtr) ?? $"Unknown error {error}";
         }
 
         internal static void ThrowIfError(nuint result, string? message = null)
         {
-            if (IsError(result))
+            if (IsError(result, out var error))
             {
-                Throw(result, message);
+                Throw(error, message);
             }
         }
 
         [DoesNotReturn]
-        internal static void Throw(nuint errorResult, string? message = null)
+        internal static void Throw(Interop.Zstd.ZSTD_error error, string? message = null)
         {
-            Debug.Assert(IsError(errorResult));
-            throw CreateExceptionForError(errorResult, message);
+            Debug.Assert(IsError((nuint)error));
+            throw CreateExceptionForError(error, message);
         }
 
-        internal static Exception CreateExceptionForError(nuint errorResult, string? message = null)
+        internal static Exception CreateExceptionForError(Interop.Zstd.ZSTD_error error, string? message = null)
         {
-            Debug.Assert(IsError(errorResult));
+            Debug.Assert(IsError((nuint)error));
 
-            return new IOException(message ?? SR.Zstd_InternalError, new Interop.Zstd.ZstdNativeException(SR.Format(GetErrorMessage(errorResult))));
+            switch (error)
+            {
+                case Interop.Zstd.ZSTD_error.memory_allocation:
+                    return new OutOfMemoryException();
+
+                case Interop.Zstd.ZSTD_error.stage_wrong:
+                    return new InvalidOperationException(SR.ZstandardEncoderDecoder_InvalidState);
+
+                default:
+                    return new IOException(message ?? SR.Zstd_InternalError, new Interop.Zstd.ZstdNativeException(SR.Format(GetErrorMessage(error))));
+            }
         }
 
         internal static int GetQualityFromCompressionLevel(CompressionLevel compressionLevel) =>

@@ -112,7 +112,7 @@ namespace System.IO.Compression
             _context = Interop.Zstd.ZSTD_createDCtx();
             if (_context.IsInvalid)
             {
-                throw new IOException(SR.ZstandardDecoder_Create);
+                throw new OutOfMemoryException();
             }
         }
 
@@ -162,12 +162,13 @@ namespace System.IO.Compression
 
                     nuint result = Interop.Zstd.ZSTD_decompressStream(_context, ref output, ref input);
 
-                    if (ZstandardUtils.IsError(result))
+                    if (ZstandardUtils.IsError(result, out var error))
                     {
                         if (ZstandardEventSource.Log.IsEnabled())
                         {
-                            ZstandardEventSource.Error(null, $"Decompression error: {Interop.Zstd.ZSTD_getErrorName(result)}");
+                            ZstandardEventSource.Error(_context, error);
                         }
+
                         return OperationStatus.InvalidData;
                     }
 
@@ -247,11 +248,11 @@ namespace System.IO.Compression
                         destPtr, (nuint)destination.Length,
                         sourcePtr, (nuint)source.Length);
 
-                    if (ZstandardUtils.IsError(result))
+                    if (ZstandardUtils.IsError(result, out var error))
                     {
                         if (ZstandardEventSource.Log.IsEnabled())
                         {
-                            ZstandardEventSource.Error(null, $"Decompression error: {Interop.Zstd.ZSTD_getErrorName(result)}");
+                            ZstandardEventSource.Error(null, error);
                         }
                         return false;
                     }
@@ -284,7 +285,7 @@ namespace System.IO.Compression
             using var dctx = Interop.Zstd.ZSTD_createDCtx();
             if (dctx.IsInvalid)
             {
-                return false;
+                throw new OutOfMemoryException();
             }
 
             unsafe
@@ -296,11 +297,11 @@ namespace System.IO.Compression
                         dctx, destPtr, (nuint)destination.Length,
                         sourcePtr, (nuint)source.Length, dictionary.DecompressionDictionary);
 
-                    if (ZstandardUtils.IsError(result))
+                    if (ZstandardUtils.IsError(result, out var error))
                     {
                         if (ZstandardEventSource.Log.IsEnabled())
                         {
-                            ZstandardEventSource.Error(null, $"Decompression error: {Interop.Zstd.ZSTD_getErrorName(result)}");
+                            ZstandardEventSource.Error(null, error);
                         }
                         return false;
                     }
@@ -332,24 +333,19 @@ namespace System.IO.Compression
 
             if (_finished)
             {
-                throw new InvalidOperationException(SR.ZstandardDecoder_InvalidState);
+                throw new InvalidOperationException(SR.ZstandardEncoderDecoder_InvalidState);
             }
 
             nuint result = _context.SetPrefix(prefix);
 
-            if (ZstandardUtils.IsError(result))
+            if (ZstandardUtils.IsError(result, out var error))
             {
                 if (ZstandardEventSource.Log.IsEnabled())
                 {
-                    ZstandardEventSource.Error(_context, $"SetPrefix error: {Interop.Zstd.ZSTD_getErrorName(result)}");
+                    ZstandardEventSource.Error(_context, error);
                 }
 
-                if ((Interop.Zstd.ZSTD_error)result == Interop.Zstd.ZSTD_error.stage_wrong)
-                {
-                    throw new InvalidOperationException(SR.ZstandardDecoder_InvalidState);
-                }
-
-                ZstandardUtils.Throw(result);
+                ZstandardUtils.Throw(error);
             }
         }
 

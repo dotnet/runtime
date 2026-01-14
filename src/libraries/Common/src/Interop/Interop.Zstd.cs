@@ -12,8 +12,35 @@ internal static partial class Interop
     {
         internal enum ZSTD_error
         {
+            no_error = 0,
+            GENERIC = -1,
+            prefix_unknown = -10,
+            version_unsupported = -12,
+            frameParameter_unsupported = -14,
+            frameParameter_windowTooLarge = -16,
+            corruption_detected = -20,
+            checksum_wrong = -22,
+            literals_headerWrong = -24,
+            dictionary_corrupted = -30,
+            dictionary_wrong = -32,
+            dictionaryCreation_failed = -34,
+            parameter_unsupported = -40,
+            parameter_combination_unsupported = -41,
+            parameter_outOfBound = -42,
+            tableLog_tooLarge = -44,
+            maxSymbolValue_tooLarge = -46,
+            maxSymbolValue_tooSmall = -48,
+            cannotProduce_uncompressedBlock = -49,
+            stabilityCondition_notRespected = -50,
             stage_wrong = -60,
+            init_missing = -62,
+            memory_allocation = -64,
+            workSpace_tooSmall = -66,
+            dstSize_tooSmall = -70,
             srcSize_wrong = -72,
+            dstBuffer_null = -74,
+            noForwardProgress_destFull = -80,
+            noForwardProgress_inputEmpty = -82,
         }
 
         // Compression context management

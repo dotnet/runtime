@@ -61,7 +61,6 @@ namespace System.IO.Compression
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
         /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="stream"/> does not support writing and <paramref name="mode"/> is <see cref="CompressionMode.Compress"/> or <paramref name="stream"/> does not support reading and <paramref name="mode"/> is <see cref="CompressionMode.Decompress"/>.</exception>
-        /// <exception cref="IOException">Failed to initialize the <see cref="ZstandardStream"/> instance.</exception>
         public ZstandardStream(Stream stream, CompressionMode mode, bool leaveOpen)
         {
             Init(stream, mode);
@@ -83,7 +82,6 @@ namespace System.IO.Compression
         /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
         /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="stream"/> does not support writing and <paramref name="mode"/> is <see cref="CompressionMode.Compress"/> or <paramref name="stream"/> does not support reading and <paramref name="mode"/> is <see cref="CompressionMode.Decompress"/>.</exception>
-        /// <exception cref="IOException">Failed to initialize the <see cref="ZstandardStream"/> instance.</exception>
         public ZstandardStream(Stream stream, CompressionMode mode) : this(stream, mode, leaveOpen: false) { }
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream, compression mode, and dictionary.</summary>
@@ -93,7 +91,6 @@ namespace System.IO.Compression
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
         /// <exception cref="ArgumentNullException"><paramref name="stream"/> or <paramref name="dictionary"/> is null.</exception>
         /// <exception cref="ArgumentException"><paramref name="stream"/> does not support writing and <paramref name="mode"/> is <see cref="CompressionMode.Compress"/> or <paramref name="stream"/> does not support reading and <paramref name="mode"/> is <see cref="CompressionMode.Decompress"/>.</exception>
-        /// <exception cref="IOException">Failed to initialize the <see cref="ZstandardStream"/> instance.</exception>
         public ZstandardStream(Stream stream, CompressionMode mode, ZstandardDictionary dictionary, bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(dictionary);
