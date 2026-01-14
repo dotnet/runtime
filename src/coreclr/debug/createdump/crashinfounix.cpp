@@ -585,6 +585,33 @@ GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name)
         {
             if (name != nullptr)
             {
+                // Try reading the executable name from the /proc/<pid>/exe link.
+                char exePath[128];
+                int chars = snprintf(exePath, sizeof(exePath), "/proc/%d/exe", pid);
+                if (chars > 0 && (size_t)chars < sizeof(exePath))
+                {
+                    struct stat sb;
+                    if (lstat(exePath, &sb) != -1) 
+                    {
+                        ssize_t bufSize = sb.st_size == 0 ? 4096 : sb.st_size + 1;
+                        char *buf = (char*) malloc(bufSize);
+                        if (buf != NULL) 
+                        {
+                            ssize_t nbytes = readlink(exePath, buf, bufSize);
+                            if (nbytes != -1) 
+                            {
+                                buf[nbytes] = '\0'; 
+                                char* executableName = strrchr(buf, '/');
+                                *name = strdup((executableName != nullptr) ? (executableName + 1) : buf);
+                                free(buf);
+                                continue;
+                            }
+                            free(buf);
+                        }
+                    }
+                }
+                
+                // Failed to read the executable name from the link, fallback to name from status.
                 char* n = strchr(line + 6, '\n');
                 if (n != nullptr)
                 {
