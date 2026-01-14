@@ -16,6 +16,8 @@
 #include <utilcode.h>
 #include <minipal/mutex.h>
 
+#include <functional>
+
 #ifdef _DEBUG
 #define LOGGING
 #endif
@@ -1114,7 +1116,6 @@ typedef enum {
     enumCordbHeapSegments,  //  47
     enumCordbAsyncStackWalk,//  48
     enumCordbAsyncFrame,    //  49
-    enumCordbAsyncValueEnum,//  50
     enumMaxDerived,         //
     enumMaxThis = 1024
 } enumCordbDerived;
@@ -6932,30 +6933,27 @@ private:
     DT_CONTEXT m_context;
 };
 
+// Function signature for retrieving a value at a specific index
+typedef std::function<HRESULT(DWORD index, ICorDebugValue** ppValue)> ValueGetter;
 
 class CordbValueEnum : public CordbBase, public ICorDebugValueEnum
 {
 public:
-    enum ValueEnumMode {
-        LOCAL_VARS_ORIGINAL_IL,
-        LOCAL_VARS_REJIT_IL,
-        ARGS,
-    } ;
-
-    CordbValueEnum(CordbNativeFrame *frame, ValueEnumMode mode);
-    HRESULT Init();
-    ~CordbValueEnum();
+    CordbValueEnum(CordbProcess* pProcess, 
+                   UINT maxCount, 
+                   ValueGetter valueGetter,
+                   NeuterList* pNeuterList);
+    
+    virtual ~CordbValueEnum();
     virtual void Neuter();
 
 #ifdef _DEBUG
     virtual const char * DbgGetName() { return "CordbValueEnum"; }
 #endif
 
-
     //-----------------------------------------------------------
     // IUnknown
     //-----------------------------------------------------------
-
     ULONG STDMETHODCALLTYPE AddRef()
     {
         return (BaseAddRef());
@@ -6969,7 +6967,6 @@ public:
     //-----------------------------------------------------------
     // ICorDebugEnum
     //-----------------------------------------------------------
-
     COM_METHOD Skip(ULONG celt);
     COM_METHOD Reset();
     COM_METHOD Clone(ICorDebugEnum **ppEnum);
@@ -6978,14 +6975,13 @@ public:
     //-----------------------------------------------------------
     // ICorDebugValueEnum
     //-----------------------------------------------------------
-
     COM_METHOD Next(ULONG celt, ICorDebugValue *values[], ULONG *pceltFetched);
 
 private:
-    CordbNativeFrame*     m_frame;
-    ValueEnumMode   m_mode;
-    UINT            m_iCurrent;
-    UINT            m_iMax;
+    ValueGetter m_valueGetter;
+    NeuterList* m_pNeuterList;
+    UINT        m_iCurrent;
+    UINT        m_iMax;
 };
 
 
@@ -7489,10 +7485,6 @@ public:
     // for what we are calling into.
     static HRESULT BuildInstantiationForCallsite(CordbModule *pModule, NewArrayHolder<CordbType*> &types, Instantiation &inst, Instantiation *currentInstantiation, mdToken targetClass, SigParser funcGenerics);
 
-    CordbILCode* GetOriginalILCode();
-#ifdef FEATURE_CODE_VERSIONING
-    CordbReJitILCode* GetReJitILCode();
-#endif // FEATURE_CODE_VERSIONING
     void AdjustIPAfterException();
 
 private:
@@ -11737,73 +11729,11 @@ public:
     COM_METHOD GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICorDebugValue **ppValue);
     COM_METHOD GetCodeEx(ILCodeKind flags, ICorDebugCode **ppCode);
 
-    CordbFunction *CordbAsyncFrame::GetFunction();
-
-    CordbILCode* GetOriginalILCode();
-#ifdef FEATURE_CODE_VERSIONING
-    CordbReJitILCode* GetReJitILCode();
-#endif // FEATURE_CODE_VERSIONING
-
     private:
 
     // load the generics type and method arguments into a cache
     void LoadGenericArgs();
 
-};
-
-class CordbAsyncValueEnum : public CordbBase, public ICorDebugValueEnum
-{
-public:
-    enum ValueEnumMode {
-        LOCAL_VARS_ORIGINAL_IL,
-        LOCAL_VARS_REJIT_IL,
-        ARGS,
-    } ;
-
-    CordbAsyncValueEnum(CordbAsyncFrame *frame, ValueEnumMode mode);
-    HRESULT Init();
-    ~CordbAsyncValueEnum();
-    virtual void Neuter();
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { return "CordbAsyncValueEnum"; }
-#endif
-
-
-    //-----------------------------------------------------------
-    // IUnknown
-    //-----------------------------------------------------------
-
-    ULONG STDMETHODCALLTYPE AddRef()
-    {
-        return (BaseAddRef());
-    }
-    ULONG STDMETHODCALLTYPE Release()
-    {
-        return (BaseRelease());
-    }
-    COM_METHOD QueryInterface(REFIID riid, void **ppInterface);
-
-    //-----------------------------------------------------------
-    // ICorDebugEnum
-    //-----------------------------------------------------------
-
-    COM_METHOD Skip(ULONG celt);
-    COM_METHOD Reset();
-    COM_METHOD Clone(ICorDebugEnum **ppEnum);
-    COM_METHOD GetCount(ULONG *pcelt);
-
-    //-----------------------------------------------------------
-    // ICorDebugValueEnum
-    //-----------------------------------------------------------
-
-    COM_METHOD Next(ULONG celt, ICorDebugValue *values[], ULONG *pceltFetched);
-
-private:
-    CordbAsyncFrame*     m_frame;
-    ValueEnumMode   m_mode;
-    UINT            m_iCurrent;
-    UINT            m_iMax;
 };
 
 class CordbAsyncStackWalk : public CordbBase, public ICorDebugStackWalk
