@@ -551,6 +551,14 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
                 default:
                     unreached();
             }
+
+            // A sign-extended cast from small int->long requires two instructions; first sign extended
+            // small int -> i32, then sign extended i32 -> i64
+            if (toType == TYP_LONG)
+            {
+                GetEmitter()->emitIns(ins);
+                ins = INS_i64_extend_s_i32;
+            }
             break;
         }
         case GenIntCastDesc::ExtendKind::ZERO_EXTEND_INT:
