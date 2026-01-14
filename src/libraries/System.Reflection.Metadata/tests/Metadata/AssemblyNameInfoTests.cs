@@ -123,6 +123,18 @@ namespace System.Reflection.Metadata.Tests.Metadata
         }
 
         [Theory]
+        [InlineData("tur", "tr")]  // Turkish alias
+        [InlineData("bul", "bg")]  // Bulgarian alias
+        public void ToAssemblyNameNormalizesCultureAliases(string alias, string normalized)
+        {
+            AssemblyNameInfo assemblyNameInfo = AssemblyNameInfo.Parse($"test,culture={alias}".AsSpan());
+            Assert.Equal(alias, assemblyNameInfo.CultureName);
+            // The culture name should be normalized via CultureInfo
+            Assert.Equal(normalized, assemblyNameInfo.ToAssemblyName().CultureName);
+            Assert.Equal(new CultureInfo(alias).Name, assemblyNameInfo.ToAssemblyName().CultureName);
+        }
+
+        [Theory]
         // "c" is an invalid culture identifier in Full Framework
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [InlineData('c')]

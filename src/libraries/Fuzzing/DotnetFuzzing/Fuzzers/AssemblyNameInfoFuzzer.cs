@@ -42,11 +42,12 @@ namespace DotnetFuzzing.Fuzzers
                 Assert.Equal(fromTryParse.Version, fromParse.Version);
                 Assert.SequenceEqual(fromTryParse.PublicKeyOrToken.AsSpan(), fromParse.PublicKeyOrToken.AsSpan());
 
+                CultureInfo? cultureInfo = null;
                 if (!string.IsNullOrEmpty(fromParse.CultureName))
                 {
                     try
                     {
-                        _ = CultureInfo.GetCultureInfo(fromParse.CultureName);
+                        cultureInfo = CultureInfo.GetCultureInfo(fromParse.CultureName);
                     }
                     catch (CultureNotFoundException)
                     {
@@ -65,21 +66,16 @@ namespace DotnetFuzzing.Fuzzers
 
                 if (fromTryParse.CultureName is not null)
                 {
-                    // When converting to AssemblyName, the culture name is lower-cased
-                    // by the CultureInfo ctor that calls CultureData.GetCultureData
-                    // which lowers the name for caching and normalization purposes.
-                    // It lowers only the part before the `-` character, but we lower
-                    // the whole string for the sake of simplicity of this test.
+                    // When converting to AssemblyName, the culture name is normalized
+                    // by the CultureInfo ctor which may change the culture name to its
+                    // canonical form (e.g., "tur" → "tr", "bul" → "bg").
+                    // Culture "c" or "C" gets mapped to Invariant Culture.
 
-                    string lowerCase = fromTryParse.CultureName.ToLower();
-                    if (lowerCase != "c")
+                    string expectedCultureName = cultureInfo!.Name;
+                    Assert.Equal(expectedCultureName, fromParse.ToAssemblyName().CultureName);
+
+                    if (string.IsNullOrEmpty(expectedCultureName))
                     {
-                        Assert.Equal(lowerCase, fromParse.ToAssemblyName().CultureName!.ToLower());
-                    }
-                    else
-                    {
-                        // Cultures "c" and "C" get mapped to Invariant Culture.
-                        Assert.Equal("", fromParse.ToAssemblyName().CultureName);
                         Assert.Equal(CultureInfo.InvariantCulture, fromParse.ToAssemblyName().CultureInfo);
                     }
                 }
