@@ -196,8 +196,8 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
 
 static unsigned GetInsOpcode(instruction ins)
 {
-    static const uint8_t insOpcodes[] = {
-#define INST(id, nm, info, fmt, opcode) static_cast<uint8_t>(opcode),
+    static const uint16_t insOpcodes[] = {
+#define INST(id, nm, info, fmt, opcode) static_cast<uint16_t>(opcode),
 #include "instrs.h"
     };
 
@@ -275,9 +275,11 @@ unsigned emitter::instrDesc::idCodeSize() const
 #error WASM64
 #endif
 
-    // Currently, all our instructions have 1 byte opcode.
-    unsigned size = 1;
-    assert(FitsIn<uint8_t>(GetInsOpcode(idIns())));
+    unsigned int opcode = GetInsOpcode(idIns());
+
+    // Currently, all our instructions have 1 or 2 byte opcodes.
+    assert(FitsIn<uint8_t>(opcode) || FitsIn<uint16_t>(opcode));
+    unsigned size = FitsIn<uint8_t>(opcode) ? 1 : 2;
     switch (idInsFmt())
     {
         case IF_OPCODE:
@@ -388,7 +390,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     switch (insFmt)
     {
         case IF_OPCODE:
-            {}
+        {
             assert(FitsIn<uint16_t>(opcode));
 
             if (FitsIn<uint8_t>(opcode))
@@ -397,11 +399,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else if (FitsIn<uint16_t>(opcode))
             {
-                dst += emitOutputByte(dst, opcode&0xFF);
-                dst += emitOutputByte(dst, opcode>>8);
+                dst += emitOutputByte(dst, opcode & 0xFF);
+                dst += emitOutputByte(dst, opcode >> 8);
             }
 
             break;
+        }
         case IF_BLOCK:
             dst += emitOutputByte(dst, opcode);
             dst += emitOutputByte(dst, 0x40 /* block type of void */);

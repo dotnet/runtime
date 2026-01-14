@@ -1106,7 +1106,6 @@ void CodeGen::genCodeForCast(GenTreeOp* tree)
         NYI_WASM("Overflow checks");
     }
 #endif
-    
 
     var_types targetType = tree->TypeGet();
 
@@ -2538,7 +2537,6 @@ void CodeGen::genTransferRegGCState(regNumber dst, regNumber src)
         gcInfo.gcMarkRegSetNpt(dstMask);
     }
 }
-
 
 #if !defined(TARGET_64BIT)
 //------------------------------------------------------------------------

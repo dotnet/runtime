@@ -481,7 +481,7 @@ static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types toType, var
     return ((uint32_t)oper << shift1) | ((uint32_t)fromType) | ((uint32_t)toType << shift2);
 }
 
-static constexpr uint32_t PackTypes(var_types toType, var_types  fromType)
+static constexpr uint32_t PackTypes(var_types toType, var_types fromType)
 {
     if (toType == TYP_BYREF)
     {
@@ -495,10 +495,10 @@ static constexpr uint32_t PackTypes(var_types toType, var_types  fromType)
     return ((uint32_t)toType) | ((uint32_t)fromType << shift1);
 }
 
-void CodeGen::genIntToIntCast(GenTreeCast *cast)
+void CodeGen::genIntToIntCast(GenTreeCast* cast)
 {
     GenIntCastDesc desc(cast);
-    var_types      toType = genActualType(cast->CastToType());
+    var_types      toType     = genActualType(cast->CastToType());
     var_types      fromType   = genActualType(cast->CastOp()->TypeGet());
     int            extendSize = desc.ExtendSrcSize();
     instruction    ins        = INS_none;
@@ -575,10 +575,10 @@ void CodeGen::genIntToIntCast(GenTreeCast *cast)
 
 void CodeGen::genFloatToIntCast(GenTree* tree)
 {
-    var_types      toType = genActualType(tree->TypeGet());
-    var_types      fromType   = genActualType(tree->AsCast()->CastFromType());
-    bool           isUnsigned = varTypeIsUnsigned(tree->AsCast()->CastToType());
-    instruction    ins        = INS_none;
+    var_types   toType     = genActualType(tree->TypeGet());
+    var_types   fromType   = genActualType(tree->AsCast()->CastFromType());
+    bool        isUnsigned = varTypeIsUnsigned(tree->AsCast()->CastToType());
+    instruction ins        = INS_none;
     assert(varTypeIsFloating(fromType) && (toType == TYP_INT || toType == TYP_LONG));
     printf("genFloatToIntCast from %s to %s, unsigned=%d\n", varTypeName(fromType), varTypeName(toType), isUnsigned);
 
@@ -611,9 +611,9 @@ void CodeGen::genIntToFloatCast(GenTree* cast)
 
 void CodeGen::genFloatToFloatCast(GenTree* cast)
 {
-    GenTreeCast* castOp = cast->AsCast();
+    GenTreeCast* castOp   = cast->AsCast();
     var_types    toType   = genActualType(cast->TypeGet());
-    var_types fromType = genActualType(castOp->CastFromType());
+    var_types    fromType = genActualType(castOp->CastFromType());
 
     printf("genFloatToFloatCast from %s to %s\n", varTypeName(fromType), varTypeName(toType));
 
