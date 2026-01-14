@@ -50,6 +50,22 @@ namespace Internal.TypeSystem
             }
         }
 
+        public bool IsConstructed
+        {
+            get
+            {
+                for (int i = 0; i < _genericParameters.Length; i++)
+                {
+                    if (_genericParameters[i].IsGenericParameter)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        }
+
         public static readonly Instantiation Empty = new Instantiation(TypeDesc.EmptyTypes);
 
         public Enumerator GetEnumerator()

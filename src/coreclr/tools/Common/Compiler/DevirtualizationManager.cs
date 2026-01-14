@@ -100,6 +100,14 @@ namespace ILCompiler
                 }
 
                 impl = implType.ResolveInterfaceMethodTargetWithVariance(declMethod);
+
+                // If we end up with a generic method definition, we need to bring the instantiation back
+                // so that we can try devirtualizing this generic virtual method
+                if (impl.IsGenericMethodDefinition && declMethod.HasInstantiation)
+                {
+                    impl = impl.MakeInstantiatedMethod(declMethod.Instantiation);
+                }
+
                 if (impl != null)
                 {
                     impl = implType.FindVirtualFunctionTargetMethodOnObjectType(impl);
@@ -178,6 +186,14 @@ namespace ILCompiler
                 }
 
                 impl = implType.FindVirtualFunctionTargetMethodOnObjectType(declMethod);
+
+                // If we end up with a generic method definition, we need to bring the instantiation back
+                // so that we can try devirtualizing this generic virtual method
+                if (impl.IsGenericMethodDefinition && declMethod.HasInstantiation)
+                {
+                    impl = impl.MakeInstantiatedMethod(declMethod.Instantiation);
+                }
+
                 if (impl != null && (impl != declMethod))
                 {
                     MethodDesc slotDefiningMethodImpl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(impl);
@@ -196,6 +212,13 @@ namespace ILCompiler
                         impl = null;
                     }
                 }
+            }
+
+            if (impl != null && impl.HasInstantiation && (!impl.Instantiation.IsConstructed || declMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).IsCanonicalMethod(CanonicalFormKind.Specific)))
+            {
+                // We don't support devirtualization of shared generic virtual methods yet.
+                devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                impl = null;
             }
 
             return impl;
