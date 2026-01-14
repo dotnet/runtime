@@ -82,12 +82,12 @@ class ShuffleIterator
     // Get next shuffle offset for struct passed in registers. There has to be at least one offset left.
     UINT16 GetNextOfsInStruct()
     {
-        _ASSERTE(m_argLocDesc->m_numEightBytesOfStructInRegs > 0);
+        _ASSERTE(m_argLocDesc->m_eightByteInfo.GetNumEightBytes() > 0);
 
-        if (m_currentEightByte < m_argLocDesc->m_numEightBytesOfStructInRegs)
+        if (m_currentEightByte < m_argLocDesc->m_eightByteInfo.GetNumEightBytes())
         {
-            SystemVClassificationType eightByte = m_argLocDesc->m_eightByteClassifications[m_currentEightByte];
-            unsigned int eightByteSize = m_argLocDesc->m_eightByteSizes[m_currentEightByte];
+            SystemVClassificationType eightByte = m_argLocDesc->m_eightByteInfo.GetEightByteClassification(m_currentEightByte);
+            unsigned int eightByteSize = m_argLocDesc->m_eightByteInfo.GetEightByteSize(m_currentEightByte);
 
             m_currentEightByte++;
 
@@ -158,7 +158,7 @@ public:
 #if defined(UNIX_AMD64_ABI)
 
         // Check if the argLocDesc is for a struct in registers
-        if (m_argLocDesc->m_numEightBytesOfStructInRegs != 0)
+        if (m_argLocDesc->m_eightByteInfo.GetNumEightBytes() != 0)
         {
             index = GetNextOfsInStruct();
             _ASSERT((index & ShuffleEntry::REGMASK) != 0);

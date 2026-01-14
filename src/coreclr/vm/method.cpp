@@ -116,40 +116,18 @@ BOOL ArgIteratorBaseForPInvoke::IsRegPassedStruct(TypeHandle th)
     }
 }
 #if defined(UNIX_AMD64_ABI)
-void ArgIteratorBaseForPInvoke::SetMTOfEightByteData(TypeHandle th)
+SystemVEightByteRegistersInfo ArgIteratorBaseForPInvoke::GetEightByteRegistersInfo(TypeHandle th)
 {
-    if (thOfEightByteData == th)
-        return;
+    if (!th.IsNativeValueType())
+    {
+        return th.AsMethodTable()->GetClass()->GetEightByteRegistersInfo();
+    }
 
-    thOfEightByteData = TypeHandle();
     SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
-    MethodTable *pMT;
-    bool nativeLayout;
-    if (th.IsNativeValueType())
-    {
-        pMT = th.AsNativeValueType();
-        nativeLayout = true;
-    }
-    else
-    {
-        pMT = th.GetMethodTable();
-        nativeLayout = false;
-    }
-    bool result = pMT->ClassifyEightBytes(&helper, 0, 0, nativeLayout);
-
+    bool result = th.AsNativeValueType()->ClassifyEightBytes(&helper, true /* nativeLayout */);
     // The answer must be true at this point.
     _ASSERTE(result);
-
-    eightByteCount = helper.eightByteCount;
-    _ASSERTE(eightByteCount <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
-
-    for (unsigned int i = 0; i < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
-    {
-        eightByteClassifications[i] = helper.eightByteClassifications[i];
-        eightByteSizes[i] = helper.eightByteSizes[i];
-    }
-
-    thOfEightByteData = th;
+    return SystemVEightByteRegistersInfo(helper);
 }
 #endif
 

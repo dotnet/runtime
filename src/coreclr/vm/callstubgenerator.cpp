@@ -2754,11 +2754,11 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
         ArgLocDesc* argLocDescForStructInRegs = argIt.GetArgLocDescForStructInRegs();
         if (argLocDescForStructInRegs != NULL)
         {
-            int numEightBytes = argLocDescForStructInRegs->m_numEightBytesOfStructInRegs;
+            int numEightBytes = argLocDescForStructInRegs->m_eightByteInfo.GetNumEightBytes();
             for (int i = 0; i < numEightBytes; i++)
             {
                 ArgLocDesc argLocDescEightByte = {};
-                SystemVClassificationType eightByteType = argLocDescForStructInRegs->m_eightByteClassifications[i];
+                SystemVClassificationType eightByteType = argLocDescForStructInRegs->m_eightByteInfo.GetEightByteClassification(i);
                 switch (eightByteType)
                 {
                     case SystemVClassificationTypeInteger:

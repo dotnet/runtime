@@ -254,13 +254,13 @@ public:
         BYTE* floatRegDest = (BYTE*)GetStructFloatRegDestinationAddress();
         INDEBUG(int remainingBytes = fieldBytes;)
 
-        _ASSERTE(m_argLocDescForStructInRegs->m_numEightBytesOfStructInRegs != 0);
+        _ASSERTE(m_argLocDescForStructInRegs->m_eightByteInfo.GetNumEightBytes() != 0);
 
         // We start at the first eightByte that the destOffset didn't skip completely.
-        for (int i = destOffset / 8; i < m_argLocDescForStructInRegs->m_numEightBytesOfStructInRegs; i++)
+        for (int i = destOffset / 8; i < m_argLocDescForStructInRegs->m_eightByteInfo.GetNumEightBytes(); i++)
         {
-            int eightByteSize = m_argLocDescForStructInRegs->m_eightByteSizes[i];
-            SystemVClassificationType eightByteClassification = m_argLocDescForStructInRegs->m_eightByteClassifications[i];
+            int eightByteSize = m_argLocDescForStructInRegs->m_eightByteInfo.GetEightByteSize(i);
+            SystemVClassificationType eightByteClassification = m_argLocDescForStructInRegs->m_eightByteInfo.GetEightByteClassification(i);
 
             // Adjust the size of the first eightByte by the destOffset
             eightByteSize -= (destOffset & 7);
@@ -324,12 +324,12 @@ public:
         TADDR genRegDest = dac_cast<TADDR>(GetStructGenRegDestinationAddress());
         INDEBUG(int remainingBytes = fieldBytes;)
 
-        _ASSERTE(m_argLocDescForStructInRegs->m_numEightBytesOfStructInRegs != 0);
+        _ASSERTE(m_argLocDescForStructInRegs->m_eightByteInfo.GetNumEightBytes() != 0);
 
-        for (int i = 0; i < m_argLocDescForStructInRegs->m_numEightBytesOfStructInRegs; i++)
+        for (int i = 0; i < m_argLocDescForStructInRegs->m_eightByteInfo.GetNumEightBytes(); i++)
         {
-            int eightByteSize = m_argLocDescForStructInRegs->m_eightByteSizes[i];
-            SystemVClassificationType eightByteClassification = m_argLocDescForStructInRegs->m_eightByteClassifications[i];
+            int eightByteSize = m_argLocDescForStructInRegs->m_eightByteInfo.GetEightByteSize(i);
+            SystemVClassificationType eightByteClassification = m_argLocDescForStructInRegs->m_eightByteInfo.GetEightByteClassification(i);
 
             _ASSERTE(remainingBytes >= eightByteSize);
 

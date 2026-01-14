@@ -231,19 +231,9 @@ protected:
     }
 
 #if defined(UNIX_AMD64_ABI)
-    FORCEINLINE uint8_t GetNumberEightBytes(TypeHandle th)
+    FORCEINLINE SystemVEightByteRegistersInfo GetEightByteRegistersInfo(TypeHandle th)
     {
-        return th.AsMethodTable()->GetClass()->GetNumberEightBytes();
-    }
-
-    FORCEINLINE SystemVClassificationType GetEightByteClassification(TypeHandle th, int index)
-    {
-        return th.AsMethodTable()->GetClass()->GetEightByteClassification(index);
-    }
-
-    FORCEINLINE uint8_t GetEightByteSize(TypeHandle th, int index)
-    {
-        return th.AsMethodTable()->GetClass()->GetEightByteSize(index);
+        return th.AsMethodTable()->GetClass()->GetEightByteRegistersInfo();
     }
 #endif // defined(UNIX_AMD64_ABI)
 

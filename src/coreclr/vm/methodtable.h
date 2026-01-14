@@ -875,6 +875,53 @@ struct FpStructInRegistersInfo
 };
 #endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
+#ifdef UNIX_AMD64_ABI_ITF
+struct SystemVEightByteRegistersInfo
+{
+private:
+    uint8_t NumEightBytes; // Number of eightbytes used by the struct passed in registers
+    SystemVClassificationType EightByteClassifications[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+    uint8_t EightByteSizes[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+public:
+
+    SystemVEightByteRegistersInfo()
+    {
+        InitEmpty();
+    }
+
+    SystemVEightByteRegistersInfo(const SystemVStructRegisterPassingHelper& helper)
+    {
+        NumEightBytes = helper.eightByteCount;
+        _ASSERTE(NumEightBytes <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
+        for (unsigned i = 0; i < NumEightBytes; i++)
+        {
+            EightByteClassifications[i] = helper.eightByteClassifications[i];
+            EightByteSizes[i] = helper.eightByteSizes[i];
+        }
+    }
+
+    void InitEmpty()
+    {
+        NumEightBytes = 0;
+    }
+
+    uint8_t GetNumEightBytes() const
+    {
+        return NumEightBytes;
+    }
+    SystemVClassificationType GetEightByteClassification(unsigned index) const
+    {
+        _ASSERTE(index < NumEightBytes);
+        return EightByteClassifications[index];
+    }
+    uint8_t GetEightByteSize(unsigned index) const
+    {
+        _ASSERTE(index < NumEightBytes);
+        return EightByteSizes[index];
+    }
+};
+#endif
+
 //===============================================================================================
 //
 // GC data appears before the beginning of the MethodTable
@@ -1136,7 +1183,7 @@ public:
 
 #if defined(UNIX_AMD64_ABI_ITF)
     // Builds the internal data structures and classifies struct eightbytes for Amd System V calling convention.
-    bool ClassifyEightBytes(SystemVStructRegisterPassingHelper *helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct, MethodTable** pByValueClassCache = NULL);
+    bool ClassifyEightBytes(SystemVStructRegisterPassingHelper *helperPtr, bool isNativeStruct, MethodTable** pByValueClassCache = NULL);
     bool ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassingHelper *helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, EEClassNativeLayoutInfo const* nativeLayoutInfo);
 #endif // defined(UNIX_AMD64_ABI_ITF)
 

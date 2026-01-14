@@ -195,12 +195,12 @@ LPVOID ProfileArgIterator::CopyStructFromRegisters()
     int fieldBytes = th.AsMethodTable()->GetNumInstanceFieldBytes();
     INDEBUG(int remainingBytes = fieldBytes;)
 
-    _ASSERTE(argLocDesc->m_numEightBytesOfStructInRegs > 0);
+    _ASSERTE(argLocDesc->m_eightByteInfo.GetNumEightBytes() > 0);
 
-    for (int i = 0; i < argLocDesc->m_numEightBytesOfStructInRegs; i++)
+    for (int i = 0; i < argLocDesc->m_eightByteInfo.GetNumEightBytes(); i++)
     {
-        int eightByteSize = argLocDesc->m_eightByteSizes[i];
-        SystemVClassificationType eightByteClassification = argLocDesc->m_eightByteClassifications[i];
+        int eightByteSize = argLocDesc->m_eightByteInfo.GetEightByteSize(i);
+        SystemVClassificationType eightByteClassification = argLocDesc->m_eightByteInfo.GetEightByteClassification(i);
 
         _ASSERTE(remainingBytes >= eightByteSize);
 
@@ -466,7 +466,7 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
         EEClass* eeClass = pMT->GetClass();
         UINT fpReturnSize = m_argIterator.GetFPReturnSize();
 
-        if (eeClass->GetNumberEightBytes() == 1)
+        if (eeClass->GetEightByteRegistersInfo().GetNumEightBytes() == 1)
         {
             if (fpReturnSize != 0)
             {

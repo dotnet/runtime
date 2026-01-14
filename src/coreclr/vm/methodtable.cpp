@@ -2045,16 +2045,16 @@ const char* GetSystemVClassificationTypeName(SystemVClassificationType t)
 #endif // _DEBUG && LOGGING
 
 // Returns 'true' if the struct is passed in registers, 'false' otherwise.
-bool MethodTable::ClassifyEightBytes(SystemVStructRegisterPassingHelper *helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool useNativeLayout, MethodTable** pByValueClassCache)
+bool MethodTable::ClassifyEightBytes(SystemVStructRegisterPassingHelper *helperPtr, bool useNativeLayout, MethodTable** pByValueClassCache)
 {
     if (useNativeLayout)
     {
         _ASSERTE(pByValueClassCache == NULL);
-        return ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel, startOffsetOfStruct, GetNativeLayoutInfo());
+        return ClassifyEightBytesWithNativeLayout(helperPtr, 0, 0, GetNativeLayoutInfo());
     }
     else
     {
-        return ClassifyEightBytesWithManagedLayout(helperPtr, nestingLevel, startOffsetOfStruct, useNativeLayout, pByValueClassCache);
+        return ClassifyEightBytesWithManagedLayout(helperPtr, 0, 0, useNativeLayout, pByValueClassCache);
     }
 }
 

@@ -640,12 +640,8 @@ class EEClassOptionalFields
     //
 
 #if defined(UNIX_AMD64_ABI)
-    // Number of eightBytes in the following arrays
-    uint8_t m_numberEightBytes;
-    // Classification of the eightBytes
-    SystemVClassificationType m_eightByteClassifications[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
-    // Size of data the eightBytes
-    uint8_t m_eightByteSizes[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+    // Information about the eightByte classifications for structs passed in registers
+    SystemVEightByteRegistersInfo m_eightByteRegistersInfo;
 #endif // UNIX_AMD64_ABI
 
     // Required alignment for this fields of this type (only set in auto-layout structures when different from pointer alignment)
@@ -1421,41 +1417,19 @@ public:
 
 
 #if defined(UNIX_AMD64_ABI)
-    // Get number of eightbytes used by a struct passed in registers.
-    inline uint8_t GetNumberEightBytes()
+    inline SystemVEightByteRegistersInfo GetEightByteRegistersInfo()
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasOptionalFields());
-        return GetOptionalFields()->m_numberEightBytes;
-    }
-
-    // Get eightbyte classification for the eightbyte with the specified index.
-    inline SystemVClassificationType GetEightByteClassification(int index)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasOptionalFields());
-        return GetOptionalFields()->m_eightByteClassifications[index];
-    }
-
-    // Get size of the data in the eightbyte with the specified index.
-    inline uint8_t GetEightByteSize(int index)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasOptionalFields());
-        return GetOptionalFields()->m_eightByteSizes[index];
+        return GetOptionalFields()->m_eightByteRegistersInfo;
     }
 
     // Set the eightByte classification
-    inline void SetEightByteClassification(uint8_t eightByteCount, SystemVClassificationType *eightByteClassifications, uint8_t *eightByteSizes)
+    inline void SetEightByteClassification(SystemVEightByteRegistersInfo eightByteInfo)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasOptionalFields());
-        GetOptionalFields()->m_numberEightBytes = eightByteCount;
-        for (int i = 0; i < eightByteCount; i++)
-        {
-            GetOptionalFields()->m_eightByteClassifications[i] = eightByteClassifications[i];
-            GetOptionalFields()->m_eightByteSizes[i] = eightByteSizes[i];
-        }
+        GetOptionalFields()->m_eightByteRegistersInfo = eightByteInfo;
     }
 #endif // UNIX_AMD64_ABI
 
