@@ -156,7 +156,7 @@ namespace System.Buffers.Text
                     return -2;
                 }
 
-                return default(Base64DecoderByte).DecodingMap[value];
+                return default(Base64.Base64DecoderByte).DecodingMap[value];
             }
 #endif
             public bool IsWhiteSpace(char value) => Base64Helper.IsWhiteSpace(value);
@@ -168,11 +168,11 @@ namespace System.Buffers.Text
         internal readonly struct Base64ByteValidatable : IBase64Validatable<byte>
         {
 #if NET
-            private static readonly SearchValues<byte> s_validBase64Chars = SearchValues.Create(default(Base64EncoderByte).EncodingMap);
+            private static readonly SearchValues<byte> s_validBase64Chars = SearchValues.Create(default(Base64.Base64EncoderByte).EncodingMap);
 
             public int IndexOfAnyExcept(ReadOnlySpan<byte> span) => span.IndexOfAnyExcept(s_validBase64Chars);
 #else
-            public int DecodeValue(byte value) => default(Base64DecoderByte).DecodingMap[value];
+            public int DecodeValue(byte value) => default(Base64.Base64DecoderByte).DecodingMap[value];
 #endif
             public bool IsWhiteSpace(byte value) => Base64Helper.IsWhiteSpace(value);
             public bool IsEncodingPad(byte value) => value == EncodingPad;
@@ -181,7 +181,7 @@ namespace System.Buffers.Text
             {
                 if (length % 4 == 0)
                 {
-                    int decoded = default(Base64DecoderByte).DecodingMap[lastChar];
+                    int decoded = default(Base64.Base64DecoderByte).DecodingMap[lastChar];
                     if ((paddingCount == 1 && (decoded & 0x03) != 0) ||
                         (paddingCount == 2 && (decoded & 0x0F) != 0))
                     {

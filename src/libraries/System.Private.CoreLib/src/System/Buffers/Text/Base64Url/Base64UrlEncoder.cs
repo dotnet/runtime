@@ -286,27 +286,27 @@ namespace System.Buffers.Text
 #if NET
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public unsafe void StoreVector512ToDestination(byte* dest, byte* destStart, int destLength, Vector512<byte> str) =>
-                default(Base64EncoderByte).StoreVector512ToDestination(dest, destStart, destLength, str);
+                default(Base64.Base64EncoderByte).StoreVector512ToDestination(dest, destStart, destLength, str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(Avx2))]
             public unsafe void StoreVector256ToDestination(byte* dest, byte* destStart, int destLength, Vector256<byte> str) =>
-                default(Base64EncoderByte).StoreVector256ToDestination(dest, destStart, destLength, str);
+                default(Base64.Base64EncoderByte).StoreVector256ToDestination(dest, destStart, destLength, str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public unsafe void StoreVector128ToDestination(byte* dest, byte* destStart, int destLength, Vector128<byte> str) =>
-                default(Base64EncoderByte).StoreVector128ToDestination(dest, destStart, destLength, str);
+                default(Base64.Base64EncoderByte).StoreVector128ToDestination(dest, destStart, destLength, str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             public unsafe void StoreArmVector128x4ToDestination(byte* dest, byte* destStart, int destLength,
                 Vector128<byte> res1, Vector128<byte> res2, Vector128<byte> res3, Vector128<byte> res4) =>
-                default(Base64EncoderByte).StoreArmVector128x4ToDestination(dest, destStart, destLength, res1, res2, res3, res4);
+                default(Base64.Base64EncoderByte).StoreArmVector128x4ToDestination(dest, destStart, destLength, res1, res2, res3, res4);
 #endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public unsafe void EncodeThreeAndWrite(byte* threeBytes, byte* destination, ref byte encodingMap) =>
-                default(Base64EncoderByte).EncodeThreeAndWrite(threeBytes, destination, ref encodingMap);
+                default(Base64.Base64EncoderByte).EncodeThreeAndWrite(threeBytes, destination, ref encodingMap);
         }
 
         private readonly struct Base64UrlEncoderChar : IBase64Encoder<ushort>
@@ -333,45 +333,12 @@ namespace System.Buffers.Text
             public int GetMaxEncodedLength(int _) => 0;  // not used for char encoding
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeOneOptionallyPadTwo(byte* oneByte, ushort* dest, ref byte encodingMap)
-            {
-                uint t0 = oneByte[0];
-
-                uint i = t0 << 8;
-
-                uint i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
-                uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
-
-                uint result;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    result = (i0 | (i1 << 16));
-                }
-                else
-                {
-                    result = ((i0 << 16) | i1);
-                }
-
-                Unsafe.WriteUnaligned(dest, result);
-            }
+            public unsafe void EncodeOneOptionallyPadTwo(byte* oneByte, ushort* dest, ref byte encodingMap) =>
+                Base64Helper.EncodeOneAndWriteTwoChars(oneByte, dest, ref encodingMap);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeTwoOptionallyPadOne(byte* twoBytes, ushort* dest, ref byte encodingMap)
-            {
-                uint t0 = twoBytes[0];
-                uint t1 = twoBytes[1];
-
-                uint i = (t0 << 16) | (t1 << 8);
-
-                ushort i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
-                ushort i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
-                ushort i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
-
-                dest[0] = i0;
-                dest[1] = i1;
-                dest[2] = i2;
-            }
+            public unsafe void EncodeTwoOptionallyPadOne(byte* twoBytes, ushort* dest, ref byte encodingMap) =>
+                Base64Helper.EncodeTwoAndWriteThreeChars(twoBytes, dest, ref encodingMap);
 
 #if NET
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
