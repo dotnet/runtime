@@ -11,3 +11,10 @@
 
 #define INDEBUG(x)          x
 #define DEBUGARG(x)         , x
+#define assert(p) (void)((p) || (assertAbort(#p, __FILE__, __LINE__), 0))
+#define assert(p) (void)0
+#define assert(a)
+#define assert
+#define assert(expression) ((void)0)
+#define assert(expression) ((void)( (!!(expression)) || (_wassert(_CRT_WIDE(#expression), _CRT_WIDE(__FILE__), (unsigned)(__LINE__)), 0)) )
+#define assert(_expr) ASSERT(_expr)

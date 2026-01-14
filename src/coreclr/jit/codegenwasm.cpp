@@ -495,63 +495,151 @@ static constexpr uint32_t PackTypes(var_types toType, var_types  fromType)
     return ((uint32_t)toType) | ((uint32_t)fromType << shift1);
 }
 
-//------------------------------------------------------------------------
-// genCodeForCast: Generate code for a cast operation
-//
-// Arguments:
-//    tree - The cast operation for which we are generating code.
-//
-void CodeGen::genCodeForCast(GenTreeOp* tree)
+void CodeGen::genIntToIntCast(GenTreeCast *cast)
 {
-    assert(tree->OperIs(GT_CAST));
-    if (tree->gtOverflow())
-        NYI_WASM("Overflow checks");
+    GenIntCastDesc desc(cast);
+    var_types      toType = genActualType(cast->CastToType());
+    var_types      fromType   = genActualType(cast->CastOp()->TypeGet());
+    int            extendSize = desc.ExtendSrcSize();
+    instruction    ins        = INS_none;
 
-    genConsumeOperands(tree);
-
-    instruction ins;
-    var_types   fromType = genActualType(tree->gtOp1->TypeGet());
-    // cases for GT_CAST(A <- B)
-    switch (PackTypes(/* toType */ tree->TypeGet(), /* fromType */ fromType)) 
+    assert(fromType == TYP_INT || fromType == TYP_LONG);
+    switch (desc.ExtendKind())
     {
-        // NOTE: For this, RyuJIT seems to just generate an i32 load of the i64 operand instead of a GT_CAST.
-        // I suspect once we implement use of wasm locals instead of the linear stack, GT_CAST will appear.
-        case PackTypes(TYP_INT, TYP_LONG):
-            ins = INS_i32_wrap_i64;
+        case GenIntCastDesc::ExtendKind::COPY:
+        {
+            if (toType == TYP_INT && fromType == TYP_LONG)
+            {
+                ins = INS_i32_wrap_i64;
+            }
+            else
+            {
+                assert(toType == fromType);
+                ins = INS_none;
+            }
             break;
-
-        case PackTypes(TYP_LONG, TYP_INT):
-            // FIXME: Use extend8/extend16 as appropriate
-            ins = tree->IsUnsigned() ? INS_i64_extend_u_i32 : INS_i64_extend_s_i32;
+        }
+        case GenIntCastDesc::ExtendKind::ZERO_EXTEND_SMALL_INT:
+        {
+            assert(extendSize <= 2);
+            if (toType == TYP_LONG)
+            {
+                ins = INS_i64_extend_u_i32;
+            }
+            else
+            {
+                // We expect the underlying types to both be int here,
+                // so we don't need to do anything more
+                assert(toType == TYP_INT && fromType == TYP_INT);
+                ins = INS_none;
+            }
             break;
-
-        case PackTypes(TYP_DOUBLE, TYP_FLOAT):
-            // NOTE: This name is wrong in the spec.
-            ins = INS_f64_promote_f32;
+        }
+        case GenIntCastDesc::ExtendKind::SIGN_EXTEND_SMALL_INT:
+        {
+            assert(extendSize <= 2);
+            switch (extendSize)
+            {
+                case 1:
+                    ins = INS_i32_extend8_s;
+                    break;
+                case 2:
+                    ins = INS_i32_extend16_s;
+                    break;
+            }
             break;
-
-        case PackTypes(TYP_FLOAT, TYP_DOUBLE):
-            ins = INS_f32_demote_f64;
+        }
+        case GenIntCastDesc::ExtendKind::ZERO_EXTEND_INT:
+        {
+            assert(toType == TYP_LONG);
+            ins = INS_i64_extend_u_i32;
             break;
-
-        // TODO: Floating point conversions - we need to figure out where semantics require a helper and where they
-        // don't.
-        case PackTypes(TYP_FLOAT, TYP_INT):
-        case PackTypes(TYP_FLOAT, TYP_LONG):
-        case PackTypes(TYP_DOUBLE, TYP_INT):
-        case PackTypes(TYP_DOUBLE, TYP_LONG):
-            ins = INS_none;
-            NYI_WASM("genCodeForCast: float from int");
+        }
+        case GenIntCastDesc::ExtendKind::SIGN_EXTEND_INT:
+        {
+            assert(toType == TYP_LONG);
+            ins = INS_i64_extend_s_i32;
             break;
-
+        }
         default:
-            ins = INS_none;
-            NYI_WASM("genCodeForCast");
+            NYI_WASM("genIntToIntCast: unhandled ExtendKind");
             break;
+    }
+
+    if (ins != INS_none)
+    {
+        GetEmitter()->emitIns(ins);
+    }
+    genProduceReg(cast);
+}
+
+void CodeGen::genFloatToIntCast(GenTree* tree)
+{
+    var_types      toType = genActualType(tree->TypeGet());
+    var_types      fromType   = genActualType(tree->AsCast()->CastFromType());
+    bool           isUnsigned = varTypeIsUnsigned(tree->AsCast()->CastToType());
+    instruction    ins        = INS_none;
+    assert(varTypeIsFloating(fromType) && (toType == TYP_INT || toType == TYP_LONG));
+    printf("genFloatToIntCast from %s to %s, unsigned=%d\n", varTypeName(fromType), varTypeName(toType), isUnsigned);
+
+    switch (PackTypes(toType, fromType))
+    {
+        case PackTypes(TYP_INT, TYP_FLOAT):
+            ins = isUnsigned ? INS_i32_trunc_sat_f32_u : INS_i32_trunc_sat_f32_s;
+            break;
+        case PackTypes(TYP_INT, TYP_DOUBLE):
+            ins = isUnsigned ? INS_i32_trunc_sat_f64_u : INS_i32_trunc_sat_f64_s;
+            break;
+        case PackTypes(TYP_LONG, TYP_FLOAT):
+            ins = isUnsigned ? INS_i64_trunc_sat_f32_u : INS_i64_trunc_sat_f32_s;
+            break;
+        case PackTypes(TYP_LONG, TYP_DOUBLE):
+            ins = isUnsigned ? INS_i64_trunc_sat_f64_u : INS_i64_trunc_sat_f64_s;
+            break;
+        default:
+            unreached();
     }
 
     GetEmitter()->emitIns(ins);
     genProduceReg(tree);
+}
+
+void CodeGen::genIntToFloatCast(GenTree* cast)
+{
+    NYI_WASM("genIntToFloatCast");
+}
+
+void CodeGen::genFloatToFloatCast(GenTree* cast)
+{
+    GenTreeCast* castOp = cast->AsCast();
+    var_types    toType   = genActualType(cast->TypeGet());
+    var_types fromType = genActualType(castOp->CastFromType());
+
+    printf("genFloatToFloatCast from %s to %s\n", varTypeName(fromType), varTypeName(toType));
+
+    instruction ins = INS_none;
+    switch (PackTypes(toType, fromType))
+    {
+        case PackTypes(TYP_FLOAT, TYP_DOUBLE):
+            ins = INS_f32_demote_f64;
+            break;
+        case PackTypes(TYP_DOUBLE, TYP_FLOAT):
+            ins = INS_f64_promote_f32;
+            break;
+        case PackTypes(TYP_FLOAT, TYP_FLOAT):
+        case PackTypes(TYP_DOUBLE, TYP_DOUBLE):
+            ins = INS_none;
+            break;
+        default:
+            NYI_WASM("genFloatToFloatCast: unhandled type pair");
+            break;
+    }
+
+    if (ins != INS_none)
+    {
+        GetEmitter()->emitIns(ins);
+    }
+    genProduceReg(cast);
 }
 
 //------------------------------------------------------------------------
@@ -932,6 +1020,13 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
         assert(genIsValidReg(varDsc->GetRegNum()));
         unsigned wasmLclIndex = WasmRegToIndex(varDsc->GetRegNum());
         GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(tree), wasmLclIndex);
+        // In this case, the resulting tree type may be different from the local var type where the value originates,
+        // and so we need an explicit conversion since we can't "load"
+        // the value with a different type like we can if the value is on the shadow stack.
+        if (tree->TypeIs(TYP_INT) && varDsc->TypeIs(TYP_LONG))
+        {
+            GetEmitter()->emitIns(INS_i32_wrap_i64);
+        }
     }
 }
 

@@ -1091,6 +1091,235 @@ void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int reg
 #endif // !TARGET_WASM
 
 //------------------------------------------------------------------------
+// genCodeForCast: Generates the code for GT_CAST.
+//
+// Arguments:
+//    tree - the GT_CAST node.
+//
+void CodeGen::genCodeForCast(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_CAST));
+
+#ifdef TARGET_WASM
+    if (tree->gtOverflow())
+    {
+        NYI_WASM("Overflow checks");
+    }
+#endif
+    
+
+    var_types targetType = tree->TypeGet();
+
+    if (varTypeIsFloating(targetType) && varTypeIsFloating(tree->gtOp1))
+    {
+        // Casts float/double <--> double/float
+        genFloatToFloatCast(tree);
+    }
+    else if (varTypeIsFloating(tree->gtOp1))
+    {
+        // Casts float/double --> int32/int64
+        genFloatToIntCast(tree);
+    }
+    else if (varTypeIsFloating(targetType))
+    {
+        // Casts int32/uint32/int64/uint64 --> float/double
+        genIntToFloatCast(tree);
+    }
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+    else if (varTypeIsLong(tree->gtOp1))
+    {
+        genLongToIntCast(tree);
+    }
+#endif // !TARGET_64BIT && !TARGET_WASM
+    else
+    {
+        // Casts int <--> int
+        genIntToIntCast(tree->AsCast());
+    }
+    // The per-case functions call genProduceReg()
+}
+
+CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
+{
+    GenTree* const  src          = cast->CastOp();
+    const var_types srcType      = genActualType(src);
+    const bool      srcUnsigned  = cast->IsUnsigned();
+    const unsigned  srcSize      = genTypeSize(srcType);
+    const var_types castType     = cast->gtCastType;
+    const bool      castUnsigned = varTypeIsUnsigned(castType);
+    const unsigned  castSize     = genTypeSize(castType);
+    const var_types dstType      = genActualType(cast->TypeGet());
+    const unsigned  dstSize      = genTypeSize(dstType);
+    const bool      overflow     = cast->gtOverflow();
+    const bool      castIsLoad   = !src->isUsedFromReg();
+
+    assert(castIsLoad == src->isUsedFromMemory());
+#ifndef TARGET_WASM
+    assert((srcSize == 4) || (srcSize == genTypeSize(TYP_I_IMPL)));
+    assert((dstSize == 4) || (dstSize == genTypeSize(TYP_I_IMPL)));
+#else
+    assert((srcSize == 4) || (srcSize == 8));
+    assert((dstSize == 4) || (dstSize == 8));
+#endif
+
+    assert(dstSize == genTypeSize(genActualType(castType)));
+
+    if (castSize < 4) // Cast to small int type
+    {
+        if (overflow)
+        {
+            m_checkKind    = CHECK_SMALL_INT_RANGE;
+            m_checkSrcSize = srcSize;
+            // Since these are small int types we can compute the min and max
+            // values of the castType without risk of integer overflow.
+            const int castNumBits = (castSize * 8) - (castUnsigned ? 0 : 1);
+            m_checkSmallIntMax    = (1 << castNumBits) - 1;
+            m_checkSmallIntMin    = (castUnsigned || srcUnsigned) ? 0 : (-m_checkSmallIntMax - 1);
+
+            m_extendKind    = COPY;
+            m_extendSrcSize = dstSize;
+        }
+        else
+        {
+            m_checkKind = CHECK_NONE;
+
+            // Casting to a small type really means widening from that small type to INT/LONG.
+            m_extendKind    = castUnsigned ? ZERO_EXTEND_SMALL_INT : SIGN_EXTEND_SMALL_INT;
+            m_extendSrcSize = castSize;
+        }
+    }
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
+    // castType cannot be (U)LONG on 32 bit targets, such casts should have been decomposed.
+    // srcType cannot be a small int type since it's the "actual type" of the cast operand.
+    // This means that widening casts do not occur on 32 bit targets.
+    else if (castSize > srcSize) // (U)INT to (U)LONG widening cast
+    {
+        assert((srcSize == 4) && (castSize == 8));
+
+        if (overflow && !srcUnsigned && castUnsigned)
+        {
+            // Widening from INT to ULONG, check if the value is positive
+            m_checkKind    = CHECK_POSITIVE;
+            m_checkSrcSize = 4;
+
+            // This is the only overflow checking cast that requires changing the
+            // source value (by zero extending), all others copy the value as is.
+            assert((srcType == TYP_INT) && (castType == TYP_ULONG));
+            m_extendKind    = ZERO_EXTEND_INT;
+            m_extendSrcSize = 4;
+        }
+        else
+        {
+            m_checkKind = CHECK_NONE;
+
+            m_extendKind    = srcUnsigned ? ZERO_EXTEND_INT : SIGN_EXTEND_INT;
+            m_extendSrcSize = 4;
+        }
+    }
+    else if (castSize < srcSize) // (U)LONG to (U)INT narrowing cast
+    {
+        assert((srcSize == 8) && (castSize == 4));
+
+        if (overflow)
+        {
+            if (castUnsigned) // (U)LONG to UINT cast
+            {
+                m_checkKind = CHECK_UINT_RANGE;
+            }
+            else if (srcUnsigned) // ULONG to INT cast
+            {
+                m_checkKind = CHECK_POSITIVE_INT_RANGE;
+            }
+            else // LONG to INT cast
+            {
+                m_checkKind = CHECK_INT_RANGE;
+            }
+
+            m_checkSrcSize = 8;
+        }
+        else
+        {
+            m_checkKind = CHECK_NONE;
+        }
+
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        // TODO-LOONGARCH64:
+        // TODO-RISCV64:
+        // LoongArch64 and RiscV64 ABIs require 32-bit values to be sign-extended to 64-bits.
+        // We apply the sign-extension unconditionally here to avoid corner case bugs, even
+        // though it may not be strictly necessary in all cases.
+        m_extendKind = SIGN_EXTEND_INT;
+#else
+        m_extendKind = COPY;
+#endif
+        m_extendSrcSize = 4;
+    }
+#endif
+    else // if (castSize == srcSize) // Sign changing or same type cast
+    {
+        assert(castSize == srcSize);
+
+        if (overflow && (srcUnsigned != castUnsigned))
+        {
+            m_checkKind    = CHECK_POSITIVE;
+            m_checkSrcSize = srcSize;
+        }
+        else
+        {
+            m_checkKind = CHECK_NONE;
+        }
+
+        m_extendKind    = COPY;
+        m_extendSrcSize = srcSize;
+    }
+
+// TODO-WASM: See if we can reuse this logic to combine (load -> cast) into a load with extension.
+#ifndef TARGET_WASM
+    if (castIsLoad)
+    {
+        const var_types srcLoadType = src->TypeGet();
+
+        switch (m_extendKind)
+        {
+            case ZERO_EXTEND_SMALL_INT: // small type/int/long -> ubyte/ushort
+                assert(varTypeIsUnsigned(srcLoadType) || (genTypeSize(srcLoadType) >= genTypeSize(castType)));
+                m_extendKind    = LOAD_ZERO_EXTEND_SMALL_INT;
+                m_extendSrcSize = min(genTypeSize(srcLoadType), genTypeSize(castType));
+                break;
+
+            case SIGN_EXTEND_SMALL_INT: // small type/int/long -> byte/short
+                assert(varTypeIsSigned(srcLoadType) || (genTypeSize(srcLoadType) >= genTypeSize(castType)));
+                m_extendKind    = LOAD_SIGN_EXTEND_SMALL_INT;
+                m_extendSrcSize = min(genTypeSize(srcLoadType), genTypeSize(castType));
+                break;
+
+#ifdef TARGET_64BIT
+            case ZERO_EXTEND_INT: // ubyte/ushort/uint -> long.
+                assert(varTypeIsUnsigned(srcLoadType) || (srcLoadType == TYP_INT));
+                m_extendKind    = varTypeIsSmall(srcLoadType) ? LOAD_ZERO_EXTEND_SMALL_INT : LOAD_ZERO_EXTEND_INT;
+                m_extendSrcSize = genTypeSize(srcLoadType);
+                break;
+
+            case SIGN_EXTEND_INT: // byte/short/int -> long.
+                assert(varTypeIsSigned(srcLoadType) || (srcLoadType == TYP_INT));
+                m_extendKind    = varTypeIsSmall(srcLoadType) ? LOAD_SIGN_EXTEND_SMALL_INT : LOAD_SIGN_EXTEND_INT;
+                m_extendSrcSize = genTypeSize(srcLoadType);
+                break;
+#endif // TARGET_64BIT
+
+            case COPY: // long -> long, small type/int/long -> int.
+                m_extendKind    = LOAD_SOURCE;
+                m_extendSrcSize = 0;
+                break;
+
+            default:
+                unreached();
+        }
+    }
+#endif // !WASM
+}
+
+//------------------------------------------------------------------------
 // genUpdateVarReg: Update the current register location for a lclVar
 //
 // Arguments:
@@ -2310,218 +2539,6 @@ void CodeGen::genTransferRegGCState(regNumber dst, regNumber src)
     }
 }
 
-//------------------------------------------------------------------------
-// genCodeForCast: Generates the code for GT_CAST.
-//
-// Arguments:
-//    tree - the GT_CAST node.
-//
-void CodeGen::genCodeForCast(GenTreeOp* tree)
-{
-    assert(tree->OperIs(GT_CAST));
-
-    var_types targetType = tree->TypeGet();
-
-    if (varTypeIsFloating(targetType) && varTypeIsFloating(tree->gtOp1))
-    {
-        // Casts float/double <--> double/float
-        genFloatToFloatCast(tree);
-    }
-    else if (varTypeIsFloating(tree->gtOp1))
-    {
-        // Casts float/double --> int32/int64
-        genFloatToIntCast(tree);
-    }
-    else if (varTypeIsFloating(targetType))
-    {
-        // Casts int32/uint32/int64/uint64 --> float/double
-        genIntToFloatCast(tree);
-    }
-#ifndef TARGET_64BIT
-    else if (varTypeIsLong(tree->gtOp1))
-    {
-        genLongToIntCast(tree);
-    }
-#endif // !TARGET_64BIT
-    else
-    {
-        // Casts int <--> int
-        genIntToIntCast(tree->AsCast());
-    }
-    // The per-case functions call genProduceReg()
-}
-
-CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
-{
-    GenTree* const  src          = cast->CastOp();
-    const var_types srcType      = genActualType(src);
-    const bool      srcUnsigned  = cast->IsUnsigned();
-    const unsigned  srcSize      = genTypeSize(srcType);
-    const var_types castType     = cast->gtCastType;
-    const bool      castUnsigned = varTypeIsUnsigned(castType);
-    const unsigned  castSize     = genTypeSize(castType);
-    const var_types dstType      = genActualType(cast->TypeGet());
-    const unsigned  dstSize      = genTypeSize(dstType);
-    const bool      overflow     = cast->gtOverflow();
-    const bool      castIsLoad   = !src->isUsedFromReg();
-
-    assert(castIsLoad == src->isUsedFromMemory());
-    assert((srcSize == 4) || (srcSize == genTypeSize(TYP_I_IMPL)));
-    assert((dstSize == 4) || (dstSize == genTypeSize(TYP_I_IMPL)));
-
-    assert(dstSize == genTypeSize(genActualType(castType)));
-
-    if (castSize < 4) // Cast to small int type
-    {
-        if (overflow)
-        {
-            m_checkKind    = CHECK_SMALL_INT_RANGE;
-            m_checkSrcSize = srcSize;
-            // Since these are small int types we can compute the min and max
-            // values of the castType without risk of integer overflow.
-            const int castNumBits = (castSize * 8) - (castUnsigned ? 0 : 1);
-            m_checkSmallIntMax    = (1 << castNumBits) - 1;
-            m_checkSmallIntMin    = (castUnsigned || srcUnsigned) ? 0 : (-m_checkSmallIntMax - 1);
-
-            m_extendKind    = COPY;
-            m_extendSrcSize = dstSize;
-        }
-        else
-        {
-            m_checkKind = CHECK_NONE;
-
-            // Casting to a small type really means widening from that small type to INT/LONG.
-            m_extendKind    = castUnsigned ? ZERO_EXTEND_SMALL_INT : SIGN_EXTEND_SMALL_INT;
-            m_extendSrcSize = castSize;
-        }
-    }
-#ifdef TARGET_64BIT
-    // castType cannot be (U)LONG on 32 bit targets, such casts should have been decomposed.
-    // srcType cannot be a small int type since it's the "actual type" of the cast operand.
-    // This means that widening casts do not occur on 32 bit targets.
-    else if (castSize > srcSize) // (U)INT to (U)LONG widening cast
-    {
-        assert((srcSize == 4) && (castSize == 8));
-
-        if (overflow && !srcUnsigned && castUnsigned)
-        {
-            // Widening from INT to ULONG, check if the value is positive
-            m_checkKind    = CHECK_POSITIVE;
-            m_checkSrcSize = 4;
-
-            // This is the only overflow checking cast that requires changing the
-            // source value (by zero extending), all others copy the value as is.
-            assert((srcType == TYP_INT) && (castType == TYP_ULONG));
-            m_extendKind    = ZERO_EXTEND_INT;
-            m_extendSrcSize = 4;
-        }
-        else
-        {
-            m_checkKind = CHECK_NONE;
-
-            m_extendKind    = srcUnsigned ? ZERO_EXTEND_INT : SIGN_EXTEND_INT;
-            m_extendSrcSize = 4;
-        }
-    }
-    else if (castSize < srcSize) // (U)LONG to (U)INT narrowing cast
-    {
-        assert((srcSize == 8) && (castSize == 4));
-
-        if (overflow)
-        {
-            if (castUnsigned) // (U)LONG to UINT cast
-            {
-                m_checkKind = CHECK_UINT_RANGE;
-            }
-            else if (srcUnsigned) // ULONG to INT cast
-            {
-                m_checkKind = CHECK_POSITIVE_INT_RANGE;
-            }
-            else // LONG to INT cast
-            {
-                m_checkKind = CHECK_INT_RANGE;
-            }
-
-            m_checkSrcSize = 8;
-        }
-        else
-        {
-            m_checkKind = CHECK_NONE;
-        }
-
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        // TODO-LOONGARCH64:
-        // TODO-RISCV64:
-        // LoongArch64 and RiscV64 ABIs require 32-bit values to be sign-extended to 64-bits.
-        // We apply the sign-extension unconditionally here to avoid corner case bugs, even
-        // though it may not be strictly necessary in all cases.
-        m_extendKind = SIGN_EXTEND_INT;
-#else
-        m_extendKind = COPY;
-#endif
-        m_extendSrcSize = 4;
-    }
-#endif
-    else // if (castSize == srcSize) // Sign changing or same type cast
-    {
-        assert(castSize == srcSize);
-
-        if (overflow && (srcUnsigned != castUnsigned))
-        {
-            m_checkKind    = CHECK_POSITIVE;
-            m_checkSrcSize = srcSize;
-        }
-        else
-        {
-            m_checkKind = CHECK_NONE;
-        }
-
-        m_extendKind    = COPY;
-        m_extendSrcSize = srcSize;
-    }
-
-    if (castIsLoad)
-    {
-        const var_types srcLoadType = src->TypeGet();
-
-        switch (m_extendKind)
-        {
-            case ZERO_EXTEND_SMALL_INT: // small type/int/long -> ubyte/ushort
-                assert(varTypeIsUnsigned(srcLoadType) || (genTypeSize(srcLoadType) >= genTypeSize(castType)));
-                m_extendKind    = LOAD_ZERO_EXTEND_SMALL_INT;
-                m_extendSrcSize = min(genTypeSize(srcLoadType), genTypeSize(castType));
-                break;
-
-            case SIGN_EXTEND_SMALL_INT: // small type/int/long -> byte/short
-                assert(varTypeIsSigned(srcLoadType) || (genTypeSize(srcLoadType) >= genTypeSize(castType)));
-                m_extendKind    = LOAD_SIGN_EXTEND_SMALL_INT;
-                m_extendSrcSize = min(genTypeSize(srcLoadType), genTypeSize(castType));
-                break;
-
-#ifdef TARGET_64BIT
-            case ZERO_EXTEND_INT: // ubyte/ushort/uint -> long.
-                assert(varTypeIsUnsigned(srcLoadType) || (srcLoadType == TYP_INT));
-                m_extendKind    = varTypeIsSmall(srcLoadType) ? LOAD_ZERO_EXTEND_SMALL_INT : LOAD_ZERO_EXTEND_INT;
-                m_extendSrcSize = genTypeSize(srcLoadType);
-                break;
-
-            case SIGN_EXTEND_INT: // byte/short/int -> long.
-                assert(varTypeIsSigned(srcLoadType) || (srcLoadType == TYP_INT));
-                m_extendKind    = varTypeIsSmall(srcLoadType) ? LOAD_SIGN_EXTEND_SMALL_INT : LOAD_SIGN_EXTEND_INT;
-                m_extendSrcSize = genTypeSize(srcLoadType);
-                break;
-#endif // TARGET_64BIT
-
-            case COPY: // long -> long, small type/int/long -> int.
-                m_extendKind    = LOAD_SOURCE;
-                m_extendSrcSize = 0;
-                break;
-
-            default:
-                unreached();
-        }
-    }
-}
 
 #if !defined(TARGET_64BIT)
 //------------------------------------------------------------------------

@@ -9,7 +9,7 @@
 #include "codegen.h"
 
 // clang-format off
-/*static*/ const BYTE CodeGenInterface::instInfo[] =
+/*static*/ const uint16_t CodeGenInterface::instInfo[] =
 {
     #define INST(id, nm, info, fmt, opcode) info,
     #include "instrs.h"
@@ -388,7 +388,19 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     switch (insFmt)
     {
         case IF_OPCODE:
-            dst += emitOutputByte(dst, opcode);
+            {}
+            assert(FitsIn<uint16_t>(opcode));
+
+            if (FitsIn<uint8_t>(opcode))
+            {
+                dst += emitOutputByte(dst, opcode);
+            }
+            else if (FitsIn<uint16_t>(opcode))
+            {
+                dst += emitOutputByte(dst, opcode&0xFF);
+                dst += emitOutputByte(dst, opcode>>8);
+            }
+
             break;
         case IF_BLOCK:
             dst += emitOutputByte(dst, opcode);
