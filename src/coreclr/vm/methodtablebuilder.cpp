@@ -413,7 +413,7 @@ MethodTableBuilder::ExpandApproxInterface(
     // to have found all of the interfaces that the type implements, and to place them in the interface list itself. Also
     // we can assume no ambiguous interfaces
     // Code related to this is marked with #SpecialCorelibInterfaceExpansionAlgorithm
-    if (!(GetModule()->IsSystem() && IsValueClass()))
+    if (!(GetModule()->IsSystem() && (IsValueClass() || IsInterface())))
     {
         // Make sure to pass in the substitution from the new itf type created above as
         // these methods assume that substitutions are allocated in the stacking heap,
@@ -1022,7 +1022,7 @@ MethodTableBuilder::bmtMDMethod::bmtMDMethod(
       m_dwImplAttrs(dwImplAttrs),
       m_dwRVA(dwRVA),
       m_type(type),
-      m_asyncMethodKind(AsyncMethodKind::NotAsync),
+      m_asyncMethodFlags(AsyncMethodFlags::None),
       m_implType(implType),
       m_methodSig(pOwningType->GetModule(),
                   tok,
@@ -1048,7 +1048,7 @@ MethodTableBuilder::bmtMDMethod::bmtMDMethod(
     DWORD dwImplAttrs,
     DWORD dwRVA,
     Signature sig,
-    AsyncMethodKind asyncMethodKind,
+    AsyncMethodFlags asyncMethodFlags,
     MethodClassification type,
     METHOD_IMPL_TYPE implType)
     : m_pOwningType(pOwningType),
@@ -1056,7 +1056,7 @@ MethodTableBuilder::bmtMDMethod::bmtMDMethod(
       m_dwImplAttrs(dwImplAttrs),
       m_dwRVA(dwRVA),
       m_type(type),
-      m_asyncMethodKind(asyncMethodKind),
+      m_asyncMethodFlags(asyncMethodFlags),
       m_implType(implType),
       m_methodSig(pOwningType->GetModule(),
                   tok,
@@ -1365,7 +1365,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     if (g_pConfig->ShouldBreakOnClassBuild(className))
     {
-        CONSISTENCY_CHECK_MSGF(false, ("BreakOnClassBuild: typename '%s' ", className));
         GetHalfBakedClass()->m_fDebuggingClass = TRUE;
     }
 
@@ -1405,11 +1404,8 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #endif // _DEBUG
 
     // If this is CoreLib, then don't perform some sanity checks on the layout
-    bmtProp->fNoSanityChecks = pModule->IsSystem() ||
-#ifdef FEATURE_READYTORUN
-        // No sanity checks for ready-to-run compiled images if possible
-        (pModule->IsReadyToRun() && pModule->GetReadyToRunInfo()->SkipTypeValidation()) ||
-#endif
+    bmtProp->fNoSanityChecks =
+        pModule->SkipTypeValidation() ||
         // No sanity checks for real generic instantiations
         !bmtGenerics->IsTypicalTypeDefinition();
 
@@ -2237,6 +2233,9 @@ MethodTableBuilder::EnumerateMethodImpls()
     bmtMethod->dwNumberMethodImpls = hEnumMethodImpl.EnumMethodImplGetCount();
     bmtMethod->dwNumberInexactMethodImplCandidates = 0;
 
+    if (bmtMethod->dwNumberMethodImpls != 0)
+        GetHalfBakedClass()->SetContainsMethodImpls();
+
     // This is the first pass. In this we will simply enumerate the token pairs and fill in
     // the data structures. In addition, we'll sort the list and eliminate duplicates.
     if (bmtMethod->dwNumberMethodImpls > 0)
@@ -2678,14 +2677,17 @@ MethodTableBuilder::EnumerateClassMethods()
     if ((DWORD)MAX_SLOT_INDEX <= cMethAndGaps)
         BuildMethodTableThrowException(IDS_CLASSLOAD_TOO_MANY_METHODS);
 
-    bmtMethod->m_cMaxDeclaredMethods = (SLOT_INDEX)cMethAndGaps;
-
-    if (g_pConfig->RuntimeAsync())
+    // In a worst case the number of declared methods can double
+    // as each async method may have two variants.
+    // The method count is typically a modest number though.
+    // We will reserve twice the size for the builder, up to the max, just in case.
+    DWORD cMethUpperBound = cMethAndGaps * 2;
+    if ((DWORD)MAX_SLOT_INDEX <= cMethUpperBound)
     {
-        // TODO: (async) the index is uint16 and can potentially overflow. This needs to be more robust.
-        bmtMethod->m_cMaxDeclaredMethods *= 2;
+        cMethUpperBound = MAX_SLOT_INDEX - 1;
     }
 
+    bmtMethod->m_cMaxDeclaredMethods = (SLOT_INDEX)cMethUpperBound;
     bmtMethod->m_cDeclaredMethods = 0;
     bmtMethod->m_rgDeclaredMethods = new (GetStackingAllocator())
         bmtMDMethod *[bmtMethod->m_cMaxDeclaredMethods];
@@ -3184,6 +3186,11 @@ MethodTableBuilder::EnumerateClassMethods()
                 CONSISTENCY_CHECK(hr == S_OK);
                 type = mcPInvoke;
             }
+
+            if (IsMiAsync(dwImplFlags))
+            {
+                BuildMethodTableThrowException(BFA_BAD_ASYNC_METHOD);
+            }
         }
         else if (IsMiRuntime(dwImplFlags))
         {
@@ -3228,6 +3235,11 @@ MethodTableBuilder::EnumerateClassMethods()
             }
 
             delegateMethodsSeen |= newDelegateMethodSeen;
+
+            if (IsMiAsync(dwImplFlags))
+            {
+                BuildMethodTableThrowException(BFA_BAD_ASYNC_METHOD);
+            }
         }
         else if (hasGenericMethodArgs)
         {
@@ -3255,6 +3267,12 @@ MethodTableBuilder::EnumerateClassMethods()
                 // pointer-sized field pointing to COM interop data which are
                 // allocated lazily when/if the MD actually gets used for interop.
                 type = mcComInterop;
+
+                // The interface method itself should never be marked as a runtime-async method.
+                if (IsMiAsync(dwImplFlags))
+                {
+                    BuildMethodTableThrowException(BFA_BAD_ASYNC_METHOD);
+                }
             }
             else
 #endif // !FEATURE_COMINTEROP
@@ -3306,6 +3324,11 @@ MethodTableBuilder::EnumerateClassMethods()
         bmtMDMethod *pDeclaredMethod = NULL;
         for (int insertCount = 0; insertCount < 2; insertCount++)
         {
+            if (bmtMethod->m_cDeclaredMethods >= bmtMethod->m_cMaxDeclaredMethods)
+            {
+                BuildMethodTableThrowException(IDS_CLASSLOAD_TOO_MANY_METHODS);
+            }
+
             bmtMDMethod * pNewMethod;
             if (insertCount == 0)
             {
@@ -3320,13 +3343,18 @@ MethodTableBuilder::EnumerateClassMethods()
 
                 if (IsTaskReturning(returnKind))
                 {
-                    // ordinary Task-returning method:
-                    //    Declare a TaskReturning method and add an Async variant that is a thunk to the TaskReturing one.
-                    //
-                    // IsMiAsync Task-returning method:
-                    //    Declare a RuntimeAsync method and add an Async variant with the actual implementation.
-                    //    The RuntimeAsync method becomes a thunk to the implementation helper.
-                    pNewMethod->SetAsyncMethodKind(IsMiAsync(dwImplFlags) ? AsyncMethodKind::RuntimeAsync : AsyncMethodKind::TaskReturning);
+                    // Declare a TaskReturning variant method.
+                    // In the next pass we will also add an AsyncCall variant that can be called by async
+                    // code when awaiting and bypass Task abstraction.
+                    AsyncMethodFlags flags = AsyncMethodFlags::ReturnsTaskOrValueTask;
+
+                    // if IsMiAsync is set, then the method becomes a task-returning thunk,
+                    // while actual IL belongs to the Async variant.
+                    // Otherwise the Async variant will be the thunk.
+                    if (IsMiAsync(dwImplFlags))
+                        flags |= AsyncMethodFlags::Thunk;
+
+                    pNewMethod->SetAsyncMethodFlags(flags);
                 }
                 else
                 {
@@ -3339,11 +3367,11 @@ MethodTableBuilder::EnumerateClassMethods()
                             BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
                         }
 
-                        pNewMethod->SetAsyncMethodKind(AsyncMethodKind::AsyncExplicitImpl);
+                        pNewMethod->SetAsyncMethodFlags(AsyncMethodFlags::AsyncCall);
                     }
                     else
                     {
-                        pNewMethod->SetAsyncMethodKind(AsyncMethodKind::NotAsync);
+                        pNewMethod->SetAsyncMethodFlags(AsyncMethodFlags::None);
                     }
                 }
 
@@ -3351,8 +3379,9 @@ MethodTableBuilder::EnumerateClassMethods()
             }
             else
             {
+                // Second pass, add the async variant.
+
                 ULONG cAsyncThunkMemberSignature = cMemberSignature;
-                AsyncMethodKind asyncKind;
                 ULONG originalTokenOffsetFromAsyncDetailsOffset;
                 ULONG newTokenOffsetFromAsyncDetailsOffset;
                 ULONG originalPrefixSize;
@@ -3360,12 +3389,16 @@ MethodTableBuilder::EnumerateClassMethods()
                 ULONG newSuffixSize;
                 ULONG newPrefixSize;
 
+                AsyncMethodFlags asyncFlags = (AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant);
+                // The opposite of the "if (IsMiAsync(dwImplFlags))" code above.
+                if (!IsMiAsync(dwImplFlags))
+                    asyncFlags |= AsyncMethodFlags::Thunk;
+
                 if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
                 {
                     cAsyncThunkMemberSignature += 1;
                     originalTokenOffsetFromAsyncDetailsOffset = 1;
                     newTokenOffsetFromAsyncDetailsOffset = 1;
-                    asyncKind = IsMiAsync(dwImplFlags) ? AsyncMethodKind::AsyncVariantImpl : AsyncMethodKind::AsyncVariantThunk;
                     originalPrefixSize = 1;
                     newPrefixSize = 1;
                     originalSuffixSize = 0;
@@ -3376,7 +3409,6 @@ MethodTableBuilder::EnumerateClassMethods()
                     cAsyncThunkMemberSignature -= 2;
                     originalTokenOffsetFromAsyncDetailsOffset = 2;
                     newTokenOffsetFromAsyncDetailsOffset = 1;
-                    asyncKind = IsMiAsync(dwImplFlags)? AsyncMethodKind::AsyncVariantImpl : AsyncMethodKind::AsyncVariantThunk;
                     originalPrefixSize = 2;
                     newPrefixSize = 1;
                     originalSuffixSize = 1;
@@ -3403,7 +3435,7 @@ MethodTableBuilder::EnumerateClassMethods()
 
                 BYTE elemTypeClassOrValuetype = returnsValueTask ? (BYTE)ELEMENT_TYPE_VALUETYPE : (BYTE)ELEMENT_TYPE_CLASS;
 
-                // for more info about constructing the signature of an async variant see comments in AsyncMethodKind
+                // for more info about constructing the signature of an async variant see comments in AsyncMethodFlags
                 if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
                 {
                     // Incoming sig will look like ... E_T_CLASS/E_T_VALUETYPE <TokenOfTask>
@@ -3423,6 +3455,15 @@ MethodTableBuilder::EnumerateClassMethods()
                     pNewMemberSignature[offsetOfAsyncDetails] = ELEMENT_TYPE_CMOD_REQD;
                 }
 
+                MethodClassification asyncVariantType = type;
+                if (type != mcIL && type != mcInstantiated)
+                {
+                    // Don't treat the async variant of special method kinds as
+                    // the special method kind.
+                    // The async variant methods are always IL methods with a transient implementation.
+                    asyncVariantType = mcIL;
+                }
+
                 Signature newMemberSig(pNewMemberSignature, cAsyncThunkMemberSignature);
                 pNewMethod = new (GetStackingAllocator()) bmtMDMethod(
                     bmtInternal->pType,
@@ -3431,12 +3472,24 @@ MethodTableBuilder::EnumerateClassMethods()
                     dwImplFlags,
                     dwMethodRVA,
                     newMemberSig,
-                    asyncKind,
-                    type,
+                    asyncFlags,
+                    asyncVariantType,
                     implType);
 
                 pNewMethod->SetAsyncOtherVariant(pDeclaredMethod);
                 pDeclaredMethod->SetAsyncOtherVariant(pNewMethod);
+
+#ifdef FEATURE_COMINTEROP
+                // We only ever include one of the two async variants (whichever doesn't have the async calling convention)
+                // Record an excluded method here in the COM VTable.
+                EnsureOptionalFieldsAreAllocated(GetHalfBakedClass(), m_pAllocMemTracker, GetLoaderAllocator()->GetLowFrequencyHeap());
+                if (GetHalfBakedClass()->GetSparseCOMInteropVTableMap() == NULL)
+                    GetHalfBakedClass()->SetSparseCOMInteropVTableMap(new SparseVTableMap());
+
+                GetHalfBakedClass()->GetSparseCOMInteropVTableMap()->RecordExcludedMethod((WORD)NumDeclaredMethods());
+
+                bmtProp->fSparse = true;
+#endif // FEATURE_COMINTEROP
             }
 
             bmtMethod->AddDeclaredMethod(pNewMethod);
@@ -3679,7 +3732,10 @@ VOID    MethodTableBuilder::AllocateWorkingSlotTables()
 
     // Allocate a FieldDesc* for each field
     bmtMFDescs->ppFieldDescList = new (GetStackingAllocator()) FieldDesc*[bmtMetaData->cFields];
-    ZeroMemory(bmtMFDescs->ppFieldDescList, bmtMetaData->cFields * sizeof(FieldDesc *));
+    if (bmtMetaData->cFields != 0)
+    {
+        ZeroMemory(bmtMFDescs->ppFieldDescList, bmtMetaData->cFields * sizeof(FieldDesc *));
+    }
 
     // Create a temporary function table (we don't know how large the vtable will be until the very end,
     // since we don't yet know how many declared methods are overrides vs. newslots).
@@ -3870,7 +3926,12 @@ CorElementType MethodTableBuilder::GetCorElementTypeOfTypeDefOrRefForStaticField
     Module *pModuleOfTypeDef;
     mdTypeDef tkTypeDef;
 
-    ClassLoader::ResolveTokenToTypeDefThrowing(module, typeDefOrRef, &pModuleOfTypeDef, &tkTypeDef);
+    if (!ClassLoader::ResolveTokenToTypeDefThrowing(module, typeDefOrRef, &pModuleOfTypeDef, &tkTypeDef))
+    {
+        // Returning ELEMENT_TYPE_VALUETYPE will cause the type to be fully resolved and proper type load exception
+        // to be thrown later in MethodTable::DoFullyLoad
+        return ELEMENT_TYPE_VALUETYPE;
+    }
 
     // First check to see if the type is byref-like
     if (pModuleOfTypeDef->GetCustomAttribute(tkTypeDef,
@@ -3905,11 +3966,12 @@ CorElementType MethodTableBuilder::GetCorElementTypeOfTypeDefOrRefForStaticField
             Module *pModuleOfSystemEnumType;
             mdTypeDef tkTypeDefOfSystemEnumType;
 
-            ClassLoader::ResolveTokenToTypeDefThrowing(pModuleOfTypeDef, tkTypeDefExtends, &pModuleOfSystemEnumType, &tkTypeDefOfSystemEnumType);
-
-            if (pModuleOfSystemEnumType != NULL && pModuleOfSystemEnumType->IsSystem())
+            if (ClassLoader::ResolveTokenToTypeDefThrowing(pModuleOfTypeDef, tkTypeDefExtends, &pModuleOfSystemEnumType, &tkTypeDefOfSystemEnumType))
             {
-                thisIsAnEnum = true;
+                if (pModuleOfSystemEnumType != NULL && pModuleOfSystemEnumType->IsSystem())
+                {
+                    thisIsAnEnum = true;
+                }
             }
         }
     }
@@ -4710,7 +4772,7 @@ BOOL MethodTableBuilder::TestOverrideForAccessibility(
     if (IsMdCheckAccessOnOverride(dwParentAttrs))
     {
         // Same Assembly
-        if (isSameAssembly || pParentAssembly->GrantsFriendAccessTo(pChildAssembly, hParentMethod.GetMethodDesc())
+        if (isSameAssembly || pParentAssembly->GrantsFriendAccessTo(pChildAssembly)
             || pChildAssembly->IgnoresAccessChecksTo(pParentAssembly))
         {
             // Can always override any method that has accessibility greater than mdPrivate
@@ -4813,7 +4875,7 @@ VOID MethodTableBuilder::TestOverRide(bmtMethodHandle hParentMethod,
     WIDENING_STATUS entry = rgWideningTable[idxMember][idxParent];
 
     if (entry == e_NO ||
-        (entry == e_SA && !isSameAssembly && !pParentAssembly->GrantsFriendAccessTo(pAssembly, hParentMethod.GetMethodDesc())
+        (entry == e_SA && !isSameAssembly && !pParentAssembly->GrantsFriendAccessTo(pAssembly)
          && !pAssembly->IgnoresAccessChecksTo(pParentAssembly)) ||
         (entry == e_NSA && isSameAssembly) ||
         (entry == e_SM && !isSameModule)
@@ -5148,7 +5210,7 @@ MethodTableBuilder::InitNewMethodDesc(
     if (NeedsNativeCodeSlot(pMethod))
         pNewMD->SetHasNativeCodeSlot();
 
-    if (pMethod->GetAsyncMethodKind() != AsyncMethodKind::NotAsync)
+    if (pMethod->GetAsyncMethodFlags() != AsyncMethodFlags::None)
         pNewMD->SetHasAsyncMethodData();
 
     // Now we know the classification we can allocate the correct type of
@@ -5196,7 +5258,7 @@ MethodTableBuilder::InitNewMethodDesc(
                    GetMDImport(),
                    pName,
                    sig,
-                   pMethod->GetAsyncMethodKind()
+                   pMethod->GetAsyncMethodFlags()
                    COMMA_INDEBUG(pszDebugMethodNameCopy)
                    COMMA_INDEBUG(GetDebugClassName())
                    COMMA_INDEBUG("") // FIX this happens on global methods, give better info
@@ -5517,7 +5579,7 @@ MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry,
     if (variantLookup == AsyncVariantLookup::AsyncOtherVariant && !declMethod.IsNull())
     {
         bmtRTMethod* declRTMethod = declMethod.AsRTMethod();
-        // Other varian may not exist. For example we return Task and the base is generic and returns T.
+        // Other variant may not exist. For example we return Task and the base is generic and returns T.
         // Then we return Null.
         declMethod = {};
         for (; !slotIt.AtEnd(); slotIt.Next())
@@ -6079,7 +6141,7 @@ MethodTableBuilder::bmtMethodHandle MethodTableBuilder::FindDeclMethodOnClassInH
                     {
                         if (variantLookup == AsyncVariantLookup::AsyncOtherVariant)
                         {
-                            if (pCurMD->IsTaskReturningMethod() || pCurMD->IsAsyncVariantMethod())
+                            if (pCurMD->IsAsyncVariantMethod() || pCurMD->ReturnsTaskOrValueTask())
                             {
                                 pCurMD = pCurMD->GetAsyncOtherVariant();
                             }
@@ -6119,7 +6181,7 @@ MethodTableBuilder::InitMethodDesc(
     IMDInternalImport * pIMDII,     // Needed for PInvoke, EEImpl(Delegate) cases
     LPCSTR              pMethodName, // Only needed for mcEEImpl (Delegate) case
     Signature           sig, // Only needed for the Async thunk case
-    AsyncMethodKind     asyncKind
+    AsyncMethodFlags    asyncFlags
     COMMA_INDEBUG(LPCUTF8 pszDebugMethodName)
     COMMA_INDEBUG(LPCUTF8 pszDebugClassName)
     COMMA_INDEBUG(LPCUTF8 pszDebugMethodSignature)
@@ -6278,11 +6340,15 @@ MethodTableBuilder::InitMethodDesc(
 #endif // !_DEBUG
         pNewMD->SetSynchronized();
 
-    if (asyncKind != AsyncMethodKind::NotAsync)
+    // if the method has nontrivial async flags, we need to at least store the flags
+    if (asyncFlags != AsyncMethodFlags::None)
     {
         AsyncMethodData* pAsyncMethodData = pNewMD->GetAddrOfAsyncMethodData();
-        pAsyncMethodData->kind = asyncKind;
-        if (asyncKind == AsyncMethodKind::AsyncVariantThunk || asyncKind == AsyncMethodKind::AsyncVariantImpl)
+        pAsyncMethodData->flags = asyncFlags;
+
+        // async variants have a signature different from their task-returning
+        // definitions, so we store the signature together with the flags
+        if (hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariant))
         {
             pAsyncMethodData->sig = sig;
         }
@@ -7024,7 +7090,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
         if (NeedsNativeCodeSlot(*it))
             size += sizeof(MethodDesc::NativeCodeSlot);
 
-        if (it->GetAsyncMethodKind() != AsyncMethodKind::NotAsync)
+        if (it->GetAsyncMethodFlags() != AsyncMethodFlags::None)
             size += sizeof(AsyncMethodData);
 
         // See comment in AllocAndInitMethodDescChunk
@@ -8253,10 +8319,11 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
     {
         if (!pParentMT->IsValueTypeClass()
             || hasGCFields
+            || bmtFP->fIsByRefLikeType
             || isAutoLayoutOrHasAutoLayoutField)
         {
             // CStruct layout types can't have a parent type, GC fields
-            // or auto layout fields.
+            // byreflike types, or auto layout fields.
             BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
         }
 
@@ -8266,6 +8333,27 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
         pLayoutInfo->SetIsBlittable(TRUE);
 
         HandleCStructLayout(pByValueClassCache);
+        break;
+    }
+
+    case EEClassLayoutInfo::LayoutType::CUnion:
+    {
+        if (!pParentMT->IsValueTypeClass()
+            || hasGCFields
+            || bmtFP->fIsByRefLikeType
+            || isAutoLayoutOrHasAutoLayoutField)
+        {
+            // CUnion layout types can't have a parent type, GC fields
+            // byreflike types, or auto layout fields.
+            BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
+        }
+
+        // Explicit size is not used for CUnion layout.
+        pLayoutInfo->SetHasExplicitSize(FALSE);
+        // CUnion layouts are always blittable
+        pLayoutInfo->SetIsBlittable(TRUE);
+
+        HandleCUnionLayout(pByValueClassCache);
         break;
     }
 
@@ -8516,35 +8604,34 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
             {
                 MethodTable * pByValueMT = pByValueClassCache[i];
 
+                int alignmentRequirement;
 #if !defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4)
                 if (pByValueMT->GetNumInstanceFieldBytes() >= DATA_ALIGNMENT)
                 {
-                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, DATA_ALIGNMENT);
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, DATA_ALIGNMENT);
+                    alignmentRequirement = DATA_ALIGNMENT;
                 }
                 else
-#elif defined(FEATURE_64BIT_ALIGNMENT)
-                if (pByValueMT->RequiresAlign8())
-                {
-                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, 8);
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, 8);
-                }
-                else
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // !defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4)
                 if (pByValueMT->ContainsGCPointers())
                 {
                     // this field type has GC pointers in it, which need to be pointer-size aligned
                     // so do this if it has not been done already
-                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, TARGET_POINTER_SIZE);
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, TARGET_POINTER_SIZE);
+                    alignmentRequirement = TARGET_POINTER_SIZE;
                     containsGCPointers = true;
                 }
                 else
                 {
-                    int fieldAlignmentRequirement = pByValueMT->GetFieldAlignmentRequirement();
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, fieldAlignmentRequirement);
-                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, fieldAlignmentRequirement);
+                    alignmentRequirement = pByValueMT->GetFieldAlignmentRequirement();
                 }
+#if defined(FEATURE_64BIT_ALIGNMENT)
+                if (pByValueMT->RequiresAlign8())
+                {
+                    alignmentRequirement = max(8, alignmentRequirement);
+                }
+#endif // FEATURE_64BIT_ALIGNMENT
+
+                largestAlignmentRequirement = max(largestAlignmentRequirement, alignmentRequirement);
+                dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, alignmentRequirement);
 
                 pFieldDescList[i].SetOffset(dwCumulativeInstanceFieldPos - dwOffsetBias);
                 dwCumulativeInstanceFieldPos += pByValueMT->GetNumInstanceFieldBytes();
@@ -8743,6 +8830,33 @@ VOID MethodTableBuilder::HandleCStructLayout(MethodTable** pByValueClassCache)
     CONSISTENCY_CHECK(pLayoutInfo != nullptr);
 
     bmtFP->NumInstanceFieldBytes = pLayoutInfo->InitializeCStructFieldLayout(
+        GetHalfBakedClass()->GetFieldDescList(),
+        pByValueClassCache,
+        bmtEnumFields->dwNumDeclaredFields
+    );
+
+    if (bmtFP->NumInlineArrayElements != 0)
+    {
+        BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
+    }
+
+    if (pLayoutInfo->IsZeroSized())
+    {
+        BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
+    }
+}
+
+VOID MethodTableBuilder::HandleCUnionLayout(MethodTable** pByValueClassCache)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(HasLayout());
+
+    EEClassLayoutInfo* pLayoutInfo = GetLayoutInfo();
+
+    CONSISTENCY_CHECK(pLayoutInfo != nullptr);
+
+    bmtFP->NumInstanceFieldBytes = pLayoutInfo->InitializeCUnionFieldLayout(
         GetHalfBakedClass()->GetFieldDescList(),
         pByValueClassCache,
         bmtEnumFields->dwNumDeclaredFields
@@ -9647,12 +9761,9 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     BOOL duplicates;
     bool retry = false;
 
-    // Always use exact loading behavior with classes or shared generics, as they have to deal with inheritance, and the
+    // Always use exact loading behavior with normal classes or shared generics, as they have to deal with inheritance, and the
     // inexact matching logic for classes would be more complex to write.
-    // Also always use the exact loading behavior with any generic that contains generic variables, as the open type is used
-    // to represent a type instantiated over its own generic variables, and the special marker type is currently the open type
-    // and we make this case distinguishable by simply disallowing the optimization in those cases.
-    bool retryWithExactInterfaces = !pMT->IsValueType() || pMT->IsSharedByGenericInstantiations() || pMT->ContainsGenericVariables();
+    bool retryWithExactInterfaces = !(pMT->IsValueType() || pMT->IsInterface()) || pMT->IsSharedByGenericInstantiations();
     if (retryWithExactInterfaces)
     {
         pMT->GetAuxiliaryDataForWrite()->SetMayHaveOpenInterfacesInInterfaceMap();
@@ -9686,13 +9797,21 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                                                                                 (const Substitution*)0,
                                                                                 retryWithExactInterfaces ? NULL : pMT).GetMethodTable();
 
+            // When checking to possibly load the special instantiation type, if we load a type which ISN'T the type instantiatiated over the special instantiation type, but it IS IsSpecialMarkerTypeForGenericCasting
+            // the ClassLoader::LoadTypeDefOrRefOrSpecThrowing function will return System.Object's MT, and we need to detect that, and abort use of the special path.
+            if (!pNewIntfMT->IsInterface() && !retry)
+            {
+                retry = true;
+                break;
+            }
+
             bool uninstGenericCase = !retryWithExactInterfaces && pNewIntfMT->IsSpecialMarkerTypeForGenericCasting();
 
             duplicates |= InsertMethodTable(pNewIntfMT, pExactMTs, nInterfacesCount, &nAssigned);
 
             // We have a special algorithm for interface maps in CoreLib, which doesn't expand interfaces, and assumes no ambiguous
             // duplicates. Code related to this is marked with #SpecialCorelibInterfaceExpansionAlgorithm
-            if (!(pMT->GetModule()->IsSystem() && pMT->IsValueType()))
+            if (!(pMT->GetModule()->IsSystem() && (pMT->IsValueType() || pMT->IsInterface())))
             {
                 MethodTable::InterfaceMapIterator intIt = pNewIntfMT->IterateInterfaceMap();
                 while (intIt.Next())
@@ -9747,7 +9866,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
 #endif
     // We have a special algorithm for interface maps in CoreLib, which doesn't expand interfaces, and assumes no ambiguous
     // duplicates. Code related to this is marked with #SpecialCorelibInterfaceExpansionAlgorithm
-    _ASSERTE(!duplicates || !(pMT->GetModule()->IsSystem() && pMT->IsValueType()));
+    _ASSERTE(!duplicates || !(pMT->GetModule()->IsSystem() && (pMT->IsValueType() || pMT->IsInterface())));
 
     CONSISTENCY_CHECK(duplicates || (nAssigned == pMT->GetNumInterfaces()));
     if (duplicates)
@@ -11216,7 +11335,7 @@ MethodTableBuilder::SetupMethodTable2(
                 {
                     // The rest of the system assumes that certain methods always have stable entrypoints.
                     // Create them now.
-                    pMD->MarkPrecodeAsStableEntrypoint();
+                    pMD->MarkStableEntryPoint();
                 }
             }
         }
@@ -12502,6 +12621,10 @@ BOOL HasLayoutMetadata(Assembly* pAssembly, IMDInternalImport* pInternalImport, 
         {
             *pLayoutType = EEClassLayoutInfo::LayoutType::CStruct;
         }
+        else if (kind == CorExtendedLayoutKind::CUnion)
+        {
+            *pLayoutType = EEClassLayoutInfo::LayoutType::CUnion;
+        }
         else
         {
             pAssembly->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADFORMAT);
@@ -12792,7 +12915,8 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
             }
 
             // Check interface for use of variant type parameters
-            if ((genericsInfo.pVarianceInfo != NULL) && (TypeFromToken(crInterface) == mdtTypeSpec))
+            if ((genericsInfo.pVarianceInfo != NULL) && (TypeFromToken(crInterface) == mdtTypeSpec)
+                && !pModule->SkipTypeValidation())
             {
                 ULONG cSig;
                 PCCOR_SIGNATURE pSig;

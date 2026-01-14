@@ -59,8 +59,13 @@ class AsmOffsets
 #if TARGET_64BIT
     public const int OFFSETOF__REGDISPLAY__m_pCurrentContext = 0x8;
 #if FEATURE_INTERPRETER
+#if TARGET_AMD64 && !TARGET_UNIX
+    public const int SIZEOF__StackFrameIterator = 0x178;
+    public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x170;
+#else
     public const int SIZEOF__StackFrameIterator = 0x170;
     public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x168;
+#endif    
 #else
     public const int SIZEOF__StackFrameIterator = 0x150;
     public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x148;
@@ -130,8 +135,13 @@ class AsmOffsets
 #if TARGET_64BIT
     public const int OFFSETOF__REGDISPLAY__m_pCurrentContext = 0x8;
 #if FEATURE_INTERPRETER
+#if TARGET_UNIX
     public const int SIZEOF__StackFrameIterator = 0x168;
     public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x160;
+#else // TARGET_UNIX
+    public const int SIZEOF__StackFrameIterator = 0x170;
+    public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x168;
+#endif // TARGET_UNIX
 #else
     public const int SIZEOF__StackFrameIterator = 0x148;
     public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x140;
@@ -199,9 +209,8 @@ class AsmOffsets
     public const int OFFSETOF__PAL_LIMITED_CONTEXT__IP = 0x108;
     public const int OFFSETOF__PAL_LIMITED_CONTEXT__FP = 0xb8;
 #elif TARGET_WASM
-    // offset to dummy field
-    public const int OFFSETOF__PAL_LIMITED_CONTEXT__IP = 0x04;
-    public const int OFFSETOF__PAL_LIMITED_CONTEXT__FP = 0x04;
+    public const int OFFSETOF__PAL_LIMITED_CONTEXT__IP = 0x10;
+    public const int OFFSETOF__PAL_LIMITED_CONTEXT__FP = 0x0c;
 #endif
 
     // Offsets / sizes that are different in 64 / 32 bit mode
@@ -225,9 +234,14 @@ class AsmOffsets
 #endif
 
 #if TARGET_UNIX
-    public const int OFFSETOF__ExInfo__m_pReversePInvokePropagationCallback = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x30;
-    public const int OFFSETOF__ExInfo__m_pReversePInvokePropagationContext = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x38;
-#endif
+#if TARGET_ARM64
+    public const int OFFSETOF__ExInfo__m_pReversePInvokePropagationCallback = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x68;
+    public const int OFFSETOF__ExInfo__m_pReversePInvokePropagationContext = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x70;
+#else // TARGET_ARM64
+    public const int OFFSETOF__ExInfo__m_pReversePInvokePropagationCallback = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x60;
+    public const int OFFSETOF__ExInfo__m_pReversePInvokePropagationContext = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x68;
+#endif // TARGET_ARM64
+#endif // TARGET_UNIX
 
 #else // TARGET_64BIT
     public const int SIZEOF__EHEnum = 0x10;
@@ -270,6 +284,9 @@ class AsmOffsets
 #elif TARGET_LOONGARCH64
     static_assert(offsetof(CONTEXT, Pc) == AsmOffsets::OFFSETOF__PAL_LIMITED_CONTEXT__IP);
     static_assert(offsetof(CONTEXT, Fp) == AsmOffsets::OFFSETOF__PAL_LIMITED_CONTEXT__FP);
+#elif TARGET_WASM
+    static_assert(offsetof(CONTEXT, InterpreterIP) == AsmOffsets::OFFSETOF__PAL_LIMITED_CONTEXT__IP);
+    static_assert(offsetof(CONTEXT, InterpreterFP) == AsmOffsets::OFFSETOF__PAL_LIMITED_CONTEXT__FP);
 #endif
     static_assert(sizeof(REGDISPLAY) == AsmOffsets::SIZEOF__REGDISPLAY);
     static_assert(offsetof(REGDISPLAY, SP) == AsmOffsets::OFFSETOF__REGDISPLAY__SP);
@@ -292,6 +309,11 @@ class AsmOffsets
     static_assert(offsetof(ExInfo, m_handlingFrameSP) == OFFSETOF__ExInfo__m_handlingFrameSP);
 #if TARGET_ARM64
     static_assert(offsetof(ExInfo, m_handlingFramePC) == OFFSETOF__ExInfo__m_handlingFramePC);
+#endif
+
+#if TARGET_UNIX
+    static_assert(offsetof(ExInfo, m_propagateExceptionCallback) == OFFSETOF__ExInfo__m_pReversePInvokePropagationCallback);
+    static_assert(offsetof(ExInfo, m_propagateExceptionContext) == OFFSETOF__ExInfo__m_pReversePInvokePropagationContext);
 #endif
 
 #endif

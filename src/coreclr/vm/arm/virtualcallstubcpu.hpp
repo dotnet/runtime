@@ -366,8 +366,6 @@ extern size_t g_poly_call_counter;
 extern size_t g_poly_miss_counter;
 #endif
 
-TADDR StubDispatchFrame_MethodFrameVPtr;
-
 LookupHolder* LookupHolder::FromLookupEntry(PCODE lookupEntry)
 {
     lookupEntry = lookupEntry & ~THUMB_CODE;

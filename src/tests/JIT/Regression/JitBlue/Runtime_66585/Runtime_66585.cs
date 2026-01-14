@@ -4,6 +4,9 @@
 // This test would segfault/AV in Caller on arm32 because it put the address of
 // Callee into r12, but then also tried to use r12 to unwind a large stack
 // frame.
+
+namespace Runtime_66585;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;

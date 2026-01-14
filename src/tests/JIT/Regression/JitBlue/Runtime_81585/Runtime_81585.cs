@@ -8,6 +8,8 @@ using Xunit;
 
 [module: SkipLocalsInit]
 
+namespace Runtime_81585;
+
 public class Runtime_81585
 {
     [Fact]

@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
+
+namespace GitHub_10215;
+
 using System;
 using Xunit;
 
@@ -463,6 +466,7 @@ public class GitHub_10215
     // Use the [Fact] attribute directly on Main like an IL test since we can't run the generator on this project.
     // The above expression creates a deep enough syntax tree that running a tree traversal of the syntax causes a stack overflow.
     // As a result, running any generator on this project causes the compilation to crash.
+    [OuterLoop]
     [Fact]
     public static int Main()
     {

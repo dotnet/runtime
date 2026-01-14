@@ -1,4 +1,3 @@
 <Project>
     <Import Project="..\Directory.Build.targets" />
-    <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(UseBootstrapLayout)' == 'true'" />
 </Project>

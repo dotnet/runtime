@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Collections.Frozen
 {
@@ -77,7 +78,7 @@ namespace System.Collections.Frozen
         // useful if the string only contains ASCII characters
         public static unsafe int GetHashCodeOrdinalIgnoreCaseAscii(ReadOnlySpan<char> s)
         {
-            Debug.Assert(KeyAnalyzer.IsAllAscii(s));
+            Debug.Assert(Ascii.IsValid(s));
 
             // We "normalize to lowercase" every char by ORing with 0x20. This casts
             // a very wide net because it will change, e.g., '^' to '~'. But that should

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="VolatileTest_op_add.cs" />
+    <Compile Include="VolatileTest_op_sub.cs" />
+    <Compile Include="VolatileTest_op_mul.cs" />
+    <Compile Include="VolatileTest_op_div.cs" />
+    <Compile Include="VolatileTest_op_mod.cs" />
+    <Compile Include="VolatileTest_op_xor.cs" />
+    <Compile Include="VolatileTest_op_or.cs" />
+    <Compile Include="VolatileTest_op_and.cs" />
+    <Compile Include="VolatileTest_op_shr.cs" />
+  </ItemGroup>
+</Project>

@@ -66,7 +66,7 @@
   <String Id="WelcomeHeaderMessage" Value=".NET 런타임"/>
   <String Id="WelcomeDescription" Value=".NET 런타임은 Windows 컴퓨터에서 .NET 애플리케이션을 실행하는 데 사용됩니다. .NET은 오픈 소스 및 플랫폼 간이며 Microsoft에서 지원합니다. .NET을 유용하게 사용하시길 바랍니다."/>
   <String Id="LearnMoreTitle" Value=".NET에 대한 자세한 정보"/>
-  <String Id="SuccessInstallLocation" Value="다음이 [DOTNETHOME]에 설치되었습니다."/>
+  <String Id="SuccessInstallLocation" Value="다음이 설치됨:"/>
   <String Id="SuccessInstallProductName" Value=" - [BUNDLEMONIKER] "/>
   <String Id="ResourcesHeader" Value="리소스"/>
   <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;설명서&lt;/A&gt;"/>

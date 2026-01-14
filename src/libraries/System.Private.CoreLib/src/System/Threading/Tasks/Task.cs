@@ -4532,6 +4532,9 @@ namespace System.Threading.Tasks
                 action.Invoke(this); // run the action directly if we failed to queue the continuation (i.e., the task completed)
         }
 
+        internal bool TryAddCompletionAction(ITaskCompletionAction action, bool addBeforeOthers = false)
+            => AddTaskContinuation(action, addBeforeOthers);
+
         // Support method for AddTaskContinuation that takes care of multi-continuation logic.
         // Returns true if and only if the continuation was successfully queued.
         private bool AddTaskContinuationComplex(object tc, bool addBeforeOthers)
