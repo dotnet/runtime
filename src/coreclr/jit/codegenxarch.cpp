@@ -5925,6 +5925,21 @@ void CodeGen::genCall(GenTreeCall* call)
             if (target->isContainedIndir())
             {
                 genConsumeAddress(target->AsIndir()->Addr());
+
+                // Consuming these registers will ensure the registers containing the state we need are available here,
+                // but it assumes we will use them immediately and will thus kill the live state. Since these registers
+                // are live into the epilog we need to remark them as live.
+                // This logic is similar to what genCallPlaceRegArgs does above for argument registers.
+                GenTreeIndir* indir = target->AsIndir();
+                if (indir->HasBase() && indir->Base()->TypeIs(TYP_BYREF, TYP_REF))
+                {
+                    gcInfo.gcMarkRegPtrVal(indir->Base()->GetRegNum(), indir->Base()->TypeGet());
+                }
+
+                if (indir->HasIndex() && indir->Index()->TypeIs(TYP_BYREF, TYP_REF))
+                {
+                    gcInfo.gcMarkRegPtrVal(indir->Index()->GetRegNum(), indir->Index()->TypeGet());
+                }
             }
             else
             {

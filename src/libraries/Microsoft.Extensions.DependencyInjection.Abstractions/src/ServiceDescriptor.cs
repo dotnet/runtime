@@ -263,7 +263,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
                 if (KeyedImplementationFactory != null)
                 {
-#if NET9_0_OR_GREATER
+#if NET
                     DiagnosticMethodInfo? dmi = DiagnosticMethodInfo.Create(KeyedImplementationFactory);
                     string declaringTypeName = dmi?.DeclaringTypeName ?? "?";
                     string methodName = dmi?.Name ?? "?";
@@ -287,7 +287,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
                 if (ImplementationFactory != null)
                 {
-#if NET9_0_OR_GREATER
+#if NET
                     DiagnosticMethodInfo? dmi = DiagnosticMethodInfo.Create(ImplementationFactory);
                     string declaringTypeName = dmi?.DeclaringTypeName ?? "?";
                     string methodName = dmi?.Name ?? "?";

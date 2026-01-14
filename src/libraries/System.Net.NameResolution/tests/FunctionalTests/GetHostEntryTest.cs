@@ -346,10 +346,6 @@ namespace System.Net.NameResolution.Tests
         [SkipOnCoreClr("JitStress interferes with cancellation timing", RuntimeTestModes.JitStress | RuntimeTestModes.JitStressRegs)]
         public async Task DnsGetHostEntry_PostCancelledToken_Throws()
         {
-            // Windows 7 name resolution is synchronous and does not respect cancellation.
-            if (PlatformDetection.IsWindows7)
-                return;
-
             using var cts = new CancellationTokenSource();
 
             Task task = Dns.GetHostEntryAsync(TestSettings.UncachedHost, cts.Token);
