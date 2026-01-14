@@ -1932,9 +1932,6 @@ public:
     void LazyInit(); // will throw
     HRESULT LazyInitWrapper(); // calls LazyInit and converts to HR.
 
-    // Helper on startup to notify debugger
-    void RaiseStartupNotification();
-
     // Send a raw managed debug event over the managed pipeline.
     void SendRawEvent(const DebuggerIPCEvent * pManagedEvent);
 

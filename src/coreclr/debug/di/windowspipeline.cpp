@@ -232,3 +232,8 @@ BOOL WindowsNativePipeline::TerminateProcess(UINT32 exitCode)
 
     return ::TerminateProcess(hProc, exitCode);
 }
+
+void WindowsNativePipeline::CleanupTargetProcess()
+{
+    // No-op on Windows.
+}
