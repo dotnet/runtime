@@ -128,7 +128,7 @@ void CommandLine::DumpHelp(const char* program)
     printf("\n");
     printf(" -target <target>\n");
     printf("     Specifies the target architecture if doing cross-compilation.\n");
-    printf("     Allowed <target> values: x64, x86, arm, arm64, loongarch64, riscv64\n");
+    printf("     Allowed <target> values: x64, x86, arm, arm64, loongarch64, riscv64, wasm\n");
     printf("     Used by the assembly differences calculator; to determine a default JIT dll name;\n");
     printf("     and to avoid treating mismatched cross-compilation replay as failure.\n");
     printf("\n");
@@ -689,7 +689,9 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
             (0 != _stricmp(o->targetArchitecture, "arm")) &&
             (0 != _stricmp(o->targetArchitecture, "arm32")) &&
             (0 != _stricmp(o->targetArchitecture, "loongarch64")) &&
-            (0 != _stricmp(o->targetArchitecture, "riscv64")))
+            (0 != _stricmp(o->targetArchitecture, "riscv64")) &&
+            (0 != _stricmp(o->targetArchitecture, "wasm")) &&
+            (0 != _stricmp(o->targetArchitecture, "wasm32")))
         {
             LogError("Illegal target architecture specified with -target.");
             DumpHelp(argv[0]);

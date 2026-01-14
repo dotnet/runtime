@@ -1863,8 +1863,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDes
 //          async variants for task-returning methods
 //
 // For {task-returning, async} variants Reflection hands out only the task-returning variant.
-//  the async varinat is an implementation detail that conceptually does not exist.
-//  TODO: (async) the filtering may not cover all scenarios. Review and add tests.
+//  the async variant is an implementation detail that conceptually does not exist.
 //
 // For generic methods we always hand out an instantiating stub except for a generic method definition
 // For non-generic methods on generic types we need an instantiating stub if it's one of the following

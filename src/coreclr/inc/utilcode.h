@@ -496,7 +496,14 @@ void    SplitPathInterior(
     _Out_opt_ LPCWSTR *pwszExt,      _Out_opt_ size_t *pcchExt);
 
 
-#include "ostype.h"
+#ifdef HOST_64BIT
+inline BOOL RunningInWow64()
+{
+    return FALSE;
+}
+#else
+BOOL RunningInWow64();
+#endif
 
 //
 // Allocate free memory within the range [pMinAddr..pMaxAddr] using
@@ -716,9 +723,9 @@ public:
     CUnorderedArrayWithAllocator(CUnorderedArrayWithAllocator const&) = delete;
     CUnorderedArrayWithAllocator& operator=(CUnorderedArrayWithAllocator const&) = delete;
     CUnorderedArrayWithAllocator(CUnorderedArrayWithAllocator&& other)
-        : m_iCount{ 0 }
-        , m_iSize{ 0 }
-        , m_pTable{ NULL}
+        : m_iCount{ other.m_iCount }
+        , m_iSize{ other.m_iSize }
+        , m_pTable{ other.m_pTable }
     {
         LIMITED_METHOD_CONTRACT;
         other.m_iCount = 0;

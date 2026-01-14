@@ -176,13 +176,11 @@ set(SOURCES
   objmgr/palobjbase.cpp
   objmgr/listedobject.cpp
   objmgr/listedobjectmanager.cpp
-  safecrt/makepath_s.cpp
   safecrt/memcpy_s.cpp
   safecrt/memmove_s.cpp
   safecrt/mbusafecrt.cpp
   safecrt/safecrt_input_s.cpp
   safecrt/safecrt_winput_s.cpp
-  safecrt/splitpath_s.cpp
   safecrt/sprintf_s.cpp
   safecrt/sscanf_s.cpp
   safecrt/strcat_s.cpp
