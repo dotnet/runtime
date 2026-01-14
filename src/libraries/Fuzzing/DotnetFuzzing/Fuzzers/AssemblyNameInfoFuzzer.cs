@@ -72,8 +72,8 @@ namespace DotnetFuzzing.Fuzzers
                     // Culture "c" or "C" gets mapped to Invariant Culture.
 
                     // cultureInfo is guaranteed to be non-null here because:
-                    // - fromTryParse.CultureName == fromParse.CultureName (asserted at line 40)
-                    // - Both this condition and the condition at line 46 check !string.IsNullOrEmpty
+                    // - fromTryParse.CultureName == fromParse.CultureName (asserted earlier)
+                    // - Both this condition and the earlier condition check !string.IsNullOrEmpty
                     //   on the same CultureName value, so cultureInfo was assigned above
                     string expectedCultureName = cultureInfo!.Name;
                     Assert.Equal(expectedCultureName, fromParse.ToAssemblyName().CultureName);
@@ -87,7 +87,7 @@ namespace DotnetFuzzing.Fuzzers
                 {
                     // CultureName is null or empty string - verify that ToAssemblyName preserves
                     // this (null stays null, empty stays empty). We don't assert the exact form
-                    // because line 62 already verified that both produce the same result.
+                    // because we already verified earlier that both produce the same result.
                     Assert.True(string.IsNullOrEmpty(fromParse.ToAssemblyName().CultureName));
                 }
 
