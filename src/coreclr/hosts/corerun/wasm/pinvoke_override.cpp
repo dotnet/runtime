@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <string.h>
-
-#define _In_z_
 #include <sal.h>
 #include "pinvokeoverride.h"
 
