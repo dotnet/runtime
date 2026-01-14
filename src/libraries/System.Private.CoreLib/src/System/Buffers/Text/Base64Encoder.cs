@@ -209,7 +209,7 @@ namespace System.Buffers.Text
             string.Create(GetEncodedLength(source.Length), source, static (buffer, source) =>
             {
                 EncodeToChars(source, buffer, out _, out int charsWritten);
-                Debug.Assert(buffer.Length == charsWritten, $"The source length: {source.Length}, bytes written: {charsWritten}");
+                Debug.Assert(buffer.Length == charsWritten, $"The source length: {source.Length}, chars written: {charsWritten}");
             });
 
         /// <summary>
@@ -259,20 +259,10 @@ namespace System.Buffers.Text
                 uint i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
                 uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
 
-                if (BitConverter.IsLittleEndian)
-                {
-                    dest[0] = (ushort)i0;
-                    dest[1] = (ushort)i1;
-                    dest[2] = (ushort)EncodingPad;
-                    dest[3] = (ushort)EncodingPad;
-                }
-                else
-                {
-                    dest[0] = (ushort)i0;
-                    dest[1] = (ushort)i1;
-                    dest[2] = (ushort)EncodingPad;
-                    dest[3] = (ushort)EncodingPad;
-                }
+                dest[0] = (ushort)i0;
+                dest[1] = (ushort)i1;
+                dest[2] = (ushort)EncodingPad;
+                dest[3] = (ushort)EncodingPad;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

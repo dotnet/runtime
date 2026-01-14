@@ -158,7 +158,7 @@ namespace System.Buffers.Text
             {
                 ReadOnlySpan<byte> source = *(ReadOnlySpan<byte>*)spanPtr;
                 EncodeToChars(source, buffer, out _, out int charsWritten);
-                Debug.Assert(buffer.Length == charsWritten, $"The source length: {source.Length}, bytes written: {charsWritten}");
+                Debug.Assert(buffer.Length == charsWritten, $"The source length: {source.Length}, chars written: {charsWritten}");
             });
 #else
             char[] destination = new char[GetEncodedLength(source.Length)];

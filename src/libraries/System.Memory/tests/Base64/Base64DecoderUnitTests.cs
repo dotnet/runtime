@@ -780,7 +780,6 @@ namespace System.Buffers.Text.Tests
                 int numBytes = rnd.Next(100, 1000 * 1000);
                 // Ensure we have a valid length (multiple of 4 for standard Base64)
                 numBytes = (numBytes / 4) * 4;
-                if (numBytes == 0) numBytes = 4;
 
                 Span<char> source = new char[numBytes];
                 Base64TestHelper.InitializeDecodableChars(source, numBytes);
@@ -796,7 +795,7 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
-        [InlineData("\u5948cz/T", 0, 0)]                                              // scalar code-path with non-ASCII
+        [InlineData("\u5948cz/T", 0, 0)] // tests the scalar code-path with non-ASCII
         [InlineData("z/Ta123\u5948", 4, 3)]
         public void DecodeFromCharsNonAsciiInputInvalid(string inputString, int expectedConsumed, int expectedWritten)
         {
@@ -892,7 +891,7 @@ namespace System.Buffers.Text.Tests
         }
 
         [Fact]
-        public void GetMaxDecodedLength_MatchesExisting()
+        public void GetMaxDecodedLength_Matches_GetMaxDecodedFromUtf8Length()
         {
             for (int i = 0; i < 100; i++)
             {
