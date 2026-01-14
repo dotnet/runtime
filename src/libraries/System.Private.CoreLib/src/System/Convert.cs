@@ -2313,7 +2313,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(inArray);
 
-            return ToBase64String(new ReadOnlySpan<byte>(inArray), Base64FormattingOptions.None);
+            return Base64.EncodeToString(inArray);
         }
 
         public static string ToBase64String(byte[] inArray, Base64FormattingOptions options)
@@ -2352,27 +2352,18 @@ namespace System
             }
 
             bool insertLineBreaks = (options == Base64FormattingOptions.InsertLineBreaks);
-            int outputLength = ToBase64_CalculateAndValidateOutputLength(bytes.Length, insertLineBreaks);
-
-            string result = string.FastAllocateString(outputLength);
 
             if (!insertLineBreaks)
             {
-                int charsWritten = Base64.EncodeToChars(bytes, new Span<char>(ref result.GetRawStringData(), result.Length));
-                Debug.Assert(result.Length == charsWritten, $"Expected {result.Length} == {charsWritten}");
+                return Base64.EncodeToString(bytes);
             }
-            else
-            {
-                unsafe
-                {
-                    fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
-                    fixed (char* charsPtr = result)
-                    {
-                        int charsWritten = ConvertToBase64ArrayInsertLineBreaks(charsPtr, bytesPtr, bytes.Length);
-                        Debug.Assert(result.Length == charsWritten, $"Expected {result.Length} == {charsWritten}");
-                    }
-                }
-            }
+
+            int outputLength = ToBase64_CalculateAndValidateOutputLength(bytes.Length, insertLineBreaks: true);
+
+            string result = string.FastAllocateString(outputLength);
+
+            int charsWritten = ConvertToBase64ArrayInsertLineBreaks(new Span<char>(ref result.GetRawStringData(), result.Length), bytes);
+            Debug.Assert(result.Length == charsWritten, $"Expected {result.Length} == {charsWritten}");
 
             return result;
         }
@@ -2382,7 +2373,7 @@ namespace System
             return ToBase64CharArray(inArray, offsetIn, length, outArray, offsetOut, Base64FormattingOptions.None);
         }
 
-        public static unsafe int ToBase64CharArray(byte[] inArray, int offsetIn, int length, char[] outArray, int offsetOut, Base64FormattingOptions options)
+        public static int ToBase64CharArray(byte[] inArray, int offsetIn, int length, char[] outArray, int offsetOut, Base64FormattingOptions options)
         {
             ArgumentNullException.ThrowIfNull(inArray);
             ArgumentNullException.ThrowIfNull(outArray);
@@ -2416,18 +2407,14 @@ namespace System
             }
             else
             {
-                fixed (char* outChars = &outArray[offsetOut])
-                fixed (byte* inData = &inArray[offsetIn])
-                {
-                    int converted = ConvertToBase64ArrayInsertLineBreaks(outChars, inData, length);
-                    Debug.Assert(converted == charLengthRequired);
-                }
+                int converted = ConvertToBase64ArrayInsertLineBreaks(outArray.AsSpan(offsetOut), new ReadOnlySpan<byte>(inArray, offsetIn, length));
+                Debug.Assert(converted == charLengthRequired);
             }
 
             return charLengthRequired;
         }
 
-        public static unsafe bool TryToBase64Chars(ReadOnlySpan<byte> bytes, Span<char> chars, out int charsWritten, Base64FormattingOptions options = Base64FormattingOptions.None)
+        public static bool TryToBase64Chars(ReadOnlySpan<byte> bytes, Span<char> chars, out int charsWritten, Base64FormattingOptions options = Base64FormattingOptions.None)
         {
             if ((uint)options > (uint)Base64FormattingOptions.InsertLineBreaks)
             {
@@ -2456,16 +2443,21 @@ namespace System
             }
             else
             {
-                fixed (char* outChars = &MemoryMarshal.GetReference(chars))
-                fixed (byte* inData = &MemoryMarshal.GetReference(bytes))
-                {
-                    int converted = ConvertToBase64ArrayInsertLineBreaks(outChars, inData, bytes.Length);
-                    Debug.Assert(converted == charLengthRequired);
-                }
+                int converted = ConvertToBase64ArrayInsertLineBreaks(chars, bytes);
+                Debug.Assert(converted == charLengthRequired);
             }
 
             charsWritten = charLengthRequired;
             return true;
+        }
+
+        private static unsafe int ConvertToBase64ArrayInsertLineBreaks(Span<char> outChars, ReadOnlySpan<byte> inData)
+        {
+            fixed (char* outCharsPtr = &MemoryMarshal.GetReference(outChars))
+            fixed (byte* inDataPtr = &MemoryMarshal.GetReference(inData))
+            {
+                return ConvertToBase64ArrayInsertLineBreaks(outCharsPtr, inDataPtr, inData.Length);
+            }
         }
 
         private static unsafe int ConvertToBase64ArrayInsertLineBreaks(char* outChars, byte* inData, int length)
