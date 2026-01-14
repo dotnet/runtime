@@ -28,7 +28,7 @@ using var zstdStream = new ZstandardStream(output, options);
 ```
 
 ## Platform Support
-This library is supported on Windows, Linux, and macOS, but not on browser or WebAssembly platforms.
+This library is supported on all platfroms supported by .NET except for browser and WASI.
 
 ## Deployment
 `System.IO.Compression.Zstandard` is included in the shared framework since .NET 11.0.
