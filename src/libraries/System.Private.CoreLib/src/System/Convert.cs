@@ -2472,77 +2472,12 @@ namespace System
         /// <param name="charLengthRequired">The pre-calculated, exact number of chars that will be written.</param>
         private static void ToBase64CharsLargeNoLineBreaks(ReadOnlySpan<byte> bytes, Span<char> chars, int charLengthRequired)
         {
-            // For large enough inputs, it's beneficial to use the vectorized UTF8-based Base64 encoding
-            // and then widen the resulting bytes into chars.
             Debug.Assert(bytes.Length >= Base64VectorizationLengthThreshold);
             Debug.Assert(chars.Length >= charLengthRequired);
             Debug.Assert(charLengthRequired % 4 == 0);
 
-            // Base64-encode the bytes directly into the destination char buffer (reinterpreted as a byte buffer).
-            OperationStatus status = Base64.EncodeToUtf8(bytes, MemoryMarshal.AsBytes(chars), out _, out int bytesWritten);
-            Debug.Assert(status == OperationStatus.Done && charLengthRequired == bytesWritten);
-
-            // Now widen the ASCII bytes in-place to chars (if the vectorized Ascii.WidenAsciiToUtf16 is ever updated
-            // to support in-place updates, it should be used here instead). Since the base64 bytes are all valid ASCII, the byte
-            // data is guaranteed to be 1/2 as long as the char data, and we can widen in-place.
-            ref ushort dest = ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(chars));
-            ref byte src = ref Unsafe.As<ushort, byte>(ref dest);
-            ref byte srcBeginning = ref src;
-
-            // We process the bytes/chars from right to left to avoid overwriting the remaining unprocessed data.
-            // The refs start out pointing just past the end of the data, and each iteration of a loop bumps
-            // the refs back the apropriate amount and performs the copy/widening.
-            dest = ref Unsafe.Add(ref dest, charLengthRequired);
-            src = ref Unsafe.Add(ref src, charLengthRequired);
-
-            // Handle 32 bytes at a time.
-            if (Vector256.IsHardwareAccelerated)
-            {
-                ref byte srcBeginningPlus31 = ref Unsafe.Add(ref srcBeginning, 31);
-                while (Unsafe.IsAddressGreaterThan(ref src, ref srcBeginningPlus31))
-                {
-                    src = ref Unsafe.Subtract(ref src, 32);
-                    dest = ref Unsafe.Subtract(ref dest, 32);
-
-                    (Vector256<ushort> utf16Lower, Vector256<ushort> utf16Upper) = Vector256.Widen(Vector256.LoadUnsafe(ref src));
-
-                    utf16Lower.StoreUnsafe(ref dest);
-                    utf16Upper.StoreUnsafe(ref dest, 16);
-                }
-            }
-
-            // Handle 16 bytes at a time.
-            if (Vector128.IsHardwareAccelerated)
-            {
-                ref byte srcBeginningPlus15 = ref Unsafe.Add(ref srcBeginning, 15);
-                while (Unsafe.IsAddressGreaterThan(ref src, ref srcBeginningPlus15))
-                {
-                    src = ref Unsafe.Subtract(ref src, 16);
-                    dest = ref Unsafe.Subtract(ref dest, 16);
-
-                    (Vector128<ushort> utf16Lower, Vector128<ushort> utf16Upper) = Vector128.Widen(Vector128.LoadUnsafe(ref src));
-
-                    utf16Lower.StoreUnsafe(ref dest);
-                    utf16Upper.StoreUnsafe(ref dest, 8);
-                }
-            }
-
-            // Handle 4 bytes at a time.
-            ref byte srcBeginningPlus3 = ref Unsafe.Add(ref srcBeginning, 3);
-            while (Unsafe.IsAddressGreaterThan(ref src, ref srcBeginningPlus3))
-            {
-                dest = ref Unsafe.Subtract(ref dest, 4);
-                src = ref Unsafe.Subtract(ref src, 4);
-                Ascii.WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref Unsafe.As<ushort, char>(ref dest), Unsafe.ReadUnaligned<uint>(ref src));
-            }
-
-            // The length produced by Base64 encoding is always a multiple of 4, so we don't need to handle
-            // 1 byte at a time as is common in other vectorized operations, as nothing will remain after
-            // the 4-byte loop.
-
-            Debug.Assert(Unsafe.AreSame(ref srcBeginning, ref src));
-            Debug.Assert(Unsafe.AreSame(ref srcBeginning, ref Unsafe.As<ushort, byte>(ref dest)),
-                "The two references should have ended up exactly at the beginning");
+            int charsWritten = Base64.EncodeToChars(bytes, chars);
+            Debug.Assert(charsWritten == charLengthRequired);
         }
 
         private static unsafe int ConvertToBase64Array(char* outChars, byte* inData, int offset, int length, bool insertLineBreaks)
