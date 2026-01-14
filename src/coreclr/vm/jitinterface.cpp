@@ -2398,7 +2398,7 @@ SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR SystemVRegDescriptorFromSyst
     {
         desc.eightByteClassifications[i] = info.GetEightByteClassification(i);
         desc.eightByteSizes[i] = (uint8_t)info.GetEightByteSize(i);
-        desc.eightByteOffsets[i] = i * SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
+        desc.eightByteOffsets[i] = (uint8_t)i * SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
     }
 
     return desc;
