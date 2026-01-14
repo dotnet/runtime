@@ -922,11 +922,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         // We must consume the operands in the proper execution order,
         // so that liveness is updated appropriately.
         genConsumeAddress(addr);
-
-        if (!data->isContained())
-        {
-            genConsumeRegs(data);
-        }
+        genConsumeRegs(data);
 
         var_types   type = tree->TypeGet();
         instruction ins  = ins_Store(type);
@@ -935,6 +931,8 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
         GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), 0);
     }
+
+    genUpdateLife(tree);
 }
 
 //------------------------------------------------------------------------
