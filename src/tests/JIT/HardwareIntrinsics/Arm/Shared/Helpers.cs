@@ -3113,14 +3113,29 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             Debug.Assert(Unsafe.SizeOf<TUnsigned>() == Unsafe.SizeOf<TSigned>(), "Unsigned/signed types must be same width");
 
-            if (right > TUnsigned.AllBitsSet >> 1)
+            var signedMaxAsUnsigned = TUnsigned.AllBitsSet >> 1;
+            var leftUnsigned = TUnsigned.CreateTruncating(left);
+
+            // How much remains before hitting MaxValue
+            TUnsigned threshold;
+            if (TSigned.IsNegative(left))
             {
-                // Overflow - right does not fit in a signed value
-                result = unchecked(left + TSigned.CreateTruncating(right));
+                threshold = signedMaxAsUnsigned + TUnsigned.CreateTruncating(unchecked(-left));
+            }
+            else
+            {
+                threshold = signedMaxAsUnsigned - leftUnsigned;
+            }
+
+            if (right > threshold)
+            {
+                // Overflow - return a negative value
+                result = TSigned.CreateTruncating(signedMaxAsUnsigned + TUnsigned.One);
                 return true;
             }
 
-            return TryAddSigned(left, TSigned.CreateTruncating(right), out result);
+            result = TSigned.CreateTruncating(leftUnsigned + right);
+            return false;
         }
 
         private static bool TryAddUnsignedSigned<TUnsigned, TSigned>(
