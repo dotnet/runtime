@@ -4,7 +4,7 @@
 #include <string.h>
 
 #define _In_z_
-#define _In_
+#include <sal.h>
 #include "pinvokeoverride.h"
 
 const void* callhelpers_pinvoke_override(const char* library_name, const char* entry_point_name);
