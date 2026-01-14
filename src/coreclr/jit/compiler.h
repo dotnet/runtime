@@ -11254,7 +11254,7 @@ public:
 
     PhaseStatus gsPhase();
     void        gsGSChecksInitCookie();   // Grabs cookie variable
-    void        gsCopyShadowParams();     // Identify vulnerable params and create dhadow copies
+    void        gsCopyShadowParams();     // Identify vulnerable params and create shadow copies
     bool        gsFindVulnerableParams(); // Shadow param analysis code
     template <typename TVisit>
     void gsVisitDependentLocals(GenTree* tree, TVisit visit);

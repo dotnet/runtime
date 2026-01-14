@@ -458,7 +458,7 @@ void Compiler::gsParamsToShadows()
 //   For each parameter that should be shadowed, create a local variable to hold its copy.
 //
 // Returns:
-//   True if any shadowing locals were created..
+//   True if any shadowing locals were created.
 //
 bool Compiler::gsCreateShadowingLocals()
 {
