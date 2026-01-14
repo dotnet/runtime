@@ -574,6 +574,37 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 {
     genConsumeOperands(treeNode);
 
+    // wasm stack is
+    // divisor (top)
+    // dividend (next)
+    // ...
+    // TODO-WASM: To check for exception, we will have to spill these to
+    // internal registers along the way, like so:
+    //
+    // ... push dividend
+    // tee.local $temp1
+    // ... push divisor
+    // tee.local $temp2
+    // ... exception checks (using $temp1 and $temp2; will introduce flow)
+    // div/mod op
+
+    if (!varTypeIsFloating(treeNode->TypeGet()))
+    {
+        ExceptionSetFlags exSetFlags = treeNode->OperExceptions(compiler);
+
+        // TODO-WASM:(AnyVal / 0) => DivideByZeroException
+        //
+        if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
+        {
+        }
+
+        // TODO-WASM: (MinInt / -1) => ArithmeticException
+        //
+        if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
+        {
+        }
+    }
+
     instruction ins;
     switch (PackOperAndType(treeNode))
     {
@@ -803,7 +834,7 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
     genConsumeAddress(tree->Addr());
 
     // TODO-WASM: compare addr with the appropriate small value instead of zero
-    //
+    // TODO-WASM: refactor once we have implemented other cases invoking throw helpers
     if (compiler->fgUseThrowHelperBlocks())
     {
         Compiler::AddCodeDsc* const add = compiler->fgFindExcptnTarget(SCK_NULL_CHECK, compiler->compCurBB);
