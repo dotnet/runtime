@@ -342,7 +342,8 @@ class EEClassLayoutInfo
             Auto = 0, // Make sure Auto is the default value as the default-constructed value represents the "auto layout" case
             Sequential,
             Explicit,
-            CStruct
+            CStruct,
+            CUnion
         };
     private:
         enum {
@@ -491,6 +492,12 @@ class EEClassLayoutInfo
         );
 
         ULONG InitializeCStructFieldLayout(
+            FieldDesc* pFields,
+            MethodTable** pByValueClassCache,
+            ULONG cFields
+        );
+
+        ULONG InitializeCUnionFieldLayout(
             FieldDesc* pFields,
             MethodTable** pByValueClassCache,
             ULONG cFields
