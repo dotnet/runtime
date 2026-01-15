@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <IsShipping>false</IsShipping>
 
     <PackageType>Template</PackageType>
     <!-- when changing the net version also change it in template.json in the templates -->
@@ -17,7 +18,6 @@
     <NoWarn>$(NoWarn);NU5128</NoWarn>
     <IsPackable>true</IsPackable>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <!-- TODO: Add package readme -->
     <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>

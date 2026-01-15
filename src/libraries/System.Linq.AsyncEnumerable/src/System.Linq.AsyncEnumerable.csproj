@@ -10,11 +10,6 @@
     <!-- Due to heavy use of callbacks, ConfigureAwait(false) should not be used.
          The callbacks should be allowed to run in the original context. -->
     <NoWarn>$(NoWarn);CA2007</NoWarn>
-
-    <!-- Disabling baseline validation since this is a brand new package.
-         Once this package has shipped a stable version, the following line
-         should be removed in order to re-enable validation. -->
-    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
   </PropertyGroup>
 
   <ItemGroup>
