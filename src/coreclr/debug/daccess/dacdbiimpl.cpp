@@ -7396,7 +7396,7 @@ HRESULT DacDbiInterfaceImpl::ParseContinuation(
     }
 
     *pDiagnosticIP = pResumeInfo->pDiagnosticIP;
-    *pNextContinuation = dac_cast<CORDB_ADDRESS>(dac_cast<TADDR>(OBJECTREFToObject(pNext)));
+    *pNextContinuation = static_cast<CORDB_ADDRESS>(dac_cast<TADDR>(OBJECTREFToObject(pNext)));
     *pState = state;
 
     return S_OK;
