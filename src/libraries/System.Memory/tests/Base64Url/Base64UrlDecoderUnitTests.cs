@@ -952,5 +952,72 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(3, written3);
             Assert.Equal(new byte[] { 1, 2, 3 }, destination3);
         }
+
+        [Fact]
+        public void DecodingWithEmbeddedWhiteSpaceIntoSmallDestination_DecodeFromUtf8()
+        {
+            // Tests DecodeWithWhiteSpaceBlockwiseWrapper path - whitespace embedded in Base64 data.
+            // Input "z A==" has whitespace in the middle. Decodes to 1 byte (0xCC).
+            byte[] input = Encoding.UTF8.GetBytes("z A==");
+
+            byte[] destination1 = new byte[1];
+            OperationStatus status1 = Base64Url.DecodeFromUtf8(input, destination1, out int consumed1, out int written1);
+            Assert.Equal(OperationStatus.Done, status1);
+            Assert.Equal(input.Length, consumed1);
+            Assert.Equal(1, written1);
+            Assert.Equal(0xCC, destination1[0]);
+
+            // Also test with larger embedded whitespace
+            byte[] input2 = Encoding.UTF8.GetBytes("z  A  = =");
+            byte[] destination2 = new byte[1];
+            OperationStatus status2 = Base64Url.DecodeFromUtf8(input2, destination2, out int consumed2, out int written2);
+            Assert.Equal(OperationStatus.Done, status2);
+            Assert.Equal(input2.Length, consumed2);
+            Assert.Equal(1, written2);
+            Assert.Equal(0xCC, destination2[0]);
+        }
+
+        [Fact]
+        public void DecodingWithEmbeddedWhiteSpaceIntoSmallDestination_DecodeFromChars()
+        {
+            // Tests DecodeWithWhiteSpaceBlockwiseWrapper path for chars - whitespace embedded in Base64 data.
+            char[] input = "z A==".ToCharArray();
+
+            byte[] destination1 = new byte[1];
+            OperationStatus status1 = Base64Url.DecodeFromChars(input, destination1, out int consumed1, out int written1);
+            Assert.Equal(OperationStatus.Done, status1);
+            Assert.Equal(input.Length, consumed1);
+            Assert.Equal(1, written1);
+            Assert.Equal(0xCC, destination1[0]);
+
+            // Also test with larger embedded whitespace
+            char[] input2 = "z  A  = =".ToCharArray();
+            byte[] destination2 = new byte[1];
+            OperationStatus status2 = Base64Url.DecodeFromChars(input2, destination2, out int consumed2, out int written2);
+            Assert.Equal(OperationStatus.Done, status2);
+            Assert.Equal(input2.Length, consumed2);
+            Assert.Equal(1, written2);
+            Assert.Equal(0xCC, destination2[0]);
+        }
+
+        [Fact]
+        public void DecodingWithEmbeddedWhiteSpaceIntoSmallDestination_ActualDestinationTooSmall()
+        {
+            // Tests DecodeWithWhiteSpaceBlockwiseWrapper path with actual destination too small.
+            // Input "A Q I D" (embedded whitespace) decodes to 3 bytes.
+            byte[] input = Encoding.UTF8.GetBytes("A Q I D");
+
+            byte[] destination1 = new byte[1];
+            OperationStatus status1 = Base64Url.DecodeFromUtf8(input, destination1, out _, out _);
+            Assert.Equal(OperationStatus.DestinationTooSmall, status1);
+
+            // With destination of 3 bytes, this should succeed.
+            byte[] destination3 = new byte[3];
+            OperationStatus status3 = Base64Url.DecodeFromUtf8(input, destination3, out int consumed3, out int written3);
+            Assert.Equal(OperationStatus.Done, status3);
+            Assert.Equal(input.Length, consumed3);
+            Assert.Equal(3, written3);
+            Assert.Equal(new byte[] { 1, 2, 3 }, destination3);
+        }
     }
 }
