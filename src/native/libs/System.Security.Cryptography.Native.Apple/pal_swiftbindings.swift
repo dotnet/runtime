@@ -202,7 +202,7 @@ enum HKDFError: Error {
 }
 
 @_silgen_name("AppleCryptoNative_HKDFExpand")
-@available(iOS 14, tvOS 14, *)
+@available(macOS 14, iOS 14, tvOS 14, *)
 public func AppleCryptoNative_HKDFExpand(
     hashAlgorithm: Int32,
     prkPtr: UnsafeMutableRawPointer,
@@ -248,7 +248,7 @@ public func AppleCryptoNative_HKDFExpand(
 }
 
 @_silgen_name("AppleCryptoNative_HKDFExtract")
-@available(iOS 14, tvOS 14, *)
+@available(macOS 14, iOS 14, tvOS 14, *)
 public func AppleCryptoNative_HKDFExtract(
     hashAlgorithm: Int32,
     ikmPtr: UnsafeMutableRawPointer,
@@ -295,7 +295,7 @@ public func AppleCryptoNative_HKDFExtract(
 }
 
 @_silgen_name("AppleCryptoNative_HKDFDeriveKey")
-@available(iOS 14, tvOS 14, *)
+@available(macOS 14, iOS 14, tvOS 14, *)
 public func AppleCryptoNative_HKDFDeriveKey(
     hashAlgorithm: Int32,
     ikmPtr: UnsafeMutableRawPointer,
