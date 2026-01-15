@@ -191,10 +191,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             static void TestDirectCall()
             {
                 // This should warn: @interface doesn't have the required annotations
-                object o = new();
-                var type = o.GetType();
-                var @interface = type.GetInterfaces()[0];
-                _ = type.GetInterfaceMap(@interface);
+                var @interface = typeof(TestType).GetInterfaces()[0];
+                _ = typeof(TestType).GetInterfaceMap(@interface);
             }
 
             [ExpectedWarning("IL2072", nameof(Type.GetInterfaceMap))]
@@ -203,29 +201,23 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 // This should also warn: @interface doesn't have the required annotations
                 // even though we're accessing a field on the return value.
                 // Regression test for https://github.com/dotnet/runtime/issues/117849
-                object o = new();
-                var type = o.GetType();
-                var @interface = type.GetInterfaces()[0];
-                _ = type.GetInterfaceMap(@interface).TargetMethods;
+                var @interface = typeof(TestType).GetInterfaces()[0];
+                _ = typeof(TestType).GetInterfaceMap(@interface).TargetMethods;
             }
 
             [ExpectedWarning("IL2072", nameof(Type.GetInterfaceMap))]
             static void TestMultipleFieldAccess()
             {
                 // Should warn even with multiple field/property accesses
-                object o = new();
-                var type = o.GetType();
-                var @interface = type.GetInterfaces()[0];
-                _ = type.GetInterfaceMap(@interface).TargetMethods.Length;
+                var @interface = typeof(TestType).GetInterfaces()[0];
+                _ = typeof(TestType).GetInterfaceMap(@interface).TargetMethods.Length;
             }
 
             static void TestWithAnnotation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
             {
                 // This should not warn: interfaceType has the required annotations
-                object o = new();
-                var type = o.GetType();
-                _ = type.GetInterfaceMap(interfaceType);
-                _ = type.GetInterfaceMap(interfaceType).TargetMethods;
+                _ = typeof(TestType).GetInterfaceMap(interfaceType);
+                _ = typeof(TestType).GetInterfaceMap(interfaceType).TargetMethods;
             }
 
             public static void Test()
