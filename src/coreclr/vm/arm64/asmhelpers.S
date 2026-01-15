@@ -1173,11 +1173,13 @@ LEAF_ENTRY Load_SwiftSelf
     EPILOG_BRANCH_REG x11
 LEAF_END Load_SwiftSelf
 
-LEAF_ENTRY Store_SwiftSelf
-    str x20, [x9], #8
+LEAF_ENTRY Load_SwiftSelf_ByRef
+    mov x20, x9
+    ldr x11, [x10], #8
+    add x9, x9, x11
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
-LEAF_END Store_SwiftSelf
+LEAF_END Load_SwiftSelf_ByRef
 
 LEAF_ENTRY Load_SwiftError
     ldr x11, [x9], #8
@@ -1187,11 +1189,109 @@ LEAF_ENTRY Load_SwiftError
     EPILOG_BRANCH_REG x11
 LEAF_END Load_SwiftError
 
-LEAF_ENTRY Store_SwiftError
-    str x21, [x9], #8
+.macro SwiftLoad_AtOffset reg
+    ldr x12, [x10], #8       // Load offset|struct_size
+    and w11, w12, #0xFFFF    // Extract offset (lower 16 bits)
+    ldr \reg, [x9, x11]      // Load from [x9 + offset]
+    lsr x12, x12, #16        // Shift to get struct_size
+    cbz x12, 1f              // If struct_size == 0, skip advance
+    add x9, x9, x12          // Advance x9 by struct_size
+1:
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
-LEAF_END Store_SwiftError
+.endm
+
+LEAF_ENTRY Load_X0_AtOffset
+    SwiftLoad_AtOffset x0
+LEAF_END Load_X0_AtOffset
+
+LEAF_ENTRY Load_X1_AtOffset
+    SwiftLoad_AtOffset x1
+LEAF_END Load_X1_AtOffset
+
+LEAF_ENTRY Load_X2_AtOffset
+    SwiftLoad_AtOffset x2
+LEAF_END Load_X2_AtOffset
+
+LEAF_ENTRY Load_X3_AtOffset
+    SwiftLoad_AtOffset x3
+LEAF_END Load_X3_AtOffset
+
+LEAF_ENTRY Load_X4_AtOffset
+    SwiftLoad_AtOffset x4
+LEAF_END Load_X4_AtOffset
+
+LEAF_ENTRY Load_X5_AtOffset
+    SwiftLoad_AtOffset x5
+LEAF_END Load_X5_AtOffset
+
+LEAF_ENTRY Load_X6_AtOffset
+    SwiftLoad_AtOffset x6
+LEAF_END Load_X6_AtOffset
+
+LEAF_ENTRY Load_X7_AtOffset
+    SwiftLoad_AtOffset x7
+LEAF_END Load_X7_AtOffset
+
+// Float versions for Swift lowering
+.macro SwiftLoadFloat_AtOffset reg
+    ldr x12, [x10], #8       // Load offset|struct_size
+    and w11, w12, #0xFFFF    // Extract offset (lower 16 bits)
+    ldr \reg, [x9, x11]      // Load float from [x9 + offset]
+    lsr x12, x12, #16        // Shift to get struct_size
+    cbz x12, 1f              // If struct_size == 0, skip advance
+    add x9, x9, x12          // Advance x9 by struct_size
+1:
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+.endm
+
+LEAF_ENTRY Load_D0_AtOffset
+    SwiftLoadFloat_AtOffset d0
+LEAF_END Load_D0_AtOffset
+
+LEAF_ENTRY Load_D1_AtOffset
+    SwiftLoadFloat_AtOffset d1
+LEAF_END Load_D1_AtOffset
+
+LEAF_ENTRY Load_D2_AtOffset
+    SwiftLoadFloat_AtOffset d2
+LEAF_END Load_D2_AtOffset
+
+LEAF_ENTRY Load_D3_AtOffset
+    SwiftLoadFloat_AtOffset d3
+LEAF_END Load_D3_AtOffset
+
+LEAF_ENTRY Load_D4_AtOffset
+    SwiftLoadFloat_AtOffset d4
+LEAF_END Load_D4_AtOffset
+
+LEAF_ENTRY Load_D5_AtOffset
+    SwiftLoadFloat_AtOffset d5
+LEAF_END Load_D5_AtOffset
+
+LEAF_ENTRY Load_D6_AtOffset
+    SwiftLoadFloat_AtOffset d6
+LEAF_END Load_D6_AtOffset
+
+LEAF_ENTRY Load_D7_AtOffset
+    SwiftLoadFloat_AtOffset d7
+LEAF_END Load_D7_AtOffset
+
+LEAF_ENTRY Load_Stack_AtOffset
+    ldr x12, [x10], #8       // Load offset|structSize|stackOffset
+    and w11, w12, #0xFFFF    // Extract offset (lower 16 bits)
+    ldr x13, [x9, x11]       // Load 8 bytes from [x9 + offset]
+    lsr x14, x12, #32        // Extract stackOffset (upper 32 bits)
+    add x14, sp, x14         // Calculate stack destination
+    str x13, [x14]           // Store to native stack
+    ubfx x12, x12, #16, #16  // Extract structSize (bits 16-31)
+    cbz x12, 1f              // If structSize == 0, skip advance
+    add x9, x9, x12          // Advance x9 by structSize
+1:
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_Stack_AtOffset
 
 LEAF_ENTRY Store_X0
     str x0, [x9], #8

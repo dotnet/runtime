@@ -118,6 +118,7 @@ class CallStubGenerator
         FPReg32,
         FPReg128,
         SwiftSelf,
+        SwiftSelfByRef,
         SwiftError,
 #endif
         Stack
@@ -141,6 +142,10 @@ class CallStubGenerator
     int m_routineIndex = 0;
     // The total stack size used for the arguments.
     int m_totalStackSize = 0;
+#ifdef TARGET_ARM64
+    // Size of struct for SwiftSelf<T> byReference case
+    int m_swiftSelfByRefSize = 0;
+#endif
 
     CallStubHeader::InvokeFunctionPtr m_pInvokeFunction = NULL;
     bool m_interpreterToNative = false;
@@ -160,7 +165,10 @@ class CallStubGenerator
     PCODE GetFPReg128RangeRoutine(int x1, int x2);
     PCODE GetFPReg32RangeRoutine(int x1, int x2);
     PCODE GetSwiftSelfRoutine();
+    PCODE GetSwiftSelfByRefRoutine();
     PCODE GetSwiftErrorRoutine();
+    PCODE GetSwiftLoadGPAtOffsetRoutine(int regIndex);
+    PCODE GetSwiftLoadFPAtOffsetRoutine(int regIndex);
 #endif
     PCODE GetGPRegRangeRoutine(int r1, int r2);
     ReturnType GetReturnType(ArgIterator *pArgIt);

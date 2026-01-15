@@ -1451,11 +1451,15 @@ RefCopyDone$argReg
         EPILOG_BRANCH_REG x11
     LEAF_END Load_SwiftSelf
 
-    LEAF_ENTRY Store_SwiftSelf
-        str x20, [x9], #8
-        ldr x11, [x10], #8
+    ; Load address of struct on interpreter stack into x20 (SwiftSelf byReference)
+    ; The next entry in the routines array contains the size of the struct
+    LEAF_ENTRY Load_SwiftSelf_ByRef
+        mov x20, x9              ; x20 = address of struct on interpreter stack
+        ldr x11, [x10], #8       ; Load size from routines array
+        add x9, x9, x11          ; Advance interpreter stack pointer by struct size
+        ldr x11, [x10], #8       ; Load next routine address
         EPILOG_BRANCH_REG x11
-    LEAF_END Store_SwiftSelf
+    LEAF_END Load_SwiftSelf_ByRef
 
     LEAF_ENTRY Load_SwiftError
         ldr x11, [x9], #8
@@ -1464,12 +1468,6 @@ RefCopyDone$argReg
         ldr x11, [x10], #8
         EPILOG_BRANCH_REG x11
     LEAF_END Load_SwiftError
-
-    LEAF_ENTRY Store_SwiftError
-        str x21, [x9], #8
-        ldr x11, [x10], #8
-        EPILOG_BRANCH_REG x11
-    LEAF_END Store_SwiftError
 
     LEAF_ENTRY Store_X0
         str x0, [x9], #8
