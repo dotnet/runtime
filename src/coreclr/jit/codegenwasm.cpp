@@ -481,6 +481,18 @@ static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types toType, var
     return ((uint32_t)oper << shift1) | ((uint32_t)fromType) | ((uint32_t)toType << shift2);
 }
 
+// ------------------------------------------------------------------------
+// PackTypes: Pack two var_types together into a uint32_t
+
+// Arguments:
+//    toType - a var_types to pack
+//    fromType - a var_types to pack
+//
+// Return Value:
+//    The two types packed together into an integer that can be used as a switch/value,
+//    the primary use case being the handling of operations with two-type variants such
+//    as casts.
+//
 static constexpr uint32_t PackTypes(var_types toType, var_types fromType)
 {
     if (toType == TYP_BYREF)
@@ -495,16 +507,26 @@ static constexpr uint32_t PackTypes(var_types toType, var_types fromType)
     return ((uint32_t)toType) | ((uint32_t)fromType << shift1);
 }
 
+//------------------------------------------------------------------------
+// genIntToIntCast: Generate code for an integer to integer cast
+//
+// Arguments:
+//    cast - The GT_CAST node for the integer cast operation
+//
+// Notes:
+//    Handles casts to and from small int, int, and long types
+//    including proper sign extension and truncation as needed.
+//
 void CodeGen::genIntToIntCast(GenTreeCast* cast)
 {
     GenIntCastDesc desc(cast);
     var_types      toType     = genActualType(cast->CastToType());
-    var_types      fromType   = genActualType(cast->CastOp()->TypeGet());
+    var_types      fromType   = genActualType(cast->CastOp());
     int            extendSize = desc.ExtendSrcSize();
     instruction    ins        = INS_none;
     assert(fromType == TYP_INT || fromType == TYP_LONG);
 
-    genConsumeRegs(cast->CastOp());
+    genConsumeOperands(cast);
 
     switch (desc.ExtendKind())
     {
@@ -523,53 +545,33 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
         }
         case GenIntCastDesc::ExtendKind::ZERO_EXTEND_SMALL_INT:
         {
-            assert(extendSize <= 2);
-            if (toType == TYP_LONG)
+            int andAmount = extendSize == 1 ? 255 : 65535;
+            if (fromType == TYP_LONG)
             {
-                ins = INS_i64_extend_u_i32;
+                GetEmitter()->emitIns(INS_i32_wrap_i64);
             }
-            else
-            {
-                // We expect the underlying types to both be int here,
-                // so we don't need to do anything more
-                assert(toType == TYP_INT && fromType == TYP_INT);
-                ins = INS_none;
-            }
+            GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, andAmount);
+            GetEmitter()->emitIns(INS_i32_and);
+            ins = (toType == TYP_LONG) ? INS_i64_extend_u_i32 : INS_none;
             break;
         }
         case GenIntCastDesc::ExtendKind::SIGN_EXTEND_SMALL_INT:
         {
-            assert(extendSize <= 2);
-            switch (extendSize)
+            if (fromType == TYP_LONG)
             {
-                case 1:
-                    ins = INS_i32_extend8_s;
-                    break;
-                case 2:
-                    ins = INS_i32_extend16_s;
-                    break;
-                default:
-                    unreached();
+                GetEmitter()->emitIns(INS_i32_wrap_i64);
             }
+            ins = (extendSize == 1) ? INS_i32_extend8_s : INS_i32_extend16_s;
 
-            // A sign-extended cast from small int->long requires two instructions; first sign extended
-            // small int -> i32, then sign extended i32 -> i64
-            if (toType == TYP_LONG)
-            {
-                GetEmitter()->emitIns(ins);
-                ins = INS_i64_extend_s_i32;
-            }
             break;
         }
         case GenIntCastDesc::ExtendKind::ZERO_EXTEND_INT:
         {
-            assert(toType == TYP_LONG);
             ins = INS_i64_extend_u_i32;
             break;
         }
         case GenIntCastDesc::ExtendKind::SIGN_EXTEND_INT:
         {
-            assert(toType == TYP_LONG);
             ins = INS_i64_extend_s_i32;
             break;
         }
@@ -584,28 +586,39 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
     genProduceReg(cast);
 }
 
+//------------------------------------------------------------------------
+// genFloatToIntCast: Generate code for a floating point to integer cast
+//
+// Arguments:
+//    tree - The GT_CAST node for the float-to-int cast operation
+//
+// Notes:
+//    Handles casts from TYP_FLOAT/TYP_DOUBLE to TYP_INT/TYP_LONG.
+//    Uses saturating truncation instructions (trunc_sat) which clamp
+//    out-of-range values rather than trapping.
+//
 void CodeGen::genFloatToIntCast(GenTree* tree)
 {
-    var_types   toType     = genActualType(tree->TypeGet());
-    var_types   fromType   = genActualType(tree->AsCast()->CastFromType());
+    var_types   toType     = tree->TypeGet();
+    var_types   fromType   = tree->AsCast()->CastOp()->TypeGet();
     bool        isUnsigned = varTypeIsUnsigned(tree->AsCast()->CastToType());
     instruction ins        = INS_none;
     assert(varTypeIsFloating(fromType) && (toType == TYP_INT || toType == TYP_LONG));
 
-    genConsumeRegs(tree->AsCast()->CastOp());
+    genConsumeOperands(tree->AsCast());
 
-    switch (PackTypes(toType, fromType))
+    switch (PackTypes(fromType, toType))
     {
-        case PackTypes(TYP_INT, TYP_FLOAT):
+        case PackTypes(TYP_FLOAT, TYP_INT):
             ins = isUnsigned ? INS_i32_trunc_sat_f32_u : INS_i32_trunc_sat_f32_s;
             break;
-        case PackTypes(TYP_INT, TYP_DOUBLE):
+        case PackTypes(TYP_DOUBLE, TYP_INT):
             ins = isUnsigned ? INS_i32_trunc_sat_f64_u : INS_i32_trunc_sat_f64_s;
             break;
-        case PackTypes(TYP_LONG, TYP_FLOAT):
+        case PackTypes(TYP_FLOAT, TYP_LONG):
             ins = isUnsigned ? INS_i64_trunc_sat_f32_u : INS_i64_trunc_sat_f32_s;
             break;
-        case PackTypes(TYP_LONG, TYP_DOUBLE):
+        case PackTypes(TYP_DOUBLE, TYP_LONG):
             ins = isUnsigned ? INS_i64_trunc_sat_f64_u : INS_i64_trunc_sat_f64_s;
             break;
         default:
@@ -616,18 +629,34 @@ void CodeGen::genFloatToIntCast(GenTree* tree)
     genProduceReg(tree);
 }
 
+//------------------------------------------------------------------------
+// genIntToFloatCast: Generate code for an integer to floating point cast
+//
+// Arguments:
+//    tree - The GT_CAST node for the int-to-float cast operation
+//
+// Notes:
+//    Handles casts from TYP_INT/TYP_LONG to TYP_FLOAT/TYP_DOUBLE.
+//    Currently not implemented (NYI_WASM).
+//
 void CodeGen::genIntToFloatCast(GenTree* tree)
 {
     NYI_WASM("genIntToFloatCast");
 }
 
+//------------------------------------------------------------------------
+// genFloatToFloatCast: Generate code for a float to float cast
+//
+// Arguments:
+//    tree - The GT_CAST node for the float-to-float cast operation
+//
 void CodeGen::genFloatToFloatCast(GenTree* tree)
 {
-    var_types   toType   = genActualType(tree->TypeGet());
-    var_types   fromType = genActualType(tree->AsCast()->CastFromType());
+    var_types   toType   = tree->TypeGet();
+    var_types   fromType = tree->AsCast()->CastOp()->TypeGet();
     instruction ins      = INS_none;
 
-    genConsumeRegs(tree->AsCast()->CastOp());
+    genConsumeOperands(tree->AsCast());
 
     switch (PackTypes(toType, fromType))
     {

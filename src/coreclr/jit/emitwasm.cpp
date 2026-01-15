@@ -9,7 +9,7 @@
 #include "codegen.h"
 
 // clang-format off
-/*static*/ const uint16_t CodeGenInterface::instInfo[] =
+/*static*/ const BYTE CodeGenInterface::instInfo[] =
 {
     #define INST(id, nm, info, fmt, opcode) info,
     #include "instrs.h"

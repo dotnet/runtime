@@ -169,10 +169,9 @@ protected:
 private:
 #if defined(TARGET_XARCH)
     static const insFlags instInfo[INS_count];
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) ||        \
+    defined(TARGET_WASM)
     static const BYTE instInfo[INS_count];
-#elif defined(TARGET_WASM)
-    static const uint16_t instInfo[INS_count];
 #else
 #error Unsupported target architecture
 #endif
