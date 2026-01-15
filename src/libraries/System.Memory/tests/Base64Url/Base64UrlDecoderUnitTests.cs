@@ -899,7 +899,8 @@ namespace System.Buffers.Text.Tests
         [Fact]
         public void DecodingWithWhiteSpaceIntoSmallDestination_DecodeFromUtf8()
         {
-            // Input "  zA==  " (8 bytes) decodes to 1 byte (0xCC).
+            // Input "  zA==  " (8 bytes) contains "zA==" which decodes to 1 byte (0xCC).
+            // 'z' = 51, 'A' = 0 -> bits: 110011 000000 -> 0b11001100 = 0xCC
             // With destination of 1 byte, this should succeed, not report "Destination too short".
             byte[] input = Encoding.UTF8.GetBytes("  zA==  ");
 

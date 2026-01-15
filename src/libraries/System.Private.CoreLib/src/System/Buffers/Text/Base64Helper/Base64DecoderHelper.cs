@@ -246,7 +246,8 @@ namespace System.Buffers.Text
 
                 if (ignoreWhiteSpace)
                 {
-                    goto InvalidDataExit; // whitespace fallback may determine actual content fits in destination
+                    // Fall through to InvalidDataFallback which strips whitespace and re-evaluates destination size requirement
+                    goto InvalidDataExit;
                 }
 
                 bytesConsumed = (int)(src - srcBytes);
