@@ -931,6 +931,13 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(OperationStatus.Done, status);
             Assert.Equal(allSpaces.Length, consumed);
             Assert.Equal(0, written);
+
+            // Also test with empty destination buffer
+            byte[] emptyDestination = Array.Empty<byte>();
+            OperationStatus statusEmpty = Base64Url.DecodeFromChars(allSpaces, emptyDestination, out int consumedEmpty, out int writtenEmpty);
+            Assert.Equal(OperationStatus.Done, statusEmpty);
+            Assert.Equal(allSpaces.Length, consumedEmpty);
+            Assert.Equal(0, writtenEmpty);
         }
 
         [Fact]
