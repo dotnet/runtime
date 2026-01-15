@@ -2029,10 +2029,6 @@ HRESULT Debugger::StartupPhase2(Thread * pThread)
     // the helper thread can do the jit-attach.
     dbgLockHolder.Release();
 
-#ifdef _DEBUG
-    // MDA notification code removed - MDAs do not exist in .NET Core
-#endif
-
 
     return hr;
 }
