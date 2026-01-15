@@ -3717,8 +3717,13 @@ unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
     assert(inTry || inHnd);
 
 #if defined(TARGET_WASM)
-    // For WASM we want one throw helper per funclet
-    // So we ignore any try region nesting.
+    // The current plan for Wasm: method regions or funclets with
+    // trys will have a single Wasm try handle all
+    // resumption from catches via virtual IPs.
+    //
+    // So we do not need to consider the nesting of the throw
+    // in try regions, just in handlers.
+    //
     if (!inHnd)
     {
         *dsg = AcdKeyDesignator::KD_NONE;
