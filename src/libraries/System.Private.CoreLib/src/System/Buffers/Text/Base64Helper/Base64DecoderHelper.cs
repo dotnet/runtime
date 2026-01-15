@@ -244,6 +244,11 @@ namespace System.Buffers.Text
                     goto InvalidDataExit; // if input is not a multiple of 4, and there is no more data, return invalid data instead
                 }
 
+                if (ignoreWhiteSpace)
+                {
+                    goto InvalidDataExit; // whitespace fallback may determine actual content fits in destination
+                }
+
                 bytesConsumed = (int)(src - srcBytes);
                 bytesWritten = (int)(dest - destBytes);
                 return OperationStatus.DestinationTooSmall;
