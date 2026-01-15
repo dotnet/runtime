@@ -1129,6 +1129,8 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         [JsonSerializable(typeof(TypeWithNestedConverter<int, string>))]
         [JsonSerializable(typeof(TypeWithSatisfiedConstraint<string>))]
+        [JsonSerializable(typeof(int))]
+        [JsonSerializable(typeof(string))]
         internal partial class NestedGenericConverterContext : JsonSerializerContext
         {
         }

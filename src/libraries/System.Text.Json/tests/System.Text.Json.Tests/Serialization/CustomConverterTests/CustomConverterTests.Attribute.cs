@@ -500,10 +500,12 @@ namespace System.Text.Json.Serialization.Tests
 
         // Tests for type parameter arity mismatch
         [Fact]
-        public static void GenericConverterAttribute_ArityMismatch_ThrowsInvalidOperationException()
+        public static void GenericConverterAttribute_ArityMismatch_ThrowsArgumentException()
         {
             // The converter has two type parameters but the type has one
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new TypeWithArityMismatch<int>()));
+            // This throws ArgumentException because the arity doesn't match, so the converter type
+            // remains an unbound generic and Activator.CreateInstance fails.
+            Assert.Throws<ArgumentException>(() => JsonSerializer.Serialize(new TypeWithArityMismatch<int>()));
         }
 
         [JsonConverter(typeof(ConverterWithTwoParams<,>))]
