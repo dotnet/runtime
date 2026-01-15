@@ -115,6 +115,20 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public async Task VeryLongAppendChain_MatchesBenchmarkScenario()
+        {
+            // This test matches the exact scenario from the performance regression benchmark
+            var enumerable = AsyncEnumerable.Empty<int>();
+            for (int i = 0; i < 10000; i++)
+            {
+                enumerable = enumerable.Append(i);
+            }
+
+            int result = await enumerable.SumAsync();
+            Assert.Equal(Enumerable.Range(0, 10000).Sum(), result);
+        }
+
+        [Fact]
         public async Task MultipleEnumerations_ProducesSameResults()
         {
             IAsyncEnumerable<int> source = CreateSource(1, 2, 3).Append(4).Append(5);
@@ -154,6 +168,32 @@ namespace System.Linq.Tests
             IAsyncEnumerable<int> result = source.Append(4).Prepend(1);
             
             await AssertEqual(new[] { 1, 2, 3, 4 }, result);
+        }
+
+        [Fact]
+        public async Task ParallelEnumeration_AppendClones()
+        {
+            // Test that multiple enumerations work correctly (tests Clone() method)
+            IAsyncEnumerable<int> source = CreateSource(1, 2, 3).Append(4).Append(5);
+            
+            // Get two enumerators explicitly to trigger cloning
+            await using var enum1 = source.GetAsyncEnumerator();
+            await using var enum2 = source.GetAsyncEnumerator();
+            
+            List<int> list1 = new();
+            while (await enum1.MoveNextAsync())
+            {
+                list1.Add(enum1.Current);
+            }
+            
+            List<int> list2 = new();
+            while (await enum2.MoveNextAsync())
+            {
+                list2.Add(enum2.Current);
+            }
+            
+            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, list1);
+            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, list2);
         }
     }
 }

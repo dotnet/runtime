@@ -210,5 +210,33 @@ namespace System.Linq.Tests
             
             Assert.Equal(new[] { 1, 2, 3, 4, 5, 6 }, items);
         }
+
+        [Fact]
+        public async Task ParallelEnumeration_ConcatClones()
+        {
+            // Test that multiple enumerations work correctly (tests Clone() method)
+            IAsyncEnumerable<int> first = CreateSource(1, 2);
+            IAsyncEnumerable<int> second = CreateSource(3, 4);
+            IAsyncEnumerable<int> source = first.Concat(second);
+            
+            // Get two enumerators explicitly to trigger cloning
+            await using var enum1 = source.GetAsyncEnumerator();
+            await using var enum2 = source.GetAsyncEnumerator();
+            
+            List<int> list1 = new();
+            while (await enum1.MoveNextAsync())
+            {
+                list1.Add(enum1.Current);
+            }
+            
+            List<int> list2 = new();
+            while (await enum2.MoveNextAsync())
+            {
+                list2.Add(enum2.Current);
+            }
+            
+            Assert.Equal(new[] { 1, 2, 3, 4 }, list1);
+            Assert.Equal(new[] { 1, 2, 3, 4 }, list2);
+        }
     }
 }

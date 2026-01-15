@@ -155,5 +155,31 @@ namespace System.Linq.Tests
             
             await AssertEqual(new[] { 1, 2, 3, 4 }, result);
         }
+
+        [Fact]
+        public async Task ParallelEnumeration_PrependClones()
+        {
+            // Test that multiple enumerations work correctly (tests Clone() method)
+            IAsyncEnumerable<int> source = CreateSource(3, 4, 5).Prepend(2).Prepend(1);
+            
+            // Get two enumerators explicitly to trigger cloning
+            await using var enum1 = source.GetAsyncEnumerator();
+            await using var enum2 = source.GetAsyncEnumerator();
+            
+            List<int> list1 = new();
+            while (await enum1.MoveNextAsync())
+            {
+                list1.Add(enum1.Current);
+            }
+            
+            List<int> list2 = new();
+            while (await enum2.MoveNextAsync())
+            {
+                list2.Add(enum2.Current);
+            }
+            
+            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, list1);
+            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, list2);
+        }
     }
 }
