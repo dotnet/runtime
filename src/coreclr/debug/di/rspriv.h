@@ -1419,6 +1419,7 @@ private:
 inline bool DoesCordbObjectTypeHaveProcessPtr(enumCordbDerived type)
 {
     return
+        (type != enumCordbCodeEnum) &&
         (type != enumCordb) &&
         (type != enumCordbHashTableEnum);
 }
