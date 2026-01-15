@@ -498,7 +498,7 @@ namespace Internal.TypeSystem
 
         protected ComputedInstanceFieldLayout ComputeCStructFieldLayout(MetadataType type, int numInstanceFields)
         {
-            if (type.ContainsGCPointers || !type.IsValueType)
+            if (type.ContainsGCPointers || type.IsByRefLike || !type.IsValueType)
             {
                 // CStruct layout algorithm does not support GC pointers.
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
@@ -563,6 +563,91 @@ namespace Internal.TypeSystem
                 cumulativeInstanceFieldPos,
                 largestAlignmentRequirement,
                 classLayoutSize: 0, // CStruct does not use the size from metadata.
+                out instanceByteSizeAndAlignment);
+
+            ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout
+            {
+                IsAutoLayoutOrHasAutoLayoutFields = false,
+                IsInt128OrHasInt128Fields = hasInt128Field,
+                IsVectorTOrHasVectorTFields = hasVectorTField,
+                FieldAlignment = instanceSizeAndAlignment.Alignment,
+                FieldSize = instanceSizeAndAlignment.Size,
+                ByteCountUnaligned = instanceByteSizeAndAlignment.Size,
+                ByteCountAlignment = instanceByteSizeAndAlignment.Alignment,
+                Offsets = offsets,
+                LayoutAbiStable = layoutAbiStable
+            };
+
+            return computedLayout;
+        }
+
+        protected ComputedInstanceFieldLayout ComputeCUnionFieldLayout(MetadataType type, int numInstanceFields)
+        {
+            if (type.ContainsGCPointers || type.IsByRefLike || !type.IsValueType)
+            {
+                // CUnion layout algorithm does not support GC pointers.
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+            }
+
+            var offsets = new FieldAndOffset[numInstanceFields];
+
+            LayoutInt largestFieldSize = LayoutInt.Zero;
+            LayoutInt largestAlignmentRequirement = LayoutInt.One;
+            int fieldOrdinal = 0;
+            int packingSize = type.Context.Target.MaximumAlignment;
+            bool layoutAbiStable = true;
+            bool hasAutoLayoutField = false;
+            bool hasInt128Field = false;
+            bool hasVectorTField = false;
+
+            foreach (var field in type.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType.UnderlyingType, hasLayout: true, packingSize, out ComputedFieldData fieldData);
+                if (!fieldData.LayoutAbiStable)
+                    layoutAbiStable = false;
+                if (fieldData.HasAutoLayout)
+                    hasAutoLayoutField = true;
+                if (fieldData.HasInt128Field)
+                    hasInt128Field = true;
+                if (fieldData.HasVectorTField)
+                    hasVectorTField = true;
+
+                largestAlignmentRequirement = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequirement);
+                largestFieldSize = LayoutInt.Max(fieldSizeAndAlignment.Size, largestFieldSize);
+
+                // All fields are placed at offset 0 in a union
+                offsets[fieldOrdinal] = new FieldAndOffset(field, LayoutInt.Zero);
+
+                fieldOrdinal++;
+            }
+
+            if (hasAutoLayoutField)
+            {
+                // CUnion does not support auto layout fields
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+            }
+
+            if (largestFieldSize == LayoutInt.Zero)
+            {
+                // CUnion cannot have zero size.
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+            }
+
+            if (type.IsInlineArray)
+            {
+                // CUnion types cannot be inline arrays
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+            }
+
+            SizeAndAlignment instanceByteSizeAndAlignment;
+            var instanceSizeAndAlignment = ComputeInstanceSize(
+                type,
+                largestFieldSize,
+                largestAlignmentRequirement,
+                classLayoutSize: 0, // CUnion does not use the size from metadata.
                 out instanceByteSizeAndAlignment);
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout
