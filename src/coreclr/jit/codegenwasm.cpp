@@ -841,8 +841,7 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
     if (compiler->fgUseThrowHelperBlocks())
     {
         Compiler::AddCodeDsc* const add = compiler->fgFindExcptnTarget(SCK_NULL_CHECK, compiler->compCurBB);
-        assert((add != nullptr) && ("ERROR: failed to find exception throw block"));
-        assert(add->acdUsed);
+        assert(add != nullptr);
         GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, compiler->compMaxUncheckedOffsetForNullObject);
         GetEmitter()->emitIns(INS_I_le_u);
         inst_JMP(EJ_jmpif, add->acdDstBlk);
@@ -854,7 +853,7 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
         GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, compiler->compMaxUncheckedOffsetForNullObject);
         GetEmitter()->emitIns(INS_I_gt_u);
         // tgtBlock is not on the model wasm control stack we set up earlier.
-        // Since we must emitted a `begin` that will end at this block, it will be at depth 0.
+        // Since we have just emitted a `begin` that will end at this block, it will be at depth 0.
         // Indicate this via isTempLabel.
         inst_JMP(EJ_jmpif, tgtBlk, /* isTempLabel */ true);
         // TODO-WASM: codegen for the call
