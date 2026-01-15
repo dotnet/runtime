@@ -238,9 +238,17 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
         "--config", str(config_path),
         "--profile", "Localhost",
         "--scenario", scenario_name,
-        "--application.framework", framework,
-        "--application.Channel", "latest", # should be 'edge', but it causes random build failures sometimes.
-        "--application.noGlobalJson", "false",
+        
+        # "--application.framework", framework,
+        # "--application.Channel", "edge",
+        # "--application.noGlobalJson", "false",
+
+        # TODO: unpin once it's working again.
+        "--application.framework", "net10.0",
+        "--application.aspNetCoreVersion", "10.0.0-rtm.25513.102",
+        "--application.runtimeVersion", "10.0.0-rtm.25513.102",
+        "--application.sdkVersion", "10.0.100-rtm.25513.102",
+
         "--application.collectDependencies", "false",
         "--application.options.collectCounters", "false",
         "--load.options.reuseBuild", "true",

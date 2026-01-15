@@ -5,4 +5,4 @@ export * from "./emscripten";
 export * from "./internal";
 export * from "./public-api";
 export * from "./exchange";
-
+export * from "./ems-ambient";
