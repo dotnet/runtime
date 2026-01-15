@@ -381,7 +381,7 @@ size_t emitter::emitRawBytes(uint8_t* destination, const void* source, size_t co
 
 size_t emitter::emitOutputOpcode(BYTE* dst, instruction ins)
 {
-    size_t sz = 0;
+    size_t   sz     = 0;
     unsigned opcode = GetInsOpcode(ins);
 
     assert(FitsIn<uint16_t>(opcode));
