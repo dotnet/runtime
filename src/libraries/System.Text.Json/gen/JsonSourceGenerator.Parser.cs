@@ -1684,16 +1684,19 @@ namespace System.Text.Json.SourceGeneration
                     !_knownSymbols.JsonConverterType.IsAssignableFrom(namedConverterType) ||
                     !namedConverterType.Constructors.Any(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType)))
                 {
-                    // Check if this is an unbound generic converter type that can be constructed
+                    // Check if this is an unbound generic converter type that can be constructed.
+                    // Note: We don't check IsAssignableFrom for unbound generic types since that check can fail
+                    // for open generics. Instead, we construct the type first and then validate.
                     if (converterType is INamedTypeSymbol { IsUnboundGenericType: true } unboundConverterType &&
-                        _knownSymbols.JsonConverterType.IsAssignableFrom(unboundConverterType) &&
                         typeToConvert is INamedTypeSymbol { IsGenericType: true } genericTypeToConvert &&
                         unboundConverterType.TypeParameters.Length == genericTypeToConvert.TypeArguments.Length)
                     {
                         // Construct the closed generic converter type
                         namedConverterType = unboundConverterType.Construct(genericTypeToConvert.TypeArguments.ToArray());
 
-                        if (!namedConverterType.Constructors.Any(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType)))
+                        // Validate the constructed type derives from JsonConverter and has accessible parameterless constructor
+                        if (!_knownSymbols.JsonConverterType.IsAssignableFrom(namedConverterType) ||
+                            !namedConverterType.Constructors.Any(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType)))
                         {
                             ReportDiagnostic(DiagnosticDescriptors.JsonConverterAttributeInvalidType, attributeData.GetLocation(), converterType?.ToDisplayString() ?? "null", declaringSymbol.ToDisplayString());
                             return null;
