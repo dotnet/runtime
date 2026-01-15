@@ -842,6 +842,7 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
     {
         Compiler::AddCodeDsc* const add = compiler->fgFindExcptnTarget(SCK_NULL_CHECK, compiler->compCurBB);
         assert(add != nullptr);
+        assert(add->acdUsed);
         GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, compiler->compMaxUncheckedOffsetForNullObject);
         GetEmitter()->emitIns(INS_I_le_u);
         inst_JMP(EJ_jmpif, add->acdDstBlk);
