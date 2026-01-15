@@ -45,7 +45,7 @@ public:
     static FCDECL0(FC_BOOL_RET, CurrentThreadIsFinalizerThread);
 };
 
-extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, BOOL isThreadPool, PCWSTR pThreadName);
+extern "C" BOOL QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, BOOL isThreadPool, PCWSTR pThreadName, QCall::ObjectHandleOnStack exception);
 extern "C" void QCALLTYPE ThreadNative_SetPriority(QCall::ObjectHandleOnStack thread, INT32 iPriority);
 extern "C" void QCALLTYPE ThreadNative_GetCurrentThread(QCall::ObjectHandleOnStack thread);
 extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle thread);
@@ -58,7 +58,6 @@ extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t);
 extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle thread);
 extern "C" void QCALLTYPE ThreadNative_SetWaitSleepJoinState(QCall::ThreadHandle thread);
 extern "C" void QCALLTYPE ThreadNative_ClearWaitSleepJoinState(QCall::ThreadHandle thread);
-extern "C" void QCALLTYPE ThreadNative_ReportDead(QCall::ThreadHandle thread);
 extern "C" INT32 QCALLTYPE ThreadNative_ReentrantWaitAny(BOOL alertable, INT32 timeout, INT32 count, HANDLE *handles);
 #ifdef TARGET_WINDOWS
 extern "C" void QCALLTYPE ThreadNative_Interrupt(QCall::ThreadHandle thread);

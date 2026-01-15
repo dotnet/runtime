@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // File: CLRtoCOMCall.cpp
 //
-
-//
 // CLR to COM call support.
 //
-
 
 #include "common.h"
 
@@ -38,15 +36,12 @@ void CreateCLRToDispatchCOMStub(
             DWORD        dwStubFlags             // PInvokeStubFlags
             );
 
-
 PCODE TheGenericCLRToCOMCallStub()
 {
     LIMITED_METHOD_CONTRACT;
 
     return GetEEFuncEntryPoint(GenericCLRToCOMCallStub);
 }
-
-
 
 CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, DWORD* pdwStubFlags)
 {
@@ -69,7 +64,9 @@ CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, 
             LoaderHeap *pHeap = pMD->GetLoaderAllocator()->GetHighFrequencyHeap();
             CLRToCOMCallInfo *pTemp = (CLRToCOMCallInfo *)(void *)pHeap->AllocMem(S_SIZE_T(sizeof(CLRToCOMCallInfo)));
 
+#ifdef TARGET_X86
             pTemp->InitStackArgumentSize();
+#endif // TARGET_X86
 
             InterlockedCompareExchangeT(&pCMD->m_pCLRToCOMCallInfo, pTemp, NULL);
         }
@@ -162,8 +159,6 @@ MethodDesc* CLRToCOMCall::GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags
                     dwStubFlags);
 }
 
-
-
 PCODE CLRToCOMCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
 {
     STANDARD_VM_CONTRACT;
@@ -201,7 +196,6 @@ PCODE CLRToCOMCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
 
     return pStub;
 }
-
 
 I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
 {

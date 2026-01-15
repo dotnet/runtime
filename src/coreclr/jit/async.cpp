@@ -73,6 +73,12 @@ PhaseStatus Compiler::SaveAsyncContexts()
     lvaAsyncSynchronizationContextVar                     = lvaGrabTemp(false DEBUGARG("Async SynchronizationContext"));
     lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvType = TYP_REF;
 
+    if (opts.IsOSR())
+    {
+        lvaGetDesc(lvaAsyncExecutionContextVar)->lvIsOSRLocal       = true;
+        lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvIsOSRLocal = true;
+    }
+
     // Create try-fault structure. This is actually a try-finally, but we
     // manually insert the restore code in a (merged) return block, so EH wise
     // we only need to restore on fault.
@@ -153,23 +159,28 @@ PhaseStatus Compiler::SaveAsyncContexts()
     CORINFO_ASYNC_INFO* asyncInfo = eeGetAsyncInfo();
 
     // Insert CaptureContexts call before the try (keep it before so the
-    // try/finally can be removed if there is no exception side effects)
-    GenTreeCall* captureCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->captureContextsMethHnd, TYP_VOID);
-    captureCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncSynchronizationContextVar, 0)));
-    captureCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncExecutionContextVar, 0)));
-    lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvHasLdAddrOp = true;
-    lvaGetDesc(lvaAsyncExecutionContextVar)->lvHasLdAddrOp       = true;
+    // try/finally can be removed if there is no exception side effects).
+    // For OSR, we did this in the tier0 method.
+    if (!opts.IsOSR())
+    {
+        GenTreeCall* captureCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->captureContextsMethHnd, TYP_VOID);
+        captureCall->gtArgs.PushFront(this,
+                                      NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncSynchronizationContextVar, 0)));
+        captureCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncExecutionContextVar, 0)));
+        lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvHasLdAddrOp = true;
+        lvaGetDesc(lvaAsyncExecutionContextVar)->lvHasLdAddrOp       = true;
 
-    CORINFO_CALL_INFO callInfo = {};
-    callInfo.hMethod           = captureCall->gtCallMethHnd;
-    callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
-    impMarkInlineCandidate(captureCall, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
+        CORINFO_CALL_INFO callInfo = {};
+        callInfo.hMethod           = captureCall->gtCallMethHnd;
+        callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
+        impMarkInlineCandidate(captureCall, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
 
-    Statement* captureStmt = fgNewStmtFromTree(captureCall);
-    fgInsertStmtAtBeg(fgFirstBB, captureStmt);
+        Statement* captureStmt = fgNewStmtFromTree(captureCall);
+        fgInsertStmtAtBeg(fgFirstBB, captureStmt);
 
-    JITDUMP("Inserted capture\n");
-    DISPSTMT(captureStmt);
+        JITDUMP("Inserted capture\n");
+        DISPSTMT(captureStmt);
+    }
 
     // Insert RestoreContexts call in fault (exceptional case)
     // First argument: started = (continuation == null)
@@ -480,14 +491,6 @@ bool AsyncLiveness::IsLocalCaptureUnnecessary(unsigned lclNum)
     {
         return true;
     }
-
-#ifdef FEATURE_EH_WINDOWS_X86
-    if (lclNum == m_comp->lvaShadowSPslotsVar)
-    {
-        // Only expected to be live in handlers
-        return true;
-    }
-#endif
 
     if (lclNum == m_comp->lvaRetAddrVar)
     {
@@ -1100,7 +1103,7 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
 
             if (layout->IsCustomLayout())
             {
-                inf.Alignment = 1;
+                inf.Alignment = layout->HasGCPtr() ? TARGET_POINTER_SIZE : 1;
                 inf.Size      = layout->GetSize();
             }
             else
@@ -2013,6 +2016,8 @@ BasicBlock* AsyncTransformation::RethrowExceptionOnResumption(BasicBlock*       
     if ((rethrowExceptionBB->Prev() == block) && !block->HasFlag(BBF_INTERNAL))
     {
         rethrowExceptionBB->RemoveFlags(BBF_INTERNAL);
+        // Non-internal blocks must be marked imported
+        rethrowExceptionBB->SetFlags(BBF_IMPORTED);
     }
 
     BasicBlock* storeResultBB = m_comp->fgNewBBafter(BBJ_ALWAYS, resumeBB, true);
