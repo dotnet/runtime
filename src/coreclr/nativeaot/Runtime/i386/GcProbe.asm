@@ -20,9 +20,9 @@ DEFAULT_PROBE_SAVE_FLAGS        equ PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
 ;;  All registers correct for return to the original return address.
 ;;
 ;; Register state on exit:
-;;  EAX: not trashed or saved
+;;  EAX: saved at [ebp - 12]
 ;;  EBP: new EBP frame with correct return address
-;;  ESP: points to saved scratch registers (ECX & EDX)
+;;  ESP: points to saved scratch registers (ECX, EDX, EAX)
 ;;  ECX: return value flags
 ;;  EDX: thread pointer
 ;;
@@ -32,6 +32,7 @@ HijackFixupProlog macro
         mov         ebp, esp
         push        ecx         ; save scratch registers
         push        edx         ; save scratch registers
+        push        eax         ; save scratch registers
 
         ;; edx <- GetThread(), TRASHES ecx
         INLINE_GETTHREAD edx, ecx
@@ -68,6 +69,7 @@ endm
 ;;  All registers restored as they were when the hijack was first reached.
 ;;
 HijackFixupEpilog macro
+        pop         eax
         pop         edx
         pop         ecx
         pop         ebp
@@ -92,10 +94,8 @@ endm
 ;;  ECX is NOT trashed if BITMASK_REG_OR_VALUE is a literal value and not a register
 ;;
 PushProbeFrame macro BITMASK_REG_OR_VALUE
-        push        eax                                 ; Save live EAX first
-        mov         eax, [ebp - 4]          ; ECX
-        xchg        [esp], eax                          ; stack={ECX}, eax=original EAX
-        push        eax                     ; EAX
+        push        [ebp - 4]               ; ECX
+        push        [ebp - 12]              ; EAX
         lea         eax, [ebp + 8]                      ; get caller ESP
         push        eax                     ; ESP
         push        edi                     ; EDI
@@ -139,7 +139,8 @@ PopProbeFrame macro
         pop         esi
         pop         edi
         pop         eax     ; discard ESP
-        pop         eax     ; EAX
+        pop         edx                                 ; EAX (into EDX temporarily)
+        mov         [ebp - 12], edx                     ; write updated EAX back to HijackFixupProlog save location
         pop         edx                                 ; ECX (into EDX temporarily)
         mov         [ebp - 4], edx                      ; write updated ECX back to HijackFixupProlog save location
 endm
@@ -153,7 +154,7 @@ endm
 ;;  ECX: register bitmask
 ;;  EDX: thread pointer
 ;;  EBP: EBP frame
-;;  ESP: scratch registers pushed (ECX & EDX)
+;;  ESP: scratch registers pushed (ECX, EDX, EAX)
 ;;
 ;; Register state on exit:
 ;;  All registers restored as they were when the hijack was first reached.
@@ -219,7 +220,7 @@ endm
 ;;  EDX: thread pointer
 ;;  ECX: register bitmask
 ;;  EBP: EBP frame
-;;  ESP: scratch registers pushed (ECX and EDX)
+;;  ESP: scratch registers pushed (ECX, EDX, EAX)
 ;;
 ;; Register state on exit:
 ;;  All registers restored as they were when the hijack was first reached.
