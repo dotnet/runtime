@@ -10777,8 +10777,8 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
 
     // Read FP callee-saved registers (xmm6-xmm15) from the stack
     // They are stored at negative offsets from TransitionBlock:
-    // Layout: [xmm6-xmm15 (160 bytes)] [xmm0-xmm3 (64 bytes)] [shadow (32 bytes)] [padding (8 bytes)] [CalleeSavedRegs] [RetAddr]
-    // xmm6 is at sp+0, TransitionBlock is at sp+264, so xmm6 is at TransitionBlock - 264
+    // Layout: [shadow (32)] [xmm6-xmm15 (160)] [xmm0-xmm3 (64)] [arg regs (32)] [padding (8)] [CalleeSavedRegs] [RetAddr]
+    // xmm6 is at sp+32, TransitionBlock is at sp+296, so xmm6 is at TransitionBlock - 264
     M128A *pFpCalleeSaved = (M128A*)((BYTE*)pTransitionBlock - 264);
 
     m_Context.Xmm6 = pFpCalleeSaved[0];

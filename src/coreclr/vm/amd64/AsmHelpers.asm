@@ -523,6 +523,14 @@ NESTED_ENTRY CallEHFunclet, _TEXT
         ; Save the SP of this function.
         mov     [r9], rsp
 
+        ; Reset MXCSR to default value before invoking managed code.
+        ; This is needed for foreign thread exceptions where CONTEXT is captured by Windows SEH,
+        ; which can leave MXCSR in a bad state (e.g., 0x20 with FP exception masks cleared).
+        ; 0x1F80 = default MXCSR: all exception masks set, round to nearest
+        push    1F80h
+        ldmxcsr [rsp]
+        add     rsp, 8
+
         ; Invoke the funclet
         call    rdx
 
@@ -547,6 +555,14 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT
         mov     [r9], rsp
         ; Restore RBP to match main function RBP
         mov     rbp, rdx
+
+        ; Reset MXCSR to default value before invoking managed code.
+        ; This is needed for foreign thread exceptions where CONTEXT is captured by Windows SEH,
+        ; which can leave MXCSR in a bad state (e.g., 0x20 with FP exception masks cleared).
+        ; 0x1F80 = default MXCSR: all exception masks set, round to nearest
+        push    1F80h
+        ldmxcsr [rsp]
+        add     rsp, 8
 
         ; Invoke the filter funclet
         call    r8
@@ -1212,11 +1228,8 @@ endif ; FEATURE_INTERPRETER
 ;   RCX = Pointer to exception object
 ;==========================================================================
 NESTED_ENTRY IL_Throw, _TEXT
+        ; Shadow space for the call is included in PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS
         PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rdx
-
-        ; Allocate shadow space for the call (required by Windows x64 ABI)
-        ; Without this, the callee's shadow space writes would overwrite our saved xmm6
-        sub     rsp, 20h
 
         ; RCX already contains exception object
         ; RDX contains pointer to TransitionBlock
@@ -1233,10 +1246,8 @@ NESTED_END IL_Throw, _TEXT
 ;   RCX = Pointer to exception object
 ;==========================================================================
 NESTED_ENTRY IL_ThrowExact, _TEXT
+        ; Shadow space for the call is included in PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS
         PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rdx
-
-        ; Allocate shadow space for the call (required by Windows x64 ABI)
-        sub     rsp, 20h
 
         ; RCX already contains exception object
         ; RDX contains pointer to TransitionBlock
@@ -1250,10 +1261,8 @@ NESTED_END IL_ThrowExact, _TEXT
 ; implementation written in C.
 ;==========================================================================
 NESTED_ENTRY IL_Rethrow, _TEXT
+        ; Shadow space for the call is included in PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS
         PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rcx
-
-        ; Allocate shadow space for the call (required by Windows x64 ABI)
-        sub     rsp, 20h
 
         ; RCX contains pointer to TransitionBlock
         call    IL_Rethrow_Impl

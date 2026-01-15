@@ -510,41 +510,42 @@ POP_COOP_PINVOKE_FRAME macro
 ; 256 mod 16 = 0, so RSP mod 16 = 8 (NOT aligned)
 ; 264 mod 16 = 8, so RSP mod 16 = 0 (aligned!) but offsets 0,16,32... work
 ;
-; With alloc_stack 264: RSP is 16-byte aligned, XMM saves at 0, 16, 32, ... (multiples of 16)
+; With alloc_stack 296: RSP is 16-byte aligned, XMM saves at 32, 48, 64, ... (multiples of 16)
 ;
 ; On exit, target contains the TransitionBlock pointer (CalleeSavedRegisters).
 PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS macro target
 
         PUSH_CALLEE_SAVED_REGISTERS
 
-        ; Allocate space for: FP callee-saved (160) + float args (64) + shadow (32) + padding (8) = 264 bytes
-        ; This makes RSP 16-byte aligned (8 + 64 + 264 = 336, and original RSP - 336 is 16-byte aligned)
-        alloc_stack     264
+        ; Allocate space for: shadow for call (32) + FP callee-saved (160) + float args (64) + arg regs (32) + padding (8) = 296 bytes
+        ; Shadow space at offset 0 is reserved for the call to IL_Throw_Impl etc.
+        ; This makes RSP 16-byte aligned (8 + 64 + 296 = 368, and original RSP - 368 is 16-byte aligned)
+        alloc_stack     296
 
-        ; Save argument registers to shadow space area at offset 224
-        SAVE_ARGUMENT_REGISTERS 224
+        ; Save argument registers at offset 256 (32 + 160 + 64)
+        SAVE_ARGUMENT_REGISTERS 256
 
-        ; Save float argument registers at offset 160
-        SAVE_FLOAT_ARGUMENT_REGISTERS 160
+        ; Save float argument registers at offset 192 (32 + 160)
+        SAVE_FLOAT_ARGUMENT_REGISTERS 192
 
-        ; Save FP callee-saved registers (xmm6-xmm15) at offset 0
-        ; RSP is 16-byte aligned, so offset 0, 16, 32, ... are all 16-byte aligned
+        ; Save FP callee-saved registers (xmm6-xmm15) at offset 32 (after shadow space)
+        ; RSP is 16-byte aligned, so offset 32, 48, 64, ... are all 16-byte aligned
         ; AND these offsets are multiples of 16 as required by unwind codes
-        save_xmm128_postrsp xmm6,  0h
-        save_xmm128_postrsp xmm7,  10h
-        save_xmm128_postrsp xmm8,  20h
-        save_xmm128_postrsp xmm9,  30h
-        save_xmm128_postrsp xmm10, 40h
-        save_xmm128_postrsp xmm11, 50h
-        save_xmm128_postrsp xmm12, 60h
-        save_xmm128_postrsp xmm13, 70h
-        save_xmm128_postrsp xmm14, 80h
-        save_xmm128_postrsp xmm15, 90h
+        save_xmm128_postrsp xmm6,  20h
+        save_xmm128_postrsp xmm7,  30h
+        save_xmm128_postrsp xmm8,  40h
+        save_xmm128_postrsp xmm9,  50h
+        save_xmm128_postrsp xmm10, 60h
+        save_xmm128_postrsp xmm11, 70h
+        save_xmm128_postrsp xmm12, 80h
+        save_xmm128_postrsp xmm13, 90h
+        save_xmm128_postrsp xmm14, 0A0h
+        save_xmm128_postrsp xmm15, 0B0h
 
         END_PROLOGUE
 
-        ; TransitionBlock pointer points to CalleeSavedRegisters at rsp + 264
-        lea     target, [rsp + 264]
+        ; TransitionBlock pointer points to CalleeSavedRegisters at rsp + 296
+        lea     target, [rsp + 296]
 
         endm
 
