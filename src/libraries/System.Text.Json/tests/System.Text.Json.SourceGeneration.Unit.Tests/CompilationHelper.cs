@@ -971,13 +971,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                                     if (reader.TokenType != JsonTokenType.PropertyName)
                                         throw new JsonException();
 
-                                    string propertyName = reader.GetString();
+                                    string propertyName = reader.GetString()!;
                                     reader.Read();
 
                                     if (propertyName == "Value1")
-                                        result.Value1 = JsonSerializer.Deserialize<T>(ref reader, options);
+                                        result.Value1 = JsonSerializer.Deserialize<T>(ref reader, options)!;
                                     else if (propertyName == "Value2")
-                                        result.Value2 = JsonSerializer.Deserialize<U>(ref reader, options);
+                                        result.Value2 = JsonSerializer.Deserialize<U>(ref reader, options)!;
                                 }
                                 return result;
                             }
@@ -1035,11 +1035,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                                 if (reader.TokenType != JsonTokenType.PropertyName)
                                     throw new JsonException();
 
-                                string propertyName = reader.GetString();
+                                string propertyName = reader.GetString()!;
                                 reader.Read();
 
                                 if (propertyName == "Value")
-                                    result.Value = JsonSerializer.Deserialize<T>(ref reader, options);
+                                    result.Value = JsonSerializer.Deserialize<T>(ref reader, options)!;
                             }
                             return result;
                         }
