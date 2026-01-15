@@ -1074,39 +1074,20 @@ typedef enum {
     enumCordbFunction,
     enumCordbThread,
     enumCordbCode,
-    enumCordbChain,
-    enumCordbChainEnum,
-    enumCordbContext,
     enumCordbFrame,
-    enumCordbFrameEnum,
-    enumCordbValueEnum,
     enumCordbRegisterSet,
     enumCordbJITILFrame,
     enumCordbBreakpoint,
     enumCordbStepper,
     enumCordbValue,
-    enumCordbEnCSnapshot,
     enumCordbEval,
     enumCordbUnmanagedThread,
-    enumCordbEnumFilter,
-    enumCordbEnCErrorInfo,
-    enumCordbEnCErrorInfoEnum,
-    enumCordbUnmanagedEvent,
-    enumCordbWin32EventThread,
-    enumCordbRCEventThread,
-    enumCordbNativeFrame,
-    enumCordbObjectValue,
     enumCordbType,
-    enumCordbNativeCode,
-    enumCordbILCode,
-    enumCordbEval2,
     enumCordbMDA,
     enumCordbHashTableEnum,
-    enumCordbCodeEnum,
     enumCordbStackWalk,
     enumCordbEnumerator,
     enumCordbHeap,
-    enumCordbHeapSegments,
     enumMaxDerived,
     enumMaxThis = 1024
 } enumCordbDerived;
@@ -1440,7 +1421,6 @@ private:
 inline bool DoesCordbObjectTypeHaveProcessPtr(enumCordbDerived type)
 {
     return
-        (type != enumCordbCodeEnum) &&
         (type != enumCordb) &&
         (type != enumCordbHashTableEnum);
 }
