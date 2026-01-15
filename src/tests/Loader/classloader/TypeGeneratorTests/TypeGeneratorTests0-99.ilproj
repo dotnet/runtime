@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="TypeGeneratorTestsReferences.il" />
+    <Compile Include="TypeGeneratorTests0-99.il" />
+    <Compile Include="Generated?.il" />
+    <Compile Include="Generated??.il" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="TestFramework\TestFramework.csproj" />
+  </ItemGroup>
+</Project>

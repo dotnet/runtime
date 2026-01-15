@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+    <NumberOfStripesToUseInStress>15</NumberOfStripesToUseInStress>
+  </PropertyGroup>
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="TypeGeneratorTests*-*.ilproj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

@@ -1,0 +1,3146 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+.class public Generated620.BaseClass0 
+{
+	.method public hidebysig specialname rtspecialname instance void .ctor() cil managed { 
+		ldarg.0
+		call instance void [mscorlib]System.Object::.ctor()
+		ret
+	}
+}
+.class public Generated620.BaseClass1 
+		extends Generated620.BaseClass0
+{
+	.method public hidebysig specialname rtspecialname instance void .ctor() cil managed { 
+		ldarg.0
+		call instance void Generated620.BaseClass0::.ctor()
+		ret
+	}
+}
+.class public Generated620.G3_C1092`1<T0> 
+		extends class Generated620.G2_C64`1<!T0>
+		implements class Generated620.IBase2`2<class Generated620.BaseClass0,!T0> 
+{
+	.method public hidebysig virtual instance string Method7<M0>() cil managed noinlining { 
+		ldstr "G3_C1092::Method7.14256<"
+		ldtoken !!M0
+		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+		call string [mscorlib]System.String::Concat(object,object)
+		ldstr ">()"
+		call string [mscorlib]System.String::Concat(object,object)
+		ret
+	}
+	.method public hidebysig newslot virtual instance string 'IBase2<class Generated620.BaseClass0,T0>.Method7'<M0>() cil managed noinlining { 
+		.override method instance string class Generated620.IBase2`2<class Generated620.BaseClass0,!T0>::Method7<[1]>()
+		ldstr "G3_C1092::Method7.MI.14257<"
+		ldtoken !!M0
+		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+		call string [mscorlib]System.String::Concat(object,object)
+		ldstr ">()"
+		call string [mscorlib]System.String::Concat(object,object)
+		ret
+	}
+	.method public hidebysig newslot virtual instance string ClassMethod3575() cil managed noinlining { 
+		ldstr "G3_C1092::ClassMethod3575.14258()"
+		ret
+	}
+	.method public hidebysig newslot virtual instance string ClassMethod3576() cil managed noinlining { 
+		ldstr "G3_C1092::ClassMethod3576.14259()"
+		ret
+	}
+	.method public hidebysig specialname rtspecialname instance void .ctor() cil managed { 
+		ldarg.0
+		call instance void class Generated620.G2_C64`1<!T0>::.ctor()
+		ret
+	}
+}
+.class public Generated620.G2_C64`1<T0> 
+		extends class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		implements class Generated620.IBase2`2<!T0,class Generated620.BaseClass1>, Generated620.IBase0 
+{
+	.method public hidebysig virtual instance string Method7<M0>() cil managed noinlining { 
+		ldstr "G2_C64::Method7.5328<"
+		ldtoken !!M0
+		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+		call string [mscorlib]System.String::Concat(object,object)
+		ldstr ">()"
+		call string [mscorlib]System.String::Concat(object,object)
+		ret
+	}
+	.method public hidebysig newslot virtual instance string Method0() cil managed noinlining { 
+		ldstr "G2_C64::Method0.5329()"
+		ret
+	}
+	.method public hidebysig newslot virtual instance string 'Generated620.IBase0.Method0'() cil managed noinlining { 
+		.override method instance string Generated620.IBase0::Method0()
+		ldstr "G2_C64::Method0.MI.5330()"
+		ret
+	}
+	.method public hidebysig newslot virtual instance string Method1() cil managed noinlining { 
+		ldstr "G2_C64::Method1.5331()"
+		ret
+	}
+	.method public hidebysig newslot virtual instance string Method2<M0>() cil managed noinlining { 
+		ldstr "G2_C64::Method2.5332<"
+		ldtoken !!M0
+		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+		call string [mscorlib]System.String::Concat(object,object)
+		ldstr ">()"
+		call string [mscorlib]System.String::Concat(object,object)
+		ret
+	}
+	.method public hidebysig newslot virtual instance string 'Generated620.IBase0.Method2'<M0>() cil managed noinlining { 
+		.override method instance string Generated620.IBase0::Method2<[1]>()
+		ldstr "G2_C64::Method2.MI.5333<"
+		ldtoken !!M0
+		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+		call string [mscorlib]System.String::Concat(object,object)
+		ldstr ">()"
+		call string [mscorlib]System.String::Concat(object,object)
+		ret
+	}
+	.method public hidebysig virtual instance string Method3<M0>() cil managed noinlining { 
+		ldstr "G2_C64::Method3.5334<"
+		ldtoken !!M0
+		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+		call string [mscorlib]System.String::Concat(object,object)
+		ldstr ">()"
+		call string [mscorlib]System.String::Concat(object,object)
+		ret
+	}
+	.method public hidebysig newslot virtual instance string ClassMethod1444<M0>() cil managed noinlining { 
+		ldstr "G2_C64::ClassMethod1444.5335<"
+		ldtoken !!M0
+		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+		call string [mscorlib]System.String::Concat(object,object)
+		ldstr ">()"
+		call string [mscorlib]System.String::Concat(object,object)
+		ret
+	}
+	.method public hidebysig newslot virtual instance string 'G1_C6<class Generated620.BaseClass0,class Generated620.BaseClass1>.ClassMethod1326'() cil managed noinlining { 
+		.override method instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1326()
+		ldstr "G2_C64::ClassMethod1326.MI.5336()"
+		ret
+	}
+	.method public hidebysig specialname rtspecialname instance void .ctor() cil managed { 
+		ldarg.0
+		call instance void class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::.ctor()
+		ret
+	}
+}
+.class interface public abstract Generated620.IBase2`2<+T0, -T1> 
+{
+	.method public hidebysig newslot abstract virtual instance string Method7<M0>() cil managed { }
+}
+.class public Generated620.G1_C6`2<T0, T1> 
+		implements class Generated620.IBase2`2<class Generated620.BaseClass1,!T0> 
+{
+	.method public hidebysig newslot virtual instance string Method7<M0>() cil managed noinlining { 
+		ldstr "G1_C6::Method7.4808<"
+		ldtoken !!M0
+		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+		call string [mscorlib]System.String::Concat(object,object)
+		ldstr ">()"
+		call string [mscorlib]System.String::Concat(object,object)
+		ret
+	}
+	.method public hidebysig newslot virtual instance string ClassMethod1326() cil managed noinlining { 
+		ldstr "G1_C6::ClassMethod1326.4809()"
+		ret
+	}
+	.method public hidebysig newslot virtual instance string ClassMethod1327<M0>() cil managed noinlining { 
+		ldstr "G1_C6::ClassMethod1327.4810<"
+		ldtoken !!M0
+		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+		call string [mscorlib]System.String::Concat(object,object)
+		ldstr ">()"
+		call string [mscorlib]System.String::Concat(object,object)
+		ret
+	}
+	.method public hidebysig specialname rtspecialname instance void .ctor() cil managed { 
+		ldarg.0
+		call instance void [mscorlib]System.Object::.ctor()
+		ret
+	}
+}
+.class interface public abstract Generated620.IBase0 
+{
+	.method public hidebysig newslot abstract virtual instance string Method0() cil managed { }
+	.method public hidebysig newslot abstract virtual instance string Method1() cil managed { }
+	.method public hidebysig newslot abstract virtual instance string Method2<M0>() cil managed { }
+	.method public hidebysig newslot abstract virtual instance string Method3<M0>() cil managed { }
+}
+.class public auto ansi beforefieldinit Generated620.Generated620 {
+	.method static void M.BaseClass0<(Generated620.BaseClass0)W>(!!W inst, string exp) cil managed {
+		.maxstack 5
+		.locals init (string[] actualResults)
+		ldc.i4.s    0
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.BaseClass0<(Generated620.BaseClass0)W>(!!W inst, string exp)"
+		ldc.i4.s 0
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.BaseClass1<(Generated620.BaseClass1)W>(!!W inst, string exp) cil managed {
+		.maxstack 5
+		.locals init (string[] actualResults)
+		ldc.i4.s    0
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.BaseClass1<(Generated620.BaseClass1)W>(!!W inst, string exp)"
+		ldc.i4.s 0
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.G3_C1092.T<T0,(class Generated620.G3_C1092`1<!!T0>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 15
+		.locals init (string[] actualResults)
+		ldc.i4.s    10
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.G3_C1092.T<T0,(class Generated620.G3_C1092`1<!!T0>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 10
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<!!T0>::ClassMethod1326()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     1
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<!!T0>::ClassMethod1327<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     2
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<!!T0>::ClassMethod1444<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     3
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<!!T0>::ClassMethod3575()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     4
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<!!T0>::ClassMethod3576()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     5
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<!!T0>::Method0()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     6
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<!!T0>::Method1()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     7
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<!!T0>::Method2<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     8
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<!!T0>::Method3<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     9
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<!!T0>::Method7<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.G3_C1092.A<(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 15
+		.locals init (string[] actualResults)
+		ldc.i4.s    10
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.G3_C1092.A<(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 10
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::ClassMethod1326()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     1
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::ClassMethod1327<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     2
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::ClassMethod1444<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     3
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::ClassMethod3575()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     4
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::ClassMethod3576()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     5
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::Method0()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     6
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::Method1()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     7
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::Method2<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     8
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::Method3<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     9
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::Method7<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.G3_C1092.B<(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 15
+		.locals init (string[] actualResults)
+		ldc.i4.s    10
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.G3_C1092.B<(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 10
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::ClassMethod1326()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     1
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::ClassMethod1327<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     2
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::ClassMethod1444<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     3
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::ClassMethod3575()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     4
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::ClassMethod3576()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     5
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::Method0()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     6
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::Method1()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     7
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::Method2<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     8
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::Method3<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     9
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::Method7<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.G2_C64.T<T0,(class Generated620.G2_C64`1<!!T0>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 13
+		.locals init (string[] actualResults)
+		ldc.i4.s    8
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.G2_C64.T<T0,(class Generated620.G2_C64`1<!!T0>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 8
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<!!T0>::ClassMethod1326()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     1
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<!!T0>::ClassMethod1327<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     2
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<!!T0>::ClassMethod1444<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     3
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<!!T0>::Method0()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     4
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<!!T0>::Method1()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     5
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<!!T0>::Method2<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     6
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<!!T0>::Method3<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     7
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<!!T0>::Method7<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.G2_C64.A<(class Generated620.G2_C64`1<class Generated620.BaseClass0>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 13
+		.locals init (string[] actualResults)
+		ldc.i4.s    8
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.G2_C64.A<(class Generated620.G2_C64`1<class Generated620.BaseClass0>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 8
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::ClassMethod1326()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     1
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::ClassMethod1327<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     2
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::ClassMethod1444<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     3
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method0()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     4
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method1()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     5
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method2<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     6
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method3<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     7
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method7<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.G2_C64.B<(class Generated620.G2_C64`1<class Generated620.BaseClass1>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 13
+		.locals init (string[] actualResults)
+		ldc.i4.s    8
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.G2_C64.B<(class Generated620.G2_C64`1<class Generated620.BaseClass1>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 8
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::ClassMethod1326()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     1
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::ClassMethod1327<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     2
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::ClassMethod1444<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     3
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method0()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     4
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method1()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     5
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method2<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     6
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method3<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     7
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method7<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.IBase2.T.T<T0,T1,(class Generated620.IBase2`2<!!T0,!!T1>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 6
+		.locals init (string[] actualResults)
+		ldc.i4.s    1
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.IBase2.T.T<T0,T1,(class Generated620.IBase2`2<!!T0,!!T1>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 1
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.IBase2`2<!!T0,!!T1>::Method7<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.IBase2.A.T<T1,(class Generated620.IBase2`2<class Generated620.BaseClass0,!!T1>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 6
+		.locals init (string[] actualResults)
+		ldc.i4.s    1
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.IBase2.A.T<T1,(class Generated620.IBase2`2<class Generated620.BaseClass0,!!T1>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 1
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.IBase2`2<class Generated620.BaseClass0,!!T1>::Method7<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.IBase2.A.A<(class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 6
+		.locals init (string[] actualResults)
+		ldc.i4.s    1
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.IBase2.A.A<(class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 1
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::Method7<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.IBase2.A.B<(class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 6
+		.locals init (string[] actualResults)
+		ldc.i4.s    1
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.IBase2.A.B<(class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 1
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.IBase2.B.T<T1,(class Generated620.IBase2`2<class Generated620.BaseClass1,!!T1>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 6
+		.locals init (string[] actualResults)
+		ldc.i4.s    1
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.IBase2.B.T<T1,(class Generated620.IBase2`2<class Generated620.BaseClass1,!!T1>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 1
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.IBase2`2<class Generated620.BaseClass1,!!T1>::Method7<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.IBase2.B.A<(class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 6
+		.locals init (string[] actualResults)
+		ldc.i4.s    1
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.IBase2.B.A<(class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 1
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::Method7<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.IBase2.B.B<(class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 6
+		.locals init (string[] actualResults)
+		ldc.i4.s    1
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.IBase2.B.B<(class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 1
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::Method7<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.G1_C6.T.T<T0,T1,(class Generated620.G1_C6`2<!!T0,!!T1>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 8
+		.locals init (string[] actualResults)
+		ldc.i4.s    3
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.G1_C6.T.T<T0,T1,(class Generated620.G1_C6`2<!!T0,!!T1>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 3
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G1_C6`2<!!T0,!!T1>::ClassMethod1326()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     1
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G1_C6`2<!!T0,!!T1>::ClassMethod1327<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     2
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G1_C6`2<!!T0,!!T1>::Method7<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.G1_C6.A.T<T1,(class Generated620.G1_C6`2<class Generated620.BaseClass0,!!T1>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 8
+		.locals init (string[] actualResults)
+		ldc.i4.s    3
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.G1_C6.A.T<T1,(class Generated620.G1_C6`2<class Generated620.BaseClass0,!!T1>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 3
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,!!T1>::ClassMethod1326()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     1
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,!!T1>::ClassMethod1327<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     2
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,!!T1>::Method7<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.G1_C6.A.A<(class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 8
+		.locals init (string[] actualResults)
+		ldc.i4.s    3
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.G1_C6.A.A<(class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 3
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::ClassMethod1326()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     1
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::ClassMethod1327<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     2
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::Method7<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.G1_C6.A.B<(class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 8
+		.locals init (string[] actualResults)
+		ldc.i4.s    3
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.G1_C6.A.B<(class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 3
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1326()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     1
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1327<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     2
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.G1_C6.B.T<T1,(class Generated620.G1_C6`2<class Generated620.BaseClass1,!!T1>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 8
+		.locals init (string[] actualResults)
+		ldc.i4.s    3
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.G1_C6.B.T<T1,(class Generated620.G1_C6`2<class Generated620.BaseClass1,!!T1>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 3
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G1_C6`2<class Generated620.BaseClass1,!!T1>::ClassMethod1326()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     1
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G1_C6`2<class Generated620.BaseClass1,!!T1>::ClassMethod1327<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     2
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G1_C6`2<class Generated620.BaseClass1,!!T1>::Method7<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.G1_C6.B.A<(class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 8
+		.locals init (string[] actualResults)
+		ldc.i4.s    3
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.G1_C6.B.A<(class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 3
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::ClassMethod1326()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     1
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::ClassMethod1327<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     2
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::Method7<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.G1_C6.B.B<(class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 8
+		.locals init (string[] actualResults)
+		ldc.i4.s    3
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.G1_C6.B.B<(class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 3
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::ClassMethod1326()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     1
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::ClassMethod1327<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     2
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::Method7<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.Generated620.IBase0<(Generated620.IBase0)W>(!!W inst, string exp) cil managed {
+		.maxstack 9
+		.locals init (string[] actualResults)
+		ldc.i4.s    4
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.Generated620.IBase0<(Generated620.IBase0)W>(!!W inst, string exp)"
+		ldc.i4.s 4
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string Generated620.IBase0::Method0()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     1
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string Generated620.IBase0::Method1()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     2
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string Generated620.IBase0::Method2<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     3
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string Generated620.IBase0::Method3<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method public hidebysig static void MethodCallingTest() cil managed
+	{
+		.maxstack  10
+		.locals init (object V_0)
+		ldstr "========================== Method Calling Test =========================="
+		call void [mscorlib]System.Console::WriteLine(string)
+		newobj instance void class Generated620.G3_C1092`1<class Generated620.BaseClass0>::.ctor()
+		stloc.0
+		ldloc.0
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1327<object>()
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1326()
+		ldstr "G2_C64::ClassMethod1326.MI.5336()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::Method7<object>()
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::Method7<object>()
+		ldstr "G3_C1092::Method7.MI.14257<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G3_C1092::Method7.MI.14257<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::ClassMethod1444<object>()
+		ldstr "G2_C64::ClassMethod1444.5335<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method3<object>()
+		ldstr "G2_C64::Method3.5334<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method2<object>()
+		ldstr "G2_C64::Method2.5332<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method1()
+		ldstr "G2_C64::Method1.5331()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method0()
+		ldstr "G2_C64::Method0.5329()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method7<object>()
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::ClassMethod1327<object>()
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::ClassMethod1326()
+		ldstr "G2_C64::ClassMethod1326.MI.5336()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string Generated620.IBase0::Method0()
+		ldstr "G2_C64::Method0.MI.5330()"
+		ldstr "Generated620.IBase0 on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		callvirt instance string Generated620.IBase0::Method1()
+		ldstr "G2_C64::Method1.5331()"
+		ldstr "Generated620.IBase0 on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		callvirt instance string Generated620.IBase0::Method2<object>()
+		ldstr "G2_C64::Method2.MI.5333<System.Object>()"
+		ldstr "Generated620.IBase0 on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		callvirt instance string Generated620.IBase0::Method3<object>()
+		ldstr "G2_C64::Method3.5334<System.Object>()"
+		ldstr "Generated620.IBase0 on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::ClassMethod3576()
+		ldstr "G3_C1092::ClassMethod3576.14259()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::ClassMethod3575()
+		ldstr "G3_C1092::ClassMethod3575.14258()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::Method7<object>()
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::ClassMethod1444<object>()
+		ldstr "G2_C64::ClassMethod1444.5335<System.Object>()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::Method3<object>()
+		ldstr "G2_C64::Method3.5334<System.Object>()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::Method2<object>()
+		ldstr "G2_C64::Method2.5332<System.Object>()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::Method1()
+		ldstr "G2_C64::Method1.5331()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::Method0()
+		ldstr "G2_C64::Method0.5329()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::ClassMethod1327<object>()
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::ClassMethod1326()
+		ldstr "G2_C64::ClassMethod1326.MI.5336()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		newobj instance void class Generated620.G3_C1092`1<class Generated620.BaseClass1>::.ctor()
+		stloc.0
+		ldloc.0
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1327<object>()
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1326()
+		ldstr "G2_C64::ClassMethod1326.MI.5336()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::Method7<object>()
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::Method7<object>()
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G3_C1092::Method7.MI.14257<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::ClassMethod1444<object>()
+		ldstr "G2_C64::ClassMethod1444.5335<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method3<object>()
+		ldstr "G2_C64::Method3.5334<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method2<object>()
+		ldstr "G2_C64::Method2.5332<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method1()
+		ldstr "G2_C64::Method1.5331()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method0()
+		ldstr "G2_C64::Method0.5329()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::ClassMethod1327<object>()
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::ClassMethod1326()
+		ldstr "G2_C64::ClassMethod1326.MI.5336()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string Generated620.IBase0::Method0()
+		ldstr "G2_C64::Method0.MI.5330()"
+		ldstr "Generated620.IBase0 on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		callvirt instance string Generated620.IBase0::Method1()
+		ldstr "G2_C64::Method1.5331()"
+		ldstr "Generated620.IBase0 on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		callvirt instance string Generated620.IBase0::Method2<object>()
+		ldstr "G2_C64::Method2.MI.5333<System.Object>()"
+		ldstr "Generated620.IBase0 on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		callvirt instance string Generated620.IBase0::Method3<object>()
+		ldstr "G2_C64::Method3.5334<System.Object>()"
+		ldstr "Generated620.IBase0 on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::ClassMethod3576()
+		ldstr "G3_C1092::ClassMethod3576.14259()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::ClassMethod3575()
+		ldstr "G3_C1092::ClassMethod3575.14258()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::ClassMethod1444<object>()
+		ldstr "G2_C64::ClassMethod1444.5335<System.Object>()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::Method3<object>()
+		ldstr "G2_C64::Method3.5334<System.Object>()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::Method2<object>()
+		ldstr "G2_C64::Method2.5332<System.Object>()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::Method1()
+		ldstr "G2_C64::Method1.5331()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::Method0()
+		ldstr "G2_C64::Method0.5329()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::ClassMethod1327<object>()
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::ClassMethod1326()
+		ldstr "G2_C64::ClassMethod1326.MI.5336()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		newobj instance void class Generated620.G2_C64`1<class Generated620.BaseClass0>::.ctor()
+		stloc.0
+		ldloc.0
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1327<object>()
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1326()
+		ldstr "G2_C64::ClassMethod1326.MI.5336()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::Method7<object>()
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::Method7<object>()
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::ClassMethod1444<object>()
+		ldstr "G2_C64::ClassMethod1444.5335<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method3<object>()
+		ldstr "G2_C64::Method3.5334<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method2<object>()
+		ldstr "G2_C64::Method2.5332<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method1()
+		ldstr "G2_C64::Method1.5331()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method0()
+		ldstr "G2_C64::Method0.5329()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method7<object>()
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::ClassMethod1327<object>()
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::ClassMethod1326()
+		ldstr "G2_C64::ClassMethod1326.MI.5336()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string Generated620.IBase0::Method0()
+		ldstr "G2_C64::Method0.MI.5330()"
+		ldstr "Generated620.IBase0 on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		callvirt instance string Generated620.IBase0::Method1()
+		ldstr "G2_C64::Method1.5331()"
+		ldstr "Generated620.IBase0 on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		callvirt instance string Generated620.IBase0::Method2<object>()
+		ldstr "G2_C64::Method2.MI.5333<System.Object>()"
+		ldstr "Generated620.IBase0 on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		callvirt instance string Generated620.IBase0::Method3<object>()
+		ldstr "G2_C64::Method3.5334<System.Object>()"
+		ldstr "Generated620.IBase0 on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		newobj instance void class Generated620.G2_C64`1<class Generated620.BaseClass1>::.ctor()
+		stloc.0
+		ldloc.0
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1327<object>()
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1326()
+		ldstr "G2_C64::ClassMethod1326.MI.5336()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::Method7<object>()
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::Method7<object>()
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::ClassMethod1444<object>()
+		ldstr "G2_C64::ClassMethod1444.5335<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method3<object>()
+		ldstr "G2_C64::Method3.5334<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method2<object>()
+		ldstr "G2_C64::Method2.5332<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method1()
+		ldstr "G2_C64::Method1.5331()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method0()
+		ldstr "G2_C64::Method0.5329()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::ClassMethod1327<object>()
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::ClassMethod1326()
+		ldstr "G2_C64::ClassMethod1326.MI.5336()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string Generated620.IBase0::Method0()
+		ldstr "G2_C64::Method0.MI.5330()"
+		ldstr "Generated620.IBase0 on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		callvirt instance string Generated620.IBase0::Method1()
+		ldstr "G2_C64::Method1.5331()"
+		ldstr "Generated620.IBase0 on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		callvirt instance string Generated620.IBase0::Method2<object>()
+		ldstr "G2_C64::Method2.MI.5333<System.Object>()"
+		ldstr "Generated620.IBase0 on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		callvirt instance string Generated620.IBase0::Method3<object>()
+		ldstr "G2_C64::Method3.5334<System.Object>()"
+		ldstr "Generated620.IBase0 on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		newobj instance void class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::.ctor()
+		stloc.0
+		ldloc.0
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::ClassMethod1327<object>()
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::ClassMethod1326()
+		ldstr "G1_C6::ClassMethod1326.4809()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::Method7<object>()
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::Method7<object>()
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::Method7<object>()
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		newobj instance void class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::.ctor()
+		stloc.0
+		ldloc.0
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1327<object>()
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1326()
+		ldstr "G1_C6::ClassMethod1326.4809()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::Method7<object>()
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::Method7<object>()
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		newobj instance void class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::.ctor()
+		stloc.0
+		ldloc.0
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::ClassMethod1327<object>()
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0> on type class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::ClassMethod1326()
+		ldstr "G1_C6::ClassMethod1326.4809()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0> on type class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::Method7<object>()
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0> on type class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		newobj instance void class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::.ctor()
+		stloc.0
+		ldloc.0
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::ClassMethod1327<object>()
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::ClassMethod1326()
+		ldstr "G1_C6::ClassMethod1326.4809()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>
+		callvirt instance string class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldloc.0
+		dup
+		callvirt instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldstr "========================================================================\n\n"
+		call void [mscorlib]System.Console::WriteLine(string)
+		ret
+	}
+	.method public hidebysig static void ConstrainedCallsTest() cil managed
+	{
+		.maxstack  10
+		.locals init (object V_0)
+		ldstr "========================== Constrained Calls Test =========================="
+		call void [mscorlib]System.Console::WriteLine(string)
+		newobj instance void class Generated620.G3_C1092`1<class Generated620.BaseClass0>::.ctor()
+		stloc.0
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.T.T<class Generated620.BaseClass0,class Generated620.BaseClass1,class Generated620.G3_C1092`1<class Generated620.BaseClass0>>(!!2,string)
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.A.T<class Generated620.BaseClass1,class Generated620.G3_C1092`1<class Generated620.BaseClass0>>(!!1,string)
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.A.B<class Generated620.G3_C1092`1<class Generated620.BaseClass0>>(!!0,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass1,class Generated620.BaseClass0,class Generated620.G3_C1092`1<class Generated620.BaseClass0>>(!!2,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.T<class Generated620.BaseClass0,class Generated620.G3_C1092`1<class Generated620.BaseClass0>>(!!1,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.A<class Generated620.G3_C1092`1<class Generated620.BaseClass0>>(!!0,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.MI.14257<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass0,class Generated620.BaseClass0,class Generated620.G3_C1092`1<class Generated620.BaseClass0>>(!!2,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.MI.14257<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.T<class Generated620.BaseClass0,class Generated620.G3_C1092`1<class Generated620.BaseClass0>>(!!1,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.MI.14257<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.A<class Generated620.G3_C1092`1<class Generated620.BaseClass0>>(!!0,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.MI.14257<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass0,class Generated620.BaseClass1,class Generated620.G3_C1092`1<class Generated620.BaseClass0>>(!!2,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.MI.14257<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.T<class Generated620.BaseClass1,class Generated620.G3_C1092`1<class Generated620.BaseClass0>>(!!1,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.MI.14257<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.B<class Generated620.G3_C1092`1<class Generated620.BaseClass0>>(!!0,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass1,class Generated620.BaseClass1,class Generated620.G3_C1092`1<class Generated620.BaseClass0>>(!!2,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.T<class Generated620.BaseClass1,class Generated620.G3_C1092`1<class Generated620.BaseClass0>>(!!1,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.B<class Generated620.G3_C1092`1<class Generated620.BaseClass0>>(!!0,string)
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G2_C64::ClassMethod1444.5335<System.Object>()#G2_C64::Method0.5329()#G2_C64::Method1.5331()#G2_C64::Method2.5332<System.Object>()#G2_C64::Method3.5334<System.Object>()#G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.G2_C64.T<class Generated620.BaseClass0,class Generated620.G3_C1092`1<class Generated620.BaseClass0>>(!!1,string)
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G2_C64::ClassMethod1444.5335<System.Object>()#G2_C64::Method0.5329()#G2_C64::Method1.5331()#G2_C64::Method2.5332<System.Object>()#G2_C64::Method3.5334<System.Object>()#G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.G2_C64.A<class Generated620.G3_C1092`1<class Generated620.BaseClass0>>(!!0,string)
+		ldloc.0
+		ldstr "G2_C64::Method0.MI.5330()#G2_C64::Method1.5331()#G2_C64::Method2.MI.5333<System.Object>()#G2_C64::Method3.5334<System.Object>()#"
+		call void Generated620.Generated620::M.Generated620.IBase0<class Generated620.G3_C1092`1<class Generated620.BaseClass0>>(!!0,string)
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G2_C64::ClassMethod1444.5335<System.Object>()#G3_C1092::ClassMethod3575.14258()#G3_C1092::ClassMethod3576.14259()#G2_C64::Method0.5329()#G2_C64::Method1.5331()#G2_C64::Method2.5332<System.Object>()#G2_C64::Method3.5334<System.Object>()#G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.G3_C1092.T<class Generated620.BaseClass0,class Generated620.G3_C1092`1<class Generated620.BaseClass0>>(!!1,string)
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G2_C64::ClassMethod1444.5335<System.Object>()#G3_C1092::ClassMethod3575.14258()#G3_C1092::ClassMethod3576.14259()#G2_C64::Method0.5329()#G2_C64::Method1.5331()#G2_C64::Method2.5332<System.Object>()#G2_C64::Method3.5334<System.Object>()#G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.G3_C1092.A<class Generated620.G3_C1092`1<class Generated620.BaseClass0>>(!!0,string)
+		newobj instance void class Generated620.G3_C1092`1<class Generated620.BaseClass1>::.ctor()
+		stloc.0
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.T.T<class Generated620.BaseClass0,class Generated620.BaseClass1,class Generated620.G3_C1092`1<class Generated620.BaseClass1>>(!!2,string)
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.A.T<class Generated620.BaseClass1,class Generated620.G3_C1092`1<class Generated620.BaseClass1>>(!!1,string)
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.A.B<class Generated620.G3_C1092`1<class Generated620.BaseClass1>>(!!0,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass1,class Generated620.BaseClass0,class Generated620.G3_C1092`1<class Generated620.BaseClass1>>(!!2,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.T<class Generated620.BaseClass0,class Generated620.G3_C1092`1<class Generated620.BaseClass1>>(!!1,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.A<class Generated620.G3_C1092`1<class Generated620.BaseClass1>>(!!0,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass0,class Generated620.BaseClass0,class Generated620.G3_C1092`1<class Generated620.BaseClass1>>(!!2,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.T<class Generated620.BaseClass0,class Generated620.G3_C1092`1<class Generated620.BaseClass1>>(!!1,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.A<class Generated620.G3_C1092`1<class Generated620.BaseClass1>>(!!0,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.MI.14257<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass0,class Generated620.BaseClass1,class Generated620.G3_C1092`1<class Generated620.BaseClass1>>(!!2,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.MI.14257<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.T<class Generated620.BaseClass1,class Generated620.G3_C1092`1<class Generated620.BaseClass1>>(!!1,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.MI.14257<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.B<class Generated620.G3_C1092`1<class Generated620.BaseClass1>>(!!0,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass1,class Generated620.BaseClass1,class Generated620.G3_C1092`1<class Generated620.BaseClass1>>(!!2,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.T<class Generated620.BaseClass1,class Generated620.G3_C1092`1<class Generated620.BaseClass1>>(!!1,string)
+		ldloc.0
+		ldstr "G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.B<class Generated620.G3_C1092`1<class Generated620.BaseClass1>>(!!0,string)
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G2_C64::ClassMethod1444.5335<System.Object>()#G2_C64::Method0.5329()#G2_C64::Method1.5331()#G2_C64::Method2.5332<System.Object>()#G2_C64::Method3.5334<System.Object>()#G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.G2_C64.T<class Generated620.BaseClass1,class Generated620.G3_C1092`1<class Generated620.BaseClass1>>(!!1,string)
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G2_C64::ClassMethod1444.5335<System.Object>()#G2_C64::Method0.5329()#G2_C64::Method1.5331()#G2_C64::Method2.5332<System.Object>()#G2_C64::Method3.5334<System.Object>()#G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.G2_C64.B<class Generated620.G3_C1092`1<class Generated620.BaseClass1>>(!!0,string)
+		ldloc.0
+		ldstr "G2_C64::Method0.MI.5330()#G2_C64::Method1.5331()#G2_C64::Method2.MI.5333<System.Object>()#G2_C64::Method3.5334<System.Object>()#"
+		call void Generated620.Generated620::M.Generated620.IBase0<class Generated620.G3_C1092`1<class Generated620.BaseClass1>>(!!0,string)
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G2_C64::ClassMethod1444.5335<System.Object>()#G3_C1092::ClassMethod3575.14258()#G3_C1092::ClassMethod3576.14259()#G2_C64::Method0.5329()#G2_C64::Method1.5331()#G2_C64::Method2.5332<System.Object>()#G2_C64::Method3.5334<System.Object>()#G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.G3_C1092.T<class Generated620.BaseClass1,class Generated620.G3_C1092`1<class Generated620.BaseClass1>>(!!1,string)
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G2_C64::ClassMethod1444.5335<System.Object>()#G3_C1092::ClassMethod3575.14258()#G3_C1092::ClassMethod3576.14259()#G2_C64::Method0.5329()#G2_C64::Method1.5331()#G2_C64::Method2.5332<System.Object>()#G2_C64::Method3.5334<System.Object>()#G3_C1092::Method7.14256<System.Object>()#"
+		call void Generated620.Generated620::M.G3_C1092.B<class Generated620.G3_C1092`1<class Generated620.BaseClass1>>(!!0,string)
+		newobj instance void class Generated620.G2_C64`1<class Generated620.BaseClass0>::.ctor()
+		stloc.0
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.T.T<class Generated620.BaseClass0,class Generated620.BaseClass1,class Generated620.G2_C64`1<class Generated620.BaseClass0>>(!!2,string)
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.A.T<class Generated620.BaseClass1,class Generated620.G2_C64`1<class Generated620.BaseClass0>>(!!1,string)
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.A.B<class Generated620.G2_C64`1<class Generated620.BaseClass0>>(!!0,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass1,class Generated620.BaseClass0,class Generated620.G2_C64`1<class Generated620.BaseClass0>>(!!2,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.T<class Generated620.BaseClass0,class Generated620.G2_C64`1<class Generated620.BaseClass0>>(!!1,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.A<class Generated620.G2_C64`1<class Generated620.BaseClass0>>(!!0,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass0,class Generated620.BaseClass0,class Generated620.G2_C64`1<class Generated620.BaseClass0>>(!!2,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.T<class Generated620.BaseClass0,class Generated620.G2_C64`1<class Generated620.BaseClass0>>(!!1,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.A<class Generated620.G2_C64`1<class Generated620.BaseClass0>>(!!0,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass0,class Generated620.BaseClass1,class Generated620.G2_C64`1<class Generated620.BaseClass0>>(!!2,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.T<class Generated620.BaseClass1,class Generated620.G2_C64`1<class Generated620.BaseClass0>>(!!1,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.B<class Generated620.G2_C64`1<class Generated620.BaseClass0>>(!!0,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass1,class Generated620.BaseClass1,class Generated620.G2_C64`1<class Generated620.BaseClass0>>(!!2,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.T<class Generated620.BaseClass1,class Generated620.G2_C64`1<class Generated620.BaseClass0>>(!!1,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.B<class Generated620.G2_C64`1<class Generated620.BaseClass0>>(!!0,string)
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G2_C64::ClassMethod1444.5335<System.Object>()#G2_C64::Method0.5329()#G2_C64::Method1.5331()#G2_C64::Method2.5332<System.Object>()#G2_C64::Method3.5334<System.Object>()#G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.G2_C64.T<class Generated620.BaseClass0,class Generated620.G2_C64`1<class Generated620.BaseClass0>>(!!1,string)
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G2_C64::ClassMethod1444.5335<System.Object>()#G2_C64::Method0.5329()#G2_C64::Method1.5331()#G2_C64::Method2.5332<System.Object>()#G2_C64::Method3.5334<System.Object>()#G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.G2_C64.A<class Generated620.G2_C64`1<class Generated620.BaseClass0>>(!!0,string)
+		ldloc.0
+		ldstr "G2_C64::Method0.MI.5330()#G2_C64::Method1.5331()#G2_C64::Method2.MI.5333<System.Object>()#G2_C64::Method3.5334<System.Object>()#"
+		call void Generated620.Generated620::M.Generated620.IBase0<class Generated620.G2_C64`1<class Generated620.BaseClass0>>(!!0,string)
+		newobj instance void class Generated620.G2_C64`1<class Generated620.BaseClass1>::.ctor()
+		stloc.0
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.T.T<class Generated620.BaseClass0,class Generated620.BaseClass1,class Generated620.G2_C64`1<class Generated620.BaseClass1>>(!!2,string)
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.A.T<class Generated620.BaseClass1,class Generated620.G2_C64`1<class Generated620.BaseClass1>>(!!1,string)
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.A.B<class Generated620.G2_C64`1<class Generated620.BaseClass1>>(!!0,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass1,class Generated620.BaseClass0,class Generated620.G2_C64`1<class Generated620.BaseClass1>>(!!2,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.T<class Generated620.BaseClass0,class Generated620.G2_C64`1<class Generated620.BaseClass1>>(!!1,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.A<class Generated620.G2_C64`1<class Generated620.BaseClass1>>(!!0,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass0,class Generated620.BaseClass0,class Generated620.G2_C64`1<class Generated620.BaseClass1>>(!!2,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.T<class Generated620.BaseClass0,class Generated620.G2_C64`1<class Generated620.BaseClass1>>(!!1,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.A<class Generated620.G2_C64`1<class Generated620.BaseClass1>>(!!0,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass0,class Generated620.BaseClass1,class Generated620.G2_C64`1<class Generated620.BaseClass1>>(!!2,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.T<class Generated620.BaseClass1,class Generated620.G2_C64`1<class Generated620.BaseClass1>>(!!1,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.B<class Generated620.G2_C64`1<class Generated620.BaseClass1>>(!!0,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass1,class Generated620.BaseClass1,class Generated620.G2_C64`1<class Generated620.BaseClass1>>(!!2,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.T<class Generated620.BaseClass1,class Generated620.G2_C64`1<class Generated620.BaseClass1>>(!!1,string)
+		ldloc.0
+		ldstr "G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.B<class Generated620.G2_C64`1<class Generated620.BaseClass1>>(!!0,string)
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G2_C64::ClassMethod1444.5335<System.Object>()#G2_C64::Method0.5329()#G2_C64::Method1.5331()#G2_C64::Method2.5332<System.Object>()#G2_C64::Method3.5334<System.Object>()#G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.G2_C64.T<class Generated620.BaseClass1,class Generated620.G2_C64`1<class Generated620.BaseClass1>>(!!1,string)
+		ldloc.0
+		ldstr "G2_C64::ClassMethod1326.MI.5336()#G1_C6::ClassMethod1327.4810<System.Object>()#G2_C64::ClassMethod1444.5335<System.Object>()#G2_C64::Method0.5329()#G2_C64::Method1.5331()#G2_C64::Method2.5332<System.Object>()#G2_C64::Method3.5334<System.Object>()#G2_C64::Method7.5328<System.Object>()#"
+		call void Generated620.Generated620::M.G2_C64.B<class Generated620.G2_C64`1<class Generated620.BaseClass1>>(!!0,string)
+		ldloc.0
+		ldstr "G2_C64::Method0.MI.5330()#G2_C64::Method1.5331()#G2_C64::Method2.MI.5333<System.Object>()#G2_C64::Method3.5334<System.Object>()#"
+		call void Generated620.Generated620::M.Generated620.IBase0<class Generated620.G2_C64`1<class Generated620.BaseClass1>>(!!0,string)
+		newobj instance void class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::.ctor()
+		stloc.0
+		ldloc.0
+		ldstr "G1_C6::ClassMethod1326.4809()#G1_C6::ClassMethod1327.4810<System.Object>()#G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.T.T<class Generated620.BaseClass0,class Generated620.BaseClass0,class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>>(!!2,string)
+		ldloc.0
+		ldstr "G1_C6::ClassMethod1326.4809()#G1_C6::ClassMethod1327.4810<System.Object>()#G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.A.T<class Generated620.BaseClass0,class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>>(!!1,string)
+		ldloc.0
+		ldstr "G1_C6::ClassMethod1326.4809()#G1_C6::ClassMethod1327.4810<System.Object>()#G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.A.A<class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>>(!!0,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass1,class Generated620.BaseClass0,class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>>(!!2,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.T<class Generated620.BaseClass0,class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>>(!!1,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.A<class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>>(!!0,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass0,class Generated620.BaseClass0,class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>>(!!2,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.T<class Generated620.BaseClass0,class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>>(!!1,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.A<class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>>(!!0,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass0,class Generated620.BaseClass1,class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>>(!!2,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.T<class Generated620.BaseClass1,class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>>(!!1,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.B<class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>>(!!0,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass1,class Generated620.BaseClass1,class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>>(!!2,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.T<class Generated620.BaseClass1,class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>>(!!1,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.B<class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>>(!!0,string)
+		newobj instance void class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::.ctor()
+		stloc.0
+		ldloc.0
+		ldstr "G1_C6::ClassMethod1326.4809()#G1_C6::ClassMethod1327.4810<System.Object>()#G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.T.T<class Generated620.BaseClass0,class Generated620.BaseClass1,class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>>(!!2,string)
+		ldloc.0
+		ldstr "G1_C6::ClassMethod1326.4809()#G1_C6::ClassMethod1327.4810<System.Object>()#G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.A.T<class Generated620.BaseClass1,class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>>(!!1,string)
+		ldloc.0
+		ldstr "G1_C6::ClassMethod1326.4809()#G1_C6::ClassMethod1327.4810<System.Object>()#G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.A.B<class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>>(!!0,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass1,class Generated620.BaseClass0,class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>>(!!2,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.T<class Generated620.BaseClass0,class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>>(!!1,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.A<class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>>(!!0,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass0,class Generated620.BaseClass0,class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>>(!!2,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.T<class Generated620.BaseClass0,class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>>(!!1,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.A<class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>>(!!0,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass0,class Generated620.BaseClass1,class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>>(!!2,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.T<class Generated620.BaseClass1,class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>>(!!1,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.B<class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>>(!!0,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass1,class Generated620.BaseClass1,class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>>(!!2,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.T<class Generated620.BaseClass1,class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>>(!!1,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.B<class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>>(!!0,string)
+		newobj instance void class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::.ctor()
+		stloc.0
+		ldloc.0
+		ldstr "G1_C6::ClassMethod1326.4809()#G1_C6::ClassMethod1327.4810<System.Object>()#G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.T.T<class Generated620.BaseClass1,class Generated620.BaseClass0,class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>>(!!2,string)
+		ldloc.0
+		ldstr "G1_C6::ClassMethod1326.4809()#G1_C6::ClassMethod1327.4810<System.Object>()#G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.B.T<class Generated620.BaseClass0,class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>>(!!1,string)
+		ldloc.0
+		ldstr "G1_C6::ClassMethod1326.4809()#G1_C6::ClassMethod1327.4810<System.Object>()#G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.B.A<class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>>(!!0,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass1,class Generated620.BaseClass1,class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>>(!!2,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.T<class Generated620.BaseClass1,class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>>(!!1,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.B<class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>>(!!0,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass0,class Generated620.BaseClass1,class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>>(!!2,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.T<class Generated620.BaseClass1,class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>>(!!1,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.B<class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>>(!!0,string)
+		newobj instance void class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::.ctor()
+		stloc.0
+		ldloc.0
+		ldstr "G1_C6::ClassMethod1326.4809()#G1_C6::ClassMethod1327.4810<System.Object>()#G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.T.T<class Generated620.BaseClass1,class Generated620.BaseClass1,class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>>(!!2,string)
+		ldloc.0
+		ldstr "G1_C6::ClassMethod1326.4809()#G1_C6::ClassMethod1327.4810<System.Object>()#G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.B.T<class Generated620.BaseClass1,class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>>(!!1,string)
+		ldloc.0
+		ldstr "G1_C6::ClassMethod1326.4809()#G1_C6::ClassMethod1327.4810<System.Object>()#G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.G1_C6.B.B<class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>>(!!0,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass1,class Generated620.BaseClass1,class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>>(!!2,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.T<class Generated620.BaseClass1,class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>>(!!1,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.B.B<class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>>(!!0,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.T.T<class Generated620.BaseClass0,class Generated620.BaseClass1,class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>>(!!2,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.T<class Generated620.BaseClass1,class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>>(!!1,string)
+		ldloc.0
+		ldstr "G1_C6::Method7.4808<System.Object>()#"
+		call void Generated620.Generated620::M.IBase2.A.B<class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>>(!!0,string)
+		ldstr "========================================================================\n\n"
+		call void [mscorlib]System.Console::WriteLine(string)
+		ret
+	}
+	.method public hidebysig static void StructConstrainedInterfaceCallsTest() cil managed
+	{
+		.maxstack  10
+		ldstr "===================== Struct Constrained Interface Calls Test ====================="
+		call void [mscorlib]System.Console::WriteLine(string)
+		ldstr "========================================================================\n\n"
+		call void [mscorlib]System.Console::WriteLine(string)
+		ret
+	}
+	.method public hidebysig static void CalliTest() cil managed
+	{
+		.maxstack  10
+		.locals init (object V_0)
+		ldstr "========================== Method Calli Test =========================="
+		call void [mscorlib]System.Console::WriteLine(string)
+		newobj instance void class Generated620.G3_C1092`1<class Generated620.BaseClass0>::.ctor()
+		stloc.0
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1327<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1326()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::ClassMethod1326.MI.5336()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::Method7<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::Method7<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G3_C1092::Method7.MI.14257<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G3_C1092::Method7.MI.14257<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::ClassMethod1444<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::ClassMethod1444.5335<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method3<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method3.5334<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method2<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method2.5332<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method1()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method1.5331()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method0()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method0.5329()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method7<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::ClassMethod1327<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::ClassMethod1326()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::ClassMethod1326.MI.5336()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string Generated620.IBase0::Method0()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method0.MI.5330()"
+		ldstr "Generated620.IBase0 on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string Generated620.IBase0::Method1()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method1.5331()"
+		ldstr "Generated620.IBase0 on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string Generated620.IBase0::Method2<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method2.MI.5333<System.Object>()"
+		ldstr "Generated620.IBase0 on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string Generated620.IBase0::Method3<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method3.5334<System.Object>()"
+		ldstr "Generated620.IBase0 on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::ClassMethod3576()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G3_C1092::ClassMethod3576.14259()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::ClassMethod3575()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G3_C1092::ClassMethod3575.14258()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::Method7<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::ClassMethod1444<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::ClassMethod1444.5335<System.Object>()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::Method3<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method3.5334<System.Object>()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::Method2<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method2.5332<System.Object>()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::Method1()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method1.5331()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::Method0()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method0.5329()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::ClassMethod1327<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G3_C1092`1<class Generated620.BaseClass0>::ClassMethod1326()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::ClassMethod1326.MI.5336()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		newobj instance void class Generated620.G3_C1092`1<class Generated620.BaseClass1>::.ctor()
+		stloc.0
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1327<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1326()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::ClassMethod1326.MI.5336()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::Method7<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::Method7<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G3_C1092::Method7.MI.14257<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::ClassMethod1444<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::ClassMethod1444.5335<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method3<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method3.5334<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method2<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method2.5332<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method1()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method1.5331()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method0()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method0.5329()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::ClassMethod1327<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::ClassMethod1326()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::ClassMethod1326.MI.5336()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string Generated620.IBase0::Method0()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method0.MI.5330()"
+		ldstr "Generated620.IBase0 on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string Generated620.IBase0::Method1()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method1.5331()"
+		ldstr "Generated620.IBase0 on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string Generated620.IBase0::Method2<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method2.MI.5333<System.Object>()"
+		ldstr "Generated620.IBase0 on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string Generated620.IBase0::Method3<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method3.5334<System.Object>()"
+		ldstr "Generated620.IBase0 on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::ClassMethod3576()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G3_C1092::ClassMethod3576.14259()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::ClassMethod3575()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G3_C1092::ClassMethod3575.14258()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G3_C1092::Method7.14256<System.Object>()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::ClassMethod1444<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::ClassMethod1444.5335<System.Object>()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::Method3<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method3.5334<System.Object>()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::Method2<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method2.5332<System.Object>()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::Method1()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method1.5331()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::Method0()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method0.5329()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::ClassMethod1327<object>()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G3_C1092`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G3_C1092`1<class Generated620.BaseClass1>::ClassMethod1326()
+		calli default string(class Generated620.G3_C1092`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::ClassMethod1326.MI.5336()"
+		ldstr "class G3_C1092`1<class Generated620.BaseClass1> on type class Generated620.G3_C1092`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		newobj instance void class Generated620.G2_C64`1<class Generated620.BaseClass0>::.ctor()
+		stloc.0
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1327<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass0>)
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1326()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::ClassMethod1326.MI.5336()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::Method7<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::Method7<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::ClassMethod1444<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::ClassMethod1444.5335<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method3<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method3.5334<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method2<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method2.5332<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method1()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method1.5331()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method0()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method0.5329()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::Method7<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::ClassMethod1327<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass0>)
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass0>::ClassMethod1326()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::ClassMethod1326.MI.5336()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string Generated620.IBase0::Method0()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method0.MI.5330()"
+		ldstr "Generated620.IBase0 on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string Generated620.IBase0::Method1()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method1.5331()"
+		ldstr "Generated620.IBase0 on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string Generated620.IBase0::Method2<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method2.MI.5333<System.Object>()"
+		ldstr "Generated620.IBase0 on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string Generated620.IBase0::Method3<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass0>)
+		ldstr "G2_C64::Method3.5334<System.Object>()"
+		ldstr "Generated620.IBase0 on type class Generated620.G2_C64`1<class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		newobj instance void class Generated620.G2_C64`1<class Generated620.BaseClass1>::.ctor()
+		stloc.0
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1327<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass1>)
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1326()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::ClassMethod1326.MI.5336()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::Method7<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::Method7<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::ClassMethod1444<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::ClassMethod1444.5335<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method3<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method3.5334<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method2<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method2.5332<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method1()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method1.5331()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method0()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method0.5329()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method7.5328<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::ClassMethod1327<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass1>)
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G2_C64`1<class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G2_C64`1<class Generated620.BaseClass1>::ClassMethod1326()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::ClassMethod1326.MI.5336()"
+		ldstr "class G2_C64`1<class Generated620.BaseClass1> on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string Generated620.IBase0::Method0()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method0.MI.5330()"
+		ldstr "Generated620.IBase0 on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string Generated620.IBase0::Method1()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method1.5331()"
+		ldstr "Generated620.IBase0 on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string Generated620.IBase0::Method2<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method2.MI.5333<System.Object>()"
+		ldstr "Generated620.IBase0 on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string Generated620.IBase0::Method3<object>()
+		calli default string(class Generated620.G2_C64`1<class Generated620.BaseClass1>)
+		ldstr "G2_C64::Method3.5334<System.Object>()"
+		ldstr "Generated620.IBase0 on type class Generated620.G2_C64`1<class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		newobj instance void class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::.ctor()
+		stloc.0
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::ClassMethod1327<object>()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>)
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::ClassMethod1326()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>)
+		ldstr "G1_C6::ClassMethod1326.4809()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::Method7<object>()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>)
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::Method7<object>()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>)
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::Method7<object>()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>)
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>)
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>)
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		newobj instance void class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::.ctor()
+		stloc.0
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1327<object>()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>)
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::ClassMethod1326()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>)
+		ldstr "G1_C6::ClassMethod1326.4809()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>)
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::Method7<object>()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>)
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass0> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0>::Method7<object>()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>)
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass0> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>)
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>)
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass0,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		newobj instance void class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::.ctor()
+		stloc.0
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::ClassMethod1327<object>()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>)
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0> on type class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::ClassMethod1326()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>)
+		ldstr "G1_C6::ClassMethod1326.4809()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0> on type class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>::Method7<object>()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>)
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0> on type class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>)
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>)
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		newobj instance void class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::.ctor()
+		stloc.0
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::ClassMethod1327<object>()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>)
+		ldstr "G1_C6::ClassMethod1327.4810<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::ClassMethod1326()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>)
+		ldstr "G1_C6::ClassMethod1326.4809()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		castclass class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>
+		ldloc.0
+		ldvirtftn instance string class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>)
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>)
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass1,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc.0
+		ldloc.0
+		ldvirtftn instance string class Generated620.IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1>::Method7<object>()
+		calli default string(class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>)
+		ldstr "G1_C6::Method7.4808<System.Object>()"
+		ldstr "class IBase2`2<class Generated620.BaseClass0,class Generated620.BaseClass1> on type class Generated620.G1_C6`2<class Generated620.BaseClass1,class Generated620.BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldstr "========================================================================\n\n"
+		call void [mscorlib]System.Console::WriteLine(string)
+		ret
+	}
+	.method public hidebysig static int32  Main() cil managed
+	{
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
+				.maxstack  10
+		call void Generated620.Generated620::MethodCallingTest()
+		call void Generated620.Generated620::ConstrainedCallsTest()
+		call void Generated620.Generated620::StructConstrainedInterfaceCallsTest()
+		call void Generated620.Generated620::CalliTest()
+		ldc.i4 100
+		ret
+	}
+}
