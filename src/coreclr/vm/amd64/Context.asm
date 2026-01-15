@@ -27,13 +27,6 @@ NESTED_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT
         test    byte ptr [r10 + OFFSETOF__CONTEXT__ContextFlags], CONTEXT_FLOATING_POINT
         je      Done_Restore_CONTEXT_FLOATING_POINT
         fxrstor [r10 + OFFSETOF__CONTEXT__FltSave]
-        ; Reset MXCSR to default value after restoring floating point context.
-        ; This is needed for contexts captured by Windows SEH (foreign thread/hardware exceptions),
-        ; which can have FltSave.MxCsr set to a bad value (e.g., 0x20 with FP exception masks cleared).
-        ; 0x1F80 = default MXCSR: all exception masks set, round to nearest, no exceptions pending
-        push    1F80h
-        ldmxcsr [rsp]
-        add     rsp, 8
     Done_Restore_CONTEXT_FLOATING_POINT:
     
         test    byte ptr [r10 + OFFSETOF__CONTEXT__ContextFlags], CONTEXT_INTEGER
