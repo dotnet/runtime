@@ -1193,7 +1193,6 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 	*events_written = false;
 
 	EventPipeSequencePoint *sequence_point = NULL;
-	ep_timestamp_t current_timestamp_boundary = stop_timestamp;
 
 	DN_DEFAULT_LOCAL_ALLOCATOR (allocator, dn_vector_ptr_default_local_allocator_byte_size);
 
@@ -1206,7 +1205,7 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 
 	// loop across sequence points
 	while (true) {
-		current_timestamp_boundary = stop_timestamp;
+		ep_timestamp_t current_timestamp_boundary = stop_timestamp;
 		EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
 			if (buffer_manager_try_peek_sequence_point (buffer_manager, &sequence_point))
 				current_timestamp_boundary = EP_MIN (current_timestamp_boundary, ep_sequence_point_get_timestamp (sequence_point));
