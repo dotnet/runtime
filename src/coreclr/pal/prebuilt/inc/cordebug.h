@@ -8650,7 +8650,7 @@ EXTERN_C const IID IID_ICorDebugProcess12;
 
 
 
-#endif  /* __ICorDebugProcess11_INTERFACE_DEFINED__ */
+#endif  /* __ICorDebugProcess12_INTERFACE_DEFINED__ */
 
 
 

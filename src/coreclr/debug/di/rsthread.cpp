@@ -4859,7 +4859,7 @@ CordbValueEnum::CordbValueEnum(
     , m_iMax(maxCount)
 {
     _ASSERTE(pProcess != NULL);
-    
+
     // Add to the appropriate neuter list
     if (m_pNeuterList != NULL)
     {
@@ -4939,7 +4939,7 @@ HRESULT CordbValueEnum::Clone(ICorDebugEnum **ppEnum)
     VALIDATE_POINTER_TO_OBJECT(ppEnum, ICorDebugEnum **);
 
     *ppEnum = NULL;
-    
+
     // Create a new enumerator with the same settings
     RSInitHolder<CordbValueEnum> pCVE(
         new CordbValueEnum(GetProcess(), m_iMax, m_valueGetter, m_pNeuterList));
@@ -11034,7 +11034,7 @@ void CordbAsyncFrame::Neuter()
     {
         m_genericArgs.m_ppInst[i]->Release();
     }
-    
+
     if (m_genericArgs.m_ppInst != NULL)
     {
         delete [] m_genericArgs.m_ppInst;
