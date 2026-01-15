@@ -24,10 +24,10 @@ void CodeGen::genMarkLabelsForCodegen()
 }
 
 //------------------------------------------------------------------------
-// genWasmLocals: generate wasm local declarations
+// genBeginFnProlog: generate wasm local declarations
 //
 // TODO-WASM: pre-declare all "register" locals
-void CodeGen::genWasmLocals()
+void CodeGen::genBeginFnProlog()
 {
     // TODO-WASM: proper local count, local declarations, and shadow stack maintenance
     GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, (unsigned)WasmValueType::Count - 1);
@@ -41,6 +41,19 @@ void CodeGen::genWasmLocals()
         GetEmitter()->emitIns_I_Ty(INS_local_decl, countPerType, static_cast<WasmValueType>(i), localOffset);
         localOffset += countPerType;
     }
+}
+
+//------------------------------------------------------------------------
+// genEnregisterOSRArgsAndLocals: enregister OSR args and locals.
+//
+void CodeGen::genEnregisterOSRArgsAndLocals()
+{
+    unreached(); // OSR not supported on WASM.
+}
+
+void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
+{
+    // NYI_WASM("Un-undefine 'genHomeRegisterParams' in codegencommon.cpp and proceed from there");
 }
 
 void CodeGen::genFnEpilog(BasicBlock* block)
@@ -1078,6 +1091,22 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 void CodeGen::genSpillVar(GenTree* tree)
 {
     NYI_WASM("Put all spillng to memory under '#if HAS_FIXED_REGISTER_SET'");
+}
+
+//------------------------------------------------------------------------
+// genLoadLocalIntoReg: set the register to "load(local on stack)".
+//
+// Arguments:
+//    targetReg - The register to load into
+//    lclNum    - The local on stack to load from
+//
+void CodeGen::genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum)
+{
+    LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
+    var_types  type   = varDsc->GetRegisterType();
+    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+    GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), lclNum, 0);
+    GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(type), WasmRegToIndex(targetReg));
 }
 
 //------------------------------------------------------------------------
