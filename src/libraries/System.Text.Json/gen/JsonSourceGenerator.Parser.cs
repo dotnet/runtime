@@ -1680,33 +1680,23 @@ namespace System.Text.Json.SourceGeneration
 
             private TypeRef? GetConverterTypeFromAttribute(INamedTypeSymbol contextType, ITypeSymbol? converterType, ISymbol declaringSymbol, AttributeData attributeData, ITypeSymbol? typeToConvert = null)
             {
-                if (converterType is not INamedTypeSymbol namedConverterType ||
+                INamedTypeSymbol? namedConverterType = converterType as INamedTypeSymbol;
+
+                // Check if this is an unbound generic converter type that needs to be constructed.
+                // For open generics, we construct the closed generic type first and then validate.
+                if (namedConverterType is { IsUnboundGenericType: true } unboundConverterType &&
+                    typeToConvert is INamedTypeSymbol { IsGenericType: true } genericTypeToConvert &&
+                    unboundConverterType.TypeParameters.Length == genericTypeToConvert.TypeArguments.Length)
+                {
+                    namedConverterType = unboundConverterType.OriginalDefinition.Construct(genericTypeToConvert.TypeArguments.ToArray());
+                }
+
+                if (namedConverterType is null ||
                     !_knownSymbols.JsonConverterType.IsAssignableFrom(namedConverterType) ||
                     !namedConverterType.Constructors.Any(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType)))
                 {
-                    // Check if this is an unbound generic converter type that can be constructed.
-                    // Note: We don't check IsAssignableFrom for unbound generic types since that check can fail
-                    // for open generics. Instead, we construct the type first and then validate.
-                    if (converterType is INamedTypeSymbol { IsUnboundGenericType: true } unboundConverterType &&
-                        typeToConvert is INamedTypeSymbol { IsGenericType: true } genericTypeToConvert &&
-                        unboundConverterType.TypeParameters.Length == genericTypeToConvert.TypeArguments.Length)
-                    {
-                        // Construct the closed generic converter type
-                        namedConverterType = unboundConverterType.Construct(genericTypeToConvert.TypeArguments.ToArray());
-
-                        // Validate the constructed type derives from JsonConverter and has accessible parameterless constructor
-                        if (!_knownSymbols.JsonConverterType.IsAssignableFrom(namedConverterType) ||
-                            !namedConverterType.Constructors.Any(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType)))
-                        {
-                            ReportDiagnostic(DiagnosticDescriptors.JsonConverterAttributeInvalidType, attributeData.GetLocation(), converterType?.ToDisplayString() ?? "null", declaringSymbol.ToDisplayString());
-                            return null;
-                        }
-                    }
-                    else
-                    {
-                        ReportDiagnostic(DiagnosticDescriptors.JsonConverterAttributeInvalidType, attributeData.GetLocation(), converterType?.ToDisplayString() ?? "null", declaringSymbol.ToDisplayString());
-                        return null;
-                    }
+                    ReportDiagnostic(DiagnosticDescriptors.JsonConverterAttributeInvalidType, attributeData.GetLocation(), converterType?.ToDisplayString() ?? "null", declaringSymbol.ToDisplayString());
+                    return null;
                 }
 
                 if (_knownSymbols.JsonStringEnumConverterType.IsAssignableFrom(namedConverterType))
