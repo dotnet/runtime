@@ -339,9 +339,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - vitek-karas
             - agocke
-            - vsadov
+            - elinor-fung
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -352,7 +351,9 @@ configuration:
             label: area-AssemblyLoader-mono
         then:
         - mentionUsers:
-            mentionees: []
+            mentionees:
+            - agocke
+            - elinor-fung
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -365,7 +366,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - JulieLeeMSFT
-            - jakobbotsch
+            - dotnet/jit-contrib
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -377,7 +378,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - brzvlad
+            - vitek-karas
+            - BrzVlad
             - kotlarmilos
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -431,7 +433,6 @@ configuration:
         - mentionUsers:
             mentionees:
             - steveisok
-            - vitek-karas
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -468,6 +469,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - steveisok
             - thaystg
             - dotnet/dotnet-diag
             replyTemplate: >-
@@ -494,6 +496,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - steveisok
+            - tommcdon
             - dotnet/dotnet-diag
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -566,6 +569,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - karelz
             - dotnet/ncl
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -614,6 +618,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - agocke
             - dotnet/gc
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -638,9 +643,9 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - vitek-karas
             - agocke
-            - vsadov
+            - jeffschwMSFT
+            - elinor-fung
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -652,8 +657,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - vitek-karas
             - agocke
+            - elinor-fung
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -666,6 +671,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - JulieLeeMSFT
+            - dotnet/jit-contrib
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -678,6 +684,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - JulieLeeMSFT
+            - dotnet/jit-contrib
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -701,7 +708,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - hoyosjs
+            - agocke
+            - dotnet/runtime-infrastructure
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -751,6 +759,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - phil-allen-msft
             - 333fred
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -775,6 +784,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - phil-allen-msft
             - 333fred
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -800,8 +810,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - agocke
-            - MichalStrehovsky
-            - jkotas
+            - dotnet/ilc-contrib
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -814,7 +823,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - agocke
-            - vitek-karas
+            - elinor-fung
             - vsadov
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -935,8 +944,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - roji
             - SamMonoRT
+            - dotnet/efteam
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -948,8 +957,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - roji
             - SamMonoRT
+            - dotnet/efteam
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -961,8 +970,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - roji
             - SamMonoRT
+            - dotnet/efteam
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -974,9 +983,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - David-Engel
             - cheenamalhotra
-            - david-engel
-            - roji
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -989,7 +997,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - steveisok
-            - dotnet/dotnet-diag
+            - dotnet/area-system-diagnostics
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1061,9 +1069,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - tarekgh
-            - tommcdon
             - steveisok
+            - dotnet/area-system-diagnostics-tracing
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1076,7 +1083,6 @@ configuration:
         - mentionUsers:
             mentionees:
             - dotnet/area-system-directoryservices
-            - jay98014
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1100,6 +1106,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - phil-allen-msft
             - 333fred
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1176,6 +1183,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - karelz
             - dotnet/area-system-io-compression
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1226,6 +1234,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - phil-allen-msft
             - 333fred
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1274,6 +1283,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - karelz
             - dotnet/ncl
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1286,6 +1296,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - karelz
             - dotnet/ncl
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1298,6 +1309,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - karelz
             - dotnet/ncl
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1324,6 +1336,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - karelz
             - dotnet/ncl
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1468,9 +1481,9 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - dotnet/area-system-security
             - bartonjs
             - vcsjones
+            - dotnet/area-system-security
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1531,7 +1544,6 @@ configuration:
         - mentionUsers:
             mentionees:
             - dotnet/area-system-text-json
-            - gregsdennis
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1555,7 +1567,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - mangod9
+            - agocke
+            - vsadov
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1591,8 +1604,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - roji
             - SamMonoRT
+            - dotnet/efteam
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1616,6 +1629,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - agocke
             - dotnet/illink
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}

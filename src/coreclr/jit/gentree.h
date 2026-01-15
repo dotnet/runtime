@@ -954,10 +954,10 @@ public:
         assert((gtRegTag == GT_REGTAG_REG) || (gtRegTag == GT_REGTAG_NONE)); // TODO-Cleanup: get rid of the NONE case,
                                                                              // and fix everyplace that reads undefined
                                                                              // values
+        // TODO-Cleanup: get rid of the NONE case, and fix everyplace that reads
+        // undefined values
         regNumber reg = (regNumber)_gtRegNum;
-        assert((gtRegTag == GT_REGTAG_NONE) || // TODO-Cleanup: get rid of the NONE case, and fix everyplace that reads
-                                               // undefined values
-               (reg >= REG_FIRST && reg <= REG_COUNT));
+        assert((gtRegTag == GT_REGTAG_NONE) || genIsValidReg(reg) || (reg == REG_COUNT));
         return reg;
     }
 

@@ -9865,7 +9865,7 @@ public:
     bool fgIsDoingEarlyLiveness         = false;
     bool fgDidEarlyLiveness             = false;
     bool compPostImportationCleanupDone = false;
-    bool compLSRADone                   = false;
+    bool compRegAllocDone               = false;
     bool compRationalIRForm             = false;
 
     bool compGeneratingProlog       = false;

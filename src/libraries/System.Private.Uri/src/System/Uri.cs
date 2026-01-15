@@ -35,6 +35,8 @@ namespace System
         public static readonly string UriSchemeTelnet = UriParser.TelnetUri.SchemeName;
         public static readonly string UriSchemeNetTcp = UriParser.NetTcpUri.SchemeName;
         public static readonly string UriSchemeNetPipe = UriParser.NetPipeUri.SchemeName;
+        /// <summary>Specifies that the URI is a data URI.</summary>
+        public static readonly string UriSchemeData = "data";
         public static readonly string SchemeDelimiter = "://";
 
         private const int SchemeLengthLimit = 1024;
@@ -595,6 +597,7 @@ namespace System
         public Uri(Uri baseUri, Uri relativeUri)
         {
             ArgumentNullException.ThrowIfNull(baseUri);
+            ArgumentNullException.ThrowIfNull(relativeUri);
 
             if (!baseUri.IsAbsoluteUri)
                 throw new ArgumentOutOfRangeException(nameof(baseUri));

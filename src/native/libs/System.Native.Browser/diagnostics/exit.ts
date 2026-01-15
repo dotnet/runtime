@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { LoaderConfigInternal } from "./types";
-import { dotnetLogger, dotnetLoaderExports, dotnetApi, dotnetBrowserUtilsExports } from "./cross-module";
+import { dotnetLogger, dotnetLoaderExports, dotnetApi, dotnetBrowserUtilsExports, dotnetRuntimeExports } from "./cross-module";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB } from "./per-module";
 import { teardownProxyConsole } from "./console-proxy";
 import { symbolicateStackTrace } from "./symbolicate";
@@ -24,6 +24,9 @@ export function registerExit() {
 function onExit(exitCode: number, reason: any, silent: boolean): boolean {
     if (!loaderConfig) {
         return true;
+    }
+    if (exitCode === 0 && loaderConfig.interopCleanupOnExit) {
+        dotnetRuntimeExports.forceDisposeProxies(true, true);
     }
     uninstallUnhandledErrorHandler();
     if (loaderConfig.logExitCode) {
