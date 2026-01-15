@@ -199,6 +199,10 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:Mono.Linker.Driver</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.EmbeddedXmlInfo</Target>
   </Suppression>
   <Suppression>
