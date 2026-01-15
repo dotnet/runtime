@@ -214,7 +214,7 @@ namespace ILCompiler
                 }
             }
 
-            if (impl != null && impl.HasInstantiation && (!impl.Instantiation.IsConstructed || declMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).IsCanonicalMethod(CanonicalFormKind.Specific)))
+            if (impl != null && impl.HasInstantiation && (impl.IsGenericMethodDefinition || declMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).IsCanonicalMethod(CanonicalFormKind.Specific)))
             {
                 // We don't support devirtualization of shared generic virtual methods yet.
                 devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
