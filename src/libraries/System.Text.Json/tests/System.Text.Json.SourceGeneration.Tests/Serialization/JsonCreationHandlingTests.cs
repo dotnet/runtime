@@ -118,9 +118,6 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfIntWithNumberHandling))]
     [JsonSerializable(typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfIntWithNumberHandlingWithAttributeOnType))]
     [JsonSerializable(typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfIntWithNumberHandlingWithoutPopulateAttribute))]
-    // TODO: Should these cases also be tested (L121 - L129) for IReadOnlySet?
-    // This goes for here, and JsonCreationHandlingTests.Enumerable.cs as well.
-    // The tests ABOVE these tests in JsonCreationHandlingTests.Enumerable.cs are for ISet, which I thought are more relevant, so I didn't add them here yet.
     [JsonSerializable(typeof(StructWithWritablePropertyStructSetOfInt))]
     [JsonSerializable(typeof(StructWithWritablePropertyStructSetOfIntWithAttributeOnType))]
     [JsonSerializable(typeof(StructWithWritablePropertyStructSetOfIntWithoutPopulateAttribute))]
