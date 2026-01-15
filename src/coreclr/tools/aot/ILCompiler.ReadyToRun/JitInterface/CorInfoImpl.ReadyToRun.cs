@@ -1507,17 +1507,7 @@ namespace Internal.JitInterface
                 Array.Copy(BitConverter.GetBytes((uint)(clause.TryLength)), 0, ehInfoData, clauseOffset + (int)EHInfoFields.TryEnd * sizeof(uint), sizeof(uint));
                 Array.Copy(BitConverter.GetBytes((uint)clause.HandlerOffset), 0, ehInfoData, clauseOffset + (int)EHInfoFields.HandlerOffset * sizeof(uint), sizeof(uint));
                 Array.Copy(BitConverter.GetBytes((uint)(clause.HandlerLength)), 0, ehInfoData, clauseOffset + (int)EHInfoFields.HandlerEnd * sizeof(uint), sizeof(uint));
-                if (clause.Flags == CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_NONE
-                    && MethodBeingCompiled.IsAsyncThunk()
-                    && ((TypeDesc)ResolveTokenInScope(_compilation.GetMethodIL(MethodBeingCompiled), null, (mdToken)clause.ClassTokenOrOffset)).IsWellKnownType(WellKnownType.Exception))
-                {
-                    // Encode System.Exception token as 0 for Async thunks
-                    Array.Copy(BitConverter.GetBytes((uint)0), 0, ehInfoData, clauseOffset + (int)EHInfoFields.ClassTokenOrOffset * sizeof(uint), sizeof(uint));
-                }
-                else
-                {
-                    Array.Copy(BitConverter.GetBytes((uint)clause.ClassTokenOrOffset), 0, ehInfoData, clauseOffset + (int)EHInfoFields.ClassTokenOrOffset * sizeof(uint), sizeof(uint));
-                }
+                Array.Copy(BitConverter.GetBytes((uint)clause.ClassTokenOrOffset), 0, ehInfoData, clauseOffset + (int)EHInfoFields.ClassTokenOrOffset * sizeof(uint), sizeof(uint));
             }
             return new ObjectNode.ObjectData(ehInfoData, Array.Empty<Relocation>(), alignment: 1, definedSymbols: Array.Empty<ISymbolDefinitionNode>());
         }
@@ -3225,9 +3215,30 @@ namespace Internal.JitInterface
                 _inlinedMethods.Add(inlinee);
 
                 var typicalMethod = inlinee.GetTypicalMethodDefinition();
-                if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(typicalMethod) &&
+
+                if ((typicalMethod.IsAsyncVariant() || typicalMethod.IsAsync || typicalMethod.IsAsyncThunk()) && !_compilation.CompilationModuleGroup.VersionsWithMethodBody(typicalMethod))
+                {
+                    // TODO: fix this restriction in runtime async
+                    // Disable async methods in cross module inlines for now, we need to trigger the CheckILBodyFixupSignature in the right situations, and that hasn't been implemented
+                    // yet. Currently, we'll correctly trigger the _ilBodiesNeeded logic below, but we also need to avoid triggering the ILBodyFixupSignature for the async thunks, but we ALSO need to make
+                    // sure we generate the CheckILBodyFixupSignature for the actual runtime-async body in which case I think the typicalMethod will be an AsyncVariantMethod, which doesn't appear
+                    // to be handled here. This check is here in the place where I believe we actually would behave incorrectly, but we also have a check in CrossModuleInlineable which disallows 
+                    // the cross module inline of async methods currently.
+                    throw new Exception("Inlining async methods is not supported in ReadyToRun compilation. Notably, we don't correctly create the ILBodyFixupSignature for the runtime-async logic");
+                }
+
+                MethodIL methodIL = _compilation.GetMethodIL(typicalMethod);
+                if (methodIL is ILStubMethodIL ilStubMethodIL && ilStubMethodIL.StubILHasGeneratedTokens)
+                {
+                    // If a method is implemented by an IL Stub, then we may need to defer creation of the IL body that
+                    // we can really emit into the final file.
+                    _ilBodiesNeeded = _ilBodiesNeeded ?? new List<EcmaMethod>();
+                    _ilBodiesNeeded.Add((EcmaMethod)typicalMethod);
+                }
+                else if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(typicalMethod) &&
                     typicalMethod is EcmaMethod ecmaMethod)
                 {
+                    // TODO, when we implement the async variant logic we'll need to detect generating the ILBodyFixupSignature here
                     Debug.Assert(_compilation.CompilationModuleGroup.CrossModuleInlineable(typicalMethod) ||
                                  _compilation.CompilationModuleGroup.IsNonVersionableWithILTokensThatDoNotNeedTranslation(typicalMethod));
                     bool needsTokenTranslation = !_compilation.CompilationModuleGroup.IsNonVersionableWithILTokensThatDoNotNeedTranslation(typicalMethod);
@@ -3245,7 +3256,7 @@ namespace Internal.JitInterface
                     // 2. If at any time, the set of methods that are inlined includes a method which has an IL body without
                     //    tokens that are useable in compilation, record that information, and once the multi-threaded portion
                     //    of the build finishes, it will then compute the IL bodies for those methods, then run the compilation again.
-                    MethodIL methodIL = _compilation.GetMethodIL(typicalMethod);
+                    
                     if (needsTokenTranslation && !(methodIL is IMethodTokensAreUseableInCompilation) && methodIL is EcmaMethodIL)
                     {
                         // We may have already acquired the right type of MethodIL here, or be working with a method that is an IL Intrinsic

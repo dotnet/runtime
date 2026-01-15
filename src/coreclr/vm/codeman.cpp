@@ -6487,11 +6487,6 @@ TypeHandle ReadyToRunJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClaus
     _ASSERTE(NULL != pEHClause);
     _ASSERTE(IsTypedHandler(pEHClause));
 
-    if (pEHClause->ClassToken == 0)
-    {
-        return TypeHandle(g_pExceptionClass);
-    }
-
     MethodDesc *pMD = PTR_MethodDesc(pCf->GetFunction());
 
     _ASSERTE(pMD != NULL);
