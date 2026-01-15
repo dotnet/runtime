@@ -4,6 +4,7 @@
     <NumberOfStripesToUseInStress>15</NumberOfStripesToUseInStress>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="TestFramework\TestFramework.csproj" />
     <MergedWrapperProjectReference Include="TypeGeneratorTests*-*.ilproj" />
   </ItemGroup>
 
