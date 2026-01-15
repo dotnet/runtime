@@ -530,7 +530,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 
     switch (desc.ExtendKind())
     {
-        case GenIntCastDesc::ExtendKind::COPY:
+        case GenIntCastDesc::COPY:
         {
             if (toType == TYP_INT && fromType == TYP_LONG)
             {
@@ -543,7 +543,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
             }
             break;
         }
-        case GenIntCastDesc::ExtendKind::ZERO_EXTEND_SMALL_INT:
+        case GenIntCastDesc::ZERO_EXTEND_SMALL_INT:
         {
             int andAmount = extendSize == 1 ? 255 : 65535;
             if (fromType == TYP_LONG)
@@ -555,7 +555,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
             ins = (toType == TYP_LONG) ? INS_i64_extend_u_i32 : INS_none;
             break;
         }
-        case GenIntCastDesc::ExtendKind::SIGN_EXTEND_SMALL_INT:
+        case GenIntCastDesc::SIGN_EXTEND_SMALL_INT:
         {
             if (fromType == TYP_LONG)
             {
