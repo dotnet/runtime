@@ -944,7 +944,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - sammonort
+            - SamMonoRT
             - dotnet/efteam
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -957,7 +957,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - sammonort
+            - SamMonoRT
             - dotnet/efteam
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -970,7 +970,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - sammonort
+            - SamMonoRT
             - dotnet/efteam
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1604,9 +1604,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - sammonort
-            - roji
-            - cincuranet
+            - SamMonoRT
+            - dotnet/efteam
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
