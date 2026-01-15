@@ -143,27 +143,6 @@
 
   <Import Project="$(MSBuildThisFileDirectory)workloads-testing.targets" Condition="'$(SkipWorkloadsTestingTargetsImport)' == 'true'" />
 
-  <Target Name="_AddLocalFrameworkAssembliesForAppleMobileR2R"
-          BeforeTargets="_PrepareForReadyToRunCompilation"
-          DependsOnTargets="ResolveLibrariesRuntimeFilesFromLocalBuild;ResolveRuntimeFilesFromLocalBuild"
-          Condition="'$(BuildTestsOnHelix)' == 'true'
-                     and '$(TargetsAppleMobile)' == 'true'
-                     and '$(RuntimeFlavor)' == 'CoreCLR'
-                     and '$(PublishReadyToRun)' == 'true'
-                     and ('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst')">
-    <ItemGroup>
-      <_LocalFrameworkAssemblies Include="@(RuntimeFiles);@(LibrariesRuntimeFiles)"
-                                Condition="'%(Extension)' == '.dll'" />
-
-      <ResolvedFileToPublish Include="@(_LocalFrameworkAssemblies)"
-                            RelativePath="%(_LocalFrameworkAssemblies.FileName)%(_LocalFrameworkAssemblies.Extension)"
-                            CopyToPublishDirectory="PreserveNewest"
-                            ExcludeFromSingleFile="true"
-                            PostprocessAssembly="true"
-                            ReferenceOnly="true" />
-    </ItemGroup>
-  </Target>
-
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="$(PublishTestAsSelfContainedAfterTargets)"
