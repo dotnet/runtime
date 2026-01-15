@@ -497,5 +497,194 @@ namespace System.Text.Json.Serialization.Tests
                 JsonSerializer.Serialize(writer, value.WrappedValue, options);
             }
         }
+
+        // Tests for type parameter arity mismatch
+        [Fact]
+        public static void GenericConverterAttribute_ArityMismatch_ThrowsInvalidOperationException()
+        {
+            // The converter has two type parameters but the type has one
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new TypeWithArityMismatch<int>()));
+        }
+
+        [JsonConverter(typeof(ConverterWithTwoParams<,>))]
+        public class TypeWithArityMismatch<T>
+        {
+            public T Value { get; set; }
+        }
+
+        public sealed class ConverterWithTwoParams<T1, T2> : JsonConverter<TypeWithArityMismatch<T1>>
+        {
+            public override TypeWithArityMismatch<T1> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => throw new NotImplementedException();
+
+            public override void Write(Utf8JsonWriter writer, TypeWithArityMismatch<T1> value, JsonSerializerOptions options)
+                => throw new NotImplementedException();
+        }
+
+        // Tests for type constraint violations
+        [Fact]
+        public static void GenericConverterAttribute_ConstraintViolation_ThrowsArgumentException()
+        {
+            // The converter has a class constraint but int is a value type
+            Assert.Throws<ArgumentException>(() => JsonSerializer.Serialize(new TypeWithConstraintViolation<int>()));
+        }
+
+        [JsonConverter(typeof(ConverterWithClassConstraint<>))]
+        public class TypeWithConstraintViolation<T>
+        {
+            public T Value { get; set; }
+        }
+
+        public sealed class ConverterWithClassConstraint<T> : JsonConverter<TypeWithConstraintViolation<T>> where T : class
+        {
+            public override TypeWithConstraintViolation<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => throw new NotImplementedException();
+
+            public override void Write(Utf8JsonWriter writer, TypeWithConstraintViolation<T> value, JsonSerializerOptions options)
+                => throw new NotImplementedException();
+        }
+
+        // Tests for converter type that doesn't match the target type
+        [Fact]
+        public static void GenericConverterAttribute_ConverterTypeMismatch_ThrowsInvalidOperationException()
+        {
+            // The converter converts DifferentType<T> but the type is TypeWithConverterMismatch<T>
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new TypeWithConverterMismatch<int>()));
+        }
+
+        [JsonConverter(typeof(DifferentTypeConverter<>))]
+        public class TypeWithConverterMismatch<T>
+        {
+            public T Value { get; set; }
+        }
+
+        public class DifferentType<T>
+        {
+            public T Value { get; set; }
+        }
+
+        public sealed class DifferentTypeConverter<T> : JsonConverter<DifferentType<T>>
+        {
+            public override DifferentType<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => throw new NotImplementedException();
+
+            public override void Write(Utf8JsonWriter writer, DifferentType<T> value, JsonSerializerOptions options)
+                => throw new NotImplementedException();
+        }
+
+        // Tests for nested containing class with type parameters
+        [Fact]
+        public static void GenericConverterAttribute_NestedConverter_Works()
+        {
+            // Converter is nested in a generic container class
+            var value = new TypeWithNestedConverter<int, string> { Value1 = 42, Value2 = "hello" };
+            string json = JsonSerializer.Serialize(value);
+            Assert.Equal(@"{""Value1"":42,""Value2"":""hello""}", json);
+
+            var deserialized = JsonSerializer.Deserialize<TypeWithNestedConverter<int, string>>(json);
+            Assert.Equal(42, deserialized.Value1);
+            Assert.Equal("hello", deserialized.Value2);
+        }
+
+        [JsonConverter(typeof(Container<>.NestedConverter<>))]
+        public class TypeWithNestedConverter<T1, T2>
+        {
+            public T1 Value1 { get; set; }
+            public T2 Value2 { get; set; }
+        }
+
+        public class Container<T>
+        {
+            public sealed class NestedConverter<U> : JsonConverter<TypeWithNestedConverter<T, U>>
+            {
+                public override TypeWithNestedConverter<T, U> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    if (reader.TokenType != JsonTokenType.StartObject)
+                        throw new JsonException();
+
+                    var result = new TypeWithNestedConverter<T, U>();
+                    while (reader.Read())
+                    {
+                        if (reader.TokenType == JsonTokenType.EndObject)
+                            break;
+
+                        if (reader.TokenType != JsonTokenType.PropertyName)
+                            throw new JsonException();
+
+                        string propertyName = reader.GetString()!;
+                        reader.Read();
+
+                        if (propertyName == "Value1")
+                            result.Value1 = JsonSerializer.Deserialize<T>(ref reader, options)!;
+                        else if (propertyName == "Value2")
+                            result.Value2 = JsonSerializer.Deserialize<U>(ref reader, options)!;
+                    }
+                    return result;
+                }
+
+                public override void Write(Utf8JsonWriter writer, TypeWithNestedConverter<T, U> value, JsonSerializerOptions options)
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("Value1");
+                    JsonSerializer.Serialize(writer, value.Value1, options);
+                    writer.WritePropertyName("Value2");
+                    JsonSerializer.Serialize(writer, value.Value2, options);
+                    writer.WriteEndObject();
+                }
+            }
+        }
+
+        // Tests for type parameters with constraints that are satisfied
+        [Fact]
+        public static void GenericConverterAttribute_ConstraintSatisfied_Works()
+        {
+            // The converter has a class constraint and string is a reference type
+            var value = new TypeWithSatisfiedConstraint<string> { Value = "test" };
+            string json = JsonSerializer.Serialize(value);
+            Assert.Equal(@"{""Value"":""test""}", json);
+
+            var deserialized = JsonSerializer.Deserialize<TypeWithSatisfiedConstraint<string>>(json);
+            Assert.Equal("test", deserialized.Value);
+        }
+
+        [JsonConverter(typeof(ConverterWithSatisfiedConstraint<>))]
+        public class TypeWithSatisfiedConstraint<T>
+        {
+            public T Value { get; set; }
+        }
+
+        public sealed class ConverterWithSatisfiedConstraint<T> : JsonConverter<TypeWithSatisfiedConstraint<T>> where T : class
+        {
+            public override TypeWithSatisfiedConstraint<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                if (reader.TokenType != JsonTokenType.StartObject)
+                    throw new JsonException();
+
+                var result = new TypeWithSatisfiedConstraint<T>();
+                while (reader.Read())
+                {
+                    if (reader.TokenType == JsonTokenType.EndObject)
+                        break;
+
+                    if (reader.TokenType != JsonTokenType.PropertyName)
+                        throw new JsonException();
+
+                    string propertyName = reader.GetString()!;
+                    reader.Read();
+
+                    if (propertyName == "Value")
+                        result.Value = JsonSerializer.Deserialize<T>(ref reader, options)!;
+                }
+                return result;
+            }
+
+            public override void Write(Utf8JsonWriter writer, TypeWithSatisfiedConstraint<T> value, JsonSerializerOptions options)
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName("Value");
+                JsonSerializer.Serialize(writer, value.Value, options);
+                writer.WriteEndObject();
+            }
+        }
     }
 }

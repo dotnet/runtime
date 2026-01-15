@@ -1099,5 +1099,38 @@ namespace System.Text.Json.SourceGeneration.Tests
         internal partial class OpenGenericConverterContext : JsonSerializerContext
         {
         }
+
+        // Tests for nested containing class with type parameters
+        [Fact]
+        public static void SupportsNestedGenericConverterOnGenericType()
+        {
+            // Test TypeWithNestedConverter<int, string> serialization with nested converter
+            var value = new TypeWithNestedConverter<int, string> { Value1 = 42, Value2 = "hello" };
+            string json = JsonSerializer.Serialize(value, NestedGenericConverterContext.Default.TypeWithNestedConverterInt32String);
+            Assert.Equal(@"{""Value1"":42,""Value2"":""hello""}", json);
+
+            var deserialized = JsonSerializer.Deserialize<TypeWithNestedConverter<int, string>>(json, NestedGenericConverterContext.Default.TypeWithNestedConverterInt32String);
+            Assert.Equal(42, deserialized.Value1);
+            Assert.Equal("hello", deserialized.Value2);
+        }
+
+        // Tests for type parameters with constraints that are satisfied
+        [Fact]
+        public static void SupportsConstrainedGenericConverterOnGenericType()
+        {
+            // Test TypeWithSatisfiedConstraint<string> serialization - string satisfies class constraint
+            var value = new TypeWithSatisfiedConstraint<string> { Value = "test" };
+            string json = JsonSerializer.Serialize(value, NestedGenericConverterContext.Default.TypeWithSatisfiedConstraintString);
+            Assert.Equal(@"{""Value"":""test""}", json);
+
+            var deserialized = JsonSerializer.Deserialize<TypeWithSatisfiedConstraint<string>>(json, NestedGenericConverterContext.Default.TypeWithSatisfiedConstraintString);
+            Assert.Equal("test", deserialized.Value);
+        }
+
+        [JsonSerializable(typeof(TypeWithNestedConverter<int, string>))]
+        [JsonSerializable(typeof(TypeWithSatisfiedConstraint<string>))]
+        internal partial class NestedGenericConverterContext : JsonSerializerContext
+        {
+        }
     }
 }

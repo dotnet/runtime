@@ -755,5 +755,58 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
         }
 #endif
+
+        [Fact]
+        public void GenericConverterArityMismatch_WarnsAsExpected()
+        {
+            Compilation compilation = CompilationHelper.CreateTypesWithGenericConverterArityMismatch();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Location converterAttrLocation = compilation.GetSymbolsWithName("TypeWithArityMismatch").First().GetAttributes()[0].GetLocation();
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, converterAttrLocation, "The 'JsonConverterAttribute' type 'HelloWorld.ConverterWithTwoParams<,>' specified on member 'HelloWorld.TypeWithArityMismatch<int>' is not a converter type or does not contain an accessible parameterless constructor."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void GenericConverterTypeMismatch_NoSourceGeneratorWarning_FailsAtRuntime()
+        {
+            // Note: The source generator cannot detect at compile time that the converter
+            // converts the wrong type (DifferentType<T> vs TypeWithConverterMismatch<T>).
+            // The DifferentTypeConverter<int> is a valid JsonConverter with a parameterless constructor,
+            // so the source generator accepts it. The mismatch will cause a runtime error.
+            Compilation compilation = CompilationHelper.CreateTypesWithGenericConverterTypeMismatch();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            // Should compile without diagnostics - the converter is technically valid
+            Assert.Empty(result.Diagnostics);
+            result.AssertContainsType("global::HelloWorld.TypeWithConverterMismatch<int>");
+        }
+
+        [Fact]
+        public void NestedGenericConverter_CompileSuccessfully()
+        {
+            Compilation compilation = CompilationHelper.CreateTypesWithNestedGenericConverter();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            // Should compile without diagnostics
+            Assert.Empty(result.Diagnostics);
+            result.AssertContainsType("global::HelloWorld.TypeWithNestedConverter<int, string>");
+        }
+
+        [Fact]
+        public void ConstrainedGenericConverter_WithSatisfiedConstraint_CompileSuccessfully()
+        {
+            Compilation compilation = CompilationHelper.CreateTypesWithConstrainedGenericConverter();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            // Should compile without diagnostics since string satisfies the class constraint
+            Assert.Empty(result.Diagnostics);
+            result.AssertContainsType("global::HelloWorld.TypeWithSatisfiedConstraint<string>");
+        }
     }
 }
