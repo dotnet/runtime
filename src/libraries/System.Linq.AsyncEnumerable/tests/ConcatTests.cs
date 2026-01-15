@@ -151,5 +151,64 @@ namespace System.Linq.Tests
                 new[] { 1, 2, 3, 4, 5, 6, 7 },
                 result);
         }
+
+        [Fact]
+        public async Task MultipleEnumerations_ProducesSameResults()
+        {
+            IAsyncEnumerable<int> first = CreateSource(1, 2);
+            IAsyncEnumerable<int> second = CreateSource(3, 4);
+            IAsyncEnumerable<int> source = first.Concat(second);
+            
+            List<int> firstEnumeration = await source.ToListAsync();
+            List<int> secondEnumeration = await source.ToListAsync();
+            
+            Assert.Equal(new[] { 1, 2, 3, 4 }, firstEnumeration);
+            Assert.Equal(new[] { 1, 2, 3, 4 }, secondEnumeration);
+        }
+
+        [Fact]
+        public async Task DisposeBeforeComplete_DoesNotThrow()
+        {
+            IAsyncEnumerable<int> first = CreateSource(1, 2, 3);
+            IAsyncEnumerable<int> second = CreateSource(4, 5, 6);
+            IAsyncEnumerable<int> source = first.Concat(second);
+            
+            await using (var enumerator = source.GetAsyncEnumerator())
+            {
+                Assert.True(await enumerator.MoveNextAsync());
+                Assert.Equal(1, enumerator.Current);
+                Assert.True(await enumerator.MoveNextAsync());
+                Assert.Equal(2, enumerator.Current);
+                // Dispose before completing enumeration
+            }
+        }
+
+        [Fact]
+        public async Task ConcatEmptySequences_ReturnsEmpty()
+        {
+            IAsyncEnumerable<int> first = AsyncEnumerable.Empty<int>();
+            IAsyncEnumerable<int> second = AsyncEnumerable.Empty<int>();
+            IAsyncEnumerable<int> result = first.Concat(second);
+            
+            await AssertEqual(Array.Empty<int>(), result);
+        }
+
+        [Fact]
+        public async Task Concat_TransitionsCorrectlyBetweenSources()
+        {
+            IAsyncEnumerable<int> first = CreateSource(1, 2);
+            IAsyncEnumerable<int> second = CreateSource(3, 4);
+            IAsyncEnumerable<int> third = CreateSource(5, 6);
+            
+            IAsyncEnumerable<int> result = first.Concat(second).Concat(third);
+            
+            List<int> items = new();
+            await foreach (int item in result)
+            {
+                items.Add(item);
+            }
+            
+            Assert.Equal(new[] { 1, 2, 3, 4, 5, 6 }, items);
+        }
     }
 }

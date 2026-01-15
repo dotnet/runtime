@@ -113,5 +113,47 @@ namespace System.Linq.Tests
 
             Assert.Equal(Enumerable.Range(0, 1000).Sum(), sum);
         }
+
+        [Fact]
+        public async Task MultipleEnumerations_ProducesSameResults()
+        {
+            IAsyncEnumerable<int> source = CreateSource(1, 2, 3).Append(4).Append(5);
+            
+            List<int> firstEnumeration = await source.ToListAsync();
+            List<int> secondEnumeration = await source.ToListAsync();
+            
+            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, firstEnumeration);
+            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, secondEnumeration);
+        }
+
+        [Fact]
+        public async Task AppendOnEmptySource_WorksCorrectly()
+        {
+            IAsyncEnumerable<int> result = AsyncEnumerable.Empty<int>().Append(42);
+            
+            await AssertEqual(new[] { 42 }, result);
+        }
+
+        [Fact]
+        public async Task DisposeBeforeComplete_DoesNotThrow()
+        {
+            IAsyncEnumerable<int> source = CreateSource(1, 2, 3).Append(4).Append(5);
+            
+            await using (var enumerator = source.GetAsyncEnumerator())
+            {
+                Assert.True(await enumerator.MoveNextAsync());
+                Assert.Equal(1, enumerator.Current);
+                // Dispose before completing enumeration
+            }
+        }
+
+        [Fact]
+        public async Task PrependAfterAppend_BothWork()
+        {
+            IAsyncEnumerable<int> source = CreateSource(2, 3);
+            IAsyncEnumerable<int> result = source.Append(4).Prepend(1);
+            
+            await AssertEqual(new[] { 1, 2, 3, 4 }, result);
+        }
     }
 }
