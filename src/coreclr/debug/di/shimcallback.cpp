@@ -1256,37 +1256,6 @@ HRESULT ShimProxyCallback::FunctionRemapComplete(ICorDebugAppDomain * pAppDomain
 } // end of methodICorDebugManagedCallback2::FunctionRemapComplete
 
 
-// Implementation of ICorDebugManagedCallback2::MDANotification
-HRESULT ShimProxyCallback::MDANotification(ICorDebugController * pController, ICorDebugThread * pThread, ICorDebugMDA * pMDA)
-{
-    m_pShim->PreDispatchEvent();
-    class MDANotificationEvent  : public ManagedEvent
-    {
-        // callbacks parameters. These are strong references
-        RSExtSmartPtr<ICorDebugController > m_pController;
-        RSExtSmartPtr<ICorDebugThread > m_pThread;
-        RSExtSmartPtr<ICorDebugMDA > m_pMDA;
-
-    public:
-        // Ctor
-        MDANotificationEvent(ICorDebugController * pController, ICorDebugThread * pThread, ICorDebugMDA * pMDA) :
-             ManagedEvent(pThread)
-        {
-            this->m_pController.Assign(pController);
-            this->m_pThread.Assign(pThread);
-            this->m_pMDA.Assign(pMDA);
-        }
-
-        HRESULT Dispatch(DispatchArgs args)
-        {
-            return args.GetCallback2()->MDANotification(m_pController, m_pThread, m_pMDA);
-        }
-    }; // end class MDANotificationEvent
-
-    m_pShim->GetManagedEventQueue()->QueueEvent(new MDANotificationEvent(pController, pThread, pMDA));
-    return S_OK;
-} // end of methodICorDebugManagedCallback2::MDANotification
-
 // Implementation of ICorDebugManagedCallback3::CustomNotification
 // Arguments:
 //      input:

@@ -113,8 +113,6 @@ class CordbReJitILCode;
 #endif // FEATURE_CODE_VERSIONING
 class CordbEval;
 
-class CordbMDA;
-
 class RSLock;
 class NeuterList;
 
@@ -1083,7 +1081,6 @@ typedef enum {
     enumCordbEval,
     enumCordbUnmanagedThread,
     enumCordbType,
-    enumCordbMDA,
     enumCordbHashTableEnum,
     enumCordbStackWalk,
     enumCordbEnumerator,
@@ -4459,70 +4456,6 @@ private:
     // The collection is filled lazily by LookupOrCreateNativeCode
     CordbSafeHashTable<CordbNativeCode> m_nativeCodeTable;
 };
-
-
-//-----------------------------------------------------------------------------
-// Cordb MDA notification
-//-----------------------------------------------------------------------------
-class CordbMDA : public CordbBase, public ICorDebugMDA
-{
-public:
-    CordbMDA(CordbProcess * pProc, DebuggerMDANotification * pData);
-    ~CordbMDA();
-
-    virtual void Neuter();
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { return "CordbMDA"; }
-#endif
-
-    //-----------------------------------------------------------
-    // IUnknown
-    //-----------------------------------------------------------
-
-    ULONG STDMETHODCALLTYPE AddRef()
-    {
-        return (BaseAddRefEnforceExternal());
-    }
-    ULONG STDMETHODCALLTYPE Release()
-    {
-        return (BaseReleaseEnforceExternal());
-    }
-    COM_METHOD QueryInterface(REFIID riid, void **ppInterface);
-
-    //-----------------------------------------------------------
-    // ICorDebugMDA
-    //-----------------------------------------------------------
-
-    // Get the string for the type of the MDA. Never empty.
-    // This is a convenient performant alternative to getting the XML stream and extracting
-    // the type from that based off the schema.
-    COM_METHOD GetName(ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
-
-    // Get a string description of the MDA. This may be empty (0-length).
-    COM_METHOD GetDescription(ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
-
-    // Get the full associated XML for the MDA. This may be empty.
-    // This could be a potentially expensive operation if the xml stream is large.
-    // See the MDA documentation for the schema for this XML stream.
-    COM_METHOD GetXML(ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
-
-    COM_METHOD GetFlags(CorDebugMDAFlags * pFlags);
-
-    // Thread that the MDA is fired on. We use the os tid instead of an ICDThread in case an MDA is fired on a
-    // native thread (or a managed thread that hasn't yet entered managed code and so we don't have a ICDThread
-    // object for it yet)
-    COM_METHOD GetOSThreadId(DWORD * pOsTid);
-
-private:
-    NewArrayHolder<WCHAR> m_szName;
-    NewArrayHolder<WCHAR> m_szDescription;
-    NewArrayHolder<WCHAR> m_szXml;
-
-    DWORD m_dwOSTID;
-    CorDebugMDAFlags m_flags;
-};
-
 
 
 struct CordbHangingField
