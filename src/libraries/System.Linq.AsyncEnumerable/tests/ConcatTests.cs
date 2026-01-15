@@ -94,7 +94,7 @@ namespace System.Linq.Tests
             IAsyncEnumerable<int> second = CreateSource(3, 4);
             IAsyncEnumerable<int> third = CreateSource(5, 6);
             IAsyncEnumerable<int> result = first.Concat(second).Concat(third);
-            
+
             await AssertEqual(
                 new[] { 1, 2, 3, 4, 5, 6 },
                 result);
@@ -109,7 +109,7 @@ namespace System.Linq.Tests
         {
             IAsyncEnumerable<int> result = AsyncEnumerable.Empty<int>();
             List<int> expected = new();
-            
+
             for (int i = 0; i < concatCount; i++)
             {
                 int start = i * 2;
@@ -146,7 +146,7 @@ namespace System.Linq.Tests
             IAsyncEnumerable<int> first = CreateSource(2, 3);
             IAsyncEnumerable<int> second = CreateSource(5, 6);
             IAsyncEnumerable<int> result = first.Append(4).Concat(second).Prepend(1).Append(7);
-            
+
             await AssertEqual(
                 new[] { 1, 2, 3, 4, 5, 6, 7 },
                 result);
@@ -158,10 +158,10 @@ namespace System.Linq.Tests
             IAsyncEnumerable<int> first = CreateSource(1, 2);
             IAsyncEnumerable<int> second = CreateSource(3, 4);
             IAsyncEnumerable<int> source = first.Concat(second);
-            
+
             List<int> firstEnumeration = await source.ToListAsync();
             List<int> secondEnumeration = await source.ToListAsync();
-            
+
             Assert.Equal(new[] { 1, 2, 3, 4 }, firstEnumeration);
             Assert.Equal(new[] { 1, 2, 3, 4 }, secondEnumeration);
         }
@@ -172,7 +172,7 @@ namespace System.Linq.Tests
             IAsyncEnumerable<int> first = CreateSource(1, 2, 3);
             IAsyncEnumerable<int> second = CreateSource(4, 5, 6);
             IAsyncEnumerable<int> source = first.Concat(second);
-            
+
             await using (var enumerator = source.GetAsyncEnumerator())
             {
                 Assert.True(await enumerator.MoveNextAsync());
@@ -189,7 +189,7 @@ namespace System.Linq.Tests
             IAsyncEnumerable<int> first = AsyncEnumerable.Empty<int>();
             IAsyncEnumerable<int> second = AsyncEnumerable.Empty<int>();
             IAsyncEnumerable<int> result = first.Concat(second);
-            
+
             await AssertEqual(Array.Empty<int>(), result);
         }
 
@@ -199,15 +199,15 @@ namespace System.Linq.Tests
             IAsyncEnumerable<int> first = CreateSource(1, 2);
             IAsyncEnumerable<int> second = CreateSource(3, 4);
             IAsyncEnumerable<int> third = CreateSource(5, 6);
-            
+
             IAsyncEnumerable<int> result = first.Concat(second).Concat(third);
-            
+
             List<int> items = new();
             await foreach (int item in result)
             {
                 items.Add(item);
             }
-            
+
             Assert.Equal(new[] { 1, 2, 3, 4, 5, 6 }, items);
         }
 
@@ -218,23 +218,23 @@ namespace System.Linq.Tests
             IAsyncEnumerable<int> first = CreateSource(1, 2);
             IAsyncEnumerable<int> second = CreateSource(3, 4);
             IAsyncEnumerable<int> source = first.Concat(second);
-            
+
             // Get two enumerators explicitly to trigger cloning
             await using var enum1 = source.GetAsyncEnumerator();
             await using var enum2 = source.GetAsyncEnumerator();
-            
+
             List<int> list1 = new();
             while (await enum1.MoveNextAsync())
             {
                 list1.Add(enum1.Current);
             }
-            
+
             List<int> list2 = new();
             while (await enum2.MoveNextAsync())
             {
                 list2.Add(enum2.Current);
             }
-            
+
             Assert.Equal(new[] { 1, 2, 3, 4 }, list1);
             Assert.Equal(new[] { 1, 2, 3, 4 }, list2);
         }

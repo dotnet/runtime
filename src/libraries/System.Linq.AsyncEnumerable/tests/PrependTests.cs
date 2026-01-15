@@ -62,7 +62,7 @@ namespace System.Linq.Tests
         {
             IAsyncEnumerable<int> source = CreateSource(4, 5, 6);
             IAsyncEnumerable<int> result = source.Prepend(3).Prepend(2).Prepend(1);
-            
+
             await AssertEqual(
                 new[] { 1, 2, 3, 4, 5, 6 },
                 result);
@@ -90,7 +90,7 @@ namespace System.Linq.Tests
         {
             IAsyncEnumerable<int> source = CreateSource(2, 3);
             IAsyncEnumerable<int> result = source.Prepend(1).Append(4).Prepend(0);
-            
+
             await AssertEqual(
                 new[] { 0, 1, 2, 3, 4 },
                 result);
@@ -118,10 +118,10 @@ namespace System.Linq.Tests
         public async Task MultipleEnumerations_ProducesSameResults()
         {
             IAsyncEnumerable<int> source = CreateSource(2, 3, 4).Prepend(1).Prepend(0);
-            
+
             List<int> firstEnumeration = await source.ToListAsync();
             List<int> secondEnumeration = await source.ToListAsync();
-            
+
             Assert.Equal(new[] { 0, 1, 2, 3, 4 }, firstEnumeration);
             Assert.Equal(new[] { 0, 1, 2, 3, 4 }, secondEnumeration);
         }
@@ -130,7 +130,7 @@ namespace System.Linq.Tests
         public async Task PrependOnEmptySource_WorksCorrectly()
         {
             IAsyncEnumerable<int> result = AsyncEnumerable.Empty<int>().Prepend(42);
-            
+
             await AssertEqual(new[] { 42 }, result);
         }
 
@@ -138,7 +138,7 @@ namespace System.Linq.Tests
         public async Task DisposeBeforeComplete_DoesNotThrow()
         {
             IAsyncEnumerable<int> source = CreateSource(2, 3, 4).Prepend(1).Prepend(0);
-            
+
             await using (var enumerator = source.GetAsyncEnumerator())
             {
                 Assert.True(await enumerator.MoveNextAsync());
@@ -152,7 +152,7 @@ namespace System.Linq.Tests
         {
             IAsyncEnumerable<int> source = CreateSource(2, 3);
             IAsyncEnumerable<int> result = source.Prepend(1).Append(4);
-            
+
             await AssertEqual(new[] { 1, 2, 3, 4 }, result);
         }
 
@@ -161,23 +161,23 @@ namespace System.Linq.Tests
         {
             // Test that multiple enumerations work correctly (tests Clone() method)
             IAsyncEnumerable<int> source = CreateSource(3, 4, 5).Prepend(2).Prepend(1);
-            
+
             // Get two enumerators explicitly to trigger cloning
             await using var enum1 = source.GetAsyncEnumerator();
             await using var enum2 = source.GetAsyncEnumerator();
-            
+
             List<int> list1 = new();
             while (await enum1.MoveNextAsync())
             {
                 list1.Add(enum1.Current);
             }
-            
+
             List<int> list2 = new();
             while (await enum2.MoveNextAsync())
             {
                 list2.Add(enum2.Current);
             }
-            
+
             Assert.Equal(new[] { 1, 2, 3, 4, 5 }, list1);
             Assert.Equal(new[] { 1, 2, 3, 4, 5 }, list2);
         }

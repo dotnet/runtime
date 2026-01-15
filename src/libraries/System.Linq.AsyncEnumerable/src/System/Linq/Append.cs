@@ -165,7 +165,7 @@ namespace System.Linq
             private readonly SingleLinkedNode<TSource>? _appended;
             private readonly int _prependCount;
             private readonly int _appendCount;
-            
+
             private SingleLinkedNode<TSource>? _node;
             private TSource[]? _appendedArray;
             private int _appendedIndex;
