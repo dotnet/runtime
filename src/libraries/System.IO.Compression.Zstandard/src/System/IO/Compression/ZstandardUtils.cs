@@ -45,22 +45,22 @@ namespace System.IO.Compression
             return System.Runtime.InteropServices.Marshal.PtrToStringAnsi(errorNamePtr) ?? $"Unknown error {error}";
         }
 
-        internal static void ThrowIfError(nuint result, string? message = null)
+        internal static void ThrowIfError(nuint result)
         {
             if (IsError(result, out var error))
             {
-                Throw(error, message);
+                Throw(error);
             }
         }
 
         [DoesNotReturn]
-        internal static void Throw(Interop.Zstd.ZSTD_error error, string? message = null)
+        internal static void Throw(Interop.Zstd.ZSTD_error error)
         {
             Debug.Assert(IsError((nuint)error));
-            throw CreateExceptionForError(error, message);
+            throw CreateExceptionForError(error);
         }
 
-        internal static Exception CreateExceptionForError(Interop.Zstd.ZSTD_error error, string? message = null)
+        internal static Exception CreateExceptionForError(Interop.Zstd.ZSTD_error error)
         {
             Debug.Assert(IsError((nuint)error));
 
@@ -73,7 +73,7 @@ namespace System.IO.Compression
                     return new InvalidOperationException(SR.ZstandardEncoderDecoder_InvalidState);
 
                 default:
-                    return new IOException(message ?? SR.Zstd_InternalError, new Interop.Zstd.ZstdNativeException(SR.Format(GetErrorMessage(error))));
+                    return new IOException(SR.Format(SR.Zstd_InternalError, GetErrorMessage(error)));
             }
         }
 

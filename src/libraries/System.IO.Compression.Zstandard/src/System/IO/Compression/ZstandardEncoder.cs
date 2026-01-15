@@ -266,7 +266,7 @@ namespace System.IO.Compression
                             return OperationStatus.InvalidData;
                         }
 
-                        ZstandardUtils.Throw(error, SR.ZstandardEncoder_CompressError);
+                        ZstandardUtils.Throw(error);
                     }
 
                     bytesConsumed = (int)input.pos;

@@ -42,23 +42,11 @@
   <data name="ZstandardEncoder_InvalidDictionary" xml:space="preserve">
     <value>The provided dictionary wasn't created for encoding data.</value>
   </data>
-  <data name="ZstandardEncoder_CompressError" xml:space="preserve">
-    <value>An error occurred during compression, see inner exception for details.</value>
-  </data>
   <data name="ZstandardEncoder_FlushError" xml:space="preserve">
     <value>An error occurred during flush operation.</value>
   </data>
-  <data name="ZstandardEncoder_DictionaryAttachFailed" xml:space="preserve">
-    <value>Failed to attach dictionary to Zstandard encoder context.</value>
-  </data>
   <data name="ZstandardEncoderDecoder_InvalidState" xml:space="preserve">
     <value>The requested operation is not valid once compression or decompression has begun.</value>
-  </data>
-  <data name="ZstandardDecoder_DecompressError" xml:space="preserve">
-    <value>An error occurred during decompression, see inner exception for details.</value>
-  </data>
-  <data name="ZstandardDecoder_DictionaryAttachFailed" xml:space="preserve">
-    <value>Failed to attach dictionary to Zstandard decoder context.</value>
   </data>
   <data name="ZstandardStream_Decompress_TruncatedData" xml:space="preserve">
     <value>Found truncated data while decoding.</value>
@@ -87,9 +75,6 @@
   <data name="ZstandardDictionary_SampleLengthsMismatch" xml:space="preserve">
     <value>The sum of sample lengths does not match the length of the samples buffer.</value>
   </data>
-  <data name="ZstandardDictionary_Train_Failure" xml:space="preserve">
-    <value>Failed to train dictionary, see inner exception for details.</value>
-  </data>
   <data name="ZstandardDictionary_Train_MinimumSampleCount" xml:space="preserve">
     <value>At least {0} samples are required to train the dictionary.</value>
   </data>
@@ -97,6 +82,6 @@
     <value>Sample lengths must be positive values.</value>
   </data>
   <data name="Zstd_InternalError" xml:space="preserve">
-    <value>An internal error has occured, see inner exception for details.</value>
+    <value>An internal error has occured: {0}.</value>
   </data>
 </root>

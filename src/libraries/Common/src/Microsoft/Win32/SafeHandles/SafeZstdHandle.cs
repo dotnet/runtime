@@ -39,7 +39,7 @@ namespace Microsoft.Win32.SafeHandles
             try
             {
                 dictionary.DangerousAddRef(ref added);
-                ZstandardUtils.ThrowIfError(Interop.Zstd.ZSTD_CCtx_refCDict(this, dictionary), SR.ZstandardDecoder_DictionaryAttachFailed);
+                ZstandardUtils.ThrowIfError(Interop.Zstd.ZSTD_CCtx_refCDict(this, dictionary));
 
                 _dictionary = dictionary;
             }
@@ -114,7 +114,7 @@ namespace Microsoft.Win32.SafeHandles
             try
             {
                 dictionary.DangerousAddRef(ref added);
-                ZstandardUtils.ThrowIfError(Interop.Zstd.ZSTD_DCtx_refDDict(this, dictionary), SR.ZstandardDecoder_DictionaryAttachFailed);
+                ZstandardUtils.ThrowIfError(Interop.Zstd.ZSTD_DCtx_refDDict(this, dictionary));
 
                 _dictionary = dictionary;
             }

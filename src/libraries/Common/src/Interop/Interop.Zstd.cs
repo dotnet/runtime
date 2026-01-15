@@ -483,10 +483,5 @@ internal static partial class Interop
             internal nuint size;
             internal nuint pos;
         }
-
-        internal sealed class ZstdNativeException : Exception
-        {
-            public ZstdNativeException(string message) : base(message) { }
-        }
     }
 }

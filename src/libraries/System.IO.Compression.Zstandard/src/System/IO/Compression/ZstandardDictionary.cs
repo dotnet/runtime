@@ -140,7 +140,7 @@ namespace System.IO.Compression
                                 samplesPtr, lengthsAsNuintPtr, (uint)sampleLengths.Length);
                     }
 
-                    ZstandardUtils.ThrowIfError(dictSize, SR.ZstandardDictionary_Train_Failure);
+                    ZstandardUtils.ThrowIfError(dictSize);
                     return Create(dictionaryBuffer.AsSpan(0, (int)dictSize));
                 }
             }
