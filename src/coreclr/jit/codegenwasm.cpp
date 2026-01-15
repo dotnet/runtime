@@ -12,13 +12,13 @@
 #ifdef TARGET_64BIT
 static const instruction INS_I_const = INS_i64_const;
 static const instruction INS_I_add   = INS_i64_add;
-static const instruction INS_I_le_s  = INS_i64_le_s;
-static const instruction INS_I_gt_s  = INS_i64_gt_s;
+static const instruction INS_I_le_u  = INS_i64_le_u;
+static const instruction INS_I_gt_u  = INS_i64_gt_u;
 #else  // !TARGET_64BIT
 static const instruction INS_I_const = INS_i32_const;
 static const instruction INS_I_add   = INS_i32_add;
-static const instruction INS_I_le_s  = INS_i32_le_s;
-static const instruction INS_I_gt_s  = INS_i32_gt_s;
+static const instruction INS_I_le_u  = INS_i32_le_u;
+static const instruction INS_I_gt_u  = INS_i32_gt_u;
 #endif // !TARGET_64BIT
 
 void CodeGen::genMarkLabelsForCodegen()
@@ -844,7 +844,7 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
         assert((add != nullptr) && ("ERROR: failed to find exception throw block"));
         assert(add->acdUsed);
         GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, compiler->compMaxUncheckedOffsetForNullObject);
-        GetEmitter()->emitIns(INS_I_le_s);
+        GetEmitter()->emitIns(INS_I_le_u);
         inst_JMP(EJ_jmpif, add->acdDstBlk);
     }
     else
@@ -852,7 +852,7 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
         BasicBlock* const tgtBlk = genCreateTempLabel();
         GetEmitter()->emitIns(INS_block);
         GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, compiler->compMaxUncheckedOffsetForNullObject);
-        GetEmitter()->emitIns(INS_I_gt_s);
+        GetEmitter()->emitIns(INS_I_gt_u);
         // tgtBlock is not on the model wasm control stack we set up earlier.
         // Since we must emitted a `begin` that will end at this block, it will be at depth 0.
         // Indicate this via isTempLabel.
