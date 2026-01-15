@@ -20,11 +20,6 @@ set(BUILD_SHARED_LIBS OFF)
 FetchContent_MakeAvailable(zstd)
 set(BUILD_SHARED_LIBS ${__CURRENT_BUILD_SHARED_LIBS})
 
-if (MSVC)
-    # Make the static library export its symbols so that we can P/Invoke them from Managed code
-    set_property(TARGET libzstd_static APPEND PROPERTY COMPILE_DEFINITIONS "ZSTD_DLL_EXPORT=1")
-endif()
-
 if (ANDROID)
     # qsort_r is not available during android build and zstd's autodetection does not seem
     # to handle this case correctly
