@@ -23,14 +23,14 @@ namespace System.IO.Compression
         [Fact]
         public void ZlibEncoder_Ctor_InvalidCompressionLevel_Throws()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ZlibEncoder(-2, ZlibCompressionFormat.Deflate));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ZlibEncoder(10, ZlibCompressionFormat.Deflate));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ZlibEncoder((CompressionLevel)(-1), ZlibCompressionFormat.Deflate));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ZlibEncoder((CompressionLevel)99, ZlibCompressionFormat.Deflate));
         }
 
         [Fact]
         public void ZlibEncoder_Ctor_InvalidFormat_Throws()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ZlibEncoder(6, (ZlibCompressionFormat)99));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ZlibEncoder(CompressionLevel.Optimal, (ZlibCompressionFormat)99));
         }
 
         [Fact]
@@ -45,7 +45,7 @@ namespace System.IO.Compression
         [InlineData(ZlibCompressionFormat.GZip)]
         public void ZlibEncoder_Compress_AllFormats(ZlibCompressionFormat format)
         {
-            using var encoder = new ZlibEncoder(6, format);
+            using var encoder = new ZlibEncoder(CompressionLevel.Optimal, format);
             byte[] destination = new byte[ZlibEncoder.GetMaxCompressedLength(s_sampleData.Length)];
 
             OperationStatus status = encoder.Compress(s_sampleData, destination, out int bytesConsumed, out int bytesWritten, isFinalBlock: true);
@@ -59,7 +59,7 @@ namespace System.IO.Compression
         [Fact]
         public void ZlibEncoder_Dispose_MultipleCallsSafe()
         {
-            var encoder = new ZlibEncoder(6, ZlibCompressionFormat.Deflate);
+            var encoder = new ZlibEncoder(CompressionLevel.Optimal, ZlibCompressionFormat.Deflate);
             encoder.Dispose();
             encoder.Dispose(); // Should not throw
         }
@@ -67,7 +67,7 @@ namespace System.IO.Compression
         [Fact]
         public void ZlibEncoder_Compress_AfterDispose_Throws()
         {
-            var encoder = new ZlibEncoder(6, ZlibCompressionFormat.Deflate);
+            var encoder = new ZlibEncoder(CompressionLevel.Optimal, ZlibCompressionFormat.Deflate);
             encoder.Dispose();
 
             byte[] buffer = new byte[100];
@@ -78,7 +78,7 @@ namespace System.IO.Compression
         [Fact]
         public void ZlibEncoder_Compress_AfterFinished_ReturnsDone()
         {
-            using var encoder = new ZlibEncoder(6, ZlibCompressionFormat.Deflate);
+            using var encoder = new ZlibEncoder(CompressionLevel.Optimal, ZlibCompressionFormat.Deflate);
             byte[] destination = new byte[ZlibEncoder.GetMaxCompressedLength(s_sampleData.Length)];
 
             // First compression with final block
@@ -95,7 +95,7 @@ namespace System.IO.Compression
         [Fact]
         public void ZlibEncoder_Reset_AllowsReuse()
         {
-            using var encoder = new ZlibEncoder(6, ZlibCompressionFormat.Deflate);
+            using var encoder = new ZlibEncoder(CompressionLevel.Optimal, ZlibCompressionFormat.Deflate);
             byte[] destination = new byte[ZlibEncoder.GetMaxCompressedLength(s_sampleData.Length)];
 
             // First compression
@@ -149,12 +149,11 @@ namespace System.IO.Compression
         }
 
         [Theory]
-        [InlineData(-1)] // Default
-        [InlineData(0)]  // No compression
-        [InlineData(1)]  // Best speed
-        [InlineData(6)]  // Default level
-        [InlineData(9)]  // Best compression
-        public void ZlibEncoder_CompressionLevels(int level)
+        [InlineData(CompressionLevel.Optimal)]      // Default - maps to level 6
+        [InlineData(CompressionLevel.NoCompression)] // No compression
+        [InlineData(CompressionLevel.Fastest)]      // Best speed - maps to level 1
+        [InlineData(CompressionLevel.SmallestSize)] // Best compression - maps to level 9
+        public void ZlibEncoder_CompressionLevels(CompressionLevel level)
         {
             using var encoder = new ZlibEncoder(level, ZlibCompressionFormat.Deflate);
             byte[] destination = new byte[ZlibEncoder.GetMaxCompressedLength(s_sampleData.Length)];
@@ -174,7 +173,7 @@ namespace System.IO.Compression
         [InlineData(ZLibCompressionStrategy.Fixed)]
         public void ZlibEncoder_CompressionStrategies(ZLibCompressionStrategy strategy)
         {
-            using var encoder = new ZlibEncoder(6, ZlibCompressionFormat.Deflate, strategy);
+            using var encoder = new ZlibEncoder(CompressionLevel.Optimal, ZlibCompressionFormat.Deflate, strategy);
             byte[] destination = new byte[ZlibEncoder.GetMaxCompressedLength(s_sampleData.Length)];
 
             OperationStatus status = encoder.Compress(s_sampleData, destination, out int consumed, out int written, isFinalBlock: true);
@@ -187,7 +186,7 @@ namespace System.IO.Compression
         [Fact]
         public void ZlibEncoder_Flush()
         {
-            using var encoder = new ZlibEncoder(6, ZlibCompressionFormat.Deflate);
+            using var encoder = new ZlibEncoder(CompressionLevel.Optimal, ZlibCompressionFormat.Deflate);
             byte[] destination = new byte[ZlibEncoder.GetMaxCompressedLength(s_sampleData.Length)];
 
             // Write some data without finalizing
@@ -207,7 +206,7 @@ namespace System.IO.Compression
         [Fact]
         public void ZlibEncoder_DestinationTooSmall()
         {
-            using var encoder = new ZlibEncoder(6, ZlibCompressionFormat.Deflate);
+            using var encoder = new ZlibEncoder(CompressionLevel.Optimal, ZlibCompressionFormat.Deflate);
             byte[] destination = new byte[5]; // Very small
 
             OperationStatus status = encoder.Compress(s_sampleData, destination, out int consumed, out int written, isFinalBlock: true);
@@ -220,7 +219,7 @@ namespace System.IO.Compression
         [Fact]
         public void ZlibEncoder_EmptySource()
         {
-            using var encoder = new ZlibEncoder(6, ZlibCompressionFormat.Deflate);
+            using var encoder = new ZlibEncoder(CompressionLevel.Optimal, ZlibCompressionFormat.Deflate);
             byte[] destination = new byte[100];
 
             OperationStatus status = encoder.Compress(ReadOnlySpan<byte>.Empty, destination, out int consumed, out int written, isFinalBlock: true);
@@ -416,7 +415,7 @@ namespace System.IO.Compression
             byte[] decompressed = new byte[s_sampleData.Length];
 
             // Compress
-            using (var encoder = new ZlibEncoder(6, format))
+            using (var encoder = new ZlibEncoder(CompressionLevel.Optimal, format))
             {
                 OperationStatus compressStatus = encoder.Compress(s_sampleData, compressed, out _, out int written, isFinalBlock: true);
                 Assert.Equal(OperationStatus.Done, compressStatus);
@@ -444,7 +443,7 @@ namespace System.IO.Compression
             byte[] compressed = new byte[ZlibEncoder.GetMaxCompressedLength(s_sampleData.Length)];
             byte[] decompressed = new byte[s_sampleData.Length];
 
-            bool compressSuccess = ZlibEncoder.TryCompress(s_sampleData, compressed, out int compressedSize, 6, format);
+            bool compressSuccess = ZlibEncoder.TryCompress(s_sampleData, compressed, out int compressedSize, CompressionLevel.Optimal, format);
             Assert.True(compressSuccess);
 
             compressed = compressed.AsSpan(0, compressedSize).ToArray();
@@ -490,7 +489,7 @@ namespace System.IO.Compression
             byte[] allCompressed = new byte[ZlibEncoder.GetMaxCompressedLength(totalSize)];
             int totalCompressed = 0;
 
-            using var encoder = new ZlibEncoder(6, ZlibCompressionFormat.Deflate);
+            using var encoder = new ZlibEncoder(CompressionLevel.Optimal, ZlibCompressionFormat.Deflate);
 
             // Compress in chunks
             for (int i = 0; i < totalSize; i += chunkSize)
@@ -600,7 +599,7 @@ namespace System.IO.Compression
             byte[] zeros = new byte[10000];
             byte[] compressed = new byte[ZlibEncoder.GetMaxCompressedLength(zeros.Length)];
 
-            using var encoder = new ZlibEncoder(9, ZlibCompressionFormat.Deflate);
+            using var encoder = new ZlibEncoder(CompressionLevel.SmallestSize, ZlibCompressionFormat.Deflate);
             encoder.Compress(zeros, compressed, out _, out int written, isFinalBlock: true);
 
             // Should compress to much smaller size
@@ -615,7 +614,7 @@ namespace System.IO.Compression
             new Random(42).NextBytes(random);
             byte[] compressed = new byte[ZlibEncoder.GetMaxCompressedLength(random.Length)];
 
-            using var encoder = new ZlibEncoder(9, ZlibCompressionFormat.Deflate);
+            using var encoder = new ZlibEncoder(CompressionLevel.SmallestSize, ZlibCompressionFormat.Deflate);
             encoder.Compress(random, compressed, out _, out int written, isFinalBlock: true);
 
             // Random data might even expand slightly
@@ -638,7 +637,7 @@ namespace System.IO.Compression
             byte[] compressed = new byte[ZlibEncoder.GetMaxCompressedLength(size) + 50];
             byte[] decompressed = new byte[Math.Max(size, 1)];
 
-            using var encoder = new ZlibEncoder(6, ZlibCompressionFormat.Deflate);
+            using var encoder = new ZlibEncoder(CompressionLevel.Optimal, ZlibCompressionFormat.Deflate);
             var compressStatus = encoder.Compress(original, compressed, out _, out int compressedSize, isFinalBlock: true);
             Assert.Equal(OperationStatus.Done, compressStatus);
 
@@ -655,7 +654,7 @@ namespace System.IO.Compression
         [Fact]
         public void MultipleResets_Work()
         {
-            using var encoder = new ZlibEncoder(6, ZlibCompressionFormat.Deflate);
+            using var encoder = new ZlibEncoder(CompressionLevel.Optimal, ZlibCompressionFormat.Deflate);
             byte[] destination = new byte[ZlibEncoder.GetMaxCompressedLength(s_sampleData.Length)];
 
             for (int i = 0; i < 5; i++)
@@ -673,7 +672,7 @@ namespace System.IO.Compression
         private static byte[] CompressData(byte[] data, ZlibCompressionFormat format)
         {
             byte[] compressed = new byte[ZlibEncoder.GetMaxCompressedLength(data.Length)];
-            using var encoder = new ZlibEncoder(6, format);
+            using var encoder = new ZlibEncoder(CompressionLevel.Optimal, format);
             encoder.Compress(data, compressed, out _, out int written, isFinalBlock: true);
             return compressed.AsSpan(0, written).ToArray();
         }

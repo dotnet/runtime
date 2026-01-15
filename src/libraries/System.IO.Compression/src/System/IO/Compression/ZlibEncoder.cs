@@ -17,18 +17,18 @@ namespace System.IO.Compression
         private bool _finished;
 
         // Store construction parameters for Reset()
-        private readonly int _compressionLevel;
+        private readonly CompressionLevel _compressionLevel;
         private readonly int _windowBits;
         private readonly ZLibCompressionStrategy _strategy;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ZlibEncoder"/> class using the specified compression level and format.
         /// </summary>
-        /// <param name="compressionLevel">A number representing compression level. -1 is default, 0 is no compression, 1 is best speed, 9 is best compression.</param>
+        /// <param name="compressionLevel">The compression level to use.</param>
         /// <param name="format">The compression format to use.</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="compressionLevel"/> is not between -1 and 9.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="compressionLevel"/> is not a valid <see cref="CompressionLevel"/> value.</exception>
         /// <exception cref="IOException">Failed to create the <see cref="ZlibEncoder"/> instance.</exception>
-        public ZlibEncoder(int compressionLevel, ZlibCompressionFormat format)
+        public ZlibEncoder(CompressionLevel compressionLevel, ZlibCompressionFormat format)
             : this(compressionLevel, format, ZLibCompressionStrategy.Default)
         {
         }
@@ -36,12 +36,12 @@ namespace System.IO.Compression
         /// <summary>
         /// Initializes a new instance of the <see cref="ZlibEncoder"/> class using the specified compression level, format, and strategy.
         /// </summary>
-        /// <param name="compressionLevel">A number representing compression level. -1 is default, 0 is no compression, 1 is best speed, 9 is best compression.</param>
+        /// <param name="compressionLevel">The compression level to use.</param>
         /// <param name="format">The compression format to use.</param>
         /// <param name="strategy">The compression strategy to use.</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="compressionLevel"/> is not between -1 and 9.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="compressionLevel"/> is not a valid <see cref="CompressionLevel"/> value.</exception>
         /// <exception cref="IOException">Failed to create the <see cref="ZlibEncoder"/> instance.</exception>
-        public ZlibEncoder(int compressionLevel, ZlibCompressionFormat format, ZLibCompressionStrategy strategy)
+        public ZlibEncoder(CompressionLevel compressionLevel, ZlibCompressionFormat format, ZLibCompressionStrategy strategy)
         {
             ValidateCompressionLevel(compressionLevel);
 
@@ -52,7 +52,7 @@ namespace System.IO.Compression
             _strategy = strategy;
 
             _state = ZLibNative.ZLibStreamHandle.CreateForDeflate(
-                (ZLibNative.CompressionLevel)_compressionLevel,
+                GetZLibNativeCompressionLevel(_compressionLevel),
                 _windowBits,
                 ZLibNative.Deflate_DefaultMemLevel,
                 (ZLibNative.CompressionStrategy)_strategy);
@@ -75,19 +75,29 @@ namespace System.IO.Compression
             _strategy = options.CompressionStrategy;
 
             _state = ZLibNative.ZLibStreamHandle.CreateForDeflate(
-                (ZLibNative.CompressionLevel)_compressionLevel,
+                GetZLibNativeCompressionLevel(_compressionLevel),
                 _windowBits,
                 ZLibNative.Deflate_DefaultMemLevel,
                 (ZLibNative.CompressionStrategy)_strategy);
         }
 
-        private static void ValidateCompressionLevel(int compressionLevel)
+        private static void ValidateCompressionLevel(CompressionLevel compressionLevel)
         {
-            if (compressionLevel < -1 || compressionLevel > 9)
+            if (compressionLevel < CompressionLevel.Optimal || compressionLevel > CompressionLevel.SmallestSize)
             {
-                throw new ArgumentOutOfRangeException(nameof(compressionLevel), SR.Format(SR.ZlibEncoder_CompressionLevel, compressionLevel, -1, 9));
+                throw new ArgumentOutOfRangeException(nameof(compressionLevel));
             }
         }
+
+        private static ZLibNative.CompressionLevel GetZLibNativeCompressionLevel(CompressionLevel compressionLevel) =>
+            compressionLevel switch
+            {
+                CompressionLevel.Optimal => ZLibNative.CompressionLevel.DefaultCompression,
+                CompressionLevel.Fastest => ZLibNative.CompressionLevel.BestSpeed,
+                CompressionLevel.NoCompression => ZLibNative.CompressionLevel.NoCompression,
+                CompressionLevel.SmallestSize => ZLibNative.CompressionLevel.BestCompression,
+                _ => throw new ArgumentOutOfRangeException(nameof(compressionLevel)),
+            };
 
         private static int GetWindowBits(ZlibCompressionFormat format)
         {
@@ -236,7 +246,7 @@ namespace System.IO.Compression
             // Dispose the old state and create a new one
             _state?.Dispose();
             _state = ZLibNative.ZLibStreamHandle.CreateForDeflate(
-                (ZLibNative.CompressionLevel)_compressionLevel,
+                GetZLibNativeCompressionLevel(_compressionLevel),
                 _windowBits,
                 ZLibNative.Deflate_DefaultMemLevel,
                 (ZLibNative.CompressionStrategy)_strategy);
@@ -251,7 +261,7 @@ namespace System.IO.Compression
         /// <returns><see langword="true"/> if the compression operation was successful; <see langword="false"/> otherwise.</returns>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
-            return TryCompress(source, destination, out bytesWritten, compressionLevel: -1, ZlibCompressionFormat.Deflate);
+            return TryCompress(source, destination, out bytesWritten, CompressionLevel.Optimal, ZlibCompressionFormat.Deflate);
         }
 
         /// <summary>
@@ -260,10 +270,10 @@ namespace System.IO.Compression
         /// <param name="source">A read-only span of bytes containing the source data to compress.</param>
         /// <param name="destination">When this method returns, a span of bytes where the compressed data is stored.</param>
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination"/>.</param>
-        /// <param name="compressionLevel">A number representing compression level. -1 is default, 0 is no compression, 1 is best speed, 9 is best compression.</param>
+        /// <param name="compressionLevel">The compression level to use.</param>
         /// <param name="format">The compression format to use.</param>
         /// <returns><see langword="true"/> if the compression operation was successful; <see langword="false"/> otherwise.</returns>
-        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int compressionLevel, ZlibCompressionFormat format)
+        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, CompressionLevel compressionLevel, ZlibCompressionFormat format)
         {
             ValidateCompressionLevel(compressionLevel);
 
