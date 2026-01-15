@@ -7424,7 +7424,7 @@ void DacDbiInterfaceImpl::GetAsyncLocals(
     TADDR nativeCodeStartAddr;
     if (codeAddr != (TADDR)NULL)
     {
-        NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(codeAddr);
+        NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(static_cast<PCODE>(codeAddr));
         if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == (PCODE)NULL)
         {
             return;
