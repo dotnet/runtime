@@ -322,7 +322,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         {
             if (!tree->gtOverflow())
             {
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
                 return nullptr;
 #else
                 if (!varTypeIsLong(dstType))
@@ -330,8 +330,6 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     return nullptr;
                 }
 
-// On Wasm, we have direct support for double->(u)long casts using the saturating instructions.
-#ifndef TARGET_WASM
                 switch (dstType)
                 {
                     case TYP_LONG:
@@ -341,8 +339,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     default:
                         unreached();
                 }
-#endif
-#endif // TARGET_64BIT
+#endif // TARGET_64BIT || TARGET_WASM
             }
             else
             {
