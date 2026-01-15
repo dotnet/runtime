@@ -129,13 +129,10 @@ void Compiler::gsUnionAssignGroups(unsigned lclNum1, unsigned lclNum2, GenTree* 
     }
 #endif
 
-    //
-    // Add lvAssignDef and lclNum to a common assign group
     if (info1.assignGroup != nullptr)
     {
         if (info2.assignGroup != nullptr)
         {
-            // OR both bit vector
             info1.assignGroup->bitVectOr(info2.assignGroup);
         }
         else
@@ -157,7 +154,7 @@ void Compiler::gsUnionAssignGroups(unsigned lclNum1, unsigned lclNum2, GenTree* 
     {
         FixedBitVect* bv = FixedBitVect::bitVectInit(lvaCount, this);
 
-        // Neither of them has an assign group yet.  Make a new one.
+        // Neither of them has an assign group yet. Make a new one.
         info1.assignGroup = bv;
         info2.assignGroup = bv;
         bv->bitVectSet(lclNum1);
@@ -420,7 +417,7 @@ void Compiler::gsParamsToShadows()
     if (compJmpOpUsed)
     {
         // There could be more than one basic block ending with a "Jmp" type tail call.
-        // We would have to insert stores in all such blocks, just before GT_JMP stmnt.
+        // We have to insert stores in all such blocks, just before GT_JMP stmnt.
         for (BasicBlock* const block : Blocks())
         {
             if (!block->KindIs(BBJ_RETURN))
