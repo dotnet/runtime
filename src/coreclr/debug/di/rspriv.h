@@ -1064,55 +1064,50 @@ protected:
 #define COM_METHOD  HRESULT STDMETHODCALLTYPE
 
 typedef enum {
-    enumCordbUnknown,       //  0
-    enumCordb,              //  1   1  [1]x1
-    enumCordbProcess,       //  2   1  [1]x1
-    enumCordbAppDomain,     //  3   1  [1]x1
-    enumCordbAssembly,      //  4
-    enumCordbModule,        //  5   15 [27-38,55-57]x1
-    enumCordbClass,         //  6
-    enumCordbFunction,      //  7
-    enumCordbThread,        //  8   2  [4,7]x1
-    enumCordbCode,          //  9
-    enumCordbChain,         //  10
-    enumCordbChainEnum,     //  11
-    enumCordbContext,       //  12
-    enumCordbFrame,         //  13
-    enumCordbFrameEnum,     //  14
-    enumCordbValueEnum,     //  15
-    enumCordbRegisterSet,   //  16
-    enumCordbJITILFrame,    //  17
-    enumCordbBreakpoint,    //  18
-    enumCordbStepper,       //  19
-    enumCordbValue,         //  20
-    enumCordbEnCSnapshot,   //  21
-    enumCordbEval,          //  22
-    enumCordbUnmanagedThread,// 23
-    // unused,              //  24
-    // unused,              //  25
-    // unused,              //  26
-    // unused,              //  27
-    // unused,              //  28
-    enumCordbEnumFilter,    //  29
-    enumCordbEnCErrorInfo,  //  30
-    enumCordbEnCErrorInfoEnum,//31
-    enumCordbUnmanagedEvent,//  32
-    enumCordbWin32EventThread,//33
-    enumCordbRCEventThread, //  34
-    enumCordbNativeFrame,   //  35
-    enumCordbObjectValue,   //  36
-    enumCordbType,          //  37
-    enumCordbNativeCode,    //  38
-    enumCordbILCode,        //  39
-    enumCordbEval2,         //  40
-    enumCordbMDA,           //  41
-    enumCordbHashTableEnum, //  42
-    enumCordbCodeEnum,      //  43
-    enumCordbStackWalk,     //  44
-    enumCordbEnumerator,    //  45
-    enumCordbHeap,          //  48
-    enumCordbHeapSegments,  //  47
-    enumMaxDerived,         //
+    enumCordbUnknown,
+    enumCordb,
+    enumCordbProcess,
+    enumCordbAppDomain,
+    enumCordbAssembly,
+    enumCordbModule,
+    enumCordbClass,
+    enumCordbFunction,
+    enumCordbThread,
+    enumCordbCode,
+    enumCordbChain,
+    enumCordbChainEnum,
+    enumCordbContext,
+    enumCordbFrame,
+    enumCordbFrameEnum,
+    enumCordbValueEnum,
+    enumCordbRegisterSet,
+    enumCordbJITILFrame,
+    enumCordbBreakpoint,
+    enumCordbStepper,
+    enumCordbValue,
+    enumCordbEnCSnapshot,
+    enumCordbEval,
+    enumCordbUnmanagedThread,
+    enumCordbEnumFilter,
+    enumCordbEnCErrorInfo,
+    enumCordbEnCErrorInfoEnum,
+    enumCordbUnmanagedEvent,
+    enumCordbWin32EventThread,
+    enumCordbRCEventThread,
+    enumCordbNativeFrame,
+    enumCordbObjectValue,
+    enumCordbType,
+    enumCordbNativeCode,
+    enumCordbILCode,
+    enumCordbEval2,
+    enumCordbMDA,
+    enumCordbHashTableEnum,
+    enumCordbCodeEnum,
+    enumCordbStackWalk,
+    enumCordbEnumerator,
+    enumCordbHeap,
+    enumCordbHeapSegments,
+    enumMaxDerived,
     enumMaxThis = 1024
 } enumCordbDerived;
 
