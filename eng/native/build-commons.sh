@@ -93,7 +93,7 @@ build_native()
 
         # set default macCatalyst deployment target
         # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-        cmakeArgs="-DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_OSX_SYSROOT=macosx -DCMAKE_SYSTEM_VARIANT=maccatalyst -DCMAKE_OSX_DEPLOYMENT_TARGET=15.2 $cmakeArgs"
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_OSX_SYSROOT=macosx -DCMAKE_SYSTEM_VARIANT=maccatalyst -DCMAKE_OSX_DEPLOYMENT_TARGET=17.0 $cmakeArgs"
     fi
 
     if [[ "$targetOS" == android || "$targetOS" == linux-bionic ]]; then
