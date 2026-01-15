@@ -2316,6 +2316,7 @@ MAIN_LOOP:
 
                         targetMethod = pILTargetMethod;
                         ip += 4;
+                        isTailcall = false;
                         goto CALL_INTERP_METHOD;
                     }
 
@@ -2340,6 +2341,7 @@ MAIN_LOOP:
                         LOCAL_VAR(callArgsOffset, void*) = helperArg;
                         targetMethod = pILTargetMethod;
                         ip += 4;
+                        isTailcall = false;
                         goto CALL_INTERP_METHOD;
                     }
 
@@ -2367,6 +2369,7 @@ MAIN_LOOP:
 
                         targetMethod = pILTargetMethod;
                         ip += 5;
+                        isTailcall = false;
                         goto CALL_INTERP_METHOD;
                     }
 
@@ -2394,6 +2397,7 @@ MAIN_LOOP:
 
                         targetMethod = pILTargetMethod;
                         ip += 5;
+                        isTailcall = false;
                         goto CALL_INTERP_METHOD;
                     }
 
@@ -2420,6 +2424,7 @@ MAIN_LOOP:
 
                         targetMethod = pILTargetMethod;
                         ip += 5;
+                        isTailcall = false;
                         goto CALL_INTERP_METHOD;
                     }
 
@@ -2448,6 +2453,7 @@ MAIN_LOOP:
 
                         targetMethod = pILTargetMethod;
                         ip += 6;
+                        isTailcall = false;
                         goto CALL_INTERP_METHOD;
                     }
 
@@ -2476,6 +2482,7 @@ MAIN_LOOP:
 
                         targetMethod = pILTargetMethod;
                         ip += 6;
+                        isTailcall = false;
                         goto CALL_INTERP_METHOD;
                     }
 
@@ -2503,6 +2510,7 @@ MAIN_LOOP:
 
                         targetMethod = pILTargetMethod;
                         ip += 5;
+                        isTailcall = false;
                         goto CALL_INTERP_METHOD;
                     }
 
@@ -2532,6 +2540,7 @@ MAIN_LOOP:
 
                         targetMethod = pILTargetMethod;
                         ip += 6;
+                        isTailcall = false;
                         goto CALL_INTERP_METHOD;
                     }
 
@@ -2561,6 +2570,7 @@ MAIN_LOOP:
 
                         targetMethod = pILTargetMethod;
                         ip += 5;
+                        isTailcall = false;
                         goto CALL_INTERP_METHOD;
                     }
 
@@ -2588,6 +2598,7 @@ MAIN_LOOP:
 
                         targetMethod = pILTargetMethod;
                         ip += 4;
+                        isTailcall = false;
                         goto CALL_INTERP_METHOD;
                     }
 
@@ -2613,6 +2624,7 @@ MAIN_LOOP:
 
                         targetMethod = pILTargetMethod;
                         ip += 4;
+                        isTailcall = false;
                         goto CALL_INTERP_METHOD;
                     }
 
@@ -2641,6 +2653,7 @@ MAIN_LOOP:
 
                         targetMethod = pILTargetMethod;
                         ip += 5;
+                        isTailcall = false;
                         goto CALL_INTERP_METHOD;
                     }
 
@@ -3199,6 +3212,7 @@ CALL_INTERP_METHOD:
                         targetMethod = pILTargetMethod;
                         ip += 5;
 
+                        isTailcall = false;
                         goto CALL_INTERP_METHOD;
                     }
 
@@ -3243,6 +3257,7 @@ CALL_INTERP_METHOD:
                         targetMethod = pILTargetMethod;
                         ip += 6;
 
+                        isTailcall = false;
                         goto CALL_INTERP_METHOD;
                     }
 
@@ -3914,6 +3929,7 @@ do                                                                      \
                         pInterpreterFrame->SetContinuation(NULL);
                         targetMethod = pILTargetMethod;
                         ip += ipAdjust;
+                        isTailcall = false;
                         goto CALL_INTERP_METHOD;
                     }
 
