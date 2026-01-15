@@ -4475,9 +4475,11 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             {
                 Range peeledOffsetRng = Range(Limit(Limit::keConstant, peeledOffset));
                 Range peeledOp1Rng    = Range(Limit(Limit::keUnknown));
-                if (RangeCheck::TryGetRangeFromAssertions(this, peeledOp1VN, assertions, &peeledOp1Rng))
+                if (RangeCheck::TryGetRangeFromAssertions(this, peeledOp1VN, assertions, &peeledOp1Rng) &&
+                    !RangeOps::DoesAddOverflow(peeledOp1Rng, peeledOffsetRng))
                 {
-                    // Subtract handles overflow internally.
+                    // We don't have to check overflow for Subtract because rng2 will
+                    // have keUnknown for its limits if overflow happens.
                     rng2 = RangeOps::Subtract(rng2, peeledOffsetRng);
 
                     RangeOps::RelationKind kind =
