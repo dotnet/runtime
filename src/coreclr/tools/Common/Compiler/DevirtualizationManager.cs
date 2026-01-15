@@ -66,6 +66,7 @@ namespace ILCompiler
         {
             devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN;
 
+            MethodDesc originalDeclMethod = declMethod;
             MethodDesc impl;
 
             if (declMethod.OwningType.IsInterface)
@@ -103,11 +104,13 @@ namespace ILCompiler
 
                 if (impl != null)
                 {
-                    // If we end up with a generic method definition, we need to bring the instantiation back
-                    // so that we can try devirtualizing this generic virtual method
-                    if (impl.IsGenericMethodDefinition && declMethod.HasInstantiation)
+                    // We need to bring the original instantiation back so that we can still try devirtualizing
+                    // when the method is a generic virtual method
+                    if (originalDeclMethod.HasInstantiation)
                     {
-                        impl = impl.MakeInstantiatedMethod(declMethod.Instantiation);
+                        // We may end up with a method that has subsituted type parameters, so we need to instantiate
+                        // on the method definition
+                        impl = impl.GetMethodDefinition().MakeInstantiatedMethod(originalDeclMethod.Instantiation);
                     }
 
                     impl = implType.FindVirtualFunctionTargetMethodOnObjectType(impl);
@@ -187,34 +190,40 @@ namespace ILCompiler
 
                 impl = implType.FindVirtualFunctionTargetMethodOnObjectType(declMethod);
 
-                // If we end up with a generic method definition, we need to bring the instantiation back
-                // so that we can try devirtualizing this generic virtual method
-                if (impl.IsGenericMethodDefinition && declMethod.HasInstantiation)
+                if (impl != null)
                 {
-                    impl = impl.MakeInstantiatedMethod(declMethod.Instantiation);
-                }
-
-                if (impl != null && (impl != declMethod))
-                {
-                    MethodDesc slotDefiningMethodImpl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(impl);
-                    MethodDesc slotDefiningMethodDecl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(declMethod);
-
-                    if (slotDefiningMethodImpl != slotDefiningMethodDecl)
+                    // We need to bring the original instantiation back so that we can still try devirtualizing
+                    // when the method is a generic virtual method
+                    if (originalDeclMethod.HasInstantiation)
                     {
-                        // If the derived method's slot does not match the vtable slot,
-                        // bail on devirtualization, as the method was installed into
-                        // the vtable slot via an explicit override and even if the
-                        // method is final, the slot may not be.
-                        //
-                        // Note the jit could still safely devirtualize if it had an exact
-                        // class, but such cases are likely rare.
-                        devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_SLOT;
-                        impl = null;
+                        // We may end up with a method that has subsituted type parameters, so we need to instantiate
+                        // on the method definition
+                        impl = impl.GetMethodDefinition().MakeInstantiatedMethod(originalDeclMethod.Instantiation);
+                    }
+
+                    if (impl != declMethod)
+                    {
+                        MethodDesc slotDefiningMethodImpl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(impl.GetMethodDefinition());
+                        MethodDesc slotDefiningMethodDecl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(declMethod);
+
+                        if (slotDefiningMethodImpl != slotDefiningMethodDecl)
+                        {
+                            // If the derived method's slot does not match the vtable slot,
+                            // bail on devirtualization, as the method was installed into
+                            // the vtable slot via an explicit override and even if the
+                            // method is final, the slot may not be.
+                            //
+                            // Note the jit could still safely devirtualize if it had an exact
+                            // class, but such cases are likely rare.
+                            devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_SLOT;
+                            impl = null;
+                        }
+
                     }
                 }
             }
 
-            if (impl != null && impl.HasInstantiation && (impl.IsGenericMethodDefinition || declMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).IsCanonicalMethod(CanonicalFormKind.Specific)))
+            if (impl != null && impl.HasInstantiation && originalDeclMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).IsCanonicalMethod(CanonicalFormKind.Specific))
             {
                 // We don't support devirtualization of shared generic virtual methods yet.
                 devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
