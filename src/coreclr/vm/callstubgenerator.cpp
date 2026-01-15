@@ -2890,10 +2890,6 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
         }
     }
 
-#ifdef TARGET_ARM64
-    bool isSwiftCallConv = false;
-#endif
-
     if (hasUnmanagedCallConv)
     {
         ComputeCallStubWorker<PInvokeArgIterator>(hasUnmanagedCallConv, unmanagedCallConv, sig, pRoutines, pMD);
@@ -2909,6 +2905,9 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 {
     bool unmanagedThisCallConv = false;
     bool rewriteMetaSigFromExplicitThisToHasThis = false;
+#ifdef TARGET_ARM64
+    bool isSwiftCallConv = false;
+#endif
 
     if (hasUnmanagedCallConv)
     {
