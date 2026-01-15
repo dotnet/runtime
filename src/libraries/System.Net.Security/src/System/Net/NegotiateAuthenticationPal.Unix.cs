@@ -776,7 +776,8 @@ namespace System.Net
         {
             try
             {
-                return Interop.NetSecurityNative.IsNtlmInstalled();
+                _ = Interop.NetSecurityNative.IsNtlmInstalled();
+                return true;
             }
             catch (Exception e) when (e is EntryPointNotFoundException || e is DllNotFoundException || e is TypeInitializationException)
             {

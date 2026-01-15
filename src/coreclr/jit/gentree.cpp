@@ -1534,6 +1534,7 @@ bool CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, We
 {
     switch (arg)
     {
+#if HAS_FIXED_REGISTER_SET
 #if defined(TARGET_X86) || defined(TARGET_ARM)
         // The x86 and arm32 CORINFO_HELP_INIT_PINVOKE_FRAME helpers have a custom calling convention.
         case WellKnownArg::PInvokeFrame:
@@ -1598,7 +1599,7 @@ bool CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, We
 
             break;
 
-#ifdef REG_DISPATCH_INDIRECT_CELL_ADDR
+#ifdef REG_DISPATCH_INDIRECT_CALL_ADDR
         case WellKnownArg::DispatchIndirectCallTarget:
             *reg = REG_DISPATCH_INDIRECT_CALL_ADDR;
             return true;
@@ -1615,6 +1616,7 @@ bool CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, We
             *reg = REG_SWIFT_SELF;
             return true;
 #endif // SWIFT_SUPPORT
+#endif // HAS_FIXED_REGISTER_SET
 
         case WellKnownArg::StackArrayLocal:
         case WellKnownArg::AsyncExecutionContext:
@@ -2367,16 +2369,50 @@ int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
 //                              is devirtualized.
 //
 // Arguments:
-//     compiler - the compiler instance so that we can call eeFindHelper
+//     compiler    - [In]  the compiler instance so that we can call eeFindHelper
+//     pMethHandle - [Out] the method handle if the call is a devirtualization candidate
 //
 // Return Value:
 //     Returns true if this GT_CALL node is a devirtualization candidate.
 //
-bool GenTreeCall::IsDevirtualizationCandidate(Compiler* compiler) const
+bool GenTreeCall::IsDevirtualizationCandidate(Compiler* compiler, CORINFO_METHOD_HANDLE* pMethHandle) const
 {
-    return IsVirtual() ||
-           (gtCallType == CT_INDIRECT && (gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
-                                          gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_GVMLOOKUP_FOR_SLOT)));
+    CORINFO_METHOD_HANDLE methHandleToDevirt = NO_METHOD_HANDLE;
+    bool                  isDevirtCandidate  = false;
+
+    if (IsVirtual() && gtCallType == CT_USER_FUNC)
+    {
+        methHandleToDevirt = gtCallMethHnd;
+        isDevirtCandidate  = true;
+    }
+    else if (IsGenericVirtual(compiler) && (JitConfig.JitEnableGenericVirtualDevirtualization() != 0))
+    {
+        GenTree* runtimeMethHndNode =
+            gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle)->GetNode();
+        assert(runtimeMethHndNode != nullptr);
+        switch (runtimeMethHndNode->OperGet())
+        {
+            case GT_RUNTIMELOOKUP:
+                methHandleToDevirt = runtimeMethHndNode->AsRuntimeLookup()->GetMethodHandle();
+                isDevirtCandidate  = true;
+                break;
+            case GT_CNS_INT:
+                methHandleToDevirt = CORINFO_METHOD_HANDLE(runtimeMethHndNode->AsIntCon()->gtCompileTimeHandle);
+                isDevirtCandidate  = true;
+                break;
+            default:
+                // Unable to get method handle for devirtualization.
+                // This can happen if the method handle is not an RUNTIMELOOKUP or CNS_INT for generic virtuals,
+                break;
+        }
+    }
+
+    if (pMethHandle)
+    {
+        *pMethHandle = methHandleToDevirt;
+    }
+
+    return isDevirtCandidate;
 }
 
 //-------------------------------------------------------------------------
@@ -5164,9 +5200,40 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             case GT_CNS_LNG:
             case GT_CNS_INT:
-                costEx = 1;
-                costSz = 4;
+            {
+                GenTreeIntConCommon* con            = tree->AsIntConCommon();
+                bool                 iconNeedsReloc = con->ImmedValNeedsReloc(this);
+                bool                 addrNeedsReloc = con->AddrNeedsReloc(this);
+                ssize_t              imm            = static_cast<ssize_t>(con->LngValue());
+                emitAttr             size           = EA_SIZE(emitActualTypeSize(tree));
+
+                if (iconNeedsReloc || addrNeedsReloc)
+                {
+                    // auipc + addi
+                    costSz = 8;
+                    costEx = 2;
+                }
+                else
+                {
+                    int instructionCount = GetEmitter()->emitLoadImmediate<false>(size, REG_NA, imm);
+
+                    assert(instructionCount != 0);
+
+                    if (instructionCount == -1)
+                    {
+                        // Cannot emit code in a 5 instruction sequence
+                        // Create a 8-byte constant(8) and load it with auipc(4) + ld(4)
+                        costSz = 16;
+                        costEx = 1 + IND_COST_EX;
+                    }
+                    else
+                    {
+                        costSz = 4 * instructionCount;
+                        costEx = instructionCount;
+                    }
+                }
                 goto COMMON_CNS;
+            }
 #elif defined(TARGET_WASM)
             case GT_CNS_STR:
                 costEx = IND_COST_EX + 2;
@@ -6751,9 +6818,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_START_NONGC:
         case GT_START_PREEMPTGC:
         case GT_PROF_HOOK:
-#if defined(FEATURE_EH_WINDOWS_X86)
-        case GT_END_LFIN:
-#endif // FEATURE_EH_WINDOWS_X86
         case GT_PHI_ARG:
         case GT_JMPTABLE:
         case GT_PHYSREG:
@@ -9622,9 +9686,6 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                 copy = new (this, oper) GenTree(oper, tree->gtType);
                 goto DONE;
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-            case GT_END_LFIN:
-#endif // FEATURE_EH_WINDOWS_X86
             case GT_JMP:
             case GT_RECORD_ASYNC_RESUME:
             case GT_ASYNC_RESUME_INFO:
@@ -10396,9 +10457,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_START_NONGC:
         case GT_START_PREEMPTGC:
         case GT_PROF_HOOK:
-#if defined(FEATURE_EH_WINDOWS_X86)
-        case GT_END_LFIN:
-#endif // FEATURE_EH_WINDOWS_X86
         case GT_PHI_ARG:
         case GT_JMPTABLE:
         case GT_PHYSREG:
@@ -11906,12 +11964,6 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
                 ilName = "OutArgs";
             }
 #endif // FEATURE_FIXED_OUT_ARGS
-#if defined(FEATURE_EH_WINDOWS_X86)
-            else if (lclNum == lvaShadowSPslotsVar)
-            {
-                ilName = "EHSlots";
-            }
-#endif // FEATURE_EH_WINDOWS_X86
 #ifdef JIT32_GCENCODER
             else if (lclNum == lvaLocAllocSPvar)
             {
@@ -12447,12 +12499,6 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                                                 buffer, sizeof(buffer)));
         }
         break;
-
-#if defined(FEATURE_EH_WINDOWS_X86)
-        case GT_END_LFIN:
-            printf(" ehID=%d", tree->AsVal()->gtVal1);
-            break;
-#endif // FEATURE_EH_WINDOWS_X86
 
             // Vanilla leaves. No qualifying information available. So do nothing
 
@@ -13426,8 +13472,22 @@ void Compiler::gtPrintABILocation(const ABIPassingInformation& abiInfo, char** b
                 }
             }
 #else  // !HAS_FIXED_REGISTER_SET
-       // TODO-WASM: refactor this code to not rely on register masks.
-            NYI_WASM("gtPrintABILocation");
+            regNumber reg = segment.GetRegister();
+            if (firstReg == REG_NA)
+            {
+                firstReg = reg;
+                lastReg  = reg;
+            }
+            else if (REG_NEXT(lastReg) == reg)
+            {
+                lastReg = reg;
+            }
+            else
+            {
+                printRegs();
+                firstReg = reg;
+                lastReg  = reg;
+            }
 #endif // !HAS_FIXED_REGISTER_SET
         }
         else
@@ -13827,6 +13887,50 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
                 return result;
             }
             break;
+        }
+
+        case NI_System_Enum_Equals:
+        {
+            assert(call->AsCall()->gtArgs.CountUserArgs() == 2);
+            GenTree* arg0 = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
+            GenTree* arg1 = call->AsCall()->gtArgs.GetArgByIndex(1)->GetNode();
+
+            bool isArg0Exact;
+            bool isArg1Exact;
+            bool isNonNull; // Unused here.
+
+            CORINFO_CLASS_HANDLE cls0 = gtGetClassHandle(arg0, &isArg0Exact, &isNonNull);
+            CORINFO_CLASS_HANDLE cls1 = gtGetClassHandle(arg1, &isArg1Exact, &isNonNull);
+            if ((cls0 != cls1) || (cls0 == NO_CLASS_HANDLE) || !isArg0Exact || !isArg1Exact)
+            {
+                break;
+            }
+
+            assert(info.compCompHnd->isEnum(cls1, nullptr) == TypeCompareState::Must);
+
+            CorInfoType corTyp = info.compCompHnd->getTypeForPrimitiveValueClass(cls1);
+            if (corTyp == CORINFO_TYPE_UNDEF)
+            {
+                break;
+            }
+
+            var_types typ = JITtype2varType(corTyp);
+            if (!varTypeIsIntegral(typ))
+            {
+                // Ignore non-integral enums e.g. enums based on float/double
+                break;
+            }
+
+            // Unbox both integral arguments and compare their underlying values
+            GenTree* offset  = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
+            GenTree* addr0   = gtNewOperNode(GT_ADD, TYP_BYREF, arg0, offset);
+            GenTree* addr1   = gtNewOperNode(GT_ADD, TYP_BYREF, arg1, gtCloneExpr(offset));
+            GenTree* cmpNode = gtNewOperNode(GT_EQ, TYP_INT, gtNewIndir(typ, addr0), gtNewIndir(typ, addr1));
+            JITDUMP("Optimized Enum.Equals call to comparison of underlying values:\n");
+            DISPTREE(cmpNode);
+            JITDUMP("\n");
+
+            return gtFoldExpr(cmpNode);
         }
 
         case NI_System_Type_op_Equality:

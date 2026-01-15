@@ -3,59 +3,63 @@
 
 import type { DotnetHostBuilder, JsModuleExports, EmscriptenModuleInternal } from "./types";
 
-import { dotnetAssert, dotnetGetInternals, dotnetBrowserHostExports, Module } from "./cross-module";
-import { findResources, isNodeHosted, isShellHosted } from "./bootstrap";
+import { dotnetAssert, dotnetInternals, dotnetBrowserHostExports, Module } from "./cross-module";
+import { findResources, isNodeHosted, isShellHosted, validateWasmFeatures } from "./bootstrap";
 import { exit, runtimeState } from "./exit";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { getIcuResourceName } from "./icu";
-import { getLoaderConfig } from "./config";
-import { fetchDll, fetchIcu, fetchVfs, fetchWasm, loadJSModule, nativeModulePromiseController } from "./assets";
+import { loaderConfig } from "./config";
+import { fetchDll, fetchIcu, fetchPdb, fetchVfs, fetchWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded } from "./assets";
 
 const runMainPromiseController = createPromiseCompletionSource<number>();
 
-// WASM-TODO: retry logic
-// WASM-TODO: throttling logic
-// WASM-TODO: Module.onDownloadResourceProgress
-// WASM-TODO: invokeLibraryInitializers
 // WASM-TODO: webCIL
 // WASM-TODO: downloadOnly - blazor render mode auto pre-download. Really no start.
-// WASM-TODO: fail fast for missing WASM features - SIMD, EH, BigInt detection
-// WASM-TODO: Module.locateFile
-// WASM-TODO: loadBootResource
 // WASM-TODO: loadAllSatelliteResources
 // WASM-TODO: runtimeOptions
 // WASM-TODO: debugLevel
 // WASM-TODO: load symbolication json https://github.com/dotnet/runtime/issues/122647
-export async function createRuntime(downloadOnly: boolean): Promise<any> {
-    const config = getLoaderConfig();
-    if (!config.resources || !config.resources.coreAssembly || !config.resources.coreAssembly.length) throw new Error("Invalid config, resources is not set");
 
+// many things happen in parallel here, but order matters for performance!
+// ideally we want to utilize network and CPU at the same time
+export async function createRuntime(downloadOnly: boolean): Promise<any> {
+    if (!loaderConfig.resources || !loaderConfig.resources.coreAssembly || !loaderConfig.resources.coreAssembly.length) throw new Error("Invalid config, resources is not set");
+
+    await validateWasmFeatures();
 
     if (typeof Module.onConfigLoaded === "function") {
-        await Module.onConfigLoaded(config);
+        await Module.onConfigLoaded(loaderConfig);
+    }
+    const modulesAfterConfigLoaded = await Promise.all((loaderConfig.resources.modulesAfterConfigLoaded || []).map(loadJSModule));
+    for (const afterConfigLoadedModule of modulesAfterConfigLoaded) {
+        await afterConfigLoadedModule.onRuntimeConfigLoaded?.(loaderConfig);
     }
 
-    if (config.resources.jsModuleDiagnostics && config.resources.jsModuleDiagnostics.length > 0) {
-        const diagnosticsModule = await loadJSModule(config.resources.jsModuleDiagnostics[0]);
-        diagnosticsModule.dotnetInitializeModule<void>(dotnetGetInternals());
+    if (loaderConfig.resources.jsModuleDiagnostics && loaderConfig.resources.jsModuleDiagnostics.length > 0) {
+        const diagnosticsModule = await loadDotnetModule(loaderConfig.resources.jsModuleDiagnostics[0]);
+        diagnosticsModule.dotnetInitializeModule<void>(dotnetInternals);
     }
-    const nativeModulePromise: Promise<JsModuleExports> = loadJSModule(config.resources.jsModuleNative[0]);
-    const runtimeModulePromise: Promise<JsModuleExports> = loadJSModule(config.resources.jsModuleRuntime[0]);
-    const wasmNativePromise: Promise<Response> = fetchWasm(config.resources.wasmNative[0]);
+    const nativeModulePromise: Promise<JsModuleExports> = loadDotnetModule(loaderConfig.resources.jsModuleNative[0]);
+    const runtimeModulePromise: Promise<JsModuleExports> = loadDotnetModule(loaderConfig.resources.jsModuleRuntime[0]);
+    const wasmNativePromise: Promise<Response> = fetchWasm(loaderConfig.resources.wasmNative[0]);
 
-    const coreAssembliesPromise = Promise.all(config.resources.coreAssembly.map(fetchDll));
-    const coreVfsPromise = Promise.all((config.resources.coreVfs || []).map(fetchVfs));
-    const assembliesPromise = Promise.all(config.resources.assembly.map(fetchDll));
-    const vfsPromise = Promise.all((config.resources.vfs || []).map(fetchVfs));
-    const icuResourceName = getIcuResourceName(config);
-    const icuDataPromise = icuResourceName ? Promise.all((config.resources.icu || []).filter(asset => asset.name === icuResourceName).map(fetchIcu)) : Promise.resolve([]);
+    const coreAssembliesPromise = Promise.all(loaderConfig.resources.coreAssembly.map(fetchDll));
+    const coreVfsPromise = Promise.all((loaderConfig.resources.coreVfs || []).map(fetchVfs));
+    const assembliesPromise = Promise.all(loaderConfig.resources.assembly.map(fetchDll));
+    const vfsPromise = Promise.all((loaderConfig.resources.vfs || []).map(fetchVfs));
+    const icuResourceName = getIcuResourceName();
+    const icuDataPromise = icuResourceName ? Promise.all((loaderConfig.resources.icu || []).filter(asset => asset.name === icuResourceName).map(fetchIcu)) : Promise.resolve([]);
+
+    const corePDBsPromise = Promise.all((loaderConfig.resources.corePdb || []).map(fetchPdb));
+    const pdbsPromise = Promise.all((loaderConfig.resources.pdb || []).map(fetchPdb));
+    const modulesAfterRuntimeReadyPromise = Promise.all((loaderConfig.resources.modulesAfterRuntimeReady || []).map(loadJSModule));
 
     const nativeModule = await nativeModulePromise;
-    const modulePromise = nativeModule.dotnetInitializeModule<EmscriptenModuleInternal>(dotnetGetInternals());
+    const modulePromise = nativeModule.dotnetInitializeModule<EmscriptenModuleInternal>(dotnetInternals);
     nativeModulePromiseController.propagateFrom(modulePromise);
 
     const runtimeModule = await runtimeModulePromise;
-    const runtimeModuleReady = runtimeModule.dotnetInitializeModule<void>(dotnetGetInternals());
+    const runtimeModuleReady = runtimeModule.dotnetInitializeModule<void>(dotnetInternals);
 
     await nativeModulePromiseController.promise;
     await coreAssembliesPromise;
@@ -69,10 +73,18 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
     }
 
     await assembliesPromise;
+    await corePDBsPromise;
+    await pdbsPromise;
     await runtimeModuleReady;
+
+    verifyAllAssetsDownloaded();
 
     if (typeof Module.onDotnetReady === "function") {
         await Module.onDotnetReady();
+    }
+    const modulesAfterRuntimeReady = await modulesAfterRuntimeReadyPromise;
+    for (const afterRuntimeReadyModule of modulesAfterRuntimeReady) {
+        await afterRuntimeReadyModule.onRuntimeReady?.(loaderConfig);
     }
 }
 

@@ -589,9 +589,7 @@ protected:
     void genReserveProlog(BasicBlock* block); // currently unused
     void genReserveEpilog(BasicBlock* block);
     void genFnProlog();
-#if defined(TARGET_WASM)
-    void genWasmLocals();
-#endif
+    void genBeginFnProlog();
     void genFnEpilog(BasicBlock* block);
 
     void genReserveFuncletProlog(BasicBlock* block);
@@ -758,6 +756,8 @@ protected:
     void genSetRegToConst(regNumber targetReg, var_types targetType, simd_t* val);
     void genSetRegToConst(regNumber targetReg, var_types targetType, simdmask_t* val);
 #endif
+    void genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum);
+
     void genCodeForTreeNode(GenTree* treeNode);
     void genCodeForBinary(GenTreeOp* treeNode);
     bool genIsSameLocalVar(GenTree* tree1, GenTree* tree2);
@@ -1260,9 +1260,6 @@ protected:
 #endif // TARGET_ARM64
 
     void genEHCatchRet(BasicBlock* block);
-#if defined(FEATURE_EH_WINDOWS_X86)
-    void genEHFinallyOrFilterRet(BasicBlock* block);
-#endif // FEATURE_EH_WINDOWS_X86
 
     void genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode);
     void genMultiRegStoreToLocal(GenTreeLclVar* lclNode);

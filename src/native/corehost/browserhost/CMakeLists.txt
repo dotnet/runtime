@@ -102,8 +102,10 @@ if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
     )
 endif ()
 
+# add -sVERBOSE=1 to debug linking issues
 # WASM-TODO    -emit-llvm
 # WASM-TODO    --source-map-base http://microsoft.com
+# WASM-TODO    -sSEPARATE_DWARF=1, -gseparate-dwarf
 target_link_options(browserhost PRIVATE
     -sINITIAL_MEMORY=134217728
     -sMAXIMUM_MEMORY=2147483648
@@ -120,10 +122,8 @@ target_link_options(browserhost PRIVATE
     -lnodefs.js
     -Wl,-error-limit=0)
 
-target_link_libraries(browserhost PUBLIC
-    BrowserHost-Static
-)
 target_link_libraries(browserhost PRIVATE
+    BrowserHost-Static
     ${NATIVE_LIBS}
 	${START_WHOLE_ARCHIVE}
     ${RUNTIMEINFO_LIB}
@@ -135,4 +135,5 @@ install(TARGETS browserhost DESTINATION sharedFramework COMPONENT runtime)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION corehost COMPONENT runtime)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION sharedFramework COMPONENT runtime)
 
-add_subdirectory(sample)
+set_source_files_properties(${BROWSERHOST_SOURCES} PROPERTIES OBJECT_DEPENDS
+    "${JS_SYSTEM_NATIVE_BROWSER};${JS_SYSTEM_BROWSER_UTILS};${JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE};${JS_BROWSER_HOST};${JS_SYSTEM_NATIVE_BROWSER_EXPOST}")
