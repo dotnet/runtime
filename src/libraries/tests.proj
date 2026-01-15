@@ -66,10 +66,6 @@
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' != 'true'" >
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-threads\Wasm.Browser.Threads.Sample.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' == 'true'" >
-    <!-- https://github.com/dotnet/runtime/issues/91676 -->
-    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-minimal-config\Wasm.Browser.Config.Sample.csproj" />
-  </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser'" >
     <!-- https://github.com/dotnet/runtime/issues/103524 -->
@@ -192,8 +188,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.IO.FileSystem.Tests\System.IO.FileSystem.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Ports\tests\System.IO.Ports.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security\tests\FunctionalTests\System.Net.Security.Tests.csproj" />
-    <!-- gRPC tests should be run only manually -->
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\gRPC\Android.Device_Emulator.gRPC.Test.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="('$(TargetOS)' == 'android' or '$(TargetsLinuxBionic)' == 'true') and '$(TargetArchitecture)' == 'arm' and '$(RunDisabledAndroidTests)' != 'true'">
@@ -298,7 +292,7 @@
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Diagnostics.Process/tests/System.Diagnostics.Process.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst') and '$(RunDisablediOSTests)' != 'true'">
+  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(RunDisablediOSTests)' != 'true'">
     <!-- PNSE -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Quic/tests/FunctionalTests/System.Net.Quic.Functional.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/51414 -->
@@ -332,8 +326,8 @@
     <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/LibraryMode/iOS.Simulator.LibraryMode.Test.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') and ('$(RuntimeFlavor)' == 'Mono' or '$(UseNativeAOTRuntime)' == 'true') and '$(RunDisablediOSTests)' != 'true'">
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\CoreCLR.Interpreter\*.Test.csproj" />
+  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' and ('$(RuntimeFlavor)' == 'Mono' or '$(UseNativeAOTRuntime)' == 'true') and '$(RunDisablediOSTests)' != 'true'">
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\CoreCLR\*.Test.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' != 'true'">
@@ -405,6 +399,10 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(RunDisabledNativeAotTests)' != 'true'">
+    <!-- https://github.com/dotnet/runtime/issues/119380 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn4.4.Tests.csproj"
+                      Condition="'$(TargetOS)' == 'osx' and '$(TargetArchitecture)' == 'arm64'" />
+
     <!-- https://github.com/dotnet/runtime/issues/108274 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Immutable\tests\System.Collections.Immutable.Tests.csproj" />
 
@@ -533,12 +531,18 @@
 
   <ItemGroup>
     <SmokeTestProject Condition="'$(UseNativeAOTRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
-    <GrpcTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\gRPC\Android.Device_Emulator.gRPC.Test.csproj" />
   </ItemGroup>
 
-  <!-- browser smoke tests -->
-  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
+  <!-- browser smoke tests Mono -->
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono'">
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.Intrinsics\tests\System.Runtime.Intrinsics.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.UnitTests\System.Runtime.InteropServices.JavaScript.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Linq\tests\System.Linq.Tests.csproj" />
+  </ItemGroup>
+
+  <!-- browser smoke tests CoreCLR -->
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'">
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.UnitTests\System.Runtime.InteropServices.JavaScript.Tests.csproj" />
   </ItemGroup>
 
   <!-- wasi/interp smoke tests -->
@@ -607,6 +611,21 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(TestNativeAOT)' == 'true'">
+    <!-- https://github.com/dotnet/runtime/issues/120725 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Tar\tests\System.Formats.Tar.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.ZipFile\tests\System.IO.Compression.ZipFile.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem.Watcher\tests\System.IO.FileSystem.Watcher.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.MemoryMappedFiles\tests\System.IO.MemoryMappedFiles.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Mail\tests\Unit\System.Net.Mail.Unit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Ping\tests\FunctionalTests\System.Net.Ping.Functional.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security\tests\UnitTests\System.Net.Security.Unit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.IO.FileSystem.Tests\DisabledFileLockingTests\System.IO.FileSystem.DisabledFileLocking.Tests.csproj" />
+
+    <!-- https://github.com/dotnet/runtime/issues/120959 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Requests\tests\System.Net.Requests.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
+
     <SmokeTestProject Include="$(RepoRoot)src\tests\FunctionalTests\Android\Device_Emulator\NativeAOT\*.Test.csproj"/>
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\System.Globalization.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Security.Cryptography\tests\System.Security.Cryptography.Tests.csproj" />
@@ -617,9 +636,8 @@
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\NativeAOT\*.Test.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst') and '$(RuntimeFlavor)' == 'CoreCLR' and '$(UseNativeAOTRuntime)' != 'true'">
-    <SmokeTestProject Remove="@(SmokeTestProject)" />
-    <SmokeTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\CoreCLR.Interpreter\*.Test.csproj"/>
+  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(UseNativeAOTRuntime)' != 'true'">
+    <SmokeTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\CoreCLR\*.Test.csproj"/>
   </ItemGroup>
 
   <!--
@@ -644,12 +662,9 @@
     <ProjectReference Condition="'$(RunHighAOTResourceRequiringTestsOnly)' == 'true'"
                       Include="@(HighAOTResourceRequiringProject)"
                       BuildInParallel="false" />
-    <ProjectReference Condition="'$(RunGrpcTestsOnly)' == 'true'"
-                      Include="@(GrpcTestProject)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true'
-                        and '$(RunGrpcTestsOnly)' != 'true'
                         and '$(RunHighAOTResourceRequiringTestsOnly)' != 'true'
                         and '$(RunLimitedSetOfTests)' != 'true'">
 
@@ -704,25 +719,25 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.IO.Hashing\tests\System.IO.Hashing.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'iossimulator' and '$(RuntimeFlavor)' == 'Mono'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'iossimulator' and '$(RuntimeFlavor)' == 'Mono'">
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'tvos'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'tvos'">
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\Device\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'maccatalyst'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'maccatalyst'">
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'tvossimulator'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'tvossimulator'">
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\Simulator\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />

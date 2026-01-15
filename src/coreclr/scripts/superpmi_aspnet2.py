@@ -124,7 +124,7 @@ def install_dotnet_sdk(channel: str, install_dir: Path) -> None:
         di = str(install_dir).replace("'", "''")
         ps_script = (
             "[System.Net.ServicePointManager]::SecurityProtocol=[System.Net.SecurityProtocolType]::Tls12;"
-            "Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1';"
+            "Invoke-WebRequest -UseBasicParsing -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1';"
             f"$DotnetVersion='{ch}';$InstallDir='{di}';"
             "& './dotnet-install.ps1' -Channel $DotnetVersion -InstallDir $InstallDir -NoPath"
         )
@@ -238,9 +238,17 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
         "--config", str(config_path),
         "--profile", "Localhost",
         "--scenario", scenario_name,
-        "--application.framework", framework,
-        "--application.Channel", "latest", # should be 'edge', but it causes random build failures sometimes.
-        "--application.noGlobalJson", "false",
+        
+        # "--application.framework", framework,
+        # "--application.Channel", "edge",
+        # "--application.noGlobalJson", "false",
+
+        # TODO: unpin once it's working again.
+        "--application.framework", "net10.0",
+        "--application.aspNetCoreVersion", "10.0.0-rtm.25513.102",
+        "--application.runtimeVersion", "10.0.0-rtm.25513.102",
+        "--application.sdkVersion", "10.0.100-rtm.25513.102",
+
         "--application.collectDependencies", "false",
         "--application.options.collectCounters", "false",
         "--load.options.reuseBuild", "true",
@@ -272,7 +280,7 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
 def main():
     parser = argparse.ArgumentParser(description="Cross-platform crank runner.")
     parser.add_argument("--core_root", help="Path to built runtime bits (CORE_ROOT).")
-    parser.add_argument("--tfm", default="net10.0", help="Target Framework Moniker (e.g., net10.0).")
+    parser.add_argument("--tfm", default="net11.0", help="Target Framework Moniker (e.g., net11.0).")
     parser.add_argument("--output_mch", help="File path to copy the resulting merged .mch to (expects a file path, not a directory).")
     parser.add_argument("--work_dir", help="Optional path to a directory in which a new working directory will be created. If specified, a new subdirectory with a random name prefixed with 'aspnet2_' will be created inside this directory. Otherwise a system temp directory is used.")
     parser.add_argument("--dryrun", action="store_true", help="Run benchmarks only without collecting SPMI data or generating .mch files.")

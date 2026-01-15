@@ -507,6 +507,25 @@ namespace System.Text.RegularExpressions
                 switch (_regexTree.FindOptimizations.FindMode)
                 {
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
+                        // If we also have a trailing End anchor with fixed length, we can check for exact length match.
+                        // Compute this lazily to avoid overhead in the interpreter.
+                        if (RegexPrefixAnalyzer.FindTrailingAnchor(_regexTree.Root) == RegexNodeKind.End &&
+                            _regexTree.Root.ComputeMaxLength() == _regexTree.FindOptimizations.MinRequiredLength)
+                        {
+                            // if (pos != 0 || inputSpan.Length != minRequiredLength) goto returnFalse;
+                            // return true;
+                            Ldloc(pos);
+                            Ldc(0);
+                            Bne(returnFalse);
+                            Ldloca(inputSpan);
+                            Call(SpanGetLengthMethod);
+                            Ldc(_regexTree.FindOptimizations.MinRequiredLength);
+                            Bne(returnFalse);
+                            Ldc(1);
+                            Ret();
+                            return true;
+                        }
+
                         // if (pos != 0) goto returnFalse;
                         // return true;
                         Ldloc(pos);
@@ -2244,16 +2263,9 @@ namespace System.Text.RegularExpressions
 
                 // Emit the condition. The condition expression is a zero-width assertion, which is atomic,
                 // so prevent backtracking into it.
-                if (analysis.MayBacktrack(condition))
-                {
-                    // Condition expressions are treated like positive lookarounds and thus are implicitly atomic,
-                    // so we need to emit the node as atomic if it might backtrack.
-                    EmitAtomic(node, null);
-                }
-                else
-                {
-                    EmitNode(condition);
-                }
+                // Condition expressions are treated like positive lookarounds and thus are implicitly atomic,
+                // so we always emit them via EmitAtomic to ensure proper isolation of backtracking state (e.g., doneLabel).
+                EmitAtomic(node, null);
                 doneLabel = originalDoneLabel;
 
                 // After the condition completes successfully, reset the text positions.
@@ -2536,16 +2548,9 @@ namespace System.Text.RegularExpressions
                 EmitTimeoutCheckIfNeeded();
 
                 // Emit the child.
-                RegexNode child = node.Child(0);
-                if (analysis.MayBacktrack(child))
-                {
-                    // Lookarounds are implicitly atomic, so we need to emit the node as atomic if it might backtrack.
-                    EmitAtomic(node, null);
-                }
-                else
-                {
-                    EmitNode(child);
-                }
+                // Lookarounds are implicitly atomic, so we always emit them via EmitAtomic to ensure
+                // proper isolation of backtracking state (e.g., doneLabel) from subsequent code.
+                EmitAtomic(node, null);
 
                 // After the child completes successfully, reset the text positions.
                 // Do not reset captures, which persist beyond the lookaround.
@@ -2626,15 +2631,9 @@ namespace System.Text.RegularExpressions
                 }
 
                 // Emit the child.
-                if (analysis.MayBacktrack(child))
-                {
-                    // Lookarounds are implicitly atomic, so we need to emit the node as atomic if it might backtrack.
-                    EmitAtomic(node, null);
-                }
-                else
-                {
-                    EmitNode(child);
-                }
+                // Lookarounds are implicitly atomic, so we always emit them via EmitAtomic to ensure
+                // proper isolation of backtracking state (e.g., doneLabel) from subsequent code.
+                EmitAtomic(node, null);
 
                 // If the generated code ends up here, it matched the lookaround, which actually
                 // means failure for a _negative_ lookaround, so we need to jump to the original done.
@@ -2831,7 +2830,9 @@ namespace System.Text.RegularExpressions
 
                 RegexNode child = node.Child(0);
 
-                if (!analysis.MayBacktrack(child))
+                // Lookarounds and conditional expressions always need atomic isolation even if their child doesn't backtrack,
+                // because descendants might still manipulate doneLabel internally.
+                if (node.Kind is RegexNodeKind.Atomic && !analysis.MayBacktrack(child))
                 {
                     // If the child has no backtracking, the atomic is a nop and we can just skip it.
                     // Note that the source generator equivalent for this is in the top-level EmitNode, in order to avoid
@@ -5215,7 +5216,7 @@ namespace System.Text.RegularExpressions
                     }
 
                     // IndexOfAny{Except}(ch1, ...)
-                    Span<char> setChars = stackalloc char[128]; // arbitrary cut-off that accomodates all of ASCII and doesn't take too long to compute
+                    Span<char> setChars = stackalloc char[128]; // arbitrary cut-off that accommodates all of ASCII and doesn't take too long to compute
                     int setCharsCount = RegexCharClass.GetSetChars(node.Str, setChars);
                     if (setCharsCount > 0)
                     {
@@ -6162,7 +6163,7 @@ namespace System.Text.RegularExpressions
 
             // SearchValues<char> is faster than a regular IndexOfAny("abcd") for sets of 4/5 values iff they are ASCII.
             // Only emit SearchValues instances when we know they'll be faster to avoid increasing the startup cost too much.
-            if (chars.Length is 4 or 5 && !RegexCharClass.IsAscii(chars))
+            if (chars.Length is 4 or 5 && !Ascii.IsValid(chars))
             {
                 Ldstr(chars.ToString());
                 Call(StringAsSpanMethod);

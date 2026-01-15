@@ -60,9 +60,6 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
-          env:
-            MSBUILDUSESERVER: 1
-            DOTNET_CLI_USE_MSBUILD_SERVER: 1
 
       #
       # Build with RuntimeFlavor only. This exercise code paths where only RuntimeFlavor is

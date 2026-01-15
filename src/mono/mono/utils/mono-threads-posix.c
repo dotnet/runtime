@@ -289,25 +289,21 @@ mono_memory_barrier_process_wide (void)
 	g_assert (status == 0);
 
 	if (memory_barrier_process_wide_helper_page == NULL) {
-		status = posix_memalign (&memory_barrier_process_wide_helper_page, mono_pagesize (), mono_pagesize ());
-		g_assert (status == 0);
+		memory_barrier_process_wide_helper_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_NONE, MONO_MEM_ACCOUNT_OTHER);
+		g_assert (memory_barrier_process_wide_helper_page != NULL);
 	}
 
 	// Changing a helper memory page protection from read / write to no access
 	// causes the OS to issue IPI to flush TLBs on all processors. This also
 	// results in flushing the processor buffers.
+	status = mono_mprotect (memory_barrier_process_wide_helper_page, mono_pagesize (), MONO_MMAP_READ | MONO_MMAP_WRITE);
+	g_assert (status == 0);
 
 	// Ensure that the page is dirty before we change the protection so that
 	// we prevent the OS from skipping the global TLB flush.
 	__sync_add_and_fetch ((size_t*)memory_barrier_process_wide_helper_page, 1);
 
 	status = mono_mprotect (memory_barrier_process_wide_helper_page, mono_pagesize (), MONO_MMAP_NONE);
-	g_assert (status == 0);
-
-	// We expected the protection change above to have triggered the memory barrier.
-	// We now undo the protection change so that memory allocation profilers don't
-	// get confused by this memory lacking access permissions (ex with Instruments).
-	status = mono_mprotect (memory_barrier_process_wide_helper_page, mono_pagesize (), MONO_MMAP_READ | MONO_MMAP_WRITE);
 	g_assert (status == 0);
 
 	status = pthread_mutex_unlock (&memory_barrier_process_wide_mutex);

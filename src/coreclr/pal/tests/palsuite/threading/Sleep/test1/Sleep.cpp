@@ -8,8 +8,7 @@
 ** Purpose: Test to establish whether the Sleep function stops the thread from
 ** executing for the specified times.
 **
-** Dependencies: GetSystemTime
-**               Fail
+** Dependencies: Fail
 **               Trace
 **
 

@@ -81,10 +81,6 @@ jobs:
         - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, coalesce(globalBuild.buildConfig, parameters.buildConfig), globalBuild.nameSuffix) }}
 
     variables:
-      - name: "MSBUILDUSESERVER"
-        value: "1"
-      - name: "DOTNET_CLI_USE_MSBUILD_SERVER"
-        value: "1"
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           - group: DotNet-HelixApi-Access
           - group: AzureDevOps-Artifact-Feeds-Pats
@@ -171,6 +167,7 @@ jobs:
     - checkout: self
       clean: true
       fetchDepth: $(checkoutFetchDepth)
+      fetchTags: false
 
     - ${{ if and(eq(parameters.isOfficialBuild, true), notin(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
@@ -243,6 +240,15 @@ jobs:
         buildArgs: ${{ parameters.buildArgs }}
         useContinueOnErrorDuringBuild: ${{ parameters.useContinueOnErrorDuringBuild }}
         shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+
+    - task: CopyFiles@2
+      displayName: Gather CMakeConfigureLog for publish to artifacts
+      inputs:
+        SourceFolder: 'artifacts/obj'
+        Contents: '**/CMakeConfigureLog.yaml'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)/artifacts/log/cmake'
+      continueOnError: true
+      condition: always()
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos', 'android') }}:
       - script: |

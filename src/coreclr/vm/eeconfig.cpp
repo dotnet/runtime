@@ -1,13 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// EEConfig.CPP
-//
 
+// EEConfig.CPP
 //
 // Fetched configuration data from the registry (should we Jit, run GC checks ...)
 //
-//
-
 
 #include "common.h"
 #include "eeconfig.h"
@@ -103,7 +100,6 @@ HRESULT EEConfig::Init()
     dwSpinLimitProcFactor = 0x4E20;
     dwSpinLimitConstant = 0x0;
     dwSpinRetryCount = 0xA;
-    dwMonitorSpinCount = 0;
 
     dwJitHostMaxSlabCache = 0;
 
@@ -186,7 +182,7 @@ HRESULT EEConfig::Init()
     m_fInteropValidatePinnedObjects = false;
     m_fInteropLogArguments = false;
 
-#if defined(_DEBUG) && defined(FEATURE_EH_FUNCLETS)
+#if defined(_DEBUG)
     fSuppressLockViolationsOnReentryFromOS = false;
 #endif
 
@@ -454,8 +450,45 @@ HRESULT EEConfig::sync()
 
     pReadyToRunExcludeList = NULL;
 
+#ifdef FEATURE_INTERPRETER
+#ifdef FEATURE_JIT
+    LPWSTR interpreterConfig;
+    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &interpreterConfig));
+    if (interpreterConfig == NULL)
+    {
+        if ((CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) != 0))
+        {
+            enableInterpreter = true;
+        }
+    }
+    else
+    {
+        enableInterpreter = true;
+    }
+#else
+    enableInterpreter = true;
+#endif // FEATURE_JIT
+#endif // FEATURE_INTERPRETER
+
+    enableHWIntrinsic = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic) != 0);
+#ifdef FEATURE_INTERPRETER
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) == 3)
+    {
+        // InterpMode 3 disables all hw intrinsics
+        enableHWIntrinsic = false;
+    }
+#endif // FEATURE_INTERPRETER
+
 #if defined(FEATURE_READYTORUN)
     fReadyToRun = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRun);
+#if defined(FEATURE_INTERPRETER)
+    if (fReadyToRun && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) >= 2)
+    {
+        // ReadyToRun and Interpreter modes 2 and 3 are mutually exclusive.
+        // If both are set, Interpreter wins.
+        fReadyToRun = false;
+    }
+#endif // defined(FEATURE_INTERPRETER)
 
     if (fReadyToRun)
     {
@@ -485,7 +518,6 @@ HRESULT EEConfig::sync()
     dwSpinLimitProcFactor = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_SpinLimitProcFactor);
     dwSpinLimitConstant = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_SpinLimitConstant);
     dwSpinRetryCount = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_SpinRetryCount);
-    dwMonitorSpinCount = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Monitor_SpinCount);
 
     dwJitHostMaxSlabCache = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitHostMaxSlabCache);
 
@@ -618,7 +650,7 @@ HRESULT EEConfig::sync()
     m_fInteropValidatePinnedObjects = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_InteropValidatePinnedObjects) != 0);
     m_fInteropLogArguments = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InteropLogArguments) != 0);
 
-#if defined(_DEBUG) && defined(FEATURE_EH_FUNCLETS)
+#if defined(_DEBUG)
     fSuppressLockViolationsOnReentryFromOS = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuppressLockViolationsOnReentryFromOS) != 0);
 #endif
 

@@ -58,7 +58,6 @@ namespace System.Buffers.Text
                             goto DoneExit;
                     }
 
-#if NET9_0_OR_GREATER
                     end = srcMax - 48;
                     if (AdvSimd.Arm64.IsSupported && (end >= src))
                     {
@@ -67,7 +66,6 @@ namespace System.Buffers.Text
                         if (src == srcEnd)
                             goto DoneExit;
                     }
-#endif
 
                     end = srcMax - 16;
                     if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian && (end >= src))
@@ -132,10 +130,8 @@ namespace System.Buffers.Text
 
 #if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if NET9_0_OR_GREATER
         [CompExactlyDependsOn(typeof(Avx512BW))]
         [CompExactlyDependsOn(typeof(Avx512Vbmi))]
-#endif
         private static unsafe void Avx512Encode<TBase64Encoder, T>(TBase64Encoder encoder, ref byte* srcBytes, ref T* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, T* destStart)
             where TBase64Encoder : IBase64Encoder<T>
             where T : unmanaged
@@ -209,9 +205,7 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if NET9_0_OR_GREATER
         [CompExactlyDependsOn(typeof(Avx2))]
-#endif
         private static unsafe void Avx2Encode<TBase64Encoder, T>(TBase64Encoder encoder, ref byte* srcBytes, ref T* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, T* destStart)
             where TBase64Encoder : IBase64Encoder<T>
             where T : unmanaged
@@ -291,7 +285,7 @@ namespace System.Buffers.Text
                 // e f d e
                 // b c a b
 
-                Vector256<sbyte> t0 = Avx2.And(str, maskAC);
+                Vector256<sbyte> t0 = str & maskAC;
                 // bits, upper case are most significant bits, lower case are least significant bits.
                 // 0000wwww XX000000 VVVVVV00 00000000
                 // 0000tttt UU000000 SSSSSS00 00000000
@@ -302,7 +296,7 @@ namespace System.Buffers.Text
                 // 0000eeee FF000000 DDDDDD00 00000000
                 // 0000bbbb CC000000 AAAAAA00 00000000
 
-                Vector256<sbyte> t2 = Avx2.And(str, maskBB);
+                Vector256<sbyte> t2 = str & maskBB;
                 // 00000000 00xxxxxx 000000vv WWWW0000
                 // 00000000 00uuuuuu 000000ss TTTT0000
                 // 00000000 00rrrrrr 000000pp QQQQ0000
@@ -322,7 +316,7 @@ namespace System.Buffers.Text
                 // 00000000 00eeeeFF 00000000 00DDDDDD
                 // 00000000 00bbbbCC 00000000 00AAAAAA
 
-                Vector256<short> t3 = Avx2.MultiplyLow(t2.AsInt16(), shiftBB);
+                Vector256<short> t3 = t2.AsInt16() * shiftBB;
                 // 00xxxxxx 00000000 00vvWWWW 00000000
                 // 00uuuuuu 00000000 00ssTTTT 00000000
                 // 00rrrrrr 00000000 00ppQQQQ 00000000
@@ -332,7 +326,7 @@ namespace System.Buffers.Text
                 // 00ffffff 00000000 00ddEEEE 00000000
                 // 00cccccc 00000000 00aaBBBB 00000000
 
-                str = Avx2.Or(t1.AsSByte(), t3.AsSByte());
+                str = t1.AsSByte() | t3.AsSByte();
                 // 00xxxxxx 00wwwwXX 00vvWWWW 00VVVVVV
                 // 00uuuuuu 00ttttUU 00ssTTTT 00SSSSSS
                 // 00rrrrrr 00qqqqRR 00ppQQQQ 00PPPPPP
@@ -360,10 +354,10 @@ namespace System.Buffers.Text
                 Vector256<sbyte> mask = Avx2.CompareGreaterThan(str, const25);
 
                 // subtract -1, so add 1 to indices for range #[1..4], All indices are now correct:
-                Vector256<sbyte> tmp = Avx2.Subtract(indices.AsSByte(), mask);
+                Vector256<sbyte> tmp = indices.AsSByte() - mask;
 
                 // Add offsets to input values:
-                str = Avx2.Add(str, Avx2.Shuffle(lut, tmp));
+                str += Avx2.Shuffle(lut, tmp);
 
                 encoder.StoreVector256ToDestination(dest, destStart, destLength, str.AsByte());
 
@@ -382,7 +376,6 @@ namespace System.Buffers.Text
             destBytes = dest;
         }
 
-#if NET9_0_OR_GREATER // Part of the Arm APIs used here added in .NET 9
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static unsafe void AdvSimdEncode<TBase64Encoder, T>(TBase64Encoder encoder, ref byte* srcBytes, ref T* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, T* destStart)
@@ -412,9 +405,9 @@ namespace System.Buffers.Text
                 (str1, str2, str3) = AdvSimd.Arm64.Load3xVector128AndUnzip(src);
 
                 // Divide bits of three input bytes over four output bytes:
-                res1 = AdvSimd.ShiftRightLogical(str1, 2);
-                res2 = AdvSimd.ShiftRightLogical(str2, 4);
-                res3 = AdvSimd.ShiftRightLogical(str3, 6);
+                res1 = str1 >>> 2;
+                res2 = str2 >>> 4;
+                res3 = str3 >>> 6;
                 res2 = AdvSimd.ShiftLeftAndInsert(res2, str1, 4);
                 res3 = AdvSimd.ShiftLeftAndInsert(res3, str2, 2);
 
@@ -441,13 +434,10 @@ namespace System.Buffers.Text
             srcBytes = src;
             destBytes = dest;
         }
-#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if NET9_0_OR_GREATER
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-#endif
         private static unsafe void Vector128Encode<TBase64Encoder, T>(TBase64Encoder encoder, ref byte* srcBytes, ref T* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, T* destStart)
             where TBase64Encoder : IBase64Encoder<T>
             where T : unmanaged
@@ -734,9 +724,7 @@ namespace System.Buffers.Text
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if NET9_0_OR_GREATER
             [CompExactlyDependsOn(typeof(Avx2))]
-#endif
             public unsafe void StoreVector256ToDestination(byte* dest, byte* destStart, int destLength, Vector256<byte> str)
             {
                 AssertWrite<Vector256<sbyte>>(dest, destStart, destLength);
@@ -750,7 +738,6 @@ namespace System.Buffers.Text
                 str.Store(dest);
             }
 
-#if NET9_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             public unsafe void StoreArmVector128x4ToDestination(byte* dest, byte* destStart, int destLength,
@@ -759,7 +746,6 @@ namespace System.Buffers.Text
                 AssertWrite<Vector128<byte>>(dest, destStart, destLength);
                 AdvSimd.Arm64.StoreVectorAndZip(dest, (res1, res2, res3, res4));
             }
-#endif // NET9_0_OR_GREATER
 #endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

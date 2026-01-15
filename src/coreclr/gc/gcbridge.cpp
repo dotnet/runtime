@@ -186,6 +186,11 @@ struct ColorData
     // Count of colors that list this color in their otherColors
     unsigned incomingColors : INCOMING_COLORS_BITS;
     unsigned visited : 1;
+    // ColorVisibleToClient for a ColorData* can change over the course of bridge processing which
+    // is problematic. We fix this by setting this flag when a color is detected as visible to client.
+    // Once the flag is set, the color is pinned to being visible to client, even though it could lose
+    // some xrefs, making it not satisfy the BridgelessColorIsHeavy condition.
+    unsigned visibleToClient : 1;
 };
 
 // Represents one managed object. Equivalent of new/old bridge "HashEntry"
@@ -233,7 +238,19 @@ static bool BridgelessColorIsHeavy(ColorData* data)
 // Should color be made visible to client?
 static bool ColorVisibleToClient(ColorData* data)
 {
-    return DynPtrArraySize(&data->bridges) || BridgelessColorIsHeavy(data);
+    if (data->visibleToClient)
+        return true;
+
+    if (DynPtrArraySize(&data->bridges) || BridgelessColorIsHeavy(data))
+    {
+        data->visibleToClient = true;
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+
 }
 
 // Stacks of ScanData objects used for tarjan algorithm.
@@ -1186,9 +1203,9 @@ static MarkCrossReferencesArgs* BuildSccCallbackData()
         ColorData* cd;
         for (cd = &cur->data[0]; cd < cur->nextData; cd++)
         {
-            int bridges = DynPtrArraySize(&cd->bridges);
-            if (!(bridges || BridgelessColorIsHeavy(cd)))
+            if (!ColorVisibleToClient(cd))
                 continue;
+            int bridges = DynPtrArraySize(&cd->bridges);
 
             apiSccs[apiIndex].Count = bridges;
             uintptr_t *contexts = new (nothrow) uintptr_t[bridges];
