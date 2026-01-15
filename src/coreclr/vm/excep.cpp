@@ -10905,6 +10905,7 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     // Layout: [xmm6-xmm15 (160 bytes)] [xmm0-xmm3 (64 bytes)] [shadow (32 bytes)] [padding (8 bytes)] [CalleeSavedRegs] [RetAddr]
     // xmm6 is at sp+0, TransitionBlock is at sp+264, so xmm6 is at TransitionBlock - 264
     M128A *pFpCalleeSaved = (M128A*)((BYTE*)pTransitionBlock - 264);
+
     m_Context.Xmm6 = pFpCalleeSaved[0];
     m_Context.Xmm7 = pFpCalleeSaved[1];
     m_Context.Xmm8 = pFpCalleeSaved[2];
@@ -10916,8 +10917,11 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     m_Context.Xmm14 = pFpCalleeSaved[8];
     m_Context.Xmm15 = pFpCalleeSaved[9];
 
-    // Initialize FP control/status
-    m_Context.MxCsr = 0x1F80; // Default MXCSR value (all exceptions masked)
+    // Initialize FP control/status in FltSave - this is what fxrstor restores from
+    m_Context.FltSave.ControlWord = 0x27F;  // Default x87 control word
+    m_Context.FltSave.MxCsr = 0x1F80;       // Default MXCSR value (all exceptions masked)
+    m_Context.FltSave.MxCsr_Mask = 0x1FFF;  // MXCSR mask
+    m_Context.MxCsr = 0x1F80;               // Default MXCSR value (all exceptions masked)
 #endif
 
 #define CALLEE_SAVED_REGISTER(reg) \

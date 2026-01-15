@@ -523,13 +523,6 @@ NESTED_ENTRY CallEHFunclet, _TEXT
         ; Save the SP of this function.
         mov     [r9], rsp
 
-        ; Reset MXCSR to default value before invoking managed code.
-        ; During exception handling, MXCSR can become corrupted.
-        ; 0x1F80 = default MXCSR: all exception masks set, round to nearest
-        push    1F80h
-        ldmxcsr [rsp]
-        add     rsp, 8
-
         ; Invoke the funclet
         call    rdx
 
@@ -554,13 +547,6 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT
         mov     [r9], rsp
         ; Restore RBP to match main function RBP
         mov     rbp, rdx
-
-        ; Reset MXCSR to default value before invoking managed code.
-        ; During exception handling, MXCSR can become corrupted.
-        ; 0x1F80 = default MXCSR: all exception masks set, round to nearest
-        push    1F80h
-        ldmxcsr [rsp]
-        add     rsp, 8
 
         ; Invoke the filter funclet
         call    r8
