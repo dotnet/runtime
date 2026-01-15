@@ -1092,5 +1092,49 @@ namespace System.IO.Compression.Tests
         }
 
         #endregion
+
+        #region CompressionMethod Property Tests for Encrypted Entries
+
+        #region CompressionMethod Property Tests for Encrypted Entries
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task CompressionMethod_AesEncryptedEntries_ReturnsActualCompressionMethod(bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "password123";
+
+            // Create archive with entries using different AES strengths
+            var entries = new[]
+            {
+                ("aes128.txt", "AES-128 content", (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes128),
+                ("aes192.txt", "AES-192 content", (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes192),
+                ("aes256.txt", "AES-256 content", (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes256),
+                ("zipcrypto.txt", "ZipCrypto content", (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.ZipCrypto),
+                ("plain.txt", "Plain content", (string?)null, (ZipArchiveEntry.EncryptionMethod?)null)
+            };
+
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            // Verify CompressionMethod without opening entry streams
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                // AES entries should report the actual compression method from the AES extra field (Deflate)
+                Assert.Equal(ZipCompressionMethod.Deflate, archive.GetEntry("aes128.txt")!.CompressionMethod);
+                Assert.Equal(ZipCompressionMethod.Deflate, archive.GetEntry("aes192.txt")!.CompressionMethod);
+                Assert.Equal(ZipCompressionMethod.Deflate, archive.GetEntry("aes256.txt")!.CompressionMethod);
+
+                // ZipCrypto uses actual compression method (Deflate)
+                Assert.Equal(ZipCompressionMethod.Deflate, archive.GetEntry("zipcrypto.txt")!.CompressionMethod);
+
+                // Plain entry uses actual compression method (Deflate)
+                Assert.Equal(ZipCompressionMethod.Deflate, archive.GetEntry("plain.txt")!.CompressionMethod);
+            }
+        }
+
+        #endregion
+
+        #endregion
+
     }
 }

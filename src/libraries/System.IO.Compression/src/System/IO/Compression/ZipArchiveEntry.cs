@@ -75,9 +75,33 @@ namespace System.IO.Compression
             _versionToExtract = (ZipVersionNeededValues)cd.VersionNeededToExtract;
             _generalPurposeBitFlag = (BitFlagValues)cd.GeneralPurposeBitFlag;
             _isEncrypted = (_generalPurposeBitFlag & BitFlagValues.IsEncrypted) != 0;
-            CompressionMethod = (ZipCompressionMethod)cd.CompressionMethod;
-            // Initialize _headerCompressionMethod from the central directory
+            // Initialize _headerCompressionMethod from the central directory.
+            // For AES entries, this will be 99 (WinZip AES wrapper indicator) and never changes.
             _headerCompressionMethod = (ZipCompressionMethod)cd.CompressionMethod;
+            // For AES-encrypted entries, the real compression method is stored in the AES extra field (0x9901)
+            // Parse it now so that people can see the actual value before opening the entry.
+            if (_isEncrypted && cd.AesExtraField.HasValue)
+            {
+                WinZipAesExtraField aesField = cd.AesExtraField.Value;
+                // Set the real compression method from the AES extra field
+                CompressionMethod = (ZipCompressionMethod)aesField.CompressionMethod;
+
+                // Also parse remaining needed metadata now
+                _aeVersion = aesField.VendorVersion;
+                _encryptionMethod = aesField.AesStrength switch
+                {
+                    1 => EncryptionMethod.Aes128,
+                    2 => EncryptionMethod.Aes192,
+                    3 => EncryptionMethod.Aes256,
+                    _ => throw new InvalidDataException(SR.InvalidAesStrength)
+                };
+            }
+            else
+            {
+                // Non-AES entry: compression method from CD is the real method
+                CompressionMethod = (ZipCompressionMethod)cd.CompressionMethod;
+            }
+
             _lastModified = new DateTimeOffset(ZipHelper.DosTimeToDateTime(cd.LastModified));
             _compressedSize = cd.CompressedSize;
             _uncompressedSize = cd.UncompressedSize;
@@ -1273,17 +1297,17 @@ namespace System.IO.Compression
                 // This ensures each write uses a fresh random salt for security
                 int keySizeBits = GetAesKeySizeBits();
                 _derivedEncryptionKeyMaterial = WinZipAesStream.CreateKey(password.AsMemory(), salt: null, keySizeBits);
-                // _encryptionMethod is already set from IsOpenable -> detected from header
+                // _encryptionMethod is already set from constructor (parsed from central directory AES extra field)
             }
 
             // Reset CRC - it will be recalculated when writing
             _crc32 = 0;
 
-            // Set the actual compression method for GetDataCompressor
-            // Note: For AES, CompressionMethod may currently be Aes (99) from reading the header
-            // We need to set it to Deflate or Stored for the actual compression
-            // WriteLocalFileHeader will set it back to Aes for the header
-            if (CompressionMethod == ZipCompressionMethod.Aes || CompressionMethod == ZipCompressionMethod.Deflate || CompressionMethod == ZipCompressionMethod.Deflate64)
+            // Set the compression method for GetDataCompressor.
+            // CompressionMethod now contains the actual method (Stored/Deflate/etc.) from the
+            // central directory AES extra field, not the wrapper value 99.
+            // For re-compression, we use Deflate unless the original was Stored.
+            if (CompressionMethod == ZipCompressionMethod.Deflate || CompressionMethod == ZipCompressionMethod.Deflate64)
             {
                 CompressionMethod = ZipCompressionMethod.Deflate;
             }
@@ -1314,35 +1338,15 @@ namespace System.IO.Compression
                 else if (IsEncrypted && _headerCompressionMethod == ZipCompressionMethod.Aes)
                 {
                     _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-                    _headerCompressionMethod = ZipCompressionMethod.Aes;
-                    // AES case - need to read the extra field to determine actual compression method and encryption strength
-                    if (!ZipLocalFileHeader.TrySkipBlockAESAware(_archive.ArchiveStream, out WinZipAesExtraField? aesExtraField))
+                    // AES case - skip the local file header and validate it exists.
+                    // The AES metadata (encryption strength, actual compression method) was already
+                    // parsed from the central directory in the constructor
+                    if (!ZipLocalFileHeader.TrySkipBlockAESAware(_archive.ArchiveStream, out _))
                     {
                         message = SR.LocalFileHeaderCorrupt;
                         return false;
                     }
 
-                    if (aesExtraField.HasValue)
-                    {
-
-                        EncryptionMethod detectedEncryption = aesExtraField.Value.AesStrength switch
-                        {
-                            1 => EncryptionMethod.Aes128,
-                            2 => EncryptionMethod.Aes192,
-                            3 => EncryptionMethod.Aes256,
-                            _ => throw new InvalidDataException(SR.InvalidAesStrength)
-                        };
-
-                        // Store the detected encryption method
-                        _encryptionMethod = detectedEncryption;
-
-                        _aeVersion = aesExtraField.Value.VendorVersion;
-
-                        // Store the actual compression method that will be used after decryption
-                        // This is needed for GetDataDecompressor to work correctly
-                        // Set the compression method to the actual method for decompression
-                        CompressionMethod = (ZipCompressionMethod)aesExtraField.Value.CompressionMethod;
-                    }
                 }
 
                 // Pass the detected encryption method to GetOffsetOfCompressedData
@@ -1364,20 +1368,15 @@ namespace System.IO.Compression
             message = null;
             if (needToUncompress)
             {
-                if (!IsEncrypted &&
-                    CompressionMethod != ZipCompressionMethod.Stored &&
+                // For AES-encrypted entries, CompressionMethod now contains the actual compression
+                // method (from the AES extra field), not the wrapper value 99. So we can use
+                // the same validation logic for both encrypted and non-encrypted entries.
+                if (CompressionMethod != ZipCompressionMethod.Stored &&
                     CompressionMethod != ZipCompressionMethod.Deflate &&
                     CompressionMethod != ZipCompressionMethod.Deflate64)
                 {
                     message = SR.UnsupportedCompression;
                     return false;
-                }
-                else
-                {
-                    if (IsEncrypted && _headerCompressionMethod == ZipCompressionMethod.Aes)
-                    {
-                        return true;
-                    }
                 }
             }
             if (_diskNumberStart != _archive.NumberOfThisDisk)

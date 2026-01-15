@@ -769,6 +769,7 @@ namespace System.IO.Compression
     internal struct WinZipAesExtraField
     {
         public const ushort HeaderId = 0x9901;
+        private const int DataSize = 7; // Vendor version (2) + Vendor ID (2) + AES strength (1) + Compression method (2)
         private ushort _vendorVersion = 2;
         private byte _aesStrength;
         private ushort _compressionMethod;
@@ -785,6 +786,73 @@ namespace System.IO.Compression
         public ushort CompressionMethod { get => _compressionMethod; set => _compressionMethod = value; } // Original compression method
 
         public static int TotalSize => 11; // 2 (header) + 2 (size) + 7 (data)
+
+        /// <summary>
+        /// Tries to find and parse the WinZip AES extra field (0x9901) from a list of generic extra fields.
+        /// </summary>
+        /// <param name="extraFields">The list of extra fields to search.</param>
+        /// <param name="aesExtraField">When this method returns true, contains the parsed AES extra field.</param>
+        /// <returns>true if the AES extra field was found and parsed; otherwise, false.</returns>
+        public static bool TryGetFromExtraFields(List<ZipGenericExtraField>? extraFields, out WinZipAesExtraField aesExtraField)
+        {
+            aesExtraField = default;
+
+            if (extraFields == null)
+                return false;
+
+            foreach (ZipGenericExtraField field in extraFields)
+            {
+                if (field.Tag == HeaderId && field.Size >= DataSize)
+                {
+                    byte[] data = field.Data;
+                    aesExtraField = new WinZipAesExtraField(
+                        VendorVersion: BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(0, 2)),
+                        AesStrength: data[4],
+                        CompressionMethod: BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(5, 2))
+                    );
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Tries to find and parse the WinZip AES extra field (0x9901) from raw extra field data bytes.
+        /// This is used when ExtraFields are not saved (Read mode) but we still need to parse the AES field.
+        /// </summary>
+        /// <param name="extraFieldData">The raw extra field data bytes.</param>
+        /// <param name="aesExtraField">When this method returns true, contains the parsed AES extra field.</param>
+        /// <returns>true if the AES extra field was found and parsed; otherwise, false.</returns>
+        public static bool TryGetFromRawExtraFieldData(ReadOnlySpan<byte> extraFieldData, out WinZipAesExtraField aesExtraField)
+        {
+            aesExtraField = default;
+            int offset = 0;
+
+            while (offset + 4 <= extraFieldData.Length) // Need at least 4 bytes for header ID and size
+            {
+                ushort headerId = BinaryPrimitives.ReadUInt16LittleEndian(extraFieldData.Slice(offset, 2));
+                ushort fieldSize = BinaryPrimitives.ReadUInt16LittleEndian(extraFieldData.Slice(offset + 2, 2));
+
+                if (offset + 4 + fieldSize > extraFieldData.Length)
+                    break; // Not enough data for this field
+
+                if (headerId == HeaderId && fieldSize >= DataSize)
+                {
+                    ReadOnlySpan<byte> data = extraFieldData.Slice(offset + 4, fieldSize);
+                    aesExtraField = new WinZipAesExtraField(
+                        VendorVersion: BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(0, 2)),
+                        AesStrength: data[4],
+                        CompressionMethod: BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(5, 2))
+                    );
+                    return true;
+                }
+
+                offset += 4 + fieldSize;
+            }
+
+            return false;
+        }
 
         public void WriteBlock(Stream stream)
         {
@@ -847,6 +915,14 @@ namespace System.IO.Compression
         public List<ZipGenericExtraField>? ExtraFields;
         public byte[]? TrailingExtraFieldData;
 
+        /// <summary>
+        /// The WinZip AES extra field (0x9901) if present in the central directory.
+        /// This is always parsed (regardless of saveExtraFieldsAndComments) so that
+        /// ZipArchiveEntry can determine the real compression method for AES-encrypted entries
+        /// without needing to read the local file header.
+        /// </summary>
+        public WinZipAesExtraField? AesExtraField;
+
         private static bool TryReadBlockInitialize(ReadOnlySpan<byte> buffer, [NotNullWhen(returnValue: true)] out ZipCentralDirectoryFileHeader? header, out int bytesRead, out uint compressedSizeSmall, out uint uncompressedSizeSmall, out ushort diskNumberStartSmall, out uint relativeOffsetOfLocalHeaderSmall)
         {
             // the buffer will always be large enough for at least the constant section to be verified
@@ -897,6 +973,14 @@ namespace System.IO.Compression
             bool diskNumberStartInZip64 = diskNumberStartSmall == ZipHelper.Mask16Bit;
 
             ReadOnlySpan<byte> zipExtraFields = dynamicHeader.Slice(header.FilenameLength, header.ExtraFieldLength);
+
+            // Always parse AES extra field (0x9901) from the central directory if present.
+            // This is needed so ZipArchiveEntry can determine the real compression method
+            // for AES-encrypted entries without requiring Open() to be called.
+            if (WinZipAesExtraField.TryGetFromRawExtraFieldData(zipExtraFields, out WinZipAesExtraField aesField))
+            {
+                header.AesExtraField = aesField;
+            }
 
             if (saveExtraFieldsAndComments)
             {

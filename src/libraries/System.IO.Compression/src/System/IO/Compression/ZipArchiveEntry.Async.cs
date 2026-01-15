@@ -386,36 +386,32 @@ public partial class ZipArchiveEntry
             message = SR.LocalFileHeaderCorrupt;
             return (false, message);
         }
-        else if (IsEncrypted && CompressionMethod == ZipCompressionMethod.Aes)
+        else if (IsEncrypted && _headerCompressionMethod == ZipCompressionMethod.Aes)
         {
             _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-            _headerCompressionMethod = ZipCompressionMethod.Aes;
-            var (success, aesExtraField) = await ZipLocalFileHeader.TrySkipBlockAESAwareAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
+            // AES case - skip the local file header and validate it exists.
+            // The AES metadata (encryption strength, actual compression method) was already
+            // parsed from the central directory in the constructor, so we don't mutate
+            // _encryptionMethod or CompressionMethod here.
+            var (success, localAesField) = await ZipLocalFileHeader.TrySkipBlockAESAwareAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
             if (!success)
             {
                 message = SR.LocalFileHeaderCorrupt;
                 return (false, message);
             }
 
-            if (aesExtraField.HasValue)
+            // Optionally validate that local header AES info matches central directory.
+            // If local header has AES field but with mismatched strength, that's corruption.
+            if (localAesField.HasValue && localAesField.Value.AesStrength != (_encryptionMethod switch
             {
-                EncryptionMethod detectedEncryption = aesExtraField.Value.AesStrength switch
-                {
-                    1 => EncryptionMethod.Aes128,
-                    2 => EncryptionMethod.Aes192,
-                    3 => EncryptionMethod.Aes256,
-                    _ => throw new InvalidDataException("Unknown AES strength")
-                };
-
-                // Store the detected encryption method
-                _encryptionMethod = detectedEncryption;
-
-                _aeVersion = aesExtraField.Value.VendorVersion;
-
-                // Store the actual compression method that will be used after decryption
-                // This is needed for GetDataDecompressor to work correctly
-                // Set the compression method to the actual method for decompression
-                CompressionMethod = (ZipCompressionMethod)aesExtraField.Value.CompressionMethod;
+                EncryptionMethod.Aes128 => 1,
+                EncryptionMethod.Aes192 => 2,
+                EncryptionMethod.Aes256 => 3,
+                _ => 0
+            }))
+            {
+                // Local and central directory AES strengths don't match - could be corruption
+                // For now, we trust the central directory as authoritative (already set in constructor)
             }
         }
 
