@@ -219,5 +219,283 @@ namespace System.Text.Json.Serialization.Tests
             string jsonSerialized = JsonSerializer.Serialize(point, options);
             Assert.Equal(json, jsonSerialized);
         }
+
+        // Tests for open generic converters on generic types
+
+        /// <summary>
+        /// A generic option type that represents an optional value.
+        /// The converter type is an open generic, which will be constructed
+        /// to match the type arguments of the Option type.
+        /// </summary>
+        [JsonConverter(typeof(OptionConverter<>))]
+        public readonly struct Option<T>
+        {
+            public bool HasValue { get; }
+            public T Value { get; }
+
+            public Option(T value)
+            {
+                HasValue = true;
+                Value = value;
+            }
+
+            public static implicit operator Option<T>(T value) => new(value);
+        }
+
+        /// <summary>
+        /// Generic converter for the Option type. Serializes the value if present,
+        /// or null if not.
+        /// </summary>
+        public sealed class OptionConverter<T> : JsonConverter<Option<T>>
+        {
+            public override bool HandleNull => true;
+
+            public override Option<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                if (reader.TokenType == JsonTokenType.Null)
+                {
+                    return default;
+                }
+
+                return new(JsonSerializer.Deserialize<T>(ref reader, options)!);
+            }
+
+            public override void Write(Utf8JsonWriter writer, Option<T> value, JsonSerializerOptions options)
+            {
+                if (!value.HasValue)
+                {
+                    writer.WriteNullValue();
+                    return;
+                }
+
+                JsonSerializer.Serialize(writer, value.Value, options);
+            }
+        }
+
+        [Fact]
+        public static void GenericConverterAttributeOnGenericType_Serialize()
+        {
+            // Test serialization with a value
+            Option<int> option = new Option<int>(42);
+            string json = JsonSerializer.Serialize(option);
+            Assert.Equal("42", json);
+
+            // Test serialization without a value
+            Option<int> emptyOption = default;
+            json = JsonSerializer.Serialize(emptyOption);
+            Assert.Equal("null", json);
+        }
+
+        [Fact]
+        public static void GenericConverterAttributeOnGenericType_Deserialize()
+        {
+            // Test deserialization with a value
+            Option<int> option = JsonSerializer.Deserialize<Option<int>>("42");
+            Assert.True(option.HasValue);
+            Assert.Equal(42, option.Value);
+
+            // Test deserialization of null
+            option = JsonSerializer.Deserialize<Option<int>>("null");
+            Assert.False(option.HasValue);
+        }
+
+        [Fact]
+        public static void GenericConverterAttributeOnGenericType_ComplexType()
+        {
+            // Test with a complex type
+            Option<string> option = new Option<string>("hello");
+            string json = JsonSerializer.Serialize(option);
+            Assert.Equal(@"""hello""", json);
+
+            option = JsonSerializer.Deserialize<Option<string>>(json);
+            Assert.True(option.HasValue);
+            Assert.Equal("hello", option.Value);
+        }
+
+        [Fact]
+        public static void GenericConverterAttributeOnGenericType_NestedInClass()
+        {
+            // Test Option type when used as a property
+            var obj = new ClassWithOptionProperty { Name = "Test", OptionalValue = 42 };
+            string json = JsonSerializer.Serialize(obj);
+            Assert.Equal(@"{""Name"":""Test"",""OptionalValue"":42}", json);
+
+            var deserialized = JsonSerializer.Deserialize<ClassWithOptionProperty>(json);
+            Assert.Equal("Test", deserialized.Name);
+            Assert.True(deserialized.OptionalValue.HasValue);
+            Assert.Equal(42, deserialized.OptionalValue.Value);
+        }
+
+        private class ClassWithOptionProperty
+        {
+            public string Name { get; set; }
+            public Option<int> OptionalValue { get; set; }
+        }
+
+        /// <summary>
+        /// A generic result type that represents either a success value or an error.
+        /// Tests a generic converter with two type parameters.
+        /// </summary>
+        [JsonConverter(typeof(ResultConverter<,>))]
+        public readonly struct Result<TValue, TError>
+        {
+            public bool IsSuccess { get; }
+            public TValue Value { get; }
+            public TError Error { get; }
+
+            private Result(TValue value, TError error, bool isSuccess)
+            {
+                Value = value;
+                Error = error;
+                IsSuccess = isSuccess;
+            }
+
+            public static Result<TValue, TError> Success(TValue value) =>
+                new(value, default!, true);
+
+            public static Result<TValue, TError> Failure(TError error) =>
+                new(default!, error, false);
+        }
+
+        /// <summary>
+        /// Generic converter for the Result type with two type parameters.
+        /// </summary>
+        public sealed class ResultConverter<TValue, TError> : JsonConverter<Result<TValue, TError>>
+        {
+            public override Result<TValue, TError> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                if (reader.TokenType != JsonTokenType.StartObject)
+                {
+                    throw new JsonException();
+                }
+
+                bool? isSuccess = null;
+                TValue value = default!;
+                TError error = default!;
+
+                while (reader.Read())
+                {
+                    if (reader.TokenType == JsonTokenType.EndObject)
+                    {
+                        break;
+                    }
+
+                    if (reader.TokenType != JsonTokenType.PropertyName)
+                    {
+                        throw new JsonException();
+                    }
+
+                    string propertyName = reader.GetString()!;
+                    reader.Read();
+
+                    switch (propertyName)
+                    {
+                        case "IsSuccess":
+                            isSuccess = reader.GetBoolean();
+                            break;
+                        case "Value":
+                            value = JsonSerializer.Deserialize<TValue>(ref reader, options)!;
+                            break;
+                        case "Error":
+                            error = JsonSerializer.Deserialize<TError>(ref reader, options)!;
+                            break;
+                    }
+                }
+
+                if (isSuccess == true)
+                {
+                    return Result<TValue, TError>.Success(value);
+                }
+
+                return Result<TValue, TError>.Failure(error);
+            }
+
+            public override void Write(Utf8JsonWriter writer, Result<TValue, TError> value, JsonSerializerOptions options)
+            {
+                writer.WriteStartObject();
+                writer.WriteBoolean("IsSuccess", value.IsSuccess);
+
+                if (value.IsSuccess)
+                {
+                    writer.WritePropertyName("Value");
+                    JsonSerializer.Serialize(writer, value.Value, options);
+                }
+                else
+                {
+                    writer.WritePropertyName("Error");
+                    JsonSerializer.Serialize(writer, value.Error, options);
+                }
+
+                writer.WriteEndObject();
+            }
+        }
+
+        [Fact]
+        public static void GenericConverterAttributeOnGenericType_TwoTypeParameters_Success()
+        {
+            var result = Result<int, string>.Success(42);
+            string json = JsonSerializer.Serialize(result);
+            Assert.Equal(@"{""IsSuccess"":true,""Value"":42}", json);
+
+            var deserialized = JsonSerializer.Deserialize<Result<int, string>>(json);
+            Assert.True(deserialized.IsSuccess);
+            Assert.Equal(42, deserialized.Value);
+        }
+
+        [Fact]
+        public static void GenericConverterAttributeOnGenericType_TwoTypeParameters_Failure()
+        {
+            var result = Result<int, string>.Failure("error message");
+            string json = JsonSerializer.Serialize(result);
+            Assert.Equal(@"{""IsSuccess"":false,""Error"":""error message""}", json);
+
+            var deserialized = JsonSerializer.Deserialize<Result<int, string>>(json);
+            Assert.False(deserialized.IsSuccess);
+            Assert.Equal("error message", deserialized.Error);
+        }
+
+        /// <summary>
+        /// Test that an open generic converter can be used on a property with [JsonConverter].
+        /// </summary>
+        [Fact]
+        public static void GenericConverterAttributeOnProperty()
+        {
+            var obj = new ClassWithGenericConverterOnProperty { Value = new MyGenericWrapper<int>(42) };
+            string json = JsonSerializer.Serialize(obj);
+            Assert.Equal(@"{""Value"":42}", json);
+
+            var deserialized = JsonSerializer.Deserialize<ClassWithGenericConverterOnProperty>(json);
+            Assert.Equal(42, deserialized.Value.WrappedValue);
+        }
+
+        private class ClassWithGenericConverterOnProperty
+        {
+            [JsonConverter(typeof(MyGenericWrapperConverter<>))]
+            public MyGenericWrapper<int> Value { get; set; }
+        }
+
+        public class MyGenericWrapper<T>
+        {
+            public T WrappedValue { get; }
+
+            public MyGenericWrapper(T value)
+            {
+                WrappedValue = value;
+            }
+        }
+
+        public sealed class MyGenericWrapperConverter<T> : JsonConverter<MyGenericWrapper<T>>
+        {
+            public override MyGenericWrapper<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                T value = JsonSerializer.Deserialize<T>(ref reader, options)!;
+                return new MyGenericWrapper<T>(value);
+            }
+
+            public override void Write(Utf8JsonWriter writer, MyGenericWrapper<T> value, JsonSerializerOptions options)
+            {
+                JsonSerializer.Serialize(writer, value.WrappedValue, options);
+            }
+        }
     }
 }

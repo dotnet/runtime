@@ -1024,5 +1024,80 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(3.14, deserialized2.Value);
             Assert.True(deserialized2.IsActive);
         }
+
+        [Fact]
+        public static void SupportsOpenGenericConverterOnGenericType()
+        {
+            // Test Option<int> serialization
+            Option<int> option = new Option<int>(42);
+            string json = JsonSerializer.Serialize(option, OpenGenericConverterContext.Default.OptionInt32);
+            Assert.Equal("42", json);
+
+            // Test deserialization
+            Option<int> deserialized = JsonSerializer.Deserialize<Option<int>>(json, OpenGenericConverterContext.Default.OptionInt32);
+            Assert.True(deserialized.HasValue);
+            Assert.Equal(42, deserialized.Value);
+        }
+
+        [Fact]
+        public static void SupportsOpenGenericConverterOnGenericType_WithNullValue()
+        {
+            // Test Option<int> with no value
+            Option<int> option = default;
+            string json = JsonSerializer.Serialize(option, OpenGenericConverterContext.Default.OptionInt32);
+            Assert.Equal("null", json);
+
+            // Test deserialization of null
+            Option<int> deserialized = JsonSerializer.Deserialize<Option<int>>("null", OpenGenericConverterContext.Default.OptionInt32);
+            Assert.False(deserialized.HasValue);
+        }
+
+        [Fact]
+        public static void SupportsOpenGenericConverterOnGenericType_StringType()
+        {
+            // Test Option<string> serialization
+            Option<string> option = new Option<string>("hello");
+            string json = JsonSerializer.Serialize(option, OpenGenericConverterContext.Default.OptionString);
+            Assert.Equal(@"""hello""", json);
+
+            // Test deserialization
+            Option<string> deserialized = JsonSerializer.Deserialize<Option<string>>(json, OpenGenericConverterContext.Default.OptionString);
+            Assert.True(deserialized.HasValue);
+            Assert.Equal("hello", deserialized.Value);
+        }
+
+        [Fact]
+        public static void SupportsOpenGenericConverterOnGenericType_NestedInClass()
+        {
+            // Test ClassWithOptionProperty
+            var obj = new ClassWithOptionProperty { Name = "Test", OptionalValue = 123 };
+            string json = JsonSerializer.Serialize(obj, OpenGenericConverterContext.Default.ClassWithOptionProperty);
+            Assert.Equal(@"{""Name"":""Test"",""OptionalValue"":123}", json);
+
+            var deserialized = JsonSerializer.Deserialize<ClassWithOptionProperty>(json, OpenGenericConverterContext.Default.ClassWithOptionProperty);
+            Assert.Equal("Test", deserialized.Name);
+            Assert.True(deserialized.OptionalValue.HasValue);
+            Assert.Equal(123, deserialized.OptionalValue.Value);
+        }
+
+        [Fact]
+        public static void SupportsOpenGenericConverterOnProperty()
+        {
+            // Test property-level open generic converter
+            var obj = new ClassWithGenericConverterOnProperty { Value = new GenericWrapper<int>(42) };
+            string json = JsonSerializer.Serialize(obj, OpenGenericConverterContext.Default.ClassWithGenericConverterOnProperty);
+            Assert.Equal(@"{""Value"":42}", json);
+
+            var deserialized = JsonSerializer.Deserialize<ClassWithGenericConverterOnProperty>(json, OpenGenericConverterContext.Default.ClassWithGenericConverterOnProperty);
+            Assert.Equal(42, deserialized.Value.WrappedValue);
+        }
+
+        [JsonSerializable(typeof(Option<int>))]
+        [JsonSerializable(typeof(Option<string>))]
+        [JsonSerializable(typeof(ClassWithOptionProperty))]
+        [JsonSerializable(typeof(ClassWithGenericConverterOnProperty))]
+        internal partial class OpenGenericConverterContext : JsonSerializerContext
+        {
+        }
     }
 }

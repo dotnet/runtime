@@ -300,4 +300,102 @@ namespace System.Text.Json.SourceGeneration.Tests
         One = 1,
         Two = 2
     }
+
+    // Generic converter types for testing open generic converter support
+
+    /// <summary>
+    /// A generic option type that represents an optional value.
+    /// Uses an open generic converter type.
+    /// </summary>
+    [JsonConverter(typeof(OptionConverter<>))]
+    public readonly struct Option<T>
+    {
+        public bool HasValue { get; }
+        public T Value { get; }
+
+        public Option(T value)
+        {
+            HasValue = true;
+            Value = value;
+        }
+
+        public static implicit operator Option<T>(T value) => new(value);
+    }
+
+    /// <summary>
+    /// Generic converter for the Option type.
+    /// </summary>
+    public sealed class OptionConverter<T> : JsonConverter<Option<T>>
+    {
+        public override bool HandleNull => true;
+
+        public override Option<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType == JsonTokenType.Null)
+            {
+                return default;
+            }
+
+            return new(JsonSerializer.Deserialize<T>(ref reader, options)!);
+        }
+
+        public override void Write(Utf8JsonWriter writer, Option<T> value, JsonSerializerOptions options)
+        {
+            if (!value.HasValue)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
+            JsonSerializer.Serialize(writer, value.Value, options);
+        }
+    }
+
+    /// <summary>
+    /// A class that contains an Option property for testing.
+    /// </summary>
+    public class ClassWithOptionProperty
+    {
+        public string Name { get; set; }
+        public Option<int> OptionalValue { get; set; }
+    }
+
+    /// <summary>
+    /// A wrapper type that uses an open generic converter on a property.
+    /// </summary>
+    public class GenericWrapper<T>
+    {
+        public T WrappedValue { get; }
+
+        public GenericWrapper(T value)
+        {
+            WrappedValue = value;
+        }
+    }
+
+    /// <summary>
+    /// Generic converter for the GenericWrapper type.
+    /// </summary>
+    public sealed class GenericWrapperConverter<T> : JsonConverter<GenericWrapper<T>>
+    {
+        public override GenericWrapper<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            T value = JsonSerializer.Deserialize<T>(ref reader, options)!;
+            return new GenericWrapper<T>(value);
+        }
+
+        public override void Write(Utf8JsonWriter writer, GenericWrapper<T> value, JsonSerializerOptions options)
+        {
+            JsonSerializer.Serialize(writer, value.WrappedValue, options);
+        }
+    }
+
+    /// <summary>
+    /// A class with a property that uses an open generic converter attribute.
+    /// </summary>
+    public class ClassWithGenericConverterOnProperty
+    {
+        [JsonConverter(typeof(GenericWrapperConverter<>))]
+        public GenericWrapper<int> Value { get; set; }
+    }
 }
