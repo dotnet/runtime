@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
@@ -194,7 +193,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 // This should warn: @interface doesn't have the required annotations
                 object o = new();
                 var type = o.GetType();
-                var @interface = type.GetInterfaces().First();
+                var @interface = type.GetInterfaces()[0];
                 _ = type.GetInterfaceMap(@interface);
             }
 
@@ -206,7 +205,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 // Regression test for https://github.com/dotnet/runtime/issues/117849
                 object o = new();
                 var type = o.GetType();
-                var @interface = type.GetInterfaces().First();
+                var @interface = type.GetInterfaces()[0];
                 _ = type.GetInterfaceMap(@interface).TargetMethods;
             }
 
@@ -216,7 +215,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 // Should warn even with multiple field/property accesses
                 object o = new();
                 var type = o.GetType();
-                var @interface = type.GetInterfaces().First();
+                var @interface = type.GetInterfaces()[0];
                 _ = type.GetInterfaceMap(@interface).TargetMethods.Length;
             }
 
