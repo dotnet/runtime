@@ -246,4 +246,5 @@ void WasmRegAlloc::PublishAllocationResults()
     }
 
     m_compiler->raMarkStkVars();
+    m_compiler->compRegAllocDone = true;
 }

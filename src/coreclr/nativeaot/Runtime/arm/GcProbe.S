@@ -21,8 +21,8 @@
     // Define the method prolog, allocating enough stack space for the PInvokeTransitionFrame and saving
     // incoming register values into it.
     PROLOG_VPUSH        "{d0-d3}"           // Save d0-d3 which can have the floating point return value
-    PROLOG_PUSH         "{r0,r1}"           // Save return registers
-    PROLOG_STACK_ALLOC  4                   // Space for caller's SP
+    PROLOG_PUSH         "{r0-r2}"           // Save return registers (r0-r2)
+    PROLOG_STACK_ALLOC  8                   // Space for caller's SP and alignment
     PROLOG_PUSH         "{r4-r10}"          // Save non-volatile registers
     PROLOG_STACK_ALLOC  8                   // Space for flags and Thread*
     PROLOG_PUSH         "{r11,lr}"          // Save caller's frame pointer and return address
@@ -32,7 +32,7 @@
     str         \trashReg, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
 
     // Compute SP value at entry to this method and save it in slot of the frame.
-    add         \trashReg, sp, #(14 * 4 + 4 * 8)
+    add         \trashReg, sp, #(16 * 4 + 4 * 8)
     str         \trashReg, [sp, #(11 * 4)]
 
     // Link the frame into the Thread
@@ -48,8 +48,8 @@
     EPILOG_POP          "{r11,lr}"          // Restore caller's frame pointer and return address
     EPILOG_STACK_FREE   8                   // Discard flags and Thread*
     EPILOG_POP          "{r4-r10}"          // Restore non-volatile registers
-    EPILOG_STACK_FREE   4                   // Discard caller's SP
-    EPILOG_POP          "{r0,r1}"           // Restore return registers
+    EPILOG_STACK_FREE   8                   // Discard caller's SP and alignment
+    EPILOG_POP          "{r0-r2}"           // Restore return registers (r0-r2)
     EPILOG_VPOP         "{d0-d3}"           // Restore d0-d3 which can have the floating point return value
 .endm
 
@@ -61,25 +61,32 @@
 //  All registers correct for return to the original return address.
 //
 // Register state on exit:
-//  r2: thread pointer
-//  r3: trashed
+//  r3: thread pointer
+//  r0, r1, r2: preserved, other volatile regs trashed
 //
 .macro FixupHijackedCallstack
-    push        {r0, r1}
+    push        {r0, r1, r2}
+
+    // align stack to 8 bytes
+    sub         sp, sp, #4
 
     // r0 <- GetThread()
     INLINE_GETTHREAD
 
-    mov         r2, r0
-    pop         {r0, r1}
+    mov         r3, r0
+
+    // restore alignment
+    add         sp, sp, #4
+
+    pop         {r0, r1, r2}
 
     // Fix the stack by restoring the original return address
-    ldr         lr, [r2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+    ldr         lr, [r3, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 
     // Clear hijack state
-    mov         r3, #0
-    str         r3, [r2, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
-    str         r3, [r2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+    mov         r12, #0
+    str         r12, [r3, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+    str         r12, [r3, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 .endm
 
 NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
@@ -110,12 +117,13 @@ NESTED_END RhpGcPollRare
 NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
     FixupHijackedCallstack
 
-    PREPARE_EXTERNAL_VAR_INDIRECT RhpTrapThreads, r3
-    tst         r3, #TrapThreadsFlags_TrapThreads
+    PREPARE_EXTERNAL_VAR_INDIRECT RhpTrapThreads, r12
+    tst         r12, #TrapThreadsFlags_TrapThreads
     bne         LOCAL_LABEL(WaitForGC)
     bx          lr
 LOCAL_LABEL(WaitForGC):
-    mov         r12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0)
+    mov         r2, r3                  // Move thread pointer to r2 for RhpWaitForGC
+    mov         r12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0 + PTFF_SAVE_R2)
     orr         r12, r12, #PTFF_THREAD_HIJACK
     b           RhpWaitForGC
 NESTED_END RhpGcProbeHijack

@@ -46,7 +46,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public static partial Task<JSObject> DynamicImport(string moduleName, string moduleUrl);
 
         [JSImport("INTERNAL.bindCsFunction")]
-        public static partial void BindCSFunction(IntPtr monoMethod, string assemblyName, string namespaceName, string shortClassName, string methodName, int signatureHash, IntPtr signature);
+        public static partial void BindCSFunction(IntPtr methodHandle, string assemblyName, string namespaceName, string shortClassName, string methodName, int signatureHash, IntPtr signature);
 
 #if DEBUG
         [JSImport("globalThis.console.log")]
