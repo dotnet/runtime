@@ -38,6 +38,9 @@ namespace System.Diagnostics.CodeAnalysis
         /// <summary>The syntax identifier for strings containing composite formats for string formatting.</summary>
         public const string CompositeFormat = nameof(CompositeFormat);
 
+        /// <summary>The syntax identifier for strings containing CSharp code.</summary>
+        public const string CSharp = "C#";
+
         /// <summary>The syntax identifier for strings containing date format specifiers.</summary>
         public const string DateOnlyFormat = nameof(DateOnlyFormat);
 
@@ -46,6 +49,9 @@ namespace System.Diagnostics.CodeAnalysis
 
         /// <summary>The syntax identifier for strings containing <see cref="Enum"/> format specifiers.</summary>
         public const string EnumFormat = nameof(EnumFormat);
+
+        /// <summary>The syntax identifier for strings containing FSharp code.</summary>
+        public const string FSharp = "F#";
 
         /// <summary>The syntax identifier for strings containing <see cref="Guid"/> format specifiers.</summary>
         public const string GuidFormat = nameof(GuidFormat);
@@ -68,16 +74,10 @@ namespace System.Diagnostics.CodeAnalysis
         /// <summary>The syntax identifier for strings containing URIs.</summary>
         public const string Uri = nameof(Uri);
 
-        /// <summary>The syntax identifier for strings containing XML.</summary>
-        public const string Xml = nameof(Xml);
-
-        /// <summary>The syntax identifier for strings containing CSharp code.</summary>
-        public const string CSharp = "C#";
-
-        /// <summary>The syntax identifier for strings containing FSharp code.</summary>
-        public const string FSharp = "F#";
-
         /// <summary>The syntax identifier for strings containing VisualBasic code.</summary>
         public const string VisualBasic = "VB.NET";
+
+        /// <summary>The syntax identifier for strings containing XML.</summary>
+        public const string Xml = nameof(Xml);
     }
 }
