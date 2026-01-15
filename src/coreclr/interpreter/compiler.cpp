@@ -4949,8 +4949,18 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         m_pStackPointer--;
         int32_t continuationArg = m_pStackPointer[0].var;
 
-        AddIns(INTOP_LDNULL);
-        m_pLastNewIns->SetDVar(continuationArg);
+        if (m_nextCallAsyncContinuationVar == -1)
+        {
+            AddIns(INTOP_LDNULL);
+            m_pLastNewIns->SetDVar(continuationArg);
+        }
+        else
+        {
+            AddIns(INTOP_MOV_P);
+            m_pLastNewIns->SetSVar(m_nextCallAsyncContinuationVar);
+            m_pLastNewIns->SetDVar(continuationArg);
+            m_nextCallAsyncContinuationVar = -1;
+        }
         callArgs[continuationArgLocation] = continuationArg;
     }
 
