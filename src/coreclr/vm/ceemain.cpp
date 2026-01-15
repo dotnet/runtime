@@ -708,7 +708,6 @@ void EEStartupHelper()
 
 #ifdef FEATURE_PERFMAP
         PerfMap::Initialize();
-        InitThreadManagerPerfMapData();
 #endif
 
 #ifdef FEATURE_PERFTRACING
@@ -733,6 +732,10 @@ void EEStartupHelper()
 
 #ifdef LOGGING
         InitializeLogging();
+#endif
+
+#ifdef FEATURE_PERFMAP
+        InitThreadManagerPerfMapData();
 #endif
 
 #ifdef FEATURE_PGO
