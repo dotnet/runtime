@@ -10970,12 +10970,11 @@ HRESULT CordbAsyncFrame::Init()
         // Initialize module and appdomain
         VMPTR_DomainAssembly vmDomainAssembly;
         IfFailThrow(GetProcess()->GetDAC()->GetDomainAssemblyFromModule(m_vmModule, &vmDomainAssembly));
-        m_pModule.Assign(GetProcess()->LookupOrCreateModule(vmDomainAssembly));
-        m_pAppDomain.Assign(m_pModule->GetAppDomain());
+        CordbModule* pModule = GetProcess()->LookupOrCreateModule(vmDomainAssembly);
+        m_pAppDomain.Assign(pModule->GetAppDomain());
 
         // LookupOrCreateNativeCode is marked INTERNAL_SYNC_API_ENTRY and requires the StopGoLock.
-        m_pCode.Assign(m_pModule->LookupOrCreateNativeCode(m_methodDef, m_vmMethodDesc, m_pCodeStart));
-
+        m_pCode.Assign(pModule->LookupOrCreateNativeCode(m_methodDef, m_vmMethodDesc, m_pCodeStart));
         m_pCode->LoadNativeInfo();
         GetProcess()->GetDAC()->GetAsyncLocals(m_vmMethodDesc, m_pCodeStart, m_state, &m_asyncVars);
 
@@ -11020,7 +11019,6 @@ void CordbAsyncFrame::Neuter()
 
     m_pCode.Clear();
     m_asyncVars.Dealloc();
-    m_pModule.Clear();
     m_pAppDomain.Clear();
 
     m_pFunction.Clear();

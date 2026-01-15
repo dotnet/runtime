@@ -11624,7 +11624,6 @@ struct RSDebuggingInfo
 class CordbAsyncFrame : public CordbBase, public ICorDebugILFrame, public ICorDebugILFrame2, public ICorDebugILFrame3, public ICorDebugILFrame4
 {
     RSSmartPtr<CordbNativeCode> m_pCode;
-    RSSmartPtr<CordbModule> m_pModule;
     RSSmartPtr<CordbAppDomain> m_pAppDomain;
     VMPTR_Module m_vmModule;
     mdMethodDef m_methodDef;
