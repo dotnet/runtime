@@ -3982,8 +3982,12 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
 
             int cns = static_cast<int>(tree->gtGetOp2()->AsIntCon()->IconValue());
 
-            if ((rng.LowerLimit().IsConstant() && !rng.LowerLimit().AddConstant(cns)) ||
-                (rng.UpperLimit().IsConstant() && !rng.UpperLimit().AddConstant(cns)))
+            bool loOverflows = false;
+            bool hiOverflows = false;
+            rng.LowerLimit().AddConstant(cns, &loOverflows);
+            rng.UpperLimit().AddConstant(cns, &hiOverflows);
+
+            if (loOverflows || hiOverflows)
             {
                 // Add cns to both bounds if they are constants. Make sure the addition doesn't overflow.
                 return;
@@ -4473,22 +4477,24 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
 
             if (peeledOffset != 0)
             {
-                Range peeledOffsetRng = Range(Limit(Limit::keConstant, peeledOffset));
-                Range peeledOp1Rng    = Range(Limit(Limit::keUnknown));
-                if (RangeCheck::TryGetRangeFromAssertions(this, peeledOp1VN, assertions, &peeledOp1Rng) &&
-                    !RangeOps::DoesAddOverflow(peeledOp1Rng, peeledOffsetRng))
+                Range peeledOp1Rng = Range(Limit(Limit::keUnknown));
+                if (RangeCheck::TryGetRangeFromAssertions(this, peeledOp1VN, assertions, &peeledOp1Rng))
                 {
-                    // We don't have to check overflow for Subtract because rng2 will
-                    // have keUnknown for its limits if overflow happens.
-                    rng2 = RangeOps::Subtract(rng2, peeledOffsetRng);
+                    bool loOverflows = false;
+                    bool hiOverflows = false;
+                    peeledOp1Rng.LowerLimit().AddConstant(peeledOffset, &loOverflows);
+                    peeledOp1Rng.UpperLimit().AddConstant(peeledOffset, &hiOverflows);
 
-                    RangeOps::RelationKind kind =
-                        RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), peeledOp1Rng, rng2);
-                    if ((kind != RangeOps::RelationKind::Unknown))
+                    if (!loOverflows && !hiOverflows)
                     {
-                        newTree = kind == RangeOps::RelationKind::AlwaysTrue ? gtNewTrue() : gtNewFalse();
-                        newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
-                        return optAssertionProp_Update(newTree, tree, stmt);
+                        RangeOps::RelationKind kind =
+                            RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), peeledOp1Rng, rng2);
+                        if ((kind != RangeOps::RelationKind::Unknown))
+                        {
+                            newTree = kind == RangeOps::RelationKind::AlwaysTrue ? gtNewTrue() : gtNewFalse();
+                            newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+                            return optAssertionProp_Update(newTree, tree, stmt);
+                        }
                     }
                 }
             }

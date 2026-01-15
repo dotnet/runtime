@@ -133,8 +133,12 @@ struct Limit
     {
         return type == keBinOpArray;
     }
-    bool AddConstant(int i)
+    bool AddConstant(int i, bool* overflows = nullptr)
     {
+        if (overflows != nullptr)
+        {
+            *overflows = false;
+        }
         switch (type)
         {
             case keDependent:
@@ -143,6 +147,10 @@ struct Limit
             case keConstant:
                 if (IntAddOverflows(cns, i))
                 {
+                    if (overflows != nullptr)
+                    {
+                        *overflows = true;
+                    }
                     return false;
                 }
                 cns += i;
@@ -418,21 +426,6 @@ struct RangeOps
         return ApplyRangeOp(r1, r2, [](Limit& a, Limit& b) {
             return AddConstantLimit(a, b);
         });
-    }
-
-    static bool DoesAddOverflow(Range& r1, Range& r2)
-    {
-        bool r1loConst = r1.LowerLimit().IsConstant() || r1.LowerLimit().IsBinOpArray();
-        bool r1hiConst = r1.UpperLimit().IsConstant() || r1.UpperLimit().IsBinOpArray();
-        bool r2loConst = r2.LowerLimit().IsConstant() || r2.LowerLimit().IsBinOpArray();
-        bool r2hiConst = r2.UpperLimit().IsConstant() || r2.UpperLimit().IsBinOpArray();
-
-        if ((r1loConst && r2loConst && IntAddOverflows(r1.LowerLimit().GetConstant(), r2.LowerLimit().GetConstant())) ||
-            (r1hiConst && r2hiConst && IntAddOverflows(r1.UpperLimit().GetConstant(), r2.UpperLimit().GetConstant())))
-        {
-            return true;
-        }
-        return false;
     }
 
     static Range Subtract(Range& r1, Range& r2)
