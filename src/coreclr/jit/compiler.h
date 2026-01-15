@@ -4197,7 +4197,7 @@ public:
 
     PhaseStatus lvaMarkLocalVars(); // Local variable ref-counting
     void lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers);
-    void lvaMarkLocalVars(BasicBlock* block, bool isRecompute);
+    void lvaMarkLocalVars(BasicBlock* block);
 
     void lvaAllocOutgoingArgSpaceVar(); // Set up lvaOutgoingArgSpaceVar
 
@@ -4392,7 +4392,7 @@ public:
 protected:
     //---------------- Local variable ref-counting ----------------------------
 
-    void lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt, bool isRecompute);
+    void lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt);
     bool IsDominatedByExceptionalEntry(BasicBlock* block);
     void SetHasExceptionalUsesHint(LclVarDsc* varDsc);
 
@@ -9865,7 +9865,7 @@ public:
     bool fgIsDoingEarlyLiveness         = false;
     bool fgDidEarlyLiveness             = false;
     bool compPostImportationCleanupDone = false;
-    bool compLSRADone                   = false;
+    bool compRegAllocDone               = false;
     bool compRationalIRForm             = false;
 
     bool compGeneratingProlog       = false;

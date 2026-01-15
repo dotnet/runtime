@@ -92,6 +92,7 @@ public class ManagedToNativeGenerator : Task
                         "n",
                         "ni",
                         "nii",
+                        "niii",
                         "nn",
                         "nni",
                         "vd",

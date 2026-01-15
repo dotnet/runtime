@@ -31,6 +31,8 @@ The LoongArch64 ABI documentation is [here](https://github.com/loongson/LoongArc
 
 The RISC-V ABIs Specification: [latest release](https://github.com/riscv-non-isa/riscv-elf-psabi-doc/releases/latest), [latest draft](https://github.com/riscv-non-isa/riscv-elf-psabi-doc/releases), [document source repo](https://github.com/riscv-non-isa/riscv-elf-psabi-doc).
 
+Web Assembly Basic C ABI: [Basic C ABI](https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md)
+
 # General Unwind/Frame Layout
 
 For all non-x86 platforms, all methods must have unwind information so the garbage collector (GC) can unwind them (unlike native code in which a leaf method may be omitted).
@@ -698,3 +700,173 @@ The stack elements are always aligned to at least `INTERP_STACK_SLOT_SIZE` and n
 Primitive types smaller than 4 bytes are always zero or sign extended to 4 bytes when on the stack.
 
 When a function is async it will have a continuation return. This return is not done using the data stack, but instead is done by setting the Continuation field in the `InterpreterFrame`. Thunks are responsible for setting/resetting this value as we enter/leave code compiled by the JIT.
+
+# Web Assembly ABI (R2R and JIT)
+
+For managed methods compiled to Web Assembly (hereafter "managed code") the CLR generally follows the [Wasm Basic C ABI](https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md).
+
+Managed code uses the same linear stack as C code. The stack grows down.
+
+## Incoming argument ABI
+
+The linear stack pointer `$sp` is the first argument to all methods. At a native->managed transition it is the value of the `$__stack_pointer` global. This global may be updated to the current `$sp` within managed code, and must be up to date with the current `$sp` at managed->native boundaries. Within the method the stack pointer always points at the bottom (lowest address) of the stack; generally this is a fixed offset from the value the stack pointer held on entry, except in methods that can do dynamic allocation.
+
+A frame pointer, if used, points at the bottom of the "fixed" portion of the stack to facilitate use of Wasm addressing modes, which only allow positive offsets.
+
+Structs are generally passed by-reference, unless they happen to exactly contain a single primitive field (or be a struct exactly containing such a struct). The linear stack provides the backing storage for the by-reference structs.
+
+Structs are generally returned via hidden buffers, whose address is supplied by the caller and passed just after the `$sp` argument.  In such cases the return value of the method is the address of the return value. But if the struct can be passed on the Wasm stack it is returned on the Wasm stack.
+
+(TBD: ABI for vector types)
+
+### Prolog
+
+The prolog will increment the stack pointer, home any arguments that are stored on the linear stack, and zero initialize slots on the linear stack as appropriate. It will establish a frame pointer if one is needed.
+
+It will also save a frame descriptor onto the stack, for use during GC and EH. For methods with EH or with GC safe points, a slot on the linear stack will be reserved for a "virtual IP" that will index into the EH and GC info to provide within-method information and allow external code to walk the managed stack frames.
+
+### Epilog
+
+Generally epilogs will be empty. There is no notion of callee-save registers in Wasm, and no other global state to update.
+
+## Outgoing call ABI
+
+For direct managed calls, Wasm uses the Portable Entry Point feature to facilitate smooth interop with interpreted code. This means all managed calls are made indirectly, and the portable entry point is also passed as the last argument.
+
+The call sequence will then be
+```
+local.get sp
+push arg 0
+...
+push arg N-1
+load PortableEntryPointPtr   ;; pushes address of portable entry point (&pe)
+dup
+load CellIndex (from &pe)
+call_indirect <tableIndex> <sigIndex>  (sig is: int32 (sp) arg0... argN-1 int32 (&pe))
+```
+Initially the cell will contain code to determine if the target method has R2R code or must be interpreted. If there is R2R code for the method it is validated and fixed up as needed. Once the target is resolved the cell can be updated to just refer to the R2R code directly, if there is any, or to a thunk for invoking the interpreter.
+
+For virtual managed calls the sequence is similar, but the portable entry point is obtained by calling a resolve helper:
+```
+local.get sp
+push arg 0
+...
+push arg N-1
+... push args for resolution ...
+call resolve                     ;; pushes address of portable entry point (&pe)
+dup
+load CellIndex (from &pe)        ;; pushes Wasm function table index of the code to invoke
+
+call_indirect <tableIndex> <sigIndex>  (sig is: int32 (sp) arg0... argN-1 int32 (&pe))
+```
+Because the `&pe` arg must be passed to the portable entrypoint, all method signatures must reflect the extra final argument (even though it will be unused). Thus for example a managed method like `int F(int x)` will have a Wasm signature `(func (param int32 int32 int32) (result int32))`.
+
+Alternatively we may choose to pass the `&pe` via a Wasm global.
+
+As an optimization, for vtable-based virtual managed calls, codegen may fetch the portable entry point from the appropriate vtable slot instead of calling the resolve helper.
+
+As an optimization, if it is known that the callee is also compiled R2R, the caller can invoke the callee directly. Since R2R method bodies may be invalidated at runtime, validation of that the callee's R2R must be done when validating the caller's R2R.
+
+FCalls implemented in native code will follow the same managed calling convention. FCall implementation macros (`FCIMPL`) will be modified to produce a small inline assembly wrapper that re-establishes `$__stack_pointer`.
+
+## GC References at Call Sites
+
+Wasm does not allow for outside access to the Wasm stack. So, before call sites that may trigger GC, all GC references live after the call (and all untracked GC references, which are effectively always live) must be saved to the linear stack. These GC references will be reported as pinned to the GC so that if they normally live in Wasm locals those locals do not need to be updated after the call. The live GC slots on the linear stack will be identified by the virtual IP (also stored on the linear stack) and the GC info (accessible from the frame descriptor, also on the linear stack).
+
+So for example if we have code like `x(a, y(b)); ... a; ... b;` where `a` and `b` are gc refs that initially are in Wasm locals, this fragment would compile into something like
+```
+;; sp for call to x
+local.get sp
+
+;; spill a to linear memory
+local.get sp
+local.get a
+i32.store offset=(a's offset in gc area of stack)
+
+;; arg a for call to x
+local.get a
+
+;; sp for call to y
+local.get sp
+
+;; spill b to linear memory
+local.get sp
+local.get b
+i32.store offset=(b's offset in gc area of stack)
+
+;; arg b for call to y
+local.get b
+
+;; update virtual IP for call to y with live gc refs
+local.get sp
+i32.const virtual-ip-for-call-to-y  (gc info : a and b slots live)
+i32.store offset=(virtual-ip offset)
+
+;; fetch &pe for y and cell index from &pe, call y
+load PortableEntryPointPtr for y
+dup
+load CellIndex (from &pe)
+call_indirect <tableIndex> <sigIndex>  (sig is: int32 (sp) int32 int32 (&pe) : returns int32)
+
+;; update virtual IP for call to x with live gc refs [can be optimized out]
+local.get sp
+i32.const virtual-ip-for-call-to-x (gc info : a and b slots live)
+i32.store offset=(virtual-ip offset)
+
+;; fetch &pe for x and cell index from &pe, call x
+load PortableEntryPointPtr for x
+dup
+load CellIndex (from &pe)
+call_indirect <tableIndex> <sigIndex>  (sig is: int32 (sp) int32 int32 (&pe) : returns int32)
+```
+Notes:
+* As an optimization, we can avoid updating the virtual IP when the GC/EH info it refers to is unchanged from the last update.
+* We may want to un-nest calls, relying on a Wasm local instead of the Wasm stack to convey nested call results to the parent call.
+* As an optimization, we will try and minimize storing gc refs to the linear stack (eg if the value already there hasn't changed from the last update).
+* As an optimization, we may try and have some gc refs primarily live on the linear stack, and not be held in Wasm locals.
+
+## Tail Calls
+
+For tail calls the only differences are the use of the `return_call_indirect` in the call, and passing the original `sp` value to the callee:
+```
+local.get sp
+i32.const <frameSize>
+i32.add
+
+push arg 0
+...
+push arg N-1
+load PortableEntryPointPtr
+dup
+load CellIndex (from &pe)
+return_call_indirect <tableIndex> <sigIndex>  (sig is: int32 (sp) arg0... argN-1 int32 (&pe))
+```
+and similarly for indirect managed calls.
+
+## PInvoke
+
+PInvoke will re-establish `$__stack_pointer` before calling the target.
+
+## Reverse PInvoke
+
+Reverse PInvoke prolog will load the global `$__stack_pointer` and use it as the managed `sp`.
+
+On return the global `$__stack_pointer` is reset to the value it had on stub entry.
+
+## Async
+
+TBD
+
+## Interpreter Stubs
+
+There will be stubs involved in both managed code->interpreter and interpreter->managed code calls. For R2R these will be per signature, generated by crossgen2.
+
+### Interpreted -> Managed
+
+The interpreter->managed stub will load the global `$__stack_pointer`, then the method arguments from the interpreter stack, and finally `int32.const 0` for the final `&pe` argument, which will be ignored by managed code (that last part can be omitted, if we pass this via a Wasm global instead), and then call the managed method.
+
+On return the global `$__stack_pointer` is reset to the value it had on stub entry.
+
+### Managed->Interpreted
+
+This stub will be passed the current managed `sp` and must store it into the global `$__stack_pointer`. The interpreter stack (see above) will be extended with a new `InterpMethodContextFrame` frame, and arguments will be moved from Wasm locals to the frame. The `&pe` argument will then be used to invoke the interpreter on the proper IL method body.
