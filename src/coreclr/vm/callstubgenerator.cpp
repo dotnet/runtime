@@ -596,6 +596,7 @@ extern "C" void Store_X7();
 extern "C" void Load_SwiftSelf();
 extern "C" void Load_SwiftSelf_ByRef();
 extern "C" void Load_SwiftError();
+extern "C" void Load_SwiftIndirectResult();
 
 extern "C" void Load_X0_AtOffset();
 extern "C" void Load_X1_AtOffset();
@@ -2016,6 +2017,14 @@ PCODE CallStubGenerator::GetSwiftErrorRoutine()
     return (PCODE)Load_SwiftError;
 }
 
+PCODE CallStubGenerator::GetSwiftIndirectResultRoutine()
+{
+#if LOG_COMPUTE_CALL_STUB
+    printf("GetSwiftIndirectResultRoutine\n");
+#endif
+    return (PCODE)Load_SwiftIndirectResult;
+}
+
 // Get offset-aware load routine for Swift struct lowering (GP registers)
 PCODE CallStubGenerator::GetSwiftLoadGPAtOffsetRoutine(int regIndex)
 {
@@ -2527,6 +2536,11 @@ void CallStubGenerator::TerminateCurrentRoutineIfNotOfNewType(RoutineType type, 
         pRoutines[m_routineIndex++] = GetSwiftErrorRoutine();
         m_currentRoutineType = RoutineType::None;
     }
+    else if ((m_currentRoutineType == RoutineType::SwiftIndirectResult) && (type != RoutineType::SwiftIndirectResult))
+    {
+        pRoutines[m_routineIndex++] = GetSwiftIndirectResultRoutine();
+        m_currentRoutineType = RoutineType::None;
+    }
 #endif // TARGET_ARM64
     else if ((m_currentRoutineType == RoutineType::Stack) && (type != RoutineType::Stack))
     {
@@ -2808,6 +2822,16 @@ void ValidateSwiftCallSignature(MetaSig &sig)
         }
     }
 
+    if (swiftIndirectResultCount > 0)
+    {
+        TypeHandle thReturnValueType;
+        CorElementType retType = sig.GetReturnTypeNormalized(&thReturnValueType);
+        if (retType != ELEMENT_TYPE_VOID)
+        {
+            COMPlusThrow(kInvalidProgramException);
+        }
+    }
+
     sig.Reset();
 }
 #endif // TARGET_ARM64
@@ -2973,6 +2997,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
     };
     SwiftLoweringElement swiftLoweringInfo[128];
     int swiftLoweringCount = 0;
+    int swiftIndirectResultCount = 0;
 
     if (isSwiftCallConv)
     {
@@ -2986,7 +3011,6 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
         int newArgCount = 0;
         int swiftSelfCount = 0;
         int swiftErrorCount = 0;
-        int swiftIndirectResultCount = 0;
         CorElementType argType;
         while ((argType = sig.NextArg()) != ELEMENT_TYPE_END)
         {
@@ -3045,6 +3069,8 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
                     {
                         COMPlusThrow(kInvalidProgramException);
                     }
+                    // SwiftIndirectResult goes in x8, not in argument registers
+                    continue;
                 }
 
                 if (argType == ELEMENT_TYPE_VALUETYPE)
@@ -3082,7 +3108,12 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
                 MethodTable* pArgMT = thArgType.IsTypeDesc() ? nullptr : thArgType.AsMethodTable();
                 if (pArgMT != nullptr)
                 {
-                    // Don't lower SwiftSelf or SwiftError types
+                    if (isSwiftIndirectResultType(pArgMT))
+                    {
+                        // SwiftIndirectResult goes in x8, not in argument registers
+                        continue;
+                    }
+                    // Don't lower Swift* types except SwiftSelf<T>
                     if (isSwiftSelfType(pArgMT) || isSwiftErrorType(pArgMT))
                     {
                         SigPointer pArg = sig.GetArgProps();
@@ -3183,6 +3214,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
     m_totalStackSize = argIt.SizeOfArgStack();
 #ifdef TARGET_ARM64
     m_swiftSelfByRefSize = 0;
+    m_hasSwiftIndirectResult = (isSwiftCallConv && swiftIndirectResultCount > 0);
 #endif
 #if LOG_COMPUTE_CALL_STUB
     printf("ComputeCallStub\n");
@@ -3225,6 +3257,19 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
         ProcessArgument(NULL, asyncContinuationLocDesc, pRoutines);
         interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
     }
+
+#ifdef TARGET_ARM64
+    if (m_hasSwiftIndirectResult)
+    {
+#if LOG_COMPUTE_CALL_STUB
+        printf("Emitting Load_SwiftIndirectResult routine\n");
+#endif
+        TerminateCurrentRoutineIfNotOfNewType(RoutineType::SwiftIndirectResult, pRoutines);
+        pRoutines[m_routineIndex++] = GetSwiftIndirectResultRoutine();
+        m_currentRoutineType = RoutineType::None;
+        interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
+    }
+#endif
 
     int ofs;
     while ((ofs = argIt.GetNextOffset()) != TransitionBlock::InvalidOffset)

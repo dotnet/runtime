@@ -120,6 +120,7 @@ class CallStubGenerator
         SwiftSelf,
         SwiftSelfByRef,
         SwiftError,
+        SwiftIndirectResult,
 #endif
         Stack
     };
@@ -145,6 +146,8 @@ class CallStubGenerator
 #ifdef TARGET_ARM64
     // Size of struct for SwiftSelf<T> byReference case
     int m_swiftSelfByRefSize = 0;
+    // Track if SwiftIndirectResult was used
+    bool m_hasSwiftIndirectResult = false;
 #endif
 
     CallStubHeader::InvokeFunctionPtr m_pInvokeFunction = NULL;
@@ -167,6 +170,7 @@ class CallStubGenerator
     PCODE GetSwiftSelfRoutine();
     PCODE GetSwiftSelfByRefRoutine();
     PCODE GetSwiftErrorRoutine();
+    PCODE GetSwiftIndirectResultRoutine();
     PCODE GetSwiftLoadGPAtOffsetRoutine(int regIndex);
     PCODE GetSwiftLoadFPAtOffsetRoutine(int regIndex);
 #endif

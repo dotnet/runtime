@@ -101,12 +101,14 @@
         PROLOG_SAVE_REG_PAIR           fp, lr, #-224!
         SAVE_ARGUMENT_REGISTERS        sp, 16
         SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 96
+        str     x8, [sp, #208]         ; Save x8 (indirect result register for Swift)
 
         mov     x0, x12
         bl      PInvokeImportWorker
         mov     x12, x0
 
         ; pop the stack and restore original register state
+        ldr     x8, [sp, #208]         ; Restore x8 (indirect result register for Swift)
         RESTORE_FLOAT_ARGUMENT_REGISTERS  sp, 96
         RESTORE_ARGUMENT_REGISTERS        sp, 16
         EPILOG_RESTORE_REG_PAIR           fp, lr, #224!
@@ -1468,6 +1470,12 @@ RefCopyDone$argReg
         ldr x11, [x10], #8
         EPILOG_BRANCH_REG x11
     LEAF_END Load_SwiftError
+
+    LEAF_ENTRY Load_SwiftIndirectResult
+        ldr x11, [x9], #8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Load_SwiftIndirectResult
 
     LEAF_ENTRY Store_X0
         str x0, [x9], #8
