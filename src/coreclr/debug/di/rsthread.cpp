@@ -11132,12 +11132,7 @@ HRESULT CordbAsyncFrame::GetFunctionToken(mdMethodDef *pToken)
 
 HRESULT CordbAsyncFrame::GetStackRange(CORDB_ADDRESS *pStart, CORDB_ADDRESS *pEnd)
 {
-    PUBLIC_REENTRANT_API_ENTRY(this);
-
-    // TODO: What should the semantics be here?
-    *pStart = (CORDB_ADDRESS)this; //this is used by VIL to find the correct frame, we need to return something or fix VIL????
-    *pEnd = (CORDB_ADDRESS)this;
-    return S_OK;
+    return E_NOTIMPL;
 }
 
 HRESULT CordbAsyncFrame::CreateStepper(ICorDebugStepper **ppStepper)
