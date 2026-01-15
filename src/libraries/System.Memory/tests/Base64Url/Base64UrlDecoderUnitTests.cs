@@ -956,7 +956,7 @@ namespace System.Buffers.Text.Tests
         [Fact]
         public void DecodingWithEmbeddedWhiteSpaceIntoSmallDestination_DecodeFromUtf8()
         {
-            // Tests DecodeWithWhiteSpaceBlockwiseWrapper path - whitespace embedded in Base64 data.
+            // Tests DecodeWithWhiteSpaceBlockwiseWrapper path - whitespace embedded in Base64Url data.
             // Input "z A==" has whitespace in the middle. Decodes to 1 byte (0xCC).
             byte[] input = Encoding.UTF8.GetBytes("z A==");
 
@@ -980,7 +980,7 @@ namespace System.Buffers.Text.Tests
         [Fact]
         public void DecodingWithEmbeddedWhiteSpaceIntoSmallDestination_DecodeFromChars()
         {
-            // Tests DecodeWithWhiteSpaceBlockwiseWrapper path for chars - whitespace embedded in Base64 data.
+            // Tests DecodeWithWhiteSpaceBlockwiseWrapper path for chars - whitespace embedded in Base64Url data.
             char[] input = "z A==".ToCharArray();
 
             byte[] destination1 = new byte[1];
