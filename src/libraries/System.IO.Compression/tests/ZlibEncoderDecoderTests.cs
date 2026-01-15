@@ -468,7 +468,7 @@ namespace System.IO.Compression
             byte[] compressed = new byte[ZlibEncoder.GetMaxCompressedLength(size)];
             byte[] decompressed = new byte[size];
 
-            using var encoder = new ZlibEncoder(6, ZlibCompressionFormat.Deflate);
+            using var encoder = new ZlibEncoder(CompressionLevel.Optimal, ZlibCompressionFormat.Deflate);
             encoder.Compress(original, compressed, out _, out int compressedSize, isFinalBlock: true);
 
             using var decoder = new ZlibDecoder(ZlibCompressionFormat.Deflate);
