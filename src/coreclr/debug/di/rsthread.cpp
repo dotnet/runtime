@@ -4443,23 +4443,6 @@ inline CORDB_ADDRESS GetSPFromDebuggerREGDISPLAY(DebuggerREGDISPLAY* pDRD)
 }
 
 
-HRESULT CordbContext::QueryInterface(REFIID id, void **pInterface)
-{
-    if (id == IID_ICorDebugContext)
-        *pInterface = static_cast<ICorDebugContext*>(this);
-    else if (id == IID_IUnknown)
-        *pInterface = static_cast<IUnknown*>(static_cast<ICorDebugContext*>(this));
-    else
-    {
-        *pInterface = NULL;
-        return E_NOINTERFACE;
-    }
-
-    AddRef();
-    return S_OK;
-}
-
-
 /* ------------------------------------------------------------------------- *
  * Frame class
  * ------------------------------------------------------------------------- */

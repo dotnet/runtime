@@ -80,7 +80,6 @@ class CordbCode;
 class CordbFrame;
 class CordbJITILFrame;
 class CordbInternalFrame;
-class CordbContext;
 class CordbThread;
 class CordbVariableHome;
 
@@ -1072,7 +1071,6 @@ typedef enum {
     enumCordbFunction,
     enumCordbThread,
     enumCordbCode,
-    enumCordbContext,
     enumCordbFrame,
     enumCordbValueEnum,
     enumCordbRegisterSet,
@@ -6427,41 +6425,6 @@ private:
     HRESULT m_cachedHR;
     bool m_fIsOneFrameAhead;
 };
-
-
-class CordbContext : public CordbBase, public ICorDebugContext
-{
-public:
-
-    CordbContext() : CordbBase(NULL, 0, enumCordbContext) {}
-
-
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { return "CordbContext"; }
-#endif
-
-
-    //-----------------------------------------------------------
-    // IUnknown
-    //-----------------------------------------------------------
-
-    ULONG STDMETHODCALLTYPE AddRef()
-    {
-        return (BaseAddRef());
-    }
-    ULONG STDMETHODCALLTYPE Release()
-    {
-        return (BaseRelease());
-    }
-    COM_METHOD QueryInterface(REFIID riid, void **ppInterface);
-
-    //-----------------------------------------------------------
-    // ICorDebugContext
-    //-----------------------------------------------------------
-private:
-
-} ;
 
 
 /* ------------------------------------------------------------------------- *
