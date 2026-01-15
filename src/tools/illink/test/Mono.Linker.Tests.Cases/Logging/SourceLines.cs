@@ -31,16 +31,16 @@ namespace Mono.Linker.Tests.Cases.Logging
         // Analyzer test infrastructure doesn't support ExpectedWarning at the top-level.
         // This is OK because the test is meant to validate that the ILLink infrastructure produces the right line numbers,
         // and we have separate tests to check the line number of analyzer warnings.
-        [ExpectedWarning("IL2074", nameof(SourceLines) + "." + nameof(type), nameof(SourceLines) + "." + nameof(GetUnknownType) + "()", Tool.Analyzer, "")]
-        [ExpectedWarning("IL2074", nameof(SourceLines) + "." + nameof(type), nameof(SourceLines) + "." + nameof(GetUnknownType) + "()", Tool.Analyzer, "")]
+        [ExpectedWarning("IL2074", nameof(SourceLines) + "." + nameof(type), nameof(SourceLines) + "." + nameof(GetUnknownType) + "()", Tool.Analyzer, "Analyzer limitation in dataflow analysis")]
+        [ExpectedWarning("IL2074", nameof(SourceLines) + "." + nameof(type), nameof(SourceLines) + "." + nameof(GetUnknownType) + "()", Tool.Analyzer, "Analyzer limitation in dataflow analysis")]
         static void UnrecognizedReflectionPattern()
         {
             type = GetUnknownType(); // IL2074
             type = GetUnknownType(); // IL2074
         }
 
-        [ExpectedWarning("IL2091", "LocalFunction()", Tool.Analyzer, "")]
-        [ExpectedWarning("IL2089", nameof(SourceLines) + "." + nameof(type), "TOuterMethod", Tool.Analyzer, "")]
+        [ExpectedWarning("IL2091", "LocalFunction()", Tool.Analyzer, "Analyzer limitation in local function tracking")]
+        [ExpectedWarning("IL2089", nameof(SourceLines) + "." + nameof(type), "TOuterMethod", Tool.Analyzer, "Analyzer limitation in generic parameter tracking")]
         static IEnumerable<int> GenericMethodIteratorWithRequirement<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TOuterMethod>()
         {
             LocalFunction();

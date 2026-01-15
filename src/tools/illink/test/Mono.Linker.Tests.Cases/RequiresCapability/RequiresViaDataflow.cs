@@ -60,11 +60,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--")]
-            [ExpectedWarning("IL3002", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--", Tool.NativeAot, "NativeAOT specific warning")]
             [ExpectedWarning("IL2026", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--")]
-            [ExpectedWarning("IL3002", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--", Tool.NativeAot, "NativeAOT specific warning")]
             static void TestOverriddenVirtualMethod()
             {
                 MethodWithAnnotatedParameter(typeof(TypeWhichOverridesMethod));
@@ -93,8 +93,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--")]
-            [ExpectedWarning("IL3002", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", Tool.NativeAot, "NativeAOT specific warning")]
             static void TestAccessOnGenericType()
             {
                 new TypeWithPublicMethods<TypeWithRequiresMethod>();
@@ -103,8 +103,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             static void MethodWithPublicMethods<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>() { }
 
             [ExpectedWarning("IL2026", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--")]
-            [ExpectedWarning("IL3002", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", Tool.NativeAot, "NativeAOT specific warning")]
             static void TestAccessOnGenericMethod()
             {
                 MethodWithPublicMethods<TypeWithRequiresMethod>();
@@ -113,8 +113,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             static void MethodWithPublicMethodsInference<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>(T instance) { }
 
             [ExpectedWarning("IL2026", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--")]
-            [ExpectedWarning("IL3002", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", Tool.NativeAot, "NativeAOT specific warning")]
             static void TestAccessOnGenericMethodWithInferenceOnMethod()
             {
                 MethodWithPublicMethodsInference(new TypeWithRequiresMethod());

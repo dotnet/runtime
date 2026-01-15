@@ -247,7 +247,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 EventRequires(null, null); // no warning on invocation
             }
 
-            [ExpectedWarning("IL3002", "--Requires--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--Requires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT specific warning")]
             public static void Test()
             {
                 Requires();

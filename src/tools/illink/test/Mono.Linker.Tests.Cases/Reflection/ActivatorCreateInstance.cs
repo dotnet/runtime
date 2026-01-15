@@ -171,8 +171,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
         }
 
         // Small formatting difference
-        [ExpectedWarning("IL2067", nameof(Activator) + "." + nameof(Activator.CreateInstance) + "(Type, Object[])", Tool.Trimmer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL2067", nameof(Activator) + "." + nameof(Activator.CreateInstance) + "(Type, params Object[])", Tool.Analyzer, "")]
+        [ExpectedWarning("IL2067", nameof(Activator) + "." + nameof(Activator.CreateInstance) + "(Type, Object[])", Tool.Trimmer | Tool.NativeAot, "Parameter annotation tracking difference")]
+        [ExpectedWarning("IL2067", nameof(Activator) + "." + nameof(Activator.CreateInstance) + "(Type, params Object[])", Tool.Analyzer, "Analyzer limitation in parameter annotation tracking")]
         [ExpectedWarning("IL2067", nameof(Activator) + "." + nameof(Activator.CreateInstance), nameof(CultureInfo))]
         [Kept]
         private void FromParameterOnInstanceMethod(
@@ -197,8 +197,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
         [ExpectedWarning("IL2067", nameof(Activator) + "." + nameof(Activator.CreateInstance) + "(Type)")]
         // Small formatting difference
-        [ExpectedWarning("IL2067", nameof(Activator) + "." + nameof(Activator.CreateInstance) + "(Type, Object[])", Tool.Trimmer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL2067", nameof(Activator) + "." + nameof(Activator.CreateInstance) + "(Type, params Object[])", Tool.Analyzer, "")]
+        [ExpectedWarning("IL2067", nameof(Activator) + "." + nameof(Activator.CreateInstance) + "(Type, Object[])", Tool.Trimmer | Tool.NativeAot, "Parameter annotation tracking difference")]
+        [ExpectedWarning("IL2067", nameof(Activator) + "." + nameof(Activator.CreateInstance) + "(Type, params Object[])", Tool.Analyzer, "Analyzer limitation in parameter annotation tracking")]
         [Kept]
         private static void FromParameterWithNonPublicConstructors(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
@@ -375,7 +375,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
         [Kept]
         // Analyzer doesn't handle assembly resolution
-        [ExpectedWarning("IL2061", nameof(Activator) + "." + nameof(Activator.CreateInstance), "NonExistingAssembly", Tool.Trimmer, "")]
+        [ExpectedWarning("IL2061", nameof(Activator) + "." + nameof(Activator.CreateInstance), "NonExistingAssembly", Tool.Trimmer, "Trimmer specific assembly resolution warning")]
         private static void WithNonExistingAssemblyName()
         {
             Activator.CreateInstance("NonExistingAssembly", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyNameParameterless1");

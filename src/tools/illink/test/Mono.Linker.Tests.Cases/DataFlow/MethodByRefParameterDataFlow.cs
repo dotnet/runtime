@@ -265,7 +265,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             TryGetAnnotatedValueOut(out TypeWithMethodsProperty);
         }
 
-        [ExpectedWarning("IL2072", nameof(TryGetAnnotatedValue), Tool.Trimmer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL2072", nameof(TryGetAnnotatedValue), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101734")]
         static void TestPassingRefProperty_Mismatch()
         {
             TryGetAnnotatedValue(ref TypeWithFieldsProperty);
@@ -312,8 +312,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         // https://github.com/dotnet/linker/issues/2158
-        [ExpectedWarning("IL2068", nameof(TryGetAnnotatedValue), Tool.Trimmer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL2072", nameof(TryGetAnnotatedValue), Tool.Trimmer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL2068", nameof(TryGetAnnotatedValue), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101734")]
+        [ExpectedWarning("IL2072", nameof(TryGetAnnotatedValue), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101734")]
         static void TestPassingRefIndexer_Mismatch()
         {
             var indexer = new RefIndexer_PublicFields();
@@ -321,7 +321,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         // https://github.com/dotnet/linker/issues/2158
-        [ExpectedWarning("IL2068", nameof(TryGetAnnotatedValue), Tool.Trimmer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL2068", nameof(TryGetAnnotatedValue), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101734")]
         static void TestPassingRefIndexer_OutParameter_Mismatch()
         {
             var indexer = new RefIndexer_PublicFields();

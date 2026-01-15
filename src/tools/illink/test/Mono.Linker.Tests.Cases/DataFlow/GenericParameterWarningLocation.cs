@@ -237,11 +237,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             static void MethodWithSpecificType(TypeWithPublicMethods<TestType> one, IWithTwo<TestType, TestType> two) { }
 
-            [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
+            [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/95121")]
             static void MethodWithOneMismatch<TUnknown>(TypeWithPublicMethods<TUnknown> one) { }
 
-            [ExpectedWarning("IL2091", nameof(IWithTwo<TestType, TestType>), Tool.NativeAot | Tool.Trimmer, "")]
-            [ExpectedWarning("IL2091", nameof(TypeWithPublicMethods<TestType>), Tool.NativeAot | Tool.Trimmer, "")]
+            [ExpectedWarning("IL2091", nameof(IWithTwo<TestType, TestType>), Tool.NativeAot | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/95121")]
+            [ExpectedWarning("IL2091", nameof(TypeWithPublicMethods<TestType>), Tool.NativeAot | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/95121")]
             static void MethodWithTwoMismatches<
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
@@ -252,11 +252,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             static TypeWithPublicMethods<TPublicMethods> MethodWithMatchingReturn<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>() => null;
 
-            [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
+            [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/95121")]
             static TypeWithPublicMethods<TUnknown> MethodWithOneMismatchReturn<TUnknown>() => null;
 
-            [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
-            [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
+            [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/95121")]
+            [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/95121")]
             static IWithTwo<TPublicFields, TPublicMethods> MethodWithTwoMismatchesInReturn<
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
@@ -264,7 +264,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             class ConstructorWithOneMatchAndOneMismatch<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TMethods>
             {
-                [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
+                [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/95121")]
                 public ConstructorWithOneMatchAndOneMismatch(IWithTwo<TMethods, TMethods> two) { }
             }
 
@@ -367,10 +367,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             class MultipleReferencesToTheSameType<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods, TUnknown>
             {
-                [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
+                [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/95121")]
                 static TypeWithPublicMethods<TUnknown> _field1;
                 static TypeWithPublicMethods<TPublicMethods> _field2;
-                [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
+                [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/95121")]
                 static TypeWithPublicMethods<TUnknown> _field3;
             }
 
@@ -378,8 +378,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields>
             {
-                [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
-                [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
+                [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/95121")]
+                [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/95121")]
                 static IWithTwo<TPublicFields, TPublicMethods> _field;
             }
 
@@ -545,8 +545,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 }
 
                 // Analyzer doesn't warn on typeof
-                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95121")]
+                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95121")]
                 static void MultipleReferencesToTheSameType<
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
                     TUnknown>()
@@ -557,8 +557,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 }
 
                 // Analyzer doesn't warn on typeof
-                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95121")]
+                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95121")]
                 static void TwoMismatchesInOneStatement<
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
@@ -911,9 +911,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 //    ldtoken owningtype
                 // In order to call the right Expression APIs.
                 [ExpectedWarning("IL2091")]
-                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95121")]
                 [ExpectedWarning("IL2091")]
-                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95121")]
                 static void MultipleReferencesToTheSameMethod<
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
                     TUnknown>()
@@ -928,9 +928,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 //    ldtoken owningtype
                 // In order to call the right Expression APIs.
                 [ExpectedWarning("IL2091")]
-                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95121")]
                 [ExpectedWarning("IL2091")]
-                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95121")]
                 static void TwoMismatchesInOneStatement<
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
@@ -966,8 +966,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 //    ldtoken field
                 //    ldtoken owningtype
                 // In order to call the right Expression APIs.
-                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95121")]
+                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95121")]
                 static void MultipleReferencesToTheSameField<
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
                     TUnknown>()
@@ -983,8 +983,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 //    ldtoken field
                 //    ldtoken owningtype
                 // In order to call the right Expression APIs.
-                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95121")]
+                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95121")]
                 static void TwoMismatchesInOneStatement<
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
@@ -1020,8 +1020,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 //    ldtoken method (getter)
                 //    ldtoken owningtype
                 // In order to call the right Expression APIs.
-                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95121")]
+                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95121")]
                 static void MultipleReferencesToTheSameProperty<
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
                     TUnknown>()
@@ -1037,8 +1037,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 //    ldtoken method (getter)
                 //    ldtoken owningtype
                 // In order to call the right Expression APIs.
-                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95121")]
+                [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95121")]
                 static void TwoMismatchesInOneStatement<
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>

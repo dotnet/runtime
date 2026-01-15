@@ -162,8 +162,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--TypeWithMethodWhichRequires--")]
-            [ExpectedWarning("IL3002", "--TypeWithMethodWhichRequires--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--TypeWithMethodWhichRequires--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--TypeWithMethodWhichRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "--TypeWithMethodWhichRequires--", Tool.NativeAot, "NativeAOT specific warning")]
             [AttributeWhichMarksPublicMethods(typeof(TypeWithMethodWhichRequires))]
             static void ShouldWarn()
             {
