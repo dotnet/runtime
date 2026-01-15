@@ -706,6 +706,11 @@ void EEStartupHelper()
         }
 #endif
 
+#ifdef FEATURE_PERFMAP
+        PerfMap::Initialize();
+        InitThreadManagerPerfMapData();
+#endif
+
 #ifdef FEATURE_PERFTRACING
         DiagnosticServerAdapter::Initialize();
         DiagnosticServerAdapter::PauseForDiagnosticsMonitor();
@@ -728,11 +733,6 @@ void EEStartupHelper()
 
 #ifdef LOGGING
         InitializeLogging();
-#endif
-
-#ifdef FEATURE_PERFMAP
-        PerfMap::Initialize();
-        InitThreadManagerPerfMapData();
 #endif
 
 #ifdef FEATURE_PGO
