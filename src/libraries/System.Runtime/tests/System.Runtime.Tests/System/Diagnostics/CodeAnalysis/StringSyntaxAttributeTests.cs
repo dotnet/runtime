@@ -11,6 +11,9 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         [InlineData(StringSyntaxAttribute.DateTimeFormat)]
         [InlineData(StringSyntaxAttribute.Json)]
         [InlineData(StringSyntaxAttribute.Regex)]
+        [InlineData(StringSyntaxAttribute.CSharp)]
+        [InlineData(StringSyntaxAttribute.FSharp)]
+        [InlineData(StringSyntaxAttribute.VisualBasic)]
         public void Ctor_Roundtrips(string syntax)
         {
             var attribute = new StringSyntaxAttribute(syntax);
