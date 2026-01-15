@@ -16,7 +16,6 @@ using static ILCompiler.DependencyAnalysis.ObjectNode;
 using static ILCompiler.DependencyAnalysis.RelocType;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
-using ILCompiler.DependencyAnalysis.ReadyToRun;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -182,6 +181,7 @@ namespace ILCompiler.ObjectWriter
         {
             if (_nodeFactory.Target.IsWasm)
             {
+                // TODO-WASM: Implement or resolve relocations
                 if (logger.IsVerbose)
                 {
                     logger.LogMessage($"Emitting relocation for {symbolName} in section {sectionIndex} of type {relocType} at offset {offset}");
@@ -459,16 +459,12 @@ namespace ILCompiler.ObjectWriter
                 }
                 else if (node is AssemblyStubNode && LayoutMode is CodeDataLayout.Separate)
                 {
-                    // TODO-WASM: handle AssemblyStub and DebugDirectoryEntryNode properly here instead of skipping
+                    // TODO-WASM: handle AssemblyStubNode properly here instead of skipping
                     continue;
                 }
 
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
-                    if (logger.IsVerbose)
-                    {
-                        logger.LogMessage($"Emitting defined symbol {GetMangledName(n)} at offset {n.Offset} in section {section.Name}");
-                    }
                     Utf8String mangledName = n == node ? currentSymbolName : GetMangledName(n);
                     sectionWriter.EmitSymbolDefinition(
                         mangledName,

@@ -48,7 +48,6 @@ namespace ILCompiler.ObjectWriter
             switch (_lengthEncodeFormat)
             {
                 case LengthEncodeFormat.ULEB128:
-                    Console.WriteLine("EMITTING LENGTH: ");
                     WriteULEB128(length);
                     break;
                 default:
