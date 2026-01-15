@@ -1048,10 +1048,13 @@ public:
     ~NewInterfaceArrayHolder()
     {
         STATIC_CONTRACT_LEAF;
-        for (ULONG32 i=0; i < m_cElements; i++)
+        if (this->m_acquired)
         {
-            if (this->m_value[i] != NULL)
-                this->m_value[i]->Release();
+            for (ULONG32 i=0; i < m_cElements; i++)
+            {
+                if (this->m_value[i] != NULL)
+                    this->m_value[i]->Release();
+            }
         }
     }
 
