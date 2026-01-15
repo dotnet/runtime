@@ -101,15 +101,15 @@ namespace ILCompiler
 
                 impl = implType.ResolveInterfaceMethodTargetWithVariance(declMethod);
 
-                // If we end up with a generic method definition, we need to bring the instantiation back
-                // so that we can try devirtualizing this generic virtual method
-                if (impl.IsGenericMethodDefinition && declMethod.HasInstantiation)
-                {
-                    impl = impl.MakeInstantiatedMethod(declMethod.Instantiation);
-                }
-
                 if (impl != null)
                 {
+                    // If we end up with a generic method definition, we need to bring the instantiation back
+                    // so that we can try devirtualizing this generic virtual method
+                    if (impl.IsGenericMethodDefinition && declMethod.HasInstantiation)
+                    {
+                        impl = impl.MakeInstantiatedMethod(declMethod.Instantiation);
+                    }
+
                     impl = implType.FindVirtualFunctionTargetMethodOnObjectType(impl);
                 }
                 else
