@@ -811,7 +811,7 @@ buffer_manager_convert_buffer_to_read_only (
 		// Wait for the writer thread to finish any pending writes to this buffer and release any
 		// cached pointers it may have. The writer thread might need the buffer manager lock to make progress so we can't hold it while waiting.
 		uint32_t index = ep_session_get_index (buffer_manager->session);
-		EP_YIELD_WHILE (ep_thread_get_session_write_in_progress (thread) == index &&
+		EP_YIELD_WHILE (ep_thread_get_session_use_in_progress (thread) == index &&
 						ep_thread_session_state_get_volatile_write_buffer (thread_session_state) == NULL);
 	}
 
@@ -983,8 +983,8 @@ ep_buffer_manager_write_event (
 	current_thread = ep_thread_get ();
 	ep_raise_error_if_nok (current_thread != NULL);
 
-	// session_state won't be freed if write_in_progress is set.
-	EP_ASSERT (ep_thread_get_session_write_in_progress (current_thread) == ep_session_get_index (session));
+	// session_state won't be freed if use_in_progress is set.
+	EP_ASSERT (ep_thread_get_session_use_in_progress (current_thread) == ep_session_get_index (session));
 	session_state = ep_thread_get_volatile_session_state (current_thread, session);
 	if (session_state == NULL) {
 		// slow path should only happen once per thread per session
@@ -1011,8 +1011,8 @@ ep_buffer_manager_write_event (
 		stack = current_stack_contents;
 	}
 
-	// buffer won't be converted to read-only if write_in_progress is set
-	EP_ASSERT (ep_thread_get_session_write_in_progress (current_thread) == ep_session_get_index(session));
+	// buffer won't be converted to read-only if use_in_progress is set
+	EP_ASSERT (ep_thread_get_session_use_in_progress (current_thread) == ep_session_get_index(session));
 	buffer = ep_thread_session_state_get_volatile_write_buffer (session_state);
 	if (!buffer) {
 		alloc_new_buffer = true;

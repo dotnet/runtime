@@ -44,7 +44,7 @@ struct _EventPipeThread_Internal {
 	// Reading from this slot can either be done by taking the buffer manager lock, or by doing a volatile read of the pointer. The volatile
 	// read should only occur when running on the OS thread associated with this EventPipeThread object. When reading under the lock the
 	// pointer should not be retained past the scope of the lock. When using the volatile read, the pointer should not be retained
-	// outside the period where writing_event_in_process == slot_number.
+	// outside the period where session_use_in_progress == slot_number.
 	volatile EventPipeThreadSessionState *session_state [EP_MAX_NUMBER_OF_SESSIONS];
 
 #ifdef EP_THREAD_INCLUDE_ACTIVITY_ID
@@ -61,7 +61,7 @@ struct _EventPipeThread_Internal {
 	// If this is set to a valid id before the corresponding entry of sessions is set to null,
 	// that pointer will be protected from deletion. See ep_disable () and
 	// ep_write () for more detail.
-	volatile uint32_t writing_event_in_progress;
+	volatile uint32_t session_use_in_progress;
 	// This is set to non-zero when the thread is unregistered from the global list of EventPipe threads.
 	// This should happen when a physical thread is ending.
 	// This is a convenience marker to prevent us from having to search the global list.
@@ -187,12 +187,12 @@ ep_thread_is_rundown_thread (const EventPipeThread *thread)
 }
 
 void
-ep_thread_set_session_write_in_progress (
+ep_thread_set_session_use_in_progress (
 	EventPipeThread *thread,
 	uint32_t session_index);
 
 uint32_t
-ep_thread_get_session_write_in_progress (const EventPipeThread *thread);
+ep_thread_get_session_use_in_progress (const EventPipeThread *thread);
 
 // _Requires_lock_held (buffer_manager)
 EventPipeThreadSessionState *

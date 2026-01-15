@@ -815,23 +815,20 @@ write_event_2 (
 		EP_ASSERT (rundown_session != NULL);
 		EP_ASSERT (thread != NULL);
 
-		ep_thread_set_session_write_in_progress (current_thread, ep_session_get_index (rundown_session));
-		{
-
-			uint8_t *data = ep_event_payload_get_flat_data (payload);
-			if (thread != NULL && rundown_session != NULL && data != NULL) {
-				ep_session_write_event (
-					rundown_session,
-					thread,
-					ep_event,
-					payload,
-					activity_id,
-					related_activity_id,
-					event_thread,
-					stack);
-			}
+		ep_thread_set_session_use_in_progress (current_thread, ep_session_get_index (rundown_session));
+		uint8_t *data = ep_event_payload_get_flat_data (payload);
+		if (thread != NULL && rundown_session != NULL && data != NULL) {
+			ep_session_write_event (
+				rundown_session,
+				thread,
+				ep_event,
+				payload,
+				activity_id,
+				related_activity_id,
+				event_thread,
+				stack);
 		}
-		ep_thread_set_session_write_in_progress (current_thread, UINT32_MAX);
+		ep_thread_set_session_use_in_progress (current_thread, UINT32_MAX);
 	} else {
 		for (uint32_t i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; ++i) {
 			if ((ep_volatile_load_allow_write () & ((uint64_t)1 << i)) == 0)
@@ -840,9 +837,9 @@ write_event_2 (
 			// Now that we know this session is probably live we pay the perf cost of the memory barriers
 			// Setting this flag lets a thread trying to do a concurrent disable that it is not safe to delete
 			// session ID i. The if check above also ensures that once the session is unpublished this thread
-			// will eventually stop ever storing ID i into the WriteInProgress flag. This is important to
-			// guarantee termination of the YIELD_WHILE loop in SuspendWriteEvents.
-			ep_thread_set_session_write_in_progress (current_thread, i);
+			// will eventually stop ever storing ID i into the session_use_in_progress flag. This is important to
+			// guarantee termination of the YIELD_WHILE loop in ep_session_suspend_write_event.
+			ep_thread_set_session_use_in_progress (current_thread, i);
 			{
 				EventPipeSession *const session = ep_volatile_load_session (i);
 				// Disable is allowed to set s_pSessions[i] = NULL at any time and that may have occurred in between
@@ -859,9 +856,9 @@ write_event_2 (
 						stack);
 				}
 			}
-			// Do not reference session past this point, we are signaling Disable() that it is safe to
+			// Do not reference session past this point, we are signaling disable_holding_lock that it is safe to
 			// delete it
-			ep_thread_set_session_write_in_progress (current_thread, UINT32_MAX);
+			ep_thread_set_session_use_in_progress (current_thread, UINT32_MAX);
 		}
 	}
 }

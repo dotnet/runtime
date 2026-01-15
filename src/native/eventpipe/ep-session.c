@@ -506,7 +506,7 @@ ep_session_suspend_write_event (EventPipeSession *session)
 		DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThread *, thread, &threads) {
 			if (thread) {
 				// Wait for the thread to finish any writes to this session
-				EP_YIELD_WHILE (ep_thread_get_session_write_in_progress (thread) == session->index);
+				EP_YIELD_WHILE (ep_thread_get_session_use_in_progress (thread) == session->index);
 
 				// Since we've already disabled the session, the thread won't call back in to this
 				// session once its done with the current write

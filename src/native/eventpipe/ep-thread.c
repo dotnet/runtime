@@ -34,7 +34,7 @@ ep_thread_alloc (void)
 	instance->os_thread_id = ep_rt_thread_id_t_to_uint64_t (ep_rt_current_thread_get_id ());
 	memset ((void *)instance->session_state, 0, sizeof (instance->session_state));
 
-	instance->writing_event_in_progress = UINT32_MAX;
+	instance->session_use_in_progress = UINT32_MAX;
 	instance->unregistered = 0;
 
 ep_on_exit:
@@ -115,7 +115,6 @@ ep_thread_register (EventPipeThread *thread)
 bool
 ep_thread_unregister (EventPipeThread *thread)
 {
-	ep_requires_lock_not_held ();
 	ep_rt_spin_lock_requires_lock_not_held (&_ep_threads_lock);
 
 	ep_return_false_if_nok (thread != NULL);
@@ -125,20 +124,30 @@ ep_thread_unregister (EventPipeThread *thread)
 	// Thread unregistration is one condition for EventPipeThreadSessionStates to be cleaned up.
 	// Rather than coordinating cross-thread cleanup, restrict the work to each reader thread by
 	// signaling events available for reading.
-	//
-	// Sessions are freed under the config lock, so hold the config lock to ensure
-	// that the buffer_manager pointer is valid for signaling.
-	EP_LOCK_ENTER (section1)
-		for (uint32_t i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; ++i) {
-			EventPipeSession *session = ep_volatile_load_session (i);
-			if (session == NULL)
-				continue;
+	for (uint32_t i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; ++i) {
+		if ((ep_volatile_load_allow_write () & ((uint64_t)1 << i)) == 0)
+			continue;
 
-			EventPipeBufferManager *buffer_manager = ep_session_get_buffer_manager (session);
-			EP_ASSERT (buffer_manager != NULL);
-			ep_rt_wait_event_set (ep_buffer_manager_get_rt_wait_event_ref (buffer_manager));
+		// Now that we know this session is probably live we pay the perf cost of the memory barriers
+		// Setting this flag lets a thread trying to do a concurrent disable that it is not safe to delete
+		// session ID i. The if check above also ensures that once the session is unpublished this thread
+		// will eventually stop ever storing ID i into the session_use_in_progress flag. This is important to
+		// guarantee termination of the YIELD_WHILE loop in ep_session_suspend_write_event.
+		ep_thread_set_session_use_in_progress (thread, i);
+		{
+			EventPipeSession *const session = ep_volatile_load_session (i);
+			// Disable is allowed to set the session to NULL at any time and that may have occurred in between
+			// the check and the load
+			if (session != NULL) {
+				EventPipeBufferManager *const buffer_manager = ep_session_get_buffer_manager (session);
+				EP_ASSERT (buffer_manager != NULL);
+				ep_rt_wait_event_set (ep_buffer_manager_get_rt_wait_event_ref (buffer_manager));
+			}
 		}
-	EP_LOCK_EXIT (section1)
+		// Do not reference session past this point, we are signaling disable_holding_lock that it is safe to
+		// delete it
+		ep_thread_set_session_use_in_progress (thread, UINT32_MAX);
+	}
 
 	EP_SPIN_LOCK_ENTER (&_ep_threads_lock, section1)
 		// Remove ourselves from the global list
@@ -157,7 +166,6 @@ ep_thread_unregister (EventPipeThread *thread)
 
 ep_on_exit:
 	ep_rt_spin_lock_requires_lock_not_held (&_ep_threads_lock);
-	ep_requires_lock_not_held ();
 	return found;
 
 ep_on_error:
@@ -199,21 +207,21 @@ ep_on_error:
 }
 
 void
-ep_thread_set_session_write_in_progress (
+ep_thread_set_session_use_in_progress (
 	EventPipeThread *thread,
 	uint32_t session_index)
 {
 	EP_ASSERT (thread != NULL);
 	EP_ASSERT (session_index < EP_MAX_NUMBER_OF_SESSIONS || session_index == UINT32_MAX);
 
-	ep_rt_volatile_store_uint32_t (&thread->writing_event_in_progress, session_index);
+	ep_rt_volatile_store_uint32_t (&thread->session_use_in_progress, session_index);
 }
 
 uint32_t
-ep_thread_get_session_write_in_progress (const EventPipeThread *thread)
+ep_thread_get_session_use_in_progress (const EventPipeThread *thread)
 {
 	EP_ASSERT (thread != NULL);
-	return ep_rt_volatile_load_uint32_t (&thread->writing_event_in_progress);
+	return ep_rt_volatile_load_uint32_t (&thread->session_use_in_progress);
 }
 
 void
@@ -256,7 +264,7 @@ ep_thread_get_volatile_session_state (
 	EP_ASSERT (session != NULL);
 	EP_ASSERT (ep_session_get_index (session) < EP_MAX_NUMBER_OF_SESSIONS);
 	EP_ASSERT (ep_thread_get() == thread);
-	EP_ASSERT (thread->writing_event_in_progress == ep_session_get_index (session));
+	EP_ASSERT (thread->session_use_in_progress == ep_session_get_index (session));
 
 	size_t index = ep_session_get_index (session);
 	return (EventPipeThreadSessionState *)ep_rt_volatile_load_ptr ((volatile void **)(&thread->session_state [index]));
