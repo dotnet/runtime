@@ -7454,6 +7454,7 @@ void DacDbiInterfaceImpl::GetAsyncLocals(
         &cAsyncVars);
 
     if (!success) return;
+    if (state >= asyncInfo.NumSuspensionPoints) return;
 
     UINT32 varBeginIndex = 0;
     for (UINT32 i = 0; i < state; i++)
@@ -7464,6 +7465,7 @@ void DacDbiInterfaceImpl::GetAsyncLocals(
     UINT32 varCount = asyncSuspensionPoints[state].NumContinuationVars;
     pAsyncLocals->Alloc(varCount);
 
+    _ASSERTE(varBeginIndex + varCount <= cAsyncVars);
     for (UINT32 i = 0; i < varCount; i++)
     {
         (*pAsyncLocals)[i].offset = asyncVars[varBeginIndex + i].Offset;
