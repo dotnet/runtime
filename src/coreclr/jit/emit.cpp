@@ -6701,8 +6701,6 @@ void emitter::emitComputeCodeSizes()
 //    codeAddrRW     - [OUT] Read/write address of the code buffer
 //    coldCodeAddr   - [OUT] address of the cold code buffer (if any)
 //    coldCodeAddrRW - [OUT] Read/write address of the cold code buffer (if any)
-//    consAddr       - [OUT] address of the read only constant buffer (if any)
-//    consAddrRW     - [OUT] Read/write address of the read only constant buffer (if any)
 //    instrCount     - [OUT] [DEBUG ONLY] number of instructions generated.
 //
 // Notes:
@@ -6713,19 +6711,17 @@ void emitter::emitComputeCodeSizes()
 // Returns:
 //    size of the method code, in bytes
 //
-unsigned emitter::emitEndCodeGen(Compiler*         comp,
-                                 bool              contTrkPtrLcls,
-                                 bool              fullyInt,
-                                 bool              fullPtrMap,
-                                 unsigned          xcptnsCount,
-                                 unsigned*         prologSize,
-                                 unsigned*         epilogSize,
-                                 void**            codeAddr,
-                                 void**            codeAddrRW,
-                                 void**            coldCodeAddr,
-                                 void**            coldCodeAddrRW,
-                                 void**            consAddr,
-                                 void** consAddrRW DEBUGARG(unsigned* instrCount))
+unsigned emitter::emitEndCodeGen(Compiler*             comp,
+                                 bool                  contTrkPtrLcls,
+                                 bool                  fullyInt,
+                                 bool                  fullPtrMap,
+                                 unsigned              xcptnsCount,
+                                 unsigned*             prologSize,
+                                 unsigned*             epilogSize,
+                                 void**                codeAddr,
+                                 void**                codeAddrRW,
+                                 void**                coldCodeAddr,
+                                 void** coldCodeAddrRW DEBUGARG(unsigned* instrCount))
 {
 #ifdef DEBUG
     if (emitComp->verbose)
@@ -6734,18 +6730,10 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
     }
 #endif
 
-    BYTE* consBlock;
-    BYTE* consBlockRW;
-    BYTE* codeBlock;
-    BYTE* codeBlockRW;
-    BYTE* coldCodeBlock;
-    BYTE* coldCodeBlockRW;
-    BYTE* cp;
-
     assert(emitCurIG == nullptr);
 
-    emitCodeBlock = nullptr;
-    emitConsBlock = nullptr;
+    emitCodeBlock  = nullptr;
+    emitDataChunks = nullptr;
 
     emitOffsAdj = 0;
 
@@ -6832,21 +6820,16 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
     emitCheckIGList();
 #endif
 
-    /* Allocate the code block (and optionally the data blocks) */
+    // Allocate the code block (and optionally the data blocks)
 
     // If we're doing procedure splitting and we found cold blocks, then
     // allocate hot and cold buffers.  Otherwise only allocate a hot
     // buffer.
 
-    coldCodeBlock = nullptr;
-
-    // This restricts the data alignment to: 4, 8, 16, 32 or 64 bytes
-    // Alignments greater than 64 would require VM support in ICorJitInfo::allocMem
-    uint32_t dataAlignment = emitConsDsc.alignment;
-    assert((dataSection::MIN_DATA_ALIGN <= dataAlignment) && (dataAlignment <= dataSection::MAX_DATA_ALIGN) &&
-           isPow2(dataAlignment));
-
-    uint32_t codeAlignment = TARGET_POINTER_SIZE;
+    AllocMemChunk codeChunk = {};
+    codeChunk.alignment     = TARGET_POINTER_SIZE;
+    codeChunk.size          = emitTotalHotCodeSize;
+    codeChunk.flags         = CORJIT_ALLOCMEM_HOT_CODE;
 
 #ifdef TARGET_X86
     //
@@ -6866,14 +6849,14 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
         const weight_t scenarioHotWeight = 256.0;
         if (emitComp->fgCalledCount > (scenarioHotWeight * emitComp->fgProfileRunsCount()))
         {
-            codeAlignment = 16;
+            codeChunk.alignment = 16;
         }
     }
     else
     {
         if (emitTotalHotCodeSize <= 16)
         {
-            codeAlignment = 16;
+            codeChunk.alignment = 16;
         }
     }
 #endif
@@ -6884,110 +6867,55 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
     //
     if (codeGen->ShouldAlignLoops() && (emitTotalHotCodeSize > 16) && emitComp->fgHasLoops)
     {
-        codeAlignment = 32;
+        codeChunk.alignment = 32;
     }
 #endif
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // For arm64/LoongArch64, we're going to put the data in the code section. So make sure the code section has
-    // adequate alignment.
-    if (emitConsDsc.dsdOffs > 0)
+    AllocMemChunk coldCodeChunk = {};
+    if (emitTotalColdCodeSize > 0)
     {
-        codeAlignment = max(codeAlignment, dataAlignment);
-    }
-#endif
-
-    // Note that we don't support forcing code alignment of 8 bytes on 32-bit platforms; an omission?
-    assert((TARGET_POINTER_SIZE <= codeAlignment) && (codeAlignment <= 32) && isPow2(codeAlignment));
-
-    CorJitAllocMemFlag allocMemFlagCodeAlign = CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN;
-    if (codeAlignment == 32)
-    {
-        allocMemFlagCodeAlign = CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN;
-    }
-    else if (codeAlignment == 16)
-    {
-        allocMemFlagCodeAlign = CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN;
+        coldCodeChunk.alignment = 0;
+        coldCodeChunk.size      = emitTotalColdCodeSize;
+        coldCodeChunk.flags     = CORJIT_ALLOCMEM_COLD_CODE;
     }
 
-    CorJitAllocMemFlag allocMemFlagDataAlign = static_cast<CorJitAllocMemFlag>(0);
-    if (dataAlignment == 16)
+    unsigned numDataChunks = 0;
+    for (dataSection* sec = emitConsDsc.dsdList; sec != nullptr; sec = sec->dsNext)
     {
-        allocMemFlagDataAlign = CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN;
-    }
-    else if (dataAlignment == 32)
-    {
-        allocMemFlagDataAlign = CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN;
-    }
-    else if (dataAlignment == 64)
-    {
-        allocMemFlagDataAlign = CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN;
+        numDataChunks++;
     }
 
-    CorJitAllocMemFlag allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlagCodeAlign | allocMemFlagDataAlign);
+    AllocMemChunk* dataChunks =
+        numDataChunks == 0 ? nullptr : new (emitComp, CMK_Codegen) AllocMemChunk[numDataChunks]{};
+    AllocMemChunk* dataChunk = dataChunks;
 
-    AllocMemArgs args;
-    memset(&args, 0, sizeof(args));
-
-    args.hotCodeSize  = emitTotalHotCodeSize;
-    args.coldCodeSize = emitTotalColdCodeSize;
-    args.roDataSize   = emitConsDsc.dsdOffs;
-    args.xcptnsCount  = xcptnsCount;
-    args.flag         = allocMemFlag;
-
-    comp->Metrics.AllocatedHotCodeBytes  = args.hotCodeSize;
-    comp->Metrics.AllocatedColdCodeBytes = args.coldCodeSize;
-    comp->Metrics.ReadOnlyDataBytes      = args.roDataSize;
-
-    emitComp->eeAllocMem(&args, emitConsDsc.alignment);
-
-    codeBlock       = (BYTE*)args.hotCodeBlock;
-    codeBlockRW     = (BYTE*)args.hotCodeBlockRW;
-    coldCodeBlock   = (BYTE*)args.coldCodeBlock;
-    coldCodeBlockRW = (BYTE*)args.coldCodeBlockRW;
-    consBlock       = (BYTE*)args.roDataBlock;
-    consBlockRW     = (BYTE*)args.roDataBlockRW;
-
-#ifdef DEBUG
-    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+    for (dataSection* sec = emitConsDsc.dsdList; sec != nullptr; sec = sec->dsNext, dataChunk++)
     {
-        // For AOT, codeBlock will not be necessarily aligned, but it is aligned in final obj file.
-        assert((((size_t)codeBlock & 31) == 0) || emitComp->IsAot());
-    }
-#if 0
-    // TODO: we should be able to assert the following, but it appears crossgen2 doesn't respect them,
-    // or maybe it respects them in the written image but not in the buffer pointer given to the JIT.
-    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
-    {
-        assert(((size_t)codeBlock & 15) == 0);
+        comp->Metrics.ReadOnlyDataBytes += sec->dsSize;
+
+        dataChunk->alignment = sec->dsAlignment;
+        dataChunk->size      = sec->dsSize;
+        dataChunk->flags     = CORJIT_ALLOCMEM_READONLY_DATA;
+
+        if (sec->dsType == dataSection::asyncResumeInfo)
+        {
+            dataChunk->flags = CORJIT_ALLOCMEM_READONLY_DATA | CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE;
+        }
     }
 
-    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN) != 0)
-    {
-        assert(((size_t)consBlock & 63) == 0);
-    }
-    else if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
-    {
-        assert(((size_t)consBlock & 31) == 0);
-    }
-    else if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
-    {
-        assert(((size_t)consBlock & 15) == 0);
-    }
-#endif // 0
-#endif
+    comp->Metrics.AllocatedHotCodeBytes  = emitTotalHotCodeSize;
+    comp->Metrics.AllocatedColdCodeBytes = emitTotalColdCodeSize;
 
-    // if (emitConsDsc.dsdOffs)
-    //     printf("Cons=%08X\n", consBlock);
+    emitComp->eeAllocMem(codeChunk, coldCodeChunk.size > 0 ? &coldCodeChunk : nullptr, dataChunks, numDataChunks,
+                         xcptnsCount);
 
-    /* Give the block addresses to the caller and other functions here */
+    // Give the block addresses to the caller and other functions here
 
-    *codeAddr = emitCodeBlock = codeBlock;
-    *codeAddrRW               = codeBlockRW;
-    *coldCodeAddr = emitColdCodeBlock = coldCodeBlock;
-    *coldCodeAddrRW                   = coldCodeBlockRW;
-    *consAddr = emitConsBlock = consBlock;
-    *consAddrRW               = consBlockRW;
+    *codeAddr = emitCodeBlock = codeChunk.block;
+    *codeAddrRW               = codeChunk.blockRW;
+    *coldCodeAddr = emitColdCodeBlock = coldCodeChunk.size > 0 ? coldCodeChunk.block : nullptr;
+    *coldCodeAddrRW                   = coldCodeChunk.size > 0 ? coldCodeChunk.blockRW : nullptr;
+    emitDataChunks                    = dataChunks;
 
     /* Nothing has been pushed on the stack */
 
@@ -7182,8 +7110,8 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 #endif
 
     /* Issue all instruction groups in order */
-    cp              = codeBlock;
-    writeableOffset = codeBlockRW - codeBlock;
+    BYTE* cp        = codeChunk.block;
+    writeableOffset = codeChunk.blockRW - codeChunk.block;
 
 #define DEFAULT_CODE_BUFFER_INIT 0xcc
 
@@ -7220,9 +7148,9 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
         {
             assert(emitCurCodeOffs(cp) == emitTotalHotCodeSize);
 
-            assert(coldCodeBlock);
-            cp              = coldCodeBlock;
-            writeableOffset = coldCodeBlockRW - coldCodeBlock;
+            assert(coldCodeChunk.size > 0);
+            cp              = coldCodeChunk.block;
+            writeableOffset = coldCodeChunk.blockRW - coldCodeChunk.block;
             emitOffsAdj     = 0;
 #ifdef DEBUG
             if (emitComp->opts.disAsm || emitComp->verbose)
@@ -7574,7 +7502,7 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 
     if (emitConsDsc.dsdOffs != 0)
     {
-        emitOutputDataSec(&emitConsDsc, consBlock);
+        emitOutputDataSec(&emitConsDsc, dataChunks);
     }
 
     /* Make sure all GC ref variables are marked as dead */
@@ -7863,8 +7791,6 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
     //
     assert((size != 0) && ((size % dataSection::MIN_DATA_ALIGN) == 0));
 
-    emitEnsureDataSectionAlignment(alignment);
-
     unsigned secOffs = emitConsDsc.dsdOffs;
     /* Advance the current offset */
     emitConsDsc.dsdOffs += size;
@@ -7874,6 +7800,8 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
     dataSection* secDesc = emitDataSecCur = (dataSection*)emitGetMem(roundUp(sizeof(*secDesc) + size));
 
     secDesc->dsSize = size;
+
+    secDesc->dsAlignment = alignment;
 
     secDesc->dsType = dataSection::data;
 
@@ -7894,50 +7822,6 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
     return secOffs;
 }
 
-//---------------------------------------------------------------------------
-// emitEnsureDataSectionAlignment:
-//   Ensure that data is emitted such that the next byte would be aligned at
-//   the specified alignment. Also increase the overall data section alignment
-//   if necessary.
-//
-// Arguments:
-//   alignment - The aligment
-//
-void emitter::emitEnsureDataSectionAlignment(unsigned alignment)
-{
-    assert(isPow2(alignment) && (alignment <= dataSection::MAX_DATA_ALIGN));
-
-    if (emitConsDsc.alignment < alignment)
-    {
-        JITDUMP("Increasing overall data section alignment from %u to %u\n", emitConsDsc.alignment, alignment);
-        emitConsDsc.alignment = alignment;
-    }
-
-    unsigned secOffs = emitConsDsc.dsdOffs;
-    if ((secOffs % alignment) == 0)
-    {
-        return;
-    }
-
-    // Should always be aligned to the minimum alignment.
-    assert((secOffs % dataSection::MIN_DATA_ALIGN) == 0);
-
-    // The maximum requested alignment is tracked and the memory allocator
-    // will end up ensuring offset 0 is at an address matching that
-    // alignment.  So if the requested alignment is greater than MIN_DATA_ALIGN,
-    // we need to pad the space out so the offset is a multiple of the requested.
-    //
-    uint8_t zeros[dataSection::MAX_DATA_ALIGN] = {}; // auto initialize to all zeros
-
-    unsigned  zeroSize  = alignment - (secOffs % alignment);
-    unsigned  zeroAlign = dataSection::MIN_DATA_ALIGN;
-    var_types zeroType  = TYP_INT;
-
-    emitBlkConst(zeros, zeroSize, zeroAlign, zeroType);
-
-    assert((emitConsDsc.dsdOffs % alignment) == 0);
-}
-
 //  Start generating a constant data section for the current function
 //  populated with BasicBlock references.
 //  You can choose the references to be either absolute pointers, or
@@ -7954,8 +7838,6 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
 
     unsigned elemSize = relativeAddr ? 4 : TARGET_POINTER_SIZE;
 
-    emitEnsureDataSectionAlignment(elemSize);
-
     UNATIVE_OFFSET emittedSize = numEntries * elemSize;
 
     /* Get hold of the current offset */
@@ -7971,6 +7853,8 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
     secDesc = emitDataSecCur = (dataSection*)emitGetMem(roundUp(sizeof(*secDesc) + numEntries * sizeof(BasicBlock*)));
 
     secDesc->dsSize = emittedSize;
+
+    secDesc->dsAlignment = elemSize;
 
     secDesc->dsType = relativeAddr ? dataSection::blockRelative32 : dataSection::blockAbsoluteAddr;
 
@@ -8003,8 +7887,6 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
 //
 void emitter::emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataSecOffs, emitter::dataSection** dataSec)
 {
-    emitEnsureDataSectionAlignment(TARGET_POINTER_SIZE);
-
     UNATIVE_OFFSET secOffs     = emitConsDsc.dsdOffs;
     unsigned       emittedSize = sizeof(CORINFO_AsyncResumeInfo) * numEntries;
     emitConsDsc.dsdOffs += emittedSize;
@@ -8014,10 +7896,11 @@ void emitter::emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataSecO
     for (unsigned i = 0; i < numEntries; i++)
         new (secDesc->dsCont + i * sizeof(emitLocation), jitstd::placement_t()) emitLocation();
 
-    secDesc->dsSize     = emittedSize;
-    secDesc->dsType     = dataSection::asyncResumeInfo;
-    secDesc->dsDataType = TYP_UNKNOWN;
-    secDesc->dsNext     = nullptr;
+    secDesc->dsSize      = emittedSize;
+    secDesc->dsAlignment = TARGET_POINTER_SIZE;
+    secDesc->dsType      = dataSection::asyncResumeInfo;
+    secDesc->dsDataType  = TYP_UNKNOWN;
+    secDesc->dsNext      = nullptr;
 
     if (emitConsDsc.dsdLast)
     {
@@ -8453,10 +8336,10 @@ CORINFO_FIELD_HANDLE emitter::emitSimdMaskConst(simdmask_t constValue)
 
 /*****************************************************************************
  *
- *  Output the given data section at the specified address.
+ *  Output the given data section into the specified memory chunks.
  */
 
-void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
+void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 {
 #ifdef DEBUG
     if (EMITVERBOSE)
@@ -8469,23 +8352,22 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
 
     if (emitComp->opts.disAsm)
     {
-        emitDispDataSec(sec, dst);
+        emitDispDataSec(sec, chunks);
     }
 
-    assert(dst);
     assert(sec->dsdOffs);
     assert(sec->dsdList);
 
     /* Walk and emit the contents of all the data blocks */
 
-    dataSection* dsc;
-    size_t       curOffs = 0;
+    size_t         curOffs = 0;
+    AllocMemChunk* chunk   = chunks;
 
-    for (dsc = sec->dsdList; dsc; dsc = dsc->dsNext)
+    for (dataSection* dsc = sec->dsdList; dsc; dsc = dsc->dsNext, chunk++)
     {
         size_t dscSize = dsc->dsSize;
 
-        BYTE* dstRW = dst + writeableOffset;
+        BYTE* dstRW = chunk->blockRW;
 
         // absolute label table
         if (dsc->dsType == dataSection::blockAbsoluteAddr)
@@ -8605,7 +8487,6 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
         }
 
         curOffs += dscSize;
-        dst += dscSize;
     }
 }
 
@@ -8613,26 +8494,27 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
 // emitDispDataSec: Dump a data section to stdout.
 //
 // Arguments:
-//    section - the data section description
-//    dst     - address of the data section
+//    section    - the data section description
+//    dataChunks - allocations for each data section
 //
 // Notes:
 //    The output format attempts to mirror typical assembler syntax.
 //    Data section entries lack type information so float/double entries
 //    are displayed as if they are integers/longs.
 //
-void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
+void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
 {
     printf("\n");
 
-    unsigned offset = 0;
+    unsigned       offset = 0;
+    AllocMemChunk* chunk  = dataChunks;
 
-    for (dataSection* data = section->dsdList; data != nullptr; data = data->dsNext)
+    for (dataSection* data = section->dsdList; data != nullptr; data = data->dsNext, chunk++)
     {
 #ifdef DEBUG
         if (emitComp->opts.disAddr)
         {
-            printf("; @" FMT_ADDR "\n", DBG_ADDR(dst));
+            printf("; @" FMT_ADDR "\n", DBG_ADDR(chunk->block));
         }
 #endif
 
@@ -8641,7 +8523,6 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
         sprintf_s(label, ArrLen(label), "RWD%02u", offset);
         printf(labelFormat, label);
         offset += data->dsSize;
-        dst += data->dsSize;
 
         if ((data->dsType == dataSection::blockRelative32) || (data->dsType == dataSection::blockAbsoluteAddr))
         {
@@ -9327,6 +9208,24 @@ void emitter::emitGCregDeadSet(GCtype gcType, regMaskTP regMask, BYTE* addr)
     regPtrNext->rpdArg             = false;
     regPtrNext->rpdCompiler.rpdAdd = 0;
     regPtrNext->rpdCompiler.rpdDel = (regMaskSmall)regMask;
+}
+
+BYTE* emitter::emitDataOffsetToPtr(UNATIVE_OFFSET offset)
+{
+    assert(offset < emitDataSize());
+    AllocMemChunk* chunk = emitDataChunks;
+    for (dataSection* dsc = emitConsDsc.dsdList; dsc; dsc = dsc->dsNext, chunk++)
+    {
+        if (dsc->dsSize > offset)
+        {
+            return chunk->block + offset;
+        }
+
+        offset -= dsc->dsSize;
+    }
+
+    assert(!"Data offset not found in chunk");
+    return nullptr;
 }
 
 /*****************************************************************************

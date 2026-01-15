@@ -8532,7 +8532,11 @@ public:
 
     // ICorJitInfo wrappers
 
-    void eeAllocMem(AllocMemArgs* args, const UNATIVE_OFFSET roDataSectionAlignment);
+    void eeAllocMem(AllocMemChunk& codeChunk,
+                    AllocMemChunk* coldCodeChunk,
+                    AllocMemChunk* dataChunks,
+                    unsigned       numDataChunks,
+                    unsigned       numExceptions);
 
     void eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize);
 

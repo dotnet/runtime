@@ -3816,56 +3816,64 @@ namespace Internal.JitInterface
 
         private void allocMem(ref AllocMemArgs args)
         {
-            args.hotCodeBlock = (void*)GetPin(_code = new byte[args.hotCodeSize]);
-            args.hotCodeBlockRW = args.hotCodeBlock;
+            Span<AllocMemChunk> chunks = new Span<AllocMemChunk>(args.chunks, checked((int)args.chunksCount));
 
-            if (args.coldCodeSize != 0)
-            {
-
-#if READYTORUN
-                this._methodColdCodeNode = new MethodColdCodeNode(MethodBeingCompiled);
-#endif
-                args.coldCodeBlock = (void*)GetPin(_coldCode = new byte[args.coldCodeSize]);
-                args.coldCodeBlockRW = args.coldCodeBlock;
-            }
+            uint roDataSize = 0;
 
             _codeAlignment = -1;
-            if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+            _roDataAlignment = -1;
+
+            foreach (ref AllocMemChunk chunk in chunks)
             {
-                _codeAlignment = 32;
+                ref int alignmentField = ref _codeAlignment;
+                if ((chunk.flags & CorJitAllocMemFlag.CORJIT_ALLOCMEM_HOT_CODE) != 0)
+                {
+                    chunk.block = (byte*)GetPin(_code = new byte[chunk.size]);
+                    chunk.blockRW = chunk.block;
+                }
+                else if ((chunk.flags & CorJitAllocMemFlag.CORJIT_ALLOCMEM_COLD_CODE) != 0)
+                {
+                    chunk.block = (byte*)GetPin(_coldCode = new byte[chunk.size]);
+                    chunk.blockRW = chunk.block;
+
+#if READYTORUN
+                    _methodColdCodeNode = new MethodColdCodeNode(MethodBeingCompiled);
+#endif
+                }
+                else
+                {
+                    roDataSize = (uint)((int)roDataSize).AlignUp((int)chunk.alignment);
+                    roDataSize += chunk.size;
+                    alignmentField = ref _roDataAlignment;
+                }
+
+                if (chunk.alignment != 0)
+                {
+                    alignmentField = Math.Max(alignmentField, (int)chunk.alignment);
+                }
             }
-            else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+
+            if (roDataSize != 0)
             {
-                _codeAlignment = 16;
-            }
-
-            if (args.roDataSize != 0)
-            {
-                _roDataAlignment = 8;
-
-                if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN) != 0)
-                {
-                    _roDataAlignment = 64;
-                }
-                else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
-                {
-                    _roDataAlignment = 32;
-                }
-                else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
-                {
-                    _roDataAlignment = 16;
-                }
-                else if (args.roDataSize < 8)
-                {
-                    _roDataAlignment = PointerSize;
-                }
-
-                _roData = new byte[args.roDataSize];
-
+                _roData = new byte[roDataSize];
                 _roDataBlob = new MethodReadOnlyDataNode(MethodBeingCompiled);
+                byte* roDataBlock = (byte*)GetPin(_roData);
+                int offset = 0;
 
-                args.roDataBlock = (void*)GetPin(_roData);
-                args.roDataBlockRW = args.roDataBlock;
+                foreach (ref AllocMemChunk chunk in chunks)
+                {
+                    if ((chunk.flags & (CorJitAllocMemFlag.CORJIT_ALLOCMEM_HOT_CODE | CorJitAllocMemFlag.CORJIT_ALLOCMEM_COLD_CODE)) != 0)
+                    {
+                        continue;
+                    }
+
+                    offset = offset.AlignUp((int)chunk.alignment);
+                    chunk.block = roDataBlock + offset;
+                    chunk.blockRW = chunk.block;
+                    offset += (int)chunk.size;
+                }
+
+                Debug.Assert(offset <= roDataSize);
             }
 
             if (_numFrameInfos > 0)

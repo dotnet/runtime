@@ -6219,7 +6219,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code = emitInsCode(ins, fmt);
             code |= insEncodeRegT2_D(id->idReg1());
             imm  = emitGetInsSC(id);
-            addr = emitConsBlock + imm;
+            addr = emitDataOffsetToPtr((UNATIVE_OFFSET)imm);
             if (!id->idIsReloc())
             {
                 assert(sizeof(size_t) == sizeof(target_size_t));

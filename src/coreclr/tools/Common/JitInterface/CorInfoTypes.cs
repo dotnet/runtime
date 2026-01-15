@@ -326,22 +326,25 @@ namespace Internal.JitInterface
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct AllocMemChunk
+    {
+        // in
+        // Alignment can be 0 for default alignment for code chunks
+        public uint alignment;
+        public uint size;
+        public CorJitAllocMemFlag flags;
+
+        // out
+        public byte* block;
+        public byte* blockRW;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     public unsafe struct AllocMemArgs
     {
-        // Input arguments
-        public uint hotCodeSize;
-        public uint coldCodeSize;
-        public uint roDataSize;
+        public AllocMemChunk* chunks;
+        public uint chunksCount;
         public uint xcptnsCount;
-        public CorJitAllocMemFlag flag;
-
-        // Output arguments
-        public void* hotCodeBlock;
-        public void* hotCodeBlockRW;
-        public void* coldCodeBlock;
-        public void* coldCodeBlockRW;
-        public void* roDataBlock;
-        public void* roDataBlockRW;
     }
 
     // Flags computed by a runtime compiler
@@ -780,12 +783,10 @@ namespace Internal.JitInterface
     // to guide the memory allocation for the code, readonly data, and read-write data
     public enum CorJitAllocMemFlag
     {
-        CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN = 0x00000000, // The code will be use the normal alignment
-        CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN = 0x00000001, // The code will be 16-byte aligned
-        CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN = 0x00000002, // The read-only data will be 16-byte aligned
-        CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN   = 0x00000004, // The code will be 32-byte aligned
-        CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN = 0x00000008, // The read-only data will be 32-byte aligned
-        CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN = 0x00000010, // The read-only data will be 64-byte aligned
+        CORJIT_ALLOCMEM_HOT_CODE = 1,
+        CORJIT_ALLOCMEM_COLD_CODE = 2,
+        CORJIT_ALLOCMEM_READONLY_DATA = 4,
+        CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE = 8,
     }
 
     public enum CorJitFuncKind

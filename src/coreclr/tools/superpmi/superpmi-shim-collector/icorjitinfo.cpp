@@ -1835,8 +1835,6 @@ void interceptor_ICJI::allocMem(AllocMemArgs *pArgs)
 {
     mc->cr->AddCall("allocMem");
     original_ICorJitInfo->allocMem(pArgs);
-    mc->cr->recAllocMem(pArgs->hotCodeSize, pArgs->coldCodeSize, pArgs->roDataSize, pArgs->xcptnsCount, pArgs->flag, &pArgs->hotCodeBlock, &pArgs->coldCodeBlock,
-                        &pArgs->roDataBlock);
 }
 
 // Reserve memory for the method/funclet's unwind information.

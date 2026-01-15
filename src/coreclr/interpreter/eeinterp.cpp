@@ -128,20 +128,23 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
             uint32_t sizeOfCode = sizeof(InterpMethod*) + IRCodeSize * sizeof(int32_t);
             uint8_t unwindInfo[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
+            AllocMemChunk codeChunk {};
+            codeChunk.alignment = 0;
+            codeChunk.size = sizeOfCode;
+            codeChunk.flags = CORJIT_ALLOCMEM_HOT_CODE;
+
             AllocMemArgs args {};
-            args.hotCodeSize = sizeOfCode;
-            args.coldCodeSize = 0;
-            args.roDataSize = 0;
+            args.chunks = &codeChunk;
+            args.chunksCount = 1;
             args.xcptnsCount = 0;
-            args.flag = CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN;
             compHnd->allocMem(&args);
 
             // We store first the InterpMethod pointer as the code header, followed by the actual code
-            *(InterpMethod**)args.hotCodeBlockRW = pMethod;
-            memcpy ((uint8_t*)args.hotCodeBlockRW + sizeof(InterpMethod*), pIRCode, IRCodeSize * sizeof(int32_t));
+            *(InterpMethod**)codeChunk.blockRW = pMethod;
+            memcpy ((uint8_t*)codeChunk.blockRW + sizeof(InterpMethod*), pIRCode, IRCodeSize * sizeof(int32_t));
 
-            compiler.UpdateWithFinalMethodByteCodeAddress((InterpByteCodeStart*)args.hotCodeBlock);
-            *entryAddress = (uint8_t*)args.hotCodeBlock;
+            compiler.UpdateWithFinalMethodByteCodeAddress((InterpByteCodeStart*)codeChunk.block);
+            *entryAddress = (uint8_t*)codeChunk.block;
             *nativeSizeOfCode = sizeOfCode;
 
             // We can't do this until we've called allocMem
