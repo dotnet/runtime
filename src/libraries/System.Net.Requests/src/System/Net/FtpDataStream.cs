@@ -78,7 +78,7 @@ namespace System.Net
                 try
                 {
                     // Close the stream first (e.g., SslStream) to ensure proper SSL/TLS shutdown
-                    if (_stream != _originalStream)
+                    if (_stream != _originalStream && _stream != null)
                     {
                         _stream.Close();
                     }
