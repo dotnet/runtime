@@ -139,10 +139,8 @@ PopProbeFrame macro
         pop         esi
         pop         edi
         pop         eax     ; discard ESP
-        pop         edx                                 ; EAX (into EDX temporarily)
-        mov         [ebp - 12], edx                     ; write updated EAX back to HijackFixupProlog save location
-        pop         edx                                 ; ECX (into EDX temporarily)
-        mov         [ebp - 4], edx                      ; write updated ECX back to HijackFixupProlog save location
+        pop         [ebp - 12]                          ; write updated EAX back to HijackFixupProlog save location
+        pop         [ebp - 4]                           ; write updated ECX back to HijackFixupProlog save location
 endm
 
 ;;
