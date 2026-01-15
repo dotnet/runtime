@@ -12,9 +12,13 @@
 #ifdef TARGET_64BIT
 static const instruction INS_I_const = INS_i64_const;
 static const instruction INS_I_add   = INS_i64_add;
+static const instruction INS_I_le_s  = INS_i64_le_s;
+static const instruction INS_I_gt_s  = INS_i64_gt_s;
 #else  // !TARGET_64BIT
 static const instruction INS_I_const = INS_i32_const;
 static const instruction INS_I_add   = INS_i32_add;
+static const instruction INS_I_le_s  = INS_i32_le_s;
+static const instruction INS_I_gt_s  = INS_i32_gt_s;
 #endif // !TARGET_64BIT
 
 void CodeGen::genMarkLabelsForCodegen()
@@ -833,26 +837,32 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 {
     genConsumeAddress(tree->Addr());
 
-    // TODO-WASM: compare addr with the appropriate small value instead of zero
     // TODO-WASM: refactor once we have implemented other cases invoking throw helpers
     if (compiler->fgUseThrowHelperBlocks())
     {
         Compiler::AddCodeDsc* const add = compiler->fgFindExcptnTarget(SCK_NULL_CHECK, compiler->compCurBB);
         assert((add != nullptr) && ("ERROR: failed to find exception throw block"));
         assert(add->acdUsed);
-        GetEmitter()->emitIns(INS_i32_eqz);
+        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, compiler->compMaxUncheckedOffsetForNullObject);
+        GetEmitter()->emitIns(INS_I_le_s);
         inst_JMP(EJ_jmpif, add->acdDstBlk);
     }
     else
     {
         BasicBlock* const tgtBlk = genCreateTempLabel();
         GetEmitter()->emitIns(INS_block);
-        // tgtBlock is not on our model control stack, so we note it is a temp label
+        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, compiler->compMaxUncheckedOffsetForNullObject);
+        GetEmitter()->emitIns(INS_I_gt_s);
+        // tgtBlock is not on the model wasm control stack we set up earlier.
+        // Since we must emitted a `begin` that will end at this block, it will be at depth 0.
+        // Indicate this via isTempLabel.
         inst_JMP(EJ_jmpif, tgtBlk, /* isTempLabel */ true);
+        // TODO-WASM: codegen for the call
         // genEmitHelperCall(compiler->acdHelper(SCK_NULL_CHECK), 0, EA_UNKNOWN);
+        // The helper won't return, and we may have things pended on the stack, so emit unreachable
         GetEmitter()->emitIns(INS_unreachable);
-        genDefineTempLabel(tgtBlk);
         GetEmitter()->emitIns(INS_end);
+        genDefineTempLabel(tgtBlk);
     }
 }
 

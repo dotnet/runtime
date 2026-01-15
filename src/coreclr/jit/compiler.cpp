@@ -438,6 +438,14 @@ Compiler::Compiler(ArenaAllocator*       arena,
 
     compMaxUncheckedOffsetForNullObject = eeInfo->maxUncheckedOffsetForNullObject;
 
+#if defined(DEBUG) && defined(TARGET_WASM)
+    // if we are cross-replaying wasm, override compMaxUncheckedOffsetForNullObject
+    if (!info.compMatchedVM)
+    {
+        compMaxUncheckedOffsetForNullObject = 1024 - 1;
+    }
+#endif
+
     info.compProfilerCallback = false; // Assume false until we are told to hook this method.
 
     info.compCode         = methodInfo->ILCode;
