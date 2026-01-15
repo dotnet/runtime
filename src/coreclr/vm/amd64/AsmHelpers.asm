@@ -1214,6 +1214,10 @@ endif ; FEATURE_INTERPRETER
 NESTED_ENTRY IL_Throw, _TEXT
         PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rdx
 
+        ; Allocate shadow space for the call (required by Windows x64 ABI)
+        ; Without this, the callee's shadow space writes would overwrite our saved xmm6
+        sub     rsp, 20h
+
         ; RCX already contains exception object
         ; RDX contains pointer to TransitionBlock
         call    IL_Throw_Impl
@@ -1231,6 +1235,9 @@ NESTED_END IL_Throw, _TEXT
 NESTED_ENTRY IL_ThrowExact, _TEXT
         PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rdx
 
+        ; Allocate shadow space for the call (required by Windows x64 ABI)
+        sub     rsp, 20h
+
         ; RCX already contains exception object
         ; RDX contains pointer to TransitionBlock
         call    IL_ThrowExact_Impl
@@ -1244,6 +1251,9 @@ NESTED_END IL_ThrowExact, _TEXT
 ;==========================================================================
 NESTED_ENTRY IL_Rethrow, _TEXT
         PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rcx
+
+        ; Allocate shadow space for the call (required by Windows x64 ABI)
+        sub     rsp, 20h
 
         ; RCX contains pointer to TransitionBlock
         call    IL_Rethrow_Impl
