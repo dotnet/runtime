@@ -193,6 +193,25 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
     pContextPointers->Lr  = (PDWORD64)&pCalleeSaved->x30;
 }
 
+void UpdateRegDisplayFromArgumentRegisters(REGDISPLAY * pRD, ArgumentRegisters* pRegs)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    T_CONTEXT * pContext = pRD->pCurrentContext;
+    for (int i = 0; i < 8; i++)
+    {
+        pContext->X[i] = pRegs->x[i];
+    }
+    pContext->X[8] = *(&pRegs->x[0] - 1); // m_x8RetBuffReg
+
+    Arm64VolatileContextPointer * pContextPointers = &pRD->volatileCurrContextPointers;
+    for (int i = 0; i < 8; i++)
+    {
+        pContextPointers->X[i] = (PDWORD64)&pRegs->x[i];
+    }
+    pContextPointers->X[8] = (PDWORD64)(&pRegs->x[0] - 1); // m_x8RetBuffReg
+}
+
 void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
 #ifndef DACCESS_COMPILE
@@ -223,6 +242,41 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
+
+#ifdef FEATURE_RESOLVE_HELPER_DISPATCH
+void ResolveHelperFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
+{
+#ifndef DACCESS_COMPILE
+    if (updateFloats)
+    {
+        UpdateFloatingPointRegisters(pRD, GetSP());
+        _ASSERTE(pRD->pCurrentContext->Pc == GetReturnAddress());
+    }
+#endif // DACCESS_COMPILE
+
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+
+    // copy the callee saved regs
+    CalleeSavedRegisters *pCalleeSaved = GetCalleeSavedRegisters();
+    UpdateRegDisplayFromCalleeSavedRegisters(pRD, pCalleeSaved);
+
+    ClearRegDisplayArgumentAndScratchRegisters(pRD);
+
+    // copy the control registers
+    pRD->pCurrentContext->Fp = pCalleeSaved->x29;
+    pRD->pCurrentContext->Lr = pCalleeSaved->x30;
+    pRD->pCurrentContext->Pc = GetReturnAddress();
+    pRD->pCurrentContext->Sp = this->GetSP();
+
+    UpdateRegDisplayFromArgumentRegisters(pRD, GetArgumentRegisters());
+
+    // Finally, syncup the regdisplay with the context
+    SyncRegDisplayToCurrentContext(pRD);
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResolveHelperFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+}
+#endif // FEATURE_RESOLVE_HELPER_DISPATCH
 
 void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {

@@ -48,6 +48,7 @@ export interface EmscriptenModule {
     stackSave(): VoidPtr;
     stackRestore(stack: VoidPtr): void;
     stackAlloc(size: number): VoidPtr;
+    safeSetTimeout(func: Function, delay: number): number;
 }
 
 export type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => void;

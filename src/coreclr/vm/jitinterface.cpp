@@ -2383,6 +2383,28 @@ unsigned CEEInfo::getClassGClayoutStatic(TypeHandle VMClsHnd, BYTE* gcPtrs)
     return result;
 }
 
+#if defined(UNIX_AMD64_ABI_ITF)
+SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR SystemVRegDescriptorFromSystemVEightByteRegistersInfo(const SystemVEightByteRegistersInfo& info)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR desc = {};
+
+    desc.passedInRegisters = true;
+    desc.eightByteCount = info.GetNumEightBytes();
+    _ASSERTE(desc.eightByteCount <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
+    _ASSERTE(desc.eightByteCount > 0);
+    for (unsigned int i = 0; i < info.GetNumEightBytes(); i++)
+    {
+        desc.eightByteClassifications[i] = info.GetEightByteClassification(i);
+        desc.eightByteSizes[i] = (uint8_t)info.GetEightByteSize(i);
+        desc.eightByteOffsets[i] = (uint8_t)i * SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
+    }
+
+    return desc;
+}
+#endif // defined(UNIX_AMD64_ABI_ITF)
+
 // returns the enregister info for a struct based on type of fields, alignment, etc.
 bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
                                                 /*IN*/  CORINFO_CLASS_HANDLE structHnd,
@@ -2440,30 +2462,42 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
         SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
         if (th.GetSize() <= CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS)
         {
-            canPassInRegisters = methodTablePtr->ClassifyEightBytes(&helper, 0, 0, useNativeLayout);
+            canPassInRegisters = methodTablePtr->ClassifyEightBytes(&helper, useNativeLayout);
         }
 #endif // !defined(UNIX_AMD64_ABI)
 
         if (canPassInRegisters)
         {
 #if defined(UNIX_AMD64_ABI)
-            SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
-            bool result = methodTablePtr->ClassifyEightBytes(&helper, 0, 0, useNativeLayout);
-
-            // The answer must be true at this point.
-            _ASSERTE(result);
+            if (!useNativeLayout)
+            {
+                // For managed layout structs, we have already computed
+                // and cached the classification in the MethodTable.
+                SystemVEightByteRegistersInfo eightByteInfo = methodTablePtr->GetClass()->GetEightByteRegistersInfo();
+                *structPassInRegDescPtr = SystemVRegDescriptorFromSystemVEightByteRegistersInfo(eightByteInfo);
+            }
+            else
+#endif // UNIX_AMD64_ABI
+            {
+#if defined(UNIX_AMD64_ABI)
+                SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
+                bool result = methodTablePtr->ClassifyEightBytes(&helper, useNativeLayout);
+                
+                // The answer must be true at this point.
+                _ASSERTE(result);
 #endif // UNIX_AMD64_ABI
 
-            structPassInRegDescPtr->passedInRegisters = true;
+                structPassInRegDescPtr->passedInRegisters = true;
 
-            structPassInRegDescPtr->eightByteCount = (uint8_t)helper.eightByteCount;
-            _ASSERTE(structPassInRegDescPtr->eightByteCount <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
+                structPassInRegDescPtr->eightByteCount = (uint8_t)helper.eightByteCount;
+                _ASSERTE(structPassInRegDescPtr->eightByteCount <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
 
-            for (unsigned int i = 0; i < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
-            {
-                structPassInRegDescPtr->eightByteClassifications[i] = helper.eightByteClassifications[i];
-                structPassInRegDescPtr->eightByteSizes[i] = (uint8_t)helper.eightByteSizes[i];
-                structPassInRegDescPtr->eightByteOffsets[i] = (uint8_t)helper.eightByteOffsets[i];
+                for (unsigned int i = 0; i < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
+                {
+                    structPassInRegDescPtr->eightByteClassifications[i] = helper.eightByteClassifications[i];
+                    structPassInRegDescPtr->eightByteSizes[i] = (uint8_t)helper.eightByteSizes[i];
+                    structPassInRegDescPtr->eightByteOffsets[i] = (uint8_t)helper.eightByteOffsets[i];
+                }
             }
         }
 
