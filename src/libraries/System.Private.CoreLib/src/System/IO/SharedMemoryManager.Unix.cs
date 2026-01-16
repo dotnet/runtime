@@ -791,7 +791,7 @@ namespace System.IO
                 }
             }
 
-            bool acquired = SharedMemoryHelpers.TryAcquireFileLock(fd, nonBlocking: true, exclusive: true);
+            bool acquired = SharedMemoryHelpers.TryAcquireFileLock(fd, nonBlocking: false, exclusive: true);
             Debug.Assert(acquired);
             return new AutoReleaseFileLock(fd);
 
