@@ -12,6 +12,7 @@ namespace DisabledRuntimeMarshalling;
 [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public unsafe class PInvokes_AutoLayout
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [Fact]
     public static void AutoLayoutStruct()
     {
@@ -19,6 +20,7 @@ public unsafe class PInvokes_AutoLayout
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/81676", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [Fact]
     public static void StructWithAutoLayoutField()
     {
@@ -26,6 +28,7 @@ public unsafe class PInvokes_AutoLayout
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/81676", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [Fact]
     public static void StructWithNestedAutoLayoutField()
     {

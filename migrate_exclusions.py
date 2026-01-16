@@ -473,9 +473,9 @@ def add_cs_attribute(filepath: str, attribute: str):
     needs_xunit_using = 'using Xunit;' not in content
     needs_testlibrary_using = 'using TestLibrary;' not in content
     
-    # Extract the attribute name for checking
-    attr_name_match = re.search(r'\[(\w+)', attribute)
-    attr_name = attr_name_match.group(1) if attr_name_match else None
+    # Extract the full attribute for checking (including the issue number)
+    # We want to check if the EXACT same attribute is already present
+    attr_check = attribute.strip()
     
     while i < len(lines):
         line = lines[i]
@@ -483,10 +483,10 @@ def add_cs_attribute(filepath: str, attribute: str):
         
         # Check if this line has [Fact] or [Theory]
         if '[Fact]' in stripped or '[Theory]' in stripped:
-            # Check if the attribute is already present on nearby lines
+            # Check if the EXACT attribute is already present on nearby lines
             has_attribute = False
             for check_idx in range(max(0, i - 5), min(len(lines), i + 5)):
-                if attr_name and attr_name in lines[check_idx]:
+                if attr_check in lines[check_idx]:
                     has_attribute = True
                     break
             
@@ -700,6 +700,13 @@ def migrate_exclusion(exclusion: ExclusionItem, repo_root: str, dry_run: bool = 
         # Apply C# attributes
         if mapping.cs_attribute and cs_files:
             attribute = mapping.cs_attribute.replace('<Issue>', exclusion.issue)
+            
+            # Special handling for issue 64127: use PlatformDoesNotSupportNativeTestAssets
+            if '64127' in exclusion.issue:
+                # For issue 64127, always use PlatformDoesNotSupportNativeTestAssets regardless of condition
+                # Replace the standard attribute format with the custom one
+                attribute = f'[ActiveIssue("{exclusion.issue}", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]'
+            
             print(f"  C# attribute: {attribute}")
             
             if not dry_run:
@@ -711,6 +718,12 @@ def migrate_exclusion(exclusion: ExclusionItem, repo_root: str, dry_run: bool = 
         # Apply IL attributes
         if mapping.il_attribute and il_files:
             attribute = mapping.il_attribute.replace('<Issue>', exclusion.issue)
+            
+            # Special handling for issue 64127: use PlatformDoesNotSupportNativeTestAssets
+            if '64127' in exclusion.issue:
+                # For issue 64127, always use PlatformDoesNotSupportNativeTestAssets regardless of condition
+                attribute = f".custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {{string('{exclusion.issue}') type([TestLibrary]TestLibrary.PlatformDetection) string[1] ('PlatformDoesNotSupportNativeTestAssets') }}"
+            
             print(f"  IL attribute: {attribute}")
             
             if not dry_run:

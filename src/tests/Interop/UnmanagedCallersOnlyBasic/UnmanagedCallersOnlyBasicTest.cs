@@ -45,6 +45,7 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         return DoubleImpl(n);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static void TestUnmanagedCallersOnlyValid()
@@ -63,6 +64,7 @@ public unsafe class UnmanagedCallersOnlyBasicTest
     }
 
     [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [Fact]
     public static void TestUnmanagedCallersOnlyValid_CallConvStdcall()
     {
@@ -82,6 +84,7 @@ public unsafe class UnmanagedCallersOnlyBasicTest
     }
 
     [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [Fact]
     public static void TestUnmanagedCallersOnlyValid_CallConvCdecl()
     {
@@ -95,6 +98,7 @@ public unsafe class UnmanagedCallersOnlyBasicTest
     }
 
     [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [Fact]
     public static void TestUnmanagedCallersOnlyValid_OnNewNativeThread()
     {
@@ -112,6 +116,7 @@ public unsafe class UnmanagedCallersOnlyBasicTest
     }
 
     [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [Fact]
     // This test is about the interaction between Tiered Compilation and the UnmanagedCallersOnlyAttribute.
     public static void TestUnmanagedCallersOnlyValid_PrepareMethod()
@@ -143,6 +148,7 @@ public unsafe class UnmanagedCallersOnlyBasicTest
     }
 
     [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [Fact]
     public static void TestUnmanagedCallersOnlyMultipleTimesValid()
     {

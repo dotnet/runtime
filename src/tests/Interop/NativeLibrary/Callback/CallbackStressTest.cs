@@ -128,6 +128,7 @@ public class CallbackStressTest
     }
 
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/166", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [Fact]
     public static int TestEntryPoint()
     {
