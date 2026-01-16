@@ -899,6 +899,7 @@ namespace System.Buffers.Text.Tests
             }
         }
 
+        [Fact]
         public void DecodingWithWhiteSpaceIntoSmallDestination()
         {
             // Input "  zAww  " (8 bytes) contains "zAww" which decodes to 3 bytes.

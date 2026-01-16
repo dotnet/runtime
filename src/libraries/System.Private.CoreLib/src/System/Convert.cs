@@ -2557,7 +2557,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
-            return Base64.DecodeFromChars(s.AsSpan());
+            return Base64.DecodeFromChars(s);
         }
 
         public static bool TryFromBase64String(string s, Span<byte> bytes, out int bytesWritten)
@@ -2573,7 +2573,13 @@ namespace System
         public static bool TryFromBase64Chars(ReadOnlySpan<char> chars, Span<byte> bytes, out int bytesWritten)
         {
             OperationStatus status = Base64.DecodeFromChars(chars, bytes, out _, out bytesWritten);
-            return status == OperationStatus.Done;
+            if (status == OperationStatus.Done)
+            {
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <summary>
