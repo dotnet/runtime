@@ -21,10 +21,7 @@ function countChars(str) {
 }
 
 // Prepare base runtime parameters
-dotnet
-    .withElementOnExit()
-    .withExitCodeLogging()
-    .withExitOnUnhandledError();
+dotnet.withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, logExitCode: true });
 
 const logLevel = params.get("MONO_LOG_LEVEL");
 const logMask = params.get("MONO_LOG_MASK");
@@ -95,6 +92,12 @@ switch (testCase) {
             }
         });
         break;
+    case "AssetIntegrity":
+        dotnet.withResourceLoader((type, name, defaultUri, integrity, behavior) => {
+            testOutput(`Asset '${name}' has integrity '${integrity}'`);
+            return defaultUri;
+        });
+        break;
     case "OutErrOverrideWorks":
         dotnet.withModuleConfig({
             out: (message) => {
@@ -109,7 +112,7 @@ switch (testCase) {
         break;
     case "InterpPgoTest":
         dotnet
-            .withConsoleForwarding()
+            .withConfig({ forwardConsole: true })
             .withRuntimeOptions(['--interp-pgo-logging'])
             .withInterpreterPgo(true);
         break;
@@ -167,6 +170,8 @@ switch (testCase) {
         dotnet.withEnvironmentVariable("foo", "bar");
         break;
     case "HttpNoStreamingTest":
+        break;
+    case "DevServer_UploadPattern":
         break;
     case "BrowserProfilerTest":
         break;
@@ -236,6 +241,7 @@ try {
             exit(0);
             break;
         case "DownloadResourceProgressTest":
+        case "AssetIntegrity":
             exit(0);
             break;
         case "OutErrOverrideWorks":
@@ -271,6 +277,15 @@ try {
                 countChars
             });
             exports.MemoryTest.Run();
+            exit(0);
+            break;
+        case "DevServer_UploadPattern":
+            console.log("not ready yet");
+            const dsExportsHttp = await getAssemblyExports(config.mainAssemblyName);
+            console.log("ready");
+            await dsExportsHttp.HttpTest.GoodUpload();
+            await dsExportsHttp.HttpTest.BadUpload();
+            console.log("done");
             exit(0);
             break;
         case "HttpNoStreamingTest":
@@ -356,5 +371,7 @@ try {
             break;
     }
 } catch (e) {
-    exit(1, e);
+    if (e.name != "ExitStatus") {
+        exit(1, e);
+    }
 }

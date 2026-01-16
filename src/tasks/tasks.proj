@@ -1,63 +1,29 @@
 <Project Sdk="Microsoft.Build.Traversal">
 
-  <ItemGroup Condition="'$(TargetsMobile)' == 'true'">
-    <ProjectReference Include="AndroidAppBuilder\AndroidAppBuilder.csproj" />
-    <ProjectReference Include="AotCompilerTask\MonoAOTCompiler.csproj" />
-    <ProjectReference Include="AppleAppBuilder\AppleAppBuilder.csproj" />
-    <ProjectReference Include="LibraryBuilder\LibraryBuilder.csproj" />
-    <ProjectReference Include="Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
-    <ProjectReference Include="Microsoft.NET.WebAssembly.Webcil\Microsoft.NET.WebAssembly.Webcil.csproj" />
-    <ProjectReference Include="MobileBuildTasks\MobileBuildTasks.csproj" />
-    <ProjectReference Include="MonoTargetsTasks\MonoTargetsTasks.csproj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
-    <ProjectReference Include="MonoTargetsTasks\ILStrip\AssemblyStripper\AssemblyStripper.csproj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
-    <ProjectReference Include="TestExclusionListTasks\TestExclusionListTasks.csproj" />
-    <ProjectReference Include="WasmAppBuilder\WasmAppBuilder.csproj" />
-    <ProjectReference Include="WasmBuildTasks\WasmBuildTasks.csproj" />
-  
-    <!-- For WasmBuildTests or any other configuration that tests against workloads -->
-    <ProjectReference Include="WorkloadBuildTasks\WorkloadBuildTasks.csproj" />
-  </ItemGroup>
-
   <ItemGroup>
-    <!-- This could be conditioned on '$(RuntimeFlavor)' == 'CoreCLR' but Mono legs still need it right now -->
-    <ProjectReference Include="Crossgen2Tasks\Crossgen2Tasks.csproj" />
-
-    <ProjectReference Include="installer.tasks\installer.tasks.csproj" />
+    <ProjectReference Include="**\*.csproj" />
   </ItemGroup>
 
-  <!--
-    Use synthetic inputs/outputs to avoid building it all the time. This should let devs build with
-    MSBuild node reuse enabled (the Arcade default). If it were built every time, it would hit file
-    locking issues vs. the persistent nodes that loaded the task DLL for the previous build. It
-    isn't particularly accurate, but better than nothing.
-  -->
-  <Target Name="BuildIncrementally"
-          DependsOnTargets="GetTasksSrc"
-          Inputs="@(TasksSrc)"
-          Outputs="$(TasksIntermediateFile)">
-    <ItemGroup>
-      <TaskProject Include="$(MSBuildProjectFullPath)" />
-    </ItemGroup>
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
+    <ProjectReference Remove="AndroidAppBuilder\AndroidAppBuilder.csproj" />
+    <ProjectReference Remove="AotCompilerTask\MonoAOTCompiler.csproj" />
+    <ProjectReference Remove="AppleAppBuilder\AppleAppBuilder.csproj" />
+    <ProjectReference Remove="LibraryBuilder\LibraryBuilder.csproj" />
+    <ProjectReference Remove="Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
+    <ProjectReference Remove="Microsoft.NET.WebAssembly.Webcil\Microsoft.NET.WebAssembly.Webcil.csproj" />
+    <ProjectReference Remove="MobileBuildTasks\MobileBuildTasks.csproj" />
+    <ProjectReference Remove="TestExclusionListTasks\TestExclusionListTasks.csproj" />
+    <ProjectReference Remove="WasmAppBuilder\WasmAppBuilder.csproj" />
+    <ProjectReference Remove="WasmBuildTasks\WasmBuildTasks.csproj" />
 
-    <MSBuild Projects="@(TaskProject)"
-             Properties="Configuration=$(TasksConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);Platform=AnyCPU"
-             Targets="Build" />
+    <!-- For WasmBuildTests or any other configuration that tests against workloads -->
+    <ProjectReference Remove="WorkloadBuildTasks\WorkloadBuildTasks.csproj" />
+  </ItemGroup>
 
-    <WriteLinesToFile File="$(TasksIntermediateFile)"
-                      Lines="$(TasksIntermediateFile)"
-                      Overwrite="true" />
-  </Target>
-
-  <Target Name="GetTasksSrc"
-          DependsOnTargets="PrepareProjectReferences">
-    <PropertyGroup>
-      <TasksIntermediateFile>$([MSBuild]::NormalizePath('$(ArtifactsObjDir)', '$(MSBuildProjectName)', '$(TasksConfiguration)', 'build-semaphore.txt'))</TasksIntermediateFile>
-    </PropertyGroup>
-
-    <!-- Include both the project file and its sources as an input. -->
-    <ItemGroup>
-      <TasksSrc Include="%(ProjectReferenceWithConfiguration.RelativeDir)%(ProjectReferenceWithConfiguration.RecursiveDir)**\*" />
-    </ItemGroup>
-  </Target>
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true' or '$(DotNetBuildSourceOnly)' == 'true'">
+    <ProjectReference Remove="MonoTargetsTasks\MonoTargetsTasks.csproj" />
+    <ProjectReference Remove="AssemblyStripper\AssemblyStripper.csproj" />
+  </ItemGroup>
 
 </Project>
+

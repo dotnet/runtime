@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { LoadBootResourceCallback, JsModuleExports, JsAsset, AssemblyAsset, PdbAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, LoaderConfig, DotnetHostBuilder } from "./types";
+import type { LoaderConfig, DotnetHostBuilder } from "./types";
 
-import { dotnetAssert, dotnetGetInternals, dotnetBrowserHostExports, dotnetUpdateInternals } from "./cross-module";
+import { exceptions, simd } from "wasm-feature-detect";
+
+import { GlobalizationMode } from "./types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL } from "./per-module";
-import { getLoaderConfig } from "./config";
-import { BrowserHost_InitializeCoreCLR } from "./run";
-import { createPromiseCompletionSource } from "./promise-completion-source";
 import { nodeFs } from "./polyfills";
+import { dotnetAssert } from "./cross-module";
 
 const scriptUrlQuery = /*! webpackIgnore: true */import.meta.url;
 const queryIndex = scriptUrlQuery.indexOf("?");
@@ -16,106 +16,26 @@ const modulesUniqueQuery = queryIndex > 0 ? scriptUrlQuery.substring(queryIndex)
 const scriptUrl = normalizeFileUrl(scriptUrlQuery);
 const scriptDirectory = normalizeDirectoryUrl(scriptUrl);
 
-const nativeModulePromiseController = createPromiseCompletionSource<EmscriptenModuleInternal>(() => {
-    dotnetUpdateInternals(dotnetGetInternals());
-});
-
-// WASM-TODO: retry logic
-// WASM-TODO: throttling logic
-// WASM-TODO: load icu data
-// WASM-TODO: invokeLibraryInitializers
-// WASM-TODO: webCIL
-// WASM-TODO: downloadOnly - blazor render mode auto pre-download. Really no start.
-
-export async function createRuntime(downloadOnly: boolean, loadBootResource?: LoadBootResourceCallback): Promise<any> {
-    const config = getLoaderConfig();
-    if (!config.resources || !config.resources.coreAssembly || !config.resources.coreAssembly.length) throw new Error("Invalid config, resources is not set");
-
-    const nativeModulePromise = loadJSModule(config.resources.jsModuleNative[0], loadBootResource);
-    const runtimeModulePromise = loadJSModule(config.resources.jsModuleRuntime[0], loadBootResource);
-    const coreAssembliesPromise = Promise.all(config.resources.coreAssembly.map(fetchDll));
-    const coreVfsPromise = Promise.all((config.resources.coreVfs || []).map(fetchVfs));
-    const assembliesPromise = Promise.all(config.resources.assembly.map(fetchDll));
-    const vfsPromise = Promise.all((config.resources.vfs || []).map(fetchVfs));
-    // WASM-TODO fetchWasm(config.resources.wasmNative[0]);// start loading early, no await
-
-    const nativeModule = await nativeModulePromise;
-    const modulePromise = nativeModule.dotnetInitializeModule<EmscriptenModuleInternal>(dotnetGetInternals());
-    nativeModulePromiseController.propagateFrom(modulePromise);
-
-    const runtimeModule = await runtimeModulePromise;
-    const runtimeModuleReady = runtimeModule.dotnetInitializeModule<void>(dotnetGetInternals());
-
-    await nativeModulePromiseController.promise;
-    await coreAssembliesPromise;
-    await coreVfsPromise;
-    await vfsPromise;
-
-    if (!downloadOnly) {
-        BrowserHost_InitializeCoreCLR();
-    }
-
-    await assembliesPromise;
-    await runtimeModuleReady;
+export async function validateWasmFeatures(): Promise<void> {
+    dotnetAssert.check(await exceptions, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+    dotnetAssert.check(await simd, "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
 }
 
-async function loadJSModule(asset: JsAsset, loadBootResource?: LoadBootResourceCallback): Promise<JsModuleExports> {
-    if (loadBootResource) throw new Error("TODO: loadBootResource is not implemented yet");
-    if (asset.name && !asset.resolvedUrl) {
-        asset.resolvedUrl = locateFile(asset.name);
-    }
-    if (!asset.resolvedUrl) throw new Error("Invalid config, resources is not set");
-    return await import(/* webpackIgnore: true */ asset.resolvedUrl);
-}
-
-async function fetchDll(asset: AssemblyAsset): Promise<void> {
-    if (asset.name && !asset.resolvedUrl) {
-        asset.resolvedUrl = locateFile(asset.name);
-    }
-    const bytes = await fetchBytes(asset);
-    await nativeModulePromiseController.promise;
-
-    dotnetBrowserHostExports.registerDllBytes(bytes, asset);
-}
-
-async function fetchVfs(asset: AssemblyAsset): Promise<void> {
-    if (asset.name && !asset.resolvedUrl) {
-        asset.resolvedUrl = locateFile(asset.name);
-    }
-    const bytes = await fetchBytes(asset);
-    await nativeModulePromiseController.promise;
-
-    dotnetBrowserHostExports.installVfsFile(bytes, asset);
-}
-
-async function fetchBytes(asset: WasmAsset | AssemblyAsset | PdbAsset | IcuAsset): Promise<Uint8Array> {
-    dotnetAssert.check(asset && asset.resolvedUrl, "Bad asset.resolvedUrl");
-    if (ENVIRONMENT_IS_NODE) {
-        const { promises: fs } = await import("fs");
-        const { fileURLToPath } = await import(/*! webpackIgnore: true */"url");
-        const isFileUrl = asset.resolvedUrl!.startsWith("file://");
-        if (isFileUrl) {
-            asset.resolvedUrl = fileURLToPath(asset.resolvedUrl!);
-        }
-        const buffer = await fs.readFile(asset.resolvedUrl!);
-        return new Uint8Array(buffer);
+export function locateFile(path: string, isModule = false): string {
+    let res;
+    if (isPathAbsolute(path)) {
+        res = path;
+    } else if (globalThis.URL) {
+        res = new globalThis.URL(path, scriptDirectory).href;
     } else {
-        const response = await fetch(asset.resolvedUrl!);
-        if (!response.ok) {
-            throw new Error(`Failed to load ${asset.resolvedUrl} with ${response.status} ${response.statusText}`);
-        }
-        const buffer = await response.arrayBuffer();
-        return new Uint8Array(buffer);
-    }
-}
-
-function locateFile(path: string) {
-    if ("URL" in globalThis) {
-        return new URL(path, scriptDirectory).toString();
+        res = scriptDirectory + path;
     }
 
-    if (isPathAbsolute(path)) return path;
-    return scriptDirectory + path + modulesUniqueQuery;
+    if (isModule) {
+        res += modulesUniqueQuery;
+    }
+
+    return res;
 }
 
 function normalizeFileUrl(filename: string) {
@@ -145,6 +65,15 @@ function isPathAbsolute(path: string): boolean {
     return protocolRx.test(path);
 }
 
+export function makeURLAbsoluteWithApplicationBase(url: string) {
+    dotnetAssert.check(typeof url === "string", "url must be a string");
+    if (!isPathAbsolute(url) && url.indexOf("./") !== 0 && url.indexOf("../") !== 0 && globalThis.URL && globalThis.document && globalThis.document.baseURI) {
+        const absoluteUrl = new URL(url, globalThis.document.baseURI);
+        return absoluteUrl.href;
+    }
+    return url;
+}
+
 export function isShellHosted(): boolean {
     return ENVIRONMENT_IS_SHELL && typeof (globalThis as any).arguments !== "undefined";
 }
@@ -160,6 +89,7 @@ export function isNodeHosted(): boolean {
     return argScript === importScript;
 }
 
+// Finds resources when running in NodeJS environment without explicit configuration
 export async function findResources(dotnet: DotnetHostBuilder): Promise<void> {
     if (!ENVIRONMENT_IS_NODE) {
         return;
@@ -182,17 +112,34 @@ export async function findResources(dotnet: DotnetHostBuilder): Promise<void> {
         const json = await fs.promises.readFile(runtimeConfigName, { encoding: "utf8" });
         runtimeConfig = JSON.parse(json);
     }
+    const icus = files
+        .filter(file => file.startsWith("icudt") && file.endsWith(".dat"))
+        .map(filename => {
+            // filename without path
+            const name = filename.substring(filename.lastIndexOf("/") + 1);
+            return { virtualPath: name, name };
+        });
+
+    const environmentVariables: { [key: string]: string } = {};
+    let globalizationMode = GlobalizationMode.All;
+    if (!icus.length) {
+        globalizationMode = GlobalizationMode.Invariant;
+        environmentVariables["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "1";
+    }
 
     const config: LoaderConfig = {
         mainAssemblyName,
         runtimeConfig,
+        globalizationMode,
         virtualWorkingDirectory: mountedDir,
+        environmentVariables,
         resources: {
             jsModuleNative: [{ name: "dotnet.native.js" }],
             jsModuleRuntime: [{ name: "dotnet.runtime.js" }],
             wasmNative: [{ name: "dotnet.native.wasm", }],
             coreAssembly: [{ virtualPath: mountedDir + "/System.Private.CoreLib.dll", name: "System.Private.CoreLib.dll" },],
             assembly: assemblies,
+            icu: icus,
         }
     };
     dotnet.withConfig(config);

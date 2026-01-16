@@ -134,34 +134,6 @@ HANDLE CreateWin32EventOrThrow(
     RETURN h;
 }
 
-//-----------------------------------------------------------------------------
-// Open an event. Another helper for DebuggerRCThread::Init
-//-----------------------------------------------------------------------------
-HANDLE OpenWin32EventOrThrow(
-    DWORD dwDesiredAccess,
-    BOOL bInheritHandle,
-    LPCWSTR lpName
-)
-{
-    CONTRACT(HANDLE)
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        POSTCONDITION(RETVAL != NULL);
-    }
-    CONTRACT_END;
-
-    HANDLE h = OpenEvent(
-        dwDesiredAccess,
-        bInheritHandle,
-        lpName
-    );
-    if (h == NULL)
-        ThrowLastError();
-
-    RETURN h;
-}
-
 //---------------------------------------------------------------------------------------
 //
 // Init

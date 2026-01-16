@@ -2677,14 +2677,17 @@ MethodTableBuilder::EnumerateClassMethods()
     if ((DWORD)MAX_SLOT_INDEX <= cMethAndGaps)
         BuildMethodTableThrowException(IDS_CLASSLOAD_TOO_MANY_METHODS);
 
-    bmtMethod->m_cMaxDeclaredMethods = (SLOT_INDEX)cMethAndGaps;
-
-    if (g_pConfig->RuntimeAsync())
+    // In a worst case the number of declared methods can double
+    // as each async method may have two variants.
+    // The method count is typically a modest number though.
+    // We will reserve twice the size for the builder, up to the max, just in case.
+    DWORD cMethUpperBound = cMethAndGaps * 2;
+    if ((DWORD)MAX_SLOT_INDEX <= cMethUpperBound)
     {
-        // TODO: (async) the index is uint16 and can potentially overflow. This needs to be more robust.
-        bmtMethod->m_cMaxDeclaredMethods *= 2;
+        cMethUpperBound = MAX_SLOT_INDEX - 1;
     }
 
+    bmtMethod->m_cMaxDeclaredMethods = (SLOT_INDEX)cMethUpperBound;
     bmtMethod->m_cDeclaredMethods = 0;
     bmtMethod->m_rgDeclaredMethods = new (GetStackingAllocator())
         bmtMDMethod *[bmtMethod->m_cMaxDeclaredMethods];
@@ -3183,6 +3186,11 @@ MethodTableBuilder::EnumerateClassMethods()
                 CONSISTENCY_CHECK(hr == S_OK);
                 type = mcPInvoke;
             }
+
+            if (IsMiAsync(dwImplFlags))
+            {
+                BuildMethodTableThrowException(BFA_BAD_ASYNC_METHOD);
+            }
         }
         else if (IsMiRuntime(dwImplFlags))
         {
@@ -3227,6 +3235,11 @@ MethodTableBuilder::EnumerateClassMethods()
             }
 
             delegateMethodsSeen |= newDelegateMethodSeen;
+
+            if (IsMiAsync(dwImplFlags))
+            {
+                BuildMethodTableThrowException(BFA_BAD_ASYNC_METHOD);
+            }
         }
         else if (hasGenericMethodArgs)
         {
@@ -3254,6 +3267,12 @@ MethodTableBuilder::EnumerateClassMethods()
                 // pointer-sized field pointing to COM interop data which are
                 // allocated lazily when/if the MD actually gets used for interop.
                 type = mcComInterop;
+
+                // The interface method itself should never be marked as a runtime-async method.
+                if (IsMiAsync(dwImplFlags))
+                {
+                    BuildMethodTableThrowException(BFA_BAD_ASYNC_METHOD);
+                }
             }
             else
 #endif // !FEATURE_COMINTEROP
@@ -3305,6 +3324,11 @@ MethodTableBuilder::EnumerateClassMethods()
         bmtMDMethod *pDeclaredMethod = NULL;
         for (int insertCount = 0; insertCount < 2; insertCount++)
         {
+            if (bmtMethod->m_cDeclaredMethods >= bmtMethod->m_cMaxDeclaredMethods)
+            {
+                BuildMethodTableThrowException(IDS_CLASSLOAD_TOO_MANY_METHODS);
+            }
+
             bmtMDMethod * pNewMethod;
             if (insertCount == 0)
             {
@@ -3431,6 +3455,15 @@ MethodTableBuilder::EnumerateClassMethods()
                     pNewMemberSignature[offsetOfAsyncDetails] = ELEMENT_TYPE_CMOD_REQD;
                 }
 
+                MethodClassification asyncVariantType = type;
+                if (type != mcIL && type != mcInstantiated)
+                {
+                    // Don't treat the async variant of special method kinds as
+                    // the special method kind.
+                    // The async variant methods are always IL methods with a transient implementation.
+                    asyncVariantType = mcIL;
+                }
+
                 Signature newMemberSig(pNewMemberSignature, cAsyncThunkMemberSignature);
                 pNewMethod = new (GetStackingAllocator()) bmtMDMethod(
                     bmtInternal->pType,
@@ -3440,11 +3473,23 @@ MethodTableBuilder::EnumerateClassMethods()
                     dwMethodRVA,
                     newMemberSig,
                     asyncFlags,
-                    type,
+                    asyncVariantType,
                     implType);
 
                 pNewMethod->SetAsyncOtherVariant(pDeclaredMethod);
                 pDeclaredMethod->SetAsyncOtherVariant(pNewMethod);
+
+#ifdef FEATURE_COMINTEROP
+                // We only ever include one of the two async variants (whichever doesn't have the async calling convention)
+                // Record an excluded method here in the COM VTable.
+                EnsureOptionalFieldsAreAllocated(GetHalfBakedClass(), m_pAllocMemTracker, GetLoaderAllocator()->GetLowFrequencyHeap());
+                if (GetHalfBakedClass()->GetSparseCOMInteropVTableMap() == NULL)
+                    GetHalfBakedClass()->SetSparseCOMInteropVTableMap(new SparseVTableMap());
+
+                GetHalfBakedClass()->GetSparseCOMInteropVTableMap()->RecordExcludedMethod((WORD)NumDeclaredMethods());
+
+                bmtProp->fSparse = true;
+#endif // FEATURE_COMINTEROP
             }
 
             bmtMethod->AddDeclaredMethod(pNewMethod);
@@ -8274,10 +8319,11 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
     {
         if (!pParentMT->IsValueTypeClass()
             || hasGCFields
+            || bmtFP->fIsByRefLikeType
             || isAutoLayoutOrHasAutoLayoutField)
         {
             // CStruct layout types can't have a parent type, GC fields
-            // or auto layout fields.
+            // byreflike types, or auto layout fields.
             BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
         }
 
@@ -8287,6 +8333,27 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
         pLayoutInfo->SetIsBlittable(TRUE);
 
         HandleCStructLayout(pByValueClassCache);
+        break;
+    }
+
+    case EEClassLayoutInfo::LayoutType::CUnion:
+    {
+        if (!pParentMT->IsValueTypeClass()
+            || hasGCFields
+            || bmtFP->fIsByRefLikeType
+            || isAutoLayoutOrHasAutoLayoutField)
+        {
+            // CUnion layout types can't have a parent type, GC fields
+            // byreflike types, or auto layout fields.
+            BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
+        }
+
+        // Explicit size is not used for CUnion layout.
+        pLayoutInfo->SetHasExplicitSize(FALSE);
+        // CUnion layouts are always blittable
+        pLayoutInfo->SetIsBlittable(TRUE);
+
+        HandleCUnionLayout(pByValueClassCache);
         break;
     }
 
@@ -8537,35 +8604,34 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
             {
                 MethodTable * pByValueMT = pByValueClassCache[i];
 
+                int alignmentRequirement;
 #if !defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4)
                 if (pByValueMT->GetNumInstanceFieldBytes() >= DATA_ALIGNMENT)
                 {
-                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, DATA_ALIGNMENT);
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, DATA_ALIGNMENT);
+                    alignmentRequirement = DATA_ALIGNMENT;
                 }
                 else
-#elif defined(FEATURE_64BIT_ALIGNMENT)
-                if (pByValueMT->RequiresAlign8())
-                {
-                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, 8);
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, 8);
-                }
-                else
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // !defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4)
                 if (pByValueMT->ContainsGCPointers())
                 {
                     // this field type has GC pointers in it, which need to be pointer-size aligned
                     // so do this if it has not been done already
-                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, TARGET_POINTER_SIZE);
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, TARGET_POINTER_SIZE);
+                    alignmentRequirement = TARGET_POINTER_SIZE;
                     containsGCPointers = true;
                 }
                 else
                 {
-                    int fieldAlignmentRequirement = pByValueMT->GetFieldAlignmentRequirement();
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, fieldAlignmentRequirement);
-                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, fieldAlignmentRequirement);
+                    alignmentRequirement = pByValueMT->GetFieldAlignmentRequirement();
                 }
+#if defined(FEATURE_64BIT_ALIGNMENT)
+                if (pByValueMT->RequiresAlign8())
+                {
+                    alignmentRequirement = max(8, alignmentRequirement);
+                }
+#endif // FEATURE_64BIT_ALIGNMENT
+
+                largestAlignmentRequirement = max(largestAlignmentRequirement, alignmentRequirement);
+                dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, alignmentRequirement);
 
                 pFieldDescList[i].SetOffset(dwCumulativeInstanceFieldPos - dwOffsetBias);
                 dwCumulativeInstanceFieldPos += pByValueMT->GetNumInstanceFieldBytes();
@@ -8780,6 +8846,33 @@ VOID MethodTableBuilder::HandleCStructLayout(MethodTable** pByValueClassCache)
     }
 }
 
+VOID MethodTableBuilder::HandleCUnionLayout(MethodTable** pByValueClassCache)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(HasLayout());
+
+    EEClassLayoutInfo* pLayoutInfo = GetLayoutInfo();
+
+    CONSISTENCY_CHECK(pLayoutInfo != nullptr);
+
+    bmtFP->NumInstanceFieldBytes = pLayoutInfo->InitializeCUnionFieldLayout(
+        GetHalfBakedClass()->GetFieldDescList(),
+        pByValueClassCache,
+        bmtEnumFields->dwNumDeclaredFields
+    );
+
+    if (bmtFP->NumInlineArrayElements != 0)
+    {
+        BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
+    }
+
+    if (pLayoutInfo->IsZeroSized())
+    {
+        BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
+    }
+}
+
 //*******************************************************************************
 // this accesses the field size which is temporarily stored in m_pMTOfEnclosingClass
 // during class loading. Don't use any other time
@@ -8829,7 +8922,7 @@ void MethodTableBuilder::SystemVAmd64CheckForPassStructInRegister(MethodTable** 
     const bool useNativeLayout = false;
     // Iterate through the fields and make sure they meet requirements to pass in registers
     SystemVStructRegisterPassingHelper helper((unsigned int)totalStructSize);
-    if (GetHalfBakedMethodTable()->ClassifyEightBytes(&helper, 0, 0, useNativeLayout, pByValueClassCache))
+    if (GetHalfBakedMethodTable()->ClassifyEightBytes(&helper, useNativeLayout, pByValueClassCache))
     {
         LOG((LF_JIT, LL_EVERYTHING, "**** SystemVAmd64CheckForPassStructInRegister: struct %s is enregisterable\n",
                this->GetDebugClassName()));
@@ -8853,7 +8946,7 @@ void MethodTableBuilder::StoreEightByteClassification(SystemVStructRegisterPassi
     LoaderAllocator* pAllocator = MethodTableBuilder::GetLoaderAllocator();
     AllocMemTracker* pamTracker = MethodTableBuilder::GetMemTracker();
     EnsureOptionalFieldsAreAllocated(eeClass, pamTracker, pAllocator->GetLowFrequencyHeap());
-    eeClass->SetEightByteClassification(helper->eightByteCount, helper->eightByteClassifications, helper->eightByteSizes);
+    eeClass->SetEightByteClassification(SystemVEightByteRegistersInfo(*helper));
 }
 
 #endif // UNIX_AMD64_ABI
@@ -12527,6 +12620,10 @@ BOOL HasLayoutMetadata(Assembly* pAssembly, IMDInternalImport* pInternalImport, 
         if (kind == CorExtendedLayoutKind::CStruct)
         {
             *pLayoutType = EEClassLayoutInfo::LayoutType::CStruct;
+        }
+        else if (kind == CorExtendedLayoutKind::CUnion)
+        {
+            *pLayoutType = EEClassLayoutInfo::LayoutType::CUnion;
         }
         else
         {

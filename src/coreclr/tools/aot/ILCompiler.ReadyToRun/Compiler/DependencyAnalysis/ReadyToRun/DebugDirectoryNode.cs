@@ -54,14 +54,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            return ObjectNodeSection.DebugDirectorySection;
+            return ObjectNodeSection.ReadOnlyDataSection;
         }
 
         public override bool IsShareable => false;
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
 
-        public override int ClassCode => 315358387;
+        public override int ClassCode => (int)ObjectNodeOrder.DebugDirectoryNode;
 
         public override bool StaticDependenciesAreComputed => true;
 

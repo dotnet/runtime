@@ -222,9 +222,7 @@ CONFIG_DWORD_INFO(INTERNAL_ContinueOnAssert, W("ContinueOnAssert"), 0, "If set, 
 CONFIG_DWORD_INFO(INTERNAL_InjectFatalError, W("InjectFatalError"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_InjectFault, W("InjectFault"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_SuppressChecks, W("SuppressChecks"),0,  "")
-#ifdef FEATURE_EH_FUNCLETS
 CONFIG_DWORD_INFO(INTERNAL_SuppressLockViolationsOnReentryFromOS, W("SuppressLockViolationsOnReentryFromOS"), 0, "64 bit OOM tests re-enter the CLR via RtlVirtualUnwind.  This indicates whether to suppress resulting locking violations.")
-#endif // FEATURE_EH_FUNCLETS
 
 ///
 /// Exception Handling
@@ -707,10 +705,16 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sve2,              W("EnableArm64Sv
 #elif defined(TARGET_RISCV64)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zba,             W("EnableRiscV64Zba"),          1, "Allows RiscV64 Zba hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zbb,             W("EnableRiscV64Zbb"),          1, "Allows RiscV64 Zbb hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zbs,             W("EnableRiscV64Zbs"),          1, "Allows RiscV64 Zbs hardware intrinsics to be disabled")
 #endif
 
 // Runtime-async
+#if defined(TARGET_BROWSER)
+// WASM-TODO: https://github.com/dotnet/runtime/issues/121064
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_RuntimeAsync, W("RuntimeAsync"), 0, "Enables runtime async method support")
+#else
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_RuntimeAsync, W("RuntimeAsync"), 1, "Enables runtime async method support")
+#endif // TARGET_BROWSER
 
 ///
 /// Uncategorized

@@ -2555,53 +2555,51 @@ namespace System
             int i;
 
             // get a pointer to the base64 table to avoid unnecessary range checking
-            fixed (byte* base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="u8)
+            ReadOnlySpan<byte> base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="u8;
+            for (i = offset; i < calcLength; i += 3)
             {
-                for (i = offset; i < calcLength; i += 3)
+                if (insertLineBreaks)
                 {
-                    if (insertLineBreaks)
+                    if (charcount == Base64LineBreakPosition)
                     {
-                        if (charcount == Base64LineBreakPosition)
-                        {
-                            outChars[j++] = '\r';
-                            outChars[j++] = '\n';
-                            charcount = 0;
-                        }
-                        charcount += 4;
+                        outChars[j++] = '\r';
+                        outChars[j++] = '\n';
+                        charcount = 0;
                     }
+                    charcount += 4;
+                }
+                outChars[j] = (char)base64[(inData[i] & 0xfc) >> 2];
+                outChars[j + 1] = (char)base64[((inData[i] & 0x03) << 4) | ((inData[i + 1] & 0xf0) >> 4)];
+                outChars[j + 2] = (char)base64[((inData[i + 1] & 0x0f) << 2) | ((inData[i + 2] & 0xc0) >> 6)];
+                outChars[j + 3] = (char)base64[inData[i + 2] & 0x3f];
+                j += 4;
+            }
+
+            // Where we left off before
+            i = calcLength;
+
+            if (insertLineBreaks && (lengthmod3 != 0) && (charcount == Base64LineBreakPosition))
+            {
+                outChars[j++] = '\r';
+                outChars[j++] = '\n';
+            }
+
+            switch (lengthmod3)
+            {
+                case 2: // One character padding needed
                     outChars[j] = (char)base64[(inData[i] & 0xfc) >> 2];
                     outChars[j + 1] = (char)base64[((inData[i] & 0x03) << 4) | ((inData[i + 1] & 0xf0) >> 4)];
-                    outChars[j + 2] = (char)base64[((inData[i + 1] & 0x0f) << 2) | ((inData[i + 2] & 0xc0) >> 6)];
-                    outChars[j + 3] = (char)base64[inData[i + 2] & 0x3f];
+                    outChars[j + 2] = (char)base64[(inData[i + 1] & 0x0f) << 2];
+                    outChars[j + 3] = (char)base64[64]; // Pad
                     j += 4;
-                }
-
-                // Where we left off before
-                i = calcLength;
-
-                if (insertLineBreaks && (lengthmod3 != 0) && (charcount == Base64LineBreakPosition))
-                {
-                    outChars[j++] = '\r';
-                    outChars[j++] = '\n';
-                }
-
-                switch (lengthmod3)
-                {
-                    case 2: // One character padding needed
-                        outChars[j] = (char)base64[(inData[i] & 0xfc) >> 2];
-                        outChars[j + 1] = (char)base64[((inData[i] & 0x03) << 4) | ((inData[i + 1] & 0xf0) >> 4)];
-                        outChars[j + 2] = (char)base64[(inData[i + 1] & 0x0f) << 2];
-                        outChars[j + 3] = (char)base64[64]; // Pad
-                        j += 4;
-                        break;
-                    case 1: // Two character padding needed
-                        outChars[j] = (char)base64[(inData[i] & 0xfc) >> 2];
-                        outChars[j + 1] = (char)base64[(inData[i] & 0x03) << 4];
-                        outChars[j + 2] = (char)base64[64]; // Pad
-                        outChars[j + 3] = (char)base64[64]; // Pad
-                        j += 4;
-                        break;
-                }
+                    break;
+                case 1: // Two character padding needed
+                    outChars[j] = (char)base64[(inData[i] & 0xfc) >> 2];
+                    outChars[j + 1] = (char)base64[(inData[i] & 0x03) << 4];
+                    outChars[j + 2] = (char)base64[64]; // Pad
+                    outChars[j + 3] = (char)base64[64]; // Pad
+                    j += 4;
+                    break;
             }
 
             return j;

@@ -230,7 +230,8 @@ namespace System.Threading
                 HillClimbing.ThreadPoolHillClimber.ForceChange(
                     newNumThreadsGoal,
                     HillClimbing.StateOrTransition.CooperativeBlocking);
-                if (counts.NumProcessingWork >= numThreadsGoal && _separated.numRequestedWorkers > 0)
+
+                if (counts.NumProcessingWork >= numThreadsGoal && _separated._hasOutstandingThreadRequest != 0)
                 {
                     addWorker = true;
                 }

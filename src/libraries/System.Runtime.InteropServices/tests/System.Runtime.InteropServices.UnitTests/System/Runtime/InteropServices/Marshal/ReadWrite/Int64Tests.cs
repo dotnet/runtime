@@ -140,11 +140,13 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [SkipOnMono("Marshal.ReadByte will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void ReadInt64_ZeroPointer_ThrowsException()
         {
-            AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.ReadInt64(IntPtr.Zero));
-            AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.ReadInt64(IntPtr.Zero, 2));
+            AssertExtensions.Throws<AccessViolationException>(() => Marshal.ReadInt64(IntPtr.Zero));
+            if (PlatformDetection.SupportsDirtyAccessViolations)
+            {
+                AssertExtensions.Throws<AccessViolationException>(() => Marshal.ReadInt64(IntPtr.Zero, 2));
+            }
         }
 
         [Fact]
@@ -166,15 +168,15 @@ namespace System.Runtime.InteropServices.Tests
 
             AssertExtensions.Throws<ArgumentException>(null, () => Marshal.ReadInt64(collectibleObject, 0));
         }
-
         [Fact]
-        [SkipOnMono("Marshal.ReadByte will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void WriteInt64_ZeroPointer_ThrowsException()
         {
-            AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.WriteInt64(IntPtr.Zero, 0));
-            AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.WriteInt64(IntPtr.Zero, 2, 0));
+            AssertExtensions.Throws<AccessViolationException>(() => Marshal.WriteInt64(IntPtr.Zero, 0));
+            if (PlatformDetection.SupportsDirtyAccessViolations)
+            {
+                AssertExtensions.Throws<AccessViolationException>(() => Marshal.WriteInt64(IntPtr.Zero, 2, 0));
+            }
         }
-
         [Fact]
         [SkipOnMono("Marshal.WriteInt64 will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void WriteInt64_NullObject_ThrowsAccessViolationException()

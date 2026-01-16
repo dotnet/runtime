@@ -33,6 +33,8 @@ namespace Internal.Runtime
         BlobIdResourceData                          = 25,
         BlobIdStackTraceEmbeddedMetadata            = 26,
         BlobIdStackTraceMethodRvaToTokenMapping     = 27,
+        BlobIdStackTraceLineNumbers                 = 28,
+        BlobIdStackTraceDocuments                   = 29,
 
         //Native layout blobs:
         NativeLayoutInfo                            = 30,
