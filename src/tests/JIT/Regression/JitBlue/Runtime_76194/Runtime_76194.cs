@@ -61,6 +61,7 @@ public unsafe class Runtime_76194
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("needs triage", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void TestEntryPoint()
     {

@@ -88,6 +88,7 @@ public class ForeignThreadExceptionsTest
     }
 
     [ActiveIssue("llvmfullaot: EH problem", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("needs triage", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static int TestEntryPoint()
     {

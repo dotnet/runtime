@@ -16,6 +16,7 @@ namespace ArrayWithThread
         public static AutoResetEvent myResetEvent1 = new AutoResetEvent(false);
         public static ManualResetEvent myResetEvent2 = new ManualResetEvent(false);
         [ActiveIssue("times out", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [Fact]
         [SkipOnCoreClr("", RuntimeTestModes.AnyGCStress)]
         public static int TestEntryPoint()
