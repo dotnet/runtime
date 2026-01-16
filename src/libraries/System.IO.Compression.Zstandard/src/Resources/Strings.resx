@@ -24,26 +24,14 @@
   <data name="CannotWriteToDecompressionStream" xml:space="preserve">
     <value>Cannot write to a stream that was opened for decompression.</value>
   </data>
-  <data name="InvalidCompressionLevel" xml:space="preserve">
-    <value>Invalid compression level specified.</value>
-  </data>
   <data name="IOCompressionZstandard_PlatformNotSupported" xml:space="preserve">
     <value>System.IO.Compression.Zstandard is not supported on this platform.</value>
-  </data>
-  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
-    <value>Cannot access a closed stream.</value>
   </data>
   <data name="Stream_FalseCanRead" xml:space="preserve">
     <value>The base stream is not readable.</value>
   </data>
   <data name="Stream_FalseCanWrite" xml:space="preserve">
     <value>The base stream is not writable.</value>
-  </data>
-  <data name="ZstandardEncoder_InvalidDictionary" xml:space="preserve">
-    <value>The provided dictionary wasn't created for encoding data.</value>
-  </data>
-  <data name="ZstandardEncoder_FlushError" xml:space="preserve">
-    <value>An error occurred during flush operation.</value>
   </data>
   <data name="ZstandardEncoderDecoder_InvalidState" xml:space="preserve">
     <value>The requested operation is not valid once compression or decompression has begun.</value>
