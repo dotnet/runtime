@@ -34,7 +34,6 @@
     .field public int32 a
 }
 
-// Types that require both StructLayout and ExtendedLayout
 
 .class flags(0x18) public value beforefieldinit CStructWithOffsets
 {
