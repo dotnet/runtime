@@ -436,7 +436,7 @@ Compiler::Compiler(ArenaAllocator*       arena,
         info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_WINNT);
     }
 
-    compMaxUncheckedOffsetForNullObject = eeInfo->maxUncheckedOffsetForNullObject;
+    compMaxUncheckedOffsetForNullObject = 0; // eeInfo->maxUncheckedOffsetForNullObject;
 
     info.compProfilerCallback = false; // Assume false until we are told to hook this method.
 
@@ -3022,16 +3022,16 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #ifdef DEBUG
 
-    // Now, set compMaxUncheckedOffsetForNullObject for STRESS_NULL_OBJECT_CHECK
-    if (compStressCompile(STRESS_NULL_OBJECT_CHECK, 30))
-    {
-        compMaxUncheckedOffsetForNullObject = (size_t)JitConfig.JitMaxUncheckedOffset();
-        if (verbose)
-        {
-            printf("STRESS_NULL_OBJECT_CHECK: compMaxUncheckedOffsetForNullObject=0x%zX\n",
-                   compMaxUncheckedOffsetForNullObject);
-        }
-    }
+    // // Now, set compMaxUncheckedOffsetForNullObject for STRESS_NULL_OBJECT_CHECK
+    // if (compStressCompile(STRESS_NULL_OBJECT_CHECK, 30))
+    // {
+    //     compMaxUncheckedOffsetForNullObject = (size_t)JitConfig.JitMaxUncheckedOffset();
+    //     if (verbose)
+    //     {
+    //         printf("STRESS_NULL_OBJECT_CHECK: compMaxUncheckedOffsetForNullObject=0x%zX\n",
+    //                compMaxUncheckedOffsetForNullObject);
+    //     }
+    // }
 
     if (verbose)
     {
