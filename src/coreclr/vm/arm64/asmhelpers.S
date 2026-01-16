@@ -1008,8 +1008,8 @@ NESTED_ENTRY InterpreterStubRet4Vector128, _TEXT, NoHandler
     EPILOG_RETURN
 NESTED_END InterpreterStubRet4Vector128, _TEXT
 
-// This stub is for when an interpreted method is called with Swift calling convention
-// and returns a lowered struct. This stub writes return values to a buffer.
+// When interpreted method is called with Swift calling convention and returns a lowered struct,
+// this stub writes return values to a buffer.
 NESTED_ENTRY InterpreterStubRetSwiftLowered, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
     add x0, sp, #__PWTB_TransitionBlock + 16
@@ -1258,7 +1258,6 @@ LEAF_ENTRY Load_X7_AtOffset
     SwiftLoad_AtOffset x7
 LEAF_END Load_X7_AtOffset
 
-// Float versions for Swift lowering
 .macro SwiftLoadFloat_AtOffset reg
     ldr x12, [x10], #8       // Load offset|struct_size
     and w11, w12, #0xFFFF    // Extract offset (lower 16 bits)
@@ -1317,6 +1316,54 @@ LEAF_ENTRY Load_Stack_AtOffset
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
 LEAF_END Load_Stack_AtOffset
+
+.macro SwiftStore_AtOffset reg
+    ldr x11, [x10], #8
+    and w11, w11, #0xFFFF
+    str \reg, [x9, x11]
+    ldr x11, [x10], #8
+    br x11
+.endm
+
+LEAF_ENTRY Store_X0_AtOffset
+    SwiftStore_AtOffset x0
+LEAF_END Store_X0_AtOffset
+
+LEAF_ENTRY Store_X1_AtOffset
+    SwiftStore_AtOffset x1
+LEAF_END Store_X1_AtOffset
+
+LEAF_ENTRY Store_X2_AtOffset
+    SwiftStore_AtOffset x2
+LEAF_END Store_X2_AtOffset
+
+LEAF_ENTRY Store_X3_AtOffset
+    SwiftStore_AtOffset x3
+LEAF_END Store_X3_AtOffset
+
+.macro SwiftStoreFloat_AtOffset reg
+    ldr x11, [x10], #8
+    and w11, w11, #0xFFFF
+    str \reg, [x9, x11]
+    ldr x11, [x10], #8
+    br x11
+.endm
+
+LEAF_ENTRY Store_D0_AtOffset
+    SwiftStoreFloat_AtOffset d0
+LEAF_END Store_D0_AtOffset
+
+LEAF_ENTRY Store_D1_AtOffset
+    SwiftStoreFloat_AtOffset d1
+LEAF_END Store_D1_AtOffset
+
+LEAF_ENTRY Store_D2_AtOffset
+    SwiftStoreFloat_AtOffset d2
+LEAF_END Store_D2_AtOffset
+
+LEAF_ENTRY Store_D3_AtOffset
+    SwiftStoreFloat_AtOffset d3
+LEAF_END Store_D3_AtOffset
 
 LEAF_ENTRY Store_X0
     str x0, [x9], #8
@@ -3003,54 +3050,11 @@ LOCAL_LABEL(CallJittedMethodRet4Vector128_NoSwiftError):
     EPILOG_RETURN
 NESTED_END CallJittedMethodRet4Vector128, _TEXT
 
-.macro SwiftStore_AtOffset reg
-    ldr x11, [x10], #8
-    and w11, w11, #0xFFFF
-    str \reg, [x9, x11]
-    ldr x11, [x10], #8
-    br x11
-.endm
-
-LEAF_ENTRY Store_X0_AtOffset
-    SwiftStore_AtOffset x0
-LEAF_END Store_X0_AtOffset
-
-LEAF_ENTRY Store_X1_AtOffset
-    SwiftStore_AtOffset x1
-LEAF_END Store_X1_AtOffset
-
-LEAF_ENTRY Store_X2_AtOffset
-    SwiftStore_AtOffset x2
-LEAF_END Store_X2_AtOffset
-
-LEAF_ENTRY Store_X3_AtOffset
-    SwiftStore_AtOffset x3
-LEAF_END Store_X3_AtOffset
-
-.macro SwiftStoreFloat_AtOffset reg
-    ldr x11, [x10], #8
-    and w11, w11, #0xFFFF
-    str \reg, [x9, x11]
-    ldr x11, [x10], #8
-    br x11
-.endm
-
-LEAF_ENTRY Store_D0_AtOffset
-    SwiftStoreFloat_AtOffset d0
-LEAF_END Store_D0_AtOffset
-
-LEAF_ENTRY Store_D1_AtOffset
-    SwiftStoreFloat_AtOffset d1
-LEAF_END Store_D1_AtOffset
-
-LEAF_ENTRY Store_D2_AtOffset
-    SwiftStoreFloat_AtOffset d2
-LEAF_END Store_D2_AtOffset
-
-LEAF_ENTRY Store_D3_AtOffset
-    SwiftStoreFloat_AtOffset d3
-LEAF_END Store_D3_AtOffset
-
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetSwiftLowered, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -64
     stp x2, x4, [fp, #16]

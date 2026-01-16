@@ -2779,98 +2779,6 @@ bool isIntrinsicSIMDType(MethodTable* pMT)
 
     return false;
 }
-
-//---------------------------------------------------------------------------
-// ValidateSwiftCallSignature:
-//    Validates that a Swift calling convention signature is valid.
-//    Throws InvalidProgramException if the signature is invalid.
-//
-// Arguments:
-//    sig - the method signature to validate.
-//
-// Throws:
-//    InvalidProgramException
-//
-void ValidateSwiftCallSignature(MetaSig &sig)
-{
-    int swiftSelfCount = 0;
-    int swiftErrorCount = 0;
-    int swiftIndirectResultCount = 0;
-
-    sig.Reset();
-
-    CorElementType argCorType;
-    while ((argCorType = sig.NextArg()) != ELEMENT_TYPE_END)
-    {
-        TypeHandle thArgTypeHandle = sig.GetLastTypeHandleThrowing();
-        bool isByRef = (argCorType == ELEMENT_TYPE_BYREF);
-
-        if (isByRef)
-        {
-            sig.GetByRefType(&thArgTypeHandle);
-        }
-
-        if (thArgTypeHandle.IsNull() || thArgTypeHandle.IsTypeDesc())
-        {
-            continue;
-        }
-
-        MethodTable* pArgMT = thArgTypeHandle.AsMethodTable();
-
-        if (!pArgMT->IsValueType())
-        {
-            COMPlusThrow(kInvalidProgramException);
-        }
-
-        if (isIntrinsicSIMDType(pArgMT))
-        {
-            COMPlusThrow(kInvalidProgramException);
-        }
-
-        if (isSwiftSelfType(pArgMT))
-        {
-            swiftSelfCount++;
-            if (swiftSelfCount > 1)
-            {
-                COMPlusThrow(kInvalidProgramException);
-            }
-        }
-
-        if (isSwiftErrorType(pArgMT))
-        {
-            if (!isByRef)
-            {
-                COMPlusThrow(kInvalidProgramException);
-            }
-            swiftErrorCount++;
-            if (swiftErrorCount > 1)
-            {
-                COMPlusThrow(kInvalidProgramException);
-            }
-        }
-
-        if (isSwiftIndirectResultType(pArgMT))
-        {
-            swiftIndirectResultCount++;
-            if (swiftIndirectResultCount > 1)
-            {
-                COMPlusThrow(kInvalidProgramException);
-            }
-        }
-    }
-
-    if (swiftIndirectResultCount > 0)
-    {
-        TypeHandle thReturnValueType;
-        CorElementType retType = sig.GetReturnTypeNormalized(&thReturnValueType);
-        if (retType != ELEMENT_TYPE_VOID)
-        {
-            COMPlusThrow(kInvalidProgramException);
-        }
-    }
-
-    sig.Reset();
-}
 #endif // TARGET_ARM64
 
 void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDesc *pMD)
@@ -3049,7 +2957,6 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 
 #ifdef TARGET_ARM64
     // Swift lowering info for expanded struct elements
-    // Max 4 elements per struct, max ~32 args = 128 entries should be plenty
     struct SwiftLoweringElement {
         uint16_t offset;        // Offset within struct
         uint16_t structSize;    // If non-zero, this is the last element, advance x9 by this amount
@@ -3392,7 +3299,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
                     MethodTable* pInnerMT = innerType.AsMethodTable();
 #if DEBUG
                     CORINFO_SWIFT_LOWERING lowering = {};
-                    pInnerMT->GetNativeSwiftPhysicalLowering(&lowering, false /* useNativeLayout */);
+                    pInnerMT->GetNativeSwiftPhysicalLowering(&lowering, false);
                     _ASSERTE(lowering.byReference);
 #endif // DEBUG
 

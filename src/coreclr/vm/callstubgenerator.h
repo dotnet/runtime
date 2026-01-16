@@ -152,7 +152,7 @@ class CallStubGenerator
     // The total stack size used for the arguments.
     int m_totalStackSize = 0;
 #ifdef TARGET_ARM64
-    // Size of struct for SwiftSelf<T> byReference case
+    // Size of struct for SwiftSelf<T>
     int m_swiftSelfByRefSize = 0;
     // Track if SwiftIndirectResult was used
     bool m_hasSwiftIndirectResult = false;
