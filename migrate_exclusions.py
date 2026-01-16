@@ -540,30 +540,34 @@ def ensure_testlibrary_reference(project_file: str) -> bool:
     with open(project_file, 'r') as f:
         content = f.read()
     
-    if '$(TestLibraryProjectPath)' in content:
+    if '$(TestLibraryProjectPath)' in content or 'TestLibrary' in content:
         return False
     
-    # Parse and add the reference
-    try:
-        tree = ET.parse(project_file)
-        root = tree.getroot()
+    # For SDK-style projects, add the reference more carefully
+    lines = content.split('\n')
+    new_lines = []
+    inserted = False
+    
+    for i, line in enumerate(lines):
+        new_lines.append(line)
         
-        # Find or create ItemGroup
-        itemgroups = root.findall('{http://schemas.microsoft.com/developer/msbuild/2003}ItemGroup')
-        if not itemgroups:
-            itemgroup = ET.SubElement(root, 'ItemGroup')
-        else:
-            itemgroup = itemgroups[0]
-        
-        # Add ProjectReference
-        proj_ref = ET.SubElement(itemgroup, 'ProjectReference')
-        proj_ref.set('Include', '$(TestLibraryProjectPath)')
-        
-        # Write back
-        tree.write(project_file, encoding='utf-8', xml_declaration=True)
+        # Find the last </ItemGroup> or </PropertyGroup> before </Project>
+        if not inserted and i < len(lines) - 1:
+            stripped = line.strip()
+            if stripped == '</ItemGroup>' or (stripped == '</PropertyGroup>' and '</ItemGroup>' not in content[content.find(line)+len(line):]):
+                # Insert a new ItemGroup after this one
+                indent = '  '
+                new_lines.append(indent + '<ItemGroup>')
+                new_lines.append(indent * 2 + '<ProjectReference Include="$(TestLibraryProjectPath)" />')
+                new_lines.append(indent + '</ItemGroup>')
+                inserted = True
+    
+    if inserted:
+        with open(project_file, 'w') as f:
+            f.write('\n'.join(new_lines))
         return True
-    except:
-        return False
+    
+    return False
 
 
 def add_il_attribute(filepath: str, attribute: str):
@@ -644,6 +648,7 @@ def migrate_exclusion(exclusion: ExclusionItem, repo_root: str, dry_run: bool = 
     # Apply replacements
     for project_file in project_files:
         project_dir = os.path.dirname(project_file)
+        project_name = os.path.splitext(os.path.basename(project_file))[0]
         
         # Parse the project file to find which source files it includes
         cs_files = []
@@ -662,6 +667,9 @@ def migrate_exclusion(exclusion: ExclusionItem, repo_root: str, dry_run: bool = 
             for compile_elem in compile_elems:
                 include = compile_elem.get('Include', '')
                 if include:
+                    # Expand MSBuild variables
+                    include = include.replace('$(MSBuildProjectName)', project_name)
+                    
                     full_path = os.path.join(project_dir, include)
                     if include.endswith('.cs'):
                         if os.path.exists(full_path):
@@ -669,15 +677,25 @@ def migrate_exclusion(exclusion: ExclusionItem, repo_root: str, dry_run: bool = 
                     elif include.endswith('.il'):
                         if os.path.exists(full_path):
                             il_files.append(full_path)
+            
+            # If no explicit Compile elements, SDK projects include all .cs/.il files by default
+            if not cs_files and not il_files:
+                for file in os.listdir(project_dir):
+                    full_path = os.path.join(project_dir, file)
+                    if file.endswith('.cs') and os.path.isfile(full_path):
+                        cs_files.append(full_path)
+                    elif file.endswith('.il') and os.path.isfile(full_path):
+                        il_files.append(full_path)
+                        
         except Exception as e:
             print(f"  Warning: Could not parse project file: {e}")
             # If we can't parse the project file, fall back to directory scanning
-            for root, dirs, files in os.walk(project_dir):
-                for file in files:
-                    if file.endswith('.cs'):
-                        cs_files.append(os.path.join(root, file))
-                    elif file.endswith('.il'):
-                        il_files.append(os.path.join(root, file))
+            for file in os.listdir(project_dir):
+                full_path = os.path.join(project_dir, file)
+                if file.endswith('.cs') and os.path.isfile(full_path):
+                    cs_files.append(full_path)
+                elif file.endswith('.il') and os.path.isfile(full_path):
+                    il_files.append(full_path)
         
         # Apply C# attributes
         if mapping.cs_attribute and cs_files:
@@ -718,19 +736,33 @@ def main():
     
     print(f"Found {len(exclusions)} exclusion items")
     
-    # Process first few for testing
+    # Process items
     dry_run = len(sys.argv) < 2 or sys.argv[1] != '--apply'
+    limit = None
+    
+    if len(sys.argv) >= 3 and sys.argv[2].startswith('--limit='):
+        limit = int(sys.argv[2].split('=')[1])
     
     if dry_run:
         print("\n=== DRY RUN MODE ===")
         print("Run with --apply to actually modify files\n")
+        limit = limit or 10
     
-    limit = 10 if dry_run else len(exclusions)
+    items_to_process = exclusions[:limit] if limit else exclusions
     
-    for i, exclusion in enumerate(exclusions[:limit]):
-        migrate_exclusion(exclusion, repo_root, dry_run)
+    success_count = 0
+    for i, exclusion in enumerate(items_to_process):
+        try:
+            migrate_exclusion(exclusion, repo_root, dry_run)
+            success_count += 1
+        except Exception as e:
+            print(f"ERROR processing {exclusion.path}: {e}")
     
-    print(f"\nProcessed {min(limit, len(exclusions))} of {len(exclusions)} items")
+    print(f"\nProcessed {len(items_to_process)} of {len(exclusions)} items")
+    print(f"Successful: {success_count}")
+    
+    if not dry_run:
+        print("\nNOTE: You should now remove the migrated items from issues.targets")
 
 
 if __name__ == '__main__':
