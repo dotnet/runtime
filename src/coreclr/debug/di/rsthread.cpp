@@ -4443,23 +4443,6 @@ inline CORDB_ADDRESS GetSPFromDebuggerREGDISPLAY(DebuggerREGDISPLAY* pDRD)
 }
 
 
-HRESULT CordbContext::QueryInterface(REFIID id, void **pInterface)
-{
-    if (id == IID_ICorDebugContext)
-        *pInterface = static_cast<ICorDebugContext*>(this);
-    else if (id == IID_IUnknown)
-        *pInterface = static_cast<IUnknown*>(static_cast<ICorDebugContext*>(this));
-    else
-    {
-        *pInterface = NULL;
-        return E_NOINTERFACE;
-    }
-
-    AddRef();
-    return S_OK;
-}
-
-
 /* ------------------------------------------------------------------------- *
  * Frame class
  * ------------------------------------------------------------------------- */
@@ -4852,7 +4835,7 @@ CordbValueEnum::CordbValueEnum(
     UINT maxCount,
     ValueGetter valueGetter,
     NeuterList* pNeuterList)
-    : CordbBase(pProcess, 0)
+    : CordbBase(pProcess, 0, enumCordbValueEnum)
     , m_valueGetter(valueGetter)
     , m_pNeuterList(pNeuterList)
     , m_iCurrent(0)
@@ -10770,7 +10753,7 @@ CordbEval::RudeAbort(
  * ------------------------------------------------------------------------- */
 
 CordbCodeEnum::CordbCodeEnum(unsigned int cCodes, RSSmartPtr<CordbCode> * ppCodes) :
-    CordbBase(NULL, 0)
+    CordbBase(NULL, 0, enumCordbCodeEnum)
 {
     // Because the array is of smart-ptrs, the elements are already reffed
     // We now take ownership of the array itself too.
