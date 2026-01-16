@@ -16,6 +16,12 @@ struct DebuggerControllerPatch;
 
 #ifdef FEATURE_INTERPRETER
 
+// Result of GetBreakpointInfo - combines opcode and step-out flag
+struct BreakpointInfo
+{
+    InterpOpcode originalOpcode;
+    bool isStepOut;
+};
 
 class IExecutionControl
 {
@@ -38,9 +44,10 @@ public:
     // Remove a breakpoint patch and restore original instruction
     virtual bool UnapplyPatch(DebuggerControllerPatch* patch) override;
 
+    // Get breakpoint info (original opcode and step-out flag)
+    BreakpointInfo GetBreakpointInfo(const void* address) const;
 private:
     InterpreterExecutionControl() = default;
-    static InterpreterExecutionControl s_instance;
 };
 
 #endif // FEATURE_INTERPRETER

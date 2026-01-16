@@ -66,5 +66,47 @@ bool InterpreterExecutionControl::UnapplyPatch(DebuggerControllerPatch* patch)
     return true;
 }
 
+BreakpointInfo InterpreterExecutionControl::GetBreakpointInfo(const void* address) const
+{
+    _ASSERTE(address != NULL);
+
+    BreakpointInfo info = { INTOP_NOP, false };
+
+    DebuggerController::ControllerLockHolder lockController;
+
+    DebuggerPatchTable* patchTable = DebuggerController::GetPatchTable();
+    if (patchTable != NULL)
+    {
+        DebuggerControllerPatch* patch = patchTable->GetPatch((CORDB_ADDRESS_TYPE*)address);
+        if (patch != NULL && patch->IsActivated())
+        {
+            // Get the original opcode from the first activated patch
+            info.originalOpcode = (InterpOpcode)patch->opcode;
+
+            // Iterate through ALL patches at this address to check if ANY is a step-out patch.
+            // Multiple patches can exist at the same address (e.g., IDE breakpoint + step-out from Debugger.Break()).
+            // The step-out patch may not be the first in the list, so we must check all of them.
+            for (DebuggerControllerPatch* p = patch; p != NULL; p = patchTable->GetNextPatch(p))
+            {
+                if (p->GetKind() == PATCH_KIND_NATIVE_MANAGED)
+                {
+                    info.isStepOut = true;
+                    break;
+                }
+            }
+
+            LOG((LF_CORDB, LL_INFO10000, "InterpreterEC::GetBreakpointInfo at %p: opcode=0x%x, isStepOut=%d\n",
+                address, info.originalOpcode, info.isStepOut));
+            return info;
+        }
+    }
+
+    // No patch at this address, read opcode from memory, not a step-out
+    info.originalOpcode = (InterpOpcode)(*(const uint32_t*)address);
+    info.isStepOut = false;
+    LOG((LF_CORDB, LL_INFO10000, "InterpreterEC::GetBreakpointInfo at %p: no patch, opcode=0x%x\n",
+        address, info.originalOpcode));
+    return info;
+}
 #endif // FEATURE_INTERPRETER
 #endif // !DACCESS_COMPILE
