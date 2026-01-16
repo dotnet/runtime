@@ -535,5 +535,28 @@ PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS macro target
 
         endm
 
+; Epilog for PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS - restores XMM callee-saved and returns
+POP_COOP_PINVOKE_FRAME_WITH_FLOATS_RETURN macro
+
+        ; Restore FP callee-saved registers (xmm6-xmm15) from offset 32 (after shadow space)
+        movdqa  xmm6,  [rsp + 20h]
+        movdqa  xmm7,  [rsp + 30h]
+        movdqa  xmm8,  [rsp + 40h]
+        movdqa  xmm9,  [rsp + 50h]
+        movdqa  xmm10, [rsp + 60h]
+        movdqa  xmm11, [rsp + 70h]
+        movdqa  xmm12, [rsp + 80h]
+        movdqa  xmm13, [rsp + 90h]
+        movdqa  xmm14, [rsp + 0A0h]
+        movdqa  xmm15, [rsp + 0B0h]
+
+        ; Deallocate stack space (296 bytes)
+        add     rsp, 296
+
+        POP_CALLEE_SAVED_REGISTERS
+        ret
+
+        endm
+
 ;; GC type flags
 GC_ALLOC_FINALIZE               equ 1

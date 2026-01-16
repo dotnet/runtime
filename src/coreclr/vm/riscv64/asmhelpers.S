@@ -827,12 +827,12 @@ NESTED_END OnCallCountThresholdReachedStub, _TEXT
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
 NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
-    PROLOG_WITH_TRANSITION_BLOCK
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS a0
 
-    addi  a0, sp, __PWTB_TransitionBlock // TransitionBlock *
+    // a0 already contains TransitionBlock pointer from macro
     call  C_FUNC(JIT_PatchpointWorkerWorkerWithPolicy)
 
-    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+    POP_COOP_PINVOKE_FRAME_WITH_FLOATS_RETURN
 NESTED_END JIT_Patchpoint, _TEXT
 
 // first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
