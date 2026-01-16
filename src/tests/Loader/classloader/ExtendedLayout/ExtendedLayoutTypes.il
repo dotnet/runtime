@@ -34,3 +34,69 @@
     .field public int32 a
 }
 
+// Types that require both StructLayout and ExtendedLayout
+
+.class flags(0x18) public value beforefieldinit CStructWithOffsets
+{
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
+        int32(0x00000000) // CStruct
+    }
+
+    .field [4] public int32 a
+}
+
+.class flags(0x18) public value beforefieldinit CStructWithSize
+{
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
+        int32(0x00000000) // CStruct
+    }
+
+    .field public int32 a
+
+    .size 12
+}
+
+.class flags(0x18) public value beforefieldinit CStructWithPack
+{
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
+        int32(0x00000000) // CStruct
+    }
+
+    .field public int8 a
+    .field public int32 b
+
+    .pack 1
+}
+
+.class flags(0x18) public value beforefieldinit CUnionWithOffsets
+{
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
+        int32(0x00000001) // CUnion
+    }
+
+    .field [4] public int32 a
+}
+
+.class flags(0x18) public value beforefieldinit CUnionWithSize
+{
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
+        int32(0x00000001) // CUnion
+    }
+
+    .field public int32 a
+
+    .size 12
+}
+
+.class flags(0x18) public value beforefieldinit CUnionWithPack
+{
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
+        int32(0x00000001) // CUnion
+    }
+
+    .field public uint8 a
+    .field public int32 b
+
+    .pack 1
+}
+

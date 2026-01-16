@@ -164,6 +164,7 @@ public struct CStructCustomSeqStructField
     public NestedSequentialType y;
 }
 
+[StructLayout(LayoutKind.Auto)]
 public struct NestedAutoLayoutType
 {
     public int x;
@@ -178,28 +179,6 @@ public struct CStructCustomAutoStructField
 [ExtendedLayout(ExtendedLayoutKind.CStruct)]
 public struct EmptyCStruct
 {
-}
-
-[ExtendedLayout(ExtendedLayoutKind.CStruct)]
-public struct CStructWithOffsets
-{
-    [FieldOffset(4)]
-    public int a;
-}
-
-[ExtendedLayout(ExtendedLayoutKind.CStruct)]
-[StructLayout(LayoutKind.Auto, Size = 12)]
-public struct CStructWithSize
-{
-    public int a;
-}
-
-[ExtendedLayout(ExtendedLayoutKind.CStruct)]
-[StructLayout(LayoutKind.Auto, Pack = 1)]
-public struct CStructWithPack
-{
-    public sbyte a;
-    public int b;
 }
 
 [ExtendedLayout(ExtendedLayoutKind.CStruct)]

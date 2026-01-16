@@ -202,28 +202,6 @@ public struct EmptyCUnion
 }
 
 [ExtendedLayout(ExtendedLayoutKind.CUnion)]
-public struct CUnionWithOffsets
-{
-    [FieldOffset(4)]
-    public int a;
-}
-
-[ExtendedLayout(ExtendedLayoutKind.CUnion)]
-[StructLayout(LayoutKind.Auto, Size = 12)]
-public struct CUnionWithSize
-{
-    public int a;
-}
-
-[ExtendedLayout(ExtendedLayoutKind.CUnion)]
-[StructLayout(LayoutKind.Auto, Pack = 1)]
-public struct CUnionWithPack
-{
-    public byte a;
-    public int b;
-}
-
-[ExtendedLayout(ExtendedLayoutKind.CUnion)]
 public struct CUnionMixedSizes
 {
     public byte byteField;
