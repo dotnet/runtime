@@ -57,6 +57,10 @@ ep_buffer_free (EventPipeBuffer *buffer)
 {
 	ep_return_void_if_nok (buffer != NULL);
 
+	// buffers are not guaranteed to be read-only at this point as allocation may have failed,
+	// a Listener EventPipe Session may not have finished reading all events by disable,
+	// or an EventPipe session was abruptly disconnected.
+
 	ep_rt_vfree (buffer->buffer, buffer->limit - buffer->buffer);
 	ep_rt_object_free (buffer);
 }

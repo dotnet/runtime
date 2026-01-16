@@ -691,6 +691,10 @@ disable_holding_lock (
 		// been emitted.
 		ep_session_write_sequence_point_unbuffered (session);
 
+		// The session is disabled but might still be referenced elsewhere.
+		// As a newly allocated session may inherit this session's index, close the session to
+		// ensure all buffers are freed and detach all threads EventPipeThreadSessionStates
+		// so threads won't write to the closed session mistaking it as the new session.
 		ep_session_close (session);
 
 		ep_session_dec_ref (session);

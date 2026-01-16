@@ -90,21 +90,22 @@ struct _EventPipeBufferManager_Internal {
 	ep_rt_spin_lock_handle_t rt_lock;
 	// The session this buffer manager belongs to.
 	EventPipeSession *session;
-	// Iterator state for reader thread.
+	// ---------------------------- READER-THREAD ONLY BEGIN ----------------------------
 	// These are not protected by rt_lock and expected to only be used on the reader thread.
+	// Iterator state for reader thread.
 	EventPipeEventInstance *current_event;
 	EventPipeBuffer *current_buffer;
-	// The thread session state grabbed from the thread_session_state_list containing the current event
-	// that is being processed by the reader thread.
 	EventPipeThreadSessionState *current_thread_session_state;
-	// A snapshot of the thead_session_state_list used by the reader thread to optimize event iteration.
+	// A snapshot of the thead_session_state_list only used by the reader thread to optimize event iteration.
 	// As existing and new threads write events, this represents the subset of EventPipeThreadSessionStates
 	// containing events before the snapshot timestamp. As buffer_manager_move_next_event_any_snapshot_thread
 	// and buffer_manager_move_next_event_same_thread iterate over events, entries are removed from the list
 	// when no more events are available before the snapshot timestamp. So once there are no more events
 	// before the snapshot timestamp, the list will be empty.
 	dn_list_t *thread_session_state_list_snapshot;
+	// The timestamp representing the cut-off for the snapshot list.
 	ep_timestamp_t snapshot_timestamp;
+	// ---------------------------- READER-THREAD ONLY END ------------------------------
 	// The total allocation size of buffers under management.
 	volatile size_t size_of_all_buffers;
 	// The maximum allowable size of buffers under management.

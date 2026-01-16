@@ -577,8 +577,10 @@ buffer_manager_snapshot_threads (
 	DN_LIST_FOREACH_BEGIN (EventPipeThreadSessionState *, thread_session_state, buffer_manager->thread_session_state_list) {
 		EventPipeBufferList *buffer_list = ep_thread_session_state_get_buffer_list (thread_session_state);
 		EventPipeBuffer *buffer = buffer_list->head_buffer;
-		if (buffer && ep_buffer_get_creation_timestamp (buffer) < snapshot_timestamp)
+		if (buffer && ep_buffer_get_creation_timestamp (buffer) < snapshot_timestamp) {
+			// Ownership is not transferred, the thread_session_state_list still owns the EventPipeThreadSessionState
 			dn_list_push_back (buffer_manager->thread_session_state_list_snapshot, thread_session_state);
+		}
 	} DN_LIST_FOREACH_END;
 
 	ep_buffer_manager_requires_lock_held (buffer_manager);
@@ -808,9 +810,12 @@ buffer_manager_convert_buffer_to_read_only (
 	EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section1)
 
 	if (wait_for_writer_thread) {
+		uint32_t index = ep_session_get_index (buffer_manager->session);
 		// Wait for the writer thread to finish any pending writes to this buffer and release any
 		// cached pointers it may have. The writer thread might need the buffer manager lock to make progress so we can't hold it while waiting.
-		uint32_t index = ep_session_get_index (buffer_manager->session);
+		// Both session_use_in_progress and write_buffer are accessed via atomic operations. By setting the write_buffer to NULL above while holding
+		// the buffer manager lock, the wait is correct only because the writer thread sets session_use_in_progress before caching the write_buffer
+		// and resets it after it's done using the cached write_buffer.
 		EP_YIELD_WHILE (ep_thread_get_session_use_in_progress (thread) == index &&
 						ep_thread_session_state_get_volatile_write_buffer (thread_session_state) == NULL);
 	}
@@ -897,6 +902,8 @@ ep_buffer_manager_free (EventPipeBufferManager * buffer_manager)
 	ep_return_void_if_nok (buffer_manager != NULL);
 
 	dn_list_free (buffer_manager->sequence_points);
+
+	EP_ASSERT (dn_list_empty (buffer_manager->thread_session_state_list_snapshot));
 
 	dn_list_free (buffer_manager->thread_session_state_list_snapshot);
 
@@ -1334,6 +1341,8 @@ void
 ep_buffer_manager_close (EventPipeBufferManager *buffer_manager)
 {
 	EP_ASSERT (buffer_manager != NULL);
+
+	dn_list_clear (buffer_manager->thread_session_state_list_snapshot);
 
 	// Take the buffer manager manipulation lock
 	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
