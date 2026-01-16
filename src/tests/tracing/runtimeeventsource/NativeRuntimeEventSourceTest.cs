@@ -24,6 +24,8 @@ namespace Tracing.Tests
     public sealed class NativeRuntimeEventSourceTest
     {
         [ActiveIssue("Build doesn't include diagnostics tracing", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/92727", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsNotWindows))]
+        [ActiveIssue("WASM doesn't support diagnostics tracing", TestPlatforms.Browser)]
         [Fact]
         public static void TestEntryPoint()
         {

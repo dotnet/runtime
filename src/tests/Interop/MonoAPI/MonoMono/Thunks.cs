@@ -40,6 +40,7 @@ public class Thunks
     // By default the ILTransform tool renames Main to TestEntryPoint but that doesn't work
     // in this case because it uses reflection to enumerate method with names starting with "Test".
     [ActiveIssue("CoreCLR does not implement the mono embedding API", TestRuntimes.CoreCLR)]
+    [ActiveIssue("Test not expected to work with AOT", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
     [Fact]
     public static void EntryPoint()
     {

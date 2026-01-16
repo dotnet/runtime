@@ -167,6 +167,7 @@ namespace TestUnhandledExceptionTester
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/80356", typeof(PlatformDetection), nameof(PlatformDetection.IsOSX), nameof(PlatformDetection.IsX64Process))]
+        [ActiveIssue("System.Diagnostics.Process is not supported", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Fact]
         public static void TestEntryPoint()
         {

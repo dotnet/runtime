@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
+using TestLibrary;
 namespace Runtime_66624;
 
 using Xunit;
@@ -60,6 +61,7 @@ public class Runtime_66624
     public static C0 s_1 = new C0(0, 0, 0);
     public static C1[][] s_3 = new C1[][] { new C1[] { new C1(new C0(0, 0, 0)) } };
     [OuterLoop]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static int TestEntryPoint()

@@ -54,6 +54,8 @@ public unsafe class Program
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("System.DllNotFoundException: UnmanagedCallersOnlyDll", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void NegativeTest_NonStaticMethod()
     {
@@ -72,6 +74,8 @@ public unsafe class Program
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("System.DllNotFoundException: UnmanagedCallersOnlyDll", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void NegativeTest_NonBlittable()
     {
@@ -87,6 +91,8 @@ public unsafe class Program
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("System.DllNotFoundException: UnmanagedCallersOnlyDll", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void NegativeTest_InstantiatedGenericArguments()
     {
@@ -99,6 +105,8 @@ public unsafe class Program
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("System.DllNotFoundException: UnmanagedCallersOnlyDll", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void NegativeTest_FromInstantiatedGenericClass()
     {
@@ -117,6 +125,8 @@ public unsafe class Program
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("System.DllNotFoundException: UnmanagedCallersOnlyDll", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void TestUnmanagedCallersOnlyViaUnmanagedCalli()
     {
@@ -155,6 +165,8 @@ public unsafe class Program
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("System.DllNotFoundException: UnmanagedCallersOnlyDll", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void TestPInvokeMarkedWithUnmanagedCallersOnly()
     {
@@ -174,6 +186,8 @@ public unsafe class Program
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("System.DllNotFoundException: UnmanagedCallersOnlyDll", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void TestUnmanagedCallersOnlyWithGeneric()
     {
@@ -191,6 +205,8 @@ public unsafe class Program
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("System.DllNotFoundException: UnmanagedCallersOnlyDll", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     [SkipOnMono("Mono doesn't support runtime async and doesn't check the async bit.")]
     public static void TestUnmanagedCallersOnlyWithRuntimeAsync()

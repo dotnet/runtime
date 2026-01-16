@@ -79,6 +79,7 @@ namespace gh53564Tests
     public partial class TestRuntimeEventCounter
     {
         [ActiveIssue(" needs triage ", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
+        [ActiveIssue("Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient", TestPlatforms.Browser)]
         [Fact]
         public static int TestEntryPoint()
         {

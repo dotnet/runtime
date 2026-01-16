@@ -21,6 +21,7 @@ namespace Tracing.Tests.RundownValidation
     public class RundownValidation
     {
         [ActiveIssue("https://github.com/dotnet/runtime/issues/83051: not supported in net8", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+        [ActiveIssue("Can't find file dotnet-diagnostic-{pid}-*-socket", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsRiscv64Process))]
         [Fact]
         public static int TestEntryPoint()
         {

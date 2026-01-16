@@ -19,6 +19,7 @@ public static class TieredVtableMethodTests
 
     [ActiveIssue("No crossgen folder under Core_Root", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
+    [ActiveIssue("No crossgen folder under Core_Root", TestPlatforms.Android)]
     [Fact]
     public static int TestEntryPoint()
     {

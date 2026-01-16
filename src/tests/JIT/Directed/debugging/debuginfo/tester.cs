@@ -21,6 +21,7 @@ using Xunit;
 public unsafe class DebugInfoTest
 {
     [ActiveIssue("Just-in-time compilation test", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("Tests coreclr JIT's debug info generation", TestRuntimes.Mono)]
     [Fact]
     public static unsafe int TestEntryPoint()
     {

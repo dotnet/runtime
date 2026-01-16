@@ -26,6 +26,7 @@ namespace Tracing.Tests.ProviderValidation
     public class ProviderValidation
     {
         [ActiveIssue("WASM doesn't support diagnostics tracing", TestPlatforms.Browser)]
+        [ActiveIssue("Can't find file dotnet-diagnostic-{pid}-*-socket", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsRiscv64Process))]
         [Fact]
         public static int TestEntryPoint()
         {

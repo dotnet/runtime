@@ -21,6 +21,9 @@ namespace XSLTest
         // The bug was that the local was only zero-initialized for the first iteration of the loop.
 
         [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Reflection emit", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+        [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53353", TestPlatforms.Android)]
+        [ActiveIssue("needs triage", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Fact]
         public static int TestEntryPoint()
         {

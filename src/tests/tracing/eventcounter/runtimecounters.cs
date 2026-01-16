@@ -99,6 +99,7 @@ namespace RuntimeEventCounterTests
     public partial class TestRuntimeEventCounter
     {
         [ActiveIssue(" needs triage ", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
+        [ActiveIssue("System.Threading.Thread.UnsafeStart not supported", TestPlatforms.Browser)]
         [Fact]
         public static int TestEntryPoint()
         {

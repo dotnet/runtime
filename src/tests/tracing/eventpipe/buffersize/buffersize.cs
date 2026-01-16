@@ -26,6 +26,7 @@ namespace Tracing.Tests.BufferValidation
     public class BufferValidation
     {
         [ActiveIssue("Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient", TestPlatforms.Browser)]
+        [ActiveIssue("Can't find file dotnet-diagnostic-{pid}-*-socket", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsRiscv64Process))]
         [Fact]
         public static int TestEntryPoint()
         {
