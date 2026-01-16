@@ -1,9 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GC.WaitForPendingFinalizers -->
+    
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CriticalFinalizer.cs" />
   </ItemGroup>
-</Project>
+<ItemGroup><ProjectReference Include="$(TestLibraryProjectPath)" /></ItemGroup></Project>

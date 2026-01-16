@@ -469,15 +469,24 @@ def add_cs_attribute(filepath: str, attribute: str):
     new_lines = []
     i = 0
     
+    # Track if we need to add using directives
+    needs_xunit_using = 'using Xunit;' not in content
+    needs_testlibrary_using = 'using TestLibrary;' not in content
+    
+    # Extract the attribute name for checking
+    attr_name_match = re.search(r'\[(\w+)', attribute)
+    attr_name = attr_name_match.group(1) if attr_name_match else None
+    
     while i < len(lines):
         line = lines[i]
+        stripped = line.strip()
         
         # Check if this line has [Fact] or [Theory]
-        if '[Fact]' in line or '[Theory]' in line:
-            # Check if the attribute is already present on the next few lines
+        if '[Fact]' in stripped or '[Theory]' in stripped:
+            # Check if the attribute is already present on nearby lines
             has_attribute = False
-            for check_idx in range(max(0, i - 3), min(len(lines), i + 3)):
-                if attribute.split('(')[0].replace('[', '') in lines[check_idx]:
+            for check_idx in range(max(0, i - 5), min(len(lines), i + 5)):
+                if attr_name and attr_name in lines[check_idx]:
                     has_attribute = True
                     break
             
@@ -491,36 +500,35 @@ def add_cs_attribute(filepath: str, attribute: str):
         i += 1
     
     if modified:
-        # Check and add using directives
-        new_content = '\n'.join(new_lines)
+        # Add using directives at the top if needed
+        final_lines = []
+        using_section_end = 0
         
-        if 'using Xunit;' not in new_content:
-            # Find where to insert using directives
-            lines = new_content.split('\n')
-            insert_idx = 0
-            for idx, line in enumerate(lines):
-                if line.strip().startswith('using '):
-                    insert_idx = idx + 1
-                elif line.strip() and not line.strip().startswith('//'):
-                    break
-            
-            lines.insert(insert_idx, 'using Xunit;')
-            new_content = '\n'.join(lines)
+        # Find the end of the using section
+        for idx, line in enumerate(new_lines):
+            stripped = line.strip()
+            if stripped.startswith('using '):
+                using_section_end = idx + 1
+            elif stripped and not stripped.startswith('//') and not stripped.startswith('/*'):
+                # First non-comment, non-using line
+                if using_section_end == 0:
+                    using_section_end = idx
+                break
         
-        if 'using TestLibrary;' not in new_content:
-            lines = new_content.split('\n')
-            insert_idx = 0
-            for idx, line in enumerate(lines):
-                if line.strip().startswith('using '):
-                    insert_idx = idx + 1
-                elif line.strip() and not line.strip().startswith('//'):
-                    break
-            
-            lines.insert(insert_idx, 'using TestLibrary;')
-            new_content = '\n'.join(lines)
+        # Insert new using directives
+        insert_idx = using_section_end
+        final_lines = new_lines[:insert_idx]
+        
+        if needs_xunit_using and 'using Xunit;' not in '\n'.join(final_lines):
+            final_lines.append('using Xunit;')
+        
+        if needs_testlibrary_using and 'using TestLibrary;' not in '\n'.join(final_lines):
+            final_lines.append('using TestLibrary;')
+        
+        final_lines.extend(new_lines[insert_idx:])
         
         with open(filepath, 'w') as f:
-            f.write(new_content)
+            f.write('\n'.join(final_lines))
         
         return True
     
@@ -637,16 +645,39 @@ def migrate_exclusion(exclusion: ExclusionItem, repo_root: str, dry_run: bool = 
     for project_file in project_files:
         project_dir = os.path.dirname(project_file)
         
-        # Find source files
+        # Parse the project file to find which source files it includes
         cs_files = []
         il_files = []
         
-        for root, dirs, files in os.walk(project_dir):
-            for file in files:
-                if file.endswith('.cs'):
-                    cs_files.append(os.path.join(root, file))
-                elif file.endswith('.il'):
-                    il_files.append(os.path.join(root, file))
+        try:
+            tree = ET.parse(project_file)
+            root = tree.getroot()
+            
+            # Try both with and without namespace
+            compile_elems = (
+                root.findall('.//{http://schemas.microsoft.com/developer/msbuild/2003}Compile') +
+                root.findall('.//Compile')
+            )
+            
+            for compile_elem in compile_elems:
+                include = compile_elem.get('Include', '')
+                if include:
+                    full_path = os.path.join(project_dir, include)
+                    if include.endswith('.cs'):
+                        if os.path.exists(full_path):
+                            cs_files.append(full_path)
+                    elif include.endswith('.il'):
+                        if os.path.exists(full_path):
+                            il_files.append(full_path)
+        except Exception as e:
+            print(f"  Warning: Could not parse project file: {e}")
+            # If we can't parse the project file, fall back to directory scanning
+            for root, dirs, files in os.walk(project_dir):
+                for file in files:
+                    if file.endswith('.cs'):
+                        cs_files.append(os.path.join(root, file))
+                    elif file.endswith('.il'):
+                        il_files.append(os.path.join(root, file))
         
         # Apply C# attributes
         if mapping.cs_attribute and cs_files:
