@@ -785,12 +785,6 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmfullaot'">
-        <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
-    </ItemGroup>
-
-
-
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minijit' and '$(TargetArchitecture)' == 'arm64'">
         <!-- DllImportSearchPaths and NativeLibrary tests use the same test helpers that fail here -->
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Primitives/Pointer/NonBlittablePointer/**">
@@ -1460,12 +1454,6 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'android' And '$(TargetArchitecture)' == 'arm64'">
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/fannkuch-redux/fannkuch-redux-5/**">
-            <Issue>https://github.com/dotnet/runtime/issues/52781</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
     <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'" >
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/MultipleAssembliesWithSamePInvoke/MAWSPITest/**">
             <Issue>missing assembly</Issue>
@@ -1677,10 +1665,6 @@
         </ExcludeList>
     </ItemGroup>
 
-
-
-
-
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'riscv64'">
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/VS-ia64-JIT/M00/b108366/b108366/*">
             <Issue>https://github.com/dotnet/runtime/issues/54393</Issue>
@@ -1737,9 +1721,6 @@
             <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
         </ExcludeList>
     </ItemGroup>
-
-    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
-
 
     <Target Name="GetFilteredExcludeList" Returns="@(FilteredExcludeList)">
         <ItemGroup>

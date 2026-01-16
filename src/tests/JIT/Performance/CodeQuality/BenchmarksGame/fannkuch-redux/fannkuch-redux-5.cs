@@ -101,6 +101,7 @@ namespace BenchmarksGame
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52781", TestPlatforms.Android)]
         [Fact]
         public static int TestEntryPoint()
         {
