@@ -21,14 +21,6 @@
         </ExcludeList>
     </ItemGroup>
 
-
-    <!-- Crossgen2 specific -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TestBuildMode)' == 'crossgen2' or '$(TestBuildMode)' == 'crossgen') and '$(RuntimeFlavor)' == 'coreclr'">
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/LoadIjwFromModuleHandle/LoadIjwFromModuleHandle/*">
-            <Issue>https://github.com/dotnet/runtime/issues/83942</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
     <!-- NativeAOT specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr'">
         <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/tailcall_v4/hijacking/**">
