@@ -344,9 +344,17 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                                 // For AnyKey, we want to cache based on descriptor identity, not AnyKey that cacheKey has.
                                 ServiceIdentifier registrationKey = isAnyKeyLookup ? ServiceIdentifier.FromDescriptor(_descriptors[i]) : cacheKey;
                                 slot = GetSlot(registrationKey);
-                                if (CreateOpenGeneric(_descriptors[i], registrationKey, callSiteChain, slot, throwOnConstraintViolation: false) is { } callSite)
+
+                                // We skip open generics with incompatible constraints.
+                                if (CreateOpenGeneric(_descriptors[i], registrationKey, callSiteChain, slot, false) is { } callSite)
                                 {
                                     AddCallSite(callSite, i);
+                                    UpdateSlot(registrationKey);
+                                }
+                                else if (slot == 0)
+                                {
+                                    // if the last registration has incompatible constraints,
+                                    // we still need to update the slot to allow direct resolution to correctly throw later
                                     UpdateSlot(registrationKey);
                                 }
                             }
