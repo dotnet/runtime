@@ -336,5 +336,118 @@ namespace System.Formats.Tar.Tests
             e = await reader.GetNextEntryAsync(copyData);
             Assert.Null(e);
         }
+
+        [Fact]
+        public async Task GetNextEntryAsync_UnseekableArchive_DisposedDataStream_DoesNotThrow()
+        {
+            await using MemoryStream archive = new MemoryStream();
+            await using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+            {
+                var entry1 = new PaxTarEntry(TarEntryType.RegularFile, "file1.txt");
+                entry1.DataStream = new MemoryStream(new byte[] { 1, 2, 3, 4, 5 });
+                await writer.WriteEntryAsync(entry1);
+
+                var entry2 = new PaxTarEntry(TarEntryType.RegularFile, "file2.txt");
+                entry2.DataStream = new MemoryStream(new byte[] { 6, 7, 8, 9, 10 });
+                await writer.WriteEntryAsync(entry2);
+            }
+
+            archive.Position = 0;
+            using WrappedStream unseekable = new WrappedStream(archive, archive.CanRead, archive.CanWrite, canSeek: false);
+            await using TarReader reader = new TarReader(unseekable);
+
+            TarEntry entry = await reader.GetNextEntryAsync(copyData: false);
+            Assert.NotNull(entry);
+            Assert.Equal("file1.txt", entry.Name);
+
+            Stream dataStream = entry.DataStream;
+            Assert.NotNull(dataStream);
+
+            byte[] buffer = new byte[5];
+            int bytesRead = await dataStream.ReadAsync(buffer, 0, buffer.Length);
+            Assert.Equal(5, bytesRead);
+
+            await dataStream.DisposeAsync();
+
+            TarEntry nextEntry = await reader.GetNextEntryAsync(copyData: false);
+            Assert.NotNull(nextEntry);
+            Assert.Equal("file2.txt", nextEntry.Name);
+
+            Assert.Null(await reader.GetNextEntryAsync());
+        }
+
+        [Fact]
+        public async Task GetNextEntryAsync_UnseekableArchive_DisposedDataStream_PartiallyRead_DoesNotThrow()
+        {
+            await using MemoryStream archive = new MemoryStream();
+            await using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+            {
+                var entry1 = new PaxTarEntry(TarEntryType.RegularFile, "file1.txt");
+                entry1.DataStream = new MemoryStream(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
+                await writer.WriteEntryAsync(entry1);
+
+                var entry2 = new PaxTarEntry(TarEntryType.RegularFile, "file2.txt");
+                entry2.DataStream = new MemoryStream(new byte[] { 11, 12, 13, 14, 15 });
+                await writer.WriteEntryAsync(entry2);
+            }
+
+            archive.Position = 0;
+            using WrappedStream unseekable = new WrappedStream(archive, archive.CanRead, archive.CanWrite, canSeek: false);
+            await using TarReader reader = new TarReader(unseekable);
+
+            TarEntry entry = await reader.GetNextEntryAsync(copyData: false);
+            Assert.NotNull(entry);
+            Assert.Equal("file1.txt", entry.Name);
+
+            Stream dataStream = entry.DataStream;
+            Assert.NotNull(dataStream);
+
+            byte[] buffer = new byte[3];
+            int bytesRead = await dataStream.ReadAsync(buffer, 0, buffer.Length);
+            Assert.Equal(3, bytesRead);
+
+            await dataStream.DisposeAsync();
+
+            TarEntry nextEntry = await reader.GetNextEntryAsync(copyData: false);
+            Assert.NotNull(nextEntry);
+            Assert.Equal("file2.txt", nextEntry.Name);
+
+            Assert.Null(await reader.GetNextEntryAsync());
+        }
+
+        [Fact]
+        public async Task GetNextEntryAsync_UnseekableArchive_DisposedDataStream_NotRead_DoesNotThrow()
+        {
+            await using MemoryStream archive = new MemoryStream();
+            await using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+            {
+                var entry1 = new PaxTarEntry(TarEntryType.RegularFile, "file1.txt");
+                entry1.DataStream = new MemoryStream(new byte[] { 1, 2, 3, 4, 5 });
+                await writer.WriteEntryAsync(entry1);
+
+                var entry2 = new PaxTarEntry(TarEntryType.RegularFile, "file2.txt");
+                entry2.DataStream = new MemoryStream(new byte[] { 6, 7, 8, 9, 10 });
+                await writer.WriteEntryAsync(entry2);
+            }
+
+            archive.Position = 0;
+            using WrappedStream unseekable = new WrappedStream(archive, archive.CanRead, archive.CanWrite, canSeek: false);
+            await using TarReader reader = new TarReader(unseekable);
+
+            TarEntry entry = await reader.GetNextEntryAsync(copyData: false);
+            Assert.NotNull(entry);
+            Assert.Equal("file1.txt", entry.Name);
+
+            Stream dataStream = entry.DataStream;
+            Assert.NotNull(dataStream);
+
+            await dataStream.DisposeAsync();
+
+            TarEntry nextEntry = await reader.GetNextEntryAsync(copyData: false);
+            Assert.NotNull(nextEntry);
+            Assert.Equal("file2.txt", nextEntry.Name);
+
+            Assert.Null(await reader.GetNextEntryAsync());
+        }
     }
 }

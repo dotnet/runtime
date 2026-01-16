@@ -71,7 +71,6 @@ namespace System.Buffers.Text
                         }
                     }
 
-#if NET9_0_OR_GREATER
                     end = srcMax - 66;
                     if (AdvSimd.Arm64.IsSupported && (end >= src))
                     {
@@ -82,7 +81,6 @@ namespace System.Buffers.Text
                             goto DoneExit;
                         }
                     }
-#endif
 
                     end = srcMax - 24;
                     if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian && (end >= src))
@@ -244,6 +242,12 @@ namespace System.Buffers.Text
                 if (srcLength != source.Length && isFinalBlock)
                 {
                     goto InvalidDataExit; // if input is not a multiple of 4, and there is no more data, return invalid data instead
+                }
+
+                if (ignoreWhiteSpace)
+                {
+                    // Fall through to InvalidDataFallback which strips whitespace and re-evaluates destination size requirement
+                    goto InvalidDataExit;
                 }
 
                 bytesConsumed = (int)(src - srcBytes);
@@ -643,10 +647,8 @@ namespace System.Buffers.Text
 
 #if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if NET9_0_OR_GREATER
         [CompExactlyDependsOn(typeof(Avx512BW))]
         [CompExactlyDependsOn(typeof(Avx512Vbmi))]
-#endif
         private static unsafe void Avx512Decode<TBase64Decoder, T>(TBase64Decoder decoder, ref T* srcBytes, ref byte* destBytes, T* srcEnd, int sourceLength, int destLength, T* srcStart, byte* destStart)
             where TBase64Decoder : IBase64Decoder<T>
             where T : unmanaged
@@ -713,9 +715,7 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if NET9_0_OR_GREATER
         [CompExactlyDependsOn(typeof(Avx2))]
-#endif
         private static unsafe void Avx2Decode<TBase64Decoder, T>(TBase64Decoder decoder, ref T* srcBytes, ref byte* destBytes, T* srcEnd, int sourceLength, int destLength, T* srcStart, byte* destStart)
             where TBase64Decoder : IBase64Decoder<T>
             where T : unmanaged
@@ -819,10 +819,8 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if NET9_0_OR_GREATER
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-#endif
         internal static Vector128<byte> SimdShuffle(Vector128<byte> left, Vector128<byte> right, Vector128<byte> mask8F)
         {
             Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
@@ -837,7 +835,6 @@ namespace System.Buffers.Text
             }
         }
 
-#if NET9_0_OR_GREATER
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static unsafe void AdvSimdDecode<TBase64Decoder, T>(TBase64Decoder decoder, ref T* srcBytes, ref byte* destBytes, T* srcEnd, int sourceLength, int destLength, T* srcStart, byte* destStart)
@@ -977,13 +974,10 @@ namespace System.Buffers.Text
             srcBytes = src;
             destBytes = dest;
         }
-#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if NET9_0_OR_GREATER
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Ssse3))]
-#endif
         private static unsafe void Vector128Decode<TBase64Decoder, T>(TBase64Decoder decoder, ref T* srcBytes, ref byte* destBytes, T* srcEnd, int sourceLength, int destLength, T* srcStart, byte* destStart)
             where TBase64Decoder : IBase64Decoder<T>
             where T : unmanaged
@@ -1275,10 +1269,8 @@ namespace System.Buffers.Text
 
 #if NET
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if NET9_0_OR_GREATER
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             [CompExactlyDependsOn(typeof(Ssse3))]
-#endif
             public bool TryDecode128Core(
                 Vector128<byte> str,
                 Vector128<byte> hiNibbles,
@@ -1312,9 +1304,7 @@ namespace System.Buffers.Text
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if NET9_0_OR_GREATER
             [CompExactlyDependsOn(typeof(Avx2))]
-#endif
             public bool TryDecode256Core(
                 Vector256<sbyte> str,
                 Vector256<sbyte> hiNibbles,
@@ -1352,9 +1342,7 @@ namespace System.Buffers.Text
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if NET9_0_OR_GREATER
             [CompExactlyDependsOn(typeof(Avx2))]
-#endif
             public unsafe bool TryLoadAvxVector256(byte* src, byte* srcStart, int sourceLength, out Vector256<sbyte> str)
             {
                 AssertRead<Vector256<sbyte>>(src, srcStart, sourceLength);
@@ -1370,7 +1358,6 @@ namespace System.Buffers.Text
                 return true;
             }
 
-#if NET9_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             public unsafe bool TryLoadArmVector128x4(byte* src, byte* srcStart, int sourceLength,
@@ -1381,7 +1368,6 @@ namespace System.Buffers.Text
 
                 return true;
             }
-#endif // NET9_0_OR_GREATER
 #endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

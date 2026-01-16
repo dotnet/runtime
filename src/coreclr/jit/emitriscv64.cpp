@@ -308,7 +308,6 @@ void emitter::emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regN
     ssize_t imm;
 
     assert(tmpReg != codeGen->rsGetRsvdReg());
-    assert(reg1 != codeGen->rsGetRsvdReg());
 
     emitAttr size = EA_SIZE(attr);
 
@@ -732,50 +731,56 @@ void emitter::emitIns_R_R_I(
     code_t     code = emitInsCode(ins);
     instrDesc* id   = emitNewInstr(attr);
 
-    if ((INS_addi <= ins && INS_srai >= ins) || (INS_addiw <= ins && INS_sraiw >= ins) ||
-        (INS_lb <= ins && INS_lhu >= ins) || INS_ld == ins || INS_lw == ins || INS_jalr == ins || INS_fld == ins ||
-        INS_flw == ins || INS_slli_uw == ins || INS_rori == ins || INS_roriw == ins)
+    switch (GetMajorOpcode(code))
     {
-        assert(isGeneralRegisterOrR0(reg2));
-        code |= (reg1 & 0x1f) << 7; // rd
-        code |= reg2 << 15;         // rs1
-        code |= imm << 20;          // imm
-    }
-    else if (INS_sd == ins || INS_sw == ins || INS_sh == ins || INS_sb == ins || INS_fsw == ins || INS_fsd == ins)
-    {
-        assert(isGeneralRegister(reg2));
-        code |= (reg1 & 0x1f) << 20;                               // rs2
-        code |= reg2 << 15;                                        // rs1
-        code |= (((imm >> 5) & 0x7f) << 25) | ((imm & 0x1f) << 7); // imm
-    }
-    else if (INS_beq <= ins && INS_bgeu >= ins)
-    {
-        assert(isGeneralRegister(reg1));
-        assert(isGeneralRegister(reg2));
-        assert(isValidSimm13(imm));
-        assert(!(imm & 3));
-        code |= reg1 << 15;
-        code |= reg2 << 20;
-        code |= ((imm >> 11) & 0x1) << 7;
-        code |= ((imm >> 1) & 0xf) << 8;
-        code |= ((imm >> 5) & 0x3f) << 25;
-        code |= ((imm >> 12) & 0x1) << 31;
-        // TODO-RISCV64: Move jump logic to emitIns_J
-        // TODO-RISC64-RVC: Remove this once all branches uses emitIns_J
-        id->idAddr()->iiaSetInstrCount(static_cast<int>(imm / sizeof(code_t)));
-    }
-    else if (ins == INS_csrrs || ins == INS_csrrw || ins == INS_csrrc)
-    {
-        assert(isGeneralRegisterOrR0(reg1));
-        assert(isGeneralRegisterOrR0(reg2));
-        assert(isValidUimm12(imm));
-        code |= reg1 << 7;
-        code |= reg2 << 15;
-        code |= imm << 20;
-    }
-    else
-    {
-        NYI_RISCV64("illegal ins within emitIns_R_R_I!");
+        case MajorOpcode::OpImm:
+        case MajorOpcode::OpImm32:
+        case MajorOpcode::Load:
+        case MajorOpcode::LoadFp:
+        case MajorOpcode::Jalr:
+            assert(!(INS_clz <= ins && ins <= INS_rev8)); // encoded under OpImm(32) but they don't take an immediate
+            assert(isGeneralRegisterOrR0(reg2));
+            code |= (reg1 & 0x1f) << 7; // rd
+            code |= reg2 << 15;         // rs1
+            code |= imm << 20;          // imm
+            break;
+
+        case MajorOpcode::Store:
+        case MajorOpcode::StoreFp:
+            assert(isGeneralRegister(reg2));
+            code |= (reg1 & 0x1f) << 20;                               // rs2
+            code |= reg2 << 15;                                        // rs1
+            code |= (((imm >> 5) & 0x7f) << 25) | ((imm & 0x1f) << 7); // imm
+            break;
+
+        case MajorOpcode::Branch:
+            assert(isGeneralRegister(reg1));
+            assert(isGeneralRegister(reg2));
+            assert(isValidSimm13(imm));
+            assert(!(imm & 3));
+            code |= reg1 << 15;
+            code |= reg2 << 20;
+            code |= ((imm >> 11) & 0x1) << 7;
+            code |= ((imm >> 1) & 0xf) << 8;
+            code |= ((imm >> 5) & 0x3f) << 25;
+            code |= ((imm >> 12) & 0x1) << 31;
+            // TODO-RISCV64: Move jump logic to emitIns_J
+            // TODO-RISC64-RVC: Remove this once all branches uses emitIns_J
+            id->idAddr()->iiaSetInstrCount(static_cast<int>(imm / sizeof(code_t)));
+            break;
+
+        case MajorOpcode::System:
+            assert(ins == INS_csrrs || ins == INS_csrrw || ins == INS_csrrc);
+            assert(isGeneralRegisterOrR0(reg1));
+            assert(isGeneralRegisterOrR0(reg2));
+            assert(isValidUimm12(imm));
+            code |= reg1 << 7;
+            code |= reg2 << 15;
+            code |= imm << 20;
+            break;
+
+        default:
+            NYI_RISCV64("illegal ins within emitIns_R_R_I!");
     }
 
     id->idIns(ins);
@@ -839,7 +844,8 @@ void emitter::emitIns_R_R_R(
         (INS_addw <= ins && ins <= INS_sraw) || (INS_fadd_s <= ins && ins <= INS_fmax_s) ||
         (INS_fadd_d <= ins && ins <= INS_fmax_d) || (INS_feq_s <= ins && ins <= INS_fle_s) ||
         (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amomaxu_d) ||
-        (INS_sh1add <= ins && ins <= INS_sh3add_uw) || (INS_rol <= ins && ins <= INS_maxu))
+        (INS_sh1add <= ins && ins <= INS_sh3add_uw) || (INS_rol <= ins && ins <= INS_maxu) ||
+        (INS_bset <= ins && ins <= INS_binv))
     {
 #ifdef DEBUG
         switch (ins)
@@ -946,6 +952,11 @@ void emitter::emitIns_R_R_R(
             case INS_minu:
             case INS_max:
             case INS_maxu:
+
+            case INS_bset:
+            case INS_bclr:
+            case INS_bext:
+            case INS_binv:
                 break;
             default:
                 NYI_RISCV64("illegal ins within emitIns_R_R_R!");
@@ -1368,7 +1379,7 @@ void emitter::emitIns_R_R_Addr(instruction ins, emitAttr attr, regNumber regData
         ssize_t imm  = (ssize_t)addr;
         ssize_t lo12 = (imm << (64 - 12)) >> (64 - 12);
         imm -= lo12;
-        emitLoadImmediate(attr, regAddr, imm);
+        emitLoadImmediate<true>(attr, regAddr, imm);
         emitIns_R_R_I(ins, attr, regData, regAddr, lo12);
     }
 }
@@ -1466,6 +1477,15 @@ static inline constexpr unsigned WordMask(uint8_t bits);
 //    reg  - The target register that will receive the constructed 64-bit constant.
 //    imm  - The 64-bit immediate value to materialize.
 //
+// Template parameter:
+//    doEmit - If true, emits the instruction sequence.
+//             If false, only computes the number of instructions.
+//
+// Returns:
+//    Returns a positive integer which is the required number of instructions to synthesize a constant.
+//    But if the value cannot be synthesized using maximum 5 instructions, returns -1 to indicate that
+//    the constant should be loaded from the memory.
+//
 // Notes:
 //    The immediate is constructed using a combination of LUI/ADDIW for the high
 //    32 bits and SLLI/ADDI for the offset, unless the required instruction count
@@ -1473,15 +1493,19 @@ static inline constexpr unsigned WordMask(uint8_t bits);
 //    When materializing the offset, the emitter heuristically selects between
 //    add mode and subtract mode to minimize the instruction count.
 //
-void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
+template <bool doEmit>
+int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 {
     assert(!EA_IS_RELOC(size));
-    assert(isGeneralRegister(reg));
+    assert(!doEmit || isGeneralRegister(reg));
 
     if (isValidSimm12(imm))
     {
-        emitIns_R_R_I(INS_addi, size, reg, REG_R0, imm & 0xFFF);
-        return;
+        if (doEmit)
+        {
+            emitIns_R_R_I(INS_addi, size, reg, REG_R0, imm & 0xFFF);
+        }
+        return 1;
     }
 
     // The following algorithm works based on the following equation:
@@ -1669,14 +1693,20 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     }
     if (upper != 0)
     {
-        ins[numberOfInstructions]    = INS_lui;
-        values[numberOfInstructions] = ((upper >> 19) & 0b1) ? (upper + 0xFFF00000) : upper;
+        if (doEmit)
+        {
+            ins[numberOfInstructions]    = INS_lui;
+            values[numberOfInstructions] = ((upper >> 19) & 0b1) ? (upper + 0xFFF00000) : upper;
+        }
         numberOfInstructions += 1;
     }
     if (lower != 0)
     {
-        ins[numberOfInstructions]    = INS_addiw;
-        values[numberOfInstructions] = lower;
+        if (doEmit)
+        {
+            ins[numberOfInstructions]    = INS_addiw;
+            values[numberOfInstructions] = lower;
+        }
         numberOfInstructions += 1;
     }
 
@@ -1708,17 +1738,20 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
             {
                 break;
             }
-            ins[numberOfInstructions - 2]    = INS_slli;
-            values[numberOfInstructions - 2] = shift;
-            if (isSubtractMode)
+            if (doEmit)
             {
-                ins[numberOfInstructions - 1]    = INS_addi;
-                values[numberOfInstructions - 1] = -(int32_t)chunk;
-            }
-            else
-            {
-                ins[numberOfInstructions - 1]    = INS_addi;
-                values[numberOfInstructions - 1] = chunk;
+                ins[numberOfInstructions - 2]    = INS_slli;
+                values[numberOfInstructions - 2] = shift;
+                if (isSubtractMode)
+                {
+                    ins[numberOfInstructions - 1]    = INS_addi;
+                    values[numberOfInstructions - 1] = -(int32_t)chunk;
+                }
+                else
+                {
+                    ins[numberOfInstructions - 1]    = INS_addi;
+                    values[numberOfInstructions - 1] = chunk;
+                }
             }
             shift = 0;
         }
@@ -1733,7 +1766,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     if (shift > 0)
     {
         numberOfInstructions += 1;
-        if (numberOfInstructions <= insCountLimit)
+        if (doEmit && (numberOfInstructions <= insCountLimit))
         {
             ins[numberOfInstructions - 1]    = INS_slli;
             values[numberOfInstructions - 1] = shift;
@@ -1744,33 +1777,53 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 
     if (numberOfInstructions <= insCountLimit)
     {
-        instrDescLoadImm* id = static_cast<instrDescLoadImm*>(emitNewInstrLoadImm(size, originalImm));
-        id->idReg1(reg);
-        memcpy(id->ins, ins, sizeof(instruction) * numberOfInstructions);
-        memcpy(id->values, values, sizeof(int32_t) * numberOfInstructions);
+        instrDescLoadImm* id;
+        if (doEmit)
+        {
+            id = static_cast<instrDescLoadImm*>(emitNewInstrLoadImm(size, originalImm));
+            id->idReg1(reg);
+            memcpy(id->ins, ins, sizeof(instruction) * numberOfInstructions);
+            memcpy(id->values, values, sizeof(int32_t) * numberOfInstructions);
+        }
+
         if (utilizeSRLI)
         {
             numberOfInstructions += 1;
             assert(numberOfInstructions < absMaxInsCount);
-            id->ins[numberOfInstructions - 1]    = INS_srli;
-            id->values[numberOfInstructions - 1] = srliShiftAmount;
+            if (doEmit)
+            {
+                id->ins[numberOfInstructions - 1]    = INS_srli;
+                id->values[numberOfInstructions - 1] = srliShiftAmount;
+            }
         }
-        id->idCodeSize(numberOfInstructions * 4);
-        id->idIns(id->ins[numberOfInstructions - 1]);
 
-        appendToCurIG(id);
+        if (doEmit)
+        {
+            id->idCodeSize(numberOfInstructions * 4);
+            id->idIns(id->ins[numberOfInstructions - 1]);
+            appendToCurIG(id);
+        }
+
+        return numberOfInstructions;
     }
     else if (EA_SIZE(size) == EA_PTRSIZE)
     {
-        assert(!emitComp->compGeneratingProlog && !emitComp->compGeneratingEpilog);
-        auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
-        emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, emitComp->eeFindJitDataOffs(constAddr));
+        if (doEmit)
+        {
+            assert(!emitComp->compGeneratingProlog && !emitComp->compGeneratingEpilog);
+            auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
+            emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, emitComp->eeFindJitDataOffs(constAddr));
+        }
+        return -1;
     }
     else
     {
         assert(false && "If number of instruction exceeds MAX_NUM_OF_LOAD_IMM_INS, imm must be 8 bytes");
     }
+    return 0;
 }
+template int emitter::emitLoadImmediate<false>(emitAttr attr, regNumber reg, ssize_t imm);
+template int emitter::emitLoadImmediate<true>(emitAttr attr, regNumber reg, ssize_t imm);
 
 /*****************************************************************************
  *
@@ -1834,7 +1887,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         ssize_t imm = (ssize_t)params.addr;
         jalrOffset  = (imm << (64 - 12)) >> (64 - 12); // low 12-bits, sign-extended
         imm -= jalrOffset;
-        emitLoadImmediate(EA_PTRSIZE, params.ireg, imm); // upper bits
+        emitLoadImmediate<true>(EA_PTRSIZE, params.ireg, imm); // upper bits
     }
 
     /* Managed RetVal: emit sequence point for the call */
@@ -3414,7 +3467,7 @@ void emitter::emitDispInsName(
                 case 0x1:
                 {
                     unsigned funct6 = (imm12 >> 6) & 0x3f;
-                    unsigned shamt  = imm12 & 0x3f; // 6 BITS for SHAMT in RISCV6
+                    unsigned shamt  = imm12 & 0x3f; // 6 BITS for SHAMT in RISCV64
                     switch (funct6)
                     {
                         case 0b011000:
@@ -3431,12 +3484,20 @@ void emitter::emitDispInsName(
                         }
                         case 0b000000:
                             printLength = printf("slli");
-                            imm12       = shamt;
                             break;
-
+                        case 0b001010:
+                            printLength = printf("bseti");
+                            break;
+                        case 0b010010:
+                            printLength = printf("bclri");
+                            break;
+                        case 0b011010:
+                            printLength = printf("binvi");
+                            break;
                         default:
                             return emitDispIllegalInstruction(code);
                     }
+                    imm12 = shamt;
                 }
                 break;
                 case 0x2: // SLTI
@@ -3456,7 +3517,7 @@ void emitter::emitDispInsName(
                         printLength = printf("xori");
                     }
                     break;
-                case 0x5: // SRLI & SRAI
+                case 0x5:
                 {
                     unsigned funct6 = (imm12 >> 6) & 0x3f;
                     imm12 &= 0x3f; // 6BITS for SHAMT in RISCV64
@@ -3470,6 +3531,9 @@ void emitter::emitDispInsName(
                             break;
                         case 0b011000:
                             printLength = printf("rori");
+                            break;
+                        case 0b010010:
+                            printLength = printf("bexti");
                             break;
                         case 0b011010:
                             if (imm12 != 0b111000) // shift amount is treated as additional funct opcode
@@ -3721,6 +3785,28 @@ void emitter::emitDispInsName(
                     printf("%s           %s, %s, %s\n", names[opcode3 & 0b11], rd, rs1, rs2);
                     return;
                 }
+                case 0b0010100:
+                    if (opcode3 != 0b001)
+                        return emitDispIllegalInstruction(code);
+                    printf("bset           %s, %s, %s\n", rd, rs1, rs2);
+                    return;
+                case 0b0100100:
+                    switch (opcode3)
+                    {
+                        case 0b001:
+                            printf("bclr           %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0b101:
+                            printf("bext           %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        default:
+                            return emitDispIllegalInstruction(code);
+                    }
+                case 0b0110100:
+                    if (opcode3 != 0b001)
+                        return emitDispIllegalInstruction(code);
+                    printf("binv           %s, %s, %s\n", rd, rs1, rs2);
+                    return;
                 default:
                     return emitDispIllegalInstruction(code);
             }
@@ -4540,7 +4626,8 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 {
                     regNumber addrReg = needTemp ? codeGen->internalRegisters.GetSingle(indir) : dataReg;
                     attr              = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
-                    emitIns_R_AI(ins, attr, dataReg, addrReg, (size_t)offset, offset, addr->GetIconHandleFlag());
+                    emitIns_R_AI(ins, attr, dataReg, addrReg,
+                                 (size_t)offset DEBUGARG(offset) DEBUGARG(addr->GetIconHandleFlag()));
                 }
                 else
                 {
@@ -4551,7 +4638,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     if (offset != 0)
                     {
                         addrReg = needTemp ? codeGen->internalRegisters.GetSingle(indir) : dataReg;
-                        emitLoadImmediate(EA_PTRSIZE, addrReg, offset);
+                        emitLoadImmediate<true>(EA_PTRSIZE, addrReg, offset);
                     }
                     emitIns_R_R_I(ins, attr, dataReg, addrReg, lo12);
                 }
@@ -4571,7 +4658,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
             // First load/store tmpReg with the large offset constant
-            emitLoadImmediate(EA_PTRSIZE, tmpReg, offset);
+            emitLoadImmediate<true>(EA_PTRSIZE, tmpReg, offset);
 
             // Then load/store dataReg from/to [memBase + tmpReg]
             emitAttr addType = varTypeIsGC(memBase) ? EA_BYREF : EA_PTRSIZE;
@@ -4730,8 +4817,22 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             ins = INS_addiw;
             imm = -imm;
         }
+        else if (ins == INS_bseti || ins == INS_bclri || ins == INS_bexti || ins == INS_binvi)
+        {
+            // Use base instructions where possible:
+            // "bexti rd, rs, 0" is equivalent to "andi rd, rs, 1"
+            // "bseti/bclri/binvi rd, rs, imm" are equivalent to "ori/andi/xori rd, rs, (~)(1 << imm)" for imm < 11
+            int minBitIndex = (ins == INS_bexti) ? 1 : 11;
+            int maxBitIndex = emitActualTypeSize(src1) * 8;
+            if (ins != INS_bexti && attr == EA_4BYTE)
+                maxBitIndex--; // can't touch the sign bit alone, it affects sign extension
 
-        assert(ins == INS_addi || ins == INS_addiw || ins == INS_andi || ins == INS_ori || ins == INS_xori);
+            assert(imm >= minBitIndex);
+            assert(imm < maxBitIndex);
+        }
+
+        assert(ins == INS_addi || ins == INS_addiw || ins == INS_andi || ins == INS_ori || ins == INS_xori ||
+               ins == INS_bseti || ins == INS_bclri || ins == INS_bexti || ins == INS_binvi);
 
         regNumber tempReg = needCheckOv ? codeGen->internalRegisters.Extract(dst) : REG_NA;
 
@@ -4870,6 +4971,9 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             case GT_OR_NOT:
             case GT_XOR:
             case GT_XOR_NOT:
+            case GT_BIT_SET:
+            case GT_BIT_CLEAR:
+            case GT_BIT_INVERT:
             {
                 emitIns_R_R_R(ins, attr, dstReg, src1Reg, src2Reg);
 

@@ -62,5 +62,56 @@ namespace System.Security.Cryptography.Xml.Tests
             node1.LoadXml(null);
             Assert.Null(node1.Value);
         }
+
+        [Fact]
+        public void Constructor_Empty()
+        {
+            KeyInfoNode node = new KeyInfoNode();
+            Assert.Null(node.Value);
+        }
+
+        [Fact]
+        public void Constructor_WithElement()
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml("<test>data</test>");
+            
+            KeyInfoNode node = new KeyInfoNode(doc.DocumentElement);
+            Assert.NotNull(node.Value);
+            Assert.Equal("test", node.Value.LocalName);
+        }
+
+        [Fact]
+        public void Value_SetNull()
+        {
+            KeyInfoNode node = new KeyInfoNode();
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml("<test />");
+            node.Value = doc.DocumentElement;
+            
+            node.Value = null;
+            Assert.Null(node.Value);
+        }
+
+        [Fact]
+        public void GetXml_NullValue()
+        {
+            KeyInfoNode node = new KeyInfoNode();
+            // Throws InvalidOperationException, not returns null
+            Assert.Throws<InvalidOperationException>(() => node.GetXml());
+        }
+
+        [Fact]
+        public void LoadXml_ValidElement()
+        {
+            string xml = "<CustomElement xmlns=\"http://custom.ns\"><Data>test</Data></CustomElement>";
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            KeyInfoNode node = new KeyInfoNode();
+            node.LoadXml(doc.DocumentElement);
+            Assert.NotNull(node.Value);
+            Assert.Equal("CustomElement", node.Value.LocalName);
+        }
     }
 }

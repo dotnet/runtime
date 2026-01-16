@@ -258,7 +258,7 @@ namespace System
                 // For values between 0 and ulong.MaxValue, we just use the existing conversion
                 return (double)(value._lower);
             }
-            else if ((value._upper >> 24) == 0) // value < (2^104)
+            else if ((value._upper >> 40) == 0) // value < (2^104)
             {
                 // For values greater than ulong.MaxValue but less than 2^104 this takes advantage
                 // that we can represent both "halves" of the uint128 within the 52-bit mantissa of
@@ -276,7 +276,7 @@ namespace System
                 // lowest 24 bits and then or's them back to ensure rounding stays correct.
 
                 double lower = BitConverter.UInt64BitsToDouble(TwoPow76Bits | ((ulong)(value >> 12) >> 12) | (value._lower & 0xFFFFFF)) - TwoPow76;
-                double upper = BitConverter.UInt64BitsToDouble(TwoPow128Bits | (ulong)(value >> 76)) - TwoPow128;
+                double upper = BitConverter.UInt64BitsToDouble(TwoPow128Bits | (value._upper >> 12)) - TwoPow128;
 
                 return lower + upper;
             }

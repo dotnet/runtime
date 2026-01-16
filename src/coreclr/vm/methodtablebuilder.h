@@ -3000,6 +3000,9 @@ private:
     VOID HandleCStructLayout(
         MethodTable **);
 
+    VOID HandleCUnionLayout(
+        MethodTable **);
+
     VOID    CheckForHFA(MethodTable ** pByValueClassCache);
 
     VOID    CheckForNativeHFA();

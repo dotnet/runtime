@@ -126,6 +126,10 @@ interface DotnetHostBuilder {
      */
     create(): Promise<RuntimeAPI>;
     /**
+     * @deprecated use runMain() or runMainAndExit() instead.
+     */
+    run(): Promise<number>;
+    /**
      * Runs the Main() method of the application and exits the runtime.
      * You can provide "command line" arguments for the Main() method using
      * - dotnet.withApplicationArguments("A", "B", "C")
@@ -133,7 +137,14 @@ interface DotnetHostBuilder {
      * Note: after the runtime exits, it would reject all further calls to the API.
      * You can use runMain() if you want to keep the runtime alive.
      */
-    run(): Promise<number>;
+    runMainAndExit (): Promise<number>;
+    /**
+     * Runs the Main() method of the application and keeps the runtime alive.
+     * You can provide "command line" arguments for the Main() method using
+     * - dotnet.withApplicationArguments("A", "B", "C")
+     * - dotnet.withApplicationArgumentsFromQuery()
+     */
+    runMain (): Promise<number>;
 }
 type MonoConfig = {
     /**
@@ -290,16 +301,19 @@ type Asset = {
 type WasmAsset = Asset & {
     name: string;
     hash?: string | null | "";
+    cache?: RequestCache;
 };
 type AssemblyAsset = Asset & {
     virtualPath: string;
     name: string;
     hash?: string | null | "";
+    cache?: RequestCache;
 };
 type PdbAsset = Asset & {
     virtualPath: string;
     name: string;
     hash?: string | null | "";
+    cache?: RequestCache;
 };
 type JsAsset = Asset & {
     /**
@@ -311,16 +325,19 @@ type JsAsset = Asset & {
 };
 type SymbolsAsset = Asset & {
     name: string;
+    cache?: RequestCache;
 };
 type VfsAsset = Asset & {
     virtualPath: string;
     name: string;
     hash?: string | null | "";
+    cache?: RequestCache;
 };
 type IcuAsset = Asset & {
     virtualPath: string;
     name: string;
     hash?: string | null | "";
+    cache?: RequestCache;
 };
 /**
  * A "key" is name of the file, a "value" is optional hash for integrity check.

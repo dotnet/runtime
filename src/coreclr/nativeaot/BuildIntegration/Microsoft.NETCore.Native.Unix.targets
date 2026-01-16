@@ -78,8 +78,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(_IsiOSLikePlatform)' == 'true'">
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_targetOS)' == 'maccatalyst'">15.0</AppleMinOSVersion>
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and ($(_targetOS.StartsWith('ios')) or $(_targetOS.StartsWith('tvos')))">12.2</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_targetOS)' == 'maccatalyst'">15.2</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and ($(_targetOS.StartsWith('ios')) or $(_targetOS.StartsWith('tvos')))">13.0</AppleMinOSVersion>
 
       <_AppleSdkName Condition="'$(_targetOS)' == 'ios'">iphoneos</_AppleSdkName>
       <_AppleSdkName Condition="'$(_targetOS)' == 'iossimulator'">iphonesimulator</_AppleSdkName>

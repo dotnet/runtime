@@ -218,8 +218,8 @@ namespace System.IO
         {
             FileAccess access = 0;
 
-            if ((rights & FileSystemRights.FullControl) != 0 ||
-                (rights & FileSystemRights.Modify) != 0)
+            if ((rights & FileSystemRights.FullControl) == FileSystemRights.FullControl ||
+                (rights & FileSystemRights.Modify) == FileSystemRights.Modify)
             {
                 return FileAccess.ReadWrite;
             }
