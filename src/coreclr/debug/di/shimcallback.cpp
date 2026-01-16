@@ -1256,6 +1256,13 @@ HRESULT ShimProxyCallback::FunctionRemapComplete(ICorDebugAppDomain * pAppDomain
 } // end of methodICorDebugManagedCallback2::FunctionRemapComplete
 
 
+// Implementation of ICorDebugManagedCallback2::MDANotification
+HRESULT ShimProxyCallback::MDANotification(ICorDebugController * pController, ICorDebugThread * pThread, ICorDebugMDA * pMDA)
+{
+    // MDA (Managed Debugging Assistant) support does not exist in .NET Core
+    return E_NOTIMPL;
+}
+
 // Implementation of ICorDebugManagedCallback3::CustomNotification
 // Arguments:
 //      input:
