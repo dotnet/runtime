@@ -121,6 +121,7 @@
       IL_004d:  ret
     } // end of method Test::TestRef
 
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('https://github.com/dotnet/runtimelab/issues/155: Arrays with non-zero lower bounds') type([TestLibrary]TestLibrary.Utilities) string[1] ('IsNativeAot') }
     .method public hidebysig static int32
             Main() il managed
     {
