@@ -325,8 +325,10 @@ namespace System.Tests
                     Assert.False(success);
                     Assert.Equal(0, bytesWritten);
 
-                    Assert.Equal(OperationStatus.DestinationTooSmall, Base64.DecodeFromUtf8(Encoding.UTF8.GetBytes(encoded), actual, out _, out bytesWritten));
-                    Assert.Equal(actual.Length, bytesWritten);
+                    Assert.Equal(OperationStatus.DestinationTooSmall, Base64.DecodeFromUtf8(Encoding.UTF8.GetBytes(encoded), actual, out int bytesConsumed, out bytesWritten));
+                    Assert.Equal(actual.Length / 3 * 3, bytesWritten);
+                    Assert.InRange(bytesConsumed, Base64.GetMaxEncodedToUtf8Length(bytesWritten), encoded.Length - 1);
+                    Assert.NotEqual(' ', encoded[bytesConsumed]);
                 }
 
                 // Buffer larger than needed

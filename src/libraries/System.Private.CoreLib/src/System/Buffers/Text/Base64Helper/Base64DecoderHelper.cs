@@ -304,9 +304,20 @@ namespace System.Buffers.Text
                     status = DecodeFrom(decoder, source, bytes, out localConsumed, out int localWritten, isFinalBlock, ignoreWhiteSpace: false);
                     bytesConsumed += localConsumed;
                     bytesWritten += localWritten;
-                    if (status is not OperationStatus.InvalidData)
+
+                    if (status is OperationStatus.Done or OperationStatus.NeedMoreData)
                     {
                         break;
+                    }
+
+                    // The DecodeFrom helper will return DestinationTooSmall if the destination is too small,
+                    // regardless of whether it's actually too small once you skip whitespace characters.
+                    // As long as we're making progress, try to trim whitespace characters again and continue.
+                    if (status == OperationStatus.DestinationTooSmall && localConsumed == 0)
+                    {
+                        // If the input contains whitespace in the middle of the next Base64 block AND the destination is small,
+                        // the DecodeFrom helper may be unable to make forward progress. Fall back to block-wise decoding.
+                        return decoder.DecodeWithWhiteSpaceBlockwiseWrapper(decoder, source, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
                     }
 
                     source = source.Slice(localConsumed);
