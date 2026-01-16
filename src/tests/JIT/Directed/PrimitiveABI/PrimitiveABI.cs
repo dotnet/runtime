@@ -16,7 +16,7 @@ public static class Program
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static long Echo_ExtendedUint_RiscV_Managed(int a0, uint a1) => unchecked((int)a1);
 
- [ActiveIssue("https://github.com/dotnet/runtime/issues/92129", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+ [ActiveIssue("https://github.com/dotnet/runtime/issues/92129", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 	[Fact]
 	public static void Test_ExtendedUint_RiscV()
 	{
@@ -29,7 +29,7 @@ public static class Program
 		Assert.Equal(ret, native);
 	}
 
- [ActiveIssue("https://github.com/dotnet/runtime/issues/92129", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+ [ActiveIssue("https://github.com/dotnet/runtime/issues/92129", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 	[Fact]
 	public static void Test_ExtendedUint_ByReflection_RiscV()
 	{
@@ -52,7 +52,7 @@ public static class Program
 	public static long Echo_ExtendedUint_OnStack_RiscV_Managed(
 		int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7, uint stack0) => unchecked((int)stack0);
 
- [ActiveIssue("https://github.com/dotnet/runtime/issues/92129", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+ [ActiveIssue("https://github.com/dotnet/runtime/issues/92129", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 	[Fact]
 	public static void Test_ExtendedUint_OnStack_RiscV()
 	{
@@ -65,7 +65,7 @@ public static class Program
 		Assert.Equal(ret, native);
 	}
 
- [ActiveIssue("https://github.com/dotnet/runtime/issues/92129", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+ [ActiveIssue("https://github.com/dotnet/runtime/issues/92129", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 	[Fact]
 	public static void Test_ExtendedUint_OnStack_ByReflection_RiscV()
 	{
@@ -88,7 +88,7 @@ public static class Program
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static double Echo_Float_RiscV_Managed(float fa0, float fa1) => fa1;
 
- [ActiveIssue("https://github.com/dotnet/runtime/issues/92129", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+ [ActiveIssue("https://github.com/dotnet/runtime/issues/92129", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 	[Fact]
 	public static void Test_Float_RiscV()
 	{
@@ -101,7 +101,7 @@ public static class Program
 		Assert.Equal(ret, native);
 	}
 
- [ActiveIssue("https://github.com/dotnet/runtime/issues/92129", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+ [ActiveIssue("https://github.com/dotnet/runtime/issues/92129", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 	[Fact]
 	public static void Test_Float_ByReflection_RiscV()
 	{
@@ -124,7 +124,7 @@ public static class Program
 	public static double Echo_Float_InIntegerReg_RiscV_Managed(
 		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, float a0) => a0;
 
- [ActiveIssue("https://github.com/dotnet/runtime/issues/92129", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+ [ActiveIssue("https://github.com/dotnet/runtime/issues/92129", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 	[Fact]
 	public static void Test_Float_InIntegerReg_RiscV()
 	{
@@ -137,7 +137,7 @@ public static class Program
 		Assert.Equal(ret, native);
 	}
 
- [ActiveIssue("https://github.com/dotnet/runtime/issues/92129", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+ [ActiveIssue("https://github.com/dotnet/runtime/issues/92129", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 	[Fact]
 	public static void Test_Float_InIntegerReg_ByReflection_RiscV()
 	{
@@ -162,7 +162,7 @@ public static class Program
 		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7,
 		int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7, float stack0) => stack0;
 
- [ActiveIssue("https://github.com/dotnet/runtime/issues/92129", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+ [ActiveIssue("https://github.com/dotnet/runtime/issues/92129", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 	[Fact]
 	public static void Test_Float_OnStack_RiscV()
 	{
@@ -175,7 +175,7 @@ public static class Program
 		Assert.Equal(ret, native);
 	}
 
- [ActiveIssue("https://github.com/dotnet/runtime/issues/92129", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+ [ActiveIssue("https://github.com/dotnet/runtime/issues/92129", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 	[Fact]
 	public static void Test_Float_OnStack_ByReflection_RiscV()
 	{

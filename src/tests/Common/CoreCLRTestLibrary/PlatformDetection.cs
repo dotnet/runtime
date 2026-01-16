@@ -86,5 +86,18 @@ namespace TestLibrary
         public static bool PlatformDoesNotSupportNativeTestAssets =>
             OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsAndroid() || OperatingSystem.IsBrowser() || OperatingSystem.IsWasi();
         public static bool IsAppleMobile => OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst();
+
+        public static bool IsBrowser => OperatingSystem.IsBrowser();
+        public static bool IsWasi => OperatingSystem.IsWasi();
+        public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
+        public static bool IsThreadingSupported => (!IsWasi && !IsBrowser) || IsWasmThreadingSupported;
+
+        private static bool IsEnvironmentVariableTrue(string variableName)
+        {
+            if (!IsBrowser)
+                return false;
+
+            return Environment.GetEnvironmentVariable(variableName) is "true";
+        }
     }
 }
