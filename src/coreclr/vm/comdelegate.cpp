@@ -82,13 +82,12 @@ class ShuffleIterator
     // Get next shuffle offset for struct passed in registers. There has to be at least one offset left.
     UINT16 GetNextOfsInStruct()
     {
-        EEClass* eeClass = m_argLocDesc->m_eeClass;
-        _ASSERTE(eeClass != NULL);
+        _ASSERTE(m_argLocDesc->m_eightByteInfo.GetNumEightBytes() > 0);
 
-        if (m_currentEightByte < eeClass->GetNumberEightBytes())
+        if (m_currentEightByte < m_argLocDesc->m_eightByteInfo.GetNumEightBytes())
         {
-            SystemVClassificationType eightByte = eeClass->GetEightByteClassification(m_currentEightByte);
-            unsigned int eightByteSize = eeClass->GetEightByteSize(m_currentEightByte);
+            SystemVClassificationType eightByte = m_argLocDesc->m_eightByteInfo.GetEightByteClassification(m_currentEightByte);
+            unsigned int eightByteSize = m_argLocDesc->m_eightByteInfo.GetEightByteSize(m_currentEightByte);
 
             m_currentEightByte++;
 
@@ -159,8 +158,7 @@ public:
 #if defined(UNIX_AMD64_ABI)
 
         // Check if the argLocDesc is for a struct in registers
-        EEClass* eeClass = m_argLocDesc->m_eeClass;
-        if (m_argLocDesc->m_eeClass != 0)
+        if (m_argLocDesc->m_eightByteInfo.GetNumEightBytes() != 0)
         {
             index = GetNextOfsInStruct();
             _ASSERT((index & ShuffleEntry::REGMASK) != 0);
@@ -812,7 +810,9 @@ CLRToCOMCallInfo * COMDelegate::PopulateCLRToCOMCallInfo(MethodTable * pDelMT)
         CLRToCOMCallInfo *pTemp = (CLRToCOMCallInfo *)(void *)pHeap->AllocMem(S_SIZE_T(sizeof(CLRToCOMCallInfo)));
 
         pTemp->m_cachedComSlot = ComMethodTable::GetNumExtraSlots(ifVtable);
+#ifdef TARGET_X86
         pTemp->InitStackArgumentSize();
+#endif // TARGET_X86
 
         InterlockedCompareExchangeT(&pClass->m_pCLRToCOMCallInfo, pTemp, NULL);
     }

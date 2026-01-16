@@ -3169,14 +3169,21 @@ void CodeGen::genCall(GenTreeCall* call)
             }
             else
 #endif // TARGET_ARM
+#ifdef TARGET_ARM64
+                if (call->IsHelperCall(compiler, CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
+            {
+                returnReg = genFirstRegNumFromMask(RBM_INTERFACELOOKUP_FOR_SLOT_RETURN);
+            }
+            else
+#endif
                 if (varTypeUsesFloatArgReg(returnType))
-                {
-                    returnReg = REG_FLOATRET;
-                }
-                else
-                {
-                    returnReg = REG_INTRET;
-                }
+            {
+                returnReg = REG_FLOATRET;
+            }
+            else
+            {
+                returnReg = REG_INTRET;
+            }
 
             if (call->GetRegNum() != returnReg)
             {
@@ -4333,8 +4340,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     // registers have been saved. So instead of letting genAllocLclFrame use initReg as a temporary register,
     // always use REG_SCRATCH. We don't care if it trashes it, so ignore the initRegZeroed output argument.
     bool ignoreInitRegZeroed = false;
-    genAllocLclFrame(compiler->compLclFrameSize, REG_SCRATCH, &ignoreInitRegZeroed,
-                     intRegState.rsCalleeRegArgMaskLiveIn);
+    genAllocLclFrame(compiler->compLclFrameSize, REG_SCRATCH, &ignoreInitRegZeroed, calleeRegArgMaskLiveIn);
 #endif
 
     regMaskTP rsPushRegs = regSet.rsGetModifiedCalleeSavedRegsMask();
