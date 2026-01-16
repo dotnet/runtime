@@ -361,10 +361,8 @@ def main():
         # Define the environment variable sets to run for each scenario
         env_var_sets = [
             {"Dummy": "0"},
-            {"TieredCompilation": "0"},
-            {"TieredPGO": "0"},
             {"TieredPGO": "1", "ReadyToRun": "0"},
-            {"ReadyToRun": "0", "OSR_HitLimit": "0", "TC_OnStackReplacement_InitialCounter": "10"},
+            {"TieredCompilation": "0", "ReadyToRun": "0"},
             {"TC_PartialCompilation": "1"},
         ]
 
