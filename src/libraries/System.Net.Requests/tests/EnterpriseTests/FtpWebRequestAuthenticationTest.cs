@@ -3,7 +3,9 @@
 
 using System.IO;
 using System.Net;
+using System.Net.Security;
 using System.Net.Test.Common;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -22,6 +24,22 @@ namespace System.Net.Tests
         public FtpWebRequestAuthenticationTest(ITestOutputHelper output)
         {
             _output = output;
+            
+            // Set up certificate validation callback to accept self-signed certificates in test environment
+#pragma warning disable SYSLIB0014 // ServicePointManager is obsolete
+            ServicePointManager.ServerCertificateValidationCallback = ValidateServerCertificate;
+#pragma warning restore SYSLIB0014
+        }
+
+        private static bool ValidateServerCertificate(
+            object sender,
+            X509Certificate? certificate,
+            X509Chain? chain,
+            SslPolicyErrors sslPolicyErrors)
+        {
+            // In the enterprise test environment, accept self-signed certificates
+            // This is safe because we're in a controlled test environment
+            return true;
         }
 
         [ConditionalFact(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled))]
