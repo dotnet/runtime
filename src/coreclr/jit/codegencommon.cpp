@@ -5214,6 +5214,11 @@ void CodeGen::genFnProlog()
         compiler->unwindPushMaskInt(regSet.rsMaskPreSpillRegs(true));
     }
 #endif // TARGET_ARM
+#else  // TARGET_WASM
+    regNumber initReg       = REG_NA;
+    bool      initRegZeroed = false;
+    bool      isOSRx64Root  = false;
+#endif // TARGET_WASM
 
     unsigned extraFrameSize = 0;
 
@@ -5378,6 +5383,7 @@ void CodeGen::genFnProlog()
     }
 #endif // TARGET_ARM
 
+#ifndef TARGET_WASM // TODO-WASM: temporary; un-undefine as needed.
     //
     // Zero out the frame as needed
     //
@@ -5395,23 +5401,17 @@ void CodeGen::genFnProlog()
 #endif // JIT32_GCENCODER
 
     // Set up the GS security cookie
-
     genSetGSSecurityCookie(initReg, &initRegZeroed);
 
 #ifdef PROFILING_SUPPORTED
-
     // Insert a function entry callback for profiling, if requested.
     // OSR methods aren't called, so don't have enter hooks.
     if (!compiler->opts.IsOSR())
     {
         genProfilingEnterCallback(initReg, &initRegZeroed);
     }
-
 #endif // PROFILING_SUPPORTED
-#else  // TARGET_WASM
-    regNumber initReg       = REG_NA;
-    bool      initRegZeroed = false;
-#endif // TARGET_WASM
+#endif // !TARGET_WASM
 
     // For OSR we may have a zero-length prolog. That's not supported
     // when the method must report a generics context,/ so add a nop if so.

@@ -12,9 +12,11 @@
 #ifdef TARGET_64BIT
 static const instruction INS_I_const = INS_i64_const;
 static const instruction INS_I_add   = INS_i64_add;
+static const instruction INS_I_sub   = INS_i64_sub;
 #else  // !TARGET_64BIT
 static const instruction INS_I_const = INS_i32_const;
 static const instruction INS_I_add   = INS_i32_add;
+static const instruction INS_I_sub   = INS_i32_sub;
 #endif // !TARGET_64BIT
 
 void CodeGen::genMarkLabelsForCodegen()
@@ -40,6 +42,50 @@ void CodeGen::genBeginFnProlog()
     {
         GetEmitter()->emitIns_I_Ty(INS_local_decl, countPerType, static_cast<WasmValueType>(i), localOffset);
         localOffset += countPerType;
+    }
+}
+
+//------------------------------------------------------------------------
+// genPushCalleeSavedRegisters: no-op since we don't need to save anything.
+//
+void CodeGen::genPushCalleeSavedRegisters()
+{
+}
+
+//------------------------------------------------------------------------
+// genAllocLclFrame: initialize the SP and FP locals.
+//
+// Arguments:
+//    frameSize         - Size of the frame to establish
+//    initReg           - Unused
+//    pInitRegZeroed    - Unused
+//    maskArgRegsLiveIn - Unused
+//
+void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
+{
+    assert(compiler->compGeneratingProlog);
+    regNumber spReg = GetStackPointerReg();
+    if (spReg == REG_NA)
+    {
+        assert(!isFramePointerUsed());
+        return;
+    }
+
+    unsigned initialSPLclIndex = 0; // TODO-WASM: remove this hardcoding once we have the SP arg local.
+    unsigned spLclIndex        = WasmRegToIndex(spReg);
+    assert(initialSPLclIndex == spLclIndex);
+    if (frameSize != 0)
+    {
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, initialSPLclIndex);
+        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, frameSize);
+        GetEmitter()->emitIns(INS_I_sub);
+        GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, spLclIndex);
+    }
+    regNumber fpReg = GetFramePointerReg();
+    if ((fpReg != REG_NA) && (fpReg != spReg))
+    {
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, spLclIndex);
+        GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, WasmRegToIndex(fpReg));
     }
 }
 
