@@ -3028,6 +3028,26 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
                 sig.GetByRefType(&thArgType);
             }
 
+            if (thArgType.IsTypeDesc() && !thArgType.AsTypeDesc()->GetTypeParam().IsNull()))
+            {
+                MethodTable* pArgMT = thArgType.AsTypeDesc()->GetTypeParam().AsMethodTable();
+                if (!pArgMT->IsValueType())
+                {
+                    COMPlusThrow(kInvalidProgramException);
+                }
+
+                if (isSwiftErrorType(pArgMT))
+                {
+                    swiftErrorCount++;
+                    if (swiftErrorCount > 1)
+                    {
+                        COMPlusThrow(kInvalidProgramException);
+                    }
+                    newArgCount++;
+                    continue;
+                }
+            }
+
             if (!thArgType.IsNull() && !thArgType.IsTypeDesc())
             {
                 MethodTable* pArgMT = thArgType.AsMethodTable();
@@ -3046,21 +3066,6 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
                 {
                     swiftSelfCount++;
                     if (swiftSelfCount > 1)
-                    {
-                        COMPlusThrow(kInvalidProgramException);
-                    }
-                    newArgCount++;
-                    continue;
-                }
-
-                if (isSwiftErrorType(pArgMT))
-                {
-                    if (!isByRef)
-                    {
-                        COMPlusThrow(kInvalidProgramException);
-                    }
-                    swiftErrorCount++;
-                    if (swiftErrorCount > 1)
                     {
                         COMPlusThrow(kInvalidProgramException);
                     }
@@ -3120,7 +3125,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
                         continue;
                     }
                     // Don't lower Swift* types except SwiftSelf<T>
-                    if (isSwiftSelfType(pArgMT) || isSwiftErrorType(pArgMT))
+                    if (isSwiftSelfType(pArgMT))
                     {
                         SigPointer pArg = sig.GetArgProps();
                         pArg.ConvertToInternalExactlyOne(sig.GetModule(), sig.GetSigTypeContext(), &swiftSigBuilder);
@@ -3339,7 +3344,16 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
                     interpreterStackOffset += interpStackSlotSize;
                     continue;
                 }
-                if (pArgMT != nullptr && isSwiftErrorType(pArgMT))
+            }
+
+            if (argCorType == ELEMENT_TYPE_PTR)
+            {
+                // Get the TypeHandle for the argument's type.
+                MetaSig *pSig = argIt.GetSig();
+                thArgTypeHandle = pSig->GetLastTypeHandleThrowing();
+                _ASSERTE(thArgTypeHandle.IsTypeDesc());
+                MethodTable* pArgMT = thArgTypeHandle.AsTypeDesc()->GetTypeParam().AsMethodTable();
+                if (isSwiftErrorType(pArgMT))
                 {
 #if LOG_COMPUTE_CALL_STUB
                     printf("Swift Error argument detected\n");

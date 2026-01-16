@@ -2513,7 +2513,7 @@ NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
     blr x11
     ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRetVoid_NoSwiftError)
-    str x10, [x11]
+    str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRetVoid_NoSwiftError):
     ldr x4, [fp, #16]
     str x2, [x4]
@@ -2539,7 +2539,7 @@ NESTED_ENTRY CallJittedMethodRetBuff, _TEXT, NoHandler
     blr x11
     ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRetBuff_NoSwiftError)
-    str x10, [x11]
+    str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRetBuff_NoSwiftError):
     ldr x4, [fp, #16]
     str x2, [x4]
@@ -2564,7 +2564,7 @@ NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
     blr x11
     ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRetI8_NoSwiftError)
-    str x10, [x11]
+    str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRetI8_NoSwiftError):
     ldr x9, [fp, #24]
     str x2, [x9]
@@ -2591,7 +2591,7 @@ NESTED_ENTRY CallJittedMethodRet2I8, _TEXT, NoHandler
     blr x11
     ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRet2I8_NoSwiftError)
-    str x10, [x11]
+    str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRet2I8_NoSwiftError):
     ldr x9, [fp, #24]
     str x2, [x9]
@@ -2618,7 +2618,7 @@ NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
     blr x11
     ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRetDouble_NoSwiftError)
-    str x10, [x11]
+    str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRetDouble_NoSwiftError):
     ldr x9, [fp, #24]
     str x2, [x9]
@@ -2645,7 +2645,7 @@ NESTED_ENTRY CallJittedMethodRet2Double, _TEXT, NoHandler
     blr x11
     ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRet2Double_NoSwiftError)
-    str x10, [x11]
+    str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRet2Double_NoSwiftError):
     ldr x9, [fp, #24]
     str x2, [x9]
@@ -2672,7 +2672,7 @@ NESTED_ENTRY CallJittedMethodRet3Double, _TEXT, NoHandler
     blr x11
     ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRet3Double_NoSwiftError)
-    str x10, [x11]
+    str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRet3Double_NoSwiftError):
     ldr x9, [fp, #24]
     str x2, [x9]
@@ -2700,7 +2700,7 @@ NESTED_ENTRY CallJittedMethodRet4Double, _TEXT, NoHandler
     blr x11
     ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRet4Double_NoSwiftError)
-    str x10, [x11]
+    str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRet4Double_NoSwiftError):
     ldr x9, [fp, #24]
     str x2, [x9]
@@ -2728,7 +2728,7 @@ NESTED_ENTRY CallJittedMethodRetFloat, _TEXT, NoHandler
     blr x11
     ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRetFloat_NoSwiftError)
-    str x10, [x11]
+    str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRetFloat_NoSwiftError):
     ldr x9, [fp, #24]
     str x2, [x9]
@@ -2755,7 +2755,7 @@ NESTED_ENTRY CallJittedMethodRet2Float, _TEXT, NoHandler
     blr x11
     ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRet2Float_NoSwiftError)
-    str x10, [x11]
+    str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRet2Float_NoSwiftError):
     ldr x9, [fp, #24]
     str x2, [x9]
@@ -2782,7 +2782,7 @@ NESTED_ENTRY CallJittedMethodRet3Float, _TEXT, NoHandler
     blr x11
     ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRet3Float_NoSwiftError)
-    str x10, [x11]
+    str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRet3Float_NoSwiftError):
     ldr x9, [fp, #24]
     str x2, [x9]
@@ -2810,7 +2810,7 @@ NESTED_ENTRY CallJittedMethodRet4Float, _TEXT, NoHandler
     blr x11
     ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRet4Float_NoSwiftError)
-    str x10, [x11]
+    str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRet4Float_NoSwiftError):
     ldr x9, [fp, #24]
     str x2, [x9]
@@ -2838,7 +2838,7 @@ NESTED_ENTRY CallJittedMethodRetVector64, _TEXT, NoHandler
     blr x11
     ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRetVector64_NoSwiftError)
-    str x10, [x11]
+    str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRetVector64_NoSwiftError):
     ldr x9, [fp, #24]
     str x2, [x9]
@@ -2865,7 +2865,7 @@ NESTED_ENTRY CallJittedMethodRet2Vector64, _TEXT, NoHandler
     blr x11
     ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRet2Vector64_NoSwiftError)
-    str x10, [x11]
+    str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRet2Vector64_NoSwiftError):
     ldr x9, [fp, #24]
     str x2, [x9]
@@ -2893,7 +2893,7 @@ NESTED_ENTRY CallJittedMethodRet3Vector64, _TEXT, NoHandler
     blr x11
     ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRet3Vector64_NoSwiftError)
-    str x10, [x11]
+    str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRet3Vector64_NoSwiftError):
     ldr x9, [fp, #24]
     str x2, [x9]
@@ -2922,7 +2922,7 @@ NESTED_ENTRY CallJittedMethodRet4Vector64, _TEXT, NoHandler
     blr x11
     ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRet4Vector64_NoSwiftError)
-    str x10, [x11]
+    str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRet4Vector64_NoSwiftError):
     ldr x9, [fp, #24]
     str x2, [x9]
@@ -2952,7 +2952,7 @@ NESTED_ENTRY CallJittedMethodRetVector128, _TEXT, NoHandler
     blr x11
     ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRetVector128_NoSwiftError)
-    str x10, [x11]
+    str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRetVector128_NoSwiftError):
     ldr x9, [fp, #24]
     str x2, [x9]
@@ -2979,7 +2979,7 @@ NESTED_ENTRY CallJittedMethodRet2Vector128, _TEXT, NoHandler
     blr x11
     ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRet2Vector128_NoSwiftError)
-    str x10, [x11]
+    str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRet2Vector128_NoSwiftError):
     ldr x9, [fp, #24]
     str x2, [x9]
@@ -3007,7 +3007,7 @@ NESTED_ENTRY CallJittedMethodRet3Vector128, _TEXT, NoHandler
     blr x11
     ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRet3Vector128_NoSwiftError)
-    str x10, [x11]
+    str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRet3Vector128_NoSwiftError):
     ldr x9, [fp, #24]
     str x2, [x9]
@@ -3036,7 +3036,7 @@ NESTED_ENTRY CallJittedMethodRet4Vector128, _TEXT, NoHandler
     blr x11
     ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRet4Vector128_NoSwiftError)
-    str x10, [x11]
+    str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRet4Vector128_NoSwiftError):
     ldr x9, [fp, #24]
     str x2, [x9]
@@ -3074,7 +3074,7 @@ NESTED_ENTRY CallJittedMethodRetSwiftLowered, _TEXT, NoHandler
     blr x11
     ldr x11, [fp, #56]
     cbz x11, LOCAL_LABEL(CallJittedMethodRetSwiftLowered_NoSwiftError)
-    str x10, [x11]
+    str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRetSwiftLowered_NoSwiftError):
     ldr x12, [fp, #24]
     str x2, [x12]            // Store continuation return value
