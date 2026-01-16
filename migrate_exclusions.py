@@ -414,7 +414,104 @@ def find_project_files(directory: str, project_name_hint: str = None) -> List[st
             if os.path.exists(candidate):
                 return [candidate]
     
+    # Approach C: Handle renamed tests (tests with _d, _r, _ro, _do suffixes)
+    # If project_name_hint ends with _d, _r, _ro, or _do, try without the suffix
+    if project_name_hint:
+        base_name = project_name_hint
+        # Strip suffix if it matches _d, _r, _ro, or _do
+        if base_name.endswith('_d') or base_name.endswith('_r'):
+            base_name = base_name[:-2]
+        elif base_name.endswith('_ro') or base_name.endswith('_do'):
+            base_name = base_name[:-3]
+        
+        # If we stripped a suffix, try again with the base name
+        if base_name != project_name_hint:
+            # Check in the directory itself
+            for ext in ['.csproj', '.ilproj', '.fsproj']:
+                candidate = os.path.join(directory, base_name + ext)
+                if os.path.exists(candidate):
+                    return [candidate]
+            
+            # Check in parent directory
+            parent = os.path.dirname(directory)
+            for ext in ['.csproj', '.ilproj', '.fsproj']:
+                candidate = os.path.join(parent, base_name + ext)
+                if os.path.exists(candidate):
+                    return [candidate]
+    
     return []
+
+
+def find_source_files(directory: str, project_name_hint: str = None) -> Tuple[List[str], List[str]]:
+    """
+    Find source files (.cs, .il) when no project files exist.
+    Returns (cs_files, il_files) tuple.
+    """
+    cs_files = []
+    il_files = []
+    
+    if not os.path.exists(directory):
+        # Try parent directory with project name hint
+        if project_name_hint:
+            parent = os.path.dirname(directory)
+            if os.path.exists(parent):
+                # Try with the full name
+                for ext in ['.cs', '.il']:
+                    candidate = os.path.join(parent, project_name_hint + ext)
+                    if os.path.exists(candidate):
+                        if ext == '.cs':
+                            cs_files.append(candidate)
+                        else:
+                            il_files.append(candidate)
+                
+                # Try with suffix stripped
+                if not cs_files and not il_files and project_name_hint:
+                    base_name = project_name_hint
+                    # Strip suffix if it matches _d, _r, _ro, or _do
+                    if base_name.endswith('_d') or base_name.endswith('_r'):
+                        base_name = base_name[:-2]
+                    elif base_name.endswith('_ro') or base_name.endswith('_do'):
+                        base_name = base_name[:-3]
+                    
+                    if base_name != project_name_hint:
+                        for ext in ['.cs', '.il']:
+                            candidate = os.path.join(parent, base_name + ext)
+                            if os.path.exists(candidate):
+                                if ext == '.cs':
+                                    cs_files.append(candidate)
+                                else:
+                                    il_files.append(candidate)
+        return (cs_files, il_files)
+    
+    # Try with the full name in the directory
+    if project_name_hint:
+        for ext in ['.cs', '.il']:
+            candidate = os.path.join(directory, project_name_hint + ext)
+            if os.path.exists(candidate):
+                if ext == '.cs':
+                    cs_files.append(candidate)
+                else:
+                    il_files.append(candidate)
+        
+        # Try with suffix stripped
+        if not cs_files and not il_files:
+            base_name = project_name_hint
+            # Strip suffix if it matches _d, _r, _ro, or _do
+            if base_name.endswith('_d') or base_name.endswith('_r'):
+                base_name = base_name[:-2]
+            elif base_name.endswith('_ro') or base_name.endswith('_do'):
+                base_name = base_name[:-3]
+            
+            if base_name != project_name_hint:
+                for ext in ['.cs', '.il']:
+                    candidate = os.path.join(directory, base_name + ext)
+                    if os.path.exists(candidate):
+                        if ext == '.cs':
+                            cs_files.append(candidate)
+                        else:
+                            il_files.append(candidate)
+    
+    return (cs_files, il_files)
 
 
 def get_replacement_for_condition(condition: str) -> Optional[ReplacementMapping]:
@@ -627,23 +724,76 @@ def migrate_exclusion(exclusion: ExclusionItem, repo_root: str, dry_run: bool = 
     print(f"  Resolved path: {resolved_path}")
     print(f"  Project name hint: {project_name_hint}")
     
+    # Get replacement mapping first - needed to decide if we should look for source files
+    mapping = get_replacement_for_condition(exclusion.condition)
+    
+    if not mapping:
+        print(f"  WARNING: No replacement mapping found for condition!")
+        return
+    
     # Find project files
     project_files = find_project_files(resolved_path, project_name_hint)
     
-    if not project_files:
+    # If no project files found but mapping has both C# and IL attributes, try to find source files
+    if not project_files and mapping.cs_attribute and mapping.il_attribute:
+        print(f"  No project files found, looking for source files...")
+        cs_files, il_files = find_source_files(resolved_path, project_name_hint)
+        
+        if cs_files or il_files:
+            print(f"  Found source file(s):")
+            for cf in cs_files:
+                print(f"    - {cf} (C#)")
+            for ilf in il_files:
+                print(f"    - {ilf} (IL)")
+            
+            # Apply C# attributes directly
+            if mapping.cs_attribute and cs_files:
+                attribute = mapping.cs_attribute.replace('<Issue>', exclusion.issue)
+                
+                # Special handling for issue 64127: use PlatformDoesNotSupportNativeTestAssets
+                if '64127' in exclusion.issue:
+                    attribute = f'[ActiveIssue("{exclusion.issue}", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]'
+                # Special handling for issue 41472: use IsThreadingSupported
+                elif '41472' in exclusion.issue:
+                    attribute = f'[ActiveIssue("{exclusion.issue}", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]'
+                
+                print(f"  C# attribute: {attribute}")
+                
+                if not dry_run:
+                    for cs_file in cs_files:
+                        if add_cs_attribute(cs_file, attribute):
+                            print(f"    Modified: {cs_file}")
+            
+            # Apply IL attributes directly
+            if mapping.il_attribute and il_files:
+                attribute = mapping.il_attribute.replace('<Issue>', exclusion.issue)
+                
+                # Special handling for issue 64127
+                if '64127' in exclusion.issue:
+                    attribute = '.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string(\'' + exclusion.issue + '\') type([TestLibrary]TestLibrary.PlatformDetection) string[1] (\'PlatformDoesNotSupportNativeTestAssets\') }'
+                # Special handling for issue 41472
+                elif '41472' in exclusion.issue:
+                    attribute = '.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string(\'' + exclusion.issue + '\') type([TestLibrary]TestLibrary.PlatformDetection) string[1] (\'IsThreadingSupported\') }'
+                
+                print(f"  IL attribute: {attribute}")
+                print(f"  NOTE: IL file attributes need manual verification!")
+                
+                if not dry_run:
+                    for il_file in il_files:
+                        if add_il_attribute(il_file, attribute):
+                            print(f"    Modified: {il_file}")
+            
+            return
+        else:
+            print(f"  WARNING: No project files or source files found!")
+            return
+    elif not project_files:
         print(f"  WARNING: No project files found!")
         return
     
     print(f"  Found {len(project_files)} project file(s):")
     for pf in project_files:
         print(f"    - {pf}")
-    
-    # Get replacement mapping
-    mapping = get_replacement_for_condition(exclusion.condition)
-    
-    if not mapping:
-        print(f"  WARNING: No replacement mapping found for condition!")
-        return
     
     # Apply replacements
     for project_file in project_files:
