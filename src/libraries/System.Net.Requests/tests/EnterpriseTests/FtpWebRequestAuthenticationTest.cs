@@ -43,6 +43,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled))]
+#pragma warning disable SYSLIB0014 // WebRequest, FtpWebRequest, and related types are obsolete
         public async Task FtpUploadWithSsl_Success()
         {
             string fileName = $"test_{Guid.NewGuid()}.txt";
@@ -85,8 +86,10 @@ namespace System.Net.Tests
                 _output.WriteLine($"Cleanup failed: {ex.Message}");
             }
         }
+#pragma warning restore SYSLIB0014
 
         [ConditionalFact(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled))]
+#pragma warning disable SYSLIB0014 // WebRequest, FtpWebRequest, and related types are obsolete
         public async Task FtpDownloadWithSsl_Success()
         {
             string fileName = $"test_{Guid.NewGuid()}.txt";
@@ -150,8 +153,10 @@ namespace System.Net.Tests
                 _output.WriteLine($"Cleanup failed: {ex.Message}");
             }
         }
+#pragma warning restore SYSLIB0014
 
         [ConditionalFact(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled))]
+#pragma warning disable SYSLIB0014 // WebRequest, FtpWebRequest, and related types are obsolete
         public void FtpUploadWithSsl_StreamDisposal_NoProtocolViolation()
         {
             string fileName = $"test_{Guid.NewGuid()}.txt";
@@ -197,5 +202,6 @@ namespace System.Net.Tests
                 _output.WriteLine($"Cleanup failed: {ex.Message}");
             }
         }
+#pragma warning restore SYSLIB0014
     }
 }
