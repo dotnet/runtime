@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
@@ -409,6 +409,52 @@ namespace System.Net.Security.Tests
             string[] acceptableIssuers)
         {
             return _clientCertificate;
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
+        [PlatformSpecific(TestPlatforms.Linux)] // Regression test for TLS 1.3 session resumption on OpenSSL
+        public async Task SslStream_Tls13ResumptionWithClientCert_IsMutuallyAuthenticatedTrue()
+        {
+            // Use certificate context which enables session caching
+            var serverContext = SslStreamCertificateContext.Create(_serverCertificate, null);
+            var clientContext = SslStreamCertificateContext.Create(_clientCertificate, null);
+
+            // Use a consistent target host to enable session resumption
+            string targetHost = Guid.NewGuid().ToString("N");
+
+            for (int i = 0; i < 3; i++)
+            {
+                (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+                using (client)
+                using (server)
+                {
+                    var clientOptions = new SslClientAuthenticationOptions
+                    {
+                        TargetHost = targetHost,
+                        ClientCertificateContext = clientContext,
+                        EnabledSslProtocols = SslProtocols.Tls13,
+                        RemoteCertificateValidationCallback = AllowAnyCertificate,
+                    };
+
+                    var serverOptions = new SslServerAuthenticationOptions
+                    {
+                        ServerCertificateContext = serverContext,
+                        ClientCertificateRequired = true,
+                        EnabledSslProtocols = SslProtocols.Tls13,
+                        RemoteCertificateValidationCallback = AllowAnyCertificate,
+                    };
+
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions),
+                        server.AuthenticateAsServerAsync(serverOptions));
+
+                    // Regression test: all connections (including resumed ones) must report mutual auth
+                    Assert.True(client.IsMutuallyAuthenticated, $"Client connection {i}: IsMutuallyAuthenticated should be true");
+                    Assert.True(server.IsMutuallyAuthenticated, $"Server connection {i}: IsMutuallyAuthenticated should be true");
+                    Assert.NotNull(client.LocalCertificate);
+                    Assert.NotNull(server.RemoteCertificate);
+                }
+            }
         }
     }
 }
