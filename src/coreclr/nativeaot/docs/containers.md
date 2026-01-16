@@ -16,7 +16,7 @@ For cloud native apps, build and runtime OS typically match, at least if you use
 
 The .NET build has this exact same need. We produce several [container images to enable cross-building](https://github.com/dotnet/runtime/blob/main/docs/workflow/using-docker.md#the-official-runtime-docker-images).
 
-You can use these images to build native AOT apps which work on distros as old as Ubuntu 16.04. These build images are not supported, but are expected to work (since we use them to build .NET on daily basis).
+You can use these images to build native AOT apps which work on distros as old as Ubuntu 18.04. These build images are not supported, but are expected to work (since we use them to build .NET on daily basis).
 
 ### Containerized build
 
@@ -58,7 +58,7 @@ Hello, World!
 The app can be tested in an old Linux container, again through volume mounting.
 
 ```bash
-$ docker run --rm -v $(pwd)/app:/app -w /app ubuntu:16.04 ./cross-build-test
+$ docker run --rm -v $(pwd)/app:/app -w /app ubuntu:18.04 ./cross-build-test
 Hello, World!
 ```
 
