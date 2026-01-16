@@ -97,9 +97,90 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
     unreached(); // OSR not supported on WASM.
 }
 
+//------------------------------------------------------------------------
+// genHomeRegisterParams: place register arguments into their RA-assigned locations.
+//
+// For the WASM RA, we have a much simplified (compared to LSRA) contract of:
+// - If an argument is live on entry in a set of registers, then the RA will
+//   assign those registers to that argument on entry.
+// This means we never need to do any copying or cycle resolution here.
+//
+// The main motivation for this (along with the obvious CQ implications) is
+// obviating the need to adapt the general "RegGraph"-based algorithm to
+// !HAS_FIXED_REGISTER_SET constraints (no reg masks).
+//
+// Arguments:
+//    initReg            - Unused
+//    initRegStillZeroed - Unused
+//
 void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 {
-    // NYI_WASM("Un-undefine 'genHomeRegisterParams' in codegencommon.cpp and proceed from there");
+    JITDUMP("*************** In genHomeRegisterParams()\n");
+
+    auto spillParam = [this](unsigned lclNum, unsigned offset, unsigned paramLclNum, const ABIPassingSegment& segment) {
+        assert(segment.IsPassedInRegister());
+
+        LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
+        if (varDsc->lvTracked && !VarSetOps::IsMember(compiler, compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
+        {
+            return;
+        }
+
+        if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr))
+        {
+            LclVarDsc* paramVarDsc = compiler->lvaGetDesc(paramLclNum);
+            var_types  storeType   = genParamStackType(paramVarDsc, segment);
+            if (!varDsc->TypeIs(TYP_STRUCT) && (genTypeSize(genActualType(varDsc)) < genTypeSize(storeType)))
+            {
+                // Can happen for struct fields due to padding.
+                storeType = genActualType(varDsc);
+            }
+
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(storeType),
+                                    WasmRegToIndex(segment.GetRegister()));
+            GetEmitter()->emitIns_S(ins_Store(storeType), emitActualTypeSize(storeType), lclNum, offset);
+        }
+
+        if (varDsc->lvIsInReg())
+        {
+            assert(varDsc->GetRegNum() == segment.GetRegister());
+        }
+    };
+
+    for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
+    {
+        LclVarDsc*                   lclDsc  = compiler->lvaGetDesc(lclNum);
+        const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
+
+        for (const ABIPassingSegment& segment : abiInfo.Segments())
+        {
+            if (!segment.IsPassedInRegister())
+            {
+                continue;
+            }
+
+            const ParameterRegisterLocalMapping* mapping =
+                compiler->FindParameterRegisterLocalMappingByRegister(segment.GetRegister());
+
+            bool spillToBaseLocal = true;
+            if (mapping != nullptr)
+            {
+                spillParam(mapping->LclNum, mapping->Offset, lclNum, segment);
+
+                // If home is shared with base local, then skip spilling to the base local.
+                if (lclDsc->lvPromoted)
+                {
+                    spillToBaseLocal = false;
+                }
+            }
+
+            if (spillToBaseLocal)
+            {
+                spillParam(lclNum, segment.Offset, lclNum, segment);
+            }
+        }
+    }
 }
 
 void CodeGen::genFnEpilog(BasicBlock* block)

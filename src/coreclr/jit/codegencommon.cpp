@@ -2929,6 +2929,7 @@ public:
     }
 #endif
 };
+#endif // !TARGET_WASM
 
 // -----------------------------------------------------------------------------
 // genParamStackType: Get the type that a part of a parameter passed in a
@@ -2998,6 +2999,7 @@ var_types CodeGen::genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& se
     }
 }
 
+#ifndef TARGET_WASM
 // -----------------------------------------------------------------------------
 // genSpillOrAddRegisterParam: Handle a register parameter either by homing it
 // to stack immediately, or by adding it to the register graph.
