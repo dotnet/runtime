@@ -7634,7 +7634,7 @@ void CordbJITILFrame::LoadGenericArgs()
 
     UINT32 cTotalGenericTypeParams = rgGenericTypeParams.Count();
 
-    NewInterfaceArrayHolder<CordbType> ppGenericArgs(new CordbType *[cTotalGenericTypeParams]);
+    NewInterfaceArrayHolder<CordbType> ppGenericArgs(new CordbType *[cTotalGenericTypeParams]());
     ppGenericArgs.SetElementCount(cTotalGenericTypeParams);
 
     for (UINT32 i = 0; i < cTotalGenericTypeParams;i++)
@@ -11517,7 +11517,7 @@ void CordbAsyncFrame::LoadGenericArgs()
 
     UINT32 cTotalGenericTypeParams = rgGenericTypeParams.Count();
 
-    NewInterfaceArrayHolder<CordbType> ppGenericArgs(new CordbType *[cTotalGenericTypeParams]);
+    NewInterfaceArrayHolder<CordbType> ppGenericArgs(new CordbType *[cTotalGenericTypeParams]());
     ppGenericArgs.SetElementCount(cTotalGenericTypeParams);
 
     for (UINT32 i = 0; i < cTotalGenericTypeParams;i++)
