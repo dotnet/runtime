@@ -4628,6 +4628,8 @@ enum class WellKnownArg : unsigned
     RuntimeMethodHandle,
     AsyncExecutionContext,
     AsyncSynchronizationContext,
+    WasmShadowStackPointer,
+    WasmPortableEntryPoint
 };
 
 #ifdef DEBUG

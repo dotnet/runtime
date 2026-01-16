@@ -338,6 +338,8 @@ class WasmClassifier
 public:
     WasmClassifier(const ClassifierInfo& info);
 
+    static var_types GetPrimitiveTypeForTrivialStruct(Compiler* comp, CORINFO_CLASS_HANDLE clsHnd);
+
     unsigned StackSize()
     {
         return 0;
