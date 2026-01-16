@@ -1,18 +1,13 @@
 project(System.Native.Browser C)
 
-set(BROWSER_SOURCES)
-
-if (GEN_PINVOKE)
-    set (BROWSER_SOURCES ${BROWSER_SOURCES} empty.c)
-else()
-    set (BROWSER_SOURCES ${BROWSER_SOURCES} entrypoints.c)
-endif()
+set(BROWSER_SOURCES ${BROWSER_SOURCES} entrypoints.c)
 
 add_library(System.Native.Browser-Static
     STATIC
     ${BROWSER_SOURCES}
 )
 set_target_properties(System.Native.Browser-Static PROPERTIES OUTPUT_NAME System.Native.Browser CLEAN_DIRECT_OUTPUT 1)
+target_compile_definitions(System.Native.Browser-Static PRIVATE GEN_PINVOKE=${GEN_PINVOKE})
 install(TARGETS System.Native.Browser-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 if (NOT CORERUN_LIBS_ONLY)
     install(TARGETS System.Native.Browser-Static DESTINATION sharedFramework COMPONENT runtime)
