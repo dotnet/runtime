@@ -22,7 +22,7 @@ enum {
 
     // LogFacility2: all 32-bit of LogFacility are used, need a 2nd DWORD for more facilities
     LF2_MULTICOREJIT = 0x00000001, // Multicore JIT
-    LF2_INTERPRETER  = 0x00000002  // Interpreter
+    LF2_INTERPRETER  = 0x00000002, // Interpreter
 };
 
 
