@@ -16,6 +16,9 @@
     <Compile Include="*.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="System.Net.Sockets" />
   </ItemGroup>
 </Project>

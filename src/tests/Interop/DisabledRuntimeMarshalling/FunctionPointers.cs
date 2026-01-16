@@ -5,6 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 using static DisabledRuntimeMarshallingNative;
+using TestLibrary;
 
 namespace DisabledRuntimeMarshalling;
 
@@ -20,6 +21,7 @@ public unsafe class FunctionPointers
         Assert.True(cb(new StructWithShortAndBool(s, b), s, b));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/81676", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static void StructWithDefaultNonBlittableFields_IgnoresMarshalAsInfo()
     {

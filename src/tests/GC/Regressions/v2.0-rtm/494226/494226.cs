@@ -5,10 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 public class Test_494226
 {
     [System.Security.SecuritySafeCritical]
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     [Fact]
     public static void TestEntryPoint()
     {

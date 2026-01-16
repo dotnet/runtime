@@ -6,5 +6,8 @@
     <Compile Include="BinderTracingTest.EventHandlers.cs" />
     <Compile Include="BinderTracingTest.ResolutionFlow.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
   <Import Project="BinderTracingTest.targets" />
 </Project>

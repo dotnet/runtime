@@ -6,6 +6,7 @@ using Xunit;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using TestLibrary;
 
 internal class MyCriticalHandle : CriticalHandle
 {
@@ -132,6 +133,7 @@ public class Reverse
         internal static extern IntPtr InvokeRetCallback(RetCallback callback);
     }
 
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -8,9 +8,11 @@ using System.Runtime.InteropServices;
 using InvalidCSharpNegative;
 
 using Xunit;
+using TestLibrary;
 
 public class ValidateNegative
 {
+    [ActiveIssue("", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMFULLAOT))]
     [Fact]
     [SkipOnMono("https://github.com/dotnet/runtime/issues/99820")]
     public static void AllowByRefLike_Substituted_For_NonByRefLike_Invalid()
@@ -21,6 +23,7 @@ public class ValidateNegative
         Assert.Throws<TypeLoadException>(() => { Exec.OverrideMethodNotByRefLike(); });
     }
 
+    [ActiveIssue("", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMFULLAOT))]
     [Fact]
     public static void AllowByRefLike_Substituted_For_NonByRefLike_Invalid_Class()
     {

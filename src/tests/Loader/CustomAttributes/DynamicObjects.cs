@@ -6,12 +6,14 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 
 using Xunit;
+using TestLibrary;
 
 #nullable disable
 
 namespace DynamicObjects {
     public class M {
         public const string ObjectRequiredMessage = "some string";
+        [ActiveIssue("Dynamic code generation is not supported on this platform", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void TestEntryPoint()
         {

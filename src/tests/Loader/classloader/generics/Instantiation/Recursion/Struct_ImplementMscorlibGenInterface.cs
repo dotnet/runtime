@@ -5,6 +5,7 @@
 // such as MyType : IComparable<MyType>
 
 /*
+using TestLibrary;
 generic interfaces:
 - ICollection
 - IComparer
@@ -338,6 +339,7 @@ public struct MyClassIList2:  IList<MyClassIList>,  IList<int>
 
 public class Test_Struct_ImplementMscorlibGenInterface
 {
+ [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
 	[Fact]
 	public static int TestEntryPoint()
 	{

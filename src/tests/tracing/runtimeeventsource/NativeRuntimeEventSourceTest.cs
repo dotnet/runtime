@@ -17,11 +17,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using Xunit;
+using TestLibrary;
 
 namespace Tracing.Tests
 {
     public sealed class NativeRuntimeEventSourceTest
     {
+        [ActiveIssue("Build doesn't include diagnostics tracing", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
         [Fact]
         public static void TestEntryPoint()
         {

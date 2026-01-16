@@ -13,6 +13,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="usegenericfield.cs" />
   </ItemGroup>
 </Project>

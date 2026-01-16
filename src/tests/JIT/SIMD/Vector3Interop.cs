@@ -22,6 +22,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
+using TestLibrary;
 
 
 public struct DT 
@@ -552,6 +553,7 @@ class RPInvokeTest
 
 public class Test_Vector3Interop 
 {  
+    [ActiveIssue("", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMFULLAOT))]
     [Fact]
     public static int TestEntryPoint() 
     {

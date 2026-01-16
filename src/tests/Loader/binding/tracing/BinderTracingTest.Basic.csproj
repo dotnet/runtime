@@ -3,5 +3,8 @@
     <Compile Include="BinderTracingTest.Basic.cs" />
     <Compile Include="BinderTracingTest.DefaultProbing.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
   <Import Project="BinderTracingTest.targets" />
 </Project>

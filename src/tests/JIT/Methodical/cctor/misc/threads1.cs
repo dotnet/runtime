@@ -6,6 +6,7 @@
 using System;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 namespace Precise
 {
@@ -15,6 +16,7 @@ namespace Precise
         {
             test.b = 0xF;
         }
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Fact]
         [OuterLoop]
         public static int TestEntryPoint()

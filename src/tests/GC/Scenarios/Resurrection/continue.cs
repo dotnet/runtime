@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using TestLibrary;
 namespace DefaultNamespace {
     using System;
     using System.Runtime.CompilerServices;
@@ -77,6 +78,7 @@ namespace DefaultNamespace {
         }
 
 
+        [ActiveIssue("PlatformDetection.IsPreciseGcSupported false on mono", TestRuntimes.Mono)]
         [Fact]
         public static int TestEntryPoint()
         {

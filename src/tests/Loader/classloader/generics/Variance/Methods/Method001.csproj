@@ -9,6 +9,9 @@
     <Compile Include="Method001.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="MethodsLib.ilproj" />
   </ItemGroup>
 </Project>

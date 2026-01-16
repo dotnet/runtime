@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using TestLibrary;
 
 namespace gh53564Tests
 {
@@ -77,6 +78,7 @@ namespace gh53564Tests
 
     public partial class TestRuntimeEventCounter
     {
+        [ActiveIssue(" needs triage ", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
         [Fact]
         public static int TestEntryPoint()
         {

@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Swift;
 using System.Text;
 using Xunit;
+using TestLibrary;
 
 public class ErrorHandlingTests
 {
@@ -63,6 +64,7 @@ public class ErrorHandlingTests
     [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling16freeStringBuffer6bufferySpys6UInt16VG_tF")]
     public unsafe static extern void FreeErrorMessageBuffer(void* stringPtr);
 
+    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public unsafe static void TestSwiftErrorThrown()
     {
@@ -79,6 +81,7 @@ public class ErrorHandlingTests
         Assert.True(errorMessage == expectedErrorMessage, string.Format("The error message retrieved from Swift does not match the expected message. Expected: {0}, Actual: {1}", expectedErrorMessage, errorMessage));
     }
 
+    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public unsafe static void TestSwiftErrorNotThrown()
     {
@@ -94,6 +97,7 @@ public class ErrorHandlingTests
         Assert.True(result == 42, "The result from Swift does not match the expected value.");
     }
 
+    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public unsafe static void TestSwiftErrorOnStackThrown()
     {
@@ -111,6 +115,7 @@ public class ErrorHandlingTests
         Assert.True(errorMessage == expectedErrorMessage, string.Format("The error message retrieved from Swift does not match the expected message. Expected: {0}, Actual: {1}", expectedErrorMessage, errorMessage));
     }
 
+    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public unsafe static void TestSwiftErrorOnStackNotThrown()
     {
@@ -127,6 +132,7 @@ public class ErrorHandlingTests
         Assert.True(result == 42, "The result from Swift does not match the expected value.");
     }
 
+    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static unsafe void TestUnmanagedCallersOnly()
     {
@@ -142,6 +148,7 @@ public class ErrorHandlingTests
         Assert.True(error.Value == null, "Expected SwiftError value to be null.");
     }
 
+    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static unsafe void TestUnmanagedCallersOnlyWithReturn()
     {

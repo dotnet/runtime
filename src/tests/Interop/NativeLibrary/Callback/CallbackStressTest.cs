@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 [assembly: DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
 public class CallbackStressTest
@@ -126,6 +127,7 @@ public class CallbackStressTest
 #endif
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/166", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static int TestEntryPoint()
     {

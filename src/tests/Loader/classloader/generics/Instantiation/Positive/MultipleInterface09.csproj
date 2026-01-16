@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="MultipleInterface09.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

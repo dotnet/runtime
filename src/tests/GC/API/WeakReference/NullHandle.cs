@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*
+using TestLibrary;
  * TEST NAME: NullHandle
  * DESCRIPTION: operates on Weakhandles whose m_handle is null
  */
@@ -36,6 +37,7 @@ public class Test_NullHandle
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static void DestroyWR() { wr = null; }
 
+    [ActiveIssue("PlatformDetection.IsPreciseGcSupported false on mono", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -11,6 +11,7 @@ using System.Threading;
 
 using Xunit;
 using TypeEquivalenceTypes;
+using TestLibrary;
 
 [TypeIdentifier("MyScope", "MyTypeId")]
 public struct EquivalentValueType
@@ -32,6 +33,7 @@ public class Simple
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Type equivalence", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static void InterfaceTypesFromDifferentAssembliesAreEquivalent()
     {
@@ -47,6 +49,7 @@ public class Simple
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Type equivalence", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static void TypeInstanceEquality()
     {
@@ -114,6 +117,7 @@ public class Simple
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Type equivalence", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static void InterfaceTypesMethodOperations()
     {
@@ -146,6 +150,7 @@ public class Simple
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Type equivalence", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static void CallSparseInterface()
     {
@@ -162,6 +167,7 @@ public class Simple
         Assert.Equal(input * 18, sparseType.MultiplyBy18(input));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Type equivalence", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static void ArrayEquivalence()
     {
@@ -180,6 +186,7 @@ public class Simple
         Assert.False(inAsmInterfaceType.MakeArrayType(1).IsEquivalentTo(otherAsmInterfaceType.MakeArrayType(2)));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Type equivalence", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static void ByRefEquivalence()
     {
@@ -205,6 +212,7 @@ public class Simple
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Type equivalence", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static void GenericClassNonEquivalence()
     {
@@ -218,6 +226,7 @@ public class Simple
         Assert.False(typeof(Generic<>).MakeGenericType(inAsmInterfaceType).IsEquivalentTo(typeof(Generic<>).MakeGenericType(otherAsmInterfaceType)));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Type equivalence", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static void GenericInterfaceEquivalence()
     {
@@ -231,6 +240,7 @@ public class Simple
         Assert.True(typeof(IGeneric<>).MakeGenericType(inAsmInterfaceType).IsEquivalentTo(typeof(IGeneric<>).MakeGenericType(otherAsmInterfaceType)));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Type equivalence", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static unsafe void TypeEquivalenceWithTypePunning()
     {
@@ -271,6 +281,7 @@ public class Simple
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Type equivalence", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     [MethodImpl (MethodImplOptions.NoInlining)]
     public static void LoadValueTypesWithMethod()
@@ -286,6 +297,7 @@ public class Simple
         Console.WriteLine($"-- {typeof(ValueTypeWithInstanceMethod).Name}");
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Type equivalence", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static void CastsOptimizations()
     {
@@ -298,6 +310,7 @@ public class Simple
         EquivalentValueType inst = (EquivalentValueType)otherEquivalentValueTypeInstance;
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Type equivalence", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static void ExactTypeOptimizations()
     {
@@ -306,6 +319,7 @@ public class Simple
         Assert.True(typeof(TestValueType[]) == TestsExactTypeOptimizationsHelper.s_arrayInstance.GetType());
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Type equivalence", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static void MethodCallSignature()
     {

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*
+using TestLibrary;
 Test_Struct_ExplicitOverrideVirtualNewslotFinal the following matrix for structs with virtual newslot final methods (explicit override):
 
 Non-Generic virtual methods:
@@ -240,6 +241,7 @@ public class Test_Struct_ExplicitOverrideVirtualNewslotFinal
 
 
 	
+ [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
 	[Fact]
 	public static int TestEntryPoint()
 	{

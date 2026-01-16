@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 [StructLayout(LayoutKind.Explicit)]
 public struct FirstLevel
@@ -40,6 +41,7 @@ public class Test_NestedStructsWithExplicitLayout_Case06
         x.ConflictingObjectField = new object();
     }
 
+    [ActiveIssue("", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMFULLAOT))]
     [Fact]
     public static int TestEntryPoint()
     {

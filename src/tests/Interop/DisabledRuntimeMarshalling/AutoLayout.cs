@@ -5,6 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 using static DisabledRuntimeMarshallingNative;
+using TestLibrary;
 
 namespace DisabledRuntimeMarshalling;
 
@@ -17,12 +18,14 @@ public unsafe class PInvokes_AutoLayout
         Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CallWithAutoLayoutStruct(new AutoLayoutStruct()));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/81676", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static void StructWithAutoLayoutField()
     {
         AssertThrowsMarshalDirectiveOrTypeLoad(() => DisabledRuntimeMarshallingNative.CallWithAutoLayoutStruct(new SequentialWithAutoLayoutField()));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/81676", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static void StructWithNestedAutoLayoutField()
     {

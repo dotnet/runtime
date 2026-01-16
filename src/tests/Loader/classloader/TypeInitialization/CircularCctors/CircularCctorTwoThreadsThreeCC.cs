@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 
 using Xunit;
+using TestLibrary;
 
 // Regression test for https://github.com/dotnet/runtime/issues/93778
 namespace CircularCctorTwoThreadsThreeCC;
@@ -129,6 +130,7 @@ public class Coordinator
         Console.WriteLine ($"{Thread.CurrentThread.ManagedThreadId}: {msg}");
     }
 
+    [ActiveIssue("System.Threading.Thread.ThrowIfNoThreadStart: PlatformNotSupportedException", TestPlatforms.Browser)]
     [Fact]
     public static void RunTestCase()
     {

@@ -8,9 +8,11 @@ using System.Runtime.InteropServices;
 using InvalidCSharp;
 
 using Xunit;
+using TestLibrary;
 
 public class GenericTypeSubstitution
 {
+    [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void AllowByRefLike_Substituted_For_AllowByRefLike()
     {
@@ -21,6 +23,7 @@ public class GenericTypeSubstitution
         Console.WriteLine($" -- Instantiate: {Exec.TypeSubstitutionFieldAllowByRefLike()}");
     }
 
+    [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void NonByRefLike_Substituted_For_AllowByRefLike()
     {
@@ -31,6 +34,7 @@ public class GenericTypeSubstitution
         Console.WriteLine($" -- Instantiate: {Exec.TypeSubstitutionFieldNonByRefLike()}");
     }
 
+    [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void AllowByRefLike_Substituted_For_NonByRefLike()
     {

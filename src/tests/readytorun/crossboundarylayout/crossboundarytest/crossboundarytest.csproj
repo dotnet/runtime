@@ -10,6 +10,9 @@
     <Compile Include="c1.cs" />
     <Compile Include="main.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\a\a.csproj"/>

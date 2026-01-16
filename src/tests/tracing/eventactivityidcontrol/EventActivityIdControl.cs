@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Tracing.Tests.Common;
 using Xunit;
+using TestLibrary;
 
 namespace Tracing.Tests
 {
@@ -30,6 +31,7 @@ namespace Tracing.Tests
         private static MethodInfo s_EventActivityIdControl;
         private static bool s_FailureEncountered = false;
 
+        [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMAOT))]
         [Fact]
         public static int TestEntryPoint()
         {

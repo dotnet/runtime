@@ -4,4 +4,7 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project> 

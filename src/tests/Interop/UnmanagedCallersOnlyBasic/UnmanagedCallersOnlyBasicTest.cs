@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 public unsafe class UnmanagedCallersOnlyBasicTest
 {
@@ -61,6 +62,7 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         return DoubleImpl(n);
     }
 
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void TestUnmanagedCallersOnlyValid_CallConvStdcall()
     {
@@ -79,6 +81,7 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         return DoubleImpl(n);
     }
 
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void TestUnmanagedCallersOnlyValid_CallConvCdecl()
     {
@@ -91,6 +94,7 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         Assert.Equal(expected, actual);
     }
 
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void TestUnmanagedCallersOnlyValid_OnNewNativeThread()
     {
@@ -107,6 +111,7 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         return DoubleImpl(n);
     }
 
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     // This test is about the interaction between Tiered Compilation and the UnmanagedCallersOnlyAttribute.
     public static void TestUnmanagedCallersOnlyValid_PrepareMethod()
@@ -137,6 +142,7 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         return UnmanagedCallersOnlyDll.DoubleImplNative(n);
     }
 
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void TestUnmanagedCallersOnlyMultipleTimesValid()
     {

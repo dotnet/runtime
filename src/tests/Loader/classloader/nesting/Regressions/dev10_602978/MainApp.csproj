@@ -9,6 +9,9 @@
     <Compile Include="MainApp.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="Library.csproj" />
   </ItemGroup>
 </Project>

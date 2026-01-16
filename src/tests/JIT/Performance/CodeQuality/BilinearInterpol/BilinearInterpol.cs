@@ -13,6 +13,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Diagnostics;
 using Xunit;
+using TestLibrary;
 
 public class BilinearTest
 {
@@ -338,6 +339,7 @@ public class BilinearTest
             }
         }
     }
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {

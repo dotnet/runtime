@@ -8,4 +8,7 @@
   <ItemGroup>
     <Compile Include="repro.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

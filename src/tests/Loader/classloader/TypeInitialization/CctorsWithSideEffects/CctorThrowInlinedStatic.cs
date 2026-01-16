@@ -3,6 +3,7 @@
 
 /*
 
+using TestLibrary;
 A .cctor has only one chance to run in any appdomain. 
 If it fails, the 2nd time we try to access a static field we check if .cctor has been run. And it has, but failed so we fail again.
 
@@ -277,6 +278,7 @@ public class Test_CctorThrowInlinedStatic
 	}
 
 
+ [ActiveIssue("Doesn't pass after LLVM AOT compilation.", TestRuntimes.Mono)]
 	[Fact]
 	public static int TestEntryPoint()
 	{

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*
+using TestLibrary;
 We are testing the following scenario:
 
 
@@ -251,6 +252,7 @@ public class Test_Class2_ImplicitOverrideVirtualNewslot_Interface
 
 
 	
+ [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
 	[Fact]
 	public static int TestEntryPoint()
 	{

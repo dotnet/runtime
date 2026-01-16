@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using TestLibrary;
 /**************************************************************/
 /* TEST: ReflectObj
 /* Purpose: test if GC can handle objects create by reflect
@@ -50,6 +51,7 @@ namespace App {
             icFinal++;
         }
 
+        [ActiveIssue("needs triage", TestRuntimes.Mono)]
         [Fact]
         public static int TestEntryPoint()
         {

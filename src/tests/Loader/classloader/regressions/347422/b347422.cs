@@ -10,11 +10,13 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 public interface IFoo{}
 
 public class Casting
 {
+ [ActiveIssue("https://github.com/dotnet/runtimelab/issues/194", typeof(Utilities), nameof(Utilities.IsNativeAot))]
 	[Fact]
 	public static int TestEntryPoint()
 	{

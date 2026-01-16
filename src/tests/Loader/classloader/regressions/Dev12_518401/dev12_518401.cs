@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /* Regression Test for Dev12 bug #518401: Bug in accessing x64 bit Multidimensional Arrays in x64
+using TestLibrary;
  * 
  * Change description: Store the callee saved registers more often in hand generated assembly helper.
 */
@@ -22,6 +23,7 @@ public class My
         s[0, 1] = s[1, 0];
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void TestEntryPoint()
     {

@@ -13,6 +13,7 @@ using Tracing.Tests.Common;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.NETCore.Client;
 using Xunit;
+using TestLibrary;
 
 namespace Tracing.Tests.EventSourceError
 {
@@ -45,6 +46,7 @@ namespace Tracing.Tests.EventSourceError
 
     public class EventSourceError
     {
+        [ActiveIssue(" needs triage ", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Fact]
         public static int TestEntryPoint()
         {

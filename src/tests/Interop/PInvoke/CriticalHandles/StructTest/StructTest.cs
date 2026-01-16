@@ -6,6 +6,7 @@ using Xunit;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using TestLibrary;
 
 internal class MyCriticalHandle : CriticalHandle
 {
@@ -179,6 +180,7 @@ public class CriticalHandleStructTest
         internal static extern MyCriticalHandleStruct Ret(IntPtr handleValue);
     }
 
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {

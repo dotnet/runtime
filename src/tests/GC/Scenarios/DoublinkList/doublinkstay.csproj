@@ -11,4 +11,7 @@
   <ItemGroup>
     <Compile Include="doublinkstay.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

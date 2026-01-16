@@ -3,6 +3,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 public class RemoteBase
 {
@@ -45,6 +46,7 @@ class LocalImpl2 : RemoteBase_InSeparateAssembly
 public static class App
 {
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static int TestEntryPoint() 
     { 

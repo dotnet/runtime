@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*
+using TestLibrary;
 A --> B --> C --> D --> E --> A
 3 threads: Thread T1 starts initialization at A, thread T2 starts initialization at C, and thread T3 starts initialization at E.  
 A::.cctor sleeps for a few seconds so Thread T1 is blocked.
@@ -143,6 +144,7 @@ public class Test_CircularCctorThreeThreads03
 	}
 
 
+ [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
 	[Fact]
 	public static int TestEntryPoint()
 	{

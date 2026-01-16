@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Swift;
 using Xunit;
+using TestLibrary;
 
 public class SwiftInlineArray
 {
@@ -21,6 +22,7 @@ public class SwiftInlineArray
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftInlineArray10swiftFunc02a0SiAA2F0V_tF")]
     private static extern nint SwiftFunc0(F0 a0);
 
+    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static unsafe void TestFuncWithByteInlineArray()
     {
@@ -77,6 +79,7 @@ public class SwiftInlineArray
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftInlineArray10swiftFunc12a0SiAA2F1V_tF")]
     private static extern nint SwiftFunc1(F1 a0);
 
+    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static unsafe void TestFuncWithIntInlineArray()
     {
@@ -108,6 +111,7 @@ public class SwiftInlineArray
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftInlineArray10swiftFunc22a0SiAA2F2V_tF")]
     private static extern nint SwiftFunc2(F2 a0);
 
+    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static unsafe void TestFuncWithLargeInlineArray()
     {
@@ -137,6 +141,7 @@ public class SwiftInlineArray
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftInlineArray10swiftFunc32a0SiAA2F3V_tF")]
     private static extern nint SwiftFunc3(F3 a0);
 
+    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static unsafe void TestFuncWithSingleElementInlineArray()
     {
@@ -163,6 +168,7 @@ public class SwiftInlineArray
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftInlineArray10swiftFunc42a0SiAA2F4V_tF")]
     private static extern nint SwiftFunc4(F4 a0);
 
+    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static unsafe void TestFuncWithStaticFields()
     {

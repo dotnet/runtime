@@ -16,6 +16,7 @@ using Microsoft.Diagnostics.Tools.RuntimeClient;
 using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
 using Xunit;
+using TestLibrary;
 
 namespace Tracing.Tests.ProcessInfoValidation
 {
@@ -90,6 +91,7 @@ namespace Tracing.Tests.ProcessInfoValidation
             return normalizedCommandLine;
         }
 
+        [ActiveIssue("Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient and system.diagnostics.process not supported", TestPlatforms.Browser)]
         [Fact]
         public static void TestEntryPoint()
         {

@@ -16,6 +16,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 // using System.Numerics;
 using Xunit;
+using TestLibrary;
 
 public class C1
 {
@@ -42,6 +43,7 @@ public struct S3
 
 public class Runtime_115979
 {
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static int Test()
     {

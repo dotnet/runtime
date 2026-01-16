@@ -12,6 +12,7 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 public class Burgers
 {
@@ -163,6 +164,7 @@ public class Burgers
         return un;
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/54358", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
     [Fact]
     public static int TestEntryPoint()
     {

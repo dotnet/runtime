@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 namespace CollectibleThreadStaticShutdownRace
 {
@@ -111,6 +112,7 @@ namespace CollectibleThreadStaticShutdownRace
 
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void TestEntryPoint()
         {

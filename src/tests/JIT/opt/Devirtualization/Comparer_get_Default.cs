@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 public class Program
 {
@@ -148,6 +149,7 @@ public class Program
     private static void Compare_Generic_Enum<TEnum>(TEnum a, TEnum b) where TEnum : Enum =>
         AssertEquals(a.CompareTo(b), Comparer<TEnum>.Default.Compare(a, b), $"({PrintBits(a)}; {PrintBits(b)}): ");
 
+    [ActiveIssue("", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMFULLAOT))]
     [Fact]
     public static int TestEntryPoint()
     {

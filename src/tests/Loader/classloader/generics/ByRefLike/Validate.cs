@@ -8,9 +8,11 @@ using System.Runtime.InteropServices;
 using InvalidCSharp;
 
 using Xunit;
+using TestLibrary;
 
 public class Validate
 {
+    [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void Validate_Activation()
     {
@@ -22,6 +24,7 @@ public class Validate
         Assert.Equal("System.ReadOnlySpan<String>[0]", Activator.CreateInstance<ReadOnlySpan<string>>().ToString());
     }
 
+    [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void Validate_TypeLoad()
     {
@@ -42,6 +45,7 @@ public class Validate
         Assert.Throws<TypeLoadException>(() => { Exec.GenericByRefLike_ConstraintsAreIndependent_ByRefLike_ByRefLike_Invalid(); });
     }
 
+    [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void Validate_Casting_Scenarios()
     {
@@ -74,6 +78,7 @@ public class Validate
 
     sealed class Ignored { }
 
+    [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void Validate_RecognizedOpCodeSequences()
     {
@@ -119,6 +124,7 @@ public class Validate
         Assert.Equal(-1, Exec.ConstrainedCallVirtMethod<RS_DI2>(new RS_DI2(), skipCall: true));
     }
 
+    [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void Validate_RecognizedOpCodeSequences_Mismatch()
     {
@@ -129,6 +135,7 @@ public class Validate
         Assert.Throws<InvalidProgramException>(() => { Exec.BoxIsinstUnboxAny_Mismatch(); });
     }
 
+    [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void Validate_InvalidOpCode_Scenarios()
     {
@@ -151,6 +158,7 @@ public class Validate
         // Assert.Throws<InvalidProgramException>(() => { Exec.ConstrainedCallVirtMethod<RS_DI1>(new RS_DI1(), skipCall: true); });
     }
 
+    [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void Validate_Inlining_Behavior()
     {
@@ -162,6 +170,7 @@ public class Validate
         Assert.True(Exec.TypeLoadExceptionAvoidsInline(false));
     }
 
+    [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     // [Fact]
     public static void Validate_MemberDiscoveryViaReflection_ForSpanReadOnlySpan()
     {

@@ -1,6 +1,7 @@
 using System;
 using System.Runtime;
 using Xunit;
+using TestLibrary;
 
 public class Test
 {
@@ -132,6 +133,7 @@ public class Test
         return isCurrentTestPassed;
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     [Fact]
     public static int TestEntryPoint()
     {

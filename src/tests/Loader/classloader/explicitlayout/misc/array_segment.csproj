@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="array_segment.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

@@ -10,4 +10,7 @@
 
     <CLRTestEnvironmentVariable Include="DOTNET_MultiCoreJitProfileWriteDelay" Value="1" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

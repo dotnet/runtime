@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 namespace BasicEventSourceTests
 {
@@ -147,6 +148,7 @@ namespace BasicEventSourceTests
             return successCountCalled;
         }
 
+        [ActiveIssue(" needs triage ", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
         [Fact]
         public static int TestEntryPoint()
         {

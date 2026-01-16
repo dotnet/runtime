@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Swift;
 using System.Numerics;
 using Xunit;
+using TestLibrary;
 
 public class InvalidCallingConvTests
 {
@@ -41,6 +42,7 @@ public class InvalidCallingConvTests
     [DllImport(SwiftLib, EntryPoint = "$s20SwiftInvalidCallConv10simpleFuncyyF")]
     public static extern void FuncWithSIMDArg(Vector4 vec);
 
+    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestFuncWithTwoSelfParameters()
     {
@@ -49,6 +51,7 @@ public class InvalidCallingConvTests
         Assert.Throws<InvalidProgramException>(() => FuncWithTwoSelfParameters(self, self));
     }
 
+    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestFuncWithTwoErrorParameters()
     {
@@ -57,6 +60,7 @@ public class InvalidCallingConvTests
         Assert.Throws<InvalidProgramException>(() => FuncWithTwoErrorParameters(ref error, ref error));
     }
 
+    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestFuncWithMixedParameters()
     {
@@ -66,6 +70,7 @@ public class InvalidCallingConvTests
         Assert.Throws<InvalidProgramException>(() => FuncWithMixedParameters(self, self, ref error, ref error));
     }
 
+    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestFuncWithSwiftErrorAsArg()
     {
@@ -74,6 +79,7 @@ public class InvalidCallingConvTests
         Assert.Throws<InvalidProgramException>(() => FuncWithSwiftErrorAsArg(error));
     }
 
+    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestFuncWithNonPrimitiveArg()
     {
@@ -83,6 +89,7 @@ public class InvalidCallingConvTests
         Assert.Throws<InvalidProgramException>(() => FuncWithNonPrimitiveArg(arg1));
     }
 
+    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestFuncWithSIMDArg()
     {

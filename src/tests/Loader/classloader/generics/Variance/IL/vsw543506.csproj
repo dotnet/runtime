@@ -6,6 +6,9 @@
     <Compile Include="vsw543506.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="varlib.ilproj" />
   </ItemGroup>
 </Project>

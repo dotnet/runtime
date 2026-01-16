@@ -1,3 +1,4 @@
+using TestLibrary;
 extern alias tests_d;
 extern alias tests_r;
 
@@ -19,6 +20,7 @@ using Xunit;
 
 public unsafe class DebugInfoTest
 {
+    [ActiveIssue("Just-in-time compilation test", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static unsafe int TestEntryPoint()
     {

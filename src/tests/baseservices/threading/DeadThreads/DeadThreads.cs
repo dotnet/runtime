@@ -5,6 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 public class DeadThreads
 {
@@ -16,6 +17,7 @@ public class DeadThreads
     ///     set DOTNET_Thread_DeadThreadCountThresholdForGCTrigger=8
     ///     set DOTNET_Thread_DeadThreadGCTriggerPeriodMilliseconds=3e8 // 1000
     /// </summary>
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void GCTriggerSanityTest()
     {

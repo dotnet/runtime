@@ -12,6 +12,9 @@
     <Compile Include="dlstack.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="DoubLinkList.csproj" />
   </ItemGroup>
 </Project>

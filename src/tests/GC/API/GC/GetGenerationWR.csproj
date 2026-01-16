@@ -9,4 +9,7 @@
   <ItemGroup>
     <Compile Include="GetGenerationWR.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

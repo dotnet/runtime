@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*
+using TestLibrary;
 Test_Class_ImplicitOverrideVirtualNewslot the following matrix for classes with virtual newslot methods (implicit override):
 
 Non-Generic virtual methods:
@@ -272,6 +273,7 @@ public class Test_Class_ImplicitOverrideVirtualNewslot
 
 
 	
+ [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
 	[Fact]
 	public static int TestEntryPoint()
 	{

@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 public delegate void MyCallback();
 
@@ -86,6 +87,7 @@ public class ForeignThreadExceptionsTest
         }
     }
 
+    [ActiveIssue("llvmfullaot: EH problem", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -6,10 +6,12 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 public class Test_VSW576621
 
 {
+   [ActiveIssue("https://github.com/dotnet/runtime/issues/111991", typeof(Utilities), nameof(Utilities.IsNativeAot))]
    [Fact]
    public static int TestEntryPoint()
    {

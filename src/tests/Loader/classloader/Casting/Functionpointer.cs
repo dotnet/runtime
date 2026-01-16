@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 namespace TestFunctionPointer
 {
@@ -39,6 +40,7 @@ namespace TestFunctionPointer
 
     public unsafe class Program
     {
+        [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
         [Fact]
         public static int TestEntryPoint()
         {

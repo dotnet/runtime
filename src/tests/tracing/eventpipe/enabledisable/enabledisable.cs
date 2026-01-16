@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Xunit;
+using TestLibrary;
 
 namespace Tracing.Tests.EnableDisableValidation
 {
@@ -56,6 +57,7 @@ namespace Tracing.Tests.EnableDisableValidation
 
     public class EnableDisableValidation
     {
+        [ActiveIssue(" needs triage ", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
         [Fact]
         public static int TestEntryPoint()
         {

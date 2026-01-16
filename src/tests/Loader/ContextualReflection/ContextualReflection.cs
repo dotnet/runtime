@@ -11,6 +11,7 @@ using System.Runtime.Loader;
 using System.Runtime.Remoting;
 using System.Threading.Tasks;
 using Xunit;
+using TestLibrary;
 
 namespace ContextualReflectionTest
 {
@@ -31,6 +32,7 @@ namespace ContextualReflectionTest
         public IProgram alcProgramInstance { get; set; }
         public Assembly defaultAssembly { get; set; }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/165", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void TestEntryPoint()
         {

@@ -10,6 +10,7 @@ using System.Runtime.Serialization.Json;
 using System.Text;
 using Newtonsoft.Json.Bson;
 using Xunit;
+using TestLibrary;
 
 namespace Serialization
 {
@@ -150,6 +151,7 @@ public class JsonBenchmarks
         }
     }
 
+    [ActiveIssue("Needs xunit.performance", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static int TestEntryPoint() {
         var tests = new JsonBenchmarks();

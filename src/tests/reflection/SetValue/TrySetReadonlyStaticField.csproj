@@ -7,4 +7,7 @@
   <ItemGroup>
     <Compile Include="TrySetReadonlyStaticField.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

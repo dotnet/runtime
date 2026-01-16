@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 public class Program
 {
@@ -27,6 +28,7 @@ public class Program
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static int TestEntryPoint()
     {

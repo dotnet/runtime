@@ -9,6 +9,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 class Foo3 : Foo2, IFoo
 {
@@ -20,6 +21,7 @@ class Bar3<T> : Bar2<T>, IBar<T>
 
 public class MainClass
 {
+ [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
 	[Fact]
 	public static int TestEntryPoint()
 	{

@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 using Xunit;
+using TestLibrary;
 
 namespace TestUnhandledExceptionTester
 {
@@ -165,6 +166,7 @@ namespace TestUnhandledExceptionTester
             Console.WriteLine("Test process exited with expected error code and produced expected output");
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/80356", typeof(PlatformDetection), nameof(PlatformDetection.IsOSX), nameof(PlatformDetection.IsX64Process))]
         [Fact]
         public static void TestEntryPoint()
         {

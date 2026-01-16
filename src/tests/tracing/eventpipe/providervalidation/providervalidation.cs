@@ -12,6 +12,7 @@ using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
 using Microsoft.Diagnostics.NETCore.Client;
 using Xunit;
+using TestLibrary;
 
 namespace Tracing.Tests.ProviderValidation
 {
@@ -24,6 +25,7 @@ namespace Tracing.Tests.ProviderValidation
 
     public class ProviderValidation
     {
+        [ActiveIssue("WASM doesn't support diagnostics tracing", TestPlatforms.Browser)]
         [Fact]
         public static int TestEntryPoint()
         {

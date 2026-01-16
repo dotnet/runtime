@@ -8,6 +8,7 @@ using System.Text;
 using Xunit;
 
 using static StringMarshalingTestNative;
+using TestLibrary;
 
 [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public partial class StringInStructTests
@@ -20,6 +21,7 @@ public partial class StringInStructTests
         Assert.True(MatchFunctionNameInStruct(new StringInStruct { str = nameof(MatchFunctionNameInStruct)}));
     }
 
+    [ActiveIssue("Crashes during LLVM AOT compilation.", TestRuntimes.Mono)]
     [Fact]
     public static void ByRef()
     {

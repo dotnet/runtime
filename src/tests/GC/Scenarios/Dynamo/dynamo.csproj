@@ -16,4 +16,7 @@
     <Compile Include="randomnode.cs" />
     <Compile Include="staticnode.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

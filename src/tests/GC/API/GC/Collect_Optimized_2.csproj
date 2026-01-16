@@ -13,4 +13,7 @@
   <ItemGroup>
     <Compile Include="Collect_Optimized.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

@@ -4,6 +4,7 @@
 // Regression test for VSW 543506
 /*
 
+using TestLibrary;
 Testing that generic argument types for co/contravariant generic types are boxed
 (VSW 543506)
 Test_vsw543506: under Loader\ClassLoader\Generics\Variance\IL
@@ -102,6 +103,7 @@ public class Test_vsw543506
 
    	
 
+   [ActiveIssue("Doesn't compile with LLVM AOT.", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMiniJIT), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsNotWindows))]
   	[Fact]
   	public static int TestEntryPoint() 
 	{

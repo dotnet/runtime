@@ -6,11 +6,13 @@ using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 namespace projs
 {
     public class Program
     {
+        [ActiveIssue("needs triage", TestPlatforms.Android)]
         [Fact]
         public static void TestEntryPoint()
         {

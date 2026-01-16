@@ -12,6 +12,7 @@ using System.Text.RegularExpressions;
 using Tracing.Tests.Common;
 using Microsoft.Diagnostics.NETCore.Client;
 using Xunit;
+using TestLibrary;
 
 namespace Tracing.Tests.BufferValidation
 {
@@ -24,6 +25,7 @@ namespace Tracing.Tests.BufferValidation
 
     public class BufferValidation
     {
+        [ActiveIssue("Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient", TestPlatforms.Browser)]
         [Fact]
         public static int TestEntryPoint()
         {

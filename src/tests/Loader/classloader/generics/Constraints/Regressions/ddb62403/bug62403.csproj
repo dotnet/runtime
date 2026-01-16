@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="bug62403.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

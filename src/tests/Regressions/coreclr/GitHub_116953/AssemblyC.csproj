@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="ClassC.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

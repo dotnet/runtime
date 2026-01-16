@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 namespace Threading.Tests
 {
@@ -13,6 +14,7 @@ namespace Threading.Tests
         private static ManualResetEvent s_resetEvent = new ManualResetEvent(false);
         private static ulong[] s_threadIds = new ulong[NumThreads];
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Fact]
         public static void TestEntryPoint()
         {

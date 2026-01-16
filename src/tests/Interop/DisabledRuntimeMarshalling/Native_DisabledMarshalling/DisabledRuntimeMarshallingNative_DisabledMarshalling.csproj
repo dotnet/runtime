@@ -8,4 +8,7 @@
     <Compile Include="../DisabledRuntimeMarshallingNative.cs" />
     <Compile Include="../RuntimeMarshallingDisabledAttribute.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

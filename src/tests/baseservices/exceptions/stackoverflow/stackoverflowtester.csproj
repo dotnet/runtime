@@ -11,4 +11,7 @@
   <ItemGroup>
     <Compile Include="stackoverflowtester.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

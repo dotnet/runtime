@@ -5,6 +5,7 @@ using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 public static class SeekUnroll
 {
@@ -96,6 +97,7 @@ public static class SeekUnroll
     // Set of indices to pass to Test(int)
     static int[] IndicesToTest = new int[] { 1, 3, 11, 19, 27 };
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static int TestEntryPoint()
     {

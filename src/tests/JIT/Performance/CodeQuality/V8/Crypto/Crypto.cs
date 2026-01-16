@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 /*
+using TestLibrary;
  * Copyright (c) 2003-2005  Tom Wu
  * All Rights Reserved.
  *
@@ -49,6 +50,7 @@ namespace V8.Crypto
     {
         private const string INPUT = "The quick brown fox jumped over the extremely lazy frogs!";
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Fact]
         public static int TestEntryPoint()
         {

@@ -10,4 +10,7 @@
 
     <CLRTestEnvironmentVariable Include="DOTNET_TC_QuickJit" Value="1" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

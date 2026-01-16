@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using InvalidCSharp;
+using TestLibrary;
 
 [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public unsafe class Program
@@ -51,6 +52,7 @@ public unsafe class Program
         Assert.Equal(-1, UnmanagedCallersOnlyDll.CallManagedProcCatchException((IntPtr)(delegate* unmanaged<int, int>)&CallbackThrows, n));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void NegativeTest_NonStaticMethod()
     {
@@ -67,6 +69,7 @@ public unsafe class Program
         return -1;
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void NegativeTest_NonBlittable()
     {
@@ -80,6 +83,7 @@ public unsafe class Program
         Assert.Throws<InvalidProgramException>(() => { UnmanagedCallersOnlyDll.CallManagedProc(UnmanagedCallersOnlyWithByRefs.GetWithByRefOutFunctionPointer(), n); });
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void NegativeTest_InstantiatedGenericArguments()
     {
@@ -90,6 +94,7 @@ public unsafe class Program
         Assert.Throws<InvalidProgramException>(() => { UnmanagedCallersOnlyDll.CallManagedProc((IntPtr)(delegate* unmanaged<int, int>)&Callbacks.CallbackMethodGeneric<int>, n); });
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void NegativeTest_FromInstantiatedGenericClass()
     {
@@ -106,6 +111,7 @@ public unsafe class Program
         return DoubleImpl(val);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void TestUnmanagedCallersOnlyViaUnmanagedCalli()
     {
@@ -142,6 +148,7 @@ public unsafe class Program
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void TestPInvokeMarkedWithUnmanagedCallersOnly()
     {
@@ -159,6 +166,7 @@ public unsafe class Program
         Assert.Throws<NotSupportedException>(() => ((delegate* unmanaged<int, int>)&CallingUnmanagedCallersOnlyDirectly.PInvokeMarkedWithUnmanagedCallersOnly)(n));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void TestUnmanagedCallersOnlyWithGeneric()
     {
@@ -174,6 +182,7 @@ public unsafe class Program
             => ((delegate* unmanaged<nint, int>)(void*)(delegate* unmanaged<MaybeBlittable<object>, int>)&InvalidGenericUnmanagedCallersOnlyParameters.GenericStructWithObjectField)((nint)1));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     [SkipOnMono("Mono doesn't support runtime async and doesn't check the async bit.")]
     public static void TestUnmanagedCallersOnlyWithRuntimeAsync()

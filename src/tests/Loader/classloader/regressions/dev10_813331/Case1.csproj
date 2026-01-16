@@ -9,6 +9,9 @@
     <Compile Include="Case1.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="Library1.csproj" />
   </ItemGroup>
 </Project>

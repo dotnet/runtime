@@ -9,4 +9,7 @@
   <ItemGroup>
     <Compile Include="CollectionCountTest.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

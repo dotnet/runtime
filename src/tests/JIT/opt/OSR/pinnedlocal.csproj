@@ -10,4 +10,7 @@
 
     <CLRTestEnvironmentVariable Include="DOTNET_GCStress" Value="3" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

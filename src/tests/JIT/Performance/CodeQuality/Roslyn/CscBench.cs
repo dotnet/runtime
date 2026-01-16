@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 public static class CscBench
 {
@@ -136,6 +137,7 @@ public class C {
         return result;
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/57352", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static int TestEntryPoint()
     {

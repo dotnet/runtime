@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*
+using TestLibrary;
 This test is for VSW 523654.
 
 Before the fix we were doing the following:
@@ -113,6 +114,7 @@ public class Test_test532654_b
 	}
 
 
+ [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
 	[Fact]
 	public static int TestEntryPoint()
 	{
