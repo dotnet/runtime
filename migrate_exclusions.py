@@ -446,6 +446,9 @@ def find_source_files(directory: str, project_name_hint: str = None) -> Tuple[Li
     """
     Find source files (.cs, .il) when no project files exist.
     Returns (cs_files, il_files) tuple.
+    
+    For IL files with suffixes (_d, _r, _ro, _do), also includes the base IL file
+    since the suffixed variants typically include the base file.
     """
     cs_files = []
     il_files = []
@@ -739,6 +742,31 @@ def migrate_exclusion(exclusion: ExclusionItem, repo_root: str, dry_run: bool = 
         print(f"  No project files found, looking for source files...")
         cs_files, il_files = find_source_files(resolved_path, project_name_hint)
         
+        # For IL files with suffixes, also include the base IL file
+        # since the suffixed variants typically include the base file
+        if il_files:
+            base_il_files_to_add = []
+            for il_file in il_files:
+                il_name = os.path.basename(il_file)
+                il_name_no_ext = os.path.splitext(il_name)[0]
+                
+                # Check if this IL file has a suffix
+                base_name = None
+                if il_name_no_ext.endswith('_d') or il_name_no_ext.endswith('_r'):
+                    base_name = il_name_no_ext[:-2]
+                elif il_name_no_ext.endswith('_ro') or il_name_no_ext.endswith('_do'):
+                    base_name = il_name_no_ext[:-3]
+                
+                # If we found a base name, look for the base IL file
+                if base_name:
+                    il_dir = os.path.dirname(il_file)
+                    base_il_path = os.path.join(il_dir, base_name + '.il')
+                    if os.path.exists(base_il_path) and base_il_path not in il_files:
+                        base_il_files_to_add.append(base_il_path)
+            
+            # Add the base IL files
+            il_files.extend(base_il_files_to_add)
+        
         if cs_files or il_files:
             print(f"  Found source file(s):")
             for cf in cs_files:
@@ -836,6 +864,29 @@ def migrate_exclusion(exclusion: ExclusionItem, repo_root: str, dry_run: bool = 
                         cs_files.append(full_path)
                     elif file.endswith('.il') and os.path.isfile(full_path):
                         il_files.append(full_path)
+            
+            # For IL files with suffixes, also include the base IL file
+            # since the suffixed variants typically include the base file
+            base_il_files_to_add = []
+            for il_file in il_files:
+                il_name = os.path.basename(il_file)
+                il_name_no_ext = os.path.splitext(il_name)[0]
+                
+                # Check if this IL file has a suffix
+                base_name = None
+                if il_name_no_ext.endswith('_d') or il_name_no_ext.endswith('_r'):
+                    base_name = il_name_no_ext[:-2]
+                elif il_name_no_ext.endswith('_ro') or il_name_no_ext.endswith('_do'):
+                    base_name = il_name_no_ext[:-3]
+                
+                # If we found a base name, look for the base IL file
+                if base_name:
+                    base_il_path = os.path.join(project_dir, base_name + '.il')
+                    if os.path.exists(base_il_path) and base_il_path not in il_files:
+                        base_il_files_to_add.append(base_il_path)
+            
+            # Add the base IL files
+            il_files.extend(base_il_files_to_add)
                         
         except Exception as e:
             print(f"  Warning: Could not parse project file: {e}")
