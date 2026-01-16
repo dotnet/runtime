@@ -7,7 +7,7 @@ import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, 
 import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_NODE } from "./per-module";
 import { createPromiseCompletionSource, delay } from "./promise-completion-source";
 import { locateFile, makeURLAbsoluteWithApplicationBase } from "./bootstrap";
-import { fetchLike } from "./polyfills";
+import { fetchLike, responseLike } from "./polyfills";
 import { loaderConfig } from "./config";
 
 let throttlingPCS: PromiseCompletionSource<void> | undefined;
@@ -264,22 +264,17 @@ async function loadResourceThrottle(asset: AssetEntryInternal): Promise<Response
 }
 
 async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
+    const expectedContentType = asset.behavior === "dotnetwasm" ? "application/wasm" : "application/octet-stream";
     if (asset.buffer) {
-        return <Response><any>{
-            ok: true,
+        const arrayBuffer = await asset.buffer;
+        return responseLike(asset.resolvedUrl!, arrayBuffer, {
+            status: 200,
+            statusText: "OK",
             headers: {
-                length: 0,
-                get: () => null
-            },
-            url: asset.resolvedUrl,
-            arrayBuffer: () => Promise.resolve(asset.buffer!),
-            json: () => {
-                throw new Error("NotImplementedException");
-            },
-            text: () => {
-                throw new Error("NotImplementedException");
+                "Content-Length": arrayBuffer.byteLength.toString(),
+                "Content-Type": expectedContentType,
             }
-        };
+        });
     }
     if (asset.pendingDownload) {
         return asset.pendingDownload.response;
@@ -317,7 +312,7 @@ async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
         }
     }
 
-    return fetchLike(asset.resolvedUrl!, fetchOptions);
+    return fetchLike(asset.resolvedUrl!, fetchOptions, expectedContentType);
 }
 
 function onDownloadedAsset() {

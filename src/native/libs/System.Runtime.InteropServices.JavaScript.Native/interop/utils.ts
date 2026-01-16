@@ -61,3 +61,14 @@ export function endMeasure(start: TimeStamp, block: string, id?: string) {
         globalThis.performance.measure(name, options);
     }
 }
+
+let textDecoderUtf8Relaxed: TextDecoder | undefined = undefined;
+export function utf8ToStringRelaxed(buffer: Uint8Array): string {
+    if (textDecoderUtf8Relaxed === undefined) {
+        textDecoderUtf8Relaxed = new TextDecoder("utf-8", { fatal: false });
+    }
+    // TODO-WASM: When threading is enabled, TextDecoder does not accept a view of a
+    // SharedArrayBuffer, we must make a copy of the array first.
+    // See https://github.com/whatwg/encoding/issues/172
+    return textDecoderUtf8Relaxed.decode(buffer);
+}

@@ -6,7 +6,7 @@ import type {
     EmscriptenModuleInternal, InternalExchange, InternalExchangeSubscriber,
     RuntimeAPI, LoaderExports, BrowserUtilsExports, RuntimeExports,
     VoidPtr, JSMarshalerArguments, CSFnHandle, TypedArray,
-    MemOffset
+    MemOffset, CharPtrPtr
 } from "../types";
 
 // we want to use the cross-module symbols defined in closure of dotnet.native.js
@@ -27,7 +27,8 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     _GetDotNetRuntimeContractDescriptor: () => void;
     _SystemJS_ExecuteTimerCallback: () => void;
     _SystemJS_ExecuteBackgroundJobCallback: () => void;
-    _BrowserHost_InitializeCoreCLR: () => number;
+    _BrowserHost_CreateHostContract: () => VoidPtr;
+    _BrowserHost_InitializeCoreCLR: (propertiesCount: number, propertyKeys: CharPtrPtr, propertyValues: CharPtrPtr) => number;
     _BrowserHost_ExecuteAssembly: (mainAssemblyNamePtr: number, argsLength: number, argsPtr: number) => number;
     _wasm_load_icu_data: (dataPtr: VoidPtr) => number;
     _SystemInteropJS_GetManagedStackTrace: (args: JSMarshalerArguments) => void;
@@ -36,6 +37,7 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     _SystemInteropJS_ReleaseJSOwnedObjectByGCHandle: (args: JSMarshalerArguments) => void;
     _SystemInteropJS_BindAssemblyExports: (args: JSMarshalerArguments) => void;
     _SystemInteropJS_CallJSExport: (methodHandle: CSFnHandle, args: JSMarshalerArguments) => void;
+    _runBackgroundTicks: () => void;
 
     FS: {
         createPath: (parent: string, path: string, canRead?: boolean, canWrite?: boolean) => string;

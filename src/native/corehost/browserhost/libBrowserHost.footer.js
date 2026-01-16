@@ -22,7 +22,7 @@
         let commonDeps = [
             "$DOTNET", "$DOTNET_INTEROP", "$ENV", "$FS", "$NODEFS",
             "$libBrowserHostFn",
-            "wasm_load_icu_data", "BrowserHost_InitializeCoreCLR", "BrowserHost_ExecuteAssembly"
+            "wasm_load_icu_data", "BrowserHost_CreateHostContract", "BrowserHost_InitializeCoreCLR", "BrowserHost_ExecuteAssembly"
         ];
         const lib = {
             $BROWSER_HOST: {
@@ -35,28 +35,18 @@
                         exports.dotnetInitializeModule(dotnetInternals);
                         BROWSER_HOST.assignExports(exports, BROWSER_HOST);
 
-                        const HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES = "TRUSTED_PLATFORM_ASSEMBLIES";
-                        const HOST_PROPERTY_ENTRY_ASSEMBLY_NAME = "ENTRY_ASSEMBLY_NAME";
-                        const HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES = "NATIVE_DLL_SEARCH_DIRECTORIES";
-                        const HOST_PROPERTY_APP_PATHS = "APP_PATHS";
-
-                        const config = dotnetInternals[2/*InternalExchangeIndex.LoaderConfig*/];
-                        if (!config.resources.assembly ||
-                            !config.resources.coreAssembly ||
-                            config.resources.coreAssembly.length === 0 ||
-                            !config.mainAssemblyName ||
-                            !config.virtualWorkingDirectory ||
-                            !config.environmentVariables) {
+                        const loaderConfig = dotnetInternals[2/*InternalExchangeIndex.LoaderConfig*/];
+                        if (!loaderConfig.resources.assembly ||
+                            !loaderConfig.resources.coreAssembly ||
+                            loaderConfig.resources.coreAssembly.length === 0 ||
+                            !loaderConfig.mainAssemblyName ||
+                            !loaderConfig.virtualWorkingDirectory ||
+                            !loaderConfig.environmentVariables) {
                             throw new Error("Invalid runtime config, cannot initialize the runtime.");
                         }
-                        const assemblyPaths = config.resources.assembly.map(a => "/" + a.virtualPath);
-                        const coreAssemblyPaths = config.resources.coreAssembly.map(a => "/" + a.virtualPath);
-                        config.environmentVariables[HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES] = [...coreAssemblyPaths, ...assemblyPaths].join(":");
-                        config.environmentVariables[HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES] = config.virtualWorkingDirectory;
-                        config.environmentVariables[HOST_PROPERTY_APP_PATHS] = config.virtualWorkingDirectory;
-                        config.environmentVariables[HOST_PROPERTY_ENTRY_ASSEMBLY_NAME] = config.mainAssemblyName;
-                        for (const key in config.environmentVariables) {
-                            ENV[key] = config.environmentVariables[key];
+
+                        for (const key in loaderConfig.environmentVariables) {
+                            ENV[key] = loaderConfig.environmentVariables[key];
                         }
 
                         if (ENVIRONMENT_IS_NODE) {
