@@ -269,6 +269,7 @@ namespace System.Buffers.Text
 
             static OperationStatus InvalidDataFallback(TBase64Decoder decoder, ReadOnlySpan<T> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock)
             {
+                ReadOnlySpan<T> originalSource = source;
                 source = source.Slice(bytesConsumed);
                 bytes = bytes.Slice(bytesWritten);
 
@@ -297,6 +298,7 @@ namespace System.Buffers.Text
                     }
 
                     // Skip over the starting whitespace and continue.
+                    int whitespaceConsumed = localConsumed;
                     bytesConsumed += localConsumed;
                     source = source.Slice(localConsumed);
 
@@ -306,6 +308,16 @@ namespace System.Buffers.Text
                     bytesWritten += localWritten;
                     if (status is not OperationStatus.InvalidData)
                     {
+                        // If we got DestinationTooSmall but wrote nothing, the issue might be trailing whitespace
+                        // or that the destination is too small to process even one block with the current approach.
+                        // Fall back to block-wise decoding which strips whitespace.
+                        if (status == OperationStatus.DestinationTooSmall && localWritten == 0 && localConsumed == 0)
+                        {
+                            // Reset and use the original source for blockwise decoding
+                            bytesConsumed = 0;
+                            bytesWritten = 0;
+                            return decoder.DecodeWithWhiteSpaceBlockwiseWrapper(decoder, originalSource, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
+                        }
                         break;
                     }
 
