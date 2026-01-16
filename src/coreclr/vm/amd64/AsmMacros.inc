@@ -495,22 +495,8 @@ POP_COOP_PINVOKE_FRAME macro
 ;   Outgoing argument homes (32 bytes)
 ;   FloatArgumentRegisters (xmm0-xmm3, 64 bytes)
 ;   FP Callee-saved registers (xmm6-xmm15, 160 bytes)
+;   Shadow space for call (32 bytes)
 ;   sp points here
-;
-; Stack alignment: After call (8) + callee-saved pushes (64) + alloc (256) = 328 bytes
-; 328 mod 16 = 8, so RSP mod 16 = 8 after alloc - NOT 16-byte aligned.
-; We need RSP to be 16-byte aligned for movaps AND unwind offsets must be multiples of 16.
-;
-; Solution: Use alloc_stack 272 (adds 16 bytes padding). 8 + 64 + 272 = 344, 344 mod 16 = 8.
-; Wait, that's still not right. Let me recalculate:
-; After call: RSP mod 16 = 8 (return addr pushed from 16-byte aligned stack)
-; After 8 pushes (64 bytes): RSP mod 16 = (8 + 64) mod 16 = 72 mod 16 = 8
-; After alloc N: RSP mod 16 = (8 + N) mod 16
-; For RSP mod 16 = 0, need N mod 16 = 8
-; 256 mod 16 = 0, so RSP mod 16 = 8 (NOT aligned)
-; 264 mod 16 = 8, so RSP mod 16 = 0 (aligned!) but offsets 0,16,32... work
-;
-; With alloc_stack 296: RSP is 16-byte aligned, XMM saves at 32, 48, 64, ... (multiples of 16)
 ;
 ; On exit, target contains the TransitionBlock pointer (CalleeSavedRegisters).
 PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS macro target

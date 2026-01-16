@@ -43,10 +43,6 @@
 #include "gdbjit.h"
 #endif // FEATURE_GDBJIT
 
-#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
-#include <xmmintrin.h>
-#endif
-
 #ifndef DACCESS_COMPILE
 
 EXTERN_C void STDCALL ThePreStubPatch();

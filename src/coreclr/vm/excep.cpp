@@ -10768,13 +10768,6 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     m_Context.SegSs = 0;
     m_Context.EFlags = 0;
 
-    // Argument registers are not saved in the transition block
-    m_Context.Rax = 0;
-    m_Context.Rcx = 0;
-    m_Context.Rdx = 0;
-    m_Context.R8 = 0;
-    m_Context.R9 = 0;
-
     // Read FP callee-saved registers (xmm6-xmm15) from the stack
     // They are stored at negative offsets from TransitionBlock:
     // Layout: [shadow (32)] [xmm6-xmm15 (160)] [xmm0-xmm3 (64)] [arg regs (32)] [padding (8)] [CalleeSavedRegs] [RetAddr]
@@ -10852,11 +10845,6 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
         m_Context.D[8 + i] = pFpCalleeSaved[i];
     }
 
-    // Initialize remaining D registers (D16-D31) to zero - these are caller-saved
-    for (int i = 16; i < 32; i++)
-    {
-        m_Context.D[i] = 0;
-    }
     // Initialize FP status/control register
     m_Context.Fpscr = 0;
 
