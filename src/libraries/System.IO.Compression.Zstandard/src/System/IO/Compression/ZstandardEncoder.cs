@@ -256,11 +256,6 @@ namespace System.IO.Compression
 
                     if (ZstandardUtils.IsError(result, out var error))
                     {
-                        if (ZstandardEventSource.Log.IsEnabled())
-                        {
-                            ZstandardEventSource.Error(_context, error);
-                        }
-
                         if (error == Interop.Zstd.ZSTD_error.srcSize_wrong)
                         {
                             return OperationStatus.InvalidData;
@@ -296,13 +291,8 @@ namespace System.IO.Compression
             ArgumentOutOfRangeException.ThrowIfGreaterThan(inputLength, nint.MaxValue);
 
             nuint result = Interop.Zstd.ZSTD_compressBound((nuint)inputLength);
-            if (ZstandardUtils.IsError(result, out var error))
+            if (ZstandardUtils.IsError(result))
             {
-                if (ZstandardEventSource.Log.IsEnabled())
-                {
-                    ZstandardEventSource.Error(null, error);
-                }
-
                 throw new ArgumentOutOfRangeException(nameof(inputLength));
             }
 
@@ -385,11 +375,6 @@ namespace System.IO.Compression
 
                     if (ZstandardUtils.IsError(result, out var error))
                     {
-                        if (ZstandardEventSource.Log.IsEnabled())
-                        {
-                            ZstandardEventSource.Error(null, error);
-                        }
-
                         return false;
                     }
 
@@ -427,11 +412,6 @@ namespace System.IO.Compression
 
             if (ZstandardUtils.IsError(result, out var error))
             {
-                if (ZstandardEventSource.Log.IsEnabled())
-                {
-                    ZstandardEventSource.Error(_context, error);
-                }
-
                 ZstandardUtils.Throw(error);
             }
         }
@@ -458,11 +438,6 @@ namespace System.IO.Compression
 
             if (ZstandardUtils.IsError(Interop.Zstd.ZSTD_CCtx_setPledgedSrcSize(_context, (ulong)length), out var error))
             {
-                if (error != Interop.Zstd.ZSTD_error.no_error && ZstandardEventSource.Log.IsEnabled())
-                {
-                    ZstandardEventSource.Error(_context, error);
-                }
-
                 ZstandardUtils.Throw(error);
             }
         }

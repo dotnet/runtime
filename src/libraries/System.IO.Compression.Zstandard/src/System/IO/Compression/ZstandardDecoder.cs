@@ -164,12 +164,18 @@ namespace System.IO.Compression
 
                     if (ZstandardUtils.IsError(result, out var error))
                     {
-                        if (ZstandardEventSource.Log.IsEnabled())
+                        switch (error)
                         {
-                            ZstandardEventSource.Error(_context, error);
-                        }
+                            // These specific errors are actionable by the caller and don't imply
+                            // that the data itself is corrupt.
+                            case Interop.Zstd.ZSTD_error.frameParameter_windowTooLarge:
+                            case Interop.Zstd.ZSTD_error.dictionary_wrong:
+                                ZstandardUtils.Throw(error);
+                                break;
 
-                        return OperationStatus.InvalidData;
+                            default:
+                                return OperationStatus.InvalidData;
+                        }
                     }
 
                     bytesConsumed = (int)input.pos;
@@ -250,10 +256,6 @@ namespace System.IO.Compression
 
                     if (ZstandardUtils.IsError(result, out var error))
                     {
-                        if (ZstandardEventSource.Log.IsEnabled())
-                        {
-                            ZstandardEventSource.Error(null, error);
-                        }
                         return false;
                     }
 
@@ -299,10 +301,6 @@ namespace System.IO.Compression
 
                     if (ZstandardUtils.IsError(result, out var error))
                     {
-                        if (ZstandardEventSource.Log.IsEnabled())
-                        {
-                            ZstandardEventSource.Error(null, error);
-                        }
                         return false;
                     }
 
@@ -340,11 +338,6 @@ namespace System.IO.Compression
 
             if (ZstandardUtils.IsError(result, out var error))
             {
-                if (ZstandardEventSource.Log.IsEnabled())
-                {
-                    ZstandardEventSource.Error(_context, error);
-                }
-
                 ZstandardUtils.Throw(error);
             }
         }

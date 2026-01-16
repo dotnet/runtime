@@ -51,6 +51,12 @@
   <data name="ZstandardStream_Decompress_TruncatedData" xml:space="preserve">
     <value>Found truncated data while decoding.</value>
   </data>
+  <data name="ZstandardDecoder_WindowTooLarge" xml:space="preserve">
+    <value>Data requires too much memory for decoding. Consider increasing the 'maxWindowLog' parameter.</value>
+  </data>
+  <data name="ZstandardDecoder_DictionaryWrong" xml:space="preserve">
+    <value>The provided dictionary is not valid for decoding the current data.</value>
+  </data>
   <data name="ZstandardStream_Decompress_InvalidData" xml:space="preserve">
     <value>Decoder encountered invalid data.</value>
   </data>

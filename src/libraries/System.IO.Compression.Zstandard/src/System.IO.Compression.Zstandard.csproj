@@ -23,7 +23,6 @@
     <Compile Include="System\IO\Compression\ZstandardDecoder.cs" />
     <Compile Include="System\IO\Compression\ZstandardDictionary.cs" />
     <Compile Include="System\IO\Compression\ZstandardEncoder.cs" />
-    <Compile Include="System\IO\Compression\ZstandardEventSource.cs" />
     <Compile Include="System\IO\Compression\ZstandardStream.Compress.cs" />
     <Compile Include="System\IO\Compression\ZstandardStream.Decompress.cs" />
     <Compile Include="System\IO\Compression\ZstandardStream.cs" />

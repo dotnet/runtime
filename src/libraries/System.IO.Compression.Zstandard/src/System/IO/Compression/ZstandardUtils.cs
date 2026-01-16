@@ -66,6 +66,12 @@ namespace System.IO.Compression
 
             switch (error)
             {
+                case Interop.Zstd.ZSTD_error.frameParameter_windowTooLarge:
+                    return new IOException(SR.ZstandardDecoder_WindowTooLarge);
+
+                case Interop.Zstd.ZSTD_error.dictionary_wrong:
+                    return new InvalidDataException(SR.ZstandardDecoder_DictionaryWrong);
+
                 case Interop.Zstd.ZSTD_error.memory_allocation:
                     return new OutOfMemoryException();
 

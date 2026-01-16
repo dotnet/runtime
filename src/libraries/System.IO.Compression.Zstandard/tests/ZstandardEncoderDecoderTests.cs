@@ -490,7 +490,7 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        public void Decompress_WindowTooLarge_ReturnsInvalidData()
+        public void Decompress_WindowTooLarge_ThrowsIOException()
         {
             byte[] input = ZstandardTestUtils.CreateTestData(1024 * 1024); // 1 MB
             byte[] output = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
@@ -513,11 +513,12 @@ namespace System.IO.Compression
 
             using ZstandardDecoder decoder = new();
 
-            var decompressResult = decoder.Decompress(output.AsSpan(0, compressedSize), decompressed, out _, out _);
-            Assert.Equal(OperationStatus.InvalidData, decompressResult);
+            var ex = Assert.Throws<IOException>(() => decoder.Decompress(output.AsSpan(0, compressedSize), decompressed, out _, out _));
+            Assert.Contains("maxWindowLog", ex.Message);
 
+            // now try with increased maxWindowLog
             using ZstandardDecoder adjustedDecoder = new(maxWindowLog: largeWindowLog);
-            decompressResult = adjustedDecoder.Decompress(output.AsSpan(0, compressedSize), decompressed, out bytesConsumed, out bytesWritten);
+            var decompressResult = adjustedDecoder.Decompress(output.AsSpan(0, compressedSize), decompressed, out bytesConsumed, out bytesWritten);
             Assert.Equal(OperationStatus.Done, decompressResult);
             Assert.Equal(input.Length, bytesWritten);
             Assert.Equal(input, decompressed.AsSpan(0, bytesWritten));
