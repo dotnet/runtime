@@ -105,7 +105,9 @@ class CallStubGenerator
         ReturnType2Vector128,
         ReturnType3Vector128,
         ReturnType4Vector128,
+#if defined(TARGET_APPLE)
         ReturnTypeSwiftLowered,
+#endif // TARGET_APPLE
 #endif // TARGET_ARM64
 #if defined(TARGET_RISCV64)
         ReturnType2I8,
@@ -123,11 +125,13 @@ class CallStubGenerator
 #ifdef TARGET_ARM64
         FPReg32,
         FPReg128,
+#if defined(TARGET_APPLE)
         SwiftSelf,
         SwiftSelfByRef,
         SwiftError,
         SwiftIndirectResult,
-#endif
+#endif // TARGET_APPLE
+#endif // TARGET_ARM64
         Stack
     };
 
@@ -151,7 +155,7 @@ class CallStubGenerator
     int m_targetSlotIndex = -1;
     // The total stack size used for the arguments.
     int m_totalStackSize = 0;
-#ifdef TARGET_ARM64
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
     // Size of struct for SwiftSelf<T>
     int m_swiftSelfByRefSize = 0;
     // Track if SwiftIndirectResult was used
@@ -159,7 +163,7 @@ class CallStubGenerator
     // Swift return lowering info
     CORINFO_SWIFT_LOWERING m_swiftReturnLowering = {};
     bool m_hasSwiftReturnLowering = false;
-#endif
+#endif // TARGET_APPLE && TARGET_ARM64
 
     CallStubHeader::InvokeFunctionPtr m_pInvokeFunction = NULL;
     bool m_interpreterToNative = false;
@@ -178,6 +182,7 @@ class CallStubGenerator
 #ifdef TARGET_ARM64
     PCODE GetFPReg128RangeRoutine(int x1, int x2);
     PCODE GetFPReg32RangeRoutine(int x1, int x2);
+#if defined(TARGET_APPLE)
     PCODE GetSwiftSelfRoutine();
     PCODE GetSwiftSelfByRefRoutine();
     PCODE GetSwiftErrorRoutine();
@@ -186,7 +191,8 @@ class CallStubGenerator
     PCODE GetSwiftLoadFPAtOffsetRoutine(int regIndex);
     PCODE GetSwiftStoreGPAtOffsetRoutine(int regIndex);
     PCODE GetSwiftStoreFPAtOffsetRoutine(int regIndex);
-#endif
+#endif // TARGET_APPLE
+#endif // TARGET_ARM64
     PCODE GetGPRegRangeRoutine(int r1, int r2);
     template<typename ArgIteratorType>
     ReturnType GetReturnType(ArgIteratorType *pArgIt);

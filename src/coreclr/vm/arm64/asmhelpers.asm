@@ -1384,24 +1384,6 @@ HaveInterpThreadContext
         EPILOG_RETURN
     NESTED_END InterpreterStubRet4Vector128
 
-    ; When interpreted method is called with Swift calling convention and returns a lowered struct,
-    ; this stub writes return values to a buffer.
-    NESTED_ENTRY InterpreterStubRetSwiftLowered
-        PROLOG_SAVE_REG_PAIR   fp, lr, #-16!
-        ; The +16 is for the fp, lr above
-        add x0, sp, #__PWTB_TransitionBlock + 16
-        mov x1, x19 ; the IR bytecode pointer
-        mov x2, xzr
-        bl ExecuteInterpretedMethod
-        mov x9, x0                ; Save return buffer address
-        ldp x0, x1, [x9]
-        ldp x2, x3, [x9, #16]
-        ldp d0, d1, [x9, #32]
-        ldp d2, d3, [x9, #48]
-        EPILOG_RESTORE_REG_PAIR fp, lr, #16!
-        EPILOG_RETURN
-    NESTED_END InterpreterStubRetSwiftLowered
-
     ; Routines for passing value type arguments by reference in general purpose registers X0..X7
     ; from native code to the interpreter
 
@@ -1494,193 +1476,6 @@ RefCopyDone$argReg
     Store_Ref X5
     Store_Ref X6
     Store_Ref X7
-
-    LEAF_ENTRY Load_SwiftSelf
-        ldr x20, [x9], #8
-        ldr x11, [x10], #8
-        EPILOG_BRANCH_REG x11
-    LEAF_END Load_SwiftSelf
-
-    LEAF_ENTRY Load_SwiftSelf_ByRef
-        mov x20, x9
-        ldr x11, [x10], #8
-        add x9, x9, x11
-        ldr x11, [x10], #8
-        EPILOG_BRANCH_REG x11
-    LEAF_END Load_SwiftSelf_ByRef
-
-    LEAF_ENTRY Load_SwiftError
-        ldr x11, [x9], #8
-        str x11, [fp, #40]
-        mov x21, xzr
-        ldr x11, [x10], #8
-        EPILOG_BRANCH_REG x11
-    LEAF_END Load_SwiftError
-
-    LEAF_ENTRY Load_SwiftIndirectResult
-        ldr x8, [x9], #8
-        ldr x11, [x10], #8
-        EPILOG_BRANCH_REG x11
-    LEAF_END Load_SwiftIndirectResult
-
-    MACRO
-        SwiftLoad_AtOffset $reg
-
-        ldr x12, [x10], #8       ; Load offset|struct_size
-        and w11, w12, #0xFFFF    ; Extract offset (lower 16 bits)
-        ldr $reg, [x9, x11]      ; Load from [x9 + offset]
-        lsr x12, x12, #16        ; Shift to get struct_size
-        cbz x12, %F1             ; If struct_size == 0, skip advance
-        add x9, x9, x12          ; Advance x9 by struct_size
-1
-        ldr x11, [x10], #8
-        EPILOG_BRANCH_REG x11
-    MEND
-
-    LEAF_ENTRY Load_X0_AtOffset
-        SwiftLoad_AtOffset x0
-    LEAF_END Load_X0_AtOffset
-
-    LEAF_ENTRY Load_X1_AtOffset
-        SwiftLoad_AtOffset x1
-    LEAF_END Load_X1_AtOffset
-
-    LEAF_ENTRY Load_X2_AtOffset
-        SwiftLoad_AtOffset x2
-    LEAF_END Load_X2_AtOffset
-
-    LEAF_ENTRY Load_X3_AtOffset
-        SwiftLoad_AtOffset x3
-    LEAF_END Load_X3_AtOffset
-
-    LEAF_ENTRY Load_X4_AtOffset
-        SwiftLoad_AtOffset x4
-    LEAF_END Load_X4_AtOffset
-
-    LEAF_ENTRY Load_X5_AtOffset
-        SwiftLoad_AtOffset x5
-    LEAF_END Load_X5_AtOffset
-
-    LEAF_ENTRY Load_X6_AtOffset
-        SwiftLoad_AtOffset x6
-    LEAF_END Load_X6_AtOffset
-
-    LEAF_ENTRY Load_X7_AtOffset
-        SwiftLoad_AtOffset x7
-    LEAF_END Load_X7_AtOffset
-
-    MACRO
-        SwiftLoadFloat_AtOffset $reg
-
-        ldr x12, [x10], #8       ; Load offset|struct_size
-        and w11, w12, #0xFFFF    ; Extract offset (lower 16 bits)
-        ldr $reg, [x9, x11]      ; Load float from [x9 + offset]
-        lsr x12, x12, #16        ; Shift to get struct_size
-        cbz x12, %F1             ; If struct_size == 0, skip advance
-        add x9, x9, x12          ; Advance x9 by struct_size
-1
-        ldr x11, [x10], #8
-        EPILOG_BRANCH_REG x11
-    MEND
-
-    LEAF_ENTRY Load_D0_AtOffset
-        SwiftLoadFloat_AtOffset d0
-    LEAF_END Load_D0_AtOffset
-
-    LEAF_ENTRY Load_D1_AtOffset
-        SwiftLoadFloat_AtOffset d1
-    LEAF_END Load_D1_AtOffset
-
-    LEAF_ENTRY Load_D2_AtOffset
-        SwiftLoadFloat_AtOffset d2
-    LEAF_END Load_D2_AtOffset
-
-    LEAF_ENTRY Load_D3_AtOffset
-        SwiftLoadFloat_AtOffset d3
-    LEAF_END Load_D3_AtOffset
-
-    LEAF_ENTRY Load_D4_AtOffset
-        SwiftLoadFloat_AtOffset d4
-    LEAF_END Load_D4_AtOffset
-
-    LEAF_ENTRY Load_D5_AtOffset
-        SwiftLoadFloat_AtOffset d5
-    LEAF_END Load_D5_AtOffset
-
-    LEAF_ENTRY Load_D6_AtOffset
-        SwiftLoadFloat_AtOffset d6
-    LEAF_END Load_D6_AtOffset
-
-    LEAF_ENTRY Load_D7_AtOffset
-        SwiftLoadFloat_AtOffset d7
-    LEAF_END Load_D7_AtOffset
-
-    LEAF_ENTRY Load_Stack_AtOffset
-        ldr x12, [x10], #8       ; Load offset|structSize|stackOffset
-        and w11, w12, #0xFFFF    ; Extract offset (lower 16 bits)
-        ldr x13, [x9, x11]       ; Load 8 bytes from [x9 + offset]
-        lsr x14, x12, #32        ; Extract stackOffset (upper 32 bits)
-        add x14, sp, x14         ; Calculate stack destination
-        str x13, [x14]           ; Store to native stack
-        ubfx x12, x12, #16, #16  ; Extract structSize (bits 16-31)
-        cbz x12, %F1             ; If structSize == 0, skip advance
-        add x9, x9, x12          ; Advance x9 by structSize
-1
-        ldr x11, [x10], #8
-        EPILOG_BRANCH_REG x11
-    LEAF_END Load_Stack_AtOffset
-
-    MACRO
-        SwiftStore_AtOffset $reg
-
-        ldr x11, [x10], #8
-        and w11, w11, #0xFFFF
-        str $reg, [x9, x11]
-        ldr x11, [x10], #8
-        br x11
-    MEND
-
-    LEAF_ENTRY Store_X0_AtOffset
-        SwiftStore_AtOffset x0
-    LEAF_END Store_X0_AtOffset
-
-    LEAF_ENTRY Store_X1_AtOffset
-        SwiftStore_AtOffset x1
-    LEAF_END Store_X1_AtOffset
-
-    LEAF_ENTRY Store_X2_AtOffset
-        SwiftStore_AtOffset x2
-    LEAF_END Store_X2_AtOffset
-
-    LEAF_ENTRY Store_X3_AtOffset
-        SwiftStore_AtOffset x3
-    LEAF_END Store_X3_AtOffset
-
-    MACRO
-        SwiftStoreFloat_AtOffset $reg
-
-        ldr x11, [x10], #8
-        and w11, w11, #0xFFFF
-        str $reg, [x9, x11]
-        ldr x11, [x10], #8
-        br x11
-    MEND
-
-    LEAF_ENTRY Store_D0_AtOffset
-        SwiftStoreFloat_AtOffset d0
-    LEAF_END Store_D0_AtOffset
-
-    LEAF_ENTRY Store_D1_AtOffset
-        SwiftStoreFloat_AtOffset d1
-    LEAF_END Store_D1_AtOffset
-
-    LEAF_ENTRY Store_D2_AtOffset
-        SwiftStoreFloat_AtOffset d2
-    LEAF_END Store_D2_AtOffset
-
-    LEAF_ENTRY Store_D3_AtOffset
-        SwiftStoreFloat_AtOffset d3
-    LEAF_END Store_D3_AtOffset
 
     LEAF_ENTRY Store_X0
         str x0, [x9], #8
@@ -2768,22 +2563,17 @@ CopyLoop
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRetVoid
-        PROLOG_SAVE_REG_PAIR fp, lr, #-48!
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         str x4, [fp, #16]
-        str xzr, [fp, #40]
         sub sp, sp, x3
         mov x10, x0
         mov x9, x1
         ldr x11, [x10], #8
         blr x11
-        ldr x11, [fp, #40]
-        cbz x11, CallJittedMethodRetVoid_NoSwiftError
-        str x10, [x11]
-CallJittedMethodRetVoid_NoSwiftError
         ldr x4, [fp, #16]
         str x2, [x4]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR fp, lr, #48!
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         ret lr
     NESTED_END CallJittedMethodRetVoid
 
@@ -2793,23 +2583,18 @@ CallJittedMethodRetVoid_NoSwiftError
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRetBuff
-        PROLOG_SAVE_REG_PAIR fp, lr, #-48!
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         str x4, [fp, #16]
-        str xzr, [fp, #40]
         sub sp, sp, x3
         mov x10, x0
         mov x9, x1
         mov x8, x2
         ldr x11, [x10], #8
         blr x11
-        ldr x11, [fp, #40]
-        cbz x11, CallJittedMethodRetBuff_NoSwiftError
-        str x10, [x11]
-CallJittedMethodRetBuff_NoSwiftError
         ldr x4, [fp, #16]
         str x2, [x4]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR fp, lr, #48!
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRetBuff
 
@@ -2819,24 +2604,19 @@ CallJittedMethodRetBuff_NoSwiftError
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRetI8
-        PROLOG_SAVE_REG_PAIR fp, lr, #-48!
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
-        str xzr, [fp, #40]
         sub sp, sp, x3
         mov x10, x0
         mov x9, x1
         ldr x11, [x10], #8
         blr x11
-        ldr x11, [fp, #40]
-        cbz x11, CallJittedMethodRetI8_NoSwiftError
-        str x10, [x11]
-CallJittedMethodRetI8_NoSwiftError
-        ldr x9, [fp, #24]
-        str x2, [x9]
         ldr x9, [fp, #16]
         str x0, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR fp, lr, #48!
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRetI8
 
@@ -2846,24 +2626,19 @@ CallJittedMethodRetI8_NoSwiftError
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRet2I8
-        PROLOG_SAVE_REG_PAIR fp, lr, #-48!
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
-        str xzr, [fp, #40]
         sub sp, sp, x3
         mov x10, x0
         mov x9, x1
         ldr x11, [x10], #8
         blr x11
-        ldr x11, [fp, #40]
-        cbz x11, CallJittedMethodRet2I8_NoSwiftError
-        str x10, [x11]
-CallJittedMethodRet2I8_NoSwiftError
-        ldr x9, [fp, #24]
-        str x2, [x9]
         ldr x9, [fp, #16]
         stp x0, x1, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR fp, lr, #48!
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRet2I8
 
@@ -2873,24 +2648,19 @@ CallJittedMethodRet2I8_NoSwiftError
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRetDouble
-        PROLOG_SAVE_REG_PAIR fp, lr, #-48!
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
-        str xzr, [fp, #40]
         sub sp, sp, x3
         mov x10, x0
         mov x9, x1
         ldr x11, [x10], #8
         blr x11
-        ldr x11, [fp, #40]
-        cbz x11, CallJittedMethodRetDouble_NoSwiftError
-        str x10, [x11]
-CallJittedMethodRetDouble_NoSwiftError
-        ldr x9, [fp, #24]
-        str x2, [x9]
         ldr x9, [fp, #16]
         str d0, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR fp, lr, #48!
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRetDouble
 
@@ -2900,24 +2670,19 @@ CallJittedMethodRetDouble_NoSwiftError
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRet2Double
-        PROLOG_SAVE_REG_PAIR fp, lr, #-48!
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
-        str xzr, [fp, #40]
         sub sp, sp, x3
         mov x10, x0
         mov x9, x1
         ldr x11, [x10], #8
         blr x11
-        ldr x11, [fp, #40]
-        cbz x11, CallJittedMethodRet2Double_NoSwiftError
-        str x10, [x11]
-CallJittedMethodRet2Double_NoSwiftError
-        ldr x9, [fp, #24]
-        str x2, [x9]
         ldr x9, [fp, #16]
         stp d0, d1, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR fp, lr, #48!
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRet2Double
 
@@ -2927,25 +2692,20 @@ CallJittedMethodRet2Double_NoSwiftError
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRet3Double
-        PROLOG_SAVE_REG_PAIR fp, lr, #-48!
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
-        str xzr, [fp, #40]
         sub sp, sp, x3
         mov x10, x0
         mov x9, x1
         ldr x11, [x10], #8
         blr x11
-        ldr x11, [fp, #40]
-        cbz x11, CallJittedMethodRet3Double_NoSwiftError
-        str x10, [x11]
-CallJittedMethodRet3Double_NoSwiftError
-        ldr x9, [fp, #24]
-        str x2, [x9]
         ldr x9, [fp, #16]
         stp d0, d1, [x9], #16
         str d2, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR fp, lr, #48!
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRet3Double
 
@@ -2955,25 +2715,20 @@ CallJittedMethodRet3Double_NoSwiftError
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRet4Double
-        PROLOG_SAVE_REG_PAIR fp, lr, #-48!
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
-        str xzr, [fp, #40]
         sub sp, sp, x3
         mov x10, x0
         mov x9, x1
         ldr x11, [x10], #8
         blr x11
-        ldr x11, [fp, #40]
-        cbz x11, CallJittedMethodRet4Double_NoSwiftError
-        str x10, [x11]
-CallJittedMethodRet4Double_NoSwiftError
-        ldr x9, [fp, #24]
-        str x2, [x9]
         ldr x9, [fp, #16]
         stp d0, d1, [x9], #16
         stp d2, d3, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR fp, lr, #48!
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRet4Double
 
@@ -2983,24 +2738,19 @@ CallJittedMethodRet4Double_NoSwiftError
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRetFloat
-        PROLOG_SAVE_REG_PAIR fp, lr, #-48!
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
-        str xzr, [fp, #40]
         sub sp, sp, x3
         mov x10, x0
         mov x9, x1
         ldr x11, [x10], #8
         blr x11
-        ldr x11, [fp, #40]
-        cbz x11, CallJittedMethodRetFloat_NoSwiftError
-        str x10, [x11]
-CallJittedMethodRetFloat_NoSwiftError
-        ldr x9, [fp, #24]
-        str x2, [x9]
         ldr x9, [fp, #16]
         str s0, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR fp, lr, #48!
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRetFloat
 
@@ -3010,24 +2760,19 @@ CallJittedMethodRetFloat_NoSwiftError
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRet2Float
-        PROLOG_SAVE_REG_PAIR fp, lr, #-48!
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
-        str xzr, [fp, #40]
         sub sp, sp, x3
         mov x10, x0
         mov x9, x1
         ldr x11, [x10], #8
         blr x11
-        ldr x11, [fp, #40]
-        cbz x11, CallJittedMethodRet2Float_NoSwiftError
-        str x10, [x11]
-CallJittedMethodRet2Float_NoSwiftError
-        ldr x9, [fp, #24]
-        str x2, [x9]
         ldr x9, [fp, #16]
         stp s0, s1, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR fp, lr, #48!
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRet2Float
 
@@ -3037,25 +2782,20 @@ CallJittedMethodRet2Float_NoSwiftError
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRet3Float
-        PROLOG_SAVE_REG_PAIR fp, lr, #-48!
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
-        str xzr, [fp, #40]
         sub sp, sp, x3
         mov x10, x0
         mov x9, x1
         ldr x11, [x10], #8
         blr x11
-        ldr x11, [fp, #40]
-        cbz x11, CallJittedMethodRet3Float_NoSwiftError
-        str x10, [x11]
-CallJittedMethodRet3Float_NoSwiftError
-        ldr x9, [fp, #24]
-        str x2, [x9]
         ldr x9, [fp, #16]
         stp s0, s1, [x9], #8
         str s2, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR fp, lr, #48!
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRet3Float
 
@@ -3065,25 +2805,20 @@ CallJittedMethodRet3Float_NoSwiftError
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRet4Float
-        PROLOG_SAVE_REG_PAIR fp, lr, #-48!
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
-        str xzr, [fp, #40]
         sub sp, sp, x3
         mov x10, x0
         mov x9, x1
         ldr x11, [x10], #8
         blr x11
-        ldr x11, [fp, #40]
-        cbz x11, CallJittedMethodRet4Float_NoSwiftError
-        str x10, [x11]
-CallJittedMethodRet4Float_NoSwiftError
-        ldr x9, [fp, #24]
-        str x2, [x9]
         ldr x9, [fp, #16]
         stp s0, s1, [x9], #8
         stp s2, s3, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR fp, lr, #48!
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRet4Float
 
@@ -3093,24 +2828,19 @@ CallJittedMethodRet4Float_NoSwiftError
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRetVector64
-        PROLOG_SAVE_REG_PAIR fp, lr, #-48!
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
-        str xzr, [fp, #40]
         sub sp, sp, x3
         mov x10, x0
         mov x9, x1
         ldr x11, [x10], #8
         blr x11
-        ldr x11, [fp, #40]
-        cbz x11, CallJittedMethodRetVector64_NoSwiftError
-        str x10, [x11]
-CallJittedMethodRetVector64_NoSwiftError
-        ldr x9, [fp, #24]
-        str x2, [x9]
         ldr x9, [fp, #16]
         str d0, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR fp, lr, #48!
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRetVector64
 
@@ -3120,25 +2850,20 @@ CallJittedMethodRetVector64_NoSwiftError
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRet2Vector64
-        PROLOG_SAVE_REG_PAIR fp, lr, #-48!
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
-        str xzr, [fp, #40]
         sub sp, sp, x3
         mov x10, x0
         mov x9, x1
         ldr x11, [x10], #8
         blr x11
-        ldr x11, [fp, #40]
-        cbz x11, CallJittedMethodRet2Vector64_NoSwiftError
-        str x10, [x11]
-CallJittedMethodRet2Vector64_NoSwiftError
-        ldr x9, [fp, #24]
-        str x2, [x9]
         ldr x9, [fp, #16]
         str d0, [x9], #8
         str d1, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR fp, lr, #48!
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRet2Vector64
 
@@ -3148,26 +2873,21 @@ CallJittedMethodRet2Vector64_NoSwiftError
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRet3Vector64
-        PROLOG_SAVE_REG_PAIR fp, lr, #-48!
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
-        str xzr, [fp, #40]
         sub sp, sp, x3
         mov x10, x0
         mov x9, x1
         ldr x11, [x10], #8
         blr x11
-        ldr x11, [fp, #40]
-        cbz x11, CallJittedMethodRet3Vector64_NoSwiftError
-        str x10, [x11]
-CallJittedMethodRet3Vector64_NoSwiftError
-        ldr x9, [fp, #24]
-        str x2, [x9]
         ldr x9, [fp, #16]
         str d0, [x9], #8
         str d1, [x9], #8
         str d2, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR fp, lr, #48!
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRet3Vector64
 
@@ -3177,27 +2897,22 @@ CallJittedMethodRet3Vector64_NoSwiftError
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRet4Vector64
-        PROLOG_SAVE_REG_PAIR fp, lr, #-48!
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
-        str xzr, [fp, #40]
         sub sp, sp, x3
         mov x10, x0
         mov x9, x1
         ldr x11, [x10], #8
         blr x11
-        ldr x11, [fp, #40]
-        cbz x11, CallJittedMethodRet4Vector64_NoSwiftError
-        str x10, [x11]
-CallJittedMethodRet4Vector64_NoSwiftError
-        ldr x9, [fp, #24]
-        str x2, [x9]
         ldr x9, [fp, #16]
         str d0, [x9], #8
         str d1, [x9], #8
         str d2, [x9], #8
         str d3, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR fp, lr, #48!
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRet4Vector64
 
@@ -3207,24 +2922,19 @@ CallJittedMethodRet4Vector64_NoSwiftError
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRetVector128
-        PROLOG_SAVE_REG_PAIR fp, lr, #-48!
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
-        str xzr, [fp, #40]
         sub sp, sp, x3
         mov x10, x0
         mov x9, x1
         ldr x11, [x10], #8
         blr x11
-        ldr x11, [fp, #40]
-        cbz x11, CallJittedMethodRetVector128_NoSwiftError
-        str x10, [x11]
-CallJittedMethodRetVector128_NoSwiftError
-        ldr x9, [fp, #24]
-        str x2, [x9]
         ldr x9, [fp, #16]
         str q0, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR fp, lr, #48!
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRetVector128
 
@@ -3234,25 +2944,20 @@ CallJittedMethodRetVector128_NoSwiftError
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRet2Vector128
-        PROLOG_SAVE_REG_PAIR fp, lr, #-48!
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
-        str xzr, [fp, #40]
         sub sp, sp, x3
         mov x10, x0
         mov x9, x1
         ldr x11, [x10], #8
         blr x11
-        ldr x11, [fp, #40]
-        cbz x11, CallJittedMethodRet2Vector128_NoSwiftError
-        str x10, [x11]
-CallJittedMethodRet2Vector128_NoSwiftError
-        ldr x9, [fp, #24]
-        str x2, [x9]
         ldr x9, [fp, #16]
         str q0, [x9], #16
         str q1, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR fp, lr, #48!
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRet2Vector128
 
@@ -3262,26 +2967,21 @@ CallJittedMethodRet2Vector128_NoSwiftError
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRet3Vector128
-        PROLOG_SAVE_REG_PAIR fp, lr, #-48!
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
-        str xzr, [fp, #40]
         sub sp, sp, x3
         mov x10, x0
         mov x9, x1
         ldr x11, [x10], #8
         blr x11
-        ldr x11, [fp, #40]
-        cbz x11, CallJittedMethodRet3Vector128_NoSwiftError
-        str x10, [x11]
-CallJittedMethodRet3Vector128_NoSwiftError
-        ldr x9, [fp, #24]
-        str x2, [x9]
         ldr x9, [fp, #16]
         str q0, [x9], #16
         str q1, [x9], #16
         str q2, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR fp, lr, #48!
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRet3Vector128
 
@@ -3291,74 +2991,25 @@ CallJittedMethodRet3Vector128_NoSwiftError
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRet4Vector128
-        PROLOG_SAVE_REG_PAIR fp, lr, #-48!
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
-        str xzr, [fp, #40]
         sub sp, sp, x3
         mov x10, x0
         mov x9, x1
         ldr x11, [x10], #8
         blr x11
-        ldr x11, [fp, #40]
-        cbz x11, CallJittedMethodRet4Vector128_NoSwiftError
-        str x10, [x11]
-CallJittedMethodRet4Vector128_NoSwiftError
-        ldr x9, [fp, #24]
-        str x2, [x9]
         ldr x9, [fp, #16]
         str q0, [x9], #16
         str q1, [x9], #16
         str q2, [x9], #16
         str q3, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR fp, lr, #48!
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRet4Vector128
 
-    ; X0 - routines array
-    ; X1 - interpreter stack args location
-    ; X2 - interpreter stack return value location
-    ; X3 - stack arguments size (properly aligned)
-    ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRetSwiftLowered
-        PROLOG_SAVE_REG_PAIR fp, lr, #-64!
-        stp x2, x4, [fp, #16]
-        str xzr, [fp, #56]
-        ; Store the return address for the terminator to use
-        adr x11, CallJittedMethodRetSwiftLowered_Epilog
-        str x11, [fp, #32]
-        str x19, [fp, #48]
-        ldrsw x11, [x0, #-20]    ; Load TargetSlotIndex
-        add x11, x11, #1         ; TargetSlotIndex + 1
-        add x11, x0, x11, lsl #3 ; x0 + (TargetSlotIndex + 1) * 8
-        str x11, [fp, #40]       ; Save store routines start pointer
-        sub sp, sp, x3
-        mov x10, x0
-        mov x9, x1
-        ldr x11, [x10], #8
-        blr x11
-        ldr x11, [fp, #56]
-        cbz x11, CallJittedMethodRetSwiftLowered_NoSwiftError
-        str x10, [x11]
-CallJittedMethodRetSwiftLowered_NoSwiftError
-        ldr x12, [fp, #24]
-        str x2, [x12]            ; Store continuation return value
-        ldr x9, [fp, #16]        ; Load return buffer address into x9
-        ldr x10, [fp, #40]       ; Load store routines start pointer
-        ldr x11, [x10], #8       ; Load first store routine
-        br x11
-CallJittedMethodRetSwiftLowered_Epilog
-        ldr x19, [fp, #48]       ; Restore x19
-        EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR fp, lr, #64!
-        EPILOG_RETURN
-    NESTED_END CallJittedMethodRetSwiftLowered
-
-    ; Terminator routine branches back to the epilog
-    LEAF_ENTRY SwiftLoweredReturnTerminator
-        ldr x11, [fp, #32]
-        br x11
-    LEAF_END SwiftLoweredReturnTerminator
 
 #endif // FEATURE_INTERPRETER
 

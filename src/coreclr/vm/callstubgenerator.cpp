@@ -593,6 +593,7 @@ extern "C" void Store_X6();
 extern "C" void Store_X6_X7();
 extern "C" void Store_X7();
 
+#if defined(TARGET_APPLE)
 extern "C" void Load_SwiftSelf();
 extern "C" void Load_SwiftSelf_ByRef();
 extern "C" void Load_SwiftError();
@@ -625,6 +626,7 @@ extern "C" void Store_D1_AtOffset();
 extern "C" void Store_D2_AtOffset();
 extern "C" void Store_D3_AtOffset();
 extern "C" void SwiftLoweredReturnTerminator();
+#endif // TARGET_APPLE
 
 extern "C" void Load_Ref_X0();
 extern "C" void Load_Ref_X1();
@@ -2002,7 +2004,9 @@ PCODE CallStubGenerator::GetFPReg32RangeRoutine(int x1, int x2)
     int index = x1 * NUM_FLOAT_ARGUMENT_REGISTERS + x2;
     return m_interpreterToNative ? FPRegs32LoadRoutines[index] : FPRegs32StoreRoutines[index];
 }
+#endif // TARGET_ARM64
 
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
 PCODE CallStubGenerator::GetSwiftSelfRoutine()
 {
 #if LOG_COMPUTE_CALL_STUB
@@ -2072,7 +2076,7 @@ PCODE CallStubGenerator::GetSwiftStoreFPAtOffsetRoutine(int regIndex)
     _ASSERTE(regIndex >= 0 && regIndex < 4);
     return routines[regIndex];
 }
-#endif // TARGET_ARM64
+#endif // TARGET_APPLE && TARGET_ARM64
 
 extern "C" void CallJittedMethodRetVoid(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRetDouble(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
@@ -2126,7 +2130,9 @@ extern "C" void CallJittedMethodRetVector128(PCODE *routines, int8_t *pArgs, int
 extern "C" void CallJittedMethodRet2Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet3Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet4Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+#if defined(TARGET_APPLE)
 extern "C" void CallJittedMethodRetSwiftLowered(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+#endif // TARGET_APPLE
 extern "C" void InterpreterStubRet2I8();
 extern "C" void InterpreterStubRet2Double();
 extern "C" void InterpreterStubRet3Double();
@@ -2143,7 +2149,9 @@ extern "C" void InterpreterStubRetVector128();
 extern "C" void InterpreterStubRet2Vector128();
 extern "C" void InterpreterStubRet3Vector128();
 extern "C" void InterpreterStubRet4Vector128();
+#if defined(TARGET_APPLE)
 extern "C" void InterpreterStubRetSwiftLowered();
+#endif // TARGET_APPLE
 #endif // TARGET_ARM64
 
 #if defined(TARGET_RISCV64)
@@ -2234,8 +2242,10 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
             INVOKE_FUNCTION_PTR(CallJittedMethodRet3Vector128);
         case ReturnType4Vector128:
             INVOKE_FUNCTION_PTR(CallJittedMethodRet4Vector128);
+#if defined(TARGET_APPLE)
         case ReturnTypeSwiftLowered:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetSwiftLowered);
+#endif // TARGET_APPLE
 #endif // TARGET_ARM64
 #if defined(TARGET_RISCV64)
         case ReturnType2I8:
@@ -2331,8 +2341,10 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
             RETURN_TYPE_HANDLER(InterpreterStubRet3Vector128);
         case ReturnType4Vector128:
             RETURN_TYPE_HANDLER(InterpreterStubRet4Vector128);
+#if defined(TARGET_APPLE)
         case ReturnTypeSwiftLowered:
             RETURN_TYPE_HANDLER(InterpreterStubRetSwiftLowered);
+#endif // TARGET_APPLE
 #endif // TARGET_ARM64
 #if defined(TARGET_RISCV64)
         case ReturnType2I8:
@@ -2556,6 +2568,7 @@ void CallStubGenerator::TerminateCurrentRoutineIfNotOfNewType(RoutineType type, 
         m_x1 = NoRange;
         m_currentRoutineType = RoutineType::None;
     }
+#if defined(TARGET_APPLE)
     else if ((m_currentRoutineType == RoutineType::SwiftSelf) && (type != RoutineType::SwiftSelf))
     {
         pRoutines[m_routineIndex++] = GetSwiftSelfRoutine();
@@ -2578,6 +2591,7 @@ void CallStubGenerator::TerminateCurrentRoutineIfNotOfNewType(RoutineType type, 
         pRoutines[m_routineIndex++] = GetSwiftIndirectResultRoutine();
         m_currentRoutineType = RoutineType::None;
     }
+#endif // TARGET_APPLE
 #endif // TARGET_ARM64
     else if ((m_currentRoutineType == RoutineType::Stack) && (type != RoutineType::Stack))
     {
@@ -2624,7 +2638,7 @@ bool isNativePrimitiveStructType(MethodTable* pMT)
     return strcmp(typeName, "CLong") == 0 || strcmp(typeName, "CULong") == 0 || strcmp(typeName, "NFloat") == 0;
 }
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
 //---------------------------------------------------------------------------
 // isSwiftSelfType:
 //    Check if the given type is SwiftSelf.
@@ -2779,7 +2793,7 @@ bool isIntrinsicSIMDType(MethodTable* pMT)
 
     return false;
 }
-#endif // TARGET_ARM64
+#endif // TARGET_APPLE && TARGET_ARM64
 
 void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDesc *pMD)
 {
@@ -2850,7 +2864,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 {
     bool unmanagedThisCallConv = false;
     bool rewriteMetaSigFromExplicitThisToHasThis = false;
-#ifdef TARGET_ARM64
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
     bool isSwiftCallConv = false;
 #endif
 
@@ -2864,7 +2878,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
             case CorInfoCallConvExtension::FastcallMemberFunction:
                 unmanagedThisCallConv = true;
                 break;
-#ifdef TARGET_ARM64
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
             case CorInfoCallConvExtension::Swift:
                 isSwiftCallConv = true;
                 break;
@@ -2955,7 +2969,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
         sig = newSig;
     }
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
     // Swift lowering info for expanded struct elements
     struct SwiftLoweringElement {
         uint16_t offset;        // Offset within struct
@@ -3190,7 +3204,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
         sig = swiftSig;
     }
     int swiftArgIndex = 0;
-#endif
+#endif // TARGET_APPLE && TARGET_ARM64
 
     ArgIteratorType argIt(&sig);
     int32_t interpreterStackOffset = 0;
@@ -3204,7 +3218,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
     m_s2 = 0;
     m_routineIndex = 0;
     m_totalStackSize = argIt.SizeOfArgStack();
-#ifdef TARGET_ARM64
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
     m_swiftSelfByRefSize = 0;
     m_hasSwiftIndirectResult = (isSwiftCallConv && swiftIndirectResultCount > 0);
 #endif
@@ -3250,7 +3264,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
         interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
     }
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
     if (m_hasSwiftIndirectResult)
     {
 #if LOG_COMPUTE_CALL_STUB
@@ -3279,7 +3293,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
         TypeHandle thArgTypeHandle;
         CorElementType argCorType = argIt.GetArgType(&thArgTypeHandle);
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
         if (isSwiftCallConv)
         {
             if (argCorType == ELEMENT_TYPE_BYREF)
@@ -3338,7 +3352,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
                 }
             }
         }
-#endif // TARGET_ARM64
+#endif // TARGET_APPLE && TARGET_ARM64
 
         if ((argCorType == ELEMENT_TYPE_VALUETYPE) && thArgTypeHandle.GetSize() > 8)
         {
@@ -3369,7 +3383,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
         }
         interpreterStackOffset += interpStackSlotSize;
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
         if (isSwiftCallConv && m_interpreterToNative && swiftArgIndex < swiftLoweringCount)
         {
             SwiftLoweringElement& elem = swiftLoweringInfo[swiftArgIndex];
@@ -3420,7 +3434,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
                 continue;
             }
         }
-#endif // TARGET_ARM64
+#endif // TARGET_APPLE && TARGET_ARM64
 
 #ifdef UNIX_AMD64_ABI
         ArgLocDesc* argLocDescForStructInRegs = argIt.GetArgLocDescForStructInRegs();
@@ -3491,7 +3505,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
         m_targetSlotIndex = m_routineIndex;
         m_routineIndex++; // Reserve one extra slot for the target method pointer
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
         if (m_hasSwiftReturnLowering)
         {
             int gpRegIndex = 0;
@@ -3528,7 +3542,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 
             pRoutines[m_routineIndex++] = (PCODE)SwiftLoweredReturnTerminator;
         }
-#endif // TARGET_ARM64
+#endif // TARGET_APPLE && TARGET_ARM64
     }
     else
     {
@@ -3744,12 +3758,12 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
 template<typename ArgIteratorType>
 CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *pArgIt)
 {
-#ifdef TARGET_ARM64
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
     if (m_hasSwiftReturnLowering)
     {
         return ReturnTypeSwiftLowered;
     }
-#endif // TARGET_ARM64
+#endif // TARGET_APPLE && TARGET_ARM64
 
     if (pArgIt->HasRetBuffArg())
     {
