@@ -814,10 +814,16 @@ void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
 {
     assert(lclAddrNode->OperIs(GT_LCL_ADDR));
+    bool     FPBased;
+    unsigned lclNum    = lclAddrNode->GetLclNum();
+    unsigned lclOffset = lclAddrNode->GetLclOffs();
 
     GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
-    GetEmitter()->emitIns_S(INS_I_const, EA_PTRSIZE, lclAddrNode->GetLclNum(), lclAddrNode->GetLclOffs());
-    GetEmitter()->emitIns(INS_I_add);
+    if ((lclOffset != 0) || (compiler->lvaFrameAddress(lclNum, &FPBased) != 0))
+    {
+        GetEmitter()->emitIns_S(INS_I_const, EA_PTRSIZE, lclNum, lclOffset);
+        GetEmitter()->emitIns(INS_I_add);
+    }
     genProduceReg(lclAddrNode);
 }
 
