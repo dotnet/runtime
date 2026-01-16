@@ -19,4 +19,7 @@ fi
 
 ./setup-digest.sh
 
+# Start ProFTPD in the background for FTP/SSL testing
+proftpd &
+
 exec /usr/sbin/apache2 -DFOREGROUND "$@"

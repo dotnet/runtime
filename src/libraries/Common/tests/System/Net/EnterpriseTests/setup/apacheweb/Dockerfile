@@ -2,10 +2,11 @@ FROM mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Install Kerberos client, apache Negotiate auth plugin, and diagnostics
+# Install Kerberos client, apache Negotiate auth plugin, ProFTPD with SSL, and diagnostics
 RUN apt-get update && \
     apt-get install -y --no-install-recommends apache2 libapache2-mod-auth-kerb procps krb5-user iputils-ping dnsutils nano \
-                                               libapache2-mod-auth-ntlm-winbind samba samba-dsdb-modules samba-vfs-modules
+                                               libapache2-mod-auth-ntlm-winbind samba samba-dsdb-modules samba-vfs-modules \
+                                               proftpd-basic openssl
 WORKDIR /setup
 
 COPY ./common/krb5.conf /etc/
@@ -18,7 +19,25 @@ RUN chmod +x *.sh ; \
     cp /etc/apache2/apache2.conf /etc/apache2/apache2.conf.ORIG ;\
     mv -f apache2.conf /etc/apache2/apache2.conf
 
+# Setup FTP user and directories
+RUN useradd -m -s /bin/bash ftpuser && \
+    echo "ftpuser:ftppass" | chpasswd && \
+    mkdir -p /home/ftpuser/ftp && \
+    chown ftpuser:ftpuser /home/ftpuser/ftp
+
+# Generate self-signed certificate for FTP TLS
+RUN mkdir -p /etc/proftpd/ssl && \
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /etc/proftpd/ssl/proftpd.key \
+    -out /etc/proftpd/ssl/proftpd.crt \
+    -subj "/C=US/ST=State/L=City/O=Test/CN=apacheweb.linux.contoso.com"
+
+# Copy ProFTPD configuration
+COPY ./apacheweb/proftpd.conf /etc/proftpd/proftpd.conf
+
 EXPOSE 80/tcp
 EXPOSE 8080/tcp
+EXPOSE 21/tcp
+EXPOSE 50000-50100/tcp
 
 ENTRYPOINT ["/bin/bash", "/setup/run.sh"]

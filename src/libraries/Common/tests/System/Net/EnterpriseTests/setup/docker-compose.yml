@@ -51,24 +51,6 @@ services:
     depends_on:
       - kdc
 
-  ftpserver:
-    build:
-      context: ./
-      dockerfile: ./ftpserver/Dockerfile
-    image: ftpserver:latest
-    container_name: ftpserver
-    hostname: ftpserver
-    domainname: linux.contoso.com
-    dns_search: linux.contoso.com
-    volumes:
-      - shared-volume:/SHARED
-    networks:
-      network1:
-        aliases:
-          - ftpserver.linux.contoso.com
-    depends_on:
-      - kdc
-
   linuxclient:
     build:
       context: ./
@@ -90,7 +72,6 @@ services:
       - apacheweb
       - altweb
       - kdc
-      - ftpserver
 
 networks:
   network1:

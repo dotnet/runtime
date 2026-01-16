@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Net;
+using System.Net.Test.Common;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -14,7 +15,7 @@ namespace System.Net.Tests
     public class FtpWebRequestAuthenticationTest
     {
         private readonly ITestOutputHelper _output;
-        private const string FtpServerUrl = "ftpserver.linux.contoso.com";
+        private const string FtpServerUrl = "apacheweb.linux.contoso.com";
         private const string FtpUsername = "ftpuser";
         private const string FtpPassword = "ftppass";
 
