@@ -13,6 +13,7 @@ using TestLibrary;
 public class Validate
 {
     [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static void Validate_Activation()
     {
@@ -25,6 +26,7 @@ public class Validate
     }
 
     [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static void Validate_TypeLoad()
     {
@@ -46,6 +48,7 @@ public class Validate
     }
 
     [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static void Validate_Casting_Scenarios()
     {
@@ -79,6 +82,7 @@ public class Validate
     sealed class Ignored { }
 
     [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static void Validate_RecognizedOpCodeSequences()
     {
@@ -125,6 +129,7 @@ public class Validate
     }
 
     [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static void Validate_RecognizedOpCodeSequences_Mismatch()
     {
@@ -136,6 +141,7 @@ public class Validate
     }
 
     [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static void Validate_InvalidOpCode_Scenarios()
     {
@@ -159,6 +165,7 @@ public class Validate
     }
 
     [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static void Validate_Inlining_Behavior()
     {
@@ -171,6 +178,7 @@ public class Validate
     }
 
     [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     // [Fact]
     public static void Validate_MemberDiscoveryViaReflection_ForSpanReadOnlySpan()
     {

@@ -18,6 +18,7 @@ public static class TieredVtableMethodTests
     private static StringBuilder s_actualCallSequence = new StringBuilder();
 
     [ActiveIssue("No crossgen folder under Core_Root", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static int TestEntryPoint()
     {

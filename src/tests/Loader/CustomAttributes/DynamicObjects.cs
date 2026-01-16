@@ -14,6 +14,7 @@ namespace DynamicObjects {
     public class M {
         public const string ObjectRequiredMessage = "some string";
         [ActiveIssue("Dynamic code generation is not supported on this platform", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
         [Fact]
         public static void TestEntryPoint()
         {

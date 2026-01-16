@@ -42,6 +42,7 @@ public class Test_NestedStructsWithExplicitLayout_Case06
     }
 
     [ActiveIssue("", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static int TestEntryPoint()
     {

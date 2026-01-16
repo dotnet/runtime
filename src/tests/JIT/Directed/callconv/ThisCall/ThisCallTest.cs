@@ -80,6 +80,7 @@ unsafe class ThisCallNative
 public unsafe class ThisCallTest
 {
     [ActiveIssue("", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -13,6 +13,7 @@ using TestLibrary;
 public class GenericTypeSubstitution
 {
     [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static void AllowByRefLike_Substituted_For_AllowByRefLike()
     {
@@ -24,6 +25,7 @@ public class GenericTypeSubstitution
     }
 
     [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static void NonByRefLike_Substituted_For_AllowByRefLike()
     {
@@ -35,6 +37,7 @@ public class GenericTypeSubstitution
     }
 
     [ActiveIssue("expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static void AllowByRefLike_Substituted_For_NonByRefLike()
     {

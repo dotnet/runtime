@@ -15,6 +15,7 @@ public partial class StringTests
 {
     private static readonly string InitialString = "Hello World";
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static void String_ByValue()
     {
@@ -22,6 +23,7 @@ public partial class StringTests
     }
 
     [ActiveIssue("Crashes during LLVM AOT compilation.", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static void String_ByRef()
     {
@@ -30,6 +32,7 @@ public partial class StringTests
     }
 
     [ActiveIssue("Crashes during LLVM AOT compilation.", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static void String_ByRef_InCallback()
     {
@@ -37,6 +40,7 @@ public partial class StringTests
     }
 
     [ActiveIssue("Crashes during LLVM AOT compilation.", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static void String_InPlace_ByRef()
     {
@@ -46,6 +50,7 @@ public partial class StringTests
     }
 
     [ActiveIssue("Crashes during LLVM AOT compilation.", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static void String_Out()
     {
@@ -54,6 +59,7 @@ public partial class StringTests
     }
 
     [ActiveIssue("Crashes during LLVM AOT compilation.", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static void String_Return()
     {
@@ -61,6 +67,7 @@ public partial class StringTests
     }
 
     [ActiveIssue("Crashes during LLVM AOT compilation.", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static void String_Callback_ByValue()
     {
@@ -68,6 +75,7 @@ public partial class StringTests
     }
 
     [ActiveIssue("Crashes during LLVM AOT compilation.", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static void String_Callback_ByRef()
     {
@@ -75,6 +83,7 @@ public partial class StringTests
     }
 
     [ActiveIssue("Crashes during LLVM AOT compilation.", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static void String_Callback_Return()
     {
