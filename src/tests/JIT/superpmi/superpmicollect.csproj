@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CrossGenTest>false</Crossgen2> <!-- Not compatible with crossgen2 -->
+    <CrossGenTest>false</CrossGenTest> <!-- Not compatible with crossgen2 -->
     <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible, JitOptimizationSensitive, IlasmRoundTripIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
 

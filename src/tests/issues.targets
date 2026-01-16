@@ -1,70 +1,5 @@
 <?xml version="1.0" ?>
 <Project DefaultTargets = "GetListOfTestCmds" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <!-- All OS/Arch/Runtime excludes -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Int128/Int128Test/*">
-            <Issue>https://github.com/dotnet/runtime/issues/74209</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
-    <!-- All OS/Arch CoreCLR excludes -->
-
-    <!-- All Unix targets on all runtimes -->
-
-    <!-- All Unix targets  on CoreCLR Runtime -->
-
-    <!-- Arm32 All OS -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TargetArchitecture)' == 'arm' or '$(AltJitArch)' == 'arm') and '$(RuntimeFlavor)' == 'coreclr' ">
-        <ExcludeList Include="$(XunitTestBinBase)/CoreMangLib/cti/system/reflection/emit/DynMethodJumpStubTests/DynMethodJumpStubTests/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/CoreMangLib/system/span/SlowTailCallArgs/*">
-            <Issue>times out</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i53/*">
-            <Issue>Needs Triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i13/*">
-            <Issue>Needs Triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i03/*">
-            <Issue>Needs Triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i33/*">
-            <Issue>Needs Triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i63/*">
-            <Issue>Needs Triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i73/*">
-            <Issue>Needs Triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i83/*">
-            <Issue>Needs Triage</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
-    <!-- Arm64 All OS -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TargetArchitecture)' == 'arm64' or '$(AltJitArch)' == 'arm64') and '$(RuntimeFlavor)' == 'coreclr'">
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeexpr1/hugeexpr1/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/CoreMangLib/cti/system/string/StringFormat1/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/CoreMangLib/cti/system/string/StringFormat2/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
-    <!-- Windows all architecture excludes -->
-
-    <!-- Windows x64 specific excludes -->
-
-    <!-- Windows x86 specific excludes -->
-
-    <!-- Windows arm64 specific excludes -->
-
     <!-- The following are x64 Unix failures on CoreCLR. -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetArchitecture)' == 'x64' and '$(TargetsWindows)' != 'true' and '$(RuntimeFlavor)' == 'coreclr'">
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/stress1_r/*">
@@ -78,11 +13,6 @@
         </ExcludeList>
     </ItemGroup>
 
-    <!-- Unix arm64 specific -->
-
-    <!-- Unix arm32 specific -->
-
-    <!-- All OSX targets on CoreCLR Runtime -->
 
     <!-- OSX x64 on CoreCLR Runtime -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsOSX)' == 'true' and '$(TargetArchitecture)' == 'x64' and '$(RuntimeFlavor)' == 'coreclr' ">
@@ -91,7 +21,6 @@
         </ExcludeList>
     </ItemGroup>
 
-    <!-- OSX arm64 on CoreCLR Runtime -->
 
     <!-- Crossgen2 specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TestBuildMode)' == 'crossgen2' or '$(TestBuildMode)' == 'crossgen') and '$(RuntimeFlavor)' == 'coreclr'">
@@ -99,12 +28,6 @@
             <Issue>https://github.com/dotnet/runtime/issues/83942</Issue>
         </ExcludeList>
     </ItemGroup>
-
-    <!-- Crossgen2 x86 specific excludes -->
-
-    <!-- Crossgen2 arm32 specific excludes -->
-
-    <!-- Crossgen2 arm32/arm64 specific excludes -->
 
     <!-- NativeAOT specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr'">
@@ -203,13 +126,6 @@
         <!-- https://github.com/dotnet/runtimelab/issues/155 -->
     </ItemGroup>
 
-    <!-- NativeAOT x86 specific -->
-
-    <!-- run.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
-         Exclude these scripts to avoid creating such methods for the superpmicollect dependent test projects
-         and running them separately from superpmicollect test. These should be excluded regardless of RuntimeFlavor/os/arch-->
-
-
     <!-- Known failures for mono runtime on *all* architectures/operating systems in *all* runtime modes -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_62692/Runtime_62692_*/**">
@@ -224,18 +140,12 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse42.X64/Crc32_*/**">
             <Issue>https://github.com/dotnet/runtime/issues/54185</Issue>
         </ExcludeList>
-
-
-
-
         <ExcludeList Include="$(XunitTestBinBase)GC/API/WeakReference/Finalize2/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)GC/API/WeakReference/Finalize2/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-
-
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SafeHandles/**">
             <Issue>https://github.com/dotnet/runtime/issues/48084</Issue>
         </ExcludeList>
@@ -350,21 +260,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/ThisCall/ThisCallTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i37/*">
-            <Issue>https://github.com/dotnet/runtime/issues/65702</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i57/*">
-            <Issue>https://github.com/dotnet/runtime/issues/65702</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i67/*">
-            <Issue>https://github.com/dotnet/runtime/issues/65702</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i77/*">
-            <Issue>https://github.com/dotnet/runtime/issues/65702</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i87/*">
-            <Issue>https://github.com/dotnet/runtime/issues/65702</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_DefaultMode_R2r/*">
           <Issue>missing assembly</Issue>
