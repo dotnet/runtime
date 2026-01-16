@@ -15,8 +15,12 @@ struct CallStubHeader
 {
     typedef void (*InvokeFunctionPtr)(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuationRet);
 
-    // Number of routines in the Routines array. The last one is the target method to call.
+    // Number of routines in the Routines array.
     int NumRoutines;
+    // Index of the target method slot within the Routines array.
+    // For normal calls, this is NumRoutines - 1.
+    // For Swift lowered returns, store routines follow the target slot.
+    int TargetSlotIndex;
     // Total stack size used for the arguments.
     int TotalStackSize;
     bool HasContinuationRet; // Indicates whether the stub supports returning a continuation
@@ -26,11 +30,12 @@ struct CallStubHeader
     // This is an array of routines that translate the arguments from the interpreter stack to the CPU registers and native stack.
     PCODE Routines[0];
 
-    CallStubHeader(int numRoutines, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, InvokeFunctionPtr pInvokeFunction)
+    CallStubHeader(int numRoutines, int targetSlotIndex, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, InvokeFunctionPtr pInvokeFunction)
     {
         LIMITED_METHOD_CONTRACT;
 
         NumRoutines = numRoutines;
+        TargetSlotIndex = targetSlotIndex;
         TotalStackSize = totalStackSize;
         Invoke = pInvokeFunction;
         HasContinuationRet = hasContinuationRet;
@@ -43,14 +48,14 @@ struct CallStubHeader
     {
         LIMITED_METHOD_CONTRACT;
 
-        VolatileStore(&Routines[NumRoutines - 1], target);
+        VolatileStore(&Routines[TargetSlotIndex], target);
     }
 
     PCODE GetTarget()
     {
         LIMITED_METHOD_CONTRACT;
 
-        return VolatileLoadWithoutBarrier(&Routines[NumRoutines - 1]);
+        return VolatileLoadWithoutBarrier(&Routines[TargetSlotIndex]);
     }
 
     size_t GetSize()
@@ -100,6 +105,7 @@ class CallStubGenerator
         ReturnType2Vector128,
         ReturnType3Vector128,
         ReturnType4Vector128,
+        ReturnTypeSwiftLowered,
 #endif // TARGET_ARM64
 #if defined(TARGET_RISCV64)
         ReturnType2I8,
@@ -141,6 +147,8 @@ class CallStubGenerator
     int m_s2 = NoRange;
     // The index of the next routine to store in the Routines array.
     int m_routineIndex = 0;
+    // The index of the target method slot in the Routines array.
+    int m_targetSlotIndex = -1;
     // The total stack size used for the arguments.
     int m_totalStackSize = 0;
 #ifdef TARGET_ARM64
@@ -148,6 +156,9 @@ class CallStubGenerator
     int m_swiftSelfByRefSize = 0;
     // Track if SwiftIndirectResult was used
     bool m_hasSwiftIndirectResult = false;
+    // Swift return lowering info
+    CORINFO_SWIFT_LOWERING m_swiftReturnLowering = {};
+    bool m_hasSwiftReturnLowering = false;
 #endif
 
     CallStubHeader::InvokeFunctionPtr m_pInvokeFunction = NULL;
@@ -173,6 +184,8 @@ class CallStubGenerator
     PCODE GetSwiftIndirectResultRoutine();
     PCODE GetSwiftLoadGPAtOffsetRoutine(int regIndex);
     PCODE GetSwiftLoadFPAtOffsetRoutine(int regIndex);
+    PCODE GetSwiftStoreGPAtOffsetRoutine(int regIndex);
+    PCODE GetSwiftStoreFPAtOffsetRoutine(int regIndex);
 #endif
     PCODE GetGPRegRangeRoutine(int r1, int r2);
     template<typename ArgIteratorType>
@@ -195,7 +208,8 @@ private:
 
         // The size of the temporary storage is the size of the CallStubHeader plus the size of the routines array.
         // The size of the routines array is three times the number of arguments plus one slot for the target method pointer.
-        return sizeof(CallStubHeader) + ((numArgs + 1) * 3 + 1) * sizeof(PCODE);
+        // Add extra space for Swift return lowering (up to 4 elements * 2 slots + terminator = 9 slots).
+        return sizeof(CallStubHeader) + ((numArgs + 1) * 3 + 10) * sizeof(PCODE);
     }
     void ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDesc *pMD);
     template<typename ArgIteratorType>

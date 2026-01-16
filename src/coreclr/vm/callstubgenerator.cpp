@@ -616,6 +616,16 @@ extern "C" void Load_D6_AtOffset();
 extern "C" void Load_D7_AtOffset();
 extern "C" void Load_Stack_AtOffset();
 
+extern "C" void Store_X0_AtOffset();
+extern "C" void Store_X1_AtOffset();
+extern "C" void Store_X2_AtOffset();
+extern "C" void Store_X3_AtOffset();
+extern "C" void Store_D0_AtOffset();
+extern "C" void Store_D1_AtOffset();
+extern "C" void Store_D2_AtOffset();
+extern "C" void Store_D3_AtOffset();
+extern "C" void SwiftLoweredReturnTerminator();
+
 extern "C" void Load_Ref_X0();
 extern "C" void Load_Ref_X1();
 extern "C" void Load_Ref_X2();
@@ -1894,7 +1904,7 @@ PCODE GPRegsRefStoreRoutines[] =
 
 #endif // TARGET_RISCV64
 
-#define LOG_COMPUTE_CALL_STUB 1
+#define LOG_COMPUTE_CALL_STUB 0
 
 PCODE CallStubGenerator::GetStackRoutine()
 {
@@ -2025,7 +2035,6 @@ PCODE CallStubGenerator::GetSwiftIndirectResultRoutine()
     return (PCODE)Load_SwiftIndirectResult;
 }
 
-// Get offset-aware load routine for Swift struct lowering (GP registers)
 PCODE CallStubGenerator::GetSwiftLoadGPAtOffsetRoutine(int regIndex)
 {
     static PCODE routines[] = {
@@ -2036,7 +2045,6 @@ PCODE CallStubGenerator::GetSwiftLoadGPAtOffsetRoutine(int regIndex)
     return routines[regIndex];
 }
 
-// Get offset-aware load routine for Swift struct lowering (FP registers)
 PCODE CallStubGenerator::GetSwiftLoadFPAtOffsetRoutine(int regIndex)
 {
     static PCODE routines[] = {
@@ -2044,6 +2052,24 @@ PCODE CallStubGenerator::GetSwiftLoadFPAtOffsetRoutine(int regIndex)
         (PCODE)Load_D4_AtOffset, (PCODE)Load_D5_AtOffset, (PCODE)Load_D6_AtOffset, (PCODE)Load_D7_AtOffset
     };
     _ASSERTE(regIndex >= 0 && regIndex < 8);
+    return routines[regIndex];
+}
+
+PCODE CallStubGenerator::GetSwiftStoreGPAtOffsetRoutine(int regIndex)
+{
+    static PCODE routines[] = {
+        (PCODE)Store_X0_AtOffset, (PCODE)Store_X1_AtOffset, (PCODE)Store_X2_AtOffset, (PCODE)Store_X3_AtOffset
+    };
+    _ASSERTE(regIndex >= 0 && regIndex < 4);
+    return routines[regIndex];
+}
+
+PCODE CallStubGenerator::GetSwiftStoreFPAtOffsetRoutine(int regIndex)
+{
+    static PCODE routines[] = {
+        (PCODE)Store_D0_AtOffset, (PCODE)Store_D1_AtOffset, (PCODE)Store_D2_AtOffset, (PCODE)Store_D3_AtOffset
+    };
+    _ASSERTE(regIndex >= 0 && regIndex < 4);
     return routines[regIndex];
 }
 #endif // TARGET_ARM64
@@ -2100,6 +2126,7 @@ extern "C" void CallJittedMethodRetVector128(PCODE *routines, int8_t *pArgs, int
 extern "C" void CallJittedMethodRet2Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet3Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet4Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetSwiftLowered(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void InterpreterStubRet2I8();
 extern "C" void InterpreterStubRet2Double();
 extern "C" void InterpreterStubRet3Double();
@@ -2116,6 +2143,7 @@ extern "C" void InterpreterStubRetVector128();
 extern "C" void InterpreterStubRet2Vector128();
 extern "C" void InterpreterStubRet3Vector128();
 extern "C" void InterpreterStubRet4Vector128();
+extern "C" void InterpreterStubRetSwiftLowered();
 #endif // TARGET_ARM64
 
 #if defined(TARGET_RISCV64)
@@ -2206,6 +2234,8 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
             INVOKE_FUNCTION_PTR(CallJittedMethodRet3Vector128);
         case ReturnType4Vector128:
             INVOKE_FUNCTION_PTR(CallJittedMethodRet4Vector128);
+        case ReturnTypeSwiftLowered:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetSwiftLowered);
 #endif // TARGET_ARM64
 #if defined(TARGET_RISCV64)
         case ReturnType2I8:
@@ -2301,6 +2331,8 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
             RETURN_TYPE_HANDLER(InterpreterStubRet3Vector128);
         case ReturnType4Vector128:
             RETURN_TYPE_HANDLER(InterpreterStubRet4Vector128);
+        case ReturnTypeSwiftLowered:
+            RETURN_TYPE_HANDLER(InterpreterStubRetSwiftLowered);
 #endif // TARGET_ARM64
 #if defined(TARGET_RISCV64)
         case ReturnType2I8:
@@ -2353,15 +2385,16 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
     S_SIZE_T finalStubSize(sizeof(CallStubHeader) + m_routineIndex * sizeof(PCODE));
     void *pHeaderStorage = pamTracker->Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(finalStubSize));
 
-    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_pInvokeFunction);
+    int targetSlotIndex = m_interpreterToNative ? m_targetSlotIndex : (m_routineIndex - 1);
+    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_pInvokeFunction);
 
     return pHeader;
 }
 
 struct CachedCallStubKey
 {
-    CachedCallStubKey(int32_t hashCode, int numRoutines, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, CallStubHeader::InvokeFunctionPtr pInvokeFunction)
-     : HashCode(hashCode), NumRoutines(numRoutines), TotalStackSize(totalStackSize), HasContinuationRet(hasContinuationRet), Invoke(pInvokeFunction), Routines(pRoutines)
+    CachedCallStubKey(int32_t hashCode, int numRoutines, int targetSlotIndex, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, CallStubHeader::InvokeFunctionPtr pInvokeFunction)
+     : HashCode(hashCode), NumRoutines(numRoutines), TargetSlotIndex(targetSlotIndex), TotalStackSize(totalStackSize), HasContinuationRet(hasContinuationRet), Invoke(pInvokeFunction), Routines(pRoutines)
     {
     }
 
@@ -2369,7 +2402,7 @@ struct CachedCallStubKey
     {
         LIMITED_METHOD_CONTRACT;
 
-        if (HashCode != other.HashCode || NumRoutines != other.NumRoutines || TotalStackSize != other.TotalStackSize || Invoke != other.Invoke || HasContinuationRet != other.HasContinuationRet)
+        if (HashCode != other.HashCode || NumRoutines != other.NumRoutines || TargetSlotIndex != other.TargetSlotIndex || TotalStackSize != other.TotalStackSize || Invoke != other.Invoke || HasContinuationRet != other.HasContinuationRet)
             return false;
 
         for (int i = 0; i < NumRoutines; i++)
@@ -2382,6 +2415,7 @@ struct CachedCallStubKey
 
     const int32_t HashCode = 0;
     const int NumRoutines = 0;
+    const int TargetSlotIndex = 0;
     const int TotalStackSize = 0;
     const bool HasContinuationRet = false;
     const CallStubHeader::InvokeFunctionPtr Invoke = NULL; // Pointer to the invoke function
@@ -2390,9 +2424,9 @@ struct CachedCallStubKey
 
 struct CachedCallStub
 {
-    CachedCallStub(int32_t hashCode, int numRoutines, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, CallStubHeader::InvokeFunctionPtr pInvokeFunction) :
+    CachedCallStub(int32_t hashCode, int numRoutines, int targetSlotIndex, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, CallStubHeader::InvokeFunctionPtr pInvokeFunction) :
         HashCode(hashCode),
-        Header(numRoutines, pRoutines, totalStackSize, hasContinuationRet, pInvokeFunction)
+        Header(numRoutines, targetSlotIndex, pRoutines, totalStackSize, hasContinuationRet, pInvokeFunction)
     {
     }
 
@@ -2404,6 +2438,7 @@ struct CachedCallStub
         return CachedCallStubKey(
             HashCode,
             Header.NumRoutines,
+            Header.TargetSlotIndex,
             &Header.Routines[0],
             Header.TotalStackSize,
             Header.HasContinuationRet,
@@ -2454,10 +2489,12 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
     hashState.Add(m_totalStackSize);
     hashState.AddPointer((void*)m_pInvokeFunction);
     hashState.Add(sig.IsAsyncCall() ? 1 : 0);
+    hashState.Add(m_targetSlotIndex);
 
     CachedCallStubKey cachedHeaderKey(
         hashState.ToHashCode(),
         m_routineIndex,
+        m_targetSlotIndex,
         pRoutines,
         ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE),
         sig.IsAsyncCall(),
@@ -2480,7 +2517,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
         // We only need to allocate the actual pRoutines array, and then we can just use the cachedHeader we already constructed
         size_t finalCachedCallStubSize = sizeof(CachedCallStub) + m_routineIndex * sizeof(PCODE);
         void* pHeaderStorage = amTracker.Track(SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(finalCachedCallStubSize)));
-        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_pInvokeFunction);
+        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_pInvokeFunction);
         s_callStubCache->Add(pHeader);
         amTracker.SuppressRelease();
 
@@ -3023,11 +3060,35 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
     int swiftLoweringCount = 0;
     int swiftIndirectResultCount = 0;
 
+    m_hasSwiftReturnLowering = false;
+    m_swiftReturnLowering = {};
+
     if (isSwiftCallConv)
     {
         if (!m_interpreterToNative)
         {
             COMPlusThrow(kNotImplementedException);
+        }
+
+        sig.Reset();
+        TypeHandle thReturnType;
+        CorElementType retCorType = sig.GetReturnTypeNormalized(&thReturnType);
+        if (retCorType == ELEMENT_TYPE_VALUETYPE && !thReturnType.IsNull() && !thReturnType.IsTypeDesc())
+        {
+            MethodTable* pRetMT = thReturnType.AsMethodTable();
+            if (pRetMT->IsValueType() && !pRetMT->IsHFA() && !isIntrinsicSIMDType(pRetMT))
+            {
+                CORINFO_SWIFT_LOWERING lowering = {};
+                pRetMT->GetNativeSwiftPhysicalLowering(&lowering, false);
+                if (!lowering.byReference && lowering.numLoweredElements > 0)
+                {
+                    m_hasSwiftReturnLowering = true;
+                    m_swiftReturnLowering = lowering;
+#if LOG_COMPUTE_CALL_STUB
+                    printf("Swift return lowering detected: %d elements\n", lowering.numLoweredElements);
+#endif
+                }
+            }
         }
 
         // Count how many extra arguments we need due to Swift lowering
@@ -3520,7 +3581,47 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
     if (m_interpreterToNative)
     {
         m_pInvokeFunction = GetInvokeFunctionPtr(returnType);
+        m_targetSlotIndex = m_routineIndex;
         m_routineIndex++; // Reserve one extra slot for the target method pointer
+
+#ifdef TARGET_ARM64
+        if (m_hasSwiftReturnLowering)
+        {
+            int gpRegIndex = 0;
+            int fpRegIndex = 0;
+
+            for (size_t i = 0; i < m_swiftReturnLowering.numLoweredElements; i++)
+            {
+                CorInfoType elemType = m_swiftReturnLowering.loweredElements[i];
+                uint32_t offset = m_swiftReturnLowering.offsets[i];
+
+                bool isFloat = (elemType == CORINFO_TYPE_FLOAT || elemType == CORINFO_TYPE_DOUBLE);
+
+                if (isFloat)
+                {
+                    _ASSERTE(fpRegIndex < 4);
+                    pRoutines[m_routineIndex++] = GetSwiftStoreFPAtOffsetRoutine(fpRegIndex);
+                    pRoutines[m_routineIndex++] = (PCODE)offset;
+                    fpRegIndex++;
+#if LOG_COMPUTE_CALL_STUB
+                    printf("Swift return store FP d%d at offset %d\n", fpRegIndex - 1, offset);
+#endif
+                }
+                else
+                {
+                    _ASSERTE(gpRegIndex < 4);
+                    pRoutines[m_routineIndex++] = GetSwiftStoreGPAtOffsetRoutine(gpRegIndex);
+                    pRoutines[m_routineIndex++] = (PCODE)offset;
+                    gpRegIndex++;
+#if LOG_COMPUTE_CALL_STUB
+                    printf("Swift return store GP x%d at offset %d\n", gpRegIndex - 1, offset);
+#endif
+                }
+            }
+
+            pRoutines[m_routineIndex++] = (PCODE)SwiftLoweredReturnTerminator;
+        }
+#endif // TARGET_ARM64
     }
     else
     {
@@ -3736,6 +3837,13 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
 template<typename ArgIteratorType>
 CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *pArgIt)
 {
+#ifdef TARGET_ARM64
+    if (m_hasSwiftReturnLowering)
+    {
+        return ReturnTypeSwiftLowered;
+    }
+#endif // TARGET_ARM64
+
     if (pArgIt->HasRetBuffArg())
     {
 #ifdef TARGET_AMD64

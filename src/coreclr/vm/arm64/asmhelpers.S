@@ -1008,6 +1008,23 @@ NESTED_ENTRY InterpreterStubRet4Vector128, _TEXT, NoHandler
     EPILOG_RETURN
 NESTED_END InterpreterStubRet4Vector128, _TEXT
 
+// This stub is for when an interpreted method is called with Swift calling convention
+// and returns a lowered struct. This stub writes return values to a buffer.
+NESTED_ENTRY InterpreterStubRetSwiftLowered, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19 // the IR bytecode pointer
+    mov x2, xzr
+    bl C_FUNC(ExecuteInterpretedMethod)
+    mov x9, x0                // Save return buffer address
+    ldp x0, x1, [x9]
+    ldp x2, x3, [x9, #16]
+    ldp d0, d1, [x9, #32]
+    ldp d2, d3, [x9, #48]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetSwiftLowered, _TEXT
+
 // Copy arguments from the processor stack to the interpreter stack
 // The CPU stack slots are aligned to pointer size.
 
@@ -2985,6 +3002,94 @@ LOCAL_LABEL(CallJittedMethodRet4Vector128_NoSwiftError):
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 48
     EPILOG_RETURN
 NESTED_END CallJittedMethodRet4Vector128, _TEXT
+
+.macro SwiftStore_AtOffset reg
+    ldr x11, [x10], #8
+    and w11, w11, #0xFFFF
+    str \reg, [x9, x11]
+    ldr x11, [x10], #8
+    br x11
+.endm
+
+LEAF_ENTRY Store_X0_AtOffset
+    SwiftStore_AtOffset x0
+LEAF_END Store_X0_AtOffset
+
+LEAF_ENTRY Store_X1_AtOffset
+    SwiftStore_AtOffset x1
+LEAF_END Store_X1_AtOffset
+
+LEAF_ENTRY Store_X2_AtOffset
+    SwiftStore_AtOffset x2
+LEAF_END Store_X2_AtOffset
+
+LEAF_ENTRY Store_X3_AtOffset
+    SwiftStore_AtOffset x3
+LEAF_END Store_X3_AtOffset
+
+.macro SwiftStoreFloat_AtOffset reg
+    ldr x11, [x10], #8
+    and w11, w11, #0xFFFF
+    str \reg, [x9, x11]
+    ldr x11, [x10], #8
+    br x11
+.endm
+
+LEAF_ENTRY Store_D0_AtOffset
+    SwiftStoreFloat_AtOffset d0
+LEAF_END Store_D0_AtOffset
+
+LEAF_ENTRY Store_D1_AtOffset
+    SwiftStoreFloat_AtOffset d1
+LEAF_END Store_D1_AtOffset
+
+LEAF_ENTRY Store_D2_AtOffset
+    SwiftStoreFloat_AtOffset d2
+LEAF_END Store_D2_AtOffset
+
+LEAF_ENTRY Store_D3_AtOffset
+    SwiftStoreFloat_AtOffset d3
+LEAF_END Store_D3_AtOffset
+
+NESTED_ENTRY CallJittedMethodRetSwiftLowered, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -64
+    stp x2, x4, [fp, #16]
+    str xzr, [fp, #56]
+    // Store the return address for the terminator to use
+    adr x11, LOCAL_LABEL(CallJittedMethodRetSwiftLowered_Epilog)
+    str x11, [fp, #32]
+    str x19, [fp, #48]
+    ldrsw x11, [x0, #-20]    // Load TargetSlotIndex
+    add x11, x11, #1         // TargetSlotIndex + 1
+    add x11, x0, x11, lsl #3 // x0 + (TargetSlotIndex + 1) * 8
+    str x11, [fp, #40]       // Save store routines start pointer
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    ldr x11, [fp, #56]
+    cbz x11, LOCAL_LABEL(CallJittedMethodRetSwiftLowered_NoSwiftError)
+    str x10, [x11]
+LOCAL_LABEL(CallJittedMethodRetSwiftLowered_NoSwiftError):
+    ldr x12, [fp, #24]
+    str x2, [x12]            // Store continuation return value
+    ldr x9, [fp, #16]        // Load return buffer address into x9
+    ldr x10, [fp, #40]       // Load store routines start pointer
+    ldr x11, [x10], #8       // Load first store routine
+    br x11
+LOCAL_LABEL(CallJittedMethodRetSwiftLowered_Epilog):
+    ldr x19, [fp, #48]       // Restore x19
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 64
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetSwiftLowered, _TEXT
+
+// Terminator routine branches back to the epilog
+LEAF_ENTRY SwiftLoweredReturnTerminator
+    ldr x11, [fp, #32]
+    br x11
+LEAF_END SwiftLoweredReturnTerminator
 
 
 #endif // FEATURE_INTERPRETER
