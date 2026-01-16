@@ -941,7 +941,6 @@ internal static partial class Interop
             // is not going to be manipulated.
             IntPtr cert = Interop.Ssl.SslGetCertificate(ssl);
 
-            // Fix for https://github.com/dotnet/runtime/issues/XXXXX
             // In TLS 1.3, new session tickets can be issued on resumed connections.
             // When resuming, no certificate is set on the SSL object, so inherit
             // the cert info from the current (resuming) session.
