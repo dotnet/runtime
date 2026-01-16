@@ -23,7 +23,7 @@ You can use these images to build native AOT apps which work on distros as old a
 The following Dockerfiles demonstrate how to construct a working build environment that can be used for volume-mounted docker builds. They can be modified to use the other image flavors we provide, like Alpine.
 
 - [Dockerfile.cross-build-x64-arm64](Dockerfile.cross-build-x64-arm64)
-- [Dockerfile.cross-build-x64-x64](Dockerfile.cross-build-x64-arm64)
+- [Dockerfile.cross-build-x64-x64](Dockerfile.cross-build-x64-x64)
 
 ### x64
 
