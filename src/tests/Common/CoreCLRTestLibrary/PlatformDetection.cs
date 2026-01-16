@@ -13,10 +13,21 @@ namespace TestLibrary
         public static bool Is64BitProcess => IntPtr.Size == 8;
 
         public static bool IsX86Process => RuntimeInformation.ProcessArchitecture == Architecture.X86;
+        public static bool IsX64Process => RuntimeInformation.ProcessArchitecture == Architecture.X64;
         public static bool IsNotX86Process => !IsX86Process;
+        public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsArm64Process => RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
+        public static bool IsRiscv64Process => RuntimeInformation.ProcessArchitecture == Architecture.Riscv64;
 
         public static bool IsWindows => OperatingSystem.IsWindows();
+
+        public static bool IsNotWindows => !OperatingSystem.IsWindows();
+
+        public static bool IsOSX => OperatingSystem.IsMacOS();
+
+        public static bool IsAndroid => OperatingSystem.IsAndroid();
+
+        public static bool IsSimulator => RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator") || RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator");
 
         public static bool IsBuiltInComEnabled => IsWindows && !Utilities.IsCoreClrInterpreter
                                             && (AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool isEnabled)
@@ -63,10 +74,12 @@ namespace TestLibrary
 
         static string _variant = Environment.GetEnvironmentVariable("DOTNET_RUNTIME_VARIANT");
 
+        public static bool IsMonoMiniJIT => _variant == "minijit";
         public static bool IsMonoLLVMAOT => _variant == "llvmaot";
         public static bool IsMonoLLVMFULLAOT => _variant == "llvmfullaot";
         public static bool IsMonoMINIFULLAOT => _variant == "minifullaot";
         public static bool IsMonoFULLAOT => IsMonoLLVMFULLAOT || IsMonoMINIFULLAOT;
+        public static bool IsMonoAnyAOT => IsMonoFULLAOT || IsMonoLLVMAOT;
         public static bool IsMonoInterpreter => _variant == "monointerpreter";
 
         // These platforms have not had their infrastructure updated to support native test assets.
