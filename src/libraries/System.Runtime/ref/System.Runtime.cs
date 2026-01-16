@@ -9108,7 +9108,7 @@ namespace System.Diagnostics.CodeAnalysis
         public const string TimeOnlyFormat = "TimeOnlyFormat";
         public const string TimeSpanFormat = "TimeSpanFormat";
         public const string Uri = "Uri";
-        public const string VisualBasic = "VB.NET";
+        public const string VisualBasic = "Visual Basic";
         public const string Xml = "Xml";
         public StringSyntaxAttribute(string syntax) { }
         public StringSyntaxAttribute(string syntax, params object?[] arguments) { }
