@@ -1048,7 +1048,7 @@ namespace System.Numerics
         {
             if (BinaryPrimitives.TryWriteUInt16BigEndian(destination, Significand))
             {
-                bytesWritten = sizeof(uint);
+                bytesWritten = sizeof(ushort);
                 return true;
             }
 
@@ -1061,7 +1061,7 @@ namespace System.Numerics
         {
             if (BinaryPrimitives.TryWriteUInt16LittleEndian(destination, Significand))
             {
-                bytesWritten = sizeof(uint);
+                bytesWritten = sizeof(ushort);
                 return true;
             }
 
