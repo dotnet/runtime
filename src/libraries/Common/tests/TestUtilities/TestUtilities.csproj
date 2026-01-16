@@ -1,9 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppMinimum);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks Condition="'$(TestSingleFile)' == 'false'">$(NetCoreAppMinimum);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFramework Condition="'$(TestSingleFile)' == 'true'">$(NetCoreAppMinimum)</TargetFramework>
+
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- For some reason, xunit.core.props isn't excluded in VS and sets this to true. -->
     <IsTestProject>false</IsTestProject>
+    <DefineConstants Condition="'$(TestSingleFile)' == 'true'">$(DefineConstants);TEST_SINGLE_FILE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -106,8 +109,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
-    <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
+    <PackageReference Condition="'$(TestSingleFile)' != 'true'"  Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+    <PackageReference Condition="'$(TestSingleFile)' != 'true'" Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
+    <PackageReference Condition="'$(TestSingleFile)' == 'true'" Include="xunit.v3.extensibility.core" Version="$(XUnitV3Version)" ExcludeAssets="build" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">

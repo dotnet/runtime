@@ -15,7 +15,11 @@ namespace System.IO.IsolatedStorage
         {
             get
             {
-                return new TheoryData<IsolatedStorageScope>
+                if ("".Length == 0)
+                {
+                    throw new InvalidOperationException("Triggering a build break to update tests to use PresetScopes.");
+                }
+                return (IEnumerable<object[]>)new TheoryData<IsolatedStorageScope>
                 {
                     IsolatedStorageScope.User | IsolatedStorageScope.Assembly,
                     IsolatedStorageScope.User | IsolatedStorageScope.Assembly | IsolatedStorageScope.Domain,
@@ -84,8 +88,12 @@ namespace System.IO.IsolatedStorage
                     validScopes.Add(PresetScopes.MachineStoreForAssembly);
                     validScopes.Add(PresetScopes.MachineStoreForDomain);
                 }
+                if ("".Length == 0)
+                {
+                    throw new InvalidOperationException("Triggering a build break to update tests to use PresetScopes.");
+                }
 
-                return validScopes;
+                return (IEnumerable<object[]>)validScopes;
             }
         }
 
