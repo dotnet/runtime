@@ -650,14 +650,9 @@ namespace System.IO.Compression
             }
         }
 
-        private static bool TrySkipBlockCore(Stream stream, Span<byte> blockBytes, int bytesRead, long currPosition)
+        private static bool TrySkipBlockCore(Stream stream, Span<byte> blockBytes, int bytesRead)
         {
             if (bytesRead != FieldLengths.Signature || !blockBytes.SequenceEqual(SignatureConstantBytes))
-            {
-                return false;
-            }
-
-            if (stream.Length < currPosition + FieldLocations.FilenameLength)
             {
                 return false;
             }
@@ -684,12 +679,11 @@ namespace System.IO.Compression
             ushort filenameLength = BinaryPrimitives.ReadUInt16LittleEndian(blockBytes[relativeFilenameLengthLocation..]);
             ushort extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(blockBytes[relativeExtraFieldLengthLocation..]);
 
-            if (stream.Length < stream.Position + filenameLength + extraFieldLength)
-            {
-                return false;
-            }
-
-            stream.Seek(filenameLength + extraFieldLength, SeekOrigin.Current);
+            // Calculate absolute position of compressed data and seek there
+            // Using SeekOrigin.Begin ensures we end up at the correct position
+            // regardless of any edge cases during header parsing
+            long dataStart = stream.Position + filenameLength + extraFieldLength;
+            stream.Seek(dataStart, SeekOrigin.Begin);
 
             return true;
         }
@@ -698,9 +692,8 @@ namespace System.IO.Compression
         public static bool TrySkipBlock(Stream stream)
         {
             Span<byte> blockBytes = stackalloc byte[FieldLengths.Signature];
-            long currPosition = stream.Position;
             int bytesRead = stream.ReadAtLeast(blockBytes, blockBytes.Length, throwOnEndOfStream: false);
-            if (!TrySkipBlockCore(stream, blockBytes, bytesRead, currPosition))
+            if (!TrySkipBlockCore(stream, blockBytes, bytesRead))
             {
                 return false;
             }
@@ -708,63 +701,6 @@ namespace System.IO.Compression
             return TrySkipBlockFinalize(stream, blockBytes, bytesRead);
         }
 
-        public static bool TrySkipBlockAESAware(Stream stream, out WinZipAesExtraField? aesExtraField)
-        {
-            aesExtraField = null;
-            BinaryReader reader = new BinaryReader(stream);
-
-            // Read the first 4 bytes (local file header signature)
-            byte[] signatureBytes = reader.ReadBytes(4);
-            if (!signatureBytes.AsSpan().SequenceEqual(SignatureConstantBytes))
-            {
-                return false; // Not a valid local file header
-            }
-
-            // Read fixed-size fields after signature
-            // Skip version through mod date (10 bytes), then skip CRC32 + sizes (12 bytes)
-            reader.ReadBytes(22); // Skip 22 bytes total
-
-            ushort nameLength = reader.ReadUInt16();
-            ushort extraLength = reader.ReadUInt16();
-
-            // Skip file name
-            stream.Seek(nameLength, SeekOrigin.Current);
-
-            // Calculate end of extra fields
-            long extraEnd = stream.Position + extraLength;
-
-            // Parse extra fields if present
-            if (extraLength > 0)
-            {
-                while (stream.Position < extraEnd)
-                {
-                    ushort headerId = reader.ReadUInt16();
-                    ushort dataSize = reader.ReadUInt16();
-
-                    if (headerId == WinZipAesExtraField.HeaderId) // 0x9901
-                    {
-                        // AES extra field structure:
-                        // Vendor version (2) + Vendor ID (2) + AES strength (1) + Original compression (2)
-                        ushort vendorVersion = reader.ReadUInt16();
-                        reader.ReadBytes(2); // Skip vendor ID 'AE'
-                        byte aesStrength = reader.ReadByte(); // 1, 2, or 3
-                        ushort compressionMethod = reader.ReadUInt16();
-
-                        aesExtraField = new WinZipAesExtraField(vendorVersion, aesStrength, compressionMethod);
-                        break;
-                    }
-                    else
-                    {
-                        stream.Seek(dataSize, SeekOrigin.Current); // Skip unknown extra field
-                    }
-                }
-            }
-
-            // Ensure we're positioned at the end of extra fields (where data begins)
-            stream.Seek(extraEnd, SeekOrigin.Begin);
-
-            return true;
-        }
     }
     internal struct WinZipAesExtraField
     {

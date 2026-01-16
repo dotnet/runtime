@@ -168,78 +168,13 @@ internal readonly partial struct ZipLocalFileHeader
         cancellationToken.ThrowIfCancellationRequested();
 
         byte[] blockBytes = new byte[FieldLengths.Signature];
-        long currPosition = stream.Position;
         int bytesRead = await stream.ReadAtLeastAsync(blockBytes, blockBytes.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
-        if (!TrySkipBlockCore(stream, blockBytes, bytesRead, currPosition))
+        if (!TrySkipBlockCore(stream, blockBytes, bytesRead))
         {
             return false;
         }
         bytesRead = await stream.ReadAtLeastAsync(blockBytes, blockBytes.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
         return TrySkipBlockFinalize(stream, blockBytes, bytesRead);
-    }
-
-    public static async Task<(bool success, WinZipAesExtraField? aesExtraField)> TrySkipBlockAESAwareAsync(Stream stream, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        WinZipAesExtraField? aesExtraField = null;
-
-        // Read the first 4 bytes (local file header signature)
-        byte[] signatureBytes = new byte[4];
-        await stream.ReadExactlyAsync(signatureBytes, cancellationToken).ConfigureAwait(false);
-        if (!signatureBytes.AsSpan().SequenceEqual(SignatureConstantBytes))
-        {
-            return (false, null); // Not a valid local file header
-        }
-
-        // Read fixed-size fields after signature
-        // Skip version through mod date (10 bytes), then skip CRC32 + sizes (12 bytes)
-        byte[] skipBuffer = new byte[22];
-        await stream.ReadExactlyAsync(skipBuffer, cancellationToken).ConfigureAwait(false);
-
-        byte[] lengthBuffer = new byte[4];
-        await stream.ReadExactlyAsync(lengthBuffer, cancellationToken).ConfigureAwait(false);
-        ushort nameLength = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(lengthBuffer.AsSpan(0, 2));
-        ushort extraLength = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(lengthBuffer.AsSpan(2, 2));
-
-        // Skip file name
-        stream.Seek(nameLength, SeekOrigin.Current);
-
-        // Parse extra fields if present
-        if (extraLength > 0)
-        {
-            long extraStart = stream.Position;
-            long extraEnd = extraStart + extraLength;
-
-            byte[] fieldHeader = new byte[4];
-            while (stream.Position < extraEnd)
-            {
-                await stream.ReadExactlyAsync(fieldHeader, cancellationToken).ConfigureAwait(false);
-                ushort headerId = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(fieldHeader.AsSpan(0, 2));
-                ushort dataSize = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(fieldHeader.AsSpan(2, 2));
-
-                if (headerId == WinZipAesExtraField.HeaderId) // 0x9901
-                {
-                    // AES extra field structure:
-                    // Vendor version (2) + Vendor ID (2) + AES strength (1) + Original compression (2)
-                    byte[] aesData = new byte[7];
-                    await stream.ReadExactlyAsync(aesData, cancellationToken).ConfigureAwait(false);
-                    ushort vendorVersion = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(aesData.AsSpan(0, 2));
-                    // Skip vendor ID 'AE' (bytes 2-3)
-                    byte aesStrength = aesData[4]; // 1, 2, or 3
-                    ushort compressionMethod = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(aesData.AsSpan(5, 2));
-
-                    aesExtraField = new WinZipAesExtraField(vendorVersion, aesStrength, compressionMethod);
-                    break;
-                }
-                else
-                {
-                    stream.Seek(dataSize, SeekOrigin.Current); // Skip unknown extra field
-                }
-            }
-        }
-
-        return (true, aesExtraField);
     }
 }
 

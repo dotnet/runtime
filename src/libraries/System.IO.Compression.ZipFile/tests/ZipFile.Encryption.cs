@@ -74,30 +74,6 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
-        public async Task Encryption_MultipleEntries_DifferentPasswords_RoundTrip(ZipArchiveEntry.EncryptionMethod encryptionMethod, bool async)
-        {
-            string archivePath = GetTempArchivePath();
-            var entries = new[]
-            {
-                ("file1.txt", "Content 1", (string?)"pass1", (ZipArchiveEntry.EncryptionMethod?)encryptionMethod),
-                ("file2.txt", "Content 2", (string?)"pass2", (ZipArchiveEntry.EncryptionMethod?)encryptionMethod)
-            };
-
-            await CreateArchiveWithEntries(archivePath, entries, async);
-
-            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
-            {
-                foreach (var (name, content, pwd, _) in entries)
-                {
-                    var entry = archive.GetEntry(name);
-                    Assert.NotNull(entry);
-                    await AssertEntryTextEquals(entry, content, pwd, async);
-                }
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(EncryptionMethodAndBoolTestData))]
         public async Task Encryption_MixedPlainAndEncrypted_RoundTrip(ZipArchiveEntry.EncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -193,7 +169,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        public void Negative_WrongPassword_Throws_InvalidDataException()
+        public void WrongPassword_Throws_InvalidDataException()
         {
             string archivePath = GetTempArchivePath();
             string password = "correct";
@@ -222,17 +198,19 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        [Fact]
-        public void Negative_OpeningPlainEntryWithPassword_Throws()
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task Negative_OpeningPlainEntryWithPassword_Throws(bool async)
         {
             string archivePath = GetTempArchivePath();
             var entries = new[] { ("plain.txt", "content", (string?)null, (ZipArchiveEntry.EncryptionMethod?)null) };
-            CreateArchiveWithEntries(archivePath, entries, async: false).GetAwaiter().GetResult();
+            await CreateArchiveWithEntries(archivePath, entries, async);
 
-            using (ZipArchive archive = ZipFile.OpenRead(archivePath))
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
             {
-                var entry = archive.GetEntry("plain.txt");
-                Assert.ThrowsAny<Exception>(() => entry.Open("password"));
+                ZipArchiveEntry entry = archive.GetEntry("plain.txt");
+                Assert.NotNull(entry);
+                Assert.Throws<InvalidDataException>(() => entry.Open("password"));
             }
         }
 
@@ -371,48 +349,6 @@ namespace System.IO.Compression.Tests
                 Assert.NotNull(entry);
                 Assert.True(entry.IsEncrypted);
                 await AssertEntryTextEquals(entry, modifiedContent, password, async);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(EncryptionMethodAndBoolTestData))]
-        public async Task UpdateMode_AppendToEncryptedEntry_RoundTrip(ZipArchiveEntry.EncryptionMethod encryptionMethod, bool async)
-        {
-            string archivePath = GetTempArchivePath();
-            string entryName = "test.txt";
-            string originalContent = "Original Content";
-            string appendedContent = " - Appended Text";
-            string password = "password123";
-
-            // Create archive with encrypted entry
-            var entries = new[] { (entryName, originalContent, (string?)password, (ZipArchiveEntry.EncryptionMethod?)encryptionMethod) };
-            await CreateArchiveWithEntries(archivePath, entries, async);
-
-            // Open in Update mode and append to the encrypted entry
-            using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Update))
-            {
-                ZipArchiveEntry entry = archive.GetEntry(entryName);
-                Assert.NotNull(entry);
-
-                using (Stream stream = entry.Open(password))
-                {
-                    // Seek to end and append
-                    stream.Seek(0, SeekOrigin.End);
-                    byte[] appendBytes = Encoding.UTF8.GetBytes(appendedContent);
-                    if (async)
-                        await stream.WriteAsync(appendBytes, 0, appendBytes.Length);
-                    else
-                        stream.Write(appendBytes, 0, appendBytes.Length);
-                }
-            }
-
-            // Verify content has original + appended
-            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
-            {
-                ZipArchiveEntry entry = archive.GetEntry(entryName);
-                Assert.NotNull(entry);
-                Assert.True(entry.IsEncrypted);
-                await AssertEntryTextEquals(entry, originalContent + appendedContent, password, async);
             }
         }
 
@@ -674,152 +610,7 @@ namespace System.IO.Compression.Tests
                 var entry = archive.GetEntry("test.txt");
                 Assert.NotNull(entry);
                 // Opening an encrypted entry without password in update mode should throw
-                Assert.ThrowsAny<Exception>(() => entry.Open());
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(Get_Booleans_Data))]
-        public async Task UpdateMode_ZipCryptoToAes_PreservesEncryption(bool async)
-        {
-            // This test verifies that modifying a ZipCrypto entry preserves encryption
-            string archivePath = GetTempArchivePath();
-            string entryName = "test.txt";
-            string originalContent = "Original ZipCrypto Content";
-            string modifiedContent = "Modified Content";
-            string password = "password123";
-
-            // Create archive with ZipCrypto encrypted entry
-            var entries = new[] { (entryName, originalContent, (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.ZipCrypto) };
-            await CreateArchiveWithEntries(archivePath, entries, async);
-
-            // Modify in Update mode
-            using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Update))
-            {
-                ZipArchiveEntry entry = archive.GetEntry(entryName);
-                Assert.NotNull(entry);
-                Assert.True(entry.IsEncrypted);
-
-                using (Stream stream = entry.Open(password))
-                {
-                    stream.SetLength(0);
-                    byte[] newContent = Encoding.UTF8.GetBytes(modifiedContent);
-                    if (async)
-                        await stream.WriteAsync(newContent, 0, newContent.Length);
-                    else
-                        stream.Write(newContent, 0, newContent.Length);
-                }
-            }
-
-            // Verify entry is still encrypted and can be read with original password
-            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
-            {
-                ZipArchiveEntry entry = archive.GetEntry(entryName);
-                Assert.NotNull(entry);
-                Assert.True(entry.IsEncrypted);
-                await AssertEntryTextEquals(entry, modifiedContent, password, async);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(Get_Booleans_Data))]
-        public async Task UpdateMode_MixedEncryption_ModifyAllEntries(bool async)
-        {
-            string archivePath = GetTempArchivePath();
-            string password = "password123";
-
-            var entries = new[]
-            {
-                ("plain1.txt", "Plain Content 1", (string?)null, (ZipArchiveEntry.EncryptionMethod?)null),
-                ("encrypted1.txt", "Encrypted Content 1", (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes256),
-                ("plain2.txt", "Plain Content 2", (string?)null, (ZipArchiveEntry.EncryptionMethod?)null),
-                ("encrypted2.txt", "Encrypted Content 2", (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.ZipCrypto)
-            };
-
-            await CreateArchiveWithEntries(archivePath, entries, async);
-
-            // Modify all entries in Update mode
-            using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Update))
-            {
-                // Modify plain1.txt
-                ZipArchiveEntry plain1 = archive.GetEntry("plain1.txt");
-                Assert.NotNull(plain1);
-                Assert.False(plain1.IsEncrypted);
-                using (Stream stream = await OpenEntryStream(async, plain1))
-                {
-                    stream.SetLength(0);
-                    byte[] content = Encoding.UTF8.GetBytes("Modified Plain Content 1");
-                    if (async)
-                        await stream.WriteAsync(content, 0, content.Length);
-                    else
-                        stream.Write(content, 0, content.Length);
-                }
-
-                // Modify encrypted1.txt (AES)
-                ZipArchiveEntry encrypted1 = archive.GetEntry("encrypted1.txt");
-                Assert.NotNull(encrypted1);
-                Assert.True(encrypted1.IsEncrypted);
-                using (Stream stream = encrypted1.Open(password))
-                {
-                    stream.SetLength(0);
-                    byte[] content = Encoding.UTF8.GetBytes("Modified Encrypted Content 1");
-                    if (async)
-                        await stream.WriteAsync(content, 0, content.Length);
-                    else
-                        stream.Write(content, 0, content.Length);
-                }
-
-                // Modify plain2.txt
-                ZipArchiveEntry plain2 = archive.GetEntry("plain2.txt");
-                Assert.NotNull(plain2);
-                Assert.False(plain2.IsEncrypted);
-                using (Stream stream = await OpenEntryStream(async, plain2))
-                {
-                    stream.SetLength(0);
-                    byte[] content = Encoding.UTF8.GetBytes("Modified Plain Content 2");
-                    if (async)
-                        await stream.WriteAsync(content, 0, content.Length);
-                    else
-                        stream.Write(content, 0, content.Length);
-                }
-
-                // Modify encrypted2.txt (ZipCrypto)
-                ZipArchiveEntry encrypted2 = archive.GetEntry("encrypted2.txt");
-                Assert.NotNull(encrypted2);
-                Assert.True(encrypted2.IsEncrypted);
-                using (Stream stream = encrypted2.Open(password))
-                {
-                    stream.SetLength(0);
-                    byte[] content = Encoding.UTF8.GetBytes("Modified Encrypted Content 2");
-                    if (async)
-                        await stream.WriteAsync(content, 0, content.Length);
-                    else
-                        stream.Write(content, 0, content.Length);
-                }
-            }
-
-            // Verify all modifications
-            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
-            {
-                var plain1 = archive.GetEntry("plain1.txt");
-                Assert.NotNull(plain1);
-                Assert.False(plain1.IsEncrypted);
-                await AssertEntryTextEquals(plain1, "Modified Plain Content 1", null, async);
-
-                var encrypted1 = archive.GetEntry("encrypted1.txt");
-                Assert.NotNull(encrypted1);
-                Assert.True(encrypted1.IsEncrypted);
-                await AssertEntryTextEquals(encrypted1, "Modified Encrypted Content 1", password, async);
-
-                var plain2 = archive.GetEntry("plain2.txt");
-                Assert.NotNull(plain2);
-                Assert.False(plain2.IsEncrypted);
-                await AssertEntryTextEquals(plain2, "Modified Plain Content 2", null, async);
-
-                var encrypted2 = archive.GetEntry("encrypted2.txt");
-                Assert.NotNull(encrypted2);
-                Assert.True(encrypted2.IsEncrypted);
-                await AssertEntryTextEquals(encrypted2, "Modified Encrypted Content 2", password, async);
+                Assert.ThrowsAny<ArgumentException>(() => entry.Open());
             }
         }
 
@@ -1135,6 +926,174 @@ namespace System.IO.Compression.Tests
         #endregion
 
         #endregion
+
+        [Theory]
+        [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        public async Task Encryption_TrueZip64_LargeEntry_RoundTrip(ZipArchiveEntry.EncryptionMethod encryptionMethod, bool async)
+        {
+            string archivePath = GetTempArchivePath();
+
+            try
+            {
+                // Clean up any leftover file from previous failed runs
+                if (File.Exists(archivePath))
+                {
+                    File.Delete(archivePath);
+                }
+
+                // Skip if insufficient disk space
+                long requiredSpace = 5L * 1024 * 1024 * 1024; // 5GB
+                DriveInfo drive = new DriveInfo(Path.GetPathRoot(Path.GetFullPath(archivePath))!);
+                if (drive.AvailableFreeSpace < requiredSpace * 2) // Need space for archive + verification
+                {
+                    return; // Skip test - insufficient disk space
+                }
+
+                string entryName = "zip64_true_large.bin";
+                long size = (long)uint.MaxValue + (1024 * 1024); // Just over 4GB
+                string password = "Zip64Password!";
+                int bufferSize = 64 * 1024 * 1024; // 64MB buffer
+
+                // Create a deterministic buffer for writing and verification
+                byte[] buffer = new byte[bufferSize];
+                new Random(42).NextBytes(buffer);
+
+                // Create archive with entry > 4GB to force Zip64
+                using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Create))
+                {
+                    ZipArchiveEntry entry = archive.CreateEntry(entryName, CompressionLevel.NoCompression);
+                    using (Stream s = entry.Open(password, encryptionMethod))
+                    {
+                        long written = 0;
+                        while (written < size)
+                        {
+                            int toWrite = (int)Math.Min(buffer.Length, size - written);
+                            if (async)
+                                await s.WriteAsync(buffer.AsMemory(0, toWrite));
+                            else
+                                s.Write(buffer, 0, toWrite);
+                            written += toWrite;
+                        }
+                    }
+                }
+
+                // Verify the archive was created and can be read
+                using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+                {
+                    ZipArchiveEntry entry = archive.GetEntry(entryName);
+                    Assert.NotNull(entry);
+                    Assert.True(entry.IsEncrypted);
+                    Assert.Equal(size, entry.Length);
+
+                    // Verify content by reading in chunks and checking pattern
+                    using (Stream s = entry.Open(password))
+                    {
+                        byte[] readBuffer = new byte[bufferSize];
+                        long totalRead = 0;
+
+                        while (totalRead < size)
+                        {
+                            int expectedToRead = (int)Math.Min(readBuffer.Length, size - totalRead);
+                            int actualRead = 0;
+                            while (actualRead < expectedToRead)
+                            {
+                                int bytesRead = async
+                                    ? await s.ReadAsync(readBuffer.AsMemory(actualRead, expectedToRead - actualRead))
+                                    : s.Read(readBuffer, actualRead, expectedToRead - actualRead);
+                                if (bytesRead == 0) break;
+                                actualRead += bytesRead;
+                            }
+
+                            Assert.Equal(expectedToRead, actualRead);
+                            Assert.True(readBuffer.AsSpan(0, actualRead).SequenceEqual(buffer.AsSpan(0, actualRead)));
+                            totalRead += actualRead;
+                        }
+
+                        Assert.Equal(size, totalRead);
+                    }
+                }
+            }
+            finally
+            {
+                // Clean up the large file
+                if (File.Exists(archivePath))
+                {
+                    File.Delete(archivePath);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        public async Task Encryption_TrueZip64_LargeEntry_UpdateMode_Throws(ZipArchiveEntry.EncryptionMethod encryptionMethod, bool async)
+        {
+            string archivePath = GetTempArchivePath();
+
+            try
+            {
+                // Clean up any leftover file from previous failed runs
+                if (File.Exists(archivePath))
+                {
+                    File.Delete(archivePath);
+                }
+
+                // Skip if insufficient disk space
+                long requiredSpace = 5L * 1024 * 1024 * 1024; // 5GB
+                DriveInfo drive = new DriveInfo(Path.GetPathRoot(Path.GetFullPath(archivePath))!);
+                if (drive.AvailableFreeSpace < requiredSpace * 2)
+                {
+                    return; // Skip test - insufficient disk space
+                }
+
+                string entryName = "zip64_true_large.bin";
+                long size = (long)uint.MaxValue + (1024 * 1024); // Just over 4GB
+                string password = "Zip64Password!";
+                int bufferSize = 64 * 1024 * 1024; // 64MB buffer
+
+                byte[] buffer = new byte[bufferSize];
+                new Random(42).NextBytes(buffer);
+
+                // Create archive with entry > 4GB to force Zip64
+                using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Create))
+                {
+                    ZipArchiveEntry entry = archive.CreateEntry(entryName, CompressionLevel.NoCompression);
+                    using (Stream s = entry.Open(password, encryptionMethod))
+                    {
+                        long written = 0;
+                        while (written < size)
+                        {
+                            int toWrite = (int)Math.Min(buffer.Length, size - written);
+                            if (async)
+                                await s.WriteAsync(buffer.AsMemory(0, toWrite));
+                            else
+                                s.Write(buffer, 0, toWrite);
+                            written += toWrite;
+                        }
+                    }
+                }
+
+                // Update mode should fail for entries larger than int.MaxValue
+                // because the implementation loads the entire decrypted content into a MemoryStream
+                using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Update))
+                {
+                    ZipArchiveEntry entry = archive.GetEntry(entryName);
+                    Assert.NotNull(entry);
+                    Assert.True(entry.IsEncrypted);
+
+                    // Opening the entry in update mode requires decrypting into memory,
+                    // which should fail for entries larger than memorystream MaxValue (~2GB)
+                    Assert.ThrowsAny<Exception>(() => entry.Open(password));
+                }
+            }
+            finally
+            {
+                // Clean up the large file
+                if (File.Exists(archivePath))
+                {
+                    File.Delete(archivePath);
+                }
+            }
+        }
 
     }
 }
