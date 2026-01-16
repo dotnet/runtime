@@ -35,7 +35,7 @@ using System.IO;
 
 namespace Mono.Linker.Steps
 {
-    internal class ResolveFromXmlStep : ProcessLinkerXmlStepBase
+    public class ResolveFromXmlStep : ProcessLinkerXmlStepBase
     {
         public ResolveFromXmlStep(Stream documentStream, string xmlDocumentLocation)
             : base(documentStream, xmlDocumentLocation)

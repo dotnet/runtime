@@ -323,6 +323,18 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:Mono.Linker.Steps.ProcessLinkerXmlStepBase</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:Mono.Linker.Steps.ResolveFromXmlStep</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:Mono.Linker.Steps.RootAssemblyInput</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.SubstitutionInfo</Target>
   </Suppression>
   <Suppression>
