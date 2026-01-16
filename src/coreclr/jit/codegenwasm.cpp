@@ -24,10 +24,10 @@ void CodeGen::genMarkLabelsForCodegen()
 }
 
 //------------------------------------------------------------------------
-// genWasmLocals: generate wasm local declarations
+// genBeginFnProlog: generate wasm local declarations
 //
 // TODO-WASM: pre-declare all "register" locals
-void CodeGen::genWasmLocals()
+void CodeGen::genBeginFnProlog()
 {
     // TODO-WASM: proper local count, local declarations, and shadow stack maintenance
     GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, (unsigned)WasmValueType::Count - 1);
@@ -41,6 +41,19 @@ void CodeGen::genWasmLocals()
         GetEmitter()->emitIns_I_Ty(INS_local_decl, countPerType, static_cast<WasmValueType>(i), localOffset);
         localOffset += countPerType;
     }
+}
+
+//------------------------------------------------------------------------
+// genEnregisterOSRArgsAndLocals: enregister OSR args and locals.
+//
+void CodeGen::genEnregisterOSRArgsAndLocals()
+{
+    unreached(); // OSR not supported on WASM.
+}
+
+void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
+{
+    // NYI_WASM("Un-undefine 'genHomeRegisterParams' in codegencommon.cpp and proceed from there");
 }
 
 void CodeGen::genFnEpilog(BasicBlock* block)
@@ -351,6 +364,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_NEG:
         case GT_NOT:
             genCodeForNegNot(treeNode->AsOp());
+            break;
+
+        case GT_IND:
+            genCodeForIndir(treeNode->AsIndir());
+            break;
+
+        case GT_STOREIND:
+            genCodeForStoreInd(treeNode->AsStoreInd());
             break;
 
         default:
@@ -872,6 +893,62 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForIndir: Produce code for a GT_IND node.
+//
+// Arguments:
+//    tree - the GT_IND node
+//
+void CodeGen::genCodeForIndir(GenTreeIndir* tree)
+{
+    assert(tree->OperIs(GT_IND));
+
+    var_types   type = tree->TypeGet();
+    instruction ins  = ins_Load(type);
+
+    genConsumeAddress(tree->Addr());
+
+    // TODO-WASM: Memory barriers
+
+    GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), 0);
+
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForStoreInd: Produce code for a GT_STOREIND node.
+//
+// Arguments:
+//    tree - the GT_STOREIND node
+//
+void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
+{
+    GenTree* data = tree->Data();
+    GenTree* addr = tree->Addr();
+
+    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
+    if (writeBarrierForm != GCInfo::WBF_NoBarrier)
+    {
+        NYI_WASM("write barriers in StoreInd");
+    }
+    else // A normal store, not a WriteBarrier store
+    {
+        // We must consume the operands in the proper execution order,
+        // so that liveness is updated appropriately.
+        genConsumeAddress(addr);
+        genConsumeRegs(data);
+
+        var_types   type = tree->TypeGet();
+        instruction ins  = ins_Store(type);
+
+        // TODO-WASM: Memory barriers
+
+        GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), 0);
+    }
+
+    genUpdateLife(tree);
+}
+
+//------------------------------------------------------------------------
 // genCodeForCompare: Produce code for a GT_EQ/GT_NE/GT_LT/GT_LE/GT_GE/GT_GT node.
 //
 // Arguments:
@@ -1078,6 +1155,22 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 void CodeGen::genSpillVar(GenTree* tree)
 {
     NYI_WASM("Put all spillng to memory under '#if HAS_FIXED_REGISTER_SET'");
+}
+
+//------------------------------------------------------------------------
+// genLoadLocalIntoReg: set the register to "load(local on stack)".
+//
+// Arguments:
+//    targetReg - The register to load into
+//    lclNum    - The local on stack to load from
+//
+void CodeGen::genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum)
+{
+    LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
+    var_types  type   = varDsc->GetRegisterType();
+    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+    GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), lclNum, 0);
+    GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(type), WasmRegToIndex(targetReg));
 }
 
 //------------------------------------------------------------------------

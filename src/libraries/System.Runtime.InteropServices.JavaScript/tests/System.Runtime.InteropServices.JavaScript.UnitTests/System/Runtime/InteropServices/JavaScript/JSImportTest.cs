@@ -246,7 +246,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public unsafe void CreateFunctionInternal()
         {
-            Func<bool> internals = Utils.CreateFunctionBool("return INTERNAL.mono_wasm_runtime_is_ready");
+            Func<bool> internals = Utils.CreateFunctionBool("return INTERNAL.getGlobalThis() === globalThis;");
             Assert.True(internals());
         }
 
