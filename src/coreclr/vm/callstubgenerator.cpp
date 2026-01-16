@@ -3072,7 +3072,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 
                     if (!lowering.byReference && lowering.numLoweredElements > 0)
                     {
-                        newArgCount += lowering.numLoweredElements;
+                        newArgCount += (int)lowering.numLoweredElements;
                         continue;
                     }
                 }
@@ -3083,7 +3083,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 
         // Build new signature with lowered structs and store lowering info
         SigBuilder swiftSigBuilder;
-        swiftSigBuilder.AppendByte(sig.GetCallingConventionInfo());
+        swiftSigBuilder.AppendByte((BYTE)sig.GetCallingConventionInfo());
         swiftSigBuilder.AppendData(newArgCount);
 
         // Copy return type
