@@ -9,8 +9,8 @@
 /* The Computer Language Benchmarks Game
 using TestLibrary;
    http://benchmarksgame.alioth.debian.org/
- 
-   contributed by Isaac Gouy 
+
+   contributed by Isaac Gouy
    modified by Josh Goldfoot, based on the Java version by The Anh Tran
 */
 
@@ -25,7 +25,7 @@ namespace BenchmarksGame
     public class SpectralNorm_3
     {
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingNotSupported))]
         [Fact]
         public static int TestEntryPoint()
         {

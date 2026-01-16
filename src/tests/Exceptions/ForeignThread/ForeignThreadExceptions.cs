@@ -88,9 +88,7 @@ public class ForeignThreadExceptionsTest
     }
 
     [ActiveIssue("llvmfullaot: EH problem", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
-    [ActiveIssue("needs triage", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-    [ActiveIssue("needs triage", TestPlatforms.Android)]
-    [ActiveIssue("Failed to catch an exception! System.DllNotFoundException: ForeignThreadExceptionsNative", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [Fact]
     public static int TestEntryPoint()
     {

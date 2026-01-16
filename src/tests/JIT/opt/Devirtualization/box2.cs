@@ -13,7 +13,7 @@ public class Program
     {
         for (int i = 0; i < 10; i++)
         {
-            // In the associated AwaitUnsafeOnCompleted, the 
+            // In the associated AwaitUnsafeOnCompleted, the
             // jit should devirtualize, remove the box,
             // and change to call unboxed entry, passing
             // extra context argument.
@@ -21,7 +21,7 @@ public class Program
         }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingNotSupported))]
     [Fact]
     public static void TestEntryPoint() => Task.Run(TestTask).Wait();
 }

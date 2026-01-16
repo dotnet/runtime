@@ -16,7 +16,7 @@ namespace Precise
         {
             test.b = 0xF;
         }
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingNotSupported))]
         [Fact]
         [OuterLoop]
         public static int TestEntryPoint()
@@ -46,7 +46,7 @@ namespace Precise
                 foreach (Thread _thread in tasks)
                     _thread.Start();
 
-                // Wait for tasks to finish	
+                // Wait for tasks to finish
                 foreach (Thread _thread in tasks)
                     _thread.Join();
 

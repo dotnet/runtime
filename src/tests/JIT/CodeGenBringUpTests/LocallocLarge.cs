@@ -62,7 +62,7 @@ public class BringUpTest_LocallocLarge
         return ok;
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingNotSupported))]
     [Fact]
     public static int TestEntryPoint()
     {

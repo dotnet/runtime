@@ -8,9 +8,9 @@
 
 /* The Computer Language Benchmarks Game
 using TestLibrary;
-   http://benchmarksgame.alioth.debian.org/ 
+   http://benchmarksgame.alioth.debian.org/
 
-   contributed by Marek Safar  
+   contributed by Marek Safar
    *reset*
    concurrency added by Peperud
    minor improvements by Alex Yakunin
@@ -28,7 +28,7 @@ namespace BenchmarksGame
         public const int MinDepth = 4;
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingNotSupported))]
         [Fact]
         public static int TestEntryPoint()
         {

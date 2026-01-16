@@ -18,7 +18,6 @@ public class CallbackTests
     [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [ActiveIssue("needs triage", TestPlatforms.Android)]
-    [ActiveIssue("System.DllNotFoundException: DoesNotExist", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static int TestEntryPoint()
     {

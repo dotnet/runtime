@@ -289,11 +289,8 @@ public unsafe class SuppressGCTransitionTest
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/70490", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
-    [ActiveIssue("needs triage", TestPlatforms.Android)]
-    [ActiveIssue("System.DllNotFoundException: SuppressGCTransitionNative", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-    [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [Xunit.SkipOnCoreClrAttribute("Depends on marshalled pinvoke calli", RuntimeTestModes.InterpreterActive)]
+    [Fact]
     public static void TestEntryPoint()
     {
         CheckGCMode.Initialize(&SuppressGCTransitionNative.SetIsInCooperativeModeFunction);

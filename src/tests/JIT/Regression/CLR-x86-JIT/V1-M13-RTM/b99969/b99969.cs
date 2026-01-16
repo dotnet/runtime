@@ -61,7 +61,7 @@ public class Test_b99969
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingNotSupported))]
     public static int TestEntryPoint()
     {
         Test_b99969 t = new Test_b99969();

@@ -75,7 +75,6 @@ namespace BenchmarksGame
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-        [ActiveIssue("needs triage", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Fact]
         public static int TestEntryPoint()
         {

@@ -61,9 +61,7 @@ public unsafe class Runtime_76194
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
-    [ActiveIssue("needs triage", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/54906", TestPlatforms.Android)]
-    [ActiveIssue("System.DllNotFoundException: CrossplatVirtualAlloc", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [Fact]
     public static void TestEntryPoint()
     {
