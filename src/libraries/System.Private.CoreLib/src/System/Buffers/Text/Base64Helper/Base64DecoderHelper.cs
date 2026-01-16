@@ -308,15 +308,19 @@ namespace System.Buffers.Text
                     bytesWritten += localWritten;
                     if (status is not OperationStatus.InvalidData)
                     {
-                        // If we got DestinationTooSmall but wrote nothing, the issue might be trailing whitespace
-                        // or that the destination is too small to process even one block with the current approach.
-                        // Fall back to block-wise decoding which strips whitespace.
-                        if (status == OperationStatus.DestinationTooSmall && localWritten == 0 && localConsumed == 0)
+                        // If we got DestinationTooSmall and have remaining non-whitespace data,
+                        // fall back to block-wise decoding which can handle small destinations better.
+                        if (status == OperationStatus.DestinationTooSmall && !source.IsEmpty)
                         {
-                            // Reset and use the original source for blockwise decoding
-                            bytesConsumed = 0;
-                            bytesWritten = 0;
-                            return decoder.DecodeWithWhiteSpaceBlockwiseWrapper(decoder, originalSource, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
+                            // Check if there's non-whitespace remaining
+                            int nonWhitespaceIdx = decoder.IndexOfAnyExceptWhiteSpace(source.Slice(localConsumed));
+                            if (nonWhitespaceIdx >= 0)
+                            {
+                                // Reset and use blockwise decoder from the start
+                                bytesConsumed = 0;
+                                bytesWritten = 0;
+                                return decoder.DecodeWithWhiteSpaceBlockwiseWrapper(decoder, originalSource, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
+                            }
                         }
                         break;
                     }
