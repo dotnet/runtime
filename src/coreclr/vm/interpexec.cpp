@@ -12,6 +12,10 @@
 #include "gchelpers.inl"
 #include "arraynative.inl"
 
+#ifdef DEBUGGING_SUPPORTED
+#include "../debug/ee/executioncontrol.h"
+#endif // DEBUGGING_SUPPORTED
+
 // for numeric_limits
 #include <limits>
 #include <functional>
@@ -477,7 +481,7 @@ static void InterpHalt()
 #endif // DEBUG
 
 #ifdef DEBUGGING_SUPPORTED
-static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *pFrame, const int8_t *stack, InterpreterFrame *pInterpreterFrame, DWORD exceptionCode)
+static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *pFrame, const int8_t *stack, InterpreterFrame *pInterpreterFrame, DWORD exceptionCode, bool isStepOut)
 {
     Thread *pThread = GetThread();
     if (pThread != NULL && g_pDebugInterface != NULL)
@@ -494,22 +498,36 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
         ctx.ContextFlags = CONTEXT_FULL;
         SetSP(&ctx, (DWORD64)pFrame);
         SetFP(&ctx, (DWORD64)stack);
-        SetIP(&ctx, (DWORD64)ip); 
+        SetIP(&ctx, (DWORD64)ip);
         SetFirstArgReg(&ctx, dac_cast<TADDR>(pInterpreterFrame)); // Enable debugger to iterate over interpreter frames
 
-        // We need to add a FaultingExceptionFrame because debugger checks for it
-        // before adjusting the IP (see `AdjustIPAfterException`).
-        FaultingExceptionFrame fef;
-        fef.InitAndLink(&ctx);
+        // Check if this is a step-out breakpoint (from Debugger.Break() via TrapStepOut).
+        // Step-out breakpoints need FaultingExceptionFrame to trigger AdjustIPAfterException,
+        // which adjusts the IP backward to show the correct source line.
+        // IDE breakpoints don't need this adjustment since the IP already points to the correct location.
+        if (isStepOut)
+        {
+            // Step-out breakpoint: use FaultingExceptionFrame to trigger AdjustIPAfterException
+            FaultingExceptionFrame fef;
+            fef.InitAndLink(&ctx);
 
-        // Notify the debugger of the exception
-        g_pDebugInterface->FirstChanceNativeException(
-            &exceptionRecord,
-            &ctx,
-            exceptionCode,
-            pThread);
+            g_pDebugInterface->FirstChanceNativeException(
+                &exceptionRecord,
+                &ctx,
+                exceptionCode,
+                pThread);
 
-        fef.Pop();
+            fef.Pop();
+        }
+        else
+        {
+            // IDE breakpoint: don't use FaultingExceptionFrame, IP is already correct
+            g_pDebugInterface->FirstChanceNativeException(
+                &exceptionRecord,
+                &ctx,
+                exceptionCode,
+                pThread);
+        }
     }
 }
 #endif // DEBUGGING_SUPPORTED
@@ -969,6 +987,11 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     int32_t returnOffset, callArgsOffset, methodSlot;
     bool isTailcall = false;
     MethodDesc* targetMethod;
+    uint32_t opcode;
+#ifdef DEBUGGING_SUPPORTED
+    InterpreterExecutionControl *execControl = InterpreterExecutionControl::GetInstance();
+    BreakpointInfo bpInfo;
+#endif // DEBUGGING_SUPPORTED
 
     SAVE_THE_LOWEST_SP;
 
@@ -985,8 +1008,11 @@ MAIN_LOOP:
             // It will be useful for testing e.g. the debug info at various locations in the current method, so let's
             // keep it for such purposes until we don't need it anymore.
             pFrame->ip = (int32_t*)ip;
-
-            switch (*ip)
+            opcode = ip[0];
+#ifdef DEBUGGING_SUPPORTED
+SWITCH_OPCODE:
+#endif // DEBUGGING_SUPPORTED
+            switch (opcode)
             {
 #ifdef DEBUG
                 case INTOP_HALT:
@@ -997,12 +1023,19 @@ MAIN_LOOP:
 #ifdef DEBUGGING_SUPPORTED
                 case INTOP_BREAKPOINT:
                 {
-                    InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame, STATUS_BREAKPOINT);
-                    break;
+                    bpInfo = execControl->GetBreakpointInfo(ip);
+                    InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame, STATUS_BREAKPOINT, bpInfo.isStepOut);
+                    if (!bpInfo.isStepOut)
+                    {
+                        opcode = bpInfo.originalOpcode;
+                        goto SWITCH_OPCODE;
+                    } else {
+                        break;
+                    }
                 }
                 case INTOP_SINGLESTEP:
                 {
-                    InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame, STATUS_SINGLE_STEP);
+                    // InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame, STATUS_SINGLE_STEP);
                     break;
                 }
 #endif // DEBUGGING_SUPPORTED

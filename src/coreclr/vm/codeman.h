@@ -2947,6 +2947,16 @@ public:
         return m_pJM != NULL;
     }
 
+    BOOL        IsInterpretedCode()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+#ifdef FEATURE_INTERPRETER
+        return m_pJM != NULL && m_pJM == ExecutionManager::GetInterpreterJitManager();
+#else
+        return FALSE;
+#endif
+    }
+
     IJitManager* GetJitManager()
     {
         LIMITED_METHOD_DAC_CONTRACT;
