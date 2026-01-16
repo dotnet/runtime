@@ -371,7 +371,7 @@ def main():
             # Run each scenario with all environment variable sets
             for idx, env_vars in enumerate(env_var_sets, 1):
                 env_vars_str = ", ".join(f"{k}={v}" for k, v in env_vars.items())
-                print(f"### Running {scenario_name} benchmark (set {idx}/6: {env_vars_str})... ###")
+                print(f"### Running {scenario_name} benchmark (set {idx}/{len(env_var_sets)}: {env_vars_str})... ###")
                 run_crank_scenario(
                     crank_app_path,
                     scenario_name,
