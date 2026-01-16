@@ -745,24 +745,46 @@ def main():
     
     if dry_run:
         print("\n=== DRY RUN MODE ===")
-        print("Run with --apply to actually modify files\n")
+        print("Run with --apply to actually modify files")
+        print("Run with --apply --limit=N to apply changes to first N items\n")
         limit = limit or 10
     
     items_to_process = exclusions[:limit] if limit else exclusions
     
     success_count = 0
+    no_project_count = 0
+    no_mapping_count = 0
+    
     for i, exclusion in enumerate(items_to_process):
         try:
+            resolved_path, project_name_hint = resolve_path(exclusion.path, repo_root)
+            project_files = find_project_files(resolved_path, project_name_hint)
+            mapping = get_replacement_for_condition(exclusion.condition)
+            
+            if not mapping:
+                no_mapping_count += 1
+            if not project_files:
+                no_project_count += 1
+            
             migrate_exclusion(exclusion, repo_root, dry_run)
             success_count += 1
         except Exception as e:
             print(f"ERROR processing {exclusion.path}: {e}")
     
-    print(f"\nProcessed {len(items_to_process)} of {len(exclusions)} items")
-    print(f"Successful: {success_count}")
+    print(f"\n{'='*60}")
+    print(f"SUMMARY:")
+    print(f"  Processed: {len(items_to_process)} of {len(exclusions)} items")
+    print(f"  Successful: {success_count}")
+    print(f"  No project files: {no_project_count}")
+    print(f"  No condition mapping: {no_mapping_count}")
+    print(f"  Remaining: {len(exclusions) - (limit if limit else len(exclusions))}")
+    print(f"{'='*60}")
     
     if not dry_run:
-        print("\nNOTE: You should now remove the migrated items from issues.targets")
+        print("\nNOTE: You should now:")
+        print("  1. Build and test the affected test projects")
+        print("  2. Remove the migrated items from issues.targets")
+        print("  3. Commit the changes")
 
 
 if __name__ == '__main__':
