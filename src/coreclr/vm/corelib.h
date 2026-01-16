@@ -334,9 +334,6 @@ DEFINE_METHOD(SYSTEM_EXCEPTION,     STR_EX_CTOR,            .ctor,              
 DEFINE_CLASS(TYPE_INIT_EXCEPTION,   System,                 TypeInitializationException)
 DEFINE_METHOD(TYPE_INIT_EXCEPTION,  STR_EX_CTOR,            .ctor,                      IM_Str_Exception_RetVoid)
 
-DEFINE_CLASS(THREAD_START_EXCEPTION,Threading,              ThreadStartException)
-DEFINE_METHOD(THREAD_START_EXCEPTION,EX_CTOR,               .ctor,                      IM_Exception_RetVoid)
-
 DEFINE_CLASS(VALUETASK_1, Tasks, ValueTask`1)
 DEFINE_METHOD(VALUETASK_1, GET_ISCOMPLETED, get_IsCompleted, NoSig)
 DEFINE_METHOD(VALUETASK_1, GET_RESULT, get_Result, NoSig)
@@ -993,6 +990,9 @@ DEFINE_CLASS(THREAD,                Threading,              Thread)
 DEFINE_METHOD(THREAD,               START_CALLBACK,                          StartCallback,                               IM_RetVoid)
 DEFINE_METHOD(THREAD,               POLLGC,                                  PollGC,                               NoSig)
 DEFINE_METHOD(THREAD,               ON_THREAD_EXITING,                       OnThreadExiting,                      IM_RetVoid)
+#ifdef FOR_ILLINK
+DEFINE_METHOD(THREAD,               CTOR,                   .ctor,           IM_RetVoid)
+#endif // FOR_ILLINK
 
 #ifdef FEATURE_OBJCMARSHAL
 DEFINE_CLASS(AUTORELEASEPOOL,       Threading,              AutoreleasePool)

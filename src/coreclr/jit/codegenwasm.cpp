@@ -24,10 +24,10 @@ void CodeGen::genMarkLabelsForCodegen()
 }
 
 //------------------------------------------------------------------------
-// genWasmLocals: generate wasm local declarations
+// genBeginFnProlog: generate wasm local declarations
 //
 // TODO-WASM: pre-declare all "register" locals
-void CodeGen::genWasmLocals()
+void CodeGen::genBeginFnProlog()
 {
     // TODO-WASM: proper local count, local declarations, and shadow stack maintenance
     GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, (unsigned)WasmValueType::Count - 1);
@@ -41,6 +41,19 @@ void CodeGen::genWasmLocals()
         GetEmitter()->emitIns_I_Ty(INS_local_decl, countPerType, static_cast<WasmValueType>(i), localOffset);
         localOffset += countPerType;
     }
+}
+
+//------------------------------------------------------------------------
+// genEnregisterOSRArgsAndLocals: enregister OSR args and locals.
+//
+void CodeGen::genEnregisterOSRArgsAndLocals()
+{
+    unreached(); // OSR not supported on WASM.
+}
+
+void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
+{
+    // NYI_WASM("Un-undefine 'genHomeRegisterParams' in codegencommon.cpp and proceed from there");
 }
 
 void CodeGen::genFnEpilog(BasicBlock* block)
@@ -353,6 +366,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForNegNot(treeNode->AsOp());
             break;
 
+        case GT_IND:
+            genCodeForIndir(treeNode->AsIndir());
+            break;
+
+        case GT_STOREIND:
+            genCodeForStoreInd(treeNode->AsStoreInd());
+            break;
+
         default:
 #ifdef DEBUG
             NYIRAW(GenTree::OpName(treeNode->OperGet()));
@@ -443,7 +464,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 //
 static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types type)
 {
-    if (type == TYP_BYREF)
+    if ((type == TYP_BYREF) || (type == TYP_REF))
     {
         type = TYP_I_IMPL;
     }
@@ -793,10 +814,16 @@ void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
 {
     assert(lclAddrNode->OperIs(GT_LCL_ADDR));
+    bool     FPBased;
+    unsigned lclNum    = lclAddrNode->GetLclNum();
+    unsigned lclOffset = lclAddrNode->GetLclOffs();
 
     GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
-    GetEmitter()->emitIns_S(INS_I_const, EA_PTRSIZE, lclAddrNode->GetLclNum(), lclAddrNode->GetLclOffs());
-    GetEmitter()->emitIns(INS_I_add);
+    if ((lclOffset != 0) || (compiler->lvaFrameAddress(lclNum, &FPBased) != 0))
+    {
+        GetEmitter()->emitIns_S(INS_I_const, EA_PTRSIZE, lclNum, lclOffset);
+        GetEmitter()->emitIns(INS_I_add);
+    }
     genProduceReg(lclAddrNode);
 }
 
@@ -869,6 +896,62 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     unsigned wasmLclIndex = WasmRegToIndex(targetReg);
     GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(tree), wasmLclIndex);
     genUpdateLifeStore(tree, targetReg, varDsc);
+}
+
+//------------------------------------------------------------------------
+// genCodeForIndir: Produce code for a GT_IND node.
+//
+// Arguments:
+//    tree - the GT_IND node
+//
+void CodeGen::genCodeForIndir(GenTreeIndir* tree)
+{
+    assert(tree->OperIs(GT_IND));
+
+    var_types   type = tree->TypeGet();
+    instruction ins  = ins_Load(type);
+
+    genConsumeAddress(tree->Addr());
+
+    // TODO-WASM: Memory barriers
+
+    GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), 0);
+
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForStoreInd: Produce code for a GT_STOREIND node.
+//
+// Arguments:
+//    tree - the GT_STOREIND node
+//
+void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
+{
+    GenTree* data = tree->Data();
+    GenTree* addr = tree->Addr();
+
+    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
+    if (writeBarrierForm != GCInfo::WBF_NoBarrier)
+    {
+        NYI_WASM("write barriers in StoreInd");
+    }
+    else // A normal store, not a WriteBarrier store
+    {
+        // We must consume the operands in the proper execution order,
+        // so that liveness is updated appropriately.
+        genConsumeAddress(addr);
+        genConsumeRegs(data);
+
+        var_types   type = tree->TypeGet();
+        instruction ins  = ins_Store(type);
+
+        // TODO-WASM: Memory barriers
+
+        GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), 0);
+    }
+
+    genUpdateLife(tree);
 }
 
 //------------------------------------------------------------------------
@@ -1078,6 +1161,22 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 void CodeGen::genSpillVar(GenTree* tree)
 {
     NYI_WASM("Put all spillng to memory under '#if HAS_FIXED_REGISTER_SET'");
+}
+
+//------------------------------------------------------------------------
+// genLoadLocalIntoReg: set the register to "load(local on stack)".
+//
+// Arguments:
+//    targetReg - The register to load into
+//    lclNum    - The local on stack to load from
+//
+void CodeGen::genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum)
+{
+    LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
+    var_types  type   = varDsc->GetRegisterType();
+    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+    GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), lclNum, 0);
+    GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(type), WasmRegToIndex(targetReg));
 }
 
 //------------------------------------------------------------------------
