@@ -13481,7 +13481,7 @@ void Compiler::fgValueNumberCastTree(GenTree* tree)
     ValueNumPair srcVNPair        = tree->AsOp()->gtOp1->gtVNPair;
     var_types    castToType       = tree->CastToType();
     var_types    castFromType     = tree->CastFromType();
-    bool         srcIsUnsigned    = ((tree->gtFlags & GTF_UNSIGNED) != 0);
+    bool         srcIsUnsigned    = tree->IsUnsigned();
     bool         hasOverflowCheck = tree->gtOverflowEx();
 
     assert(genActualType(castToType) == genActualType(tree->TypeGet())); // Ensure that the resultType is correct

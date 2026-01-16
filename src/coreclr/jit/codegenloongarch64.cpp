@@ -1065,7 +1065,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     var_types targetType = treeNode->TypeGet();
     emitter*  emit       = GetEmitter();
     emitAttr  attr       = emitActualTypeSize(treeNode);
-    unsigned  isUnsigned = (treeNode->gtFlags & GTF_UNSIGNED);
+    unsigned  isUnsigned = treeNode->IsUnsigned();
 
     GenTree* op1 = treeNode->gtGetOp1();
     GenTree* op2 = treeNode->gtGetOp2();
@@ -2874,7 +2874,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     emitAttr srcSize = EA_ATTR(genTypeSize(srcType));
     noway_assert((srcSize == EA_4BYTE) || (srcSize == EA_8BYTE));
 
-    bool        IsUnsigned = treeNode->gtFlags & GTF_UNSIGNED;
+    bool        IsUnsigned = treeNode->IsUnsigned();
     instruction ins        = INS_invalid;
 
     genConsumeOperands(treeNode->AsOp());
@@ -3270,7 +3270,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         assert(!op1->isContainedIntOrIImmed());
         assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
 
-        bool      IsUnsigned = (tree->gtFlags & GTF_UNSIGNED) != 0;
+        bool      IsUnsigned = tree->IsUnsigned();
         regNumber regOp1     = op1->GetRegNum();
 
         if (op2->isContainedIntOrIImmed())

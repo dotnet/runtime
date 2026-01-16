@@ -241,7 +241,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 // Need a register different from target reg to check for overflow.
                 buildInternalIntRegisterDefForNode(tree);
-                if ((tree->gtFlags & GTF_UNSIGNED) == 0)
+                if (!tree->IsUnsigned())
                     buildInternalIntRegisterDefForNode(tree);
                 setInternalRegsDelayFree = true;
             }
@@ -290,7 +290,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 // Need a register different from target reg to check for overflow.
                 buildInternalIntRegisterDefForNode(tree);
-                if ((tree->gtFlags & GTF_UNSIGNED) == 0)
+                if (!tree->IsUnsigned())
                     buildInternalIntRegisterDefForNode(tree);
                 setInternalRegsDelayFree = true;
             }
@@ -340,7 +340,7 @@ int LinearScan::BuildNode(GenTree* tree)
             emitAttr attr = emitActualTypeSize(tree->AsOp());
             if (EA_SIZE(attr) != EA_8BYTE)
             {
-                if ((tree->AsOp()->gtFlags & GTF_UNSIGNED) != 0)
+                if (tree->AsOp()->IsUnsigned())
                     buildInternalIntRegisterDefForNode(tree);
             }
 

@@ -1730,7 +1730,7 @@ void CodeGen::genCheckOverflow(GenTree* tree)
     else
 #endif
     {
-        bool isUnsignedOverflow = ((tree->gtFlags & GTF_UNSIGNED) != 0);
+        bool isUnsignedOverflow = tree->IsUnsigned();
 
 #if defined(TARGET_XARCH)
 

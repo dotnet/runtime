@@ -4849,7 +4849,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             assert(ins == INS_addi || ins == INS_addiw);
 
             // AS11 = B + C
-            if ((dst->gtFlags & GTF_UNSIGNED) != 0)
+            if (dst->IsUnsigned())
             {
                 codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bltu, dstReg, nullptr, tempReg);
             }
@@ -4892,7 +4892,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         {
             case GT_MUL:
             {
-                if (!needCheckOv && !(dst->gtFlags & GTF_UNSIGNED))
+                if (!needCheckOv && !dst->IsUnsigned())
                 {
                     emitIns_R_R_R(ins, attr, dstReg, src1Reg, src2Reg);
                 }
@@ -4908,7 +4908,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                         assert(REG_RA != src1Reg);
                         assert(REG_RA != src2Reg);
 
-                        if ((dst->gtFlags & GTF_UNSIGNED) != 0)
+                        if (dst->IsUnsigned())
                         {
                             if (attr == EA_4BYTE)
                             {
@@ -4945,7 +4945,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                         assert(tempReg != src1Reg);
                         assert(tempReg != src2Reg);
 
-                        if ((dst->gtFlags & GTF_UNSIGNED) != 0)
+                        if (dst->IsUnsigned())
                         {
                             codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg);
                         }
@@ -4991,7 +4991,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 regNumber saveOperReg1 = REG_NA;
                 regNumber saveOperReg2 = REG_NA;
 
-                if ((dst->gtFlags & GTF_UNSIGNED) && (attr == EA_8BYTE))
+                if (dst->IsUnsigned() && (attr == EA_8BYTE))
                 {
                     if (src1->TypeIs(TYP_INT))
                     {
@@ -5071,7 +5071,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     regNumber   branchReg1 = REG_NA;
                     regNumber   branchReg2 = REG_NA;
 
-                    if ((dst->gtFlags & GTF_UNSIGNED) != 0)
+                    if (dst->IsUnsigned())
                     {
                         // if A < B then overflow
                         branchIns  = INS_bltu;

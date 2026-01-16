@@ -1080,9 +1080,9 @@ GenTree* DecomposeLongs::DecomposeArith(LIR::Use& use)
             hiResult->gtFlags |= GTF_OVERFLOW | GTF_EXCEPT;
             loResult->gtFlags &= ~(GTF_OVERFLOW | GTF_EXCEPT);
         }
-        if (loResult->gtFlags & GTF_UNSIGNED)
+        if (loResult->IsUnsigned())
         {
-            hiResult->gtFlags |= GTF_UNSIGNED;
+            hiResult->SetUnsigned();
         }
     }
 

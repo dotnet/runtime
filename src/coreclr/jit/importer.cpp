@@ -7507,7 +7507,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1->gtFlags |= (GTF_EXCEPT | GTF_OVERFLOW);
                     if (uns)
                     {
-                        op1->gtFlags |= GTF_UNSIGNED;
+                        op1->SetUnsigned();
                     }
                 }
 
@@ -7798,7 +7798,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // TODO: setting both flags when only one is appropriate.
                 if (uns)
                 {
-                    op1->gtFlags |= GTF_RELOP_NAN_UN | GTF_UNSIGNED;
+                    op1->gtFlags |= GTF_RELOP_NAN_UN;
+                    op1->SetUnsigned();
                 }
 
                 // Fold result, if possible.
@@ -7943,7 +7944,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (uns)
                 {
-                    op1->gtFlags |= GTF_UNSIGNED;
+                    op1->SetUnsigned();
                 }
 
                 if (unordered)
