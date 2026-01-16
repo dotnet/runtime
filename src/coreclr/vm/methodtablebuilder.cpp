@@ -3391,9 +3391,16 @@ MethodTableBuilder::EnumerateClassMethods()
                 if (!IsMiAsync(dwImplFlags))
                     asyncFlags |= AsyncMethodFlags::Thunk;
 
+                // Here we construct the signature of async call variant given its task-returning counterpart.
+                // It is basicaly just removing the Task/ValueTask part of the return type and keeping
+                // the token for T or inserting void instead.
+                // The rest of the signature stays exactly the same.
                 ULONG tokenLen = 0;
                 if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
                 {
+                    // from ". . . Task . . . Method(args);"        we construct
+                    //      ". . . void . . . Method(args);"
+
                     taskTokenOffsetFromAsyncDetailsOffset = 1;
                     tokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + taskTokenOffsetFromAsyncDetailsOffset]);
 
@@ -3404,6 +3411,9 @@ MethodTableBuilder::EnumerateClassMethods()
                 }
                 else if (returnKind == MethodReturnKind::GenericTaskReturningMethod)
                 {
+                    // from ". . . Task<tk> . . . Method(args);"    we construct
+                    //      ". . .      tk  . . . Method(args);"
+
                     taskTokenOffsetFromAsyncDetailsOffset = 2;
                     tokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + taskTokenOffsetFromAsyncDetailsOffset]);
 

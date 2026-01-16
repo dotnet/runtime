@@ -89,14 +89,9 @@ enum class AsyncMethodFlags
     // the IL body belongs to one of the variants and another variant is a synthetic thunk.
     //
     // The signature of the Async variant is derived from the Task-returning signature by replacing
-    // Task return type with modreq'd element type:
-    //   Example: "Task<int> Foo();"  ===> "modreq(Task`) int Foo();"
-    //   Example: "ValueTask Bar();"  ===> "modreq(ValueTask) void Bar();"
-    //
-    // The reason for this encoding is that:
-    //   - it uses parts of original signature, as-is, thus does not need to look for or construct anything
-    //   - it "unwraps" the element type.
-    //   - it is reversible. Thus nonconflicting signatures will map to nonconflicting ones.
+    // Task return type with "element" type:
+    //   Example: "Task<int> Foo();"  ===> "int Foo();"
+    //   Example: "ValueTask Bar();"  ===> "void Bar();"
     //
     // It is possible to get from one variant to another via GetAsyncOtherVariant.
     //
