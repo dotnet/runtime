@@ -58,6 +58,7 @@ namespace Tracing.Tests.EnableDisableValidation
     public class EnableDisableValidation
     {
         [ActiveIssue(" needs triage ", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
+        [ActiveIssue(" needs triage ", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Fact]
         public static int TestEntryPoint()
         {

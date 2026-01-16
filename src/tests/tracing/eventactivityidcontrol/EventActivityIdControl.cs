@@ -32,6 +32,7 @@ namespace Tracing.Tests
         private static bool s_FailureEncountered = false;
 
         [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMAOT))]
+        [ActiveIssue("needs triage", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Fact]
         public static int TestEntryPoint()
         {

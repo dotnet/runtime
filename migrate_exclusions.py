@@ -706,6 +706,10 @@ def migrate_exclusion(exclusion: ExclusionItem, repo_root: str, dry_run: bool = 
                 # For issue 64127, always use PlatformDoesNotSupportNativeTestAssets regardless of condition
                 # Replace the standard attribute format with the custom one
                 attribute = f'[ActiveIssue("{exclusion.issue}", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]'
+            # Special handling for issue 41472: use IsThreadingSupported
+            elif '41472' in exclusion.issue:
+                # For issue 41472, always use IsThreadingSupported regardless of condition
+                attribute = f'[ActiveIssue("{exclusion.issue}", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]'
             
             print(f"  C# attribute: {attribute}")
             
@@ -723,6 +727,10 @@ def migrate_exclusion(exclusion: ExclusionItem, repo_root: str, dry_run: bool = 
             if '64127' in exclusion.issue:
                 # For issue 64127, always use PlatformDoesNotSupportNativeTestAssets regardless of condition
                 attribute = f".custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {{string('{exclusion.issue}') type([TestLibrary]TestLibrary.PlatformDetection) string[1] ('PlatformDoesNotSupportNativeTestAssets') }}"
+            # Special handling for issue 41472: use IsThreadingSupported
+            elif '41472' in exclusion.issue:
+                # For issue 41472, always use IsThreadingSupported regardless of condition
+                attribute = f".custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {{string('{exclusion.issue}') type([TestLibrary]TestLibrary.PlatformDetection) string[1] ('IsThreadingSupported') }}"
             
             print(f"  IL attribute: {attribute}")
             

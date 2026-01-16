@@ -152,6 +152,7 @@ public class JsonBenchmarks
     }
 
     [ActiveIssue("Needs xunit.performance", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static int TestEntryPoint() {
         var tests = new JsonBenchmarks();

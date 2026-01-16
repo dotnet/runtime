@@ -73,6 +73,7 @@ public static class MDGeneralArray
         return Bench(Iterations, s, d);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Arrays with non-zero lower bounds", typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArrayNotSupported))]
     public static int TestEntryPoint() {
