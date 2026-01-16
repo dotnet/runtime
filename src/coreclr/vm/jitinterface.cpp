@@ -14334,6 +14334,12 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 }
             }
 
+            // Strip off method instantiation for comparison if the method is generic virtual.
+            if (pImplMethodCompiler != NULL && pDeclMethod->HasMethodInstantiation())
+            {
+                pImplMethodCompiler = pImplMethodCompiler->StripMethodInstantiation();
+            }
+
             if (pImplMethodRuntime != pImplMethodCompiler)
             {
                 if (kind == READYTORUN_FIXUP_Check_VirtualFunctionOverride)
