@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Linq;
 using System.Reflection;
 using Xunit;
 
-// Validates that ilasm/ildasm roundtrip does not duplicated self-referential constraints
+// Validates that ilasm/ildasm roundtrip does not duplicate self-referential constraints
 
 public interface IComp<TSelf>
     : IEq<TSelf>
