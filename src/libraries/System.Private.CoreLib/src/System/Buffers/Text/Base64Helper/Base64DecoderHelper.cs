@@ -517,6 +517,7 @@ namespace System.Buffers.Text
 
                 if (status != OperationStatus.Done)
                 {
+                    Debug.Assert(localConsumed == 0 && localWritten == 0, "On failure, should not have consumed or written any bytes");
                     return status;
                 }
 

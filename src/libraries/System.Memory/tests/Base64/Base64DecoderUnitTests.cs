@@ -951,5 +951,6 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(0, bytesConsumed);
             Assert.Equal(0, bytesWritten);
         }
+
     }
 }
