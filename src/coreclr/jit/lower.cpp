@@ -11545,15 +11545,25 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 
     if (useNullCheck && !ind->OperIs(GT_NULLCHECK))
     {
+#if defined(TARGET_XARCH)
+        // Avoid conversion to GT_NULLCHECK if address is contained to prevent size regression.
         if (ind->Addr()->isContained())
         {
-            ind->Addr()->clearContained();
+            useNullCheck = false;
         }
-        
-        comp->gtChangeOperToNullCheck(ind);
-        ind->ClearUnusedValue();
+#endif
+        if (useNullCheck)
+        {
+            if (ind->Addr()->isContained())
+            {
+                ind->Addr()->ClearContained();
+            }
+            comp->gtChangeOperToNullCheck(ind);
+            ind->ClearUnusedValue();
+        }
     }
-    else if (!useNullCheck && !ind->OperIs(GT_IND))
+
+    if (!useNullCheck && !ind->OperIs(GT_IND))
     {
         ind->ChangeOper(GT_IND);
         ind->SetUnusedValue();
