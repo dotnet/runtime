@@ -926,31 +926,30 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(2, bytesWritten); // "AAA=" decodes to 2 bytes
         }
 
-        [Theory]
-        [InlineData("AAAA")]
-        [InlineData("AAA=")]
-        public void DecodingWithIsFinalBlockFalseNoWhiteSpace(string base64String)
+        [Fact]
+        public void DecodingCompleteQuantumWithIsFinalBlockFalse()
         {
-            // Verify existing behavior is preserved for cases without whitespace
-            ReadOnlySpan<byte> base64Data = Encoding.ASCII.GetBytes(base64String);
+            // Complete quantum without padding should be decoded even when isFinalBlock=false
+            ReadOnlySpan<byte> base64Data = "AAAA"u8;
             var output = new byte[10];
 
-            if (base64String == "AAAA")
-            {
-                // Complete quantum without padding should be decoded
-                OperationStatus status = Base64.DecodeFromUtf8(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
-                Assert.Equal(OperationStatus.Done, status);
-                Assert.Equal(4, bytesConsumed);
-                Assert.Equal(3, bytesWritten);
-            }
-            else if (base64String == "AAA=")
-            {
-                // Quantum with padding should not be decoded when isFinalBlock=false
-                OperationStatus status = Base64.DecodeFromUtf8(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
-                Assert.Equal(OperationStatus.InvalidData, status);
-                Assert.Equal(0, bytesConsumed);
-                Assert.Equal(0, bytesWritten);
-            }
+            OperationStatus status = Base64.DecodeFromUtf8(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(4, bytesConsumed);
+            Assert.Equal(3, bytesWritten);
+        }
+
+        [Fact]
+        public void DecodingPaddedQuantumWithIsFinalBlockFalse()
+        {
+            // Quantum with padding should not be decoded when isFinalBlock=false
+            ReadOnlySpan<byte> base64Data = "AAA="u8;
+            var output = new byte[10];
+
+            OperationStatus status = Base64.DecodeFromUtf8(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+            Assert.Equal(OperationStatus.InvalidData, status);
+            Assert.Equal(0, bytesConsumed);
+            Assert.Equal(0, bytesWritten);
         }
     }
 }
