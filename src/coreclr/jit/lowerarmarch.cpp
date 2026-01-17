@@ -3560,33 +3560,39 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
         {
             return;
         }
+        if (code == GenCondition::EQ &&
+            (!trueVal->IsIntegralConst() || trueVal->AsIntCon()->IntegralValue() - constVal != 1))
+        {
+            return;
+        }
+        if (code == GenCondition::NE &&
+            (!falseVal->IsIntegralConst() || falseVal->AsIntCon()->IntegralValue() - constVal != 1))
+        {
+            return;
+        }
 
         GenTree** replaceOperand = nullptr;
         GenTree*  removeVal      = nullptr;
-        if (code == GenCondition::NE && falseVal->IsIntegralConst() &&
-            falseVal->AsIntCon()->IntegralValue() - constVal == 1)
-        {
-            removeVal = falseVal;
-            replaceOperand = &(select->gtOp2);
-        }
-        else if (code == GenCondition::EQ && trueVal->IsIntegralConst() &&
-                 trueVal->AsIntCon()->IntegralValue() - constVal == 1)
-        {
-            removeVal      = trueVal;
-            replaceOperand = &(select->gtOp1);
-        }
-        if (removeVal)
-        {
-            GenTree* newLocal = comp->gtNewLclvNode(lclNum, removeVal->TypeGet());
-            BlockRange().InsertBefore(removeVal, newLocal);
-            BlockRange().Remove(removeVal);
-            *replaceOperand = newLocal;
-            select->SetOper(GT_SELECT_INCCC);
 
-            JITDUMP("Converted to: GT_SELECT_INCCC\n");
-            DISPTREERANGE(BlockRange(), select);
-            JITDUMP("\n");
+        // The increment needs to occur along the false path,
+        // reverse condition if that's not the case
+        if (code == GenCondition::EQ)
+        {
+            GenTreeOpCC* selectcc = select->AsOpCC();
+            selectcc->gtCondition = GenCondition::Reverse(selectcc->gtCondition);
+            std::swap(selectcc->gtOp1, selectcc->gtOp2);
+            falseVal = selectcc->gtOp2;
         }
+
+        GenTree* newLocal = comp->gtNewLclvNode(lclNum, falseVal->TypeGet());
+        BlockRange().InsertBefore(falseVal, newLocal);
+        BlockRange().Remove(falseVal);
+        select->gtOp2 = newLocal;
+        select->SetOper(GT_SELECT_INCCC);
+
+        JITDUMP("Converted to: GT_SELECT_INCCC\n");
+        DISPTREERANGE(BlockRange(), select);
+        JITDUMP("\n");
     }
 }
 
