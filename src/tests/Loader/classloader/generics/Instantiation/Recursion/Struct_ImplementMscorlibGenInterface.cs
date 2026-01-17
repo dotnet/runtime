@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using Xunit;
  using System.Collections;
+using TestLibrary;
 
 public struct MyClassICollection : ICollection<MyClassICollection> 
 {

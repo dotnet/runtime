@@ -8,6 +8,7 @@ using TestLibrary;
 */
 using System;
 using Xunit;
+using TestLibrary;
 
 #pragma warning disable 169
 struct MyStruct

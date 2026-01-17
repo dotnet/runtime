@@ -20,6 +20,7 @@ class D<T> : C<T> {virtual NEWSLOT methods}
 
 using System;
 using Xunit;
+using TestLibrary;
 
 
 

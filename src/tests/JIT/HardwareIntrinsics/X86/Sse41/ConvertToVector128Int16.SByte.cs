@@ -16,6 +16,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using Xunit;
+using TestLibrary;
 
 namespace JIT.HardwareIntrinsics.X86._Sse41.handwritten
 {

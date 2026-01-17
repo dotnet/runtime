@@ -12,6 +12,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Xunit;
+using TestLibrary;
 
 public class delete_next_card_table
 {

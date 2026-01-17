@@ -12,6 +12,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 public interface IBaseInterface<out T>
 {

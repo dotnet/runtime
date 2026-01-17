@@ -12,6 +12,7 @@ using TestLibrary;
 using System;
 using System.Linq.Expressions;
 using Xunit;
+using TestLibrary;
 
 namespace StaticFieldBug
 {

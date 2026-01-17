@@ -20,6 +20,7 @@ IPos<int> is not castable to IPos<MyEnum>
 */
 using System;
 using Xunit;
+using TestLibrary;
 
 public class C<T> : IPos<T>, INeg<T>
 {

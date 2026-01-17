@@ -11,6 +11,7 @@ using TestLibrary;
 */
 using System;
 using Xunit;
+using TestLibrary;
 
 public class Test_DevDiv607
 {	

@@ -27,6 +27,7 @@ using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 public struct A
 {
 	public static int i;

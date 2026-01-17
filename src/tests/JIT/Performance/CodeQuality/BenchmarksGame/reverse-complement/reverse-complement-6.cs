@@ -21,6 +21,7 @@ using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 namespace BenchmarksGame
 {

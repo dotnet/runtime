@@ -20,6 +20,7 @@ Generic virtual methods:
 
 using System;
 using Xunit;
+using TestLibrary;
 
 
 public class A<T>

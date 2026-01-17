@@ -24,6 +24,7 @@ using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 public class A 
 {
 	public static int i;

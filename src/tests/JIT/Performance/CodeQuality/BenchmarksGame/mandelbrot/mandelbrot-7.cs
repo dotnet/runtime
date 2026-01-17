@@ -23,6 +23,7 @@ using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Xunit;
+using TestLibrary;
 
 namespace BenchmarksGame
 {

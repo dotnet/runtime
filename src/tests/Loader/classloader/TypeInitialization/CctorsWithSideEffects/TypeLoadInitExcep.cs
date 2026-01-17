@@ -15,6 +15,7 @@ Expected: Should return the same exception.
 
 using System;
 using Xunit;
+using TestLibrary;
 
 
 public class A 

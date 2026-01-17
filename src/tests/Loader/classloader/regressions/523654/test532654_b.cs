@@ -39,6 +39,7 @@ is only hit non-deterministically some of the time.
 using System;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 public class A
 {

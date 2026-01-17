@@ -12,6 +12,7 @@ Expected: Should get no exceptions.
 using System;
 using System.IO;
 using Xunit;
+using TestLibrary;
 
 public class MyClass
 {	
