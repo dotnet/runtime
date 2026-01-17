@@ -11441,6 +11441,48 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     //
     assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK));
 
+    // Convert an unused IND(gcHeapAddr + smallOffset) into IND(gcHeapAddr) when possible
+    // to enable better null-check codegen.
+    if (comp->opts.Tier0OptimizationEnabled() && ind->OperIs(GT_IND) && ind->IsUnusedValue())
+    {
+        auto isTooBigOffset = [](Compiler* comp, ssize_t size, ssize_t offset) -> bool {
+            return (offset < 0) || CheckedOps::AddOverflows(size, offset, true) || comp->fgIsBigOffset(size + offset);
+        };
+
+        GenTree* addr = ind->Addr();
+        if (addr->OperIs(GT_LEA))
+        {
+            GenTreeAddrMode* addrMode = addr->AsAddrMode();
+            if (addrMode->HasBase() && !addrMode->HasIndex() && addrMode->Base()->TypeIs(TYP_REF) &&
+                !isTooBigOffset(comp, ind->Size(), addrMode->Offset()))
+            {
+                assert(addrMode->GetScale() <= 1);
+                ind->gtOp1 = addrMode->Base();
+                ind->gtOp1->ClearContained();
+                if (comp->m_pLowering != nullptr)
+                {
+                    comp->m_pLowering->BlockRange().Remove(addr);
+                }
+            }
+        }
+        else if (addr->OperIs(GT_ADD))
+        {
+            GenTree* baseAddr = addr->gtGetOp1();
+            GenTree* offset   = addr->gtGetOp2();
+
+            if (baseAddr->TypeIs(TYP_REF) && offset->IsCnsIntOrI() &&
+                !isTooBigOffset(comp, ind->Size(), offset->AsIntCon()->IconValue()))
+            {
+                ind->gtOp1 = baseAddr;
+                ind->gtOp1->ClearContained();
+                if (comp->m_pLowering != nullptr)
+                {
+                    comp->m_pLowering->BlockRange().Remove(offset, addr);
+                }
+            }
+        }
+    }
+
     ind->ChangeType(comp->gtTypeForNullCheck(ind));
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
