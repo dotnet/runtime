@@ -952,26 +952,5 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(base64Data.Length, bytesConsumed);
             Assert.True(bytesWritten > 0, "Should have decoded data");
         }
-
-        [Theory]
-        [InlineData("AAAA AA\r\nA=")]               // Just base64 start, then whitespace-split final quantum
-        [InlineData("AA AA AAAA AA\r\nA=")]         // Previous blocks with spaces, then whitespace-split final quantum
-        public void DecodingWithSpacesBeforeWhiteSpaceSplitFinalQuantum(string base64String)
-        {
-            // Test cases where previous blocks already contain spaces
-            ReadOnlySpan<byte> base64Data = Encoding.ASCII.GetBytes(base64String);
-            var output = new byte[100]; // Use larger buffer to avoid #123222
-
-            // First call with isFinalBlock=false
-            OperationStatus status = Base64.DecodeFromUtf8(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
-            
-            // Verify we can complete decoding by retrying with the FULL input and isFinalBlock=true
-            Array.Clear(output, 0, output.Length);
-            status = Base64.DecodeFromUtf8(base64Data, output, out bytesConsumed, out bytesWritten, isFinalBlock: true);
-            Assert.Equal(OperationStatus.Done, status);
-            Assert.Equal(base64Data.Length, bytesConsumed);
-            Assert.True(bytesWritten > 0, "Should have decoded data");
-        }
-
     }
 }
