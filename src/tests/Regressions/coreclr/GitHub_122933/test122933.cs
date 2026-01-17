@@ -6,8 +6,8 @@ using System.Linq;
 using System.Reflection;
 using Xunit;
 
-// Small repro for ilasm/ildasm roundtrip issue with duplicated constraints
-// This demonstrates the issue where constraints get duplicated during ilasm roundtrip
+// Validates that ilasm/ildasm roundtrip does not duplicated self-referential constraints
+
 public interface IComp<TSelf>
     : IEq<TSelf>
         where TSelf : IComp<TSelf>?
