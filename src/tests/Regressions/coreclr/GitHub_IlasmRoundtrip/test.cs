@@ -6,10 +6,6 @@ using System.Linq;
 using System.Reflection;
 using Xunit;
 
-// Reference the IL types so they are loaded
-public interface IEq<TSelf> where TSelf : IEq<TSelf>? { }
-public interface IComp<TSelf> : IEq<TSelf> where TSelf : IComp<TSelf>? { }
-
 namespace TestIlasmRoundtrip
 {
     public class Program
@@ -17,9 +13,15 @@ namespace TestIlasmRoundtrip
         [Fact]
         public static void TestConstraintsNotDuplicated()
         {
-            // Load the types from the IL assembly
-            Type ieqType = typeof(IEq<>);
-            Type icompType = typeof(IComp<>);
+            // Load the assembly containing the IL types
+            Assembly asm = Assembly.Load("repro");
+            
+            // Get the types from the IL assembly (they are in the global namespace)
+            Type ieqType = asm.GetType("IEq`1");
+            Type icompType = asm.GetType("IComp`1");
+            
+            Assert.NotNull(ieqType);
+            Assert.NotNull(icompType);
 
             // Get the generic type parameter for IEq<TSelf>
             Type[] ieqTypeParams = ieqType.GetGenericArguments();
