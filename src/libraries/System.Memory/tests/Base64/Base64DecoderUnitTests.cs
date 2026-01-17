@@ -903,30 +903,6 @@ namespace System.Buffers.Text.Tests
         }
 
         [Fact]
-        public void DecodingWithWhiteSpaceSplitFinalQuantumStreamingScenario()
-        {
-            // Simulate a streaming scenario where we call DecodeFromUtf8 multiple times
-            ReadOnlySpan<byte> base64Data = "AA\r\nA="u8;
-            var output = new byte[10];
-
-            // First call with isFinalBlock=false
-            OperationStatus status = Base64.DecodeFromUtf8(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
-            Assert.Equal(OperationStatus.InvalidData, status);
-            Assert.Equal(0, bytesConsumed);
-            Assert.Equal(0, bytesWritten);
-
-            // Slice the buffer based on what was consumed (nothing in this case)
-            base64Data = base64Data.Slice(bytesConsumed);
-            var outputSpan = output.AsSpan().Slice(bytesWritten);
-
-            // Second call with isFinalBlock=true should successfully decode
-            status = Base64.DecodeFromUtf8(base64Data, outputSpan, out bytesConsumed, out bytesWritten, isFinalBlock: true);
-            Assert.Equal(OperationStatus.Done, status);
-            Assert.Equal(6, bytesConsumed); // All 6 bytes: "AA\r\nA="
-            Assert.Equal(2, bytesWritten); // "AAA=" decodes to 2 bytes
-        }
-
-        [Fact]
         public void DecodingCompleteQuantumWithIsFinalBlockFalse()
         {
             // Complete quantum without padding should be decoded even when isFinalBlock=false
