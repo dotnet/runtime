@@ -5607,6 +5607,9 @@ static void UnwindWriteBarrierToCaller(CONTEXT* pContext)
 #elif defined(TARGET_RISCV64)
     // On RISC-V64, return address is in RA
     SetIP(pContext, pContext->Ra);
+#elif defined(TARGET_WASM)
+    // WASM uses interpreter, write barriers don't fault
+    UNREACHABLE();
 #else
 #error "UnwindWriteBarrierToCaller not implemented for this architecture"
 #endif
