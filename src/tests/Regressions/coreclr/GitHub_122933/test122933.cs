@@ -44,16 +44,6 @@ public class Test122933
         if (ieqConstraints.Length != 1)
         {
             Console.WriteLine($"FAIL: IEq<TSelf> should have 1 constraint, but has {ieqConstraints.Length}");
-            foreach (var constraint in ieqConstraints)
-            {
-                Console.WriteLine($"  - {constraint}");
-            }
-            return -1;
-        }
-
-        if (!ieqConstraints[0].IsGenericType)
-        {
-            Console.WriteLine($"FAIL: IEq<TSelf> constraint should be generic");
             return -1;
         }
 
@@ -80,16 +70,6 @@ public class Test122933
         if (icompConstraints.Length != 1)
         {
             Console.WriteLine($"FAIL: IComp<TSelf> should have 1 constraint, but has {icompConstraints.Length}");
-            foreach (var constraint in icompConstraints)
-            {
-                Console.WriteLine($"  - {constraint}");
-            }
-            return -1;
-        }
-
-        if (!icompConstraints[0].IsGenericType)
-        {
-            Console.WriteLine($"FAIL: IComp<TSelf> constraint should be generic");
             return -1;
         }
 
@@ -97,19 +77,6 @@ public class Test122933
         {
             Console.WriteLine($"FAIL: IComp<TSelf> constraint should be IComp<>, but is {icompConstraints[0].GetGenericTypeDefinition()}");
             return -1;
-        }
-
-        // Log the constraints for debugging
-        Console.WriteLine($"PASS: IEq<TSelf> constraints count: {ieqConstraints.Length}");
-        foreach (var constraint in ieqConstraints)
-        {
-            Console.WriteLine($"  - {constraint}");
-        }
-
-        Console.WriteLine($"PASS: IComp<TSelf> constraints count: {icompConstraints.Length}");
-        foreach (var constraint in icompConstraints)
-        {
-            Console.WriteLine($"  - {constraint}");
         }
 
         return 100;
