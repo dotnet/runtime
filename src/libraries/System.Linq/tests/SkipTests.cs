@@ -402,6 +402,18 @@ namespace System.Linq.Tests
                 Assert.Equal(items, source.Skip(2).Append(2).Append(3).ToList());
                 Assert.Equal(items, items.Concat(source.Skip(2)).ToArray());
                 Assert.Equal(items, items.Concat(source.Skip(2)).ToList());
+                Assert.Empty(source.Skip(2).Select(x => x * 2).ToArray());
+                Assert.Empty(source.Skip(2).Select(x => x * 2).ToList());
+                Assert.Empty(source.Skip(2).Where(x => x > 0).ToArray());
+                Assert.Empty(source.Skip(2).Where(x => x > 0).ToList());
+                Assert.Empty(source.Skip(2).Take(10).ToArray());
+                Assert.Empty(source.Skip(2).Take(10).ToList());
+                Assert.Empty(source.Skip(2).Skip(1).ToArray());
+                Assert.Empty(source.Skip(2).Skip(1).ToList());
+                Assert.Empty(source.Skip(2).Distinct().ToArray());
+                Assert.Empty(source.Skip(2).Distinct().ToList());
+                Assert.Empty(source.Skip(2).OrderBy(x => x).ToArray());
+                Assert.Empty(source.Skip(2).OrderBy(x => x).ToList());
             }
         }
     }
