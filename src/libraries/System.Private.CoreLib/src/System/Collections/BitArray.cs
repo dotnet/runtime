@@ -603,6 +603,8 @@ namespace System.Collections
                     }
                     intSpan[lastIndex] = ReverseIfBE(ReverseIfBE(intSpan[fromindex]) << shiftCount);
                 }
+
+                ClearHighExtraBits();
             }
             else
             {

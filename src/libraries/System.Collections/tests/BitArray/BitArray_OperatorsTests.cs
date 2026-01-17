@@ -387,5 +387,19 @@ namespace System.Collections.Tests
         {
             Assert.Equal(expected, array.PopCount());
         }
+
+        [Fact]
+        public static void LeftShift_PopCountReturnsCorrectCount()
+        {
+            BitArray ba = new(33);
+            ba[^1] = true;
+
+            Assert.True(ba.HasAnySet());
+            Assert.Equal(1, ba.PopCount());
+
+            ba.LeftShift(1);
+            Assert.False(ba.HasAnySet());
+            Assert.Equal(0, ba.PopCount());
+        }
     }
 }
