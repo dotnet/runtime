@@ -2271,19 +2271,23 @@ namespace System.Numerics.Tests
             AssertEqual(+expectedResult, BFloat16.RadiansToDegrees(+value), allowedVariance);
         }
 
-        [Theory]
-        [InlineData(float.NegativeInfinity, 2, new byte[] { 0x00, 0x80 })]
-        [InlineData(-3.40282347E+38f, 2, new byte[] { 0x00, 0xFF })]          // MinValue
-        [InlineData(-1.0f, 2, new byte[] { 0x00, 0x80 })]
-        [InlineData(-1.1754944E-38f, 2, new byte[] { 0x00, 0x01 })]           // -Epsilon
-        [InlineData(float.NaN, 2, new byte[] { 0x00, 0xC0 })]
-        [InlineData(0.0f, 2, new byte[] { 0x00, 0x00 })]                      // Zero
-        [InlineData(1.0f, 2, new byte[] { 0x00, 0x80 })]
-        [InlineData(3.40282347E+38f, 2, new byte[] { 0x00, 0xFF })]           // MaxValue
-        [InlineData(float.PositiveInfinity, 2, new byte[] { 0x00, 0x80 })]
-        public static void TryWriteSignificandBigEndianTest(float floatValue, int expectedBytesWritten, byte[] expectedBytes)
+        public static IEnumerable<object[]> TryWriteSignificandBigEndianTest_TestData()
         {
-            BFloat16 value = (BFloat16)floatValue;
+            yield return new object[] { BFloat16.NegativeInfinity, 2, new byte[] { 0x00, 0x80 } };
+            yield return new object[] { BFloat16.MinValue, 2, new byte[] { 0x00, 0xFF } };
+            yield return new object[] { (BFloat16)(-1.0f), 2, new byte[] { 0x00, 0x80 } };
+            yield return new object[] { -BFloat16.Epsilon, 2, new byte[] { 0x00, 0x01 } };
+            yield return new object[] { BFloat16.NaN, 2, new byte[] { 0x00, 0xC0 } };
+            yield return new object[] { (BFloat16)0.0f, 2, new byte[] { 0x00, 0x00 } };
+            yield return new object[] { (BFloat16)1.0f, 2, new byte[] { 0x00, 0x80 } };
+            yield return new object[] { BFloat16.MaxValue, 2, new byte[] { 0x00, 0xFF } };
+            yield return new object[] { BFloat16.PositiveInfinity, 2, new byte[] { 0x00, 0x80 } };
+        }
+
+        [Theory]
+        [MemberData(nameof(TryWriteSignificandBigEndianTest_TestData))]
+        public static void TryWriteSignificandBigEndianTest(BFloat16 value, int expectedBytesWritten, byte[] expectedBytes)
+        {
             Span<byte> destination = stackalloc byte[2];
             int bytesWritten;
 
@@ -2305,19 +2309,23 @@ namespace System.Numerics.Tests
             Assert.Equal(new byte[] { 0x00, 0x80 }, destination.ToArray());
         }
 
-        [Theory]
-        [InlineData(float.NegativeInfinity, 2, new byte[] { 0x80, 0x00 })]
-        [InlineData(-3.40282347E+38f, 2, new byte[] { 0xFF, 0x00 })]          // MinValue
-        [InlineData(-1.0f, 2, new byte[] { 0x80, 0x00 })]
-        [InlineData(-1.1754944E-38f, 2, new byte[] { 0x01, 0x00 })]           // -Epsilon
-        [InlineData(float.NaN, 2, new byte[] { 0xC0, 0x00 })]
-        [InlineData(0.0f, 2, new byte[] { 0x00, 0x00 })]                      // Zero
-        [InlineData(1.0f, 2, new byte[] { 0x80, 0x00 })]
-        [InlineData(3.40282347E+38f, 2, new byte[] { 0xFF, 0x00 })]           // MaxValue
-        [InlineData(float.PositiveInfinity, 2, new byte[] { 0x80, 0x00 })]
-        public static void TryWriteSignificandLittleEndianTest(float floatValue, int expectedBytesWritten, byte[] expectedBytes)
+        public static IEnumerable<object[]> TryWriteSignificandLittleEndianTest_TestData()
         {
-            BFloat16 value = (BFloat16)floatValue;
+            yield return new object[] { BFloat16.NegativeInfinity, 2, new byte[] { 0x80, 0x00 } };
+            yield return new object[] { BFloat16.MinValue, 2, new byte[] { 0xFF, 0x00 } };
+            yield return new object[] { (BFloat16)(-1.0f), 2, new byte[] { 0x80, 0x00 } };
+            yield return new object[] { -BFloat16.Epsilon, 2, new byte[] { 0x01, 0x00 } };
+            yield return new object[] { BFloat16.NaN, 2, new byte[] { 0xC0, 0x00 } };
+            yield return new object[] { (BFloat16)0.0f, 2, new byte[] { 0x00, 0x00 } };
+            yield return new object[] { (BFloat16)1.0f, 2, new byte[] { 0x80, 0x00 } };
+            yield return new object[] { BFloat16.MaxValue, 2, new byte[] { 0xFF, 0x00 } };
+            yield return new object[] { BFloat16.PositiveInfinity, 2, new byte[] { 0x80, 0x00 } };
+        }
+
+        [Theory]
+        [MemberData(nameof(TryWriteSignificandLittleEndianTest_TestData))]
+        public static void TryWriteSignificandLittleEndianTest(BFloat16 value, int expectedBytesWritten, byte[] expectedBytes)
+        {
             Span<byte> destination = stackalloc byte[2];
             int bytesWritten;
 
