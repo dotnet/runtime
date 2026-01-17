@@ -97,9 +97,9 @@ namespace System.ComponentModel
                 {
                     ISite? site = GetSite(_provider);
                     string? providerName = site?.Name;
-                    if (providerName != null && providerName.Length > 0)
+                    if (!string.IsNullOrEmpty(providerName))
                     {
-                        name = SR.Format(SR.UsingResourceKeys() ? "{0} on {1}" : SR.MetaExtenderName, name, providerName);
+                        name = SR.Format(SR.MetaExtenderName, name, providerName);
                     }
                 }
                 return name;
