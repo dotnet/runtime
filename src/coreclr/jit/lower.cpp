@@ -11545,6 +11545,11 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 
     if (useNullCheck && !ind->OperIs(GT_NULLCHECK))
     {
+        if (ind->Addr()->isContained())
+        {
+            ind->Addr()->clearContained();
+        }
+        
         comp->gtChangeOperToNullCheck(ind);
         ind->ClearUnusedValue();
     }
