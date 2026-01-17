@@ -832,6 +832,17 @@ MethodTableBuilder::bmtRTType::GetEnclosingTypeToken() const
 
 //*******************************************************************************
 /*static*/ bool
+MethodTableBuilder::MethodSignature::SameAsyncVariantKind(
+    const MethodSignature& sig1,
+    const MethodSignature& sig2)
+{
+    STANDARD_VM_CONTRACT;
+
+    return sig1.m_asyncVariantKind == sig2.m_asyncVariantKind;
+}
+
+//*******************************************************************************
+/*static*/ bool
 MethodTableBuilder::MethodSignature::NamesEqual(
     const MethodSignature & sig1,
     const MethodSignature & sig2)
@@ -888,7 +899,7 @@ MethodTableBuilder::MethodSignature::Equivalent(
 {
     STANDARD_VM_CONTRACT;
 
-    return NamesEqual(*this, rhs) && SignaturesEquivalent(*this, rhs, FALSE);
+    return SameAsyncVariantKind(*this, rhs) && NamesEqual(*this, rhs) && SignaturesEquivalent(*this, rhs, FALSE);
 }
 
 //*******************************************************************************
@@ -898,7 +909,7 @@ MethodTableBuilder::MethodSignature::ExactlyEqual(
 {
     STANDARD_VM_CONTRACT;
 
-    return NamesEqual(*this, rhs) && SignaturesExactlyEqual(*this, rhs);
+    return SameAsyncVariantKind(*this, rhs) && NamesEqual(*this, rhs) && SignaturesExactlyEqual(*this, rhs);
 }
 
 //*******************************************************************************
@@ -923,7 +934,7 @@ MethodTableBuilder::MethodSignature::GetMethodAttributes() const
         {   // We have empty name or signature on error, do nothing
         }
     }
-    // Don't overwrite signature that may have already been provided for AsyncThunk method
+    // Don't overwrite signature that may have already been provided for an AsyncVariant method
     if (m_cSig == 0)
     {
         m_cSig = static_cast<size_t>(cSig);
@@ -993,6 +1004,7 @@ MethodTableBuilder::bmtRTMethod::bmtRTMethod(
       m_methodSig(pMD->IsAsyncVariantMethod()
        ? MethodSignature(pMD->GetModule(),
                          pMD->GetMemberDef(),
+                         pMD->IsAsyncVariantForValueTaskReturningMethod(), 
                          pMD->GetSignature(),
                          &pOwningType->GetSubstitution())
        : MethodSignature(pMD->GetModule(),
@@ -1058,10 +1070,15 @@ MethodTableBuilder::bmtMDMethod::bmtMDMethod(
       m_type(type),
       m_asyncMethodFlags(asyncMethodFlags),
       m_implType(implType),
-      m_methodSig(pOwningType->GetModule(),
-                  tok,
-                  sig,
-                  &pOwningType->GetSubstitution()),
+      m_methodSig(hasAsyncFlags(asyncMethodFlags, AsyncMethodFlags::IsAsyncVariant)
+          ? MethodSignature(pOwningType->GetModule(),
+              tok,
+              hasAsyncFlags(asyncMethodFlags, AsyncMethodFlags::IsAsyncVariantForValueTask),
+              sig,
+              &pOwningType->GetSubstitution())
+          : MethodSignature(pOwningType->GetModule(),
+              tok,
+              &pOwningType->GetSubstitution())),
       m_pMD(NULL),
       m_pUnboxedMD(NULL),
       m_slotIndex(INVALID_SLOT_INDEX),
@@ -3387,6 +3404,11 @@ MethodTableBuilder::EnumerateClassMethods()
                 ULONG taskTypePrefixReplacementSize;
 
                 AsyncMethodFlags asyncFlags = (AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant);
+                if (returnsValueTask)
+                {
+                    asyncFlags |= AsyncMethodFlags::IsAsyncVariantForValueTask;
+                }
+
                 // The opposite of the "if (IsMiAsync(dwImplFlags))" code above.
                 if (!IsMiAsync(dwImplFlags))
                     asyncFlags |= AsyncMethodFlags::Thunk;

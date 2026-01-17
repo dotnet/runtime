@@ -72,8 +72,10 @@ enum class AsyncMethodFlags
     ReturnsTaskOrValueTask     = 2,
     // An AsyncCall representation of a ReturnsTaskOrValueTask method.
     IsAsyncVariant             = 4,
+    // Whether the ReturnsTaskOrValueTask counterpart is returning Task or ValueTask
+    IsAsyncVariantForValueTask = 8,
     // Method has synthetic body, which forwards to the other variant.
-    Thunk                      = 8,
+    Thunk                      = 16,
     // The rest of the methods that are not in any of the above groups.
     // Such methods are not interesting to the Runtime Async feature.
     // Note: Generic T-returning methods are classified as "None", even if T could be a Task.
@@ -1971,6 +1973,18 @@ public:
 
         AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
         return hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariant);
+    }
+
+    // Is this an Async variant method for a method that
+    // returns ValueTask or ValueTask<T> ?
+    inline bool IsAsyncVariantForValueTaskReturningMethod() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (!HasAsyncMethodData())
+            return false;
+
+        AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
+        return hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariantForValueTask);
     }
 
     // Is this a small(ish) synthetic Task/async adapter to an async/Task implementation?
