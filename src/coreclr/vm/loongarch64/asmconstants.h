@@ -99,11 +99,25 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
 #define SIZEOF__CONTEXT               0x520
 ASMCONSTANTS_C_ASSERT(SIZEOF__CONTEXT == sizeof(T_CONTEXT));
 
-#define OFFSETOF__CONTEXT__S0         0xC0
-ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__S0 == offsetof(T_CONTEXT, S0));
+#define OFFSETOF__CONTEXT__ContextFlags 0x0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__ContextFlags == offsetof(T_CONTEXT, ContextFlags));
+
+#define OFFSETOF__CONTEXT__Ra         0x08
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Ra == offsetof(T_CONTEXT, Ra));
+
+#define OFFSETOF__CONTEXT__Sp         0x18
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Sp == offsetof(T_CONTEXT, Sp));
 
 #define OFFSETOF__CONTEXT__Fp         0xB8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Fp == offsetof(T_CONTEXT, Fp));
+
+#define OFFSETOF__CONTEXT__S0         0xC0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__S0 == offsetof(T_CONTEXT, S0));
+
+#define OFFSETOF__CONTEXT__Pc         0xF8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Pc == offsetof(T_CONTEXT, Pc));
+
+#define CONTEXT_INTEGER_BIT           1
 
 //=========================================
 #define               OFFSETOF__MethodTable__m_dwFlags    0x0

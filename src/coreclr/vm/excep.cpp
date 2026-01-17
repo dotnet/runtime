@@ -11220,6 +11220,7 @@ void SoftwareExceptionFrame::InitAndLink(Thread *pThread)
 // platform-specific adjustments needed for OSR (like simulating the call stack alignment).
 //
 // Returns the adjusted SP and FP values that the OSR method should use.
+#ifdef FEATURE_ON_STACK_REPLACEMENT
 void SoftwareExceptionFrame::UpdateContextForOSRTransition(TransitionBlock* pTransitionBlock, CONTEXT* pContext, 
                                                            UINT_PTR* pCurrentSP, UINT_PTR* pCurrentFP)
 {
@@ -11320,5 +11321,6 @@ void SoftwareExceptionFrame::UpdateContextForOSRTransition(TransitionBlock* pTra
 #error "Unsupported platform for OSR TransitionBlock-based context capture"
 #endif
 }
+#endif // FEATURE_ON_STACK_REPLACEMENT
 
 #endif // DACCESS_COMPILE

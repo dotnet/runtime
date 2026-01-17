@@ -1066,3 +1066,44 @@ NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
     break 0
 NESTED_END IL_Rethrow, _TEXT
 
+// ------------------------------------------------------------------
+// ClrRestoreNonvolatileContextWorker
+//
+// Restores non-volatile registers based on ContextFlags and jumps to target PC.
+//
+// Arguments:
+//   $a0 - pointer to CONTEXT structure
+//   $a1 - unused (SSP, not supported on LoongArch64)
+// ------------------------------------------------------------------
+LEAF_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT
+
+    // Check if CONTEXT_INTEGER is set
+    ld.w    $t0, $a0, OFFSETOF__CONTEXT__ContextFlags
+    andi    $t1, $t0, (1 << CONTEXT_INTEGER_BIT)
+    beqz    $t1, LOCAL_LABEL(SkipIntegerRestore)
+
+    // Restore callee-saved registers s0-s8
+    ld.d    $s0, $a0, OFFSETOF__CONTEXT__S0
+    ld.d    $s1, $a0, (OFFSETOF__CONTEXT__S0 + 8)
+    ld.d    $s2, $a0, (OFFSETOF__CONTEXT__S0 + 16)
+    ld.d    $s3, $a0, (OFFSETOF__CONTEXT__S0 + 24)
+    ld.d    $s4, $a0, (OFFSETOF__CONTEXT__S0 + 32)
+    ld.d    $s5, $a0, (OFFSETOF__CONTEXT__S0 + 40)
+    ld.d    $s6, $a0, (OFFSETOF__CONTEXT__S0 + 48)
+    ld.d    $s7, $a0, (OFFSETOF__CONTEXT__S0 + 56)
+    ld.d    $s8, $a0, (OFFSETOF__CONTEXT__S0 + 64)
+
+LOCAL_LABEL(SkipIntegerRestore):
+    // Restore fp, ra
+    ld.d    $fp, $a0, OFFSETOF__CONTEXT__Fp
+    ld.d    $ra, $a0, OFFSETOF__CONTEXT__Ra
+
+    // Load sp and pc
+    ld.d    $t0, $a0, OFFSETOF__CONTEXT__Sp
+    ld.d    $t1, $a0, OFFSETOF__CONTEXT__Pc
+
+    // Set sp and jump
+    move    $sp, $t0
+    jr      $t1
+
+LEAF_END ClrRestoreNonvolatileContextWorker, _TEXT

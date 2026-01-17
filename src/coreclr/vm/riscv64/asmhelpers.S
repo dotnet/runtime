@@ -923,6 +923,50 @@ NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
     ebreak
 NESTED_END IL_Rethrow, _TEXT
 
+// ------------------------------------------------------------------
+// ClrRestoreNonvolatileContextWorker
+//
+// Restores non-volatile registers based on ContextFlags and jumps to target PC.
+//
+// Arguments:
+//   a0 - pointer to CONTEXT structure
+//   a1 - unused (SSP, not supported on RISC-V64)
+// ------------------------------------------------------------------
+LEAF_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT
+
+    // Check if CONTEXT_INTEGER is set
+    lw      t0, OFFSETOF__CONTEXT__ContextFlags(a0)
+    andi    t1, t0, (1 << CONTEXT_INTEGER_BIT)
+    beqz    t1, LOCAL_LABEL(SkipIntegerRestore)
+
+    // Restore callee-saved registers s1-s11
+    ld      s1, OFFSETOF__CONTEXT__S1(a0)
+    ld      s2, OFFSETOF__CONTEXT__S2(a0)
+    ld      s3, (OFFSETOF__CONTEXT__S2 + 8)(a0)
+    ld      s4, (OFFSETOF__CONTEXT__S2 + 16)(a0)
+    ld      s5, (OFFSETOF__CONTEXT__S2 + 24)(a0)
+    ld      s6, (OFFSETOF__CONTEXT__S2 + 32)(a0)
+    ld      s7, (OFFSETOF__CONTEXT__S2 + 40)(a0)
+    ld      s8, (OFFSETOF__CONTEXT__S2 + 48)(a0)
+    ld      s9, (OFFSETOF__CONTEXT__S2 + 56)(a0)
+    ld      s10, (OFFSETOF__CONTEXT__S2 + 64)(a0)
+    ld      s11, (OFFSETOF__CONTEXT__S2 + 72)(a0)
+
+LOCAL_LABEL(SkipIntegerRestore):
+    // Restore fp, ra
+    ld      fp, OFFSETOF__CONTEXT__Fp(a0)
+    ld      ra, OFFSETOF__CONTEXT__Ra(a0)
+
+    // Load sp and pc
+    ld      t0, OFFSETOF__CONTEXT__Sp(a0)
+    ld      t1, OFFSETOF__CONTEXT__Pc(a0)
+
+    // Set sp and jump
+    mv      sp, t0
+    jr      t1
+
+LEAF_END ClrRestoreNonvolatileContextWorker, _TEXT
+
 #ifdef FEATURE_INTERPRETER
 
 // Align interpreter stack by adjusting it by 8 bytes
