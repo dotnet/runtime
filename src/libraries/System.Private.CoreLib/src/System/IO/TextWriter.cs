@@ -622,6 +622,15 @@ namespace System.IO
             }, new TupleSlim<TextWriter, string?>(this, value), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
         /// <summary>
+        /// Writes a string to the text stream asynchronously.
+        /// </summary>
+        /// <param name="value">The string to write. If <paramref name="value"/> is <see langword="null"/>, nothing is written.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        public Task WriteAsync(string? value, CancellationToken cancellationToken) =>
+            WriteAsync(value.AsMemory(), cancellationToken);
+
+        /// <summary>
         /// Equivalent to WriteAsync(stringBuilder.ToString()) however it uses the
         /// StringBuilder.GetChunks() method to avoid creating the intermediate string
         /// </summary>
@@ -707,6 +716,15 @@ namespace System.IO
             }, new TupleSlim<TextWriter, string?>(this, value), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
         /// <summary>
+        /// Writes a string followed by a line terminator to the text stream asynchronously.
+        /// </summary>
+        /// <param name="value">The string to write. If <paramref name="value"/> is <see langword="null"/>, only the line terminator is written.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        public Task WriteLineAsync(string? value, CancellationToken cancellationToken) =>
+            WriteLineAsync(value.AsMemory(), cancellationToken);
+
+        /// <summary>
         /// Equivalent to WriteLineAsync(stringBuilder.ToString()) however it uses the
         /// StringBuilder.GetChunks() method to avoid creating the intermediate string
         /// </summary>
@@ -760,6 +778,14 @@ namespace System.IO
         {
             return WriteAsync(CoreNewLine);
         }
+
+        /// <summary>
+        /// Writes a line terminator to the text stream asynchronously.
+        /// </summary>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        public Task WriteLineAsync(CancellationToken cancellationToken) =>
+            WriteAsync(CoreNewLine, cancellationToken);
 
         public virtual Task FlushAsync()
         {

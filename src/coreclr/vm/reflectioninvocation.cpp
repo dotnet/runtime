@@ -25,6 +25,8 @@
 #include "dbginterface.h"
 #include "argdestination.h"
 
+#include "interpexec.h"
+
 extern "C" void QCALLTYPE RuntimeFieldHandle_GetValue(FieldDesc* fieldDesc, QCall::ObjectHandleOnStack instance, QCall::TypeHandle fieldType, QCall::TypeHandle declaringType, BOOL* pIsClassInitialized, QCall::ObjectHandleOnStack result)
 {
     QCALL_CONTRACT;
@@ -223,10 +225,17 @@ protected:
         LIMITED_METHOD_CONTRACT;
     }
 
-    FORCEINLINE BOOL IsRegPassedStruct(MethodTable* pMT)
+    FORCEINLINE BOOL IsRegPassedStruct(TypeHandle th)
     {
-        return pMT->IsRegPassedStruct();
+        return th.AsMethodTable()->IsRegPassedStruct();
     }
+
+#if defined(UNIX_AMD64_ABI)
+    FORCEINLINE SystemVEightByteRegistersInfo GetEightByteRegistersInfo(TypeHandle th)
+    {
+        return th.AsMethodTable()->GetClass()->GetEightByteRegistersInfo();
+    }
+#endif // defined(UNIX_AMD64_ABI)
 
 public:
     BOOL HasThis()
@@ -406,6 +415,10 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     callDescrData.dwRegTypeMap = 0;
 #endif
     callDescrData.fpReturnSize = argit.GetFPReturnSize();
+#ifdef TARGET_WASM
+    // WASM-TODO: this is now called from the interpreter, so the arguments layout is OK. reconsider with codegen
+    callDescrData.nArgsSize = nStackBytes;
+#endif // TARGET_WASM
 
     // This is duplicated logic from MethodDesc::GetCallTarget
     PCODE pTarget;
@@ -1361,6 +1374,23 @@ FCIMPL0(FC_BOOL_RET, ReflectionInvocation::TryEnsureSufficientExecutionStack)
     // plenty close enough for the purposes of this method.
 	UINT_PTR current = reinterpret_cast<UINT_PTR>(&pThread);
 	UINT_PTR limit = pThread->GetCachedStackSufficientExecutionLimit();
+
+#ifdef FEATURE_INTERPRETER
+    InterpThreadContext* pInterpThreadContext = pThread->GetInterpThreadContext();
+    if (pInterpThreadContext != nullptr)
+    {
+        // The interpreter has its own stack, so we need to check against that too.
+#ifdef HOST_64BIT
+        const UINT_PTR MinExecutionStackSize = 128 * 1024;
+#else // !HOST_64BIT
+        const UINT_PTR MinExecutionStackSize = 64 * 1024;
+#endif // HOST_64BIT
+        if (pInterpThreadContext->pStackPointer >= pInterpThreadContext->pStackEnd - MinExecutionStackSize)
+        {
+            FC_RETURN_BOOL(FALSE);
+        }
+    }
+#endif // FEATURE_INTERPRETER
 
 	FC_RETURN_BOOL(current >= limit);
 }

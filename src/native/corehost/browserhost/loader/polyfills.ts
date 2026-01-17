@@ -93,7 +93,9 @@ export async function fetchLike(url: string, init?: RequestInit): Promise<Respon
                 },
                 url,
                 arrayBuffer: () => arrayBuffer,
-                json: () => JSON.parse(arrayBuffer),
+                json: () => {
+                    throw new Error("NotImplementedException");
+                },
                 text: () => {
                     throw new Error("NotImplementedException");
                 }

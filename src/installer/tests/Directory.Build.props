@@ -8,7 +8,7 @@
     <TestRunnerAdditionalArguments>--filter-query $(TestCaseFilter)</TestRunnerAdditionalArguments>
     <!-- Enable crash and hang dumps -->
     <TestRunnerAdditionalArguments>$(TestRunnerAdditionalArguments) --crashdump</TestRunnerAdditionalArguments>
-    <TestRunnerAdditionalArguments>$(TestRunnerAdditionalArguments) --hangdump --hangdump-timeout 5m --hangdump-type full</TestRunnerAdditionalArguments>
+    <TestRunnerAdditionalArguments>$(TestRunnerAdditionalArguments) --hangdump --hangdump-timeout 8m --hangdump-type full</TestRunnerAdditionalArguments>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -24,6 +25,21 @@ namespace Internal.JitInterface
                 return s_instance;
             }
         }
+
+        [FixedAddressValueType]
+        private static readonly JitConfigProviderVtbl s_JitConfigProviderVtbl;
+
+        [FixedAddressValueType]
+        private static readonly JitConfigProviderInstance s_JitConfigProvider;
+
+        unsafe static JitConfigProvider()
+        {
+            s_JitConfigProviderVtbl.GetIntConfigValue = &getIntConfigValue;
+            s_JitConfigProviderVtbl.GetStringConfigValue = &getStringConfigValue;
+            s_JitConfigProvider.Vtbl = (JitConfigProviderVtbl*)Unsafe.AsPointer(ref s_JitConfigProviderVtbl);
+        }
+
+        public unsafe static IntPtr UnmanagedInstance => (IntPtr)Unsafe.AsPointer(ref Unsafe.AsRef(in s_JitConfigProvider));
 
         private CorJitFlag[] _jitFlags;
         private Dictionary<string, string> _config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -65,11 +81,6 @@ namespace Internal.JitInterface
             CorInfoImpl.Startup(CorInfoImpl.TargetToOs(target));
         }
 
-        public IntPtr UnmanagedInstance
-        {
-            get;
-        }
-
         public IEnumerable<CorJitFlag> Flags => _jitFlags;
 
         /// <summary>
@@ -91,8 +102,6 @@ namespace Internal.JitInterface
             {
                 _config[param.Key] = param.Value;
             }
-
-            UnmanagedInstance = CreateUnmanagedInstance();
         }
 
         public bool HasFlag(CorJitFlag flag)
@@ -158,22 +167,15 @@ namespace Internal.JitInterface
 
         #region Unmanaged instance
 
-        private static unsafe IntPtr CreateUnmanagedInstance()
+        private unsafe struct JitConfigProviderVtbl
         {
-            // This potentially leaks memory, but since we only expect to have one per compilation,
-            // it shouldn't matter...
+            public delegate* unmanaged<IntPtr, byte*, int, int> GetIntConfigValue;
+            public delegate* unmanaged<IntPtr, byte*, byte*, int, int> GetStringConfigValue;
+        }
 
-            const int numCallbacks = 2;
-
-            void** callbacks = (void**)NativeMemory.Alloc((nuint)(sizeof(void*) * numCallbacks));
-
-            callbacks[0] = (delegate* unmanaged<IntPtr, byte*, int, int>)&getIntConfigValue;
-            callbacks[1] = (delegate* unmanaged<IntPtr, byte*, byte*, int, int>)&getStringConfigValue;
-
-            IntPtr instance = (IntPtr)NativeMemory.Alloc((nuint)sizeof(IntPtr));
-            *(IntPtr*)instance = (IntPtr)callbacks;
-
-            return instance;
+        private unsafe struct JitConfigProviderInstance
+        {
+            public JitConfigProviderVtbl* Vtbl;
         }
 
         [UnmanagedCallersOnly]
