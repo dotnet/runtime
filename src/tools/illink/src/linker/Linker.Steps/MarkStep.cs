@@ -3350,6 +3350,9 @@ namespace Mono.Linker.Steps
 #endif
             var methodOrigin = new MessageOrigin(method);
 
+            // Check for [UnsupportedOSPlatform] early to potentially skip body scanning
+            TryMarkMethodForUnsupportedPlatform(method);
+
             bool markedForCall =
                 reason.Kind == DependencyKind.DirectCall ||
                 reason.Kind == DependencyKind.VirtualCall ||
@@ -3589,6 +3592,66 @@ namespace Mono.Linker.Steps
             }
         }
 
+        /// <summary>
+        /// Checks if the method has [UnsupportedOSPlatform] attribute matching the target OS
+        /// and marks it for PNSE conversion if so.
+        /// </summary>
+        /// <returns>True if the method was marked for PNSE conversion.</returns>
+        bool TryMarkMethodForUnsupportedPlatform(MethodDefinition method)
+        {
+            if (Context.TargetOS is null)
+                return false;
+
+            // Check method-level attributes
+            if (HasMatchingUnsupportedOSPlatformAttribute(method))
+            {
+                Annotations.SetAction(method, MethodAction.ConvertToPNSE);
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Checks if the property has [UnsupportedOSPlatform] attribute matching the target OS
+        /// and marks its getter/setter for PNSE conversion if so.
+        /// </summary>
+        void TryMarkPropertyForUnsupportedPlatform(PropertyDefinition property)
+        {
+            if (Context.TargetOS is null)
+                return;
+
+            if (!HasMatchingUnsupportedOSPlatformAttribute(property))
+                return;
+
+            if (property.GetMethod is not null)
+                Annotations.SetAction(property.GetMethod, MethodAction.ConvertToPNSE);
+
+            if (property.SetMethod is not null)
+                Annotations.SetAction(property.SetMethod, MethodAction.ConvertToPNSE);
+        }
+
+        /// <summary>
+        /// Checks if the provider has [UnsupportedOSPlatform] attribute matching the target OS.
+        /// </summary>
+        bool HasMatchingUnsupportedOSPlatformAttribute(ICustomAttributeProvider provider)
+        {
+            if (!provider.HasCustomAttributes)
+                return false;
+
+            foreach (var attribute in Context.CustomAttributes.GetCustomAttributes(provider, "System.Runtime.Versioning", "UnsupportedOSPlatformAttribute"))
+            {
+                if (attribute.ConstructorArguments.Count > 0 &&
+                    attribute.ConstructorArguments[0].Value is string platformName &&
+                    string.Equals(platformName, Context.TargetOS, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         protected virtual void MarkAndCacheConvertToThrowExceptionCtor(DependencyInfo reason, MessageOrigin origin)
         {
             if (Context.MarkedKnownMembers.NotSupportedExceptionCtorString != null)
@@ -3773,6 +3836,11 @@ namespace Mono.Linker.Steps
                         default:
                             return false;
                     }
+                // Skip body scanning for methods that will be stubbed - their bodies will be replaced
+                case MethodAction.ConvertToStub:
+                case MethodAction.ConvertToThrow:
+                case MethodAction.ConvertToPNSE:
+                    return false;
                 default:
                     return false;
             }
@@ -3784,6 +3852,9 @@ namespace Mono.Linker.Steps
                 return;
 
             var propertyOrigin = new MessageOrigin(prop);
+
+            // Check for [UnsupportedOSPlatform] on the property and mark getter/setter for PNSE
+            TryMarkPropertyForUnsupportedPlatform(prop);
 
             // Consider making this more similar to MarkEvent method?
             MarkCustomAttributes(prop, new DependencyInfo(DependencyKind.CustomAttribute, prop), propertyOrigin);

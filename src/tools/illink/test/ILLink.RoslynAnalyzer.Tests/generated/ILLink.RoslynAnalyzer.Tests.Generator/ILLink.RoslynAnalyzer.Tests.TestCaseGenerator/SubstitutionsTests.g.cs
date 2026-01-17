@@ -91,5 +91,11 @@ namespace ILLink.RoslynAnalyzer.Tests
             return RunTest(allowMissingWarnings: true);
         }
 
+        [Fact]
+        public Task UnsupportedOSPlatformSubstitution()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
+
     }
 }

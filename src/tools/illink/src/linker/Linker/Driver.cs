@@ -597,6 +597,13 @@ namespace Mono.Linker
                             context.WarningSuppressionWriter = new WarningSuppressionWriter(context, fileOutputKind);
                             continue;
 
+                        case "--target-os":
+                            if (!GetStringParam(token, out string? targetOS))
+                                return -1;
+
+                            context.TargetOS = targetOS;
+                            continue;
+
                         case "--notrimwarn":
                             context.NoTrimWarn = true;
                             continue;
@@ -1545,6 +1552,8 @@ namespace Mono.Linker
             Console.WriteLine("  --link-attributes FILE         Supplementary custom attribute definitions for attributes controlling the trimming behavior.");
             Console.WriteLine("  --ignore-link-attributes       Skips reading embedded attributes. Defaults to false");
             Console.WriteLine("  --strip-link-attributes        Remove XML link attributes resources for linked assemblies. Defaults to true");
+            Console.WriteLine("  --target-os NAME               Target OS platform name (e.g., browser, ios, windows). Methods with matching");
+            Console.WriteLine("                                   [UnsupportedOSPlatform] attribute will be stubbed with PlatformNotSupportedException.");
 
             Console.WriteLine();
             Console.WriteLine("Analyzer");

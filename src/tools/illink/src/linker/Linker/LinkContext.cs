@@ -135,6 +135,13 @@ namespace Mono.Linker
 
         public bool IgnoreLinkAttributes { get; set; }
 
+        /// <summary>
+        /// The target OS platform name (e.g., "browser", "ios", "windows").
+        /// When set, methods marked with [UnsupportedOSPlatform] matching this value
+        /// will have their bodies replaced with throw PlatformNotSupportedException.
+        /// </summary>
+        public string? TargetOS { get; set; }
+
         public Dictionary<string, bool> FeatureSettings { get; init; }
 
         public List<PInvokeInfo> PInvokes { get; private set; }
