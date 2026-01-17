@@ -2042,10 +2042,20 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 	    {
 		if (isFloatHfa)
 		{
-			_ASSERTE("FLOAT REGISTER DETECTED in GetNextOffset()");
+			_ASSERTE("FLOAT HFA DETECTED in GetNextOffset()");
+		}
+		else if (thValueType.IsHFA())
+		{
+			_ASSERTE("HFA DETECTED in GetNextOffset()");
 		}
 		gRegs = argSize/sizeof(TADDR);
 		if(argSize % sizeof(TADDR) != 0) gRegs++;
+	    }
+	    else if (argSize > ENREGISTERED_PARAMTYPE_MAXSIZE)
+	    {
+		_ASSERTE("argSoze > ENREGISTERED_PARAMTYPE_MAXSIZE  GetNextOffset()");
+		//argSize = sizeof(TADDR);
+		//gRegs = 1;
 	    }
 	    break;
 
