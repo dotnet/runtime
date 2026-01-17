@@ -146,6 +146,11 @@ namespace System.Linq
 
             private static void Fill(IList<TSource> source, Span<TSource> destination, int sourceIndex)
             {
+                if (destination.Length == 0)
+                {
+                    return;
+                }
+
                 if (source.TryGetSpan(out ReadOnlySpan<TSource> sourceSpan))
                 {
                     sourceSpan.Slice(sourceIndex, destination.Length).CopyTo(destination);

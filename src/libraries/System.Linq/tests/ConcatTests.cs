@@ -571,5 +571,16 @@ namespace System.Linq.Tests
                 }
             ];
         }
+
+        [Fact]
+        public void ConcatAfterSkipMoreThanCount()
+        {
+            int[] source = [1];
+            int[] items = [2, 3];
+
+            int[] result = source.Skip(2).Concat(items).ToArray();
+
+            Assert.Equal(items, result);
+        }
     }
 }
