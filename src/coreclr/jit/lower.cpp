@@ -11537,7 +11537,8 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     if (comp->opts.Tier0OptimizationEnabled() && ind->OperIs(GT_IND) && ind->IsUnusedValue())
     {
         auto isTooBigOffset = [](Compiler* comp, ssize_t size, ssize_t offset) -> bool {
-            return (offset < 0) || CheckedOps::AddOverflows(size, offset, true) || comp->fgIsBigOffset(size + offset);
+            return (offset < 0) || CheckedOps::AddOverflows<ssize_t>(size, offset, true) ||
+                   comp->fgIsBigOffset(size + offset);
         };
 
         GenTree* addr = ind->Addr();
