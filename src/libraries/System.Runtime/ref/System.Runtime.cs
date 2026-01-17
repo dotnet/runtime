@@ -9096,9 +9096,11 @@ namespace System.Diagnostics.CodeAnalysis
     public sealed partial class StringSyntaxAttribute : System.Attribute
     {
         public const string CompositeFormat = "CompositeFormat";
+        public const string CSharp = "C#";
         public const string DateOnlyFormat = "DateOnlyFormat";
         public const string DateTimeFormat = "DateTimeFormat";
         public const string EnumFormat = "EnumFormat";
+        public const string FSharp = "F#";
         public const string GuidFormat = "GuidFormat";
         public const string Json = "Json";
         public const string NumericFormat = "NumericFormat";
@@ -9106,6 +9108,7 @@ namespace System.Diagnostics.CodeAnalysis
         public const string TimeOnlyFormat = "TimeOnlyFormat";
         public const string TimeSpanFormat = "TimeSpanFormat";
         public const string Uri = "Uri";
+        public const string VisualBasic = "Visual Basic";
         public const string Xml = "Xml";
         public StringSyntaxAttribute(string syntax) { }
         public StringSyntaxAttribute(string syntax, params object?[] arguments) { }
@@ -14534,6 +14537,7 @@ namespace System.Runtime.InteropServices
     public enum ExtendedLayoutKind
     {
         CStruct = 0,
+        CUnion = 1,
     }
     public partial class ExternalException : System.SystemException
     {
@@ -17038,6 +17042,7 @@ namespace System
     public partial class Uri : System.IEquatable<System.Uri>, System.IFormattable, System.ISpanFormattable, System.Runtime.Serialization.ISerializable
     {
         public static readonly string SchemeDelimiter;
+        public static readonly string UriSchemeData;
         public static readonly string UriSchemeFile;
         public static readonly string UriSchemeFtp;
         public static readonly string UriSchemeFtps;

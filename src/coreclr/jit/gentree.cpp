@@ -1599,7 +1599,7 @@ bool CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, We
 
             break;
 
-#ifdef REG_DISPATCH_INDIRECT_CELL_ADDR
+#ifdef REG_DISPATCH_INDIRECT_CALL_ADDR
         case WellKnownArg::DispatchIndirectCallTarget:
             *reg = REG_DISPATCH_INDIRECT_CALL_ADDR;
             return true;
