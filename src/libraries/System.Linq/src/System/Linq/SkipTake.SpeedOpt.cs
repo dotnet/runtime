@@ -441,7 +441,7 @@ namespace System.Linq
             {
                 if (_source is Iterator<TSource> iterator &&
                     iterator.GetCount(onlyIfCheap: true) is int count &&
-                    count != -1)
+                    count >= 0)
                 {
                     if (count <= _minIndexInclusive)
                     {
