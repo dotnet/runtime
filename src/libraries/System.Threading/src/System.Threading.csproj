@@ -11,6 +11,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ILLinkSubstitutionsXmls Include="ILLink/ILLink.Substitutions.wasm.singlethread.xml" Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' != 'true'" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="System\Threading\Barrier.cs" />
     <Compile Include="System\Threading\CDSsyncETWBCLProvider.cs" />
     <Compile Include="System\Threading\CountdownEvent.cs" />

@@ -94,7 +94,9 @@ namespace System.Threading
 
         #region Public Wait/Pulse methods
 
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public static bool Wait(object obj, int millisecondsTimeout)
         {
             return GetCondition(obj).Wait(millisecondsTimeout, obj);

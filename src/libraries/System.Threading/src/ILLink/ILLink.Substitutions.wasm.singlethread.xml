@@ -1,0 +1,32 @@
+<linker>
+  <assembly fullname="System.Threading">
+    <type fullname="System.Threading.ReaderWriterLock">
+      <method signature="System.Void AcquireReaderLock(System.Int32)" body="remove"/>
+      <method signature="System.Void AcquireReaderLock(System.TimeSpan)" body="remove"/>
+      <method signature="System.Void RestoreLock(System.Threading.LockCookie&amp;)" body="remove"/>
+      <method signature="System.Threading.LockCookie UpgradeToWriterLock(System.Int32)" body="remove"/>
+      <method signature="System.Threading.LockCookie UpgradeToWriterLock(System.TimeSpan)" body="remove"/>
+    </type>
+    <type fullname="System.Threading.Barrier">
+      <method signature="System.Void SignalAndWait()" body="remove" />
+      <method signature="System.Void SignalAndWait(System.Threading.CancellationToken)" body="remove" />
+      <method signature="System.Boolean SignalAndWait(System.TimeSpan)" body="remove"/>
+      <method signature="System.Boolean SignalAndWait(System.TimeSpan,System.Threading.CancellationToken)" body="remove"/>
+      <method signature="System.Boolean SignalAndWait(System.Int32)" body="remove"/>
+      <method signature="System.Boolean SignalAndWait(System.Int32,System.Threading.CancellationToken)" body="remove"/>
+      <!--
+      <method signature="System.Boolean DiscontinuousWait(System.Threading.ManualResetEventSlim,System.Int32,System.Threading.CancellationToken,System.Int64)" body="remove"/>
+      -->
+      <method signature="System.Int64 AddParticipant()" body="remove"/>
+      <method signature="System.Int64 AddParticipants(System.Int32)" body="remove"/>
+    </type>
+    <type fullname="System.Threading.CountdownEvent">
+      <method signature="System.Void Wait()" body="remove" />
+      <method signature="System.Void Wait(System.Threading.CancellationToken)" body="remove" />
+      <method signature="System.Boolean Wait(System.TimeSpan)" body="remove"/>
+      <method signature="System.Boolean Wait(System.TimeSpan,System.Threading.CancellationToken)" body="remove"/>
+      <method signature="System.Boolean Wait(System.Int32)" body="remove"/>
+      <method signature="System.Boolean Wait(System.Int32,System.Threading.CancellationToken)" body="remove"/>
+    </type>
+  </assembly>
+</linker>
