@@ -875,5 +875,82 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(4, written4);
             Assert.Equal(new byte[] { 1, 2, 3, 4 }, destination4);
         }
+
+        [Theory]
+        [InlineData("AA\r\nA=")]
+        [InlineData("AA\r\nA=\r\n")]
+        [InlineData("AA A=")]
+        [InlineData("AA\tA=")]
+        public void DecodingWithWhiteSpaceSplitFinalQuantumAndIsFinalBlockFalse(string base64String)
+        {
+            // When a final quantum (containing padding) is split by whitespace and isFinalBlock=false,
+            // the decoder should not consume any bytes, allowing the caller to retry with isFinalBlock=true
+            ReadOnlySpan<byte> base64Data = Encoding.ASCII.GetBytes(base64String);
+            var output = new byte[10];
+
+            // First call with isFinalBlock=false should consume 0 bytes
+            OperationStatus status = Base64.DecodeFromUtf8(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+            Assert.Equal(0, bytesConsumed);
+            Assert.Equal(0, bytesWritten);
+            Assert.Equal(OperationStatus.InvalidData, status);
+
+            // Second call with isFinalBlock=true should succeed
+            status = Base64.DecodeFromUtf8(base64Data, output, out bytesConsumed, out bytesWritten, isFinalBlock: true);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(base64Data.Length, bytesConsumed);
+            Assert.Equal(2, bytesWritten); // "AAA=" decodes to 2 bytes
+            Assert.Equal(new byte[] { 0, 0 }, output[..2]);
+        }
+
+        [Fact]
+        public void DecodingWithWhiteSpaceSplitFinalQuantumStreamingScenario()
+        {
+            // Simulate a streaming scenario where we call DecodeFromUtf8 multiple times
+            ReadOnlySpan<byte> base64Data = "AA\r\nA="u8;
+            var output = new byte[10];
+
+            // First call with isFinalBlock=false
+            OperationStatus status = Base64.DecodeFromUtf8(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+            Assert.Equal(OperationStatus.InvalidData, status);
+            Assert.Equal(0, bytesConsumed);
+            Assert.Equal(0, bytesWritten);
+
+            // Slice the buffer based on what was consumed (nothing in this case)
+            base64Data = base64Data.Slice(bytesConsumed);
+            var outputSpan = output.AsSpan().Slice(bytesWritten);
+
+            // Second call with isFinalBlock=true should successfully decode
+            status = Base64.DecodeFromUtf8(base64Data, outputSpan, out bytesConsumed, out bytesWritten, isFinalBlock: true);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(6, bytesConsumed); // All 6 bytes: "AA\r\nA="
+            Assert.Equal(2, bytesWritten); // "AAA=" decodes to 2 bytes
+        }
+
+        [Theory]
+        [InlineData("AAAA")]
+        [InlineData("AAA=")]
+        public void DecodingWithIsFinalBlockFalseNoWhiteSpace(string base64String)
+        {
+            // Verify existing behavior is preserved for cases without whitespace
+            ReadOnlySpan<byte> base64Data = Encoding.ASCII.GetBytes(base64String);
+            var output = new byte[10];
+
+            if (base64String == "AAAA")
+            {
+                // Complete quantum without padding should be decoded
+                OperationStatus status = Base64.DecodeFromUtf8(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+                Assert.Equal(OperationStatus.Done, status);
+                Assert.Equal(4, bytesConsumed);
+                Assert.Equal(3, bytesWritten);
+            }
+            else if (base64String == "AAA=")
+            {
+                // Quantum with padding should not be decoded when isFinalBlock=false
+                OperationStatus status = Base64.DecodeFromUtf8(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+                Assert.Equal(OperationStatus.InvalidData, status);
+                Assert.Equal(0, bytesConsumed);
+                Assert.Equal(0, bytesWritten);
+            }
+        }
     }
 }
