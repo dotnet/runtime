@@ -88,7 +88,7 @@ namespace System.Net.Tests
         }
 #pragma warning restore SYSLIB0014
 
-        [ConditionalFact(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled), Skip = "Temporarily disabled to reduce test load")]
+        [ConditionalFact(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled))]
 #pragma warning disable SYSLIB0014 // WebRequest, FtpWebRequest, and related types are obsolete
         public async Task FtpUploadWithSsl_Success()
         {
@@ -134,7 +134,7 @@ namespace System.Net.Tests
         }
 #pragma warning restore SYSLIB0014
 
-        [ConditionalFact(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled), Skip = "Temporarily disabled to reduce test load")]
+        [ConditionalFact(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled))]
 #pragma warning disable SYSLIB0014 // WebRequest, FtpWebRequest, and related types are obsolete
         public async Task FtpDownloadWithSsl_Success()
         {
