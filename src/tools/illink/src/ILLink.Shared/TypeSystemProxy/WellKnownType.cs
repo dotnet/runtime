@@ -19,6 +19,7 @@ namespace ILLink.Shared.TypeSystemProxy
         System_Object,
         System_Attribute,
         System_NotSupportedException,
+        System_PlatformNotSupportedException,
         System_Runtime_CompilerServices_DisablePrivateReflectionAttribute,
         System_Void
     }
@@ -37,6 +38,7 @@ namespace ILLink.Shared.TypeSystemProxy
                 WellKnownType.System_Object => ("System", "Object"),
                 WellKnownType.System_Attribute => ("System", "Attribute"),
                 WellKnownType.System_NotSupportedException => ("System", "NotSupportedException"),
+                WellKnownType.System_PlatformNotSupportedException => ("System", "PlatformNotSupportedException"),
                 WellKnownType.System_Runtime_CompilerServices_DisablePrivateReflectionAttribute => ("System.Runtime.CompilerServices", "DisablePrivateReflectionAttribute"),
                 WellKnownType.System_Void => ("System", "Void"),
                 _ => throw new System.ArgumentException(type.ToString())
@@ -56,7 +58,7 @@ namespace ILLink.Shared.TypeSystemProxy
                     "Array" => WellKnownType.System_Array,
                     "Attribute" => WellKnownType.System_Attribute,
                     "Object" => WellKnownType.System_Object,
-                    "NotSupportedException" => WellKnownType.System_NotSupportedException,
+                    "PlatformNotSupportedException" => WellKnownType.System_PlatformNotSupportedException,
                     "Void" => WellKnownType.System_Void,
                     _ => null
                 },

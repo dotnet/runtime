@@ -3582,6 +3582,10 @@ namespace Mono.Linker.Steps
                 case MethodAction.ConvertToThrow:
                     MarkAndCacheConvertToThrowExceptionCtor(new DependencyInfo(DependencyKind.UnreachableBodyRequirement, method), origin);
                     break;
+
+                case MethodAction.ConvertToPNSE:
+                    MarkAndCacheConvertToThrowPNSECtor(new DependencyInfo(DependencyKind.UnreachableBodyRequirement, method), origin);
+                    break;
             }
         }
 
@@ -3599,6 +3603,32 @@ namespace Mono.Linker.Steps
             var nseCtor = MarkMethodIf(nse.Methods, KnownMembers.IsNotSupportedExceptionCtorString, reason, origin);
             Context.MarkedKnownMembers.NotSupportedExceptionCtorString = nseCtor ??
                 throw new LinkerFatalErrorException(MessageContainer.CreateErrorMessage(null, DiagnosticId.CouldNotFindConstructor, nse.GetDisplayName()));
+
+            var objectType = BCL.FindPredefinedType(WellKnownType.System_Object, Context);
+            if (objectType == null)
+                throw new NotSupportedException("Missing predefined 'System.Object' type");
+
+            MarkType(objectType, reason, origin);
+
+            var objectCtor = MarkMethodIf(objectType.Methods, MethodDefinitionExtensions.IsDefaultConstructor, reason, origin);
+            Context.MarkedKnownMembers.ObjectCtor = objectCtor ??
+                    throw new LinkerFatalErrorException(MessageContainer.CreateErrorMessage(null, DiagnosticId.CouldNotFindConstructor, objectType.GetDisplayName()));
+        }
+
+        protected virtual void MarkAndCacheConvertToThrowPNSECtor(DependencyInfo reason, MessageOrigin origin)
+        {
+            if (Context.MarkedKnownMembers.PlatformNotSupportedExceptionCtor != null)
+                return;
+
+            var pnse = BCL.FindPredefinedType(WellKnownType.System_PlatformNotSupportedException, Context);
+            if (pnse == null)
+                throw new LinkerFatalErrorException(MessageContainer.CreateErrorMessage(null, DiagnosticId.CouldNotFindType, "System.PlatformNotSupportedException"));
+
+            MarkType(pnse, reason, origin);
+
+            var pnseCtor = MarkMethodIf(pnse.Methods, KnownMembers.IsPlatformNotSupportedExceptionCtor, reason, origin);
+            Context.MarkedKnownMembers.PlatformNotSupportedExceptionCtor = pnseCtor ??
+                throw new LinkerFatalErrorException(MessageContainer.CreateErrorMessage(null, DiagnosticId.CouldNotFindConstructor, pnse.GetDisplayName()));
 
             var objectType = BCL.FindPredefinedType(WellKnownType.System_Object, Context);
             if (objectType == null)

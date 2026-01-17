@@ -9,6 +9,7 @@ namespace Mono.Linker
     public class KnownMembers
     {
         public MethodDefinition? NotSupportedExceptionCtorString { get; set; }
+        public MethodDefinition? PlatformNotSupportedExceptionCtor { get; set; }
         public MethodDefinition? DisablePrivateReflectionAttributeCtor { get; set; }
         public MethodDefinition? ObjectCtor { get; set; }
 
@@ -20,6 +21,17 @@ namespace Mono.Linker
                 return false;
 
             if (method.GetMetadataParametersCount() != 1 || method.GetParameter((ParameterIndex)1).ParameterType.MetadataType != MetadataType.String)
+                return false;
+
+            return true;
+        }
+
+        public static bool IsPlatformNotSupportedExceptionCtor(MethodDefinition method)
+        {
+            if (!method.IsConstructor || method.IsStatic)
+                return false;
+
+            if (method.GetMetadataParametersCount() != 0)
                 return false;
 
             return true;

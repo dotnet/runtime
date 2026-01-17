@@ -68,6 +68,9 @@ namespace Mono.Linker.Steps
                 case "remove":
                     _substitutionInfo.SetMethodAction(method, MethodAction.ConvertToThrow);
                     return;
+                case "pnse":
+                    _substitutionInfo.SetMethodAction(method, MethodAction.ConvertToPNSE);
+                    return;
                 case "stub":
                     string value = GetAttribute(methodNav, "value");
                     if (!string.IsNullOrEmpty(value))

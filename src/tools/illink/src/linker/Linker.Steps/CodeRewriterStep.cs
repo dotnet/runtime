@@ -54,6 +54,9 @@ namespace Mono.Linker.Steps
                 case MethodAction.ConvertToThrow:
                     RewriteBodyToLinkedAway(method);
                     break;
+                case MethodAction.ConvertToPNSE:
+                    RewriteBodyToPNSE(method);
+                    break;
             }
         }
 
@@ -63,6 +66,16 @@ namespace Mono.Linker.Steps
             method.ImplAttributes |= MethodImplAttributes.NoInlining;
 
             method.Body = CreateThrowLinkedAwayBody(method);
+
+            method.ClearDebugInformation();
+        }
+
+        protected virtual void RewriteBodyToPNSE(MethodDefinition method)
+        {
+            method.ImplAttributes &= ~(MethodImplAttributes.AggressiveInlining | MethodImplAttributes.Synchronized);
+            method.ImplAttributes |= MethodImplAttributes.NoInlining;
+
+            method.Body = CreateThrowPNSEBody(method);
 
             method.ClearDebugInformation();
         }
@@ -94,6 +107,32 @@ namespace Mono.Linker.Steps
 
             // import the method into the current assembly
             ctor = Context.MarkedKnownMembers.NotSupportedExceptionCtorString;
+            ctor = Assembly.MainModule.ImportReference(ctor);
+
+            il.Emit(OpCodes.Ldstr, "Linked away");
+            il.Emit(OpCodes.Newobj, ctor);
+            il.Emit(OpCodes.Throw);
+
+            return body;
+        }
+
+        MethodBody CreateThrowPNSEBody(MethodDefinition method)
+        {
+            var body = new MethodBody(method);
+            var il = body.GetLinkerILProcessor();
+            MethodReference? ctor;
+
+            // Makes the body verifiable
+            if (method.IsConstructor && !method.DeclaringType.IsValueType)
+            {
+                ctor = Assembly.MainModule.ImportReference(Context.MarkedKnownMembers.ObjectCtor);
+
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Call, ctor);
+            }
+
+            // import the method into the current assembly
+            ctor = Context.MarkedKnownMembers.PlatformNotSupportedExceptionCtor;
             ctor = Assembly.MainModule.ImportReference(ctor);
 
             il.Emit(OpCodes.Ldstr, "Linked away");

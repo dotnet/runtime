@@ -40,7 +40,8 @@ namespace Mono.Linker.Steps
 
         public override void ProcessMethod(MethodDefinition method)
         {
-            if (Context.Annotations.GetAction(method) != MethodAction.ConvertToThrow)
+            if (Context.Annotations.GetAction(method) != MethodAction.ConvertToThrow
+                && Context.Annotations.GetAction(method) != MethodAction.ConvertToPNSE)
                 Context.Suppressions.GatherSuppressions(method);
         }
 
