@@ -2288,10 +2288,8 @@ namespace System.Numerics.Tests
         [MemberData(nameof(TryWriteSignificandBigEndianTest_TestData))]
         public static void TryWriteSignificandBigEndianTest(BFloat16 value, int expectedBytesWritten, byte[] expectedBytes)
         {
-            Span<byte> destination = stackalloc byte[2];
-            int bytesWritten;
-
-            Assert.True(FloatingPointHelper<BFloat16>.TryWriteSignificandBigEndian(value, destination, out bytesWritten));
+            Span<byte> destination = [0, 0];
+            Assert.True(FloatingPointHelper<BFloat16>.TryWriteSignificandBigEndian(value, destination, out int bytesWritten));
             Assert.Equal(expectedBytesWritten, bytesWritten);
             Assert.Equal(expectedBytes, destination.ToArray());
         }
@@ -2299,14 +2297,8 @@ namespace System.Numerics.Tests
         [Fact]
         public static void TryWriteSignificandBigEndianTest_EmptyDestination()
         {
-            Span<byte> destination = stackalloc byte[2];
-            destination[0] = 0x00;
-            destination[1] = 0x80;
-            int bytesWritten;
-
-            Assert.False(FloatingPointHelper<BFloat16>.TryWriteSignificandBigEndian(default, Span<byte>.Empty, out bytesWritten));
+            Assert.False(FloatingPointHelper<BFloat16>.TryWriteSignificandBigEndian(default, Span<byte>.Empty, out int bytesWritten));
             Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x80 }, destination.ToArray());
         }
 
         public static IEnumerable<object[]> TryWriteSignificandLittleEndianTest_TestData() =>
@@ -2326,10 +2318,8 @@ namespace System.Numerics.Tests
         [MemberData(nameof(TryWriteSignificandLittleEndianTest_TestData))]
         public static void TryWriteSignificandLittleEndianTest(BFloat16 value, int expectedBytesWritten, byte[] expectedBytes)
         {
-            Span<byte> destination = stackalloc byte[2];
-            int bytesWritten;
-
-            Assert.True(FloatingPointHelper<BFloat16>.TryWriteSignificandLittleEndian(value, destination, out bytesWritten));
+            Span<byte> destination = [0, 0];
+            Assert.True(FloatingPointHelper<BFloat16>.TryWriteSignificandLittleEndian(value, destination, out int bytesWritten));
             Assert.Equal(expectedBytesWritten, bytesWritten);
             Assert.Equal(expectedBytes, destination.ToArray());
         }
@@ -2337,14 +2327,8 @@ namespace System.Numerics.Tests
         [Fact]
         public static void TryWriteSignificandLittleEndianTest_EmptyDestination()
         {
-            Span<byte> destination = stackalloc byte[2];
-            destination[0] = 0x80;
-            destination[1] = 0x00;
-            int bytesWritten;
-
-            Assert.False(FloatingPointHelper<BFloat16>.TryWriteSignificandLittleEndian(default, Span<byte>.Empty, out bytesWritten));
+            Assert.False(FloatingPointHelper<BFloat16>.TryWriteSignificandLittleEndian(default, Span<byte>.Empty, out int bytesWritten));
             Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0x80, 0x00 }, destination.ToArray());
         }
 
         #region AssertExtentions
