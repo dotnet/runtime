@@ -390,14 +390,20 @@ namespace System.Collections.Tests
 
         public static IEnumerable<object[]> Shift_PopCount_TestData()
         {
-            // Test various lengths that include edge cases around int32 boundaries
-            foreach (int length in new[] { 1, BitsPerByte, BitsPerInt32 - 1, BitsPerInt32, BitsPerInt32 + 1, 2 * BitsPerInt32, 2 * BitsPerInt32 + 1 })
+            // Test lengths that cover edge cases around int32 boundaries
+            int[] lengths = [1, BitsPerByte, BitsPerInt32 - 1, BitsPerInt32, BitsPerInt32 + 1, 2 * BitsPerInt32, 2 * BitsPerInt32 + 1];
+
+            foreach (int length in lengths)
             {
-                // Test various shift amounts
-                foreach (int shift in new[] { 1, length / 2, length - 1, length, length + 1 }.Where(s => s > 0).Distinct())
+                // Generate valid shift amounts based on array length
+                int[] shifts = [1, length / 2, length - 1, length, length + 1];
+
+                // Test with bit set at start, middle, and end positions
+                int[] bitPositions = length > 1 ? [0, length / 2, length - 1] : [0];
+
+                foreach (int shift in shifts.Where(s => s > 0).Distinct())
                 {
-                    // Test with bit set at various positions
-                    foreach (int bitPosition in new[] { 0, length / 2, length - 1 }.Distinct())
+                    foreach (int bitPosition in bitPositions.Distinct())
                     {
                         yield return new object[] { length, bitPosition, shift };
                     }
