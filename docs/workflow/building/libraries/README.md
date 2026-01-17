@@ -248,7 +248,7 @@ By default, code analyzers and ILLink trimming are disabled during local builds 
   ./build.sh libs -c Release /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
   ```
 
-These features are automatically run on a dedicated CI pipeline to ensure code quality without impacting regular build times. Individual projects can still override these settings by explicitly setting `RunAnalyzers` or `ILLinkTrimAssembly` properties in their project files.
+These features are automatically run on a dedicated CI pipeline for all PRs and scheduled builds to ensure code quality without impacting regular build times. Individual projects can still override these settings by explicitly setting `RunAnalyzers` or `ILLinkTrimAssembly` properties in their project files.
 
 ## Working in Visual Studio
 
