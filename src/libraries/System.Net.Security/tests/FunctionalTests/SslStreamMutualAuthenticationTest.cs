@@ -392,9 +392,10 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
-        [PlatformSpecific(TestPlatforms.Linux)] // Regression test for TLS 1.3 session resumption on OpenSSL
-        public async Task SslStream_Tls13ResumptionWithClientCert_IsMutuallyAuthenticatedTrue()
+        [Theory]
+        [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        public async Task SslStream_Tls13ResumptionWithClientCert_IsMutuallyAuthenticatedTrue(
+            SslProtocols protocol)
         {
             string targetHost = Guid.NewGuid().ToString("N");
 
@@ -402,7 +403,7 @@ namespace System.Net.Security.Tests
             {
                 TargetHost = targetHost,
                 ClientCertificates = new X509CertificateCollection { _clientCertificate },
-                EnabledSslProtocols = SslProtocols.Tls13,
+                EnabledSslProtocols = protocol,
                 RemoteCertificateValidationCallback = AllowAnyCertificate,
             };
 
@@ -410,7 +411,7 @@ namespace System.Net.Security.Tests
             {
                 ServerCertificate = _serverCertificate,
                 ClientCertificateRequired = true,
-                EnabledSslProtocols = SslProtocols.Tls13,
+                EnabledSslProtocols = protocol,
                 RemoteCertificateValidationCallback = AllowAnyCertificate,
             };
 
@@ -424,7 +425,7 @@ namespace System.Net.Security.Tests
                         client.AuthenticateAsClientAsync(clientOptions),
                         server.AuthenticateAsServerAsync(serverOptions));
 
-                    // PingPong triggers TLS 1.3 new session ticket delivery
+                    // PingPong triggers new session ticket delivery (TLS 1.3)
                     await TestHelper.PingPong(client, server);
 
                     // Regression test: all connections (including resumed ones) must report mutual auth
