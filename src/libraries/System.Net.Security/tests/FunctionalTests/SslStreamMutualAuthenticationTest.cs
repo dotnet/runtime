@@ -393,7 +393,8 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
-        public async Task SslStream_Tls13ResumedSessionsClientCollection_MutualAuthPreserved()
+        [PlatformSpecific(TestPlatforms.Linux)] // Regression test for TLS 1.3 session resumption on OpenSSL
+        public async Task SslStream_Tls13ResumptionWithClientCert_IsMutuallyAuthenticatedTrue()
         {
             string targetHost = Guid.NewGuid().ToString("N");
 
@@ -407,7 +408,7 @@ namespace System.Net.Security.Tests
 
             var serverOptions = new SslServerAuthenticationOptions
             {
-                ServerCertificateContext = SslStreamCertificateContext.Create(_serverCertificate, null),
+                ServerCertificate = _serverCertificate,
                 ClientCertificateRequired = true,
                 EnabledSslProtocols = SslProtocols.Tls13,
                 RemoteCertificateValidationCallback = AllowAnyCertificate,
@@ -423,10 +424,17 @@ namespace System.Net.Security.Tests
                         client.AuthenticateAsClientAsync(clientOptions),
                         server.AuthenticateAsServerAsync(serverOptions));
 
+                    // PingPong triggers TLS 1.3 new session ticket delivery
+                    await TestHelper.PingPong(client, server);
+
+                    // Regression test: all connections (including resumed ones) must report mutual auth
                     Assert.True(client.IsMutuallyAuthenticated, $"Client connection {i}: IsMutuallyAuthenticated should be true");
                     Assert.True(server.IsMutuallyAuthenticated, $"Server connection {i}: IsMutuallyAuthenticated should be true");
                     Assert.NotNull(client.LocalCertificate);
                     Assert.NotNull(server.RemoteCertificate);
+
+                    await client.ShutdownAsync();
+                    await server.ShutdownAsync();
                 }
             }
         }
