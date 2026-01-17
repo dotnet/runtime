@@ -84,6 +84,7 @@ public class Bench
 ### Example: Collection Operation Benchmark
 
 ```csharp
+using System.Linq;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
 
@@ -189,6 +190,7 @@ public class Bench
 @EgorBot -intel -profiler --envvars DOTNET_JitDisasm:MyOperation
 
 ```cs
+using System.Linq;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
 
