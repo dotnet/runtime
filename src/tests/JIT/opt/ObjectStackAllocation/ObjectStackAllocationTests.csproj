@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CrossGenTest>false</Crossgen2> <!-- https://github.com/dotnet/runtime/issues/109314 -->
+    <CrossGenTest>false</CrossGenTest> <!-- https://github.com/dotnet/runtime/issues/109314 -->
     <!-- Needed for CLRTestEnvironmentVariable -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <DebugType>None</DebugType>

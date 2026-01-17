@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CrossGenTest>false</Crossgen2> <!-- https://github.com/dotnet/runtime/issues/85663 -->
+    <CrossGenTest>false</CrossGenTest> <!-- https://github.com/dotnet/runtime/issues/85663 -->
     <!-- Needed for JitOptimizationSensitive and NativeAotIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
