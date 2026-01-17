@@ -2273,22 +2273,22 @@ namespace System.Numerics.Tests
 
         public static IEnumerable<object[]> TryWriteSignificandBigEndianTest_TestData() =>
         [
-            [BFloat16.NegativeInfinity, 2, new byte[] { 0x00, 0x80 }],
-            [BFloat16.MinValue, 2, new byte[] { 0x00, 0xFF }],
-            [(BFloat16)(-1.0f), 2, new byte[] { 0x00, 0x80 }],
-            [-BFloat16.Epsilon, 2, new byte[] { 0x00, 0x01 }],
-            [BFloat16.NaN, 2, new byte[] { 0x00, 0xC0 }],
-            [(BFloat16)0.0f, 2, new byte[] { 0x00, 0x00 }],
-            [(BFloat16)1.0f, 2, new byte[] { 0x00, 0x80 }],
-            [BFloat16.MaxValue, 2, new byte[] { 0x00, 0xFF }],
-            [BFloat16.PositiveInfinity, 2, new byte[] { 0x00, 0x80 }],
+            [BFloat16.NegativeInfinity, 1, new byte[] { 0x80 }],
+            [BFloat16.MinValue, 1, new byte[] { 0xFF }],
+            [(BFloat16)(-1.0f), 1, new byte[] { 0x80 }],
+            [-BFloat16.Epsilon, 1, new byte[] { 0x01 }],
+            [BFloat16.NaN, 1, new byte[] { 0xC0 }],
+            [(BFloat16)0.0f, 1, new byte[] { 0x00 }],
+            [(BFloat16)1.0f, 1, new byte[] { 0x80 }],
+            [BFloat16.MaxValue, 1, new byte[] { 0xFF }],
+            [BFloat16.PositiveInfinity, 1, new byte[] { 0x80 }],
         ];
 
         [Theory]
         [MemberData(nameof(TryWriteSignificandBigEndianTest_TestData))]
         public static void TryWriteSignificandBigEndianTest(BFloat16 value, int expectedBytesWritten, byte[] expectedBytes)
         {
-            Span<byte> destination = [0, 0];
+            Span<byte> destination = [0];
             Assert.True(FloatingPointHelper<BFloat16>.TryWriteSignificandBigEndian(value, destination, out int bytesWritten));
             Assert.Equal(expectedBytesWritten, bytesWritten);
             Assert.Equal(expectedBytes, destination.ToArray());
@@ -2303,22 +2303,22 @@ namespace System.Numerics.Tests
 
         public static IEnumerable<object[]> TryWriteSignificandLittleEndianTest_TestData() =>
         [
-            [BFloat16.NegativeInfinity, 2, new byte[] { 0x80, 0x00 }],
-            [BFloat16.MinValue, 2, new byte[] { 0xFF, 0x00 }],
-            [(BFloat16)(-1.0f), 2, new byte[] { 0x80, 0x00 }],
-            [-BFloat16.Epsilon, 2, new byte[] { 0x01, 0x00 }],
-            [BFloat16.NaN, 2, new byte[] { 0xC0, 0x00 }],
-            [(BFloat16)0.0f, 2, new byte[] { 0x00, 0x00 }],
-            [(BFloat16)1.0f, 2, new byte[] { 0x80, 0x00 }],
-            [BFloat16.MaxValue, 2, new byte[] { 0xFF, 0x00 }],
-            [BFloat16.PositiveInfinity, 2, new byte[] { 0x80, 0x00 }],
+            [BFloat16.NegativeInfinity, 1, new byte[] { 0x80 }],
+            [BFloat16.MinValue, 1, new byte[] { 0xFF }],
+            [(BFloat16)(-1.0f), 1, new byte[] { 0x80 }],
+            [-BFloat16.Epsilon, 1, new byte[] { 0x01 }],
+            [BFloat16.NaN, 1, new byte[] { 0xC0 }],
+            [(BFloat16)0.0f, 1, new byte[] { 0x00 }],
+            [(BFloat16)1.0f, 1, new byte[] { 0x80 }],
+            [BFloat16.MaxValue, 1, new byte[] { 0xFF }],
+            [BFloat16.PositiveInfinity, 1, new byte[] { 0x80 }],
         ];
 
         [Theory]
         [MemberData(nameof(TryWriteSignificandLittleEndianTest_TestData))]
         public static void TryWriteSignificandLittleEndianTest(BFloat16 value, int expectedBytesWritten, byte[] expectedBytes)
         {
-            Span<byte> destination = [0, 0];
+            Span<byte> destination = [0];
             Assert.True(FloatingPointHelper<BFloat16>.TryWriteSignificandLittleEndian(value, destination, out int bytesWritten));
             Assert.Equal(expectedBytesWritten, bytesWritten);
             Assert.Equal(expectedBytes, destination.ToArray());
