@@ -388,5 +388,21 @@ namespace System.Linq.Tests
             Assert.False(iterator.MoveNext());
             Assert.Equal(-1, state);
         }
+
+        [Fact]
+        public void SkipMoreThanCountFollowedByOperators()
+        {
+            int[] items = [2, 3];
+
+            foreach (IEnumerable<int> source in CreateSources([1]))
+            {
+                Assert.Equal(items, source.Skip(2).Concat(items).ToArray());
+                Assert.Equal(items, source.Skip(2).Concat(items).ToList());
+                Assert.Equal(items, source.Skip(2).Append(2).Append(3).ToArray());
+                Assert.Equal(items, source.Skip(2).Append(2).Append(3).ToList());
+                Assert.Equal(items, items.Concat(source.Skip(2)).ToArray());
+                Assert.Equal(items, items.Concat(source.Skip(2)).ToList());
+            }
+        }
     }
 }
