@@ -1,4 +1,3 @@
-using TestLibrary;
 extern alias tests_d;
 extern alias tests_r;
 
@@ -14,6 +13,7 @@ using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Tracing.Tests.Common;
+using TestLibrary;
 using DebugInfoMethodsD = tests_d::DebugInfoMethods;
 using DebugInfoMethodsR = tests_r::DebugInfoMethods;
 using Xunit;
