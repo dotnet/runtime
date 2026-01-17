@@ -929,9 +929,9 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
-        [InlineData("AQIDBAUG AQ\r\nQ=", 10, 6, "AQ\r\nQ=")]           // Two complete blocks, then whitespace-split final quantum
-        [InlineData("AQID BAUG AQ\r\nQ=", 11, 6, "AQ\r\nQ=")]          // Two blocks with space, then whitespace-split final quantum
-        [InlineData("AQIDBAUG\r\nAQID AQ\r\nQ=", 17, 9, "AQ\r\nQ=")]   // Multiple blocks with various whitespace patterns
+        [InlineData("AQIDBAUG AQ\r\nQ=", 9, 6, " AQ\r\nQ=")]           // Two complete blocks, then whitespace-split final quantum
+        [InlineData("AQID BAUG AQ\r\nQ=", 10, 6, " AQ\r\nQ=")]          // Two blocks with space, then whitespace-split final quantum
+        [InlineData("AQIDBAUG\r\nAQID AQ\r\nQ=", 15, 9, " AQ\r\nQ=")]   // Multiple blocks with various whitespace patterns
         public void DecodingWithValidDataBeforeWhiteSpaceSplitFinalQuantum(string base64String, int expectedBytesConsumedFirstCall, int expectedBytesWrittenFirstCall, string expectedRemainingAfterFirstCall)
         {
             // When there's valid data before a whitespace-split final quantum and isFinalBlock=false,
