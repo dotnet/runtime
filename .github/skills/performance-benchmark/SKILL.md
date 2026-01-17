@@ -1,0 +1,258 @@
+---
+name: performance-benchmark
+description: Generate and run ad hoc performance benchmarks to validate code changes. Use this when asked to benchmark, profile, or validate the performance impact of a code change in dotnet/runtime.
+---
+
+# Ad Hoc Performance Benchmarking
+
+When you need to validate the performance impact of a code change, follow this process to write a BenchmarkDotNet benchmark and trigger EgorBot to run it.
+
+## Step 1: Write the Benchmark
+
+Create a BenchmarkDotNet benchmark that tests the specific operation being changed. Follow these guidelines:
+
+### Benchmark Structure
+
+```csharp
+using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Running;
+
+BenchmarkSwitcher.FromAssembly(typeof(Bench).Assembly).Run(args);
+
+public class Bench
+{
+    // Add setup/cleanup if needed
+    [GlobalSetup]
+    public void Setup()
+    {
+        // Initialize test data
+    }
+
+    [Benchmark(Baseline = true)]
+    public void BaselineMethod()
+    {
+        // Test the operation
+    }
+
+    [Benchmark]
+    public void OptimizedMethod()
+    {
+        // Test the optimized version if applicable
+    }
+}
+```
+
+### Best Practices
+
+- **Avoid trivial benchmarks**: Include some complexity (e.g., loops, realistic data sizes) to get meaningful measurements
+- **Use `[Benchmark(Baseline = true)]`** to mark the baseline method when comparing implementations
+- **Use `[GlobalSetup]`** to initialize test data outside the measured code
+- **Avoid `[DisassemblyDiagnoser]`**: It causes crashes on Linux. Use `--envvars DOTNET_JitDisasm:MethodName` instead
+- **Return values** from benchmark methods to prevent dead code elimination
+- **Use realistic data sizes** that represent actual usage patterns
+
+### Example: String Operation Benchmark
+
+```csharp
+using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Running;
+
+BenchmarkSwitcher.FromAssembly(typeof(Bench).Assembly).Run(args);
+
+[MemoryDiagnoser]
+public class Bench
+{
+    private string _testString = default!;
+
+    [Params(10, 100, 1000)]
+    public int Length { get; set; }
+
+    [GlobalSetup]
+    public void Setup()
+    {
+        _testString = new string('a', Length);
+    }
+
+    [Benchmark]
+    public int StringOperation()
+    {
+        return _testString.IndexOf('z');
+    }
+}
+```
+
+### Example: Collection Operation Benchmark
+
+```csharp
+using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Running;
+
+BenchmarkSwitcher.FromAssembly(typeof(Bench).Assembly).Run(args);
+
+[MemoryDiagnoser]
+public class Bench
+{
+    private int[] _array = default!;
+    private List<int> _list = default!;
+
+    [Params(100, 1000, 10000)]
+    public int Count { get; set; }
+
+    [GlobalSetup]
+    public void Setup()
+    {
+        _array = Enumerable.Range(0, Count).ToArray();
+        _list = _array.ToList();
+    }
+
+    [Benchmark]
+    public int SumArray()
+    {
+        int sum = 0;
+        foreach (var item in _array)
+            sum += item;
+        return sum;
+    }
+
+    [Benchmark]
+    public int SumList()
+    {
+        int sum = 0;
+        foreach (var item in _list)
+            sum += item;
+        return sum;
+    }
+}
+```
+
+## Step 2: Post the EgorBot Comment
+
+Post a comment on the PR to trigger EgorBot with your benchmark. The general format is:
+
+```
+@EgorBot [target flags] [options] [BenchmarkDotNet args]
+
+```cs
+// Your benchmark code here
+```
+```
+
+### Target Flags (Required - Choose at Least One)
+
+| Flag | Architecture | Description |
+|------|--------------|-------------|
+| `-arm` | ARM64 | Azure Cobalt100 (Neoverse-N2) |
+| `-intel` | x64 | Azure Cascade Lake |
+| `-amd` or `-x64` | x64 | Azure Genoa (AMD EPYC 9V74) |
+
+You can combine multiple targets: `-arm -intel -amd`
+
+### Common Options
+
+| Option | Description |
+|--------|-------------|
+| `-profiler` | Collect flamegraph/hot assembly using perf record |
+| `--envvars KEY:VALUE` | Set environment variables (e.g., `DOTNET_JitDisasm:MethodName`) |
+| `-commit <hash>` | Run against a specific commit |
+| `-commit <hash1> vs <hash2>` | Compare two commits |
+| `-commit <hash> vs previous` | Compare commit with its parent |
+
+### Example: Basic PR Benchmark
+
+To benchmark the current PR changes against the base branch:
+
+```
+@EgorBot -intel -arm
+
+```cs
+using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Running;
+
+BenchmarkSwitcher.FromAssembly(typeof(Bench).Assembly).Run(args);
+
+[MemoryDiagnoser]
+public class Bench
+{
+    [Benchmark]
+    public int MyOperation()
+    {
+        // Your benchmark code
+        return 42;
+    }
+}
+```
+```
+
+### Example: Benchmark with Profiling and Disassembly
+
+```
+@EgorBot -intel -profiler --envvars DOTNET_JitDisasm:MyOperation
+
+```cs
+using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Running;
+
+BenchmarkSwitcher.FromAssembly(typeof(Bench).Assembly).Run(args);
+
+public class Bench
+{
+    private int[] _data = Enumerable.Range(0, 1000).ToArray();
+
+    [Benchmark]
+    public int MyOperation()
+    {
+        int sum = 0;
+        foreach (var x in _data)
+            sum += x;
+        return sum;
+    }
+}
+```
+```
+
+### Example: Compare Two Commits
+
+```
+@EgorBot -amd -commit abc1234 vs def5678
+
+```cs
+using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Running;
+
+BenchmarkSwitcher.FromAssembly(typeof(Bench).Assembly).Run(args);
+
+public class Bench
+{
+    [Benchmark]
+    public void TestMethod()
+    {
+        // Benchmark code
+    }
+}
+```
+```
+
+### Example: Run Existing dotnet/performance Benchmarks
+
+To run benchmarks from the dotnet/performance repository (no code snippet needed):
+
+```
+@EgorBot -arm -intel --filter `*TryGetValueFalse<String, String>*`
+```
+
+**Note**: Surround filter expressions with backticks to avoid issues with special characters.
+
+## Important Notes
+
+- **Bot response time**: EgorBot uses polling and may take up to 30 seconds to respond
+- **Supported repositories**: EgorBot monitors `dotnet/runtime` and `EgorBot/runtime-utils`
+- **PR mode (default)**: When posting in a PR, EgorBot automatically compares the PR changes against the base branch
+- **Results variability**: Results may vary between runs due to VM differences. Do not compare results across different architectures or cloud providers
+- **Azure targets preferred**: Use Azure targets (`-arm`, `-intel`, `-amd`) unless you have a specific reason to use AWS/Hetzner
+- **Check the manual**: EgorBot replies include a link to the [manual](https://github.com/EgorBot/runtime-utils) for advanced options
+
+## Additional Resources
+
+- [BenchmarkDotNet CLI Arguments](https://github.com/dotnet/BenchmarkDotNet/blob/master/docs/articles/guides/console-args.md)
+- [EgorBot Manual](https://github.com/EgorBot/runtime-utils)
+- [BenchmarkDotNet Filter Simulator](http://egorbot.westus2.cloudapp.azure.com:5042/microbenchmarks)
