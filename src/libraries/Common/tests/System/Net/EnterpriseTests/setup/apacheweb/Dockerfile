@@ -23,7 +23,9 @@ RUN chmod +x *.sh ; \
 RUN useradd -m -s /bin/bash ftpuser && \
     echo "ftpuser:ftppass" | chpasswd && \
     mkdir -p /home/ftpuser/ftp && \
-    chown ftpuser:ftpuser /home/ftpuser/ftp
+    chown ftpuser:ftpuser /home/ftpuser/ftp && \
+    mkdir -p /var/log/proftpd && \
+    chmod 755 /var/log/proftpd
 
 # Generate self-signed certificate for FTP TLS
 RUN mkdir -p /etc/proftpd/ssl && \
