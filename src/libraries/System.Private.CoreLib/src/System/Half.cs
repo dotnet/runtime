@@ -1532,7 +1532,7 @@ namespace System
                 }
 
                 Debug.Assert(IsSubnormal(x));
-                return MinExponent - (BitOperations.LeadingZeroCount(x.TrailingSignificand) - 16 - BiasedExponentLength);
+                return MinExponent - (BitOperations.LeadingZeroCount(x.TrailingSignificand) - BiasedExponentLength);
             }
 
             return x.Exponent;

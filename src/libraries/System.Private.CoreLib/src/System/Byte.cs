@@ -279,7 +279,7 @@ namespace System
         public static (byte Quotient, byte Remainder) DivRem(byte left, byte right) => Math.DivRem(left, right);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
-        public static byte LeadingZeroCount(byte value) => (byte)(BitOperations.LeadingZeroCount(value) - 24);
+        public static byte LeadingZeroCount(byte value) => (byte)BitOperations.LeadingZeroCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         public static byte PopCount(byte value) => (byte)BitOperations.PopCount(value);
