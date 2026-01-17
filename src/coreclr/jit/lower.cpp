@@ -6823,7 +6823,7 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTree* 
     if (comp->opts.ShouldUsePInvokeHelpers())
     {
         return;
-    }
+    } 
 
     JITDUMP("======= Inserting PInvoke method epilog\n");
 
