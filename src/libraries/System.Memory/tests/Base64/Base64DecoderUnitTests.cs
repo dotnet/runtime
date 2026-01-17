@@ -877,10 +877,10 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
-        [InlineData("AA\r\nA=")]
-        [InlineData("AA\r\nA=\r\n")]
-        [InlineData("AA A=")]
-        [InlineData("AA\tA=")]
+        [InlineData("AQ\r\nQ=")]
+        [InlineData("AQ\r\nQ=\r\n")]
+        [InlineData("AQ Q=")]
+        [InlineData("AQ\tQ=")]
         public void DecodingWithWhiteSpaceSplitFinalQuantumAndIsFinalBlockFalse(string base64String)
         {
             // When a final quantum (containing padding) is split by whitespace and isFinalBlock=false,
@@ -898,8 +898,8 @@ namespace System.Buffers.Text.Tests
             status = Base64.DecodeFromUtf8(base64Data, output, out bytesConsumed, out bytesWritten, isFinalBlock: true);
             Assert.Equal(OperationStatus.Done, status);
             Assert.Equal(base64Data.Length, bytesConsumed);
-            Assert.Equal(2, bytesWritten); // "AAA=" decodes to 2 bytes
-            Assert.Equal(new byte[] { 0, 0 }, output[..2]);
+            Assert.Equal(2, bytesWritten); // "AQQ=" decodes to 2 bytes: {1, 4}
+            Assert.Equal(new byte[] { 1, 4 }, output[..2]);
         }
 
         [Fact]
@@ -929,21 +929,27 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
-        [InlineData("AAAAAAAA AA\r\nA=")]           // Two complete blocks, then whitespace-split final quantum
-        [InlineData("AAAA AAAA AA\r\nA=")]          // Two blocks with space, then whitespace-split final quantum
-        [InlineData("AAAAAAAA\r\nAAAA AA\r\nA=")]   // Multiple blocks with various whitespace patterns
-        public void DecodingWithValidDataBeforeWhiteSpaceSplitFinalQuantum(string base64String)
+        [InlineData("AQIDBAUG AQ\r\nQ=", 10, 6, "AQ\r\nQ=")]           // Two complete blocks, then whitespace-split final quantum
+        [InlineData("AQID BAUG AQ\r\nQ=", 11, 6, "AQ\r\nQ=")]          // Two blocks with space, then whitespace-split final quantum
+        [InlineData("AQIDBAUG\r\nAQID AQ\r\nQ=", 17, 9, "AQ\r\nQ=")]   // Multiple blocks with various whitespace patterns
+        public void DecodingWithValidDataBeforeWhiteSpaceSplitFinalQuantum(string base64String, int expectedBytesConsumedFirstCall, int expectedBytesWrittenFirstCall, string expectedRemainingAfterFirstCall)
         {
             // When there's valid data before a whitespace-split final quantum and isFinalBlock=false,
             // verify the streaming scenario works correctly
             ReadOnlySpan<byte> base64Data = Encoding.ASCII.GetBytes(base64String);
             var output = new byte[100]; // Use larger buffer to avoid #123222
 
-            // First call with isFinalBlock=false
+            // First call with isFinalBlock=false should decode the valid complete blocks and stop before the incomplete final quantum
             OperationStatus status = Base64.DecodeFromUtf8(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
             
-            // Should have processed some data (either Done with partial decode or InvalidData/NeedMoreData)
-            Assert.True(status == OperationStatus.Done || status == OperationStatus.InvalidData || status == OperationStatus.NeedMoreData);
+            Assert.Equal(OperationStatus.InvalidData, status);
+            Assert.Equal(expectedBytesConsumedFirstCall, bytesConsumed);
+            Assert.Equal(expectedBytesWrittenFirstCall, bytesWritten);
+            
+            // Verify that only the final block remains
+            ReadOnlySpan<byte> remaining = base64Data.Slice(bytesConsumed);
+            string remainingString = Encoding.ASCII.GetString(remaining);
+            Assert.Equal(expectedRemainingAfterFirstCall, remainingString);
             
             // Verify we can complete decoding by retrying with the FULL input and isFinalBlock=true
             Array.Clear(output, 0, output.Length);
