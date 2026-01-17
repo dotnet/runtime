@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks Condition="'$(TestSingleFile)' == 'false'">$(NetCoreAppMinimum);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks Condition="'$(TestSingleFile)' != 'true'">$(NetCoreAppMinimum);$(NetFrameworkCurrent)</TargetFrameworks>
     <TargetFramework Condition="'$(TestSingleFile)' == 'true'">$(NetCoreAppMinimum)</TargetFramework>
 
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
