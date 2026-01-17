@@ -388,18 +388,69 @@ namespace System.Collections.Tests
             Assert.Equal(expected, array.PopCount());
         }
 
-        [Fact]
-        public static void LeftShift_PopCountReturnsCorrectCount()
+        public static IEnumerable<object[]> Shift_PopCount_TestData()
         {
-            BitArray ba = new(33);
-            ba[^1] = true;
+            // Test various lengths that include edge cases around int32 boundaries
+            foreach (int length in new[] { 1, BitsPerByte, BitsPerInt32 - 1, BitsPerInt32, BitsPerInt32 + 1, 2 * BitsPerInt32, 2 * BitsPerInt32 + 1 })
+            {
+                // Test various shift amounts
+                foreach (int shift in new[] { 1, length / 2, length - 1, length, length + 1 }.Where(s => s > 0).Distinct())
+                {
+                    // Test with bit set at various positions
+                    foreach (int bitPosition in new[] { 0, length / 2, length - 1 }.Distinct())
+                    {
+                        yield return new object[] { length, bitPosition, shift };
+                    }
+                }
+            }
+        }
 
-            Assert.True(ba.HasAnySet());
-            Assert.Equal(1, ba.PopCount());
+        [Theory]
+        [MemberData(nameof(Shift_PopCount_TestData))]
+        public static void LeftShift_PopCount(int length, int bitPosition, int shift)
+        {
+            BitArray ba = new(length);
+            ba[bitPosition] = true;
 
-            ba.LeftShift(1);
-            Assert.False(ba.HasAnySet());
-            Assert.Equal(0, ba.PopCount());
+            int expectedPopCount = bitPosition + shift < length ? 1 : 0;
+            ba.LeftShift(shift);
+            Assert.Equal(expectedPopCount, ba.PopCount());
+        }
+
+        [Theory]
+        [MemberData(nameof(Shift_PopCount_TestData))]
+        public static void RightShift_PopCount(int length, int bitPosition, int shift)
+        {
+            BitArray ba = new(length);
+            ba[bitPosition] = true;
+
+            int expectedPopCount = bitPosition - shift >= 0 ? 1 : 0;
+            ba.RightShift(shift);
+            Assert.Equal(expectedPopCount, ba.PopCount());
+        }
+
+        [Theory]
+        [MemberData(nameof(Shift_PopCount_TestData))]
+        public static void LeftShift_HasAnySet(int length, int bitPosition, int shift)
+        {
+            BitArray ba = new(length);
+            ba[bitPosition] = true;
+
+            bool expectedHasAny = bitPosition + shift < length;
+            ba.LeftShift(shift);
+            Assert.Equal(expectedHasAny, ba.HasAnySet());
+        }
+
+        [Theory]
+        [MemberData(nameof(Shift_PopCount_TestData))]
+        public static void RightShift_HasAnySet(int length, int bitPosition, int shift)
+        {
+            BitArray ba = new(length);
+            ba[bitPosition] = true;
+
+            bool expectedHasAny = bitPosition - shift >= 0;
+            ba.RightShift(shift);
+            Assert.Equal(expectedHasAny, ba.HasAnySet());
         }
     }
 }
