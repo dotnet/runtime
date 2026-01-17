@@ -927,6 +927,7 @@ NESTED_END IL_Rethrow, _TEXT
 // ClrRestoreNonvolatileContextWorker
 //
 // Restores non-volatile registers based on ContextFlags and jumps to target PC.
+// Also restores volatile argument registers (a0-a7) for passing arguments.
 //
 // Arguments:
 //   a0 - pointer to CONTEXT structure
@@ -934,32 +935,45 @@ NESTED_END IL_Rethrow, _TEXT
 // ------------------------------------------------------------------
 LEAF_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT
 
+    // Save CONTEXT pointer in t0 so we can restore a0 later
+    mv      t0, a0
+
     // Check if CONTEXT_INTEGER is set
-    lw      t0, OFFSETOF__CONTEXT__ContextFlags(a0)
-    andi    t1, t0, (1 << CONTEXT_INTEGER_BIT)
-    beqz    t1, LOCAL_LABEL(SkipIntegerRestore)
+    lw      t1, OFFSETOF__CONTEXT__ContextFlags(t0)
+    andi    t2, t1, (1 << CONTEXT_INTEGER_BIT)
+    beqz    t2, LOCAL_LABEL(SkipIntegerRestore)
 
     // Restore callee-saved registers s1-s11
-    ld      s1, OFFSETOF__CONTEXT__S1(a0)
-    ld      s2, OFFSETOF__CONTEXT__S2(a0)
-    ld      s3, (OFFSETOF__CONTEXT__S2 + 8)(a0)
-    ld      s4, (OFFSETOF__CONTEXT__S2 + 16)(a0)
-    ld      s5, (OFFSETOF__CONTEXT__S2 + 24)(a0)
-    ld      s6, (OFFSETOF__CONTEXT__S2 + 32)(a0)
-    ld      s7, (OFFSETOF__CONTEXT__S2 + 40)(a0)
-    ld      s8, (OFFSETOF__CONTEXT__S2 + 48)(a0)
-    ld      s9, (OFFSETOF__CONTEXT__S2 + 56)(a0)
-    ld      s10, (OFFSETOF__CONTEXT__S2 + 64)(a0)
-    ld      s11, (OFFSETOF__CONTEXT__S2 + 72)(a0)
+    ld      s1, OFFSETOF__CONTEXT__S1(t0)
+    ld      s2, OFFSETOF__CONTEXT__S2(t0)
+    ld      s3, (OFFSETOF__CONTEXT__S2 + 8)(t0)
+    ld      s4, (OFFSETOF__CONTEXT__S2 + 16)(t0)
+    ld      s5, (OFFSETOF__CONTEXT__S2 + 24)(t0)
+    ld      s6, (OFFSETOF__CONTEXT__S2 + 32)(t0)
+    ld      s7, (OFFSETOF__CONTEXT__S2 + 40)(t0)
+    ld      s8, (OFFSETOF__CONTEXT__S2 + 48)(t0)
+    ld      s9, (OFFSETOF__CONTEXT__S2 + 56)(t0)
+    ld      s10, (OFFSETOF__CONTEXT__S2 + 64)(t0)
+    ld      s11, (OFFSETOF__CONTEXT__S2 + 72)(t0)
+
+    // Also restore argument registers a0-a7 (for passing arguments to target)
+    ld      a0, OFFSETOF__CONTEXT__A0(t0)
+    ld      a1, (OFFSETOF__CONTEXT__A0 + 8)(t0)
+    ld      a2, (OFFSETOF__CONTEXT__A0 + 16)(t0)
+    ld      a3, (OFFSETOF__CONTEXT__A0 + 24)(t0)
+    ld      a4, (OFFSETOF__CONTEXT__A0 + 32)(t0)
+    ld      a5, (OFFSETOF__CONTEXT__A0 + 40)(t0)
+    ld      a6, (OFFSETOF__CONTEXT__A0 + 48)(t0)
+    ld      a7, (OFFSETOF__CONTEXT__A0 + 56)(t0)
 
 LOCAL_LABEL(SkipIntegerRestore):
     // Restore fp, ra
-    ld      fp, OFFSETOF__CONTEXT__Fp(a0)
-    ld      ra, OFFSETOF__CONTEXT__Ra(a0)
+    ld      fp, OFFSETOF__CONTEXT__Fp(t0)
+    ld      ra, OFFSETOF__CONTEXT__Ra(t0)
 
-    // Load sp and pc
-    ld      t0, OFFSETOF__CONTEXT__Sp(a0)
-    ld      t1, OFFSETOF__CONTEXT__Pc(a0)
+    // Load sp and pc (t0 will be overwritten)
+    ld      t1, OFFSETOF__CONTEXT__Pc(t0)
+    ld      t0, OFFSETOF__CONTEXT__Sp(t0)
 
     // Set sp and jump
     mv      sp, t0

@@ -2811,7 +2811,8 @@ NESTED_END IL_Rethrow, _TEXT
 // ClrRestoreNonvolatileContextWorker
 //
 // Restores non-volatile (callee-saved) registers based on ContextFlags and jumps to the target IP.
-// This is the ARM64 equivalent of the AMD64 version used for OSR transitions.
+// Also restores volatile argument registers (x0-x7) which are used to pass arguments to the target function.
+// This is the ARM64 equivalent of the AMD64 version used for OSR transitions and exception handling.
 //
 // Arguments:
 //   x0 - pointer to CONTEXT structure
@@ -2820,25 +2821,33 @@ NESTED_END IL_Rethrow, _TEXT
 // ------------------------------------------------------------------
 LEAF_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT
 
+    // Save CONTEXT pointer in x16 (scratch register) so we can restore x0 later
+    mov     x16, x0
+
     // Check ContextFlags to see if we should restore integer registers
-    ldr     w16, [x0, #OFFSETOF__CONTEXT__ContextFlags]
-    tbz     w16, #CONTEXT_INTEGER_BIT, LOCAL_LABEL(SkipIntegerRestore)
+    ldr     w17, [x16, #OFFSETOF__CONTEXT__ContextFlags]
+    tbz     w17, #CONTEXT_INTEGER_BIT, LOCAL_LABEL(SkipIntegerRestore)
 
     // Restore callee-saved registers x19-x28
-    ldp     x19, x20, [x0, #OFFSETOF__CONTEXT__X19]
-    ldp     x21, x22, [x0, #(OFFSETOF__CONTEXT__X19 + 16)]
-    ldp     x23, x24, [x0, #(OFFSETOF__CONTEXT__X19 + 32)]
-    ldp     x25, x26, [x0, #(OFFSETOF__CONTEXT__X19 + 48)]
-    ldp     x27, x28, [x0, #(OFFSETOF__CONTEXT__X19 + 64)]
+    ldp     x19, x20, [x16, #OFFSETOF__CONTEXT__X19]
+    ldp     x21, x22, [x16, #(OFFSETOF__CONTEXT__X19 + 16)]
+    ldp     x23, x24, [x16, #(OFFSETOF__CONTEXT__X19 + 32)]
+    ldp     x25, x26, [x16, #(OFFSETOF__CONTEXT__X19 + 48)]
+    ldp     x27, x28, [x16, #(OFFSETOF__CONTEXT__X19 + 64)]
+
+    // Also restore argument registers x0-x7 (used for passing arguments to target function)
+    ldp     x0, x1, [x16, #OFFSETOF__CONTEXT__X0]
+    ldp     x2, x3, [x16, #(OFFSETOF__CONTEXT__X0 + 16)]
+    ldp     x4, x5, [x16, #(OFFSETOF__CONTEXT__X0 + 32)]
+    ldp     x6, x7, [x16, #(OFFSETOF__CONTEXT__X0 + 48)]
 
 LOCAL_LABEL(SkipIntegerRestore):
     // Restore fp (x29) and lr (x30)
-    ldp     fp, lr, [x0, #OFFSETOF__CONTEXT__Fp]
+    ldp     fp, lr, [x16, #OFFSETOF__CONTEXT__Fp]
 
-    // Load Sp and Pc into temporaries
-    // We use x16 and x17 as they are IP0/IP1 (intra-procedure call scratch registers)
-    ldr     x16, [x0, #OFFSETOF__CONTEXT__Sp]
-    ldr     x17, [x0, #OFFSETOF__CONTEXT__Pc]
+    // Load Sp and Pc into temporaries (x16 will be overwritten, x17 holds Pc)
+    ldr     x17, [x16, #OFFSETOF__CONTEXT__Pc]
+    ldr     x16, [x16, #OFFSETOF__CONTEXT__Sp]
 
     // Set sp and jump to target
     mov     sp, x16

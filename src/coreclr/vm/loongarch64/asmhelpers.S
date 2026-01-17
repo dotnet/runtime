@@ -1070,6 +1070,7 @@ NESTED_END IL_Rethrow, _TEXT
 // ClrRestoreNonvolatileContextWorker
 //
 // Restores non-volatile registers based on ContextFlags and jumps to target PC.
+// Also restores volatile argument registers ($a0-$a7) for passing arguments.
 //
 // Arguments:
 //   $a0 - pointer to CONTEXT structure
@@ -1077,30 +1078,43 @@ NESTED_END IL_Rethrow, _TEXT
 // ------------------------------------------------------------------
 LEAF_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT
 
+    // Save CONTEXT pointer in $t0 so we can restore $a0 later
+    move    $t0, $a0
+
     // Check if CONTEXT_INTEGER is set
-    ld.w    $t0, $a0, OFFSETOF__CONTEXT__ContextFlags
-    andi    $t1, $t0, (1 << CONTEXT_INTEGER_BIT)
-    beqz    $t1, LOCAL_LABEL(SkipIntegerRestore)
+    ld.w    $t1, $t0, OFFSETOF__CONTEXT__ContextFlags
+    andi    $t2, $t1, (1 << CONTEXT_INTEGER_BIT)
+    beqz    $t2, LOCAL_LABEL(SkipIntegerRestore)
 
     // Restore callee-saved registers s0-s8
-    ld.d    $s0, $a0, OFFSETOF__CONTEXT__S0
-    ld.d    $s1, $a0, (OFFSETOF__CONTEXT__S0 + 8)
-    ld.d    $s2, $a0, (OFFSETOF__CONTEXT__S0 + 16)
-    ld.d    $s3, $a0, (OFFSETOF__CONTEXT__S0 + 24)
-    ld.d    $s4, $a0, (OFFSETOF__CONTEXT__S0 + 32)
-    ld.d    $s5, $a0, (OFFSETOF__CONTEXT__S0 + 40)
-    ld.d    $s6, $a0, (OFFSETOF__CONTEXT__S0 + 48)
-    ld.d    $s7, $a0, (OFFSETOF__CONTEXT__S0 + 56)
-    ld.d    $s8, $a0, (OFFSETOF__CONTEXT__S0 + 64)
+    ld.d    $s0, $t0, OFFSETOF__CONTEXT__S0
+    ld.d    $s1, $t0, (OFFSETOF__CONTEXT__S0 + 8)
+    ld.d    $s2, $t0, (OFFSETOF__CONTEXT__S0 + 16)
+    ld.d    $s3, $t0, (OFFSETOF__CONTEXT__S0 + 24)
+    ld.d    $s4, $t0, (OFFSETOF__CONTEXT__S0 + 32)
+    ld.d    $s5, $t0, (OFFSETOF__CONTEXT__S0 + 40)
+    ld.d    $s6, $t0, (OFFSETOF__CONTEXT__S0 + 48)
+    ld.d    $s7, $t0, (OFFSETOF__CONTEXT__S0 + 56)
+    ld.d    $s8, $t0, (OFFSETOF__CONTEXT__S0 + 64)
+
+    // Also restore argument registers $a0-$a7 (for passing arguments to target)
+    ld.d    $a0, $t0, OFFSETOF__CONTEXT__A0
+    ld.d    $a1, $t0, (OFFSETOF__CONTEXT__A0 + 8)
+    ld.d    $a2, $t0, (OFFSETOF__CONTEXT__A0 + 16)
+    ld.d    $a3, $t0, (OFFSETOF__CONTEXT__A0 + 24)
+    ld.d    $a4, $t0, (OFFSETOF__CONTEXT__A0 + 32)
+    ld.d    $a5, $t0, (OFFSETOF__CONTEXT__A0 + 40)
+    ld.d    $a6, $t0, (OFFSETOF__CONTEXT__A0 + 48)
+    ld.d    $a7, $t0, (OFFSETOF__CONTEXT__A0 + 56)
 
 LOCAL_LABEL(SkipIntegerRestore):
     // Restore fp, ra
-    ld.d    $fp, $a0, OFFSETOF__CONTEXT__Fp
-    ld.d    $ra, $a0, OFFSETOF__CONTEXT__Ra
+    ld.d    $fp, $t0, OFFSETOF__CONTEXT__Fp
+    ld.d    $ra, $t0, OFFSETOF__CONTEXT__Ra
 
-    // Load sp and pc
-    ld.d    $t0, $a0, OFFSETOF__CONTEXT__Sp
-    ld.d    $t1, $a0, OFFSETOF__CONTEXT__Pc
+    // Load sp and pc ($t0 will be overwritten)
+    ld.d    $t1, $t0, OFFSETOF__CONTEXT__Pc
+    ld.d    $t0, $t0, OFFSETOF__CONTEXT__Sp
 
     // Set sp and jump
     move    $sp, $t0
