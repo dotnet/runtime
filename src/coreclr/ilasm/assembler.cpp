@@ -2534,6 +2534,7 @@ void Assembler::CheckAddGenericParamConstraint(GenericParamConstraintList* pGPCL
         if (curParamIndex == index)
         {
             mdToken curTypeConstraint = pGPC->GetTypeConstraint();
+            // TODO: Add fix here
             if (curTypeConstraint == tkTypeConstraint)
             {
                 match = true;
