@@ -491,7 +491,8 @@ C_FUNC(\Name\()_End):
         EPILOG_RESTORE_REG_PAIR   x21, x22, 32
         EPILOG_RESTORE_REG_PAIR   x19, x20, 16
 
-        EPILOG_RESTORE_REG_PAIR_RET   fp, lr, 176
+        EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 176
+        ret
 .endm
 
 // ------------------------------------------------------------------

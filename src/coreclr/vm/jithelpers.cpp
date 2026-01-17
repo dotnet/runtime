@@ -1701,7 +1701,6 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
         // Transition!
         ClrRestoreNonvolatileContext(pFrameContext);
     }
-
  DONE:
     ::SetLastError(dwLastError);
 }

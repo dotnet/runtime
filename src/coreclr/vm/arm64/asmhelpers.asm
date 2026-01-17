@@ -1011,15 +1011,14 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
     IMPORT JIT_PatchpointWorkerWorkerWithPolicy
 
     NESTED_ENTRY JIT_Patchpoint
-        ; Use PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS to save all registers including FP callee-saved
-        ; This allows us to build a complete CONTEXT from TransitionBlock without RtlCaptureContext
-        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS x0
+        PROLOG_WITH_TRANSITION_BLOCK
 
-        ; x0 contains pointer to TransitionBlock
+        ; x0 = pointer to TransitionBlock
+        add     x0, sp, #__PWTB_TransitionBlock
         bl      JIT_PatchpointWorkerWorkerWithPolicy
 
         ; If we return, restore all registers and return to caller
-        POP_COOP_PINVOKE_FRAME_WITH_FLOATS_RETURN
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
     NESTED_END
 
     // first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
@@ -3060,6 +3059,40 @@ CopyLoop
         ; Should never return
         brk     #0
     NESTED_END IL_Rethrow
+
+; ------------------------------------------------------------------
+; ClrRestoreNonvolatileContextWorker
+;
+; Restores non-volatile registers based on ContextFlags and jumps to PC.
+; x0 - pointer to CONTEXT structure
+; x1 - unused (SSP, not used on ARM64)
+; ------------------------------------------------------------------
+    LEAF_ENTRY ClrRestoreNonvolatileContextWorker
+
+        ; Check if CONTEXT_INTEGER bit is set
+        ldr     w16, [x0, #OFFSETOF__CONTEXT__ContextFlags]
+        tbz     w16, #1, SkipIntegerRestore  ; CONTEXT_INTEGER_BIT = 1
+
+        ; Restore callee-saved registers x19-x28
+        ldp     x19, x20, [x0, #OFFSETOF__CONTEXT__X19]
+        ldp     x21, x22, [x0, #(OFFSETOF__CONTEXT__X19 + 16)]
+        ldp     x23, x24, [x0, #(OFFSETOF__CONTEXT__X19 + 32)]
+        ldp     x25, x26, [x0, #(OFFSETOF__CONTEXT__X19 + 48)]
+        ldp     x27, x28, [x0, #(OFFSETOF__CONTEXT__X19 + 64)]
+
+SkipIntegerRestore
+        ; Restore fp and lr
+        ldp     fp, lr, [x0, #OFFSETOF__CONTEXT__Fp]
+
+        ; Load Sp and Pc
+        ldr     x16, [x0, #OFFSETOF__CONTEXT__Sp]
+        ldr     x17, [x0, #OFFSETOF__CONTEXT__Pc]
+
+        ; Set sp and jump
+        mov     sp, x16
+        br      x17
+
+    LEAF_END ClrRestoreNonvolatileContextWorker
 
 ; Must be at very end of file
     END

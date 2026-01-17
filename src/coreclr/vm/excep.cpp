@@ -6906,39 +6906,6 @@ void ThrowResumeAfterCatchException(TADDR resumeSP, TADDR resumeIP)
 {
     throw ResumeAfterCatchException(resumeSP, resumeIP);
 }
-
-VOID DECLSPEC_NORETURN UnwindAndContinueResumeAfterCatch(TADDR resumeSP, TADDR resumeIP)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_ANY;
-
-    CONTEXT context;
-    ClrCaptureContext(&context);
-
-    // Unwind to the caller of the Ex.RhThrowEx / Ex.RhThrowHwEx
-    Thread::VirtualUnwindToFirstManagedCallFrame(&context);
-
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-    size_t targetSSP = GetSSPForFrameOnCurrentStack(GetIP(&context));
-#else
-    size_t targetSSP = 0;
-#endif
-
-    // Skip all managed frames upto a native frame
-    while (ExecutionManager::IsManagedCode(GetIP(&context)))
-    {
-        Thread::VirtualUnwindCallFrame(&context);
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-        if (targetSSP != 0)
-        {
-            targetSSP += sizeof(size_t);
-        }
-#endif
-    }
-
-    ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, &context, targetSSP, resumeSP, resumeIP);
-}
 #endif // FEATURE_INTERPRETER
 
 thread_local DWORD t_dwCurrentExceptionCode;
@@ -11307,108 +11274,47 @@ void SoftwareExceptionFrame::UpdateContextForOSRTransition(TransitionBlock* pTra
     *pCurrentFP = pTransitionBlock->m_calleeSavedRegisters.Rbp;
 
 #elif defined(TARGET_ARM64)
-    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+    // Only restore control registers - callee-saved regs already have correct CPU values
+    pContext->ContextFlags = CONTEXT_CONTROL;
 
-    // Copy callee-saved registers from TransitionBlock
-    pContext->X19 = pTransitionBlock->m_calleeSavedRegisters.x19;
-    pContext->X20 = pTransitionBlock->m_calleeSavedRegisters.x20;
-    pContext->X21 = pTransitionBlock->m_calleeSavedRegisters.x21;
-    pContext->X22 = pTransitionBlock->m_calleeSavedRegisters.x22;
-    pContext->X23 = pTransitionBlock->m_calleeSavedRegisters.x23;
-    pContext->X24 = pTransitionBlock->m_calleeSavedRegisters.x24;
-    pContext->X25 = pTransitionBlock->m_calleeSavedRegisters.x25;
-    pContext->X26 = pTransitionBlock->m_calleeSavedRegisters.x26;
-    pContext->X27 = pTransitionBlock->m_calleeSavedRegisters.x27;
-    pContext->X28 = pTransitionBlock->m_calleeSavedRegisters.x28;
-    pContext->Fp = pTransitionBlock->m_calleeSavedRegisters.x29;  // frame pointer
-    pContext->Lr = pTransitionBlock->m_calleeSavedRegisters.x30;  // link register
+    UINT_PTR managedFrameFP = pTransitionBlock->m_calleeSavedRegisters.x29;
+    TADDR callerFP = *((TADDR*)managedFrameFP);
+    TADDR callerLR = *((TADDR*)(managedFrameFP + 8));
+    
+    // Use caller's FP so F-OSR returns with correct FP for caller
+    pContext->Fp = callerFP;
+    pContext->Lr = callerLR;
 
-    // Read FP callee-saved registers (d8-d15) from the stack
-    // TransitionBlock is at sp+192, FP callee-saved at sp+0, so offset is -192
-    double *pFpCalleeSaved = (double*)((BYTE*)pTransitionBlock - 192);
-    pContext->V[8] = *(unsigned __int64*)&pFpCalleeSaved[0];
-    pContext->V[9] = *(unsigned __int64*)&pFpCalleeSaved[1];
-    pContext->V[10] = *(unsigned __int64*)&pFpCalleeSaved[2];
-    pContext->V[11] = *(unsigned __int64*)&pFpCalleeSaved[3];
-    pContext->V[12] = *(unsigned __int64*)&pFpCalleeSaved[4];
-    pContext->V[13] = *(unsigned __int64*)&pFpCalleeSaved[5];
-    pContext->V[14] = *(unsigned __int64*)&pFpCalleeSaved[6];
-    pContext->V[15] = *(unsigned __int64*)&pFpCalleeSaved[7];
-
-    // SP points just past the TransitionBlock
     *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
-    *pCurrentFP = pTransitionBlock->m_calleeSavedRegisters.x29;
+    *pCurrentFP = callerFP;
 
 #elif defined(TARGET_LOONGARCH64)
-    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+    // Only restore control registers - callee-saved regs already have correct CPU values
+    pContext->ContextFlags = CONTEXT_CONTROL;
 
-    // Copy callee-saved registers from TransitionBlock
-    pContext->Fp = pTransitionBlock->m_calleeSavedRegisters.fp;
-    pContext->Ra = pTransitionBlock->m_calleeSavedRegisters.ra;
-    pContext->S0 = pTransitionBlock->m_calleeSavedRegisters.s0;
-    pContext->S1 = pTransitionBlock->m_calleeSavedRegisters.s1;
-    pContext->S2 = pTransitionBlock->m_calleeSavedRegisters.s2;
-    pContext->S3 = pTransitionBlock->m_calleeSavedRegisters.s3;
-    pContext->S4 = pTransitionBlock->m_calleeSavedRegisters.s4;
-    pContext->S5 = pTransitionBlock->m_calleeSavedRegisters.s5;
-    pContext->S6 = pTransitionBlock->m_calleeSavedRegisters.s6;
-    pContext->S7 = pTransitionBlock->m_calleeSavedRegisters.s7;
-    pContext->S8 = pTransitionBlock->m_calleeSavedRegisters.s8;
+    UINT_PTR managedFrameFP = pTransitionBlock->m_calleeSavedRegisters.fp;
+    TADDR callerFP = *((TADDR*)managedFrameFP);
+    TADDR callerRA = *((TADDR*)(managedFrameFP + 8));
 
-    // Read FP callee-saved registers (f24-f31) from the stack
-    // TransitionBlock is at sp+128, FP callee-saved at sp+0, so offset is -128
-    double *pFpCalleeSaved = (double*)((BYTE*)pTransitionBlock - 128);
-    pContext->F[24] = *(UINT64*)&pFpCalleeSaved[0];
-    pContext->F[25] = *(UINT64*)&pFpCalleeSaved[1];
-    pContext->F[26] = *(UINT64*)&pFpCalleeSaved[2];
-    pContext->F[27] = *(UINT64*)&pFpCalleeSaved[3];
-    pContext->F[28] = *(UINT64*)&pFpCalleeSaved[4];
-    pContext->F[29] = *(UINT64*)&pFpCalleeSaved[5];
-    pContext->F[30] = *(UINT64*)&pFpCalleeSaved[6];
-    pContext->F[31] = *(UINT64*)&pFpCalleeSaved[7];
+    pContext->Fp = callerFP;
+    pContext->Ra = callerRA;
 
     *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
-    *pCurrentFP = pTransitionBlock->m_calleeSavedRegisters.fp;
+    *pCurrentFP = callerFP;
 
 #elif defined(TARGET_RISCV64)
-    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+    // Only restore control registers - callee-saved regs already have correct CPU values
+    pContext->ContextFlags = CONTEXT_CONTROL;
 
-    // Copy callee-saved registers from TransitionBlock
-    pContext->Fp = pTransitionBlock->m_calleeSavedRegisters.fp;
-    pContext->Ra = pTransitionBlock->m_calleeSavedRegisters.ra;
-    pContext->S1 = pTransitionBlock->m_calleeSavedRegisters.s1;
-    pContext->S2 = pTransitionBlock->m_calleeSavedRegisters.s2;
-    pContext->S3 = pTransitionBlock->m_calleeSavedRegisters.s3;
-    pContext->S4 = pTransitionBlock->m_calleeSavedRegisters.s4;
-    pContext->S5 = pTransitionBlock->m_calleeSavedRegisters.s5;
-    pContext->S6 = pTransitionBlock->m_calleeSavedRegisters.s6;
-    pContext->S7 = pTransitionBlock->m_calleeSavedRegisters.s7;
-    pContext->S8 = pTransitionBlock->m_calleeSavedRegisters.s8;
-    pContext->S9 = pTransitionBlock->m_calleeSavedRegisters.s9;
-    pContext->S10 = pTransitionBlock->m_calleeSavedRegisters.s10;
-    pContext->S11 = pTransitionBlock->m_calleeSavedRegisters.s11;
-    pContext->Tp = pTransitionBlock->m_calleeSavedRegisters.tp;
-    pContext->Gp = pTransitionBlock->m_calleeSavedRegisters.gp;
+    UINT_PTR managedFrameFP = pTransitionBlock->m_calleeSavedRegisters.fp;
+    TADDR callerFP = *((TADDR*)managedFrameFP);
+    TADDR callerRA = *((TADDR*)(managedFrameFP + 8));
 
-    // Read FP callee-saved registers (fs0-fs11) from the stack
-    // TransitionBlock is at sp+160, FP callee-saved at sp+0, so offset is -160
-    double *pFpCalleeSaved = (double*)((BYTE*)pTransitionBlock - 160);
-    // RISC-V FP callee-saved: fs0=f8, fs1=f9, fs2-fs11=f18-f27
-    pContext->F[8] = *(UINT64*)&pFpCalleeSaved[0];   // fs0
-    pContext->F[9] = *(UINT64*)&pFpCalleeSaved[1];   // fs1
-    pContext->F[18] = *(UINT64*)&pFpCalleeSaved[2];  // fs2
-    pContext->F[19] = *(UINT64*)&pFpCalleeSaved[3];  // fs3
-    pContext->F[20] = *(UINT64*)&pFpCalleeSaved[4];  // fs4
-    pContext->F[21] = *(UINT64*)&pFpCalleeSaved[5];  // fs5
-    pContext->F[22] = *(UINT64*)&pFpCalleeSaved[6];  // fs6
-    pContext->F[23] = *(UINT64*)&pFpCalleeSaved[7];  // fs7
-    pContext->F[24] = *(UINT64*)&pFpCalleeSaved[8];  // fs8
-    pContext->F[25] = *(UINT64*)&pFpCalleeSaved[9];  // fs9
-    pContext->F[26] = *(UINT64*)&pFpCalleeSaved[10]; // fs10
-    pContext->F[27] = *(UINT64*)&pFpCalleeSaved[11]; // fs11
+    pContext->Fp = callerFP;
+    pContext->Ra = callerRA;
 
     *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
-    *pCurrentFP = pTransitionBlock->m_calleeSavedRegisters.fp;
+    *pCurrentFP = callerFP;
 
 #else
 #error "Unsupported platform for OSR TransitionBlock-based context capture"

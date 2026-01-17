@@ -101,11 +101,26 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
 #endif
 ASMCONSTANTS_C_ASSERT(SIZEOF__CONTEXT == sizeof(T_CONTEXT));
 
+#define OFFSETOF__CONTEXT__ContextFlags 0x0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__ContextFlags == offsetof(T_CONTEXT, ContextFlags));
+
+// CONTEXT_INTEGER_BIT is bit 1 in ContextFlags (from pal.h CONTEXT_INTEGER definition)
+#define CONTEXT_INTEGER_BIT           1
+
 #define OFFSETOF__CONTEXT__X19        0xA0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__X19 == offsetof(T_CONTEXT, X19));
 
 #define OFFSETOF__CONTEXT__Fp         0xF0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Fp == offsetof(T_CONTEXT, Fp));
+
+#define OFFSETOF__CONTEXT__Lr         0xF8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Lr == offsetof(T_CONTEXT, Lr));
+
+#define OFFSETOF__CONTEXT__Sp         0x100
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Sp == offsetof(T_CONTEXT, Sp));
+
+#define OFFSETOF__CONTEXT__Pc         0x108
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Pc == offsetof(T_CONTEXT, Pc));
 
 #define               OFFSETOF__DynamicHelperStubArgs__Constant1    0x0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicHelperStubArgs__Constant1
