@@ -24,11 +24,9 @@ public class Test122933
     [Fact]
     public static int TestEntryPoint()
     {
-        // Get the types
         Type ieqType = typeof(IEq<>);
         Type icompType = typeof(IComp<>);
 
-        // Get the generic type parameter for IEq<TSelf>
         Type[] ieqTypeParams = ieqType.GetGenericArguments();
         if (ieqTypeParams.Length != 1)
         {
@@ -37,10 +35,8 @@ public class Test122933
         }
         Type ieqTSelf = ieqTypeParams[0];
 
-        // Get the constraints on IEq's TSelf parameter
         Type[] ieqConstraints = ieqTSelf.GetGenericParameterConstraints();
         
-        // There should be exactly one constraint: IEq<TSelf>
         if (ieqConstraints.Length != 1)
         {
             Console.WriteLine($"FAIL: IEq<TSelf> should have 1 constraint, but has {ieqConstraints.Length}");
@@ -53,7 +49,6 @@ public class Test122933
             return -1;
         }
 
-        // Get the generic type parameter for IComp<TSelf>
         Type[] icompTypeParams = icompType.GetGenericArguments();
         if (icompTypeParams.Length != 1)
         {
@@ -62,11 +57,8 @@ public class Test122933
         }
         Type icompTSelf = icompTypeParams[0];
 
-        // Get the constraints on IComp's TSelf parameter
         Type[] icompConstraints = icompTSelf.GetGenericParameterConstraints();
         
-        // There should be exactly one constraint: IComp<TSelf>
-        // After ilasm roundtrip, this becomes duplicated - that's the bug
         if (icompConstraints.Length != 1)
         {
             Console.WriteLine($"FAIL: IComp<TSelf> should have 1 constraint, but has {icompConstraints.Length}");
