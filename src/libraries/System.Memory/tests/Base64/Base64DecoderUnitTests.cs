@@ -937,7 +937,7 @@ namespace System.Buffers.Text.Tests
             // When there's valid data before a whitespace-split final quantum and isFinalBlock=false,
             // verify the streaming scenario works correctly
             ReadOnlySpan<byte> base64Data = Encoding.ASCII.GetBytes(base64String);
-            var output = new byte[100]; // Use larger buffer to avoid #123222
+            var output = new byte[100];
 
             // First call with isFinalBlock=false should decode the valid complete blocks and stop before the incomplete final quantum
             OperationStatus status = Base64.DecodeFromUtf8(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
