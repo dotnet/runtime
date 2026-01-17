@@ -3414,7 +3414,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     asyncFlags |= AsyncMethodFlags::Thunk;
 
                 // Here we construct the signature of async call variant given its task-returning counterpart.
-                // It is basicaly just removing the Task/ValueTask part of the return type and keeping
+                // It is basically just removing the Task/ValueTask part of the return type and keeping
                 // the token for T or inserting void instead.
                 // The rest of the signature stays exactly the same.
                 ULONG tokenLen = 0;
@@ -3460,8 +3460,6 @@ MethodTableBuilder::EnumerateClassMethods()
                 // copy bytes after the original async prefix
                 _ASSERTE((cMemberSignature - originalRemainingSigOffset) == (cAsyncThunkMemberSignature - newRemainingSigOffset));
                 memcpy(pNewMemberSignature + newRemainingSigOffset, pMemberSignature + originalRemainingSigOffset, cMemberSignature - originalRemainingSigOffset);
-
-                BYTE elemTypeClassOrValuetype = returnsValueTask ? (BYTE)ELEMENT_TYPE_VALUETYPE : (BYTE)ELEMENT_TYPE_CLASS;
 
                 if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
                 {
