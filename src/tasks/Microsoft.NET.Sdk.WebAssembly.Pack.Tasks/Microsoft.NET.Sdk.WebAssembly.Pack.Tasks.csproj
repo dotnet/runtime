@@ -19,8 +19,8 @@
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
-      <FilesToPackage Include="$(OutputPath)$(TargetFramework)\*.dll" TargetPath="tools" />
-      <FilesToPackage Include="$(OutputPath)$(TargetFramework)\*.pdb" TargetPath="tools" />
+      <FilesToPackage Include="$(OutputPath)*.dll" TargetPath="tools" />
+      <FilesToPackage Include="$(OutputPath)*.pdb" TargetPath="tools" />
     </ItemGroup>
   </Target>
 </Project>
