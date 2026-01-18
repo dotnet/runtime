@@ -11525,48 +11525,47 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     // So, to summarize:
     // - On ARM64, always use GT_NULLCHECK for a dead indirection.
     // - On ARM, always use GT_IND.
-    // - On XARCH, always use GT_NULLCHECK.
+    // - On XARCH, we prefer GT_NULLCHECK for unused indirections to avoid unnecessary register loads and sign extensions (e.g., movsx).
     // In all cases we try to preserve the original type and never make it wider to avoid AVEs.
     // For structs we conservatively lower it to BYTE. For 8-byte primitives we lower it to TYP_INT
     // on XARCH as an optimization.
     //
     assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK));
 
-    ind->ChangeType(comp->gtTypeForNullCheck(ind));
+    #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM) || defined(TARGET_XARCH)
+        bool useNullCheck = true;
+    #elif defined(TARGET_ARM)
+        bool useNullCheck = false;
+    #else
+        bool useNullCheck = !ind->Addr()->isContained();
+    #endif
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
-    bool useNullCheck = true;
-#elif defined(TARGET_ARM)
-    bool useNullCheck = false;
-#else  // TARGET_XARCH
-    bool useNullCheck = true;
-    ind->ClearDontExtend();
-#endif // !TARGET_XARCH
-
-    if (useNullCheck && !ind->OperIs(GT_NULLCHECK))
+    if (useNullCheck)
     {
-#if defined(TARGET_XARCH)
-        // Avoid conversion to GT_NULLCHECK if address is contained to prevent size regression.
         if (ind->Addr()->isContained())
         {
-            useNullCheck = false;
+            ind->Addr()->ClearContained();
         }
-#endif
-        if (useNullCheck)
-        {
-            if (ind->Addr()->isContained())
-            {
-                ind->Addr()->ClearContained();
-            }
-            comp->gtChangeOperToNullCheck(ind);
-            ind->ClearUnusedValue();
-        }
-    }
 
-    if (!useNullCheck && !ind->OperIs(GT_IND))
+        ind->ChangeType(comp->gtTypeForNullCheck(ind));
+        
+        if (!ind->OperIs(GT_NULLCHECK))
+        {
+            comp->gtChangeOperToNullCheck(ind);
+        }
+        ind->ClearUnusedValue();
+
+    #if defined(TARGET_XARCH)
+            ind->ClearDontExtend();
+    #endif
+    }
+    else
     {
-        ind->ChangeOper(GT_IND);
-        ind->SetUnusedValue();
+        if (!ind->OperIs(GT_IND))
+        {
+            ind->ChangeOper(GT_IND);
+            ind->SetUnusedValue();
+        }
     }
 }
 
