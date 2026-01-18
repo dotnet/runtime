@@ -557,7 +557,7 @@ DictionaryEntry GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPV
     }
 
     DictionaryEntry * pSlot;
-    result = Dictionary::PopulateEntry(pMD, pDeclaringMT, signature, FALSE, &pSlot, dictionaryIndexAndSlot, pModule);
+    result = Dictionary::PopulateEntry(pMD, pDeclaringMT, signature, &pSlot, dictionaryIndexAndSlot, pModule);
 
     if (pMT != NULL && pDeclaringMT != pMT)
     {
