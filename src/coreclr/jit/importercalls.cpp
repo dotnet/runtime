@@ -8822,15 +8822,10 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         //
         assert(dvInfo.needsMethodContext);
 
-        // We don't expect NAOT to end up here, since it has Array<T>
-        // and normal devirtualization.
-        //
-        assert(!IsTargetAbi(CORINFO_NATIVEAOT_ABI));
-
-        // We don't expect R2R to end up here, since it does not (yet) support
-        // array interface devirtualization.
-        //
-        assert(!IsAot());
+        // We don't expect R2R/NAOT to end up here for array interface devirtualization.
+        // For NAOT, it has Array<T> and normal devirtualization.
+        // For R2R, we don't (yet) support array interface devirtualization.
+        assert(call->IsGenericVirtual(this) || !IsAot());
 
         // We don't expect there to be an existing inst param arg.
         //
@@ -8856,6 +8851,19 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         derivedMethod = info.compCompHnd->getInstantiatedEntry(derivedMethod, &instantiatingStub, &ignored);
         assert(ignored == NO_CLASS_HANDLE);
         assert((derivedMethod == NO_METHOD_HANDLE) || (instantiatingStub != NO_METHOD_HANDLE));
+    }
+
+    if (call->IsGenericVirtual(this) && dvInfo.needsMethodContext)
+    {
+        CallArg* lookupArg = call->gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
+        assert(lookupArg != nullptr);
+
+        if (lookupArg->GetNode()->OperIs(GT_RUNTIMELOOKUP))
+        {
+            // If we need a runtime lookup, we can't devirtualize yet because we don't have the right generic context.
+            JITDUMP("Generic virtual method devirt: runtime lookup present, sorry.\n");
+            return;
+        }
     }
 
     // If we failed to get a method handle, we can't directly devirtualize.
