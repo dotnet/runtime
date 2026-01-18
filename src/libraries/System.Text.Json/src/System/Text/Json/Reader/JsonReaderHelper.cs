@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
+
 namespace System.Text.Json
 {
     internal static partial class JsonReaderHelper
@@ -19,109 +20,181 @@ namespace System.Text.Json
         private static readonly SearchValues<char> s_charactersToEscape = SearchValues.Create("'\\");
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-public static bool ContainsSpecialCharacters(this ReadOnlySpan<char> text) =>
-    text.ContainsAny(s_specialCharacters);
+        public static bool ContainsSpecialCharacters(this ReadOnlySpan<char> text) =>
+            text.ContainsAny(s_specialCharacters);
 
         /// <summary>
         /// Appends a property name escaped for use in JSON Path single-quoted bracket notation.
         /// Escapes single quotes as \' and backslashes as \\.
         /// </summary>
-/// <summary>
-/// Appends a property name escaped for use in JSON Path single-quoted bracket notation.
-/// Escapes single quotes as \' and backslashes as \\.
-/// </summary>
-[MethodImpl(MethodImplOptions.AggressiveInlining)]
-public static void AppendEscapedPropertyName(this ref ValueStringBuilder builder, string propertyName)
-{
-    AppendEscapedPropertyName(ref builder, propertyName.AsSpan());
-}
-
-[MethodImpl(MethodImplOptions.AggressiveInlining)]
-public static void AppendEscapedPropertyName(this ref ValueStringBuilder builder, ReadOnlySpan<char> span)
-{
-    int length = span.Length;
-    if (length == 0)
-        return;
-
-    // Find first special character
-    int i = span.IndexOfAny(s_charactersToEscape);
-    
-    // Fast path: no special characters
-    if (i < 0)
-    {
-        builder.Append(span);
-        return;
-    }
-
-    // Pre-allocate enough space (worst-case: every character needs escaping)
-    builder.EnsureCapacity(builder.Length + length + 16); // Small buffer for typical cases
-
-    // Process in chunks using spans
-    int start = 0;
-    
-    do
-    {
-        // Append safe segment before special character
-        if (i > start)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void AppendEscapedPropertyName(this ref ValueStringBuilder builder, string propertyName)
         {
-            builder.Append(span.Slice(start, i - start));
+            AppendEscapedPropertyName(ref builder, propertyName.AsSpan());
         }
 
-        // Handle the special character
-        char c = span[i];
-        if (c == '\'' || c == '\\')  // Direct comparison is fastest
+        /// <summary>
+        /// Appends a property name escaped for use in JSON Path single-quoted bracket notation.
+        /// Escapes single quotes as \' and backslashes as \\.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void AppendEscapedPropertyName(this ref ValueStringBuilder builder, ReadOnlySpan<char> span)
         {
-            builder.Append('\\');
-        }
-        builder.Append(c);
+            int length = span.Length;
+            if (length == 0)
+                return;
 
-        // Move past this character
-        start = i + 1;
-        
-        // Find next special character
-        if (start < length)
-        {
-            ReadOnlySpan<char> remaining = span.Slice(start);
-            int next = remaining.IndexOfAny(s_charactersToEscape);
-            i = next >= 0 ? start + next : -1;
-        }
-        else
-        {
-            i = -1;
-        }
-    } while (i >= 0);
+            // Find first special character
+            int i = span.IndexOfAny(s_charactersToEscape);
+            
+            // Fast path: no special characters
+            if (i < 0)
+            {
+                builder.Append(span);
+                return;
+            }
 
-    // Append any remaining safe characters
-    if (start < length)
-    {
-        builder.Append(span.Slice(start));
-    }
-}
+            // Pre-allocate enough space (worst-case: every character needs escaping)
+            builder.EnsureCapacity(builder.Length + length + 16); // Small buffer for typical cases
+
+            // Process in chunks using spans
+            int start = 0;
+            
+            do
+            {
+                // Append safe segment before special character
+                if (i > start)
+                {
+                    builder.Append(span.Slice(start, i - start));
+                }
+
+                // Handle the special character
+                char c = span[i];
+                if (c == '\'' || c == '\\')  // Direct comparison is fastest
+                {
+                    builder.Append('\\');
+                }
+                builder.Append(c);
+
+                // Move past this character
+                start = i + 1;
+                
+                // Find next special character
+                if (start < length)
+                {
+                    ReadOnlySpan<char> remaining = span.Slice(start);
+                    int next = remaining.IndexOfAny(s_charactersToEscape);
+                    i = next >= 0 ? start + next : -1;
+                }
+                else
+                {
+                    i = -1;
+                }
+            } while (i >= 0);
+
+            // Append any remaining safe characters
+            if (start < length)
+            {
+                builder.Append(span.Slice(start));
+            }
+        }
+
+        /// <summary>
+        /// Appends a property name escaped for use in JSON Path single-quoted bracket notation.
+        /// Escapes single quotes as \' and backslashes as \\.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void AppendEscapedPropertyName(this StringBuilder builder, string propertyName)
+        {
+            AppendEscapedPropertyName(builder, propertyName.AsSpan());
+        }
+
+        /// <summary>
+        /// Appends a property name escaped for use in JSON Path single-quoted bracket notation.
+        /// Escapes single quotes as \' and backslashes as \\.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void AppendEscapedPropertyName(this StringBuilder builder, ReadOnlySpan<char> span)
+        {
+            int length = span.Length;
+            if (length == 0)
+                return;
+
+            // Find first special character
+            int i = span.IndexOfAny(s_charactersToEscape);
+            
+            // Fast path: no special characters
+            if (i < 0)
+            {
+                builder.Append(span);
+                return;
+            }
+
+            // Calculate required capacity
+            // Worst-case scenario: every character needs escaping (doubles the length)
+            int estimatedCapacity = builder.Length + length * 2;
+            if (builder.Capacity < estimatedCapacity)
+            {
+                builder.EnsureCapacity(estimatedCapacity);
+            }
+
+            // Process in chunks using spans
+            int start = 0;
+            
+            do
+            {
+                // Append safe segment before special character
+                if (i > start)
+                {
+                    builder.Append(span.Slice(start, i - start));
+                }
+
+                // Handle the special character
+                char c = span[i];
+                if (c == '\'' || c == '\\')  // Direct comparison is fastest
+                {
+                    builder.Append('\\');
+                }
+                builder.Append(c);
+
+                // Move past this character
+                start = i + 1;
+                
+                // Find next special character
+                if (start < length)
+                {
+                    ReadOnlySpan<char> remaining = span.Slice(start);
+                    int next = remaining.IndexOfAny(s_charactersToEscape);
+                    i = next >= 0 ? start + next : -1;
+                }
+                else
+                {
+                    i = -1;
+                }
+            } while (i >= 0);
+
+            // Append any remaining safe characters
+            if (start < length)
+            {
+                builder.Append(span.Slice(start));
+            }
+        }
+       [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (int, int) CountNewLines(ReadOnlySpan<byte> data)
         {
             int lastLineFeedIndex = data.LastIndexOf(JsonConstants.LineFeed);
-            int newLines = 0;
-
-            if (lastLineFeedIndex >= 0)
+            if (lastLineFeedIndex < 0)
             {
-                newLines = 1;
-                data = data.Slice(0, lastLineFeedIndex);
-#if NET
-                newLines += data.Count(JsonConstants.LineFeed);
-#else
-                int pos;
-                while ((pos = data.IndexOf(JsonConstants.LineFeed)) >= 0)
-                {
-                    newLines++;
-                    data = data.Slice(pos + 1);
-                }
-#endif
+                return (0, -1);
             }
-
+            
+            // Use SIMD-optimized Count method (.NET 10.0.2)
+            int newLines = 1 + data.Slice(0, lastLineFeedIndex).Count(JsonConstants.LineFeed);
+            
             return (newLines, lastLineFeedIndex);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+ [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static JsonValueKind ToValueKind(this JsonTokenType tokenType)
         {
             return tokenType switch
