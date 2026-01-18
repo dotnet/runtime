@@ -3394,8 +3394,7 @@ namespace Internal.JitInterface
 
             pEEInfoOut.osPageSize = 0x1000;
 
-            pEEInfoOut.maxUncheckedOffsetForNullObject = (_compilation.NodeFactory.Target.IsWindows) ?
-                (32 * 1024 - 1) : (pEEInfoOut.osPageSize / 2 - 1);
+            pEEInfoOut.maxUncheckedOffsetForNullObject = 0;
 
             pEEInfoOut.targetAbi = TargetABI;
             pEEInfoOut.osType = TargetToOs(_compilation.NodeFactory.Target);
