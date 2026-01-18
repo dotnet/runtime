@@ -11278,23 +11278,52 @@ void SoftwareExceptionFrame::UpdateContextForOSRTransition(TransitionBlock* pTra
     *pCurrentFP = pTransitionBlock->m_calleeSavedRegisters.Rbp;
 
 #elif defined(TARGET_ARM64)
-    // Only restore control registers - callee-saved regs already have correct CPU values
-    pContext->ContextFlags = CONTEXT_CONTROL;
+    // Restore control and integer registers, matching the x64 approach
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
 
+    // Copy callee-saved registers x19-x28 from TransitionBlock
+    // These are the values F() had when it called JIT_Patchpoint
+    pContext->X19 = pTransitionBlock->m_calleeSavedRegisters.x19;
+    pContext->X20 = pTransitionBlock->m_calleeSavedRegisters.x20;
+    pContext->X21 = pTransitionBlock->m_calleeSavedRegisters.x21;
+    pContext->X22 = pTransitionBlock->m_calleeSavedRegisters.x22;
+    pContext->X23 = pTransitionBlock->m_calleeSavedRegisters.x23;
+    pContext->X24 = pTransitionBlock->m_calleeSavedRegisters.x24;
+    pContext->X25 = pTransitionBlock->m_calleeSavedRegisters.x25;
+    pContext->X26 = pTransitionBlock->m_calleeSavedRegisters.x26;
+    pContext->X27 = pTransitionBlock->m_calleeSavedRegisters.x27;
+    pContext->X28 = pTransitionBlock->m_calleeSavedRegisters.x28;
+
+    // F()'s FP points to where F() saved [caller_fp, caller_lr]
     UINT_PTR managedFrameFP = pTransitionBlock->m_calleeSavedRegisters.x29;
-    TADDR callerFP = *((TADDR*)managedFrameFP);
-    TADDR callerLR = *((TADDR*)(managedFrameFP + 8));
-    
-    // Use caller's FP so F-OSR returns with correct FP for caller
+    // Read Test()'s FP and LR from F()'s stack frame
+    TADDR callerFP = *((TADDR*)managedFrameFP);          // Test()'s FP at [F's FP + 0]
+    TADDR callerLR = *((TADDR*)(managedFrameFP + 8));    // LR to Test() at [F's FP + 8]
+
+    // CRITICAL: Use Test()'s FP (callerFP), not F()'s FP (managedFrameFP)!
+    // This matches what VirtualUnwind produces - the CALLER's frame pointer
     pContext->Fp = callerFP;
     pContext->Lr = callerLR;
 
+    // SP = F()'s SP when it called JIT_Patchpoint
     *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
+    // FP output should also be caller's FP to match VirtualUnwind behavior
     *pCurrentFP = callerFP;
 
 #elif defined(TARGET_LOONGARCH64)
-    // Only restore control registers - callee-saved regs already have correct CPU values
-    pContext->ContextFlags = CONTEXT_CONTROL;
+    // Restore control and integer registers, matching the ARM64 approach
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+
+    // Copy callee-saved registers s0-s8 from TransitionBlock
+    pContext->S0 = pTransitionBlock->m_calleeSavedRegisters.s0;
+    pContext->S1 = pTransitionBlock->m_calleeSavedRegisters.s1;
+    pContext->S2 = pTransitionBlock->m_calleeSavedRegisters.s2;
+    pContext->S3 = pTransitionBlock->m_calleeSavedRegisters.s3;
+    pContext->S4 = pTransitionBlock->m_calleeSavedRegisters.s4;
+    pContext->S5 = pTransitionBlock->m_calleeSavedRegisters.s5;
+    pContext->S6 = pTransitionBlock->m_calleeSavedRegisters.s6;
+    pContext->S7 = pTransitionBlock->m_calleeSavedRegisters.s7;
+    pContext->S8 = pTransitionBlock->m_calleeSavedRegisters.s8;
 
     UINT_PTR managedFrameFP = pTransitionBlock->m_calleeSavedRegisters.fp;
     TADDR callerFP = *((TADDR*)managedFrameFP);
@@ -11307,8 +11336,23 @@ void SoftwareExceptionFrame::UpdateContextForOSRTransition(TransitionBlock* pTra
     *pCurrentFP = callerFP;
 
 #elif defined(TARGET_RISCV64)
-    // Only restore control registers - callee-saved regs already have correct CPU values
-    pContext->ContextFlags = CONTEXT_CONTROL;
+    // Restore control and integer registers, matching the ARM64 approach
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+
+    // Copy callee-saved registers s1-s11 from TransitionBlock
+    pContext->S1 = pTransitionBlock->m_calleeSavedRegisters.s1;
+    pContext->S2 = pTransitionBlock->m_calleeSavedRegisters.s2;
+    pContext->S3 = pTransitionBlock->m_calleeSavedRegisters.s3;
+    pContext->S4 = pTransitionBlock->m_calleeSavedRegisters.s4;
+    pContext->S5 = pTransitionBlock->m_calleeSavedRegisters.s5;
+    pContext->S6 = pTransitionBlock->m_calleeSavedRegisters.s6;
+    pContext->S7 = pTransitionBlock->m_calleeSavedRegisters.s7;
+    pContext->S8 = pTransitionBlock->m_calleeSavedRegisters.s8;
+    pContext->S9 = pTransitionBlock->m_calleeSavedRegisters.s9;
+    pContext->S10 = pTransitionBlock->m_calleeSavedRegisters.s10;
+    pContext->S11 = pTransitionBlock->m_calleeSavedRegisters.s11;
+    pContext->Tp = pTransitionBlock->m_calleeSavedRegisters.tp;
+    pContext->Gp = pTransitionBlock->m_calleeSavedRegisters.gp;
 
     UINT_PTR managedFrameFP = pTransitionBlock->m_calleeSavedRegisters.fp;
     TADDR callerFP = *((TADDR*)managedFrameFP);

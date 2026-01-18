@@ -926,8 +926,9 @@ NESTED_END IL_Rethrow, _TEXT
 // ------------------------------------------------------------------
 // ClrRestoreNonvolatileContextWorker
 //
-// Restores non-volatile registers based on ContextFlags and jumps to target PC.
-// Also restores volatile argument registers (a0-a7) for passing arguments.
+// Restores registers based on ContextFlags and jumps to target PC.
+// When CONTEXT_INTEGER is set, restores ALL integer registers
+// because exception handling needs a0 (exception object).
 //
 // Arguments:
 //   a0 - pointer to CONTEXT structure
@@ -935,7 +936,7 @@ NESTED_END IL_Rethrow, _TEXT
 // ------------------------------------------------------------------
 LEAF_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT
 
-    // Save CONTEXT pointer in t0 so we can restore a0 later
+    // Save CONTEXT pointer in t0 before we potentially clobber a0
     mv      t0, a0
 
     // Check if CONTEXT_INTEGER is set
@@ -943,7 +944,17 @@ LEAF_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT
     andi    t2, t1, (1 << CONTEXT_INTEGER_BIT)
     beqz    t2, LOCAL_LABEL(SkipIntegerRestore)
 
-    // Restore callee-saved registers s1-s11
+    // Restore ALL integer registers (needed by exception handling)
+    // Argument registers a1-a7 (a0 last since we use it)
+    ld      a1, (OFFSETOF__CONTEXT__A0 + 8)(t0)
+    ld      a2, (OFFSETOF__CONTEXT__A0 + 16)(t0)
+    ld      a3, (OFFSETOF__CONTEXT__A0 + 24)(t0)
+    ld      a4, (OFFSETOF__CONTEXT__A0 + 32)(t0)
+    ld      a5, (OFFSETOF__CONTEXT__A0 + 40)(t0)
+    ld      a6, (OFFSETOF__CONTEXT__A0 + 48)(t0)
+    ld      a7, (OFFSETOF__CONTEXT__A0 + 56)(t0)
+
+    // Callee-saved registers s1-s11
     ld      s1, OFFSETOF__CONTEXT__S1(t0)
     ld      s2, OFFSETOF__CONTEXT__S2(t0)
     ld      s3, (OFFSETOF__CONTEXT__S2 + 8)(t0)
@@ -956,15 +967,8 @@ LEAF_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT
     ld      s10, (OFFSETOF__CONTEXT__S2 + 64)(t0)
     ld      s11, (OFFSETOF__CONTEXT__S2 + 72)(t0)
 
-    // Also restore argument registers a0-a7 (for passing arguments to target)
+    // Restore a0 last (exception object for exception handling)
     ld      a0, OFFSETOF__CONTEXT__A0(t0)
-    ld      a1, (OFFSETOF__CONTEXT__A0 + 8)(t0)
-    ld      a2, (OFFSETOF__CONTEXT__A0 + 16)(t0)
-    ld      a3, (OFFSETOF__CONTEXT__A0 + 24)(t0)
-    ld      a4, (OFFSETOF__CONTEXT__A0 + 32)(t0)
-    ld      a5, (OFFSETOF__CONTEXT__A0 + 40)(t0)
-    ld      a6, (OFFSETOF__CONTEXT__A0 + 48)(t0)
-    ld      a7, (OFFSETOF__CONTEXT__A0 + 56)(t0)
 
 LOCAL_LABEL(SkipIntegerRestore):
     // Restore fp, ra

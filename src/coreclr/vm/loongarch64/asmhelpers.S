@@ -1069,8 +1069,9 @@ NESTED_END IL_Rethrow, _TEXT
 // ------------------------------------------------------------------
 // ClrRestoreNonvolatileContextWorker
 //
-// Restores non-volatile registers based on ContextFlags and jumps to target PC.
-// Also restores volatile argument registers ($a0-$a7) for passing arguments.
+// Restores registers based on ContextFlags and jumps to target PC.
+// When CONTEXT_INTEGER is set, restores ALL integer registers
+// because exception handling needs $a0 (exception object).
 //
 // Arguments:
 //   $a0 - pointer to CONTEXT structure
@@ -1078,7 +1079,7 @@ NESTED_END IL_Rethrow, _TEXT
 // ------------------------------------------------------------------
 LEAF_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT
 
-    // Save CONTEXT pointer in $t0 so we can restore $a0 later
+    // Save CONTEXT pointer in $t0 before we potentially clobber $a0
     move    $t0, $a0
 
     // Check if CONTEXT_INTEGER is set
@@ -1086,7 +1087,17 @@ LEAF_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT
     andi    $t2, $t1, (1 << CONTEXT_INTEGER_BIT)
     beqz    $t2, LOCAL_LABEL(SkipIntegerRestore)
 
-    // Restore callee-saved registers s0-s8
+    // Restore ALL integer registers (needed by exception handling)
+    // Argument registers a1-a7 (a0 last since we use it)
+    ld.d    $a1, $t0, (OFFSETOF__CONTEXT__A0 + 8)
+    ld.d    $a2, $t0, (OFFSETOF__CONTEXT__A0 + 16)
+    ld.d    $a3, $t0, (OFFSETOF__CONTEXT__A0 + 24)
+    ld.d    $a4, $t0, (OFFSETOF__CONTEXT__A0 + 32)
+    ld.d    $a5, $t0, (OFFSETOF__CONTEXT__A0 + 40)
+    ld.d    $a6, $t0, (OFFSETOF__CONTEXT__A0 + 48)
+    ld.d    $a7, $t0, (OFFSETOF__CONTEXT__A0 + 56)
+
+    // Callee-saved registers s0-s8
     ld.d    $s0, $t0, OFFSETOF__CONTEXT__S0
     ld.d    $s1, $t0, (OFFSETOF__CONTEXT__S0 + 8)
     ld.d    $s2, $t0, (OFFSETOF__CONTEXT__S0 + 16)
@@ -1097,15 +1108,8 @@ LEAF_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT
     ld.d    $s7, $t0, (OFFSETOF__CONTEXT__S0 + 56)
     ld.d    $s8, $t0, (OFFSETOF__CONTEXT__S0 + 64)
 
-    // Also restore argument registers $a0-$a7 (for passing arguments to target)
+    // Restore $a0 last (exception object for exception handling)
     ld.d    $a0, $t0, OFFSETOF__CONTEXT__A0
-    ld.d    $a1, $t0, (OFFSETOF__CONTEXT__A0 + 8)
-    ld.d    $a2, $t0, (OFFSETOF__CONTEXT__A0 + 16)
-    ld.d    $a3, $t0, (OFFSETOF__CONTEXT__A0 + 24)
-    ld.d    $a4, $t0, (OFFSETOF__CONTEXT__A0 + 32)
-    ld.d    $a5, $t0, (OFFSETOF__CONTEXT__A0 + 40)
-    ld.d    $a6, $t0, (OFFSETOF__CONTEXT__A0 + 48)
-    ld.d    $a7, $t0, (OFFSETOF__CONTEXT__A0 + 56)
 
 LOCAL_LABEL(SkipIntegerRestore):
     // Restore fp, ra

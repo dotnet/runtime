@@ -3063,32 +3063,39 @@ CopyLoop
 ; ------------------------------------------------------------------
 ; ClrRestoreNonvolatileContextWorker
 ;
-; Restores non-volatile registers based on ContextFlags and jumps to PC.
-; Also restores volatile argument registers (x0-x7) for passing arguments.
+; Restores registers based on ContextFlags and jumps to PC.
+; When CONTEXT_INTEGER is set, restores ALL integer registers (x0-x28)
+; because exception handling needs x0 (exception object).
+;
 ; x0 - pointer to CONTEXT structure
 ; x1 - unused (SSP, not used on ARM64)
 ; ------------------------------------------------------------------
     LEAF_ENTRY ClrRestoreNonvolatileContextWorker
 
-        ; Save CONTEXT pointer in x16 so we can restore x0 later
+        ; Save CONTEXT pointer in x16 before we potentially clobber x0
         mov     x16, x0
 
         ; Check if CONTEXT_INTEGER bit is set
         ldr     w17, [x16, #OFFSETOF__CONTEXT__ContextFlags]
         tbz     w17, #1, SkipIntegerRestore  ; CONTEXT_INTEGER_BIT = 1
 
-        ; Restore callee-saved registers x19-x28
+        ; Restore ALL integer registers x0-x28
+        ; Exception handling needs x0 (exception object)
+        ldp     x0, x1,   [x16, #OFFSETOF__CONTEXT__X0]
+        ldp     x2, x3,   [x16, #(OFFSETOF__CONTEXT__X0 + 16)]
+        ldp     x4, x5,   [x16, #(OFFSETOF__CONTEXT__X0 + 32)]
+        ldp     x6, x7,   [x16, #(OFFSETOF__CONTEXT__X0 + 48)]
+        ldp     x8, x9,   [x16, #(OFFSETOF__CONTEXT__X0 + 64)]
+        ldp     x10, x11, [x16, #(OFFSETOF__CONTEXT__X0 + 80)]
+        ldp     x12, x13, [x16, #(OFFSETOF__CONTEXT__X0 + 96)]
+        ldp     x14, x15, [x16, #(OFFSETOF__CONTEXT__X0 + 112)]
+        ; Skip x16, x17 - they're scratch registers we're using
+        ; x18 is platform reserved
         ldp     x19, x20, [x16, #OFFSETOF__CONTEXT__X19]
         ldp     x21, x22, [x16, #(OFFSETOF__CONTEXT__X19 + 16)]
         ldp     x23, x24, [x16, #(OFFSETOF__CONTEXT__X19 + 32)]
         ldp     x25, x26, [x16, #(OFFSETOF__CONTEXT__X19 + 48)]
         ldp     x27, x28, [x16, #(OFFSETOF__CONTEXT__X19 + 64)]
-
-        ; Also restore argument registers x0-x7 (for passing arguments to target)
-        ldp     x0, x1, [x16, #OFFSETOF__CONTEXT__X0]
-        ldp     x2, x3, [x16, #(OFFSETOF__CONTEXT__X0 + 16)]
-        ldp     x4, x5, [x16, #(OFFSETOF__CONTEXT__X0 + 32)]
-        ldp     x6, x7, [x16, #(OFFSETOF__CONTEXT__X0 + 48)]
 
 SkipIntegerRestore
         ; Restore fp and lr
