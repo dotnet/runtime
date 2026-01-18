@@ -18,8 +18,9 @@ namespace System.Text.Json
         // Characters that need to be escaped in the single-quoted bracket notation.
         private static readonly SearchValues<char> s_charactersToEscape = SearchValues.Create("'\\");
 
-        public static bool ContainsSpecialCharacters(this ReadOnlySpan<char> text) =>
-            text.ContainsAny(s_specialCharacters);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+public static bool ContainsSpecialCharacters(this ReadOnlySpan<char> text) =>
+    text.ContainsAny(s_specialCharacters);
 
         /// <summary>
         /// Appends a property name escaped for use in JSON Path single-quoted bracket notation.
