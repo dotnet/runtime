@@ -253,6 +253,21 @@ Entire method body is replaces with `throw` instruction when method is reference
 </linker>
 ```
 
+### Throw PlatformNotSupportedException
+
+
+Entire method body is replaces with `throw new PlatformNotSupportedException()` instruction when method is referenced.
+
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <type fullname="Assembly.A">
+      <method signature="System.String TestMethod()" body="pnse" />
+    </type>
+  </assembly>
+</linker>
+```
+
 ### Remove embedded resources
 
 ```xml

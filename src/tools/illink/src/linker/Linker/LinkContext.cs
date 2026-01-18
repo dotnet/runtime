@@ -135,6 +135,8 @@ namespace Mono.Linker
 
         public bool IgnoreLinkAttributes { get; set; }
 
+        public string? TargetOS { get; set; }
+
         public Dictionary<string, bool> FeatureSettings { get; init; }
 
         public List<PInvokeInfo> PInvokes { get; private set; }
