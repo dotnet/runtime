@@ -328,6 +328,9 @@ namespace System.Threading.Tasks
                 }
                 else  // This is more efficient for a small number of actions and no DOP support:
                 {
+#if FEATURE_SINGLE_THREADED
+                if (OperatingSystem.IsBrowser()) throw new PlatformNotSupportedException();
+#endif
                     // Initialize our array of tasks, one per action.
                     Task[] tasks = new Task[actionsCopy.Length];
 

@@ -160,6 +160,9 @@ namespace System.Threading
                 SetOwnerThreadToCurrent();
                 return;
             }
+#if FEATURE_SINGLE_THREADED
+            if (OperatingSystem.IsBrowser()) throw new PlatformNotSupportedException();
+#endif
 
             _monitor.Acquire();
 

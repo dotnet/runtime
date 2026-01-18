@@ -392,6 +392,9 @@ namespace System.Diagnostics.Tracing
         [MethodImpl(MethodImplOptions.NoInlining)]
         public void ThreadPoolIOEnqueue(RegisteredWaitHandle registeredWaitHandle)
         {
+#if FEATURE_SINGLE_THREADED
+            if (OperatingSystem.IsBrowser()) return;
+#endif
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
             {
 #pragma warning disable CA1416 // 'RegisteredWaitHandle.Repeating' is unsupported on: 'browser'
