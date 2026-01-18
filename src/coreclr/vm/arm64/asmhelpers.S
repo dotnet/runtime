@@ -2813,6 +2813,7 @@ NESTED_END IL_Rethrow, _TEXT
 // Restores registers based on ContextFlags and jumps to the target IP.
 // When CONTEXT_INTEGER is set, restores ALL integer registers (x0-x28)
 // because exception handling needs x0 (exception object).
+// When CONTEXT_FLOATING_POINT is set, restores non-volatile FP regs (d8-d15).
 //
 // Arguments:
 //   x0 - pointer to CONTEXT structure
@@ -2824,8 +2825,19 @@ LEAF_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT
     // Save context pointer in x16 since we'll overwrite x0
     mov     x16, x0
 
-    // Check ContextFlags to see if we should restore integer registers
+    // Check ContextFlags to see if we should restore floating point registers
     ldr     w17, [x16, #OFFSETOF__CONTEXT__ContextFlags]
+    tbz     w17, #CONTEXT_FLOATING_POINT_BIT, LOCAL_LABEL(SkipFloatingPointRestore)
+
+    // Restore non-volatile FP registers d8-d15 (lower 64 bits of v8-v15)
+    // V8 is at OFFSETOF__CONTEXT__V0 + 8*16 = 0x110 + 0x80 = 0x190
+    ldp     q8, q9,   [x16, #(OFFSETOF__CONTEXT__V0 + 8*16)]
+    ldp     q10, q11, [x16, #(OFFSETOF__CONTEXT__V0 + 10*16)]
+    ldp     q12, q13, [x16, #(OFFSETOF__CONTEXT__V0 + 12*16)]
+    ldp     q14, q15, [x16, #(OFFSETOF__CONTEXT__V0 + 14*16)]
+
+LOCAL_LABEL(SkipFloatingPointRestore):
+    // Check ContextFlags to see if we should restore integer registers
     tbz     w17, #CONTEXT_INTEGER_BIT, LOCAL_LABEL(SkipIntegerRestore)
 
     // Restore ALL integer registers x0-x28

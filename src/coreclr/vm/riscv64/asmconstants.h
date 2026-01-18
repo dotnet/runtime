@@ -124,6 +124,15 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__S2 == offsetof(T_CONTEXT, S2));
 #define OFFSETOF__CONTEXT__Pc         0x108
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Pc == offsetof(T_CONTEXT, Pc));
 
+// Floating point registers F[0..31] start after Pc
+// Non-volatile FP registers are F8-F9, F18-F27
+// Each F entry is 8 bytes (ULONGLONG)
+#define OFFSETOF__CONTEXT__F          0x110
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__F == offsetof(T_CONTEXT, F));
+
+// CONTEXT_FLOATING_POINT_BIT is bit 2 in ContextFlags
+#define CONTEXT_FLOATING_POINT_BIT    2
+
 #define CONTEXT_INTEGER_BIT           1
 
 //=========================================

@@ -3066,6 +3066,7 @@ CopyLoop
 ; Restores registers based on ContextFlags and jumps to PC.
 ; When CONTEXT_INTEGER is set, restores ALL integer registers (x0-x28)
 ; because exception handling needs x0 (exception object).
+; When CONTEXT_FLOATING_POINT is set, restores non-volatile FP regs (d8-d15).
 ;
 ; x0 - pointer to CONTEXT structure
 ; x1 - unused (SSP, not used on ARM64)
@@ -3075,8 +3076,19 @@ CopyLoop
         ; Save CONTEXT pointer in x16 before we potentially clobber x0
         mov     x16, x0
 
-        ; Check if CONTEXT_INTEGER bit is set
+        ; Check if CONTEXT_FLOATING_POINT bit is set (bit 2)
         ldr     w17, [x16, #OFFSETOF__CONTEXT__ContextFlags]
+        tbz     w17, #2, SkipFloatingPointRestore
+
+        ; Restore non-volatile FP registers d8-d15 (full q8-q15)
+        ; V8 is at OFFSETOF__CONTEXT__V0 + 8*16 = 0x110 + 0x80 = 0x190
+        ldp     q8, q9,   [x16, #(OFFSETOF__CONTEXT__V0 + 128)]
+        ldp     q10, q11, [x16, #(OFFSETOF__CONTEXT__V0 + 160)]
+        ldp     q12, q13, [x16, #(OFFSETOF__CONTEXT__V0 + 192)]
+        ldp     q14, q15, [x16, #(OFFSETOF__CONTEXT__V0 + 224)]
+
+SkipFloatingPointRestore
+        ; Check if CONTEXT_INTEGER bit is set
         tbz     w17, #1, SkipIntegerRestore  ; CONTEXT_INTEGER_BIT = 1
 
         ; Restore ALL integer registers x0-x28

@@ -929,6 +929,7 @@ NESTED_END IL_Rethrow, _TEXT
 // Restores registers based on ContextFlags and jumps to target PC.
 // When CONTEXT_INTEGER is set, restores ALL integer registers
 // because exception handling needs a0 (exception object).
+// When CONTEXT_FLOATING_POINT is set, restores non-volatile FP regs (f8-f9, f18-f27).
 //
 // Arguments:
 //   a0 - pointer to CONTEXT structure
@@ -939,8 +940,28 @@ LEAF_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT
     // Save CONTEXT pointer in t0 before we potentially clobber a0
     mv      t0, a0
 
-    // Check if CONTEXT_INTEGER is set
+    // Check if CONTEXT_FLOATING_POINT is set
     lw      t1, OFFSETOF__CONTEXT__ContextFlags(t0)
+    andi    t2, t1, (1 << CONTEXT_FLOATING_POINT_BIT)
+    beqz    t2, LOCAL_LABEL(SkipFloatingPointRestore)
+
+    // Restore non-volatile FP registers f8-f9, f18-f27
+    // Each F entry is 8 bytes
+    fld     f8,  (OFFSETOF__CONTEXT__F + 8*8)(t0)
+    fld     f9,  (OFFSETOF__CONTEXT__F + 9*8)(t0)
+    fld     f18, (OFFSETOF__CONTEXT__F + 18*8)(t0)
+    fld     f19, (OFFSETOF__CONTEXT__F + 19*8)(t0)
+    fld     f20, (OFFSETOF__CONTEXT__F + 20*8)(t0)
+    fld     f21, (OFFSETOF__CONTEXT__F + 21*8)(t0)
+    fld     f22, (OFFSETOF__CONTEXT__F + 22*8)(t0)
+    fld     f23, (OFFSETOF__CONTEXT__F + 23*8)(t0)
+    fld     f24, (OFFSETOF__CONTEXT__F + 24*8)(t0)
+    fld     f25, (OFFSETOF__CONTEXT__F + 25*8)(t0)
+    fld     f26, (OFFSETOF__CONTEXT__F + 26*8)(t0)
+    fld     f27, (OFFSETOF__CONTEXT__F + 27*8)(t0)
+
+LOCAL_LABEL(SkipFloatingPointRestore):
+    // Check if CONTEXT_INTEGER is set
     andi    t2, t1, (1 << CONTEXT_INTEGER_BIT)
     beqz    t2, LOCAL_LABEL(SkipIntegerRestore)
 
