@@ -11,7 +11,6 @@ using System.Threading.Tests;
 using Microsoft.DotNet.XUnitExtensions;
 
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace System.IO.Tests

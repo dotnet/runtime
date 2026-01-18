@@ -18,7 +18,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
 using TestUtilities;
 
 namespace System.Net.Quic.Tests

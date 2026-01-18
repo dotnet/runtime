@@ -3,7 +3,10 @@
 
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading.Tasks;
+using Xunit;
 using Xunit.Sdk;
+using Xunit.v3;
 
 namespace System.Linq.Expressions.Tests
 {
@@ -19,8 +22,10 @@ namespace System.Linq.Expressions.Tests
             _data = data;
         }
 
-        public override IEnumerable<object[]> GetData(MethodInfo testMethod)
+        public override ValueTask<IReadOnlyCollection<ITheoryDataRow>> GetData(MethodInfo testMethod, DisposalTracker disposalTracker)
         {
+            var result = new List<ITheoryDataRow>();
+
             // Re-using the arrays would be a nice optimization, and safe since this is internal and we could
             // just not do the sort of uses that would break that, but xUnit pre-loads GetData() results and
             // we'd therefore end up with multiple copies of the last result.
@@ -29,8 +34,12 @@ namespace System.Linq.Expressions.Tests
                 object[] withType = new object[_data.Length + 1];
                 _data.CopyTo(withType, 0);
                 withType[withType.Length - 1] = compilationType;
-                yield return withType;
+                result.Add(new TheoryDataRow(withType));
             }
+
+            return new ValueTask<IReadOnlyCollection<ITheoryDataRow>>(result);
         }
+
+        public override bool SupportsDiscoveryEnumeration() => true;
     }
 }

@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks Condition="'$(TestSingleFile)' != 'true'">$(NetCoreAppMinimum);$(NetFrameworkCurrent)</TargetFrameworks>
-    <TargetFramework Condition="'$(TestSingleFile)' == 'true'">$(NetCoreAppMinimum)</TargetFramework>
+    <TargetFrameworks>$(NetCoreAppMinimum);$(NetFrameworkCurrent)</TargetFrameworks>
 
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- For some reason, xunit.core.props isn't excluded in VS and sets this to true. -->
@@ -109,9 +108,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Condition="'$(TestSingleFile)' != 'true'"  Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
-    <PackageReference Condition="'$(TestSingleFile)' != 'true'" Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
-    <PackageReference Condition="'$(TestSingleFile)' == 'true'" Include="xunit.v3.extensibility.core" Version="$(XUnitV3Version)" ExcludeAssets="build" />
+    <PackageReference Include="Microsoft.DotNet.XUnitV3Extensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+    <PackageReference Include="xunit.v3.extensibility.core" Version="$(XUnitV3Version)" ExcludeAssets="build" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
@@ -126,7 +124,7 @@
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-    <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
+    <PackageReference Include="xunit.v3.assert" Version="$(XUnitV3Version)" />
   </ItemGroup>
 
 </Project>

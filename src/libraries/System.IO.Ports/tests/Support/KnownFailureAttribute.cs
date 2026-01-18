@@ -3,23 +3,16 @@
 
 using System;
 using System.Collections.Generic;
-using Xunit.Sdk;
-using Xunit.Abstractions;
+using Xunit.v3;
 
 namespace Legacy.Support
 {
-    [TraitDiscoverer("Legacy.Support.KnownFailureDiscoverer", "System.IO.Ports.Tests")]
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = true)]
     class KnownFailureAttribute : Attribute, ITraitAttribute
     {
         public KnownFailureAttribute() { }
-    }
 
-    public class KnownFailureDiscoverer : ITraitDiscoverer
-    {
-        public IEnumerable<KeyValuePair<string, string>> GetTraits(IAttributeInfo traitAttribute)
-        {
-            yield return new KeyValuePair<string, string>("KnownFailure", "true");
-        }
+        public IReadOnlyCollection<KeyValuePair<string, string>> GetTraits() =>
+            [new("KnownFailure", "true")];
     }
 }

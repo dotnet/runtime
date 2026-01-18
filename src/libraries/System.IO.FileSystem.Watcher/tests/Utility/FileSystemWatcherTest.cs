@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using Xunit;
 using Xunit.Sdk;
-using Xunit.Abstractions;
 using System.Linq;
 
 namespace System.IO.Tests

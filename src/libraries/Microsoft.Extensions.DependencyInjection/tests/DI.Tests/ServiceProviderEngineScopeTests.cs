@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {

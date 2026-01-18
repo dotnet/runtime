@@ -6,11 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
-#if !TEST_SINGLE_FILE
-using Xunit.Abstractions;
-#else
 using Xunit.v3;
-#endif
 using Xunit.Sdk;
 
 namespace TestUtilities;

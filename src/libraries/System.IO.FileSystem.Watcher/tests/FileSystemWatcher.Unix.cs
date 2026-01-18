@@ -11,7 +11,6 @@ using System.Threading;
 using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.IO.Tests
 {

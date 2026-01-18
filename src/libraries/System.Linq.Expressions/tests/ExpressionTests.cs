@@ -15,7 +15,7 @@ namespace System.Linq.Expressions.Tests
     // due to static state being affected. For this reason some tests have to be done
     // in a particular order, with those for the old constructor coming after most of
     // the tests, and those affected by this being repeated after that.
-    [TestCaseOrderer("System.Linq.Expressions.Tests.TestOrderer", "System.Linq.Expressions.Tests")]
+    [TestCaseOrderer(typeof(TestOrderer))]
     public class ExpressionTests
     {
         private static readonly Expression MarkerExtension = Expression.Constant(0);

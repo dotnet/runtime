@@ -4,11 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
-#if !TEST_SINGLE_FILE
-using Xunit.Abstractions;
-#else
 using Xunit.v3;
-#endif
 using Xunit.Sdk;
 
 namespace TestUtilities;

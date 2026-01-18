@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
+
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -1714,7 +1714,7 @@ namespace System.Net.Http.Functional.Tests
                         uri = new Uri($"{uri.Scheme}://{IPAddress.Loopback}:{uri.Port}");
 
                         Version version = Version.Parse(useVersion);
-                        
+
                         using HttpClient client = new HttpClient(CreateHttpClientHandler(allowAllCertificates: true));
 
                         using HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, version, exactVersion: true);

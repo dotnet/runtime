@@ -9,7 +9,6 @@ using System.Net.Security;
 using System.Runtime.ExceptionServices;
 using System.Security.Authentication;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {

@@ -7,12 +7,8 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Text;
-#if !TEST_SINGLE_FILE
-using Xunit.Abstractions;
-#else
 using Xunit;
 using Xunit.Sdk;
-#endif
 
 namespace TestUtilities;
 
