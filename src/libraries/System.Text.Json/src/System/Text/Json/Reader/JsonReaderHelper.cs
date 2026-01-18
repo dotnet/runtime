@@ -57,7 +57,6 @@ namespace System.Text.Json
 
             // Process in chunks using spans
             int start = 0;
-
             do
             {
                 // Append safe segment before special character
@@ -125,7 +124,6 @@ namespace System.Text.Json
                 builder.Append(span);
                 return;
             }
-
             // Calculate required capacity
             // Worst-case scenario: every character needs escaping (doubles the length)
             int estimatedCapacity = builder.Length + length * 2;
@@ -136,7 +134,6 @@ namespace System.Text.Json
 
             // Process in chunks using spans
             int start = 0;
-
             do
             {
                 // Append safe segment before special character
