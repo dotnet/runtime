@@ -6,8 +6,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Mail.Tests
 {
     public abstract class SmtpClientSendMailTest<T> : LoopbackServerTestBase<T> where T : ISendMethodProvider

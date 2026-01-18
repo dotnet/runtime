@@ -2,6 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RootNamespace>System</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ManualTests.cs" />

@@ -5,8 +5,6 @@ using System.Net.Test.Common;
 using System.Threading;
 
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Sockets.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;

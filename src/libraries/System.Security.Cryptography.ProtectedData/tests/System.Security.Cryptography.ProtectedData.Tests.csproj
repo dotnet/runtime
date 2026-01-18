@@ -2,6 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <RootNamespace>System.Security.Cryptography.ProtectedDataTests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ArrayProtectedDataTests.cs" />

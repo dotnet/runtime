@@ -11,8 +11,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Collections.Immutable.Tests
 {
     public partial class ImmutableArrayTest : SimpleElementImmutablesTestBase

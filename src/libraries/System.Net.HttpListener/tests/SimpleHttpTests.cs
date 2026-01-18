@@ -8,8 +8,6 @@ using System.Text;
 using Microsoft.DotNet.XUnitExtensions;
 
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]

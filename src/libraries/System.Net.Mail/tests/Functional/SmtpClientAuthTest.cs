@@ -5,8 +5,6 @@ using System.Net.Mail.Tests;
 using System.Net.Test.Common;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Mail.Tests
 {
     public abstract class SmtpClientAuthTest<TSendMethod> : LoopbackServerTestBase<TSendMethod>

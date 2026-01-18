@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 using System.Linq;
 using Microsoft.DotNet.XUnitExtensions;

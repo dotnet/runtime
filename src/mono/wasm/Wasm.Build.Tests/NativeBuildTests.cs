@@ -6,7 +6,6 @@ using System.Data;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 #nullable enable

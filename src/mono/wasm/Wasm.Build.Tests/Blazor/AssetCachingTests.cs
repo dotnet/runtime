@@ -8,8 +8,6 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
 using Xunit;
-using Xunit.Abstractions;
-
 #nullable enable
 
 namespace Wasm.Build.Tests.Blazor;

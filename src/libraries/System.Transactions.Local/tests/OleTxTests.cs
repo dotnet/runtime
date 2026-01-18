@@ -5,7 +5,6 @@ using System.IO;
 using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace System.Transactions.Tests;

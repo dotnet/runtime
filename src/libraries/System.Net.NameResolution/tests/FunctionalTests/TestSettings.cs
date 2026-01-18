@@ -4,8 +4,6 @@
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.NameResolution.Tests
 {
     internal static class TestSettings

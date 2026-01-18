@@ -11,8 +11,6 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;

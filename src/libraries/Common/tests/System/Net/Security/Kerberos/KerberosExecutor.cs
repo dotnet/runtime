@@ -11,8 +11,6 @@ using Kerberos.NET.Configuration;
 using Kerberos.NET.Crypto;
 using Kerberos.NET.Server;
 using Kerberos.NET.Logging;
-using Xunit.Abstractions;
-
 namespace System.Net.Security.Kerberos;
 
 public class KerberosExecutor : IDisposable

@@ -1,8 +1,6 @@
 using System.Collections.Specialized;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace Wasm.Build.Tests;
 
 public class WasmBrowserRunMainOnly(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext) : WasmTemplateTestsBase(output, buildContext)

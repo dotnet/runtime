@@ -9,7 +9,6 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.NET.Sdk.WebAssembly;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 #nullable enable

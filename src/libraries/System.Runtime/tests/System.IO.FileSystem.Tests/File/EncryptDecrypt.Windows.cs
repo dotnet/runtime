@@ -8,8 +8,6 @@ using System.Linq;
 using System.Security;
 using System.ServiceProcess;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.IO.Tests
 {
     public partial class EncryptDecrypt

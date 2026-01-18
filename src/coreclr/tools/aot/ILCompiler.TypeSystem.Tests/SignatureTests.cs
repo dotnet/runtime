@@ -12,8 +12,6 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using Xunit;
-using Xunit.Abstractions;
-
 namespace TypeSystemTests
 {
     public class SignatureTests

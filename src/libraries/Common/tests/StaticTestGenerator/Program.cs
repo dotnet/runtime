@@ -10,7 +10,6 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace StaticTestGenerator
@@ -1029,8 +1028,6 @@ namespace StaticTestGenerator
 @"using System;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
-using Xunit.Abstractions;
-
 public static class Test
 {
     private static bool s_verbose;

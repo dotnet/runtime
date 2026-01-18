@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RootNamespace>System.Linq.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AggregateTests.cs" />

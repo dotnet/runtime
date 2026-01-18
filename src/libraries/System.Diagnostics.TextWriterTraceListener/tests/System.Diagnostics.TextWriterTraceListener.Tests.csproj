@@ -2,6 +2,7 @@
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RootNamespace>System.Diagnostics.TextWriterTraceListenerTests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CommonUtilities.cs" />

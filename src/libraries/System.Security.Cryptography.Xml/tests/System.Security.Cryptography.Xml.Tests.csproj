@@ -3,6 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <Nullable>disable</Nullable>
     <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
+    <RootNamespace>System.Security.Cryptography.Xml.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"

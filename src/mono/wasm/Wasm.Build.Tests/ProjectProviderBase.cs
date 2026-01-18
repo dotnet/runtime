@@ -15,7 +15,6 @@ using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Microsoft.NET.Sdk.WebAssembly;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace Wasm.Build.Tests;

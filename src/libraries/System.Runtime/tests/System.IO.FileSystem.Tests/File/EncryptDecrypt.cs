@@ -5,8 +5,6 @@ using Microsoft.DotNet.XUnitExtensions;
 using System.Diagnostics;
 using System.Security;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.IO.Tests
 {
     public partial class EncryptDecrypt : FileSystemTest

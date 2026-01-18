@@ -8,8 +8,6 @@ using System.Xml.Xsl;
 using OLEDB.Test.ModuleCore;
 using XmlCoreTest.Common;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Xml.XslCompiledTransformApiTests
 {
     //[TestCase(Name = "Xml 4th Errata tests for XslCompiledTransform", Params = new object[] { 300 })]

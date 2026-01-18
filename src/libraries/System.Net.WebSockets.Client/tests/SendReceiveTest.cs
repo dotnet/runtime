@@ -5,8 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
-
 using EchoControlMessage = System.Net.Test.Common.WebSocketEchoHelper.EchoControlMessage;
 using EchoQueryKey = System.Net.Test.Common.WebSocketEchoOptions.EchoQueryKey;
 

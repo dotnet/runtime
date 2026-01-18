@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Wasm.Build.Tests.Blazor;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 #nullable enable

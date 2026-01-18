@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
+    <RootNamespace>System.Reflection.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyExtensionTests.cs" />

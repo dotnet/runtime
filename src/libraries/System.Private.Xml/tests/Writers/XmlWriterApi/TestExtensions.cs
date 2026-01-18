@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using XmlCoreTest.Common;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace System.Xml.XmlWriterApiTests

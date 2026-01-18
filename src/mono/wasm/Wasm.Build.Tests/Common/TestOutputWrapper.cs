@@ -3,8 +3,6 @@
 
 using System;
 using System.Text;
-using Xunit.Abstractions;
-
 #nullable enable
 
 namespace Wasm.Build.Tests;

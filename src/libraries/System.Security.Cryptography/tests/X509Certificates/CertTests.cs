@@ -9,7 +9,6 @@ using System.Security.Cryptography.X509Certificates.Tests.CertificateCreation;
 using System.Threading;
 using Test.Cryptography;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {

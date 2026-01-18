@@ -7,8 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
-
 using EchoQueryKey = System.Net.Test.Common.WebSocketEchoOptions.EchoQueryKey;
 
 namespace System.Net.WebSockets.Client.Tests

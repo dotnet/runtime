@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 
 using Xunit;
-using Xunit.Abstractions;
 using System.Threading;
 
 namespace System.Net.NetworkInformation.Tests

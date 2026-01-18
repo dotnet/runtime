@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RootNamespace>CoreXml.Test.XLinq</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ExtensionTests.cs" />
