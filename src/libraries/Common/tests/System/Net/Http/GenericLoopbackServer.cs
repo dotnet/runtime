@@ -88,10 +88,11 @@ namespace System.Net.Test.Common
             _socket?.Dispose();
             _websocket?.Dispose();
         }
-        public void Close()
+
+        public async Task CloseAsync()
         {
             _socket?.Close();
-            CloseWebSocket();
+            await CloseWebSocketAsync();
         }
 
         public EndPoint? LocalEndPoint => _socket?.LocalEndPoint;
@@ -108,28 +109,20 @@ namespace System.Net.Test.Common
             }
         }
 
-        public void Shutdown(SocketShutdown how)
+        public async Task ShutdownAsync(SocketShutdown how)
         {
             _socket?.Shutdown(how);
-            CloseWebSocket();
+            await CloseWebSocketAsync();
         }
 
-        private void CloseWebSocket()
+        private async Task CloseWebSocketAsync()
         {
             if (_websocket == null) return;
 
             var state = _websocket.State;
             if (state != WebSocketState.Open && state != WebSocketState.Connecting && state != WebSocketState.CloseSent) return;
 
-            try
-            {
-                var task = _websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing remoteLoop", CancellationToken.None);
-                // Block and wait for the task to complete synchronously
-                Task.WaitAll(task);
-            }
-            catch (Exception)
-            {
-            }
+            await _websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing remoteLoop", CancellationToken.None);
         }
     }
 

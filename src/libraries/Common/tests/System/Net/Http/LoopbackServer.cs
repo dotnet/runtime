@@ -155,7 +155,7 @@ namespace System.Net.Test.Common
             }
             catch (Exception)
             {
-                closableWrapper?.Close();
+                await closableWrapper?.CloseAsync();
                 throw;
             }
         }
@@ -679,7 +679,7 @@ namespace System.Net.Test.Common
                     // This seems to help avoid connection reset issues caused by buffered data
                     // that has not been sent/acked when the graceful shutdown timeout expires.
                     // This may throw if the socket was already closed, so eat any exception.
-                    _socket?.Shutdown(SocketShutdown.Send);
+                    await _socket?.ShutdownAsync(SocketShutdown.Send);
                 }
                 catch (Exception) { }
 
