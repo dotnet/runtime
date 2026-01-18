@@ -97,42 +97,6 @@ public static void AppendEscapedPropertyName(this ref ValueStringBuilder builder
         builder.Append(span.Slice(start));
     }
 }
-        /// <summary>
-        /// Appends a property name escaped for use in JSON Path single-quoted bracket notation.
-        /// Escapes single quotes as \' and backslashes as \\.
-        /// </summary>
-        public static void AppendEscapedPropertyName(this StringBuilder builder, string propertyName)
-        {
-            ReadOnlySpan<char> span = propertyName.AsSpan();
-
-            int i = span.IndexOfAny(s_charactersToEscape);
-
-            // Fast path: if no characters need escaping, append directly.
-            if (i < 0)
-            {
-                builder.Append(propertyName);
-                return;
-            }
-
-            // Append the portion before the first character needing escaping.
-            if (i > 0)
-            {
-                builder.Append(span.Slice(0, i));
-            }
-
-            // Escape characters from position i onward.
-            for (; i < span.Length; i++)
-            {
-                char c = span[i];
-                if (c is '\\' or '\'')
-                {
-                    builder.Append('\\');
-                }
-
-                builder.Append(c);
-            }
-        }
-
         public static (int, int) CountNewLines(ReadOnlySpan<byte> data)
         {
             int lastLineFeedIndex = data.LastIndexOf(JsonConstants.LineFeed);
