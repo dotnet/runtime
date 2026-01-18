@@ -394,7 +394,7 @@ namespace System.Net
                 {
                     FtpWebRequest request = (FtpWebRequest)_request!;
 #pragma warning disable SYSLIB0014 // ServicePointManager is obsolete
-                    SslStream sslStream = new SslStream(Stream, true, ServicePointManager.ServerCertificateValidationCallback);
+                    SslStream sslStream = new SslStream(Stream, false, ServicePointManager.ServerCertificateValidationCallback);
 
                     if (_isAsync)
                     {
