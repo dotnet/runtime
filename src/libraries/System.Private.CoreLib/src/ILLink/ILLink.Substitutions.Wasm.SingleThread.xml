@@ -2,62 +2,6 @@
   <assembly fullname="System.Private.CoreLib">
     <type fullname="System.Environment">
       <method signature="System.Int32 get_ProcessorCount()" body="pnse" value="1" />
-      <method signature="System.Environment/ProcessCpuUsage get_CpuUsage()" body="pnse"/>
     </type>
-    <type fullname="System.Threading.Monitor">
-      <method signature="System.Boolean Wait(System.Object,System.Int32)" body="pnse"/>
-      <method signature="System.Boolean Wait(System.Object,System.TimeSpan)" body="pnse"/>
-      <method signature="System.Boolean Wait(System.Object)" body="pnse"/>
-      <method signature="System.Boolean Wait(System.Object,System.Int32,System.Boolean)" body="pnse"/>
-      <method signature="System.Boolean Wait(System.Object,System.TimeSpan,System.Boolean)" body="pnse"/>
-    </type>
-    <type fullname="System.Threading.SemaphoreSlim">
-      <method signature="System.Void Wait()" body="pnse"/>
-      <method signature="System.Void Wait(System.Threading.CancellationToken)" body="pnse"/>
-      <method signature="System.Boolean Wait(System.TimeSpan)" body="pnse"/>
-      <method signature="System.Boolean Wait(System.TimeSpan,System.Threading.CancellationToken)" body="pnse"/>
-      <method signature="System.Boolean Wait(System.Int32)" body="pnse"/>
-      <method signature="System.Boolean Wait(System.Int32,System.Threading.CancellationToken)" body="pnse"/>
-    </type>
-    <type fullname="System.Threading.ManualResetEventSlim">
-      <method signature="System.Void Wait()" body="pnse"/>
-      <method signature="System.Void Wait(System.Threading.CancellationToken)" body="pnse"/>
-      <method signature="System.Boolean Wait(System.TimeSpan)" body="pnse"/>
-      <method signature="System.Boolean Wait(System.TimeSpan,System.Threading.CancellationToken)" body="pnse"/>
-      <method signature="System.Boolean Wait(System.Int32)" body="pnse"/>
-      <method signature="System.Boolean Wait(System.Int32,System.Threading.CancellationToken)" body="pnse"/>
-    </type>
-    <type fullname="System.Threading.Thread">
-      <method signature="System.Void Start()" body="pnse"/>
-      <method signature="System.Void Start(System.Object)" body="pnse"/>
-      <method signature="System.Void UnsafeStart()" body="pnse"/>
-      <method signature="System.Void UnsafeStart(System.Object)" body="pnse"/>
-    </type>
-    <type fullname="System.Threading.ThreadPool">
-      <method signature="System.Threading.RegisteredWaitHandle RegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.UInt32,System.Boolean)" body="pnse"/>
-      <method signature="System.Threading.RegisteredWaitHandle RegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.Int32,System.Boolean)" body="pnse"/>
-      <method signature="System.Threading.RegisteredWaitHandle RegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.Int64,System.Boolean)" body="pnse"/>
-      <method signature="System.Threading.RegisteredWaitHandle RegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.TimeSpan,System.Boolean)" body="pnse"/>
-      <method signature="System.Threading.RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.UInt32,System.Boolean)" body="pnse"/>
-      <method signature="System.Threading.RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.Int32,System.Boolean)" body="pnse"/>
-      <method signature="System.Threading.RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.Int64,System.Boolean)" body="pnse"/>
-      <method signature="System.Threading.RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.TimeSpan,System.Boolean)" body="pnse"/>
-    </type>
-    <type fullname="System.Threading.Tasks.Task">
-      <method signature="System.Void WaitAll(System.Threading.Tasks.Task[])" body="pnse" />
-      <method signature="System.Boolean WaitAll(System.Threading.Tasks.Task[],System.TimeSpan)" body="pnse"/>
-      <method signature="System.Boolean WaitAll(System.Threading.Tasks.Task[],System.Int32)" body="pnse"/>
-      <method signature="System.Void WaitAll(System.Threading.Tasks.Task[],System.Threading.CancellationToken)" body="pnse" />
-      <method signature="System.Boolean WaitAll(System.Threading.Tasks.Task[],System.Int32,System.Threading.CancellationToken)" body="pnse"/>
-      <method signature="System.Void WaitAll(System.ReadOnlySpan`1&lt;System.Threading.Tasks.Task&gt;)" body="pnse" />
-      <method signature="System.Void WaitAll(System.Collections.Generic.IEnumerable`1&lt;System.Threading.Tasks.Task&gt;,System.Threading.CancellationToken)" body="pnse" />
-
-    </type>
-    <type fullname="System.Threading.Tasks.TaskAsyncEnumerableExtensions">
-      <method signature="System.Collections.Generic.IEnumerable`1&lt;T&gt; ToBlockingEnumerable`1(System.Collections.Generic.IAsyncEnumerable`1&lt;T&gt;,System.Threading.CancellationToken)" body="pnse"/>
-    </type>
-    <!--
-      <method signature="System.Boolean WaitAllCore(System.ReadOnlySpan`1&lt;System.Threading.Tasks.Task&gt;,System.Int32,System.Threading.CancellationToken)" body="pnse" />
-    -->
   </assembly>
 </linker>

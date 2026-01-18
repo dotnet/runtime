@@ -127,6 +127,7 @@
       <!-- update debug symbols -->
       <SharedFrameworkILLinkArgs>$(SharedFrameworkILLinkArgs) -b true</SharedFrameworkILLinkArgs>
       <SharedFrameworkILLinkArgs Condition="'@(SharedFrameworkSuppressionsXml)' != ''" >$(SharedFrameworkILLinkArgs) --link-attributes "@(SharedFrameworkSuppressionsXml, '" --link-attributes "')"</SharedFrameworkILLinkArgs>
+      <SharedFrameworkILLinkArgs Condition="'$(TargetsBrowser)' == 'true'">$(SharedFrameworkILLinkArgs) --target-os browser</SharedFrameworkILLinkArgs>
     </PropertyGroup>
 
     <ItemGroup>

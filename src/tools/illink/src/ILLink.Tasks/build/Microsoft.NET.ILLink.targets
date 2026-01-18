@@ -90,6 +90,10 @@ Copyright (c) .NET Foundation. All rights reserved.
     <NoWarn>$(NoWarn);IL2121</NoWarn>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --target-os browser</_ExtraTrimmerArgs>
+  </PropertyGroup>
+
   <!--
     ============================================================
                      ILLink
