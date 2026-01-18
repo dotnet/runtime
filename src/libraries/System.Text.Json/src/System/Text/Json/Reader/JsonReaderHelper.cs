@@ -45,7 +45,6 @@ namespace System.Text.Json
 
             // Find first special character
             int i = span.IndexOfAny(s_charactersToEscape);
-            
             // Fast path: no special characters
             if (i < 0)
             {
@@ -58,7 +57,7 @@ namespace System.Text.Json
 
             // Process in chunks using spans
             int start = 0;
-            
+
             do
             {
                 // Append safe segment before special character
@@ -77,7 +76,6 @@ namespace System.Text.Json
 
                 // Move past this character
                 start = i + 1;
-                
                 // Find next special character
                 if (start < length)
                 {
@@ -121,7 +119,6 @@ namespace System.Text.Json
 
             // Find first special character
             int i = span.IndexOfAny(s_charactersToEscape);
-            
             // Fast path: no special characters
             if (i < 0)
             {
@@ -139,7 +136,7 @@ namespace System.Text.Json
 
             // Process in chunks using spans
             int start = 0;
-            
+
             do
             {
                 // Append safe segment before special character
