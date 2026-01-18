@@ -645,6 +645,10 @@
 			<method signature="System.Void .ctor()" />
 		</type>
 
+		<type fullname="System.Collections.Concurrent.ConcurrentDictionary`2">
+			<method signature="System.Void .ctor()" />
+		</type>
+
 	</assembly>
 	<assembly fullname="System.Private.CoreLib" feature="System.Reflection.Metadata.MetadataUpdater.IsSupported" featurevalue="true" featuredefault="true">
 		<type fullname="Mono.HotReload.FieldStore" preserve="fields" />

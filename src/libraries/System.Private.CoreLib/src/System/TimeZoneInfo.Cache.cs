@@ -64,6 +64,11 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+#if FEATURE_SINGLE_THREADED
+using TransitionCacheDictionary = System.Collections.Generic.Dictionary<int, int>;
+#else
+using TransitionCacheDictionary = System.Collections.Concurrent.ConcurrentDictionary<int, int>;
+#endif
 
 namespace System
 {
@@ -1394,7 +1399,7 @@ namespace System
 
         // _transitionCache maps a year to int value. the low 16 bits store the index of the first transition for that year in _yearsTransitions.
         // the high 16 bits store the number of transitions for that year. We use concurrent dictionary for thread-safe access.
-        private readonly ConcurrentDictionary<int, int> _transitionCache = new ConcurrentDictionary<int, int>();
+        private readonly TransitionCacheDictionary _transitionCache = new TransitionCacheDictionary();
 
         // _yearsTransitions stores all transitions for all cached years.
         // When accessing _yearsTransitions, store it in a local variable as it may be replaced by another thread.
