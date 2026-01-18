@@ -133,9 +133,15 @@ public static void AppendEscapedPropertyName(this ref ValueStringBuilder builder
                     JsonTokenType.False or JsonTokenType.Null => (JsonValueKind)((byte)tokenType - 4),
                     // This is the offset between the set of literals within JsonValueType and JsonTokenType
                     // Essentially: JsonTokenType.Null - JsonValueType.Null
-                     _ => JsonValueKind.Undefined
+                     _ => GetUndefinedWithDebug(tokenType)
                     };
         }
+[MethodImpl(MethodImplOptions.NoInlining)]
+private static JsonValueKind GetUndefinedWithDebug(JsonTokenType tokenType)
+{
+    Debug.Fail($"No mapping for token type {tokenType}");
+    return JsonValueKind.Undefined;
+}
 
         // Returns true if the TokenType is a primitive "value", i.e. String, Number, True, False, and Null
         // Otherwise, return false.
