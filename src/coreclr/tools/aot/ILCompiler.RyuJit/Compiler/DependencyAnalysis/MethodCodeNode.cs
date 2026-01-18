@@ -276,6 +276,7 @@ namespace ILCompiler.DependencyAnalysis
                     maxOffset = Math.Max(maxOffset, offset);
                 }
 
+                // Propagate last known document/line number forward to enable correct mapping when IL offsets decrease at higher native offsets
                 for (int i = 1; i <= maxOffset; i++)
                 {
                     if (sequencePoints[i].Document == null && sequencePoints[i - 1].Document != null)
@@ -283,8 +284,6 @@ namespace ILCompiler.DependencyAnalysis
                         sequencePoints[i] = (sequencePoints[i - 1].Document, sequencePoints[i - 1].LineNumber, false);
                     }
                 }
-
-
             }
             catch (BadImageFormatException)
             {
@@ -304,6 +303,9 @@ namespace ILCompiler.DependencyAnalysis
                 if (nativeMapping.ILOffset < sequencePoints.Length)
                 {
                     var sequencePoint = sequencePoints[nativeMapping.ILOffset];
+                    // Emit sequence point if we have it from _debugInfo or if ILOffset decreases.
+                    // This handles the case of IL offsets decreasing at higher native offsets.
+                    // See WalkILOffsetsCallback in src/coreclr/vm/debugdebugger.cpp for more details.
                     if ((sequencePoint.IsBackedSequencePoint || nativeMapping.ILOffset < previousIlOffset) &&
                         sequencePoint.Document != null)
                     {
