@@ -7,15 +7,10 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-// See callers:
-// ProcessManager.SunOS.cs
-// Environment.SunOS etc.
-
 internal static partial class Interop
 {
     internal static partial class @procfs
     {
-
         // Constants from sys/procfs.h
         private const int PRARGSZ = 80;
 
@@ -54,23 +49,22 @@ internal static partial class Interop
             {
                 if (ReadProcessInfo(pid, pProcessInfo, null, 0) < 0)
                 {
-                    Interop.ErrorInfo errorInfo = Sys.GetLastErrorInfo();
-                    throw new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
+                    return false;
                 }
             }
             return true;
         }
 
         // Variant that also gets the arg string.
-        internal static unsafe bool GetProcessInfoById(int pid, out ProcessInfo processInfo, out  string argString)
+        internal static unsafe bool GetProcessInfoById(int pid, out ProcessInfo processInfo, out string argString)
         {
             byte* argBuf = stackalloc byte[PRARGSZ];
             fixed (ProcessInfo* pProcessInfo = &processInfo)
             {
                 if (ReadProcessInfo(pid, pProcessInfo, argBuf, PRARGSZ) < 0)
                 {
-                    Interop.ErrorInfo errorInfo = Sys.GetLastErrorInfo();
-                    throw new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
+                    argString = "";
+                    return false;
                 }
             }
             argString = Marshal.PtrToStringUTF8((IntPtr)argBuf)!;

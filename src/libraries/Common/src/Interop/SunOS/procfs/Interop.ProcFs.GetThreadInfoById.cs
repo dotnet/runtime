@@ -7,15 +7,10 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-// See callers:
-// ProcessManager.SunOS.cs
-// ProcessThread.SunOS etc.
-
 internal static partial class Interop
 {
     internal static partial class @procfs
     {
-
         // Output type for GetThreadInfoById()
         // Keep in sync with pal_io.h ThreadInfo
         [StructLayout(LayoutKind.Sequential)]
@@ -51,8 +46,7 @@ internal static partial class Interop
             {
                 if (ReadThreadInfo(pid, tid, pThreadInfo) < 0)
                 {
-                    Interop.ErrorInfo errorInfo = Sys.GetLastErrorInfo();
-                    throw new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
+                    return false;
                 }
             }
             return true;
