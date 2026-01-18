@@ -8853,17 +8853,11 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         assert((derivedMethod == NO_METHOD_HANDLE) || (instantiatingStub != NO_METHOD_HANDLE));
     }
 
-    if (call->IsGenericVirtual(this) && dvInfo.needsMethodContext)
+    if (call->IsGenericVirtual(this) && dvInfo.needsRuntimeLookup)
     {
-        CallArg* lookupArg = call->gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
-        assert(lookupArg != nullptr);
-
-        if (lookupArg->GetNode()->OperIs(GT_RUNTIMELOOKUP))
-        {
-            // If we need a runtime lookup, we can't devirtualize yet because we don't have the right generic context.
-            JITDUMP("Generic virtual method devirt: runtime lookup present, sorry.\n");
-            return;
-        }
+        // If we need a runtime lookup, we can't devirtualize yet because we don't have the right generic context.
+        JITDUMP("Generic virtual method devirt: runtime lookup present, sorry.\n");
+        return;
     }
 
     // If we failed to get a method handle, we can't directly devirtualize.

@@ -1161,6 +1161,7 @@ namespace Internal.JitInterface
         // - isInstantiatingStub is set to TRUE if the devirtualized method is a method instantiation stub
         // - needsMethodContext is set TRUE if the devirtualized method may require a method context
         //     (in which case the method handle and context will be a generic method)
+        // - needsRuntimeLookup is set TRUE if the devirtualized generic method requires a runtime lookup
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
         public CORINFO_CONTEXT_STRUCT* exactContext;
@@ -1171,6 +1172,8 @@ namespace Internal.JitInterface
         public bool isInstantiatingStub { get { return _isInstantiatingStub != 0; } set { _isInstantiatingStub = value ? (byte)1 : (byte)0; } }
         public byte _needsMethodContext;
         public bool needsMethodContext { get { return _needsMethodContext != 0; } set { _needsMethodContext = value ? (byte)1 : (byte)0; } }
+        public byte _needsRuntimeLookup;
+        public bool needsRuntimeLookup { get { return _needsRuntimeLookup != 0; } set { _needsRuntimeLookup = value ? (byte)1 : (byte)0; } }
     }
 
     //----------------------------------------------------------------------------
