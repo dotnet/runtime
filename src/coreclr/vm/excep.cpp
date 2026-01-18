@@ -11301,13 +11301,12 @@ void SoftwareExceptionFrame::UpdateContextForOSRTransition(TransitionBlock* pTra
     TADDR callerLR = *((TADDR*)(managedFrameFP + 8));    // LR to Test() at [F's FP + 8]
 
     // CRITICAL: Use Test()'s FP (callerFP), not F()'s FP (managedFrameFP)!
-    // This matches what VirtualUnwind produces - the CALLER's frame pointer
     pContext->Fp = callerFP;
     pContext->Lr = callerLR;
 
     // SP = F()'s SP when it called JIT_Patchpoint
     *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
-    // FP output should also be caller's FP to match VirtualUnwind behavior
+    // FP output should also be caller's FP
     *pCurrentFP = callerFP;
 
 #elif defined(TARGET_LOONGARCH64)

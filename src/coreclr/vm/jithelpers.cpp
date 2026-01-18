@@ -1628,8 +1628,7 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
         UINT_PTR currentSP;
         UINT_PTR currentFP;
 
-        // Build CONTEXT directly from TransitionBlock - this completely bypasses
-        // RtlCaptureContext, VirtualUnwindToFirstManagedCallFrame, and RtlVirtualUnwind.
+        // Build CONTEXT directly from TransitionBlock
         CONTEXT frameContext;
         memset(&frameContext, 0, sizeof(frameContext));
         pFrameContext = &frameContext;
