@@ -8,6 +8,7 @@
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <FeatureWasmManagedThreads Condition="'$(WasmEnableThreads)' == 'true'">true</FeatureWasmManagedThreads>
     <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
+    <_ExtraTrimmerArgs Condition="'$(TargetsBrowser)' == 'true'">$(_ExtraTrimmerArgs) --target-os browser</_ExtraTrimmerArgs>
   </PropertyGroup>
 
   <ItemGroup>
