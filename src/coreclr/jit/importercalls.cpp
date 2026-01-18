@@ -8856,6 +8856,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     if (call->IsGenericVirtual(this) && dvInfo.needsRuntimeLookup)
     {
         // If we need a runtime lookup, we can't devirtualize yet because we don't have the right generic context.
+        // TODO-CQ: resolve this later when we have the right context.
         JITDUMP("Generic virtual method devirt: runtime lookup present, sorry.\n");
         return;
     }
