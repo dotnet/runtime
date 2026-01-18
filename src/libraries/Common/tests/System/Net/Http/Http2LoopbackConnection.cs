@@ -397,9 +397,9 @@ namespace System.Net.Test.Common
             _ignoreWindowUpdates = false;
         }
 
-        public Task ShutdownSend()
+        public async Task ShutdownSendAsync()
         {
-            return _connectionSocket?.ShutdownAsync(SocketShutdown.Send);
+            await _connectionSocket?.ShutdownAsync(SocketShutdown.Send);
         }
 
         // This will cause a server-initiated shutdown of the connection.
@@ -408,7 +408,7 @@ namespace System.Net.Test.Common
         public async Task WaitForConnectionShutdownAsync(bool ignoreUnexpectedFrames = false)
         {
             // Shutdown our send side, so the client knows there won't be any more frames coming.
-            await ShutdownSend();
+            await ShutdownSendAsync();
 
             await WaitForClientDisconnectAsync(ignoreUnexpectedFrames: ignoreUnexpectedFrames);
         }

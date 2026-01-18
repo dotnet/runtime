@@ -155,7 +155,7 @@ namespace System.Net.Test.Common
             }
             catch (Exception)
             {
-                await closableWrapper?.Close();
+                await closableWrapper?.CloseAsync();
                 throw;
             }
         }

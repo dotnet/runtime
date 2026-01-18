@@ -84,7 +84,7 @@ namespace System.Net.WebSockets.Client.Tests
 
                     // Close the underlying connection prematurely (without sending a WebSocket Close frame).
                     await connection.Socket.ShutdownAsync(SocketShutdown.Both);
-                    await connection.Socket.Close();
+                    await connection.Socket.CloseAsync();
                 });
 
                 // Initiate a connection attempt.

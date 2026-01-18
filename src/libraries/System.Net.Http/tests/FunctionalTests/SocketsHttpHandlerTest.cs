@@ -592,7 +592,7 @@ namespace System.Net.Http.Functional.Tests
                     string response = LoopbackServer.GetContentModeResponse(mode, content);
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        await server.ListenSocket.Close(); // Shut down the listen socket so attempts at additional connections would fail on the client
+                        await server.ListenSocket.CloseAsync(); // Shut down the listen socket so attempts at additional connections would fail on the client
                         await connection.ReadRequestHeaderAndSendCustomResponseAsync(response);
                         await connection.ReadRequestHeaderAndSendCustomResponseAsync(response);
                     });
@@ -2165,7 +2165,7 @@ namespace System.Net.Http.Functional.Tests
                     await request2;
 
                     // Close underlying socket from first connection.
-                    await socket.Close();
+                    await socket.CloseAsync();
                 }
             });
         }
