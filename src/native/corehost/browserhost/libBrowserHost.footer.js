@@ -19,10 +19,14 @@
         const exports = {};
         libBrowserHost(exports);
 
+        // libBrowserHostFn is too complex for acorn-optimizer.mjs to find the dependencies
+        let explicitDeps = [
+            "wasm_load_icu_data", "BrowserHost_CreateHostContract", "BrowserHost_InitializeCoreCLR", "BrowserHost_ExecuteAssembly"
+        ];
         let commonDeps = [
             "$DOTNET", "$DOTNET_INTEROP", "$ENV", "$FS", "$NODEFS",
             "$libBrowserHostFn",
-            "wasm_load_icu_data", "BrowserHost_CreateHostContract", "BrowserHost_InitializeCoreCLR", "BrowserHost_ExecuteAssembly"
+            ...explicitDeps
         ];
         const lib = {
             $BROWSER_HOST: {
@@ -58,11 +62,6 @@
                         }
                     }
                 },
-                // libBrowserHostFn is too complex for acorn-optimizer.mjs to find the dependencies
-                AJSDCE_Deps: function () {
-                    _BrowserHost_InitializeCoreCLR();
-                    _BrowserHost_ExecuteAssembly();
-                },
             },
             $libBrowserHostFn: libBrowserHost,
             $BROWSER_HOST__postset: "BROWSER_HOST.selfInitialize()",
@@ -70,13 +69,18 @@
         };
 
         let assignExportsBuilder = "";
+        let explicitImportsBuilder = "";
         for (const exportName of Reflect.ownKeys(exports)) {
             const name = String(exportName);
             if (name === "dotnetInitializeModule") continue;
             lib[name] = () => "dummy";
             assignExportsBuilder += `_${String(name)} = exports.${String(name)};\n`;
         }
+        for (const importName of explicitDeps) {
+            explicitImportsBuilder += `_${importName}();\n`;
+        }
         lib.$BROWSER_HOST.assignExports = new Function("exports", assignExportsBuilder);
+        lib.$BROWSER_HOST.explicitImports = new Function(explicitImportsBuilder);
 
         autoAddDeps(lib, "$BROWSER_HOST");
         addToLibrary(lib);

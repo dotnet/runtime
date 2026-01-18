@@ -1,7 +1,7 @@
 <linker>
   <assembly fullname="System.Private.CoreLib">
     <type fullname="System.Environment">
-      <method signature="System.Int32 get_ProcessorCount()" body="pnse" value="1" />
+      <method signature="System.Int32 get_ProcessorCount()" body="stub" value="1" />
     </type>
   </assembly>
 </linker>

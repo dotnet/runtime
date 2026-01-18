@@ -3062,6 +3062,9 @@ namespace System.Threading.Tasks
             bool returnValue = SpinWait(millisecondsTimeout);
             if (!returnValue)
             {
+#if FEATURE_SINGLE_THREADED
+                if (OperatingSystem.IsBrowser()) throw new PlatformNotSupportedException();
+#endif
                 // We're about to block waiting for the task to complete, which is expensive, and if
                 // the task being waited on depends on some other work to run, this thread could end up
                 // waiting for some other thread to do work. If the two threads are part of the same scheduler,
@@ -5357,6 +5360,9 @@ namespace System.Threading.Tasks
 
             if (signaledTaskIndex == -1 && tasks.Length != 0)
             {
+#if FEATURE_SINGLE_THREADED
+                if (OperatingSystem.IsBrowser()) throw new PlatformNotSupportedException();
+#endif
                 Task<Task> firstCompleted = TaskFactory.CommonCWAnyLogic(tasks, isSyncBlocking: true);
                 bool waitCompleted = firstCompleted.Wait(millisecondsTimeout, cancellationToken);
                 if (waitCompleted)
