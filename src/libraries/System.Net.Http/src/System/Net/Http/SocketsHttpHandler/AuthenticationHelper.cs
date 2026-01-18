@@ -359,6 +359,18 @@ namespace System.Net.Http
 
         public static ValueTask<HttpResponseMessage> SendWithProxyAuthAsync(HttpRequestMessage request, Uri proxyUri, bool async, ICredentials proxyCredentials, bool doRequestAuth, HttpConnectionPool pool, CancellationToken cancellationToken)
         {
+            // For proxy authentication, try to send Basic auth proactively when credentials are available.
+            // Many proxies require the Proxy-Authorization header on the first request, especially for
+            // HTTPS CONNECT tunnels where the proxy may close the connection after sending 407.
+            // This is particularly important for environment variable proxies (HTTP_PROXY/HTTPS_PROXY)
+            // that include credentials in the URL (e.g., http://user:password@proxy:port).
+            NetworkCredential? credential = proxyCredentials.GetCredential(proxyUri, BasicScheme);
+            if (credential != null && credential != CredentialCache.DefaultNetworkCredentials)
+            {
+                // Proactively set Basic auth header before sending the request
+                SetBasicAuthToken(request, credential, isProxyAuth: true);
+            }
+
             return SendWithAuthAsync(request, proxyUri, async, proxyCredentials, preAuthenticate: false, isProxyAuth: true, doRequestAuth, pool, cancellationToken);
         }
 
