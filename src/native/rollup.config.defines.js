@@ -22,14 +22,14 @@ export const staticLibDestination = process.env.StaticLibDestination || "../../a
 
 console.log(`Rollup configuration: Configuration=${configuration}, ProductVersion=${productVersion}, ContinuousIntegrationBuild=${isContinuousIntegrationBuild}`);
 
-export const banner = "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n//! This is generated file, see src/native/libs/Browser/rollup.config.defines.js\n\n";
+export const banner = "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n//! This is generated file, see src/native/rollup.config.js\n\n";
 export const banner_dts = banner + "//! This is not considered public API with backward compatibility guarantees. \n";
 export const keep_classnames = /(ManagedObject|ManagedError|Span|ArraySegment)/;
 export const keep_fnames = /(dotnetUpdateInternals|dotnetUpdateInternalsSubscriber)/;
 export const reserved = [
-    "Module", "dotnetApi",
-    "dotnetInternals", "dotnetLogger", "dotnetAssert", "dotnetJSEngine",
-    "dotnetUpdateInternals", "dotnetUpdateInternalsSubscriber", "dotnetInitializeModule",
+    "_ems_", "Module",
+    "dotnetInternals", "dotnetUpdateInternals", "dotnetUpdateInternalsSubscriber", "dotnetInitializeModule",
+    "dotnetLogger", "dotnetAssert", "dotnetApi",
     "dotnetLoaderExports", "dotnetRuntimeExports", "dotnetBrowserHostExports", "dotnetInteropJSExports",
     "dotnetNativeBrowserExports", "dotnetBrowserUtilsExports", "dotnetDiagnosticsExports",
 ];
@@ -52,3 +52,15 @@ export const envConstants = {
     gitHash,
     isContinuousIntegrationBuild,
 };
+
+/* eslint-disable quotes */
+export const inlinefastCheck = [
+    {
+        pattern: 'dotnetAssert\\.fastCheck\\(([^,]*), \\(\\) => *`([^`]*)`\\);',
+        replacement: (match) => `if (!(${match[1]})) throw new Error(\`Assert failed: ${match[2]}\`); // inlined fastCheck`
+    },
+    {
+        pattern: 'dotnetAssert\\.fastCheck\\(([^,]*), \\(\\) => *"([^"]*)"\\);',
+        replacement: (match) => `if (!(${match[1]})) throw new Error(\`Assert failed: ${match[2]}\`); // inlined fastCheck`
+    },
+];

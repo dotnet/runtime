@@ -24,7 +24,6 @@ set(CORDBDI_SOURCES
   rsclass.cpp
   rsfunction.cpp
   rsmain.cpp
-  rsmda.cpp
   rsregsetcommon.cpp
   rsstackwalk.cpp
   rsthread.cpp

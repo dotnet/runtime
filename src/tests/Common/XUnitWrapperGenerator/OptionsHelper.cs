@@ -8,7 +8,7 @@ public static class OptionsHelper
 {
     private const string InMergedTestDirectoryOption = "build_property.InMergedTestDirectory";
     private const string IsMergedTestRunnerAssemblyOption = "build_property.IsMergedTestRunnerAssembly";
-    private const string PriorityOption = "build_property.Priority";
+    private const string CLRTestPriorityToBuildOption = "build_property.CLRTestPriorityToBuild";
     private const string TestBuildModeOption = "build_property.TestBuildMode";
     private const string RuntimeFlavorOption = "build_property.RuntimeFlavor";
     private const string IsOutOfProcessTestAssemblyOption = "build_metadata.AdditionalFiles.IsOutOfProcessTestAssembly";
@@ -35,7 +35,7 @@ public static class OptionsHelper
 
     internal static bool IsMergedTestRunnerAssembly(this AnalyzerConfigOptions options) => options.GetBoolOption(IsMergedTestRunnerAssemblyOption);
 
-    internal static int? Priority(this AnalyzerConfigOptions options) => options.GetIntOption(PriorityOption);
+    internal static int? CLRTestPriorityToBuild(this AnalyzerConfigOptions options) => options.GetIntOption(CLRTestPriorityToBuildOption);
 
     internal static string RuntimeFlavor(this AnalyzerConfigOptions options) => options.TryGetValue(RuntimeFlavorOption, out string? flavor) ? flavor : "CoreCLR";
 
