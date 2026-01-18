@@ -125,7 +125,7 @@ namespace System.Text.Json
                     JsonTokenType.None => JsonValueKind.Undefined,
                     JsonTokenType.StartArray => JsonValueKind.Array,
                     JsonTokenType.StartObject => JsonValueKind.Object,
-                    JsonTokenType.String or JsonTokenType.Number or JsonTokenType.True or 
+                    JsonTokenType.String or JsonTokenType.Number or JsonTokenType.True or
                     JsonTokenType.False or JsonTokenType.Null => (JsonValueKind)((byte)tokenType - 4),
                     // This is the offset between the set of literals within JsonValueType and JsonTokenType
                     // Essentially: JsonTokenType.Null - JsonValueType.Null
