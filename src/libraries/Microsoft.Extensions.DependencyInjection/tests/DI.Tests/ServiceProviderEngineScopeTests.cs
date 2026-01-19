@@ -2,12 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
-using Xunit.Abstractions;
-using Xunit.Sdk;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
@@ -51,7 +48,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             services.AddKeyedTransient("throws", (_, _) => new TestDisposable(true));
             services.AddKeyedTransient("doesnotthrow", (_, _) => new TestDisposable(false));
 
-
             var scope = services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>().CreateScope().ServiceProvider;
 
             var disposables = new TestDisposable[]
@@ -66,12 +62,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         }
 
         [Fact]
-        public void Dispose_TwoServicesThrows_DisposesAllAndThrowsAgggregatedException()
+        public void Dispose_TwoServicesThrows_DisposesAllAndThrowsAggregateException()
         {
             var services = new ServiceCollection();
             services.AddKeyedTransient("throws", (_, _) => new TestDisposable(true));
             services.AddKeyedTransient("doesnotthrow", (_, _) => new TestDisposable(false));
-           
 
             var scope = services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>().CreateScope().ServiceProvider;
 
@@ -96,7 +91,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             services.AddKeyedTransient("throws", (_, _) => new TestDisposable(true));
             services.AddKeyedTransient("doesnotthrow", (_, _) => new TestDisposable(false));
 
-
             var scope = services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>().CreateScope().ServiceProvider;
 
             var disposables = new TestDisposable[]
@@ -105,7 +99,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 scope.GetRequiredKeyedService<TestDisposable>("doesnotthrow")
             };
 
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(async() => await ((IAsyncDisposable)scope).DisposeAsync());
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await ((IAsyncDisposable)scope).DisposeAsync());
             Assert.Equal(TestDisposable.ErrorMessage, exception.Message);
             Assert.All(disposables, disposable => Assert.True(disposable.IsDisposed));
         }
@@ -116,7 +110,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             var services = new ServiceCollection();
             services.AddKeyedTransient("throws", (_, _) => new TestDisposable(true));
             services.AddKeyedTransient("doesnotthrow", (_, _) => new TestDisposable(false));
-
 
             var scope = services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>().CreateScope().ServiceProvider;
 
@@ -139,8 +132,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             public const string ErrorMessage = "Dispose failed.";
 
             private readonly bool _throwsOnDispose;
-            public int DisposedCounter { get; private set; }
-            public bool IsDisposed => DisposedCounter > 0;
+
+            public bool IsDisposed { get; private set; }
 
             public TestDisposable(bool throwsOnDispose)
             {
@@ -149,13 +142,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             public void Dispose()
             {
+                IsDisposed = true;
+
                 if (_throwsOnDispose)
                 {
-                    DisposedCounter++;
                     throw new InvalidOperationException(ErrorMessage);
                 }
-
-                DisposedCounter++;
             }
 
             public ValueTask DisposeAsync()
