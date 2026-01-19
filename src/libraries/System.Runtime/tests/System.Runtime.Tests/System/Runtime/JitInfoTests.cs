@@ -51,7 +51,7 @@ namespace System.Runtime.Tests
             long afterCompiledILBytes = System.Runtime.JitInfo.GetCompiledILBytes();
             long afterCompiledMethodCount = System.Runtime.JitInfo.GetCompiledMethodCount();
 
-            if (PlatformDetection.IsMonoInterpreter || PlatformDetection.IsCoreCLRInterpreter || PlatformDetection.IsMonoAOT || PlatformDetection.IsReadyToRunCompiled)
+            if (PlatformDetection.IsMonoInterpreter || PlatformDetection.IsCoreClrInterpreter || PlatformDetection.IsMonoAOT || PlatformDetection.IsReadyToRunCompiled)
             {
                 // JitInfo metrics may be 0 in AOT scenarios
                 Assert.True(beforeCompilationTime >= TimeSpan.Zero, $"Compilation time not greater or equal to 0! ({beforeCompilationTime})");
@@ -65,7 +65,7 @@ namespace System.Runtime.Tests
                 Assert.True(beforeCompiledMethodCount > 0, $"Compiled method count not greater than 0! ({beforeCompiledMethodCount})");
             }
 
-            if (PlatformDetection.IsMonoInterpreter || PlatformDetection.IsCoreCLRInterpreter)
+            if (PlatformDetection.IsMonoInterpreter || PlatformDetection.IsCoreClrInterpreter)
             {
                 // Before and after will most likely be the same with the interpreter
                 Assert.True(afterCompilationTime >= beforeCompilationTime, $"CompilationTime: after not greater than before! (after: {afterCompilationTime}, before: {beforeCompilationTime})");
