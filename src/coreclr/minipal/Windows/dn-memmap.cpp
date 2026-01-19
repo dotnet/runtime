@@ -15,13 +15,11 @@ MemoryMappedFile* MemoryMappedFile::Open(const WCHAR* path)
         goto Fail;
 
     LARGE_INTEGER li;
-    if (!GetFileSizeEx(hFile, &li))
+    // All the use cases are not accepting files >4GB
+    if (!GetFileSizeEx(hFile, &li) || li.HighPart != 0)
         goto Fail;
 
-    if (li.QuadPart > SIZE_MAX)
-        goto Fail;
-
-    size_t size = (size_t)li.QuadPart;
+    uint32_t size = li.LowPart;
 
     hFileMapping = CreateFileMappingW(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
     if (hFileMapping == NULL)

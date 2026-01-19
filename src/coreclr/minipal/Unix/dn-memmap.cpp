@@ -32,11 +32,10 @@ MemoryMappedFile* MemoryMappedFile::Open(const WCHAR* path)
     struct stat st;
     if (fstat(fd, &st) != 0)
         goto Fail;
-
-#ifdef TARGET_32BIT
-    if (st.st_size > INT32_MAX)
+    
+    // All the use cases are not accepting files >4GB
+    if (st.st_size > UINT32_MAX)
         goto Fail;
-#endif
 
     address = mmap(nullptr, (size_t)st.st_size, PROT_READ, MAP_SHARED, fd, 0);
     if (address == MAP_FAILED)

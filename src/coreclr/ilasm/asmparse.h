@@ -167,10 +167,8 @@ private:
             return NULL;
 
         m_File = CreateMappedFile(moduleName);
-        if (m_File != nullptr && m_File->Size() > UINT_MAX)
+        if (m_File == nullptr)
         {
-            if (m_File)
-                delete m_File;
             m_File = nullptr;
             m_FileSize = 0;
             return nullptr;

@@ -9,7 +9,7 @@
 
 class MemoryMappedFile final
 {
-    size_t m_size;
+    uint32_t m_size;
     void* m_address;
     
     MemoryMappedFile() = default;
@@ -22,7 +22,7 @@ public:
     MemoryMappedFile& operator=(const MemoryMappedFile&) = delete;
 
     void* Address() { return m_address; }
-    size_t Size() { return m_size; }
+    uint32_t Size() { return m_size; }
 };
 
 #endif // DN_MEMMAP_H
