@@ -152,14 +152,6 @@ public class ComputeWasmBuildAssets : Task
                     Log.LogMessage(MessageImportance.Low, "Found satellite assembly '{0}' asset for inferred candidate '{1}' with culture '{2}'", candidate.ItemSpec, relatedAssetPath, culture);
                 }
 
-                // Check for unique file name before adding candidate
-                var candidateFileName = Path.GetFileName(candidate.ItemSpec);
-                if (!uniqueFileNames.Add(candidateFileName))
-                {
-                    Log.LogMessage(MessageImportance.Low, "Skipping duplicate file name '{0}' for candidate '{1}'", candidateFileName, candidate.ItemSpec);
-                    continue;
-                }
-
                 assetCandidates.Add(candidate);
             }
 
