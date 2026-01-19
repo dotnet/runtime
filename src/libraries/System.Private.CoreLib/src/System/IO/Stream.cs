@@ -222,9 +222,6 @@ namespace System.IO
             }
             else
             {
-#if FEATURE_SINGLE_THREADED
-                if (OperatingSystem.IsBrowser()) throw new PlatformNotSupportedException();
-#endif
 #pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44543
                 semaphore.Wait();
 #pragma warning restore CA1416
@@ -499,9 +496,6 @@ namespace System.IO
             }
             else
             {
-#if FEATURE_SINGLE_THREADED
-                if (OperatingSystem.IsBrowser()) throw new PlatformNotSupportedException();
-#endif
 #pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44543
                 semaphore.Wait(); // synchronously wait here
 #pragma warning restore CA1416
