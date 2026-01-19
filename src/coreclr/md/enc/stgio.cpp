@@ -44,7 +44,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
-#include "dn-stdio.h"
+#include <dn-stdio.h>
 #endif // TARGET_UNIX
 
 //********** Types. ***********************************************************
