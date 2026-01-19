@@ -167,6 +167,58 @@ namespace System.SpanTests
             }
         }
 
+        [Fact]
+        public void InvalidRange_HighLessThanLow_ReturnsMinus1()
+        {
+            // When highInclusive < lowInclusive, the range is invalid and no values should match
+            for (int length = 1; length <= 64; length++)
+            {
+                T[] array = Enumerable.Range(0, length).Select(Create).ToArray();
+
+                // Test with a clearly invalid range where high < low
+                T lowInclusive = Create(100);
+                T highInclusive = Create(50);
+
+                // IndexOfAnyInRange should return -1 (no match)
+                Assert.Equal(-1, IndexOfAnyInRange(array, lowInclusive, highInclusive));
+
+                // LastIndexOfAnyInRange should return -1 (no match)
+                Assert.Equal(-1, LastIndexOfAnyInRange(array, lowInclusive, highInclusive));
+
+                // IndexOfAnyExceptInRange should find the first element (all values are outside the invalid range)
+                Assert.Equal(0, IndexOfAnyExceptInRange(array, lowInclusive, highInclusive));
+
+                // LastIndexOfAnyExceptInRange should find the last element (all values are outside the invalid range)
+                Assert.Equal(length - 1, LastIndexOfAnyExceptInRange(array, lowInclusive, highInclusive));
+            }
+        }
+
+        [Fact]
+        public void InvalidRange_SpecificValue_DoesNotMatch()
+        {
+            // Test the specific case from the issue: data=[50], low=200, high=100
+            // This should not match regardless of whether intrinsics are enabled
+            for (int length = 1; length <= 64; length++)
+            {
+                T[] array = new T[length];
+                for (int i = 0; i < length; i++)
+                {
+                    array[i] = Create(50);
+                }
+
+                T lowInclusive = Create(200);
+                T highInclusive = Create(100);
+
+                // Value 50 is not in the (invalid) range [200, 100]
+                Assert.Equal(-1, IndexOfAnyInRange(array, lowInclusive, highInclusive));
+                Assert.Equal(-1, LastIndexOfAnyInRange(array, lowInclusive, highInclusive));
+
+                // Value 50 is outside the (invalid) range [200, 100]
+                Assert.Equal(0, IndexOfAnyExceptInRange(array, lowInclusive, highInclusive));
+                Assert.Equal(length - 1, LastIndexOfAnyExceptInRange(array, lowInclusive, highInclusive));
+            }
+        }
+
         // Wrappers for {Last}IndexOfAny{Except}InRange that invoke both the Span and ReadOnlySpan overloads,
         // ensuring they both produce the same result, and returning that result.
         // This avoids needing to code the same call sites twice in all the above tests.

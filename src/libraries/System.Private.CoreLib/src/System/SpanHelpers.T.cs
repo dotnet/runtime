@@ -3506,6 +3506,16 @@ namespace System
         {
             // T must be a type whose comparison operator semantics match that of Vector128/256.
 
+            // When highInclusive < lowInclusive, the range is invalid.
+            // For IndexOfAnyInRange, return -1 (no match).
+            // For IndexOfAnyExceptInRange, every value is outside the range, so return 0 if length > 0.
+            if (highInclusive < lowInclusive)
+            {
+                return typeof(TNegator) == typeof(DontNegate<T>)
+                    ? -1
+                    : (length > 0 ? 0 : -1);
+            }
+
             if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
             {
                 T rangeInclusive = highInclusive - lowInclusive;
@@ -3652,6 +3662,16 @@ namespace System
             where TNegator : struct, INegator<T>
         {
             // T must be a type whose comparison operator semantics match that of Vector128/256.
+
+            // When highInclusive < lowInclusive, the range is invalid.
+            // For LastIndexOfAnyInRange, return -1 (no match).
+            // For LastIndexOfAnyExceptInRange, every value is outside the range, so return the last index if length > 0.
+            if (highInclusive < lowInclusive)
+            {
+                return typeof(TNegator) == typeof(DontNegate<T>)
+                    ? -1
+                    : (length > 0 ? length - 1 : -1);
+            }
 
             if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
             {
