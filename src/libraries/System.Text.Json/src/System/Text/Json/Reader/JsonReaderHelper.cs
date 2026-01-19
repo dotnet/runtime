@@ -131,7 +131,6 @@ namespace System.Text.Json
             {
                 builder.EnsureCapacity(estimatedCapacity);
             }
-
             // Process in chunks using spans
             int start = 0;
             do
@@ -141,7 +140,6 @@ namespace System.Text.Json
                 {
                     builder.Append(span.Slice(start, i - start));
                 }
-
                 // Handle the special character
                 char c = span[i];
                 if (c == '\'' || c == '\\')  // Direct comparison is fastest
@@ -152,7 +150,6 @@ namespace System.Text.Json
 
                 // Move past this character
                 start = i + 1;
-                
                 // Find next special character
                 if (start < length)
                 {
@@ -172,7 +169,7 @@ namespace System.Text.Json
                 builder.Append(span.Slice(start));
             }
         }
-       [MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (int, int) CountNewLines(ReadOnlySpan<byte> data)
         {
             int lastLineFeedIndex = data.LastIndexOf(JsonConstants.LineFeed);
@@ -180,15 +177,12 @@ namespace System.Text.Json
             {
                 return (0, -1);
             }
-            
             // Use SIMD-optimized Count method (.NET 10.0.2)
             int newLines = 1 + data.Slice(0, lastLineFeedIndex).Count(JsonConstants.LineFeed);
-            
             return (newLines, lastLineFeedIndex);
         }
-
- [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static JsonValueKind ToValueKind(this JsonTokenType tokenType)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		internal static JsonValueKind ToValueKind(this JsonTokenType tokenType)
         {
             return tokenType switch
             {
@@ -202,12 +196,12 @@ namespace System.Text.Json
                      _ => GetUndefinedWithDebug(tokenType)
                     };
         }
-[MethodImpl(MethodImplOptions.NoInlining)]
-private static JsonValueKind GetUndefinedWithDebug(JsonTokenType tokenType)
-{
-    Debug.Fail($"No mapping for token type {tokenType}");
-    return JsonValueKind.Undefined;
-}
+		[MethodImpl(MethodImplOptions.NoInlining)]
+		private static JsonValueKind GetUndefinedWithDebug(JsonTokenType tokenType)
+		{
+			Debug.Fail($"No mapping for token type {tokenType}");
+			return JsonValueKind.Undefined;
+		}
 
         // Returns true if the TokenType is a primitive "value", i.e. String, Number, True, False, and Null
         // Otherwise, return false.
