@@ -12,9 +12,9 @@
 #include "gchelpers.inl"
 #include "arraynative.inl"
 
-#ifdef DEBUGGING_SUPPORTED
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
 #include "../debug/ee/executioncontrol.h"
-#endif // DEBUGGING_SUPPORTED
+#endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
 
 // for numeric_limits
 #include <limits>
@@ -490,7 +490,7 @@ static void InterpHalt()
 }
 #endif // DEBUG
 
-#ifdef DEBUGGING_SUPPORTED
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
 static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *pFrame, const int8_t *stack, InterpreterFrame *pInterpreterFrame, DWORD exceptionCode, bool isStepOut)
 {
     Thread *pThread = GetThread();
@@ -540,7 +540,7 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
         }
     }
 }
-#endif // DEBUGGING_SUPPORTED
+#endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
 
 #define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
@@ -1011,10 +1011,10 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     bool frameNeedsTailcallUpdate = false;
     MethodDesc* targetMethod;
     uint32_t opcode;
-#ifdef DEBUGGING_SUPPORTED
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
     InterpreterExecutionControl *execControl = InterpreterExecutionControl::GetInstance();
     BreakpointInfo bpInfo;
-#endif // DEBUGGING_SUPPORTED
+#endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
 
     SAVE_THE_LOWEST_SP;
 
@@ -1032,9 +1032,9 @@ MAIN_LOOP:
             // keep it for such purposes until we don't need it anymore.
             pFrame->ip = (int32_t*)ip;
             opcode = ip[0];
-#ifdef DEBUGGING_SUPPORTED
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
 SWITCH_OPCODE:
-#endif // DEBUGGING_SUPPORTED
+#endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
             switch (opcode)
             {
 #ifdef DEBUG
@@ -1043,7 +1043,7 @@ SWITCH_OPCODE:
                     ip++;
                     break;
 #endif // DEBUG
-#ifdef DEBUGGING_SUPPORTED
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
                 case INTOP_BREAKPOINT:
                 {
                     bpInfo = execControl->GetBreakpointInfo(ip);
@@ -1061,7 +1061,7 @@ SWITCH_OPCODE:
                     // InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame, STATUS_SINGLE_STEP);
                     break;
                 }
-#endif // DEBUGGING_SUPPORTED
+#endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
                 case INTOP_INITLOCALS:
                     memset(LOCAL_VAR_ADDR(ip[1], void), 0, ip[2]);
                     ip += 3;
