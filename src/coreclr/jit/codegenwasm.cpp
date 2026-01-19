@@ -551,8 +551,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
                 GetEmitter()->emitIns(INS_i32_wrap_i64);
             }
             GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, andAmount);
-            GetEmitter()->emitIns(INS_i32_and);
-            ins = (toType == TYP_LONG) ? INS_i64_extend_u_i32 : INS_none;
+            ins = INS_i32_and;
             break;
         }
         case GenIntCastDesc::SIGN_EXTEND_SMALL_INT:
