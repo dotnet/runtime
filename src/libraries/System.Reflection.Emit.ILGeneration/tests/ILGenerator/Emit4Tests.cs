@@ -108,7 +108,7 @@ namespace System.Reflection.Emit.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/118965", typeof(CoreClrConfigurationDetection), nameof(CoreClrConfigurationDetection.IsCoreClrInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/118965", typeof(PlatformDetection), nameof(PlatformDetection.IsCoreClrInterpreter))]
         public void TestEmitCalliNonBlittable()
         {
             string input = "Test string!", result = "!gnirts tseT";
@@ -143,7 +143,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/118965", typeof(CoreClrConfigurationDetection), nameof(CoreClrConfigurationDetection.IsCoreClrInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/118965", typeof(PlatformDetection), nameof(PlatformDetection.IsCoreClrInterpreter))]
         public void TestDynamicMethodEmitCalliNonBlittable()
         {
             string input = "Test string!", result = "!gnirts tseT";

@@ -1918,7 +1918,7 @@ public class MyType
         private static string StringReverse(string a) => string.Join("", a.Reverse());
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/118965", typeof(CoreClrConfigurationDetection), nameof(CoreClrConfigurationDetection.IsCoreClrInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/118965", typeof(PlatformDetection), nameof(PlatformDetection.IsCoreClrInterpreter))]
         public void EmitCalliNonBlittable()
         {
             string input = "Test string!", result = "!gnirts tseT";
