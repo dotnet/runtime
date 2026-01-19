@@ -878,6 +878,50 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     EPILOG_BRANCH_REG t2
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Throw_Impl
+// implementation written in C.
+//
+// Input state:
+//   a0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Throw, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS a1
+    // a0 already contains exception object
+    // a1 contains pointer to TransitionBlock
+    call  C_FUNC(IL_Throw_Impl)
+    // Should never return
+    ebreak
+NESTED_END IL_Throw, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_ThrowExact_Impl
+// implementation written in C.
+//
+// Input state:
+//   a0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_ThrowExact, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS a1
+    // a0 already contains exception object
+    // a1 contains pointer to TransitionBlock
+    call  C_FUNC(IL_ThrowExact_Impl)
+    // Should never return
+    ebreak
+NESTED_END IL_ThrowExact, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Rethrow_Impl
+// implementation written in C.
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS a0
+    // a0 contains pointer to TransitionBlock
+    call  C_FUNC(IL_Rethrow_Impl)
+    // Should never return
+    ebreak
+NESTED_END IL_Rethrow, _TEXT
+
 #ifdef FEATURE_INTERPRETER
 
 // Align interpreter stack by adjusting it by 8 bytes

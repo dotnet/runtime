@@ -24,7 +24,7 @@ namespace Test.Cryptography
 
         internal static byte[] HexToByteArray(this string hexString)
         {
-#if NET9_0_OR_GREATER
+#if NET
             return Convert.FromHexString(hexString);
 #else
             byte[] bytes = new byte[hexString.Length / 2];
@@ -56,7 +56,7 @@ namespace Test.Cryptography
 
         internal static string ByteArrayToHex(this ReadOnlySpan<byte> bytes)
         {
-#if NET9_0_OR_GREATER
+#if NET
             return Convert.ToHexString(bytes);
 #else
             StringBuilder builder = new StringBuilder(bytes.Length * 2);
@@ -89,7 +89,7 @@ namespace Test.Cryptography
 
         internal static bool ContainsAnyExcept(this ReadOnlySpan<byte> bytes, byte value)
         {
-#if NET9_0_OR_GREATER
+#if NET
             return bytes.ContainsAnyExcept(value);
 #else
             foreach (byte b in bytes)

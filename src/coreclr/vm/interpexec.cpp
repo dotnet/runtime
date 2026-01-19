@@ -445,13 +445,13 @@ typedef void (*HELPER_FTN_V_PP)(void*, void*);
 InterpThreadContext::InterpThreadContext()
 {
     // FIXME VirtualAlloc/mmap with INTERP_STACK_ALIGNMENT alignment
-    pStackStart = pStackPointer = (int8_t*)malloc(INTERP_STACK_SIZE);
+    pStackStart = pStackPointer = (int8_t*)new byte[INTERP_STACK_SIZE];
     pStackEnd = pStackStart + INTERP_STACK_SIZE;
 }
 
 InterpThreadContext::~InterpThreadContext()
 {
-    free(pStackStart);
+    delete [] pStackStart;
 }
 
 DictionaryEntry GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule);
@@ -814,11 +814,7 @@ void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont,
     GCX_COOP();
 
     Thread *pThread = GetThread();
-    InterpThreadContext *threadContext = pThread->GetInterpThreadContext();
-    if (threadContext == nullptr || threadContext->pStackStart == nullptr)
-    {
-        COMPlusThrow(kOutOfMemoryException);
-    }
+    InterpThreadContext *threadContext = pThread->GetOrCreateInterpThreadContext();
     int8_t *sp = threadContext->pStackPointer;
 
     // This construct ensures that the InterpreterFrame is always stored at a higher address than the
@@ -3298,11 +3294,11 @@ CALL_INTERP_METHOD:
                 }
 #define LDELEM(dtype,etype)                                                    \
 do {                                                                           \
-    BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);                    \
-    if (arrayRef == NULL)                                                      \
+    ArrayBase* arr = LOCAL_VAR(ip[2], ArrayBase*);                             \
+    if (arr == NULL)                                                           \
         COMPlusThrow(kNullReferenceException);                                 \
                                                                                \
-    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);                  \
+    VALIDATEOBJECT(arr);                                                       \
     uint32_t len = arr->GetNumComponents();                                    \
     uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);                        \
     if (idx >= len)                                                            \
@@ -3357,29 +3353,30 @@ do {                                                                           \
 #undef LDELEM
                 case INTOP_LDELEM_REF:
                 {
-                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);
-                    if (arrayRef == NULL)
+                    ArrayBase* arr = LOCAL_VAR(ip[2], ArrayBase*);
+                    if (arr == NULL)
                         COMPlusThrow(kNullReferenceException);
 
-                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                    VALIDATEOBJECT(arr);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);
                     if (idx >= len)
                         COMPlusThrow(kIndexOutOfRangeException);
 
                     uint8_t* pData = arr->GetDataPtr();
-                    OBJECTREF elemRef = ObjectToOBJECTREF(*(Object**)(pData + idx * sizeof(OBJECTREF)));
-                    LOCAL_VAR(ip[1], OBJECTREF) = elemRef;
+                    Object* elem = *(Object**)(pData + idx * sizeof(OBJECTREF));
+                    VALIDATEOBJECT(elem);
+                    LOCAL_VAR(ip[1], Object*) = elem;
                     ip += 4;
                     break;
                 }
                 case INTOP_LDELEM_VT:
                 {
-                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);
-                    if (arrayRef == NULL)
+                    ArrayBase* arr = LOCAL_VAR(ip[2], ArrayBase*);
+                    if (arr == NULL)
                         COMPlusThrow(kNullReferenceException);
 
-                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                    VALIDATEOBJECT(arr);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);
                     if (idx >= len)
@@ -3395,11 +3392,11 @@ do {                                                                           \
                 }
 #define STELEM(dtype,etype)                                                    \
 do {                                                                           \
-    BASEARRAYREF arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);                    \
-    if (arrayRef == NULL)                                                      \
+    ArrayBase* arr = LOCAL_VAR(ip[1], ArrayBase*);                             \
+    if (arr == NULL)                                                           \
         COMPlusThrow(kNullReferenceException);                                 \
                                                                                \
-    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);                  \
+    VALIDATEOBJECT(arr);                                                       \
     uint32_t len = arr->GetNumComponents();                                    \
     uint32_t idx = (uint32_t)LOCAL_VAR(ip[2], int32_t);                        \
     if (idx >= len)                                                            \
@@ -3454,11 +3451,11 @@ do {                                                                           \
 #undef STELEM
                 case INTOP_STELEM_REF:
                 {
-                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);
-                    if (arrayRef == NULL)
+                    ArrayBase* arr = LOCAL_VAR(ip[1], ArrayBase*);
+                    if (arr == NULL)
                         COMPlusThrow(kNullReferenceException);
 
-                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                    VALIDATEOBJECT(arr);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[2], int32_t);
                     if (idx >= len)
@@ -3473,8 +3470,8 @@ do {                                                                           \
                             COMPlusThrow(kArrayTypeMismatchException);
 
                         // ObjIsInstanceOf can trigger GC, so the object references have to be re-fetched
-                        arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);
-                        arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                        arr = LOCAL_VAR(ip[1], ArrayBase*);
+                        VALIDATEOBJECT(arr);
                         elemRef = LOCAL_VAR(ip[3], OBJECTREF);
                     }
 
@@ -3485,11 +3482,11 @@ do {                                                                           \
                 }
                 case INTOP_STELEM_VT:
                 {
-                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);
-                    if (arrayRef == NULL)
+                    ArrayBase* arr = LOCAL_VAR(ip[1], ArrayBase*);
+                    if (arr == NULL)
                         COMPlusThrow(kNullReferenceException);
 
-                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                    VALIDATEOBJECT(arr);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[2], int32_t);
                     if (idx >= len)
@@ -3506,11 +3503,11 @@ do {                                                                           \
                 }
                 case INTOP_STELEM_VT_NOREF:
                 {
-                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);
-                    if (arrayRef == NULL)
+                    ArrayBase* arr = LOCAL_VAR(ip[1], ArrayBase*);
+                    if (arr == NULL)
                         COMPlusThrow(kNullReferenceException);
 
-                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                    VALIDATEOBJECT(arr);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[2], int32_t);
                     if (idx >= len)
@@ -3526,11 +3523,11 @@ do {                                                                           \
                 }
                 case INTOP_LDELEMA:
                 {
-                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);
-                    if (arrayRef == NULL)
+                    ArrayBase* arr = LOCAL_VAR(ip[2], ArrayBase*);
+                    if (arr == NULL)
                         COMPlusThrow(kNullReferenceException);
 
-                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                    VALIDATEOBJECT(arr);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);
                     if (idx >= len)
@@ -3951,13 +3948,24 @@ do                                                                      \
 
                     InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[3]];
 
-                    THREADBASEREF threadBase = ((THREADBASEREF)GetThread()->GetExposedObject());
-                    continuation = LOCAL_VAR(ip[2], CONTINUATIONREF);
-                    OBJECTREF executionContext = threadBase->GetExecutionContext();
+                    OBJECTREF executionContext;
+                    {
+                        THREADBASEREF threadBase = (THREADBASEREF)GetThread()->GetExposedObject();
+                        executionContext = threadBase->GetExecutionContext();
+                    }
+
                     if (executionContext != NULL && ((EXECUTIONCONTEXTREF)executionContext)->IsFlowSuppressed())
                     {
-                        executionContext = NULL;
+                        executionContext = CallWithSEHWrapper(
+                            [] ()
+                            {
+                                FieldDesc *pFd = CoreLibBinder::GetField(FIELD__EXECUTIONCONTEXT__DEFAULT_FLOW_SUPPRESSED);
+                                pFd->CheckRunClassInitThrowing();
+                                return pFd->GetStaticOBJECTREF();
+                            }
+                        );
                     }
+                    continuation = LOCAL_VAR(ip[2], CONTINUATIONREF);
                     SetObjectReference((OBJECTREF *)((uint8_t*)(OBJECTREFToObject(continuation)) + pAsyncSuspendData->offsetIntoContinuationTypeForExecutionContext), executionContext);
                     continuation->SetFlags(pAsyncSuspendData->flags);
 
@@ -4007,7 +4015,7 @@ do                                                                      \
                     OBJECTREF syncContext = LOCAL_VAR(ip[4] + INTERP_STACK_SLOT_SIZE, OBJECTREF);
 
                     InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[5]];
-                    MethodDesc *restoreContextsMethod = pAsyncSuspendData->restoreContextsMethod;
+                    MethodDesc *restoreContextsMethod = pAsyncSuspendData->restoreContextsOnSuspensionMethod;
 
                     returnOffset = ip[1];
                     callArgsOffset = pMethod->allocaSize;
@@ -4212,8 +4220,8 @@ do                                                                      \
 
         pInterpreterFrame->SetIsFaulting(false);
 
-        Thread *pThread = GetThread();
-        if (pThread->IsAbortRequested())
+        void* abortAddress = COMPlusCheckForAbort(resumeIP);
+        if (abortAddress != NULL)
         {
             // Record the resume IP in the pFrame so that the exception handling unwinds from there
             pFrame->ip = ip;

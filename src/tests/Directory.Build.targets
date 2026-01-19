@@ -424,6 +424,9 @@
       <MarkerFile Include="$(IntermediateOutputPath)\$(MSBuildProjectName).MergedTestAssembly" Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' != 'true' and '$(CLRTestKind)' != 'SharedLibrary'">
         <Type>MergedTestAssembly</Type>
       </MarkerFile>
+      <MarkerFile Include="$(IntermediateOutputPath)\$(MSBuildProjectName).XHarnessNoRunner" Condition="'$(EmitXHarnessNoRunnerMarkerFile)' == 'true'">
+        <Type>XHarnessNoRunner</Type>
+      </MarkerFile>
       <MarkerFile Include="$(IntermediateOutputPath)\$(AssemblyName).NoMonoAot" Condition="'$(MonoAotIncompatible)' == 'true'">
         <Type>NoMonoAot</Type>
       </MarkerFile>

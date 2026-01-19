@@ -30,6 +30,9 @@ FRAME_TYPE_NAME(HijackFrame)
 FRAME_TYPE_NAME(PrestubMethodFrame)
 FRAME_TYPE_NAME(CallCountingHelperFrame)
 FRAME_TYPE_NAME(StubDispatchFrame)
+#ifdef FEATURE_RESOLVE_HELPER_DISPATCH
+FRAME_TYPE_NAME(ResolveHelperFrame)
+#endif // FEATURE_RESOLVE_HELPER_DISPATCH
 FRAME_TYPE_NAME(ExternalMethodFrame)
 FRAME_TYPE_NAME(DynamicHelperFrame)
 FRAME_TYPE_NAME(ProtectValueClassFrame)

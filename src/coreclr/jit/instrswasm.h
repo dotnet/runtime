@@ -26,7 +26,9 @@
 //
 INST(invalid,     "INVALID",     0, IF_NONE,    BAD_CODE)
 INST(unreachable, "unreachable", 0, IF_OPCODE,  0x00)
-INST(label,       "label",       0, IF_LABEL,   0x00)
+INST(label,       "label",       0, IF_RAW_ULEB128, 0x00)
+INST(local_cnt,   "local.cnt",   0, IF_RAW_ULEB128, 0x00)
+INST(local_decl,  "local",       0, IF_LOCAL_DECL,  0x00)
 INST(nop,         "nop",         0, IF_OPCODE,  0x01)
 INST(block,       "block",       0, IF_BLOCK,   0x02)
 INST(loop,        "loop",        0, IF_BLOCK,   0x03)
@@ -45,10 +47,17 @@ INST(i32_load,    "i32.load",    0, IF_MEMARG,  0x28)
 INST(i64_load,    "i64.load",    0, IF_MEMARG,  0x29)
 INST(f32_load,    "f32.load",    0, IF_MEMARG,  0x2A)
 INST(f64_load,    "f64.load",    0, IF_MEMARG,  0x2B)
+INST(i32_load8_s, "i32.load8_s", 0, IF_MEMARG,  0x2C)
+INST(i32_load8_u, "i32.load8_u", 0, IF_MEMARG,  0x2D)
+INST(i32_load16_s,"i32.load16_s",0, IF_MEMARG,  0x2E)
+INST(i32_load16_u,"i32.load16_u",0, IF_MEMARG,  0x2F)
+
 INST(i32_store,   "i32.store",   0, IF_MEMARG,  0x36)
 INST(i64_store,   "i64.store",   0, IF_MEMARG,  0x37)
 INST(f32_store,   "f32.store",   0, IF_MEMARG,  0x38)
 INST(f64_store,   "f64.store",   0, IF_MEMARG,  0x39)
+INST(i32_store8,  "i32.store8",  0, IF_MEMARG,  0x3A)
+INST(i32_store16, "i32.store16", 0, IF_MEMARG,  0x3B)
 
 // 5.4.7 Numeric Instructions
 // Constants

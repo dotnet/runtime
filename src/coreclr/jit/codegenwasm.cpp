@@ -9,10 +9,178 @@
 #include "codegen.h"
 #include "fgwasm.h"
 
+#ifdef TARGET_64BIT
+static const instruction INS_I_const = INS_i64_const;
+static const instruction INS_I_add   = INS_i64_add;
+static const instruction INS_I_sub   = INS_i64_sub;
+#else  // !TARGET_64BIT
+static const instruction INS_I_const = INS_i32_const;
+static const instruction INS_I_add   = INS_i32_add;
+static const instruction INS_I_sub   = INS_i32_sub;
+#endif // !TARGET_64BIT
+
 void CodeGen::genMarkLabelsForCodegen()
 {
     // No work needed here for now.
     // We mark labels as needed in genEmitStartBlock.
+}
+
+//------------------------------------------------------------------------
+// genBeginFnProlog: generate wasm local declarations
+//
+// TODO-WASM: pre-declare all "register" locals
+void CodeGen::genBeginFnProlog()
+{
+    // TODO-WASM: proper local count, local declarations, and shadow stack maintenance
+    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, (unsigned)WasmValueType::Count - 1);
+    // Emit 1 local of each supported value type to ensure
+    // the declarations can be encoded.
+    // TODO-WASM: remove and declare locals based on RA assignments once this is supported.
+    int localOffset  = 0;
+    int countPerType = 1;
+    for (unsigned i = (uint8_t)WasmValueType::Invalid + 1; i < (unsigned)WasmValueType::Count; i++)
+    {
+        GetEmitter()->emitIns_I_Ty(INS_local_decl, countPerType, static_cast<WasmValueType>(i), localOffset);
+        localOffset += countPerType;
+    }
+}
+
+//------------------------------------------------------------------------
+// genPushCalleeSavedRegisters: no-op since we don't need to save anything.
+//
+void CodeGen::genPushCalleeSavedRegisters()
+{
+}
+
+//------------------------------------------------------------------------
+// genAllocLclFrame: initialize the SP and FP locals.
+//
+// Arguments:
+//    frameSize         - Size of the frame to establish
+//    initReg           - Unused
+//    pInitRegZeroed    - Unused
+//    maskArgRegsLiveIn - Unused
+//
+void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
+{
+    assert(compiler->compGeneratingProlog);
+    regNumber spReg = GetStackPointerReg();
+    if (spReg == REG_NA)
+    {
+        assert(!isFramePointerUsed());
+        return;
+    }
+
+    unsigned initialSPLclIndex = 0; // TODO-WASM: remove this hardcoding once we have the SP arg local.
+    unsigned spLclIndex        = WasmRegToIndex(spReg);
+    assert(initialSPLclIndex == spLclIndex);
+    if (frameSize != 0)
+    {
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, initialSPLclIndex);
+        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, frameSize);
+        GetEmitter()->emitIns(INS_I_sub);
+        GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, spLclIndex);
+    }
+    regNumber fpReg = GetFramePointerReg();
+    if ((fpReg != REG_NA) && (fpReg != spReg))
+    {
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, spLclIndex);
+        GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, WasmRegToIndex(fpReg));
+    }
+}
+
+//------------------------------------------------------------------------
+// genEnregisterOSRArgsAndLocals: enregister OSR args and locals.
+//
+void CodeGen::genEnregisterOSRArgsAndLocals()
+{
+    unreached(); // OSR not supported on WASM.
+}
+
+//------------------------------------------------------------------------
+// genHomeRegisterParams: place register arguments into their RA-assigned locations.
+//
+// For the WASM RA, we have a much simplified (compared to LSRA) contract of:
+// - If an argument is live on entry in a set of registers, then the RA will
+//   assign those registers to that argument on entry.
+// This means we never need to do any copying or cycle resolution here.
+//
+// The main motivation for this (along with the obvious CQ implications) is
+// obviating the need to adapt the general "RegGraph"-based algorithm to
+// !HAS_FIXED_REGISTER_SET constraints (no reg masks).
+//
+// Arguments:
+//    initReg            - Unused
+//    initRegStillZeroed - Unused
+//
+void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
+{
+    JITDUMP("*************** In genHomeRegisterParams()\n");
+
+    auto spillParam = [this](unsigned lclNum, unsigned offset, unsigned paramLclNum, const ABIPassingSegment& segment) {
+        assert(segment.IsPassedInRegister());
+
+        LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
+        if (varDsc->lvTracked && !VarSetOps::IsMember(compiler, compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
+        {
+            return;
+        }
+
+        if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr))
+        {
+            LclVarDsc* paramVarDsc = compiler->lvaGetDesc(paramLclNum);
+            var_types  storeType   = genParamStackType(paramVarDsc, segment);
+            if (!varDsc->TypeIs(TYP_STRUCT) && (genTypeSize(genActualType(varDsc)) < genTypeSize(storeType)))
+            {
+                // Can happen for struct fields due to padding.
+                storeType = genActualType(varDsc);
+            }
+
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(storeType),
+                                    WasmRegToIndex(segment.GetRegister()));
+            GetEmitter()->emitIns_S(ins_Store(storeType), emitActualTypeSize(storeType), lclNum, offset);
+        }
+
+        if (varDsc->lvIsInReg())
+        {
+            assert(varDsc->GetRegNum() == segment.GetRegister());
+        }
+    };
+
+    for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
+    {
+        LclVarDsc*                   lclDsc  = compiler->lvaGetDesc(lclNum);
+        const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
+
+        for (const ABIPassingSegment& segment : abiInfo.Segments())
+        {
+            if (!segment.IsPassedInRegister())
+            {
+                continue;
+            }
+
+            const ParameterRegisterLocalMapping* mapping =
+                compiler->FindParameterRegisterLocalMappingByRegister(segment.GetRegister());
+
+            bool spillToBaseLocal = true;
+            if (mapping != nullptr)
+            {
+                spillParam(mapping->LclNum, mapping->Offset, lclNum, segment);
+
+                // If home is shared with base local, then skip spilling to the base local.
+                if (lclDsc->lvPromoted)
+                {
+                    spillToBaseLocal = false;
+                }
+            }
+
+            if (spillToBaseLocal)
+            {
+                spillParam(lclNum, segment.Offset, lclNum, segment);
+            }
+        }
+    }
 }
 
 void CodeGen::genFnEpilog(BasicBlock* block)
@@ -39,9 +207,16 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 
     // TODO-WASM: shadow stack maintenance
-    // TODO-WASM-CQ: do not emit "return" in case this is the last block
-
-    instGen(INS_return);
+    // TODO-WASM: we need to handle the end-of-function case if we reach the end of a codegen for a function
+    // and do NOT have an epilog. In those cases we currently will not emit an end instruction.
+    if (block->IsLast() || compiler->bbIsFuncletBeg(block->Next()))
+    {
+        instGen(INS_end);
+    }
+    else
+    {
+        instGen(INS_return);
+    }
 }
 
 void CodeGen::genCaptureFuncletPrologEpilogInfo()
@@ -155,12 +330,6 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
     {
         instGen(INS_end);
         WasmInterval* interval = wasmControlFlowStack->Pop();
-
-        if (!interval->IsLoop() && !block->HasFlag(BBF_HAS_LABEL))
-        {
-            block->SetFlags(BBF_HAS_LABEL);
-            genDefineTempLabel(block);
-        }
     }
 
     // Push control flow for intervals that start here or earlier, and emit
@@ -185,10 +354,23 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
             wasmCursor++;
             wasmControlFlowStack->Push(interval);
 
-            if (interval->IsLoop() && !block->HasFlag(BBF_HAS_LABEL))
+            if (interval->IsLoop())
             {
-                block->SetFlags(BBF_HAS_LABEL);
-                genDefineTempLabel(block);
+                if (!block->HasFlag(BBF_HAS_LABEL))
+                {
+                    block->SetFlags(BBF_HAS_LABEL);
+                    genDefineTempLabel(block);
+                }
+            }
+            else
+            {
+                BasicBlock* const endBlock = compiler->fgIndexToBlockMap[interval->End()];
+
+                if (!endBlock->HasFlag(BBF_HAS_LABEL))
+                {
+                    endBlock->SetFlags(BBF_HAS_LABEL);
+                    genDefineTempLabel(endBlock);
+                }
             }
 
             if (wasmCursor >= compiler->fgWasmIntervals->size())
@@ -261,6 +443,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForCompare(treeNode->AsOp());
             break;
 
+        case GT_LCL_ADDR:
+            genCodeForLclAddr(treeNode->AsLclFld());
+            break;
+
+        case GT_LCL_FLD:
+            genCodeForLclFld(treeNode->AsLclFld());
+            break;
+
         case GT_LCL_VAR:
             genCodeForLclVar(treeNode->AsLclVar());
             break;
@@ -301,6 +491,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_NEG:
         case GT_NOT:
             genCodeForNegNot(treeNode->AsOp());
+            break;
+
+        case GT_IND:
+            genCodeForIndir(treeNode->AsIndir());
+            break;
+
+        case GT_STOREIND:
+            genCodeForStoreInd(treeNode->AsStoreInd());
             break;
 
         default:
@@ -393,7 +591,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 //
 static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types type)
 {
-    if (type == TYP_BYREF)
+    if ((type == TYP_BYREF) || (type == TYP_REF))
     {
         type = TYP_I_IMPL;
     }
@@ -735,6 +933,44 @@ void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForLclAddr: Generates the code for GT_LCL_ADDR.
+//
+// Arguments:
+//    lclAddrNode - the node.
+//
+void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
+{
+    assert(lclAddrNode->OperIs(GT_LCL_ADDR));
+    bool     FPBased;
+    unsigned lclNum    = lclAddrNode->GetLclNum();
+    unsigned lclOffset = lclAddrNode->GetLclOffs();
+
+    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+    if ((lclOffset != 0) || (compiler->lvaFrameAddress(lclNum, &FPBased) != 0))
+    {
+        GetEmitter()->emitIns_S(INS_I_const, EA_PTRSIZE, lclNum, lclOffset);
+        GetEmitter()->emitIns(INS_I_add);
+    }
+    genProduceReg(lclAddrNode);
+}
+
+//------------------------------------------------------------------------
+// genCodeForLclFld: Produce code for a GT_LCL_FLD node.
+//
+// Arguments:
+//    tree - the GT_LCL_FLD node
+//
+void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
+{
+    assert(tree->OperIs(GT_LCL_FLD));
+    LclVarDsc* varDsc = compiler->lvaGetDesc(tree);
+
+    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+    GetEmitter()->emitIns_S(ins_Load(tree->TypeGet()), emitTypeSize(tree), tree->GetLclNum(), tree->GetLclOffs());
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
 // genCodeForLclVar: Produce code for a GT_LCL_VAR node.
 //
 // Arguments:
@@ -752,14 +988,14 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     if (!varDsc->lvIsRegCandidate())
     {
         var_types type = varDsc->GetRegisterType(tree);
-        // TODO-WASM: actually local.get the frame base local here.
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
         GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(tree), tree->GetLclNum(), 0);
         genProduceReg(tree);
     }
     else
     {
         assert(genIsValidReg(varDsc->GetRegNum()));
-        unsigned wasmLclIndex = UnpackWasmReg(varDsc->GetRegNum());
+        unsigned wasmLclIndex = WasmRegToIndex(varDsc->GetRegNum());
         GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(tree), wasmLclIndex);
     }
 }
@@ -778,23 +1014,71 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     assert(!op1->IsMultiRegNode());
     genConsumeRegs(op1);
 
+    // We rewrite all stack stores to STOREIND because the address must be first on the operand stack, so here only
+    // enregistered locals need to be handled.
     LclVarDsc* varDsc    = compiler->lvaGetDesc(tree);
     regNumber  targetReg = varDsc->GetRegNum();
+    assert(genIsValidReg(targetReg) && varDsc->lvIsRegCandidate());
 
-    if (!varDsc->lvIsRegCandidate())
+    unsigned wasmLclIndex = WasmRegToIndex(targetReg);
+    GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(tree), wasmLclIndex);
+    genUpdateLifeStore(tree, targetReg, varDsc);
+}
+
+//------------------------------------------------------------------------
+// genCodeForIndir: Produce code for a GT_IND node.
+//
+// Arguments:
+//    tree - the GT_IND node
+//
+void CodeGen::genCodeForIndir(GenTreeIndir* tree)
+{
+    assert(tree->OperIs(GT_IND));
+
+    var_types   type = tree->TypeGet();
+    instruction ins  = ins_Load(type);
+
+    genConsumeAddress(tree->Addr());
+
+    // TODO-WASM: Memory barriers
+
+    GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), 0);
+
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForStoreInd: Produce code for a GT_STOREIND node.
+//
+// Arguments:
+//    tree - the GT_STOREIND node
+//
+void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
+{
+    GenTree* data = tree->Data();
+    GenTree* addr = tree->Addr();
+
+    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
+    if (writeBarrierForm != GCInfo::WBF_NoBarrier)
     {
-        // TODO-WASM: handle these cases in lower/ra.
-        // Emit drop for now to simulate the store effect on the wasm stack.
-        GetEmitter()->emitIns(INS_drop);
-        genUpdateLife(tree);
+        NYI_WASM("write barriers in StoreInd");
     }
-    else
+    else // A normal store, not a WriteBarrier store
     {
-        assert(genIsValidReg(targetReg));
-        unsigned wasmLclIndex = UnpackWasmReg(targetReg);
-        GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(tree), wasmLclIndex);
-        genUpdateLifeStore(tree, targetReg, varDsc);
+        // We must consume the operands in the proper execution order,
+        // so that liveness is updated appropriately.
+        genConsumeAddress(addr);
+        genConsumeRegs(data);
+
+        var_types   type = tree->TypeGet();
+        instruction ins  = ins_Store(type);
+
+        // TODO-WASM: Memory barriers
+
+        GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), 0);
     }
+
+    genUpdateLife(tree);
 }
 
 //------------------------------------------------------------------------
@@ -888,15 +1172,39 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
 {
     assert(treeNode->OperIsCmpCompare());
 
+    genTreeOps op          = treeNode->OperGet();
+    bool       invertSense = false;
+
     if ((treeNode->gtFlags & GTF_RELOP_NAN_UN) != 0)
     {
-        NYI_WASM("genCompareFloat: unordered compares");
+        // We don't expect to see GT_EQ unordered,
+        // since CIL doesn't have this mode.
+        //
+        assert(op != GT_EQ);
+
+        // Wasm float comparisons other than "fne" return false for NaNs.
+        // Our unordered float compares need to return true for NaNs.
+        //
+        // So we can re-express say GT_GE (UN) as !GT_LT
+        //
+        if (op != GT_NE)
+        {
+            op          = GenTree::ReverseRelop(op);
+            invertSense = true;
+        }
+    }
+    else
+    {
+        // We don't expect to see GT_NE ordered,
+        // since CIL doesn't have this mode.
+        //
+        assert(op != GT_NE);
     }
 
     genConsumeOperands(treeNode);
 
     instruction ins;
-    switch (PackOperAndType(treeNode->OperGet(), treeNode->gtOp1->TypeGet()))
+    switch (PackOperAndType(op, treeNode->gtOp1->TypeGet()))
     {
         case PackOperAndType(GT_EQ, TYP_FLOAT):
             ins = INS_f32_eq;
@@ -939,6 +1247,12 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
     }
 
     GetEmitter()->emitIns(ins);
+
+    if (invertSense)
+    {
+        GetEmitter()->emitIns(INS_i32_eqz);
+    }
+
     genProduceReg(treeNode);
 }
 
@@ -974,6 +1288,22 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 void CodeGen::genSpillVar(GenTree* tree)
 {
     NYI_WASM("Put all spillng to memory under '#if HAS_FIXED_REGISTER_SET'");
+}
+
+//------------------------------------------------------------------------
+// genLoadLocalIntoReg: set the register to "load(local on stack)".
+//
+// Arguments:
+//    targetReg - The register to load into
+//    lclNum    - The local on stack to load from
+//
+void CodeGen::genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum)
+{
+    LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
+    var_types  type   = varDsc->GetRegisterType();
+    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+    GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), lclNum, 0);
+    GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(type), WasmRegToIndex(targetReg));
 }
 
 //------------------------------------------------------------------------
