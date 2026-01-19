@@ -9,7 +9,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
-using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 using Internal.TypeSystem;
@@ -19,6 +18,16 @@ using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
 
 namespace ILCompiler.ObjectWriter
 {
+    internal static class WasmObjectNodeSection
+    {
+        public static readonly ObjectNodeSection DataSection = new ObjectNodeSection("wasm.data", SectionType.Writeable, needsAlign: false);
+        public static readonly ObjectNodeSection CombinedDataSection = new ObjectNodeSection("wasm.alldata", SectionType.Writeable, needsAlign: false);
+        public static readonly ObjectNodeSection FunctionSection = new ObjectNodeSection("wasm.function", SectionType.ReadOnly, needsAlign: false);
+        public static readonly ObjectNodeSection TypeSection = new ObjectNodeSection("wasm.type", SectionType.ReadOnly, needsAlign: false);
+        public static readonly ObjectNodeSection ExportSection = new ObjectNodeSection("wasm.export", SectionType.ReadOnly, needsAlign: false);
+        public static readonly ObjectNodeSection MemorySection = new ObjectNodeSection("wasm.memory", SectionType.ReadOnly, needsAlign: false);
+    }
+
     /// <summary>
     /// Wasm object file format writer.
     /// </summary>
@@ -62,13 +71,13 @@ namespace ILCompiler.ObjectWriter
 
         private void WriteFunctionIndex(int signatureIndex)
         {
-            SectionWriter writer = GetOrCreateSection(ObjectNodeSection.WasmFunctionSection);
+            SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.FunctionSection);
             writer.WriteULEB128((ulong)signatureIndex);
         }
 
         private void WriteExport(string methodName, int functionIndex)
         {
-            SectionWriter writer = GetOrCreateSection(ObjectNodeSection.WasmExportSection);
+            SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.ExportSection);
             int length = Encoding.UTF8.GetByteCount(methodName);
             writer.WriteULEB128((ulong)length);
             writer.WriteUtf8StringNoNull(methodName);
@@ -78,7 +87,7 @@ namespace ILCompiler.ObjectWriter
 
         private void WriteType(WasmFuncType signature, Logger logger)
         {
-            SectionWriter writer = GetOrCreateSection(ObjectNodeSection.WasmTypeSection);
+            SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.TypeSection);
             if (logger.IsVerbose)
             {
                 logger.LogMessage($"Emitting function signature: {signature}");
@@ -92,10 +101,10 @@ namespace ILCompiler.ObjectWriter
         private Dictionary<string, int> _sectionNameToIndex = new();
         private Dictionary<ObjectNodeSection, WasmSectionType> sectionToType = new()
         {
-            { ObjectNodeSection.WasmMemorySection, WasmSectionType.Memory },
-            { ObjectNodeSection.WasmFunctionSection, WasmSectionType.Function },
-            { ObjectNodeSection.WasmExportSection, WasmSectionType.Export },
-            { ObjectNodeSection.WasmTypeSection, WasmSectionType.Type },
+            { WasmObjectNodeSection.MemorySection, WasmSectionType.Memory },
+            { WasmObjectNodeSection.FunctionSection, WasmSectionType.Function },
+            { WasmObjectNodeSection.ExportSection, WasmSectionType.Export },
+            { WasmObjectNodeSection.TypeSection, WasmSectionType.Type },
             { ObjectNodeSection.WasmCodeSection, WasmSectionType.Code }
         };
 
@@ -128,12 +137,12 @@ namespace ILCompiler.ObjectWriter
                 offset += segment.ContentSize;
             }
 
-            return new WasmDataSection(segments, new Utf8String(ObjectNodeSection.WasmCombinedDataSection.Name));
+            return new WasmDataSection(segments, new Utf8String(WasmObjectNodeSection.CombinedDataSection.Name));
         }
 
         private protected override ObjectNodeSection GetEmitSection(ObjectNodeSection section)
         {
-            if (section == ObjectNodeSection.TextSection)
+            if (section == ObjectNodeSection.TextSection || section == ObjectNodeSection.ManagedCodeUnixContentSection)
             {
                 return ObjectNodeSection.WasmCodeSection;
             }
@@ -161,7 +170,7 @@ namespace ILCompiler.ObjectWriter
         {
             WasmSectionType sectionType = GetWasmSectionType(section);
             WasmSection wasmSection;
-            if (section == ObjectNodeSection.WasmCombinedDataSection)
+            if (section == WasmObjectNodeSection.CombinedDataSection)
             {
                 wasmSection = CreateCombinedDataSection();
             }
@@ -177,10 +186,11 @@ namespace ILCompiler.ObjectWriter
 
         private void WriteMemorySection(ulong contentSize)
         {
+            // TODO-WASM: Reserve an extra page or two for runtime stack as a temporary measure
             // pages are 64 kb each, so we need to calculate how many pages we need
             ulong numPages = (contentSize + (1<<16) - 1) >> 16;
 
-            SectionWriter writer = GetOrCreateSection(ObjectNodeSection.WasmMemorySection);
+            SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.MemorySection);
             writer.WriteByte(0x01); // number of memories
             writer.WriteByte(0x00); // memory limits: flags (0 = only minimum)
             writer.WriteULEB128(numPages); // memory limits: initial size in pages (64kb each)
@@ -188,8 +198,8 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitSectionsAndLayout()
         {
-            GetOrCreateSection(ObjectNodeSection.WasmCombinedDataSection);
-            ulong contentSize = (ulong)SectionByName(ObjectNodeSection.WasmCombinedDataSection.Name).ContentSize;
+            GetOrCreateSection(WasmObjectNodeSection.CombinedDataSection);
+            ulong contentSize = (ulong)SectionByName(WasmObjectNodeSection.CombinedDataSection.Name).ContentSize;
             WriteMemorySection(contentSize);
         }
 
@@ -224,19 +234,19 @@ namespace ILCompiler.ObjectWriter
 
             EmitWasmHeader(outputFileStream);
             // Type section
-            SectionByName(ObjectNodeSection.WasmTypeSection.Name).Emit(outputFileStream, logger);
+            SectionByName(WasmObjectNodeSection.TypeSection.Name).Emit(outputFileStream, logger);
             // Function section
-            SectionByName(ObjectNodeSection.WasmFunctionSection.Name).Emit(outputFileStream, logger);
+            SectionByName(WasmObjectNodeSection.FunctionSection.Name).Emit(outputFileStream, logger);
             // Memory section
-            SectionByName(ObjectNodeSection.WasmMemorySection.Name).Emit(outputFileStream, logger);
+            SectionByName(WasmObjectNodeSection.MemorySection.Name).Emit(outputFileStream, logger);
             // Export section
-            SectionByName(ObjectNodeSection.WasmExportSection.Name).Emit(outputFileStream, logger);
+            SectionByName(WasmObjectNodeSection.ExportSection.Name).Emit(outputFileStream, logger);
             // Code section
             WasmSection codeSection = SectionByName(ObjectNodeSection.WasmCodeSection.Name);
             PrependCount(codeSection, _methodCount);
             codeSection.Emit(outputFileStream, logger);
             // Data section (all segments)
-            SectionByName(ObjectNodeSection.WasmCombinedDataSection.Name).Emit(outputFileStream, logger);
+            SectionByName(WasmObjectNodeSection.CombinedDataSection.Name).Emit(outputFileStream, logger);
         }
 
         private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList, Logger logger)
@@ -255,9 +265,9 @@ namespace ILCompiler.ObjectWriter
         // For now, this function just prepares the function, exports, and type sections for emission by prepending the counts.
         private protected override void EmitSymbolTable(IDictionary<Utf8String, SymbolDefinition> definedSymbols, SortedSet<Utf8String> undefinedSymbols)
         {
-            int funcIdx = _sectionNameToIndex[ObjectNodeSection.WasmFunctionSection.Name];
+            int funcIdx = _sectionNameToIndex[WasmObjectNodeSection.FunctionSection.Name];
             PrependCount(_sections[funcIdx], _methodCount);
-            int typeIdx = _sectionNameToIndex[ObjectNodeSection.WasmTypeSection.Name];
+            int typeIdx = _sectionNameToIndex[WasmObjectNodeSection.TypeSection.Name];
             PrependCount(_sections[typeIdx], _uniqueSignatures.Count);
 
             // TODO-WASM: Handle exports better (e.g., only export public methods, etc.)
@@ -267,7 +277,7 @@ namespace ILCompiler.ObjectWriter
                 WriteExport(name, idx);
             }
 
-            int exportIdx = _sectionNameToIndex[ObjectNodeSection.WasmExportSection.Name];
+            int exportIdx = _sectionNameToIndex[WasmObjectNodeSection.ExportSection.Name];
             PrependCount(_sections[exportIdx], _methodCount);
         }
     }

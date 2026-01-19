@@ -10,7 +10,7 @@ using Internal.Text;
 
 namespace ILCompiler.ObjectWriter
 {
-    enum LengthEncodeFormat
+    internal enum LengthEncodeFormat
     {
         ULEB128,
         None,

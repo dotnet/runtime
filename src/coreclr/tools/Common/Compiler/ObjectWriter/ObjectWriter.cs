@@ -360,7 +360,7 @@ namespace ILCompiler.ObjectWriter
             {
                 GetOrCreateSection(ObjectNodeSection.ManagedCodeWindowsContentSection);
             }
-            else if (_nodeFactory.Target.OperatingSystem != TargetOS.Browser)
+            else
             {
                 GetOrCreateSection(ObjectNodeSection.ManagedCodeUnixContentSection);
             }
