@@ -669,6 +669,7 @@ Dictionary::PopulateEntry(
     MethodDesc *       pMD,
     MethodTable *      pMT,
     LPVOID             signature,
+    BOOL               nonExpansive,
     DictionaryEntry ** ppSlot,
     DWORD              dictionaryIndexAndSlot, /* = -1 */
     Module *           pModule /* = NULL */)
@@ -810,11 +811,16 @@ Dictionary::PopulateEntry(
             declaringType = ptr.GetTypeHandleThrowing(
                 pLookupModule,
                 &typeContext,
-                ClassLoader::LoadTypes,
+                (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes),
                 CLASS_LOADED,
                 FALSE,
                 NULL,
                 pZapSigContext);
+            if (declaringType.IsNull())
+            {
+                _ASSERTE(nonExpansive);
+                return NULL;
+            }
             IfFailThrow(ptr.SkipExactlyOne());
 
             FALLTHROUGH;
@@ -825,11 +831,16 @@ Dictionary::PopulateEntry(
             TypeHandle th = ptr.GetTypeHandleThrowing(
                 pLookupModule,
                 &typeContext,
-                ClassLoader::LoadTypes,
+                (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes),
                 CLASS_LOADED,
                 FALSE,
                 NULL,
                 pZapSigContext);
+            if (th.IsNull())
+            {
+                _ASSERTE(nonExpansive);
+                return NULL;
+            }
             IfFailThrow(ptr.SkipExactlyOne());
 
             if (!declaringType.IsNull())
@@ -853,11 +864,16 @@ Dictionary::PopulateEntry(
             constraintType = ptr.GetTypeHandleThrowing(
                 pLookupModule,
                 &typeContext,
-                ClassLoader::LoadTypes,
+                (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes),
                 CLASS_LOADED,
                 FALSE,
                 NULL,
                 pZapSigContext);
+            if (constraintType.IsNull())
+            {
+                _ASSERTE(nonExpansive);
+                return NULL;
+            }
             IfFailThrow(ptr.SkipExactlyOne());
 
             FALLTHROUGH;
@@ -951,6 +967,7 @@ Dictionary::PopulateEntry(
                 if (ownerType.IsNull())
                     ownerType = pMethod->GetMethodTable();
 
+                _ASSERT(!ownerType.IsNull() && !nonExpansive);
                 pOwnerMT = ownerType.GetMethodTable();
 
                 if (kind == DispatchStubAddrSlot && pMethod->IsVtableMethod())
@@ -964,12 +981,21 @@ Dictionary::PopulateEntry(
                 ownerType = ptr.GetTypeHandleThrowing(
                     pLookupModule,
                     &typeContext,
-                    ClassLoader::LoadTypes,
+                    (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes),
                     CLASS_LOADED,
                     FALSE,
                     NULL,
                     pZapSigContext);
+                if (ownerType.IsNull())
+                {
+                    _ASSERTE(nonExpansive);
+                    return NULL;
+                }
                 IfFailThrow(ptr.SkipExactlyOne());
+
+                // <NICE> wsperf: Create a path that doesn't load types or create new handles if nonExpansive is set </NICE>
+                if (nonExpansive)
+                    return NULL;
 
                 pOwnerMT = ownerType.GetMethodTable();
                 _ASSERTE(pOwnerMT != NULL);
@@ -1000,11 +1026,16 @@ Dictionary::PopulateEntry(
                     TypeHandle thMethodDefType = ptr.GetTypeHandleThrowing(
                         pLookupModule,
                         &typeContext,
-                        ClassLoader::LoadTypes,
+                        (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes),
                         CLASS_LOADED,
                         FALSE,
                         NULL,
                         pZapSigContext);
+                    if (thMethodDefType.IsNull())
+                    {
+                        _ASSERTE(nonExpansive);
+                        return NULL;
+                    }
                     IfFailThrow(ptr.SkipExactlyOne());
                     MethodTable * pMethodDefMT = thMethodDefType.GetMethodTable();
                     _ASSERTE(pMethodDefMT != NULL);
@@ -1226,11 +1257,16 @@ Dictionary::PopulateEntry(
                 ownerType = ptr.GetTypeHandleThrowing(
                     pLookupModule,
                     &typeContext,
-                    ClassLoader::LoadTypes,
+                    (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes),
                     CLASS_LOADED,
                     FALSE,
                     NULL,
                     pZapSigContext);
+                if (ownerType.IsNull())
+                {
+                    _ASSERTE(nonExpansive);
+                    return NULL;
+                }
                 IfFailThrow(ptr.SkipExactlyOne());
 
                 // Computed by MethodTable::GetIndexForFieldDesc().

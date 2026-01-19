@@ -260,10 +260,9 @@ namespace ILCompiler.DependencyAnalysis
             if (_debugLocInfos == null)
                 yield break;
 
-            var sequencePoints = new (string Document, int LineNumber, bool IsBackedSequencePoint)[_debugLocInfos.Length * 4 /* chosen empirically */];
+            var sequencePoints = new (string Document, int LineNumber)[_debugLocInfos.Length * 4 /* chosen empirically */];
             try
             {
-                int maxOffset = 0;
                 foreach (var sequencePoint in _debugInfo.GetSequencePoints())
                 {
                     int offset = sequencePoint.Offset;
@@ -272,17 +271,7 @@ namespace ILCompiler.DependencyAnalysis
                         int newLength = Math.Max(2 * sequencePoints.Length, sequencePoint.Offset + 1);
                         Array.Resize(ref sequencePoints, newLength);
                     }
-                    sequencePoints[offset] = (sequencePoint.Document, sequencePoint.LineNumber, true);
-                    maxOffset = Math.Max(maxOffset, offset);
-                }
-
-                // Propagate last known document/line number forward to enable correct mapping when IL offsets decrease at higher native offsets
-                for (int i = 1; i <= maxOffset; i++)
-                {
-                    if (sequencePoints[i].Document == null && sequencePoints[i - 1].Document != null)
-                    {
-                        sequencePoints[i] = (sequencePoints[i - 1].Document, sequencePoints[i - 1].LineNumber, false);
-                    }
+                    sequencePoints[offset] = (sequencePoint.Document, sequencePoint.LineNumber);
                 }
             }
             catch (BadImageFormatException)
@@ -294,7 +283,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             int previousNativeOffset = -1;
-            int previousIlOffset = -1;
             foreach (var nativeMapping in _debugLocInfos)
             {
                 if (nativeMapping.NativeOffset == previousNativeOffset)
@@ -303,18 +291,13 @@ namespace ILCompiler.DependencyAnalysis
                 if (nativeMapping.ILOffset < sequencePoints.Length)
                 {
                     var sequencePoint = sequencePoints[nativeMapping.ILOffset];
-                    // Emit sequence point if we have it from _debugInfo or if ILOffset decreases.
-                    // This handles the case of IL offsets decreasing at higher native offsets.
-                    // See WalkILOffsetsCallback in src/coreclr/vm/debugdebugger.cpp for more details.
-                    if ((sequencePoint.IsBackedSequencePoint || nativeMapping.ILOffset < previousIlOffset) &&
-                        sequencePoint.Document != null)
+                    if (sequencePoint.Document != null)
                     {
                         yield return new NativeSequencePoint(
                             nativeMapping.NativeOffset,
                             sequencePoint.Document,
                             sequencePoint.LineNumber);
                         previousNativeOffset = nativeMapping.NativeOffset;
-                        previousIlOffset = nativeMapping.ILOffset;
                     }
                 }
             }

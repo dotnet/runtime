@@ -796,9 +796,8 @@ namespace Internal.IL
                         {
                             instParam = GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType);
                         }
-                        else
+                        else if (targetMethod.AcquiresInstMethodTableFromThis())
                         {
-                            Debug.Assert(targetMethod.AcquiresInstMethodTableFromThis());
                             _dependencies.Add(_factory.ShadowNonConcreteMethod(concreteMethod), reason);
                         }
 

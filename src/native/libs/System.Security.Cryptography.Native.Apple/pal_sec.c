@@ -5,5 +5,10 @@
 
 CFStringRef AppleCryptoNative_SecCopyErrorMessageString(OSStatus osStatus)
 {
-    return SecCopyErrorMessageString(osStatus, NULL);
+    if (__builtin_available(iOS 11.3, tvOS 11.3, *))
+    {
+        return SecCopyErrorMessageString(osStatus, NULL);
+    }
+
+    return CFStringCreateWithFormat(NULL, NULL, CFSTR("OSStatus %d"), (int)osStatus);
 }
