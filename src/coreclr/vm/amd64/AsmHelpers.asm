@@ -11,6 +11,9 @@ extern  ProfileLeave:proc
 extern  ProfileTailcall:proc
 extern OnHijackWorker:proc
 extern JIT_RareDisableHelperWorker:proc
+extern IL_Throw_Impl:proc
+extern IL_ThrowExact_Impl:proc
+extern IL_Rethrow_Impl:proc
 ifdef FEATURE_INTERPRETER
 extern ExecuteInterpretedMethod:proc
 extern GetInterpThreadContextWithPossiblyMissingThreadOrCallStub:proc
@@ -405,7 +408,6 @@ NESTED_ENTRY JIT_Patchpoint, _TEXT
         call    JIT_PatchpointWorkerWorkerWithPolicy
 
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
-        TAILJMP_RAX
 NESTED_END JIT_Patchpoint, _TEXT
 
 ; first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
@@ -518,8 +520,9 @@ NESTED_ENTRY CallEHFunclet, _TEXT
         movdqa  xmm14, [r8 + OFFSETOF__CONTEXT__Xmm14]
         movdqa  xmm15, [r8 + OFFSETOF__CONTEXT__Xmm15]
 
-         ; Save the SP of this function.
+        ; Save the SP of this function.
         mov     [r9], rsp
+
         ; Invoke the funclet
         call    rdx
 
@@ -544,6 +547,7 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT
         mov     [r9], rsp
         ; Restore RBP to match main function RBP
         mov     rbp, rdx
+
         ; Invoke the filter funclet
         call    r8
 
@@ -1199,5 +1203,55 @@ END_PROLOGUE
 NESTED_END CallJittedMethodRetI8, _TEXT
 
 endif ; FEATURE_INTERPRETER
+
+;==========================================================================
+; Capture a transition block with register values and call the IL_Throw_Impl
+; implementation written in C.
+;
+; Input state:
+;   RCX = Pointer to exception object
+;==========================================================================
+NESTED_ENTRY IL_Throw, _TEXT
+        ; Shadow space for the call is included in PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rdx
+
+        ; RCX already contains exception object
+        ; RDX contains pointer to TransitionBlock
+        call    IL_Throw_Impl
+        ; Should never return
+        int     3
+NESTED_END IL_Throw, _TEXT
+
+;==========================================================================
+; Capture a transition block with register values and call the IL_ThrowExact_Impl
+; implementation written in C.
+;
+; Input state:
+;   RCX = Pointer to exception object
+;==========================================================================
+NESTED_ENTRY IL_ThrowExact, _TEXT
+        ; Shadow space for the call is included in PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rdx
+
+        ; RCX already contains exception object
+        ; RDX contains pointer to TransitionBlock
+        call    IL_ThrowExact_Impl
+        ; Should never return
+        int     3
+NESTED_END IL_ThrowExact, _TEXT
+
+;==========================================================================
+; Capture a transition block with register values and call the IL_Rethrow_Impl
+; implementation written in C.
+;==========================================================================
+NESTED_ENTRY IL_Rethrow, _TEXT
+        ; Shadow space for the call is included in PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rcx
+
+        ; RCX contains pointer to TransitionBlock
+        call    IL_Rethrow_Impl
+        ; Should never return
+        int     3
+NESTED_END IL_Rethrow, _TEXT
 
         end

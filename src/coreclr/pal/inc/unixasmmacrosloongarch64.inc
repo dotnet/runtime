@@ -404,6 +404,45 @@ C_FUNC(\Name\()_End):
         EPILOG_STACK_FREE  160
 .endm
 
+// Pushes a full TransitionBlock on the stack including argument registers and
+// floating point argument registers. Used for exception throw helpers where we
+// need to capture the complete register state.
+//
+// Stack layout (from low to high address):
+//   sp+0:     FloatArgumentRegisters (fa0-fa7, 64 bytes)
+//   sp+64:    TransitionBlock start
+//             - CalleeSavedRegisters (fp, ra, s0-s8 - 96 bytes)
+//             - ArgumentRegisters (a0-a7, 64 bytes)
+//
+// On exit, \target contains the TransitionBlock pointer (sp+128).
+.macro PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS target
+        // Stack: FPCalleeSaved(64) + FloatArgs(64) + CalleeSaved(96) + Args(64) = 288 bytes
+        PROLOG_STACK_ALLOC 288
+        PROLOG_SAVE_REG_PAIR  22, 1, 128, 1
+
+        // Save callee-saved registers at offset 128 (after FP callee-saved and FloatArgumentRegisters)
+        SAVE_CALLEESAVED_REGISTERS $sp, 128
+
+        // Save argument registers (a0-a7) at offset 224
+        SAVE_ARGUMENT_REGISTERS $sp, 224
+
+        // Save floating-point argument registers (fa0-fa7) at offset 64
+        SAVE_FLOAT_ARGUMENT_REGISTERS $sp, 64
+
+        // Save FP callee-saved registers (f24-f31) at offset 0
+        fst.d   $f24, $sp, 0
+        fst.d   $f25, $sp, 8
+        fst.d   $f26, $sp, 16
+        fst.d   $f27, $sp, 24
+        fst.d   $f28, $sp, 32
+        fst.d   $f29, $sp, 40
+        fst.d   $f30, $sp, 48
+        fst.d   $f31, $sp, 56
+
+        // Set target to TransitionBlock pointer
+        addi.d  \target, $sp, 128
+.endm
+
 // ------------------------------------------------------------------
 // Macro to generate Redirection Stubs
 //

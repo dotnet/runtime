@@ -19,7 +19,7 @@ let loadBootResourceCallback: LoadBootResourceCallback | undefined = undefined;
 export function setLoadBootResourceCallback(callback: LoadBootResourceCallback | undefined): void {
     loadBootResourceCallback = callback;
 }
-
+let instantiateStreaming = typeof WebAssembly !== "undefined" && typeof WebAssembly.instantiateStreaming === "function";
 export let wasmBinaryPromise: Promise<Response> | undefined = undefined;
 export const nativeModulePromiseController = createPromiseCompletionSource<EmscriptenModuleInternal>(() => {
     dotnetUpdateInternals(dotnetInternals);
@@ -62,11 +62,14 @@ export function fetchWasm(asset: WasmAsset): Promise<Response> {
     assetInternal.behavior = "dotnetwasm";
     if (!asset.resolvedUrl) throw new Error("Invalid config, resources is not set");
     wasmBinaryPromise = loadResource(assetInternal);
+    if (assetInternal.buffer) {
+        instantiateStreaming = false;
+    }
     return wasmBinaryPromise;
 }
 
 export async function instantiateWasm(imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback): Promise<void> {
-    if (wasmBinaryPromise instanceof globalThis.Response === false || !WebAssembly.instantiateStreaming) {
+    if (!instantiateStreaming) {
         const res = await checkResponseOk();
         const data = await res.arrayBuffer();
         const module = await WebAssembly.compile(data);
@@ -74,7 +77,7 @@ export async function instantiateWasm(imports: WebAssembly.Imports, successCallb
         onDownloadedAsset();
         successCallback(instance, module);
     } else {
-        const instantiated = await WebAssembly.instantiateStreaming(wasmBinaryPromise, imports);
+        const instantiated = await WebAssembly.instantiateStreaming(wasmBinaryPromise!, imports);
         await checkResponseOk();
         onDownloadedAsset();
         successCallback(instantiated.instance, instantiated.module);
