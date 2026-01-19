@@ -1752,7 +1752,7 @@ int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
                 else
                 {
                     ins[numberOfInstructions - 1]    = INS_addi;
-                    values[numberOfInstructions - 1] = chunk;
+                    values[numberOfInstructions - 1] = (int32_t)chunk;
                 }
             }
             shift = 0;
