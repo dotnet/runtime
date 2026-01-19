@@ -28,7 +28,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly extern TestLibrary
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 {
   .ver 0:0:0:0
 }

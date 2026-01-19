@@ -19,7 +19,7 @@
 {
   .ver 0:0:0:0
 }
-.assembly extern TestLibrary {}
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 
 .assembly nopiatestil
 {

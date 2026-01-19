@@ -7,9 +7,9 @@
 //
 // The benchmark was originally implemented in BCPL by Martin Richards.
 
-using TestLibrary;
 #define INTF_FOR_TASK
 
+using TestLibrary;
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
