@@ -29,6 +29,8 @@
   
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .ver 0:0:0:0 }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .namespace JitTest_ldelem_get_misc_il
 {
   .class public auto ansi Test

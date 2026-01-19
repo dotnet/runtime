@@ -21,6 +21,8 @@
   
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .ver 0:0:0:0 }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 // MVID: {23E3D49B-6CFD-4DA0-8C9D-A611CE0BA103}
 .namespace JitTest_huge_struct_Arrays_il
 {

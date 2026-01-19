@@ -20,6 +20,8 @@
 {
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .ver 0:0:0:0 }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .namespace GCTest_arrres_il
 {
   .class public auto ansi Test

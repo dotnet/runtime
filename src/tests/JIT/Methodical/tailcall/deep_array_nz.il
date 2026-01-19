@@ -9,6 +9,8 @@
 }
 .assembly ASSEMBLY_NAME { }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .ver 0:0:0:0 }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .namespace JitTest_compat_deep_array_nz
 {
   .class public auto ansi beforefieldinit TestClass extends [mscorlib]System.Object

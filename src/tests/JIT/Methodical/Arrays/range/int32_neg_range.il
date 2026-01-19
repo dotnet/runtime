@@ -24,6 +24,8 @@
 {
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .ver 0:0:0:0 }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .namespace JitTest
 {
   .class public auto ansi Int32_Neg_Range

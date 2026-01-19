@@ -27,6 +27,8 @@
   
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .ver 0:0:0:0 }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .namespace JitTest_huge_struct_huge_il
 {
   .class value private auto ansi sealed TestStruct extends [mscorlib]System.ValueType
