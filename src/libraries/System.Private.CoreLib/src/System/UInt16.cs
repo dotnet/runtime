@@ -276,7 +276,7 @@ namespace System
         public static (ushort Quotient, ushort Remainder) DivRem(ushort left, ushort right) => Math.DivRem(left, right);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
-        public static ushort LeadingZeroCount(ushort value) => (ushort)BitOperations.LeadingZeroCount(value);
+        public static ushort LeadingZeroCount(ushort value) => (ushort)(BitOperations.LeadingZeroCount(value) - 16);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         public static ushort PopCount(ushort value) => (ushort)BitOperations.PopCount(value);

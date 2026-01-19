@@ -285,7 +285,7 @@ namespace System
         public static (sbyte Quotient, sbyte Remainder) DivRem(sbyte left, sbyte right) => Math.DivRem(left, right);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
-        public static sbyte LeadingZeroCount(sbyte value) => (sbyte)BitOperations.LeadingZeroCount((byte)value);
+        public static sbyte LeadingZeroCount(sbyte value) => (sbyte)(BitOperations.LeadingZeroCount((byte)value) - 24);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         public static sbyte PopCount(sbyte value) => (sbyte)BitOperations.PopCount((byte)value);

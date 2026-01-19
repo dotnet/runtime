@@ -282,7 +282,7 @@ namespace System
         public static (short Quotient, short Remainder) DivRem(short left, short right) => Math.DivRem(left, right);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
-        public static short LeadingZeroCount(short value) => (short)BitOperations.LeadingZeroCount((ushort)value);
+        public static short LeadingZeroCount(short value) => (short)(BitOperations.LeadingZeroCount((ushort)value) - 16);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         public static short PopCount(short value) => (short)BitOperations.PopCount((ushort)value);
