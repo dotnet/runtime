@@ -44,12 +44,18 @@ public class Bench
 
 ### Best Practices
 
-- **Avoid trivial benchmarks**: Include some complexity (e.g., loops, realistic data sizes) to get meaningful measurements
-- **Use `[Benchmark(Baseline = true)]`** to mark the baseline method when comparing implementations
-- **Use `[GlobalSetup]`** to initialize test data outside the measured code
-- **Avoid `[DisassemblyDiagnoser]`**: It causes crashes on Linux. Use `--envvars DOTNET_JitDisasm:MethodName` instead
+For comprehensive guidance, see the [Microbenchmark Design Guidelines](https://github.com/dotnet/performance/blob/main/docs/microbenchmark-design-guidelines.md).
+
+Key principles:
+
+- **Move initialization to `[GlobalSetup]`**: Separate setup logic from the measured code to avoid measuring allocation/initialization overhead
 - **Return values** from benchmark methods to prevent dead code elimination
-- **Use realistic data sizes** that represent actual usage patterns
+- **Avoid loops**: BenchmarkDotNet invokes the benchmark many times automatically; adding manual loops distorts measurements
+- **No side effects**: Benchmarks should be pure and produce consistent results
+- **Focus on common cases**: Benchmark hot paths and typical usage, not edge cases or error paths
+- **Use consistent input data**: Always use the same test data for reproducible comparisons
+- **Avoid `[DisassemblyDiagnoser]`**: It causes crashes on Linux. Use `--envvars DOTNET_JitDisasm:MethodName` instead
+- **Benchmark class requirements**: Must be `public`, not `sealed`, not `static`, and must be a `class` (not struct)
 
 ### Example: String Operation Benchmark
 
@@ -107,22 +113,16 @@ public class Bench
     }
 
     [Benchmark]
-    public int SumArray()
-    {
-        int sum = 0;
-        foreach (var item in _array)
-            sum += item;
-        return sum;
-    }
+    public bool AnyArray() => _array.Any();
 
     [Benchmark]
-    public int SumList()
-    {
-        int sum = 0;
-        foreach (var item in _list)
-            sum += item;
-        return sum;
-    }
+    public bool AnyList() => _list.Any();
+
+    [Benchmark]
+    public int SumArray() => _array.Sum();
+
+    [Benchmark]
+    public int SumList() => _list.Sum();
 }
 ```
 
@@ -187,7 +187,7 @@ public class Bench
 ### Example: Benchmark with Profiling and Disassembly
 
 ```
-@EgorBot -intel -profiler --envvars DOTNET_JitDisasm:MyOperation
+@EgorBot -intel -profiler --envvars DOTNET_JitDisasm:SumArray
 
 ```cs
 using System.Linq;
@@ -201,13 +201,7 @@ public class Bench
     private int[] _data = Enumerable.Range(0, 1000).ToArray();
 
     [Benchmark]
-    public int MyOperation()
-    {
-        int sum = 0;
-        foreach (var x in _data)
-            sum += x;
-        return sum;
-    }
+    public int SumArray() => _data.Sum();
 }
 ```
 ```
@@ -255,6 +249,7 @@ To run benchmarks from the dotnet/performance repository (no code snippet needed
 
 ## Additional Resources
 
+- [Microbenchmark Design Guidelines](https://github.com/dotnet/performance/blob/main/docs/microbenchmark-design-guidelines.md) - Essential reading for writing effective benchmarks
 - [BenchmarkDotNet CLI Arguments](https://github.com/dotnet/BenchmarkDotNet/blob/master/docs/articles/guides/console-args.md)
 - [EgorBot Manual](https://github.com/EgorBot/runtime-utils)
 - [BenchmarkDotNet Filter Simulator](http://egorbot.westus2.cloudapp.azure.com:5042/microbenchmarks)
