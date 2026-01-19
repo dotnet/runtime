@@ -66,10 +66,10 @@ namespace System.IO.Compression
         /// <param name="inputSize">The input size to get the maximum expected compressed length from.</param>
         /// <returns>A number representing the maximum compressed length for the provided input size.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="inputSize"/> is negative.</exception>
-        public static int GetMaxCompressedLength(int inputSize)
+        public static long GetMaxCompressedLength(long inputSize)
         {
             // GZip has a larger header than raw deflate, so add extra overhead
-            int baseLength = DeflateEncoder.GetMaxCompressedLength(inputSize);
+            long baseLength = DeflateEncoder.GetMaxCompressedLength(inputSize);
 
             // GZip adds ~18 bytes header/trailer overhead
             return baseLength + 10;

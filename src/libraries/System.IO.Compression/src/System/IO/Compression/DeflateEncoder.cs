@@ -149,20 +149,13 @@ namespace System.IO.Compression
         /// <param name="inputSize">The input size to get the maximum expected compressed length from.</param>
         /// <returns>A number representing the maximum compressed length for the provided input size.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="inputSize"/> is negative.</exception>
-        public static int GetMaxCompressedLength(int inputSize)
+        public static long GetMaxCompressedLength(long inputSize)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(inputSize);
 
             // ZLib's compressBound formula: inputSize + (inputSize >> 12) + (inputSize >> 14) + (inputSize >> 25) + 13
             // We use a conservative estimate
-            long result = inputSize + (inputSize >> 12) + (inputSize >> 14) + (inputSize >> 25) + 18;
-
-            if (result > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(inputSize));
-            }
-
-            return (int)result;
+            return inputSize + (inputSize >> 12) + (inputSize >> 14) + (inputSize >> 25) + 18;
         }
 
         /// <summary>

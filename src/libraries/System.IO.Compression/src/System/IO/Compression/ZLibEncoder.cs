@@ -66,7 +66,7 @@ namespace System.IO.Compression
         /// <param name="inputSize">The input size to get the maximum expected compressed length from.</param>
         /// <returns>A number representing the maximum compressed length for the provided input size.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="inputSize"/> is negative.</exception>
-        public static int GetMaxCompressedLength(int inputSize) => DeflateEncoder.GetMaxCompressedLength(inputSize);
+        public static long GetMaxCompressedLength(long inputSize) => DeflateEncoder.GetMaxCompressedLength(inputSize);
 
         /// <summary>
         /// Compresses a read-only byte span into a destination span.
