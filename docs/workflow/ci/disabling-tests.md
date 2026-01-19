@@ -23,7 +23,7 @@ The two types have very different mechanisms for disabling.
 You need to determine under which configuration you wish to disable the test:
 - For all configurations
 - For just one processor architecture (x86, x64, arm32, arm64)
-- For just one runtime (coreclr, mono) or mono runtime variant (monointerpreter, llvmaot, llvmfullaot)
+- For just one runtime (coreclr, mono) or runtime variant (monointerpreter, llvmaot, llvmfullaot, coreclrinterpreter)
 - For just one operating system (Windows, Linux, macOS, Android, iOS)
 - For a particular run type:
    - GCStress

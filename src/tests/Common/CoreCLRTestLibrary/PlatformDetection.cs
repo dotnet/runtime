@@ -68,6 +68,8 @@ namespace TestLibrary
         public static bool IsMonoMINIFULLAOT => _variant == "minifullaot";
         public static bool IsMonoFULLAOT => IsMonoLLVMFULLAOT || IsMonoMINIFULLAOT;
         public static bool IsMonoInterpreter => _variant == "monointerpreter";
+        public static bool IsCoreCLRInterpreter => _variant == "coreclrinterpreter";
+        public static bool IsInterpreter => IsMonoInterpreter || IsCoreCLRInterpreter;
 
         // These platforms have not had their infrastructure updated to support native test assets.
         public static bool PlatformDoesNotSupportNativeTestAssets =>
