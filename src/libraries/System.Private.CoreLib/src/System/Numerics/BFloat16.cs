@@ -116,11 +116,11 @@ namespace System.Numerics
             }
         }
 
-        internal ushort Significand
+        internal byte Significand
         {
             get
             {
-                return (ushort)(TrailingSignificand | ((BiasedExponent != 0) ? (1U << BiasedExponentShift) : 0U));
+                return (byte)(TrailingSignificand | ((BiasedExponent != 0) ? (1U << BiasedExponentShift) : 0U));
             }
         }
 
@@ -1010,7 +1010,7 @@ namespace System.Numerics
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
-        int IFloatingPoint<BFloat16>.GetSignificandByteCount() => sizeof(ushort);
+        int IFloatingPoint<BFloat16>.GetSignificandByteCount() => sizeof(byte);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
         int IFloatingPoint<BFloat16>.GetSignificandBitLength() => SignificandLength;
@@ -1046,9 +1046,10 @@ namespace System.Numerics
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<BFloat16>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (BinaryPrimitives.TryWriteUInt16BigEndian(destination, Significand))
+            if (destination.Length >= sizeof(byte))
             {
-                bytesWritten = sizeof(uint);
+                destination[0] = Significand;
+                bytesWritten = sizeof(byte);
                 return true;
             }
 
@@ -1059,9 +1060,10 @@ namespace System.Numerics
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<BFloat16>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (BinaryPrimitives.TryWriteUInt16LittleEndian(destination, Significand))
+            if (destination.Length >= sizeof(byte))
             {
-                bytesWritten = sizeof(uint);
+                destination[0] = Significand;
+                bytesWritten = sizeof(byte);
                 return true;
             }
 
