@@ -3043,7 +3043,7 @@ dump_thread (MonoInternalThread *thread, ThreadDumpUserData *ud, FILE* output_fi
 		MonoStackFrameInfo *frame = &ud->frames [i];
 		MonoMethod *method = NULL;
 
-		if (frame->type == FRAME_TYPE_MANAGED)
+		if (frame->type == FRAME_TYPE_MANAGED && frame->ji && !frame->ji->async)
 			method = mono_jit_info_get_method (frame->ji);
 
 		if (method) {
