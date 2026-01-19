@@ -244,7 +244,7 @@ private:
     { return ((m_hMapping != NULL) || (m_hModule != NULL)); }
 #else
     { return m_mmap; }
-#endif
+#endif // TARGET_WINDOWS
 
     void CtorInit();
     HRESULT WriteToDisk(const void *pbBuff, ULONG cbWrite, ULONG *pcbWritten);
@@ -269,7 +269,7 @@ private:
 #else
     int         m_fd;
     bool        m_mmap;
-#endif
+#endif // TARGET_WINDOWS
     void *      m_pBaseData;            // Base address for memory mapped file.
     void *      m_pData;                // For memory mapped file read.
     ULONG       m_cbData;               // Size of in memory data.

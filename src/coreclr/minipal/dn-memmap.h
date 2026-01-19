@@ -7,16 +7,12 @@
 
 #include <stdint.h>
 
-class MemoryMappedFile
+class MemoryMappedFile final
 {
     size_t m_size;
     void* m_address;
     
-    MemoryMappedFile()
-        : m_size(0)
-        , m_address(nullptr)
-    {
-    }
+    MemoryMappedFile() = default;
 
 public:
     static MemoryMappedFile* Open(const WCHAR* path);

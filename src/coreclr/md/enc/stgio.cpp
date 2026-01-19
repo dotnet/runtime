@@ -45,7 +45,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include "dn-stdio.h"
-#endif
+#endif // TARGET_UNIX
 
 //********** Types. ***********************************************************
 #define SMALL_ALLOC_MAP_SIZE (64 * 1024) // 64 kb is the minimum size of virtual
@@ -104,7 +104,7 @@ void StgIO::CtorInit()
 #else
     m_fd = -1;
     m_mmap = false;
-#endif
+#endif // TARGET_WINDOWS
     m_pBaseData = 0;
     m_pData = 0;
     m_cbData = 0;
@@ -240,7 +240,7 @@ HRESULT StgIO::Open(                    // Return code.
         _ASSERTE(m_hModule == NULL);
 #else
         _ASSERTE(m_fd == -1);
-#endif
+#endif // TARGET_WINDOWS
 
         // Open the file for read.  Sharing is determined by caller, it can
         // allow other readers or be exclusive.
@@ -318,7 +318,7 @@ HRESULT StgIO::Open(                    // Return code.
 
             m_iType = STGIO_HFILE;
         }
-    #else
+#else
         MAKE_UTF8PTR_FROMWIDE_NOTHROW(u8Name, szName);
         int fd = open(u8Name, O_RDONLY);
         if (fd == -1)
@@ -338,7 +338,7 @@ HRESULT StgIO::Open(                    // Return code.
         // Data will come from the file.
         m_fd = fd;
         m_iType = STGIO_HFILE;
-    #endif
+#endif // TARGET_WINDOWS
     }
 
 ErrExit:
@@ -430,7 +430,7 @@ void StgIO::Close()
                 close(m_fd);
         }
         break;
-#endif
+#endif // TARGET_WINDOWS
 
         // Free the stream pointer.
         case STGIO_STREAM:
