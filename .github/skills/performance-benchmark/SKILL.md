@@ -28,16 +28,10 @@ public class Bench
         // Initialize test data
     }
 
-    [Benchmark(Baseline = true)]
-    public void BaselineMethod()
+    [Benchmark]
+    public void MyOperation()
     {
         // Test the operation
-    }
-
-    [Benchmark]
-    public void OptimizedMethod()
-    {
-        // Test the optimized version if applicable
     }
 }
 ```
@@ -244,7 +238,6 @@ To run benchmarks from the dotnet/performance repository (no code snippet needed
 - **Supported repositories**: EgorBot monitors `dotnet/runtime` and `EgorBot/runtime-utils`
 - **PR mode (default)**: When posting in a PR, EgorBot automatically compares the PR changes against the base branch
 - **Results variability**: Results may vary between runs due to VM differences. Do not compare results across different architectures or cloud providers
-- **Azure targets preferred**: Use Azure targets (`-arm`, `-intel`, `-amd`) unless you have a specific reason to use AWS/Hetzner
 - **Check the manual**: EgorBot replies include a link to the [manual](https://github.com/EgorBot/runtime-utils) for advanced options
 
 ## Additional Resources
