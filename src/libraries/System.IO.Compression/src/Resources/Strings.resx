@@ -170,20 +170,23 @@
   <data name="ZLibErrorUnexpected" xml:space="preserve">
     <value>The underlying compression routine returned an unexpected error code: '{0}'.</value>
   </data>
-  <data name="ZlibEncoder_CompressionLevel" xml:space="preserve">
-    <value>The compression level ({0}) must be between {1} and {2}, inclusive.</value>
+  <data name="DeflateEncoder_NotInitialized" xml:space="preserve">
+    <value>The DeflateEncoder has not been initialized. Use the constructor to initialize.</value>
   </data>
-  <data name="ZlibEncoder_NotInitialized" xml:space="preserve">
-    <value>The ZlibEncoder has not been initialized. Use the constructor to initialize.</value>
+  <data name="DeflateDecoder_NotInitialized" xml:space="preserve">
+    <value>The DeflateDecoder has not been initialized. Use the constructor to initialize.</value>
   </data>
-  <data name="ZlibDecoder_NotInitialized" xml:space="preserve">
-    <value>The ZlibDecoder has not been initialized. Use the constructor to initialize.</value>
+  <data name="ZLibEncoder_NotInitialized" xml:space="preserve">
+    <value>The ZLibEncoder has not been initialized. Use the constructor to initialize.</value>
   </data>
-  <data name="ZlibEncoder_AlreadyFinished" xml:space="preserve">
-    <value>The encoder has already finished compressing. Call Reset() to reuse for a new compression operation.</value>
+  <data name="ZLibDecoder_NotInitialized" xml:space="preserve">
+    <value>The ZLibDecoder has not been initialized. Use the constructor to initialize.</value>
   </data>
-  <data name="ZlibDecoder_AlreadyFinished" xml:space="preserve">
-    <value>The decoder has already finished decompressing. Call Reset() to reuse for a new decompression operation.</value>
+  <data name="GZipEncoder_NotInitialized" xml:space="preserve">
+    <value>The GZipEncoder has not been initialized. Use the constructor to initialize.</value>
+  </data>
+  <data name="GZipDecoder_NotInitialized" xml:space="preserve">
+    <value>The GZipDecoder has not been initialized. Use the constructor to initialize.</value>
   </data>
   <data name="CDCorrupt" xml:space="preserve">
     <value>Central Directory corrupt.</value>

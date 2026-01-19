@@ -18,6 +18,26 @@ namespace System.IO.Compression
         Decompress = 0,
         Compress = 1,
     }
+    public sealed partial class DeflateDecoder : System.IDisposable
+    {
+        public DeflateDecoder() { }
+        public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
+        public void Dispose() { }
+        public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
+    public sealed partial class DeflateEncoder : System.IDisposable
+    {
+        public DeflateEncoder() { }
+        public DeflateEncoder(System.IO.Compression.CompressionLevel compressionLevel) { }
+        public DeflateEncoder(System.IO.Compression.CompressionLevel compressionLevel, System.IO.Compression.ZLibCompressionStrategy strategy) { }
+        public DeflateEncoder(System.IO.Compression.ZLibCompressionOptions options) { }
+        public System.Buffers.OperationStatus Compress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) { throw null; }
+        public void Dispose() { }
+        public System.Buffers.OperationStatus Flush(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static int GetMaxCompressedLength(int inputSize) { throw null; }
+        public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, System.IO.Compression.CompressionLevel compressionLevel) { throw null; }
+    }
     public partial class DeflateStream : System.IO.Stream
     {
         public DeflateStream(System.IO.Stream stream, System.IO.Compression.CompressionLevel compressionLevel) { }
@@ -53,6 +73,26 @@ namespace System.IO.Compression
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void WriteByte(byte value) { }
+    }
+    public sealed partial class GZipDecoder : System.IDisposable
+    {
+        public GZipDecoder() { }
+        public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
+        public void Dispose() { }
+        public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
+    public sealed partial class GZipEncoder : System.IDisposable
+    {
+        public GZipEncoder() { }
+        public GZipEncoder(System.IO.Compression.CompressionLevel compressionLevel) { }
+        public GZipEncoder(System.IO.Compression.CompressionLevel compressionLevel, System.IO.Compression.ZLibCompressionStrategy strategy) { }
+        public GZipEncoder(System.IO.Compression.ZLibCompressionOptions options) { }
+        public System.Buffers.OperationStatus Compress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) { throw null; }
+        public void Dispose() { }
+        public System.Buffers.OperationStatus Flush(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static int GetMaxCompressedLength(int inputSize) { throw null; }
+        public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, System.IO.Compression.CompressionLevel compressionLevel) { throw null; }
     }
     public partial class GZipStream : System.IO.Stream
     {
@@ -158,40 +198,25 @@ namespace System.IO.Compression
         RunLengthEncoding = 3,
         Fixed = 4,
     }
-    public enum ZlibCompressionFormat
+    public sealed partial class ZLibDecoder : System.IDisposable
     {
-        Deflate = 0,
-        ZLib = 1,
-        GZip = 2,
-    }
-    public sealed partial class ZlibDecoder : System.IDisposable
-    {
-        public ZlibDecoder(System.IO.Compression.ZlibCompressionFormat format) { }
+        public ZLibDecoder() { }
         public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public void Dispose() { }
-        public void Reset() { }
         public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
-        public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, System.IO.Compression.ZlibCompressionFormat format) { throw null; }
     }
-    public sealed partial class ZlibEncoder : System.IDisposable
+    public sealed partial class ZLibEncoder : System.IDisposable
     {
-        public ZlibEncoder(System.IO.Compression.CompressionLevel compressionLevel, System.IO.Compression.ZlibCompressionFormat format) { }
-        public ZlibEncoder(System.IO.Compression.CompressionLevel compressionLevel, System.IO.Compression.ZlibCompressionFormat format, System.IO.Compression.ZLibCompressionStrategy strategy) { }
-        public ZlibEncoder(System.IO.Compression.ZlibEncoderOptions options) { }
+        public ZLibEncoder() { }
+        public ZLibEncoder(System.IO.Compression.CompressionLevel compressionLevel) { }
+        public ZLibEncoder(System.IO.Compression.CompressionLevel compressionLevel, System.IO.Compression.ZLibCompressionStrategy strategy) { }
+        public ZLibEncoder(System.IO.Compression.ZLibCompressionOptions options) { }
         public System.Buffers.OperationStatus Compress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) { throw null; }
         public void Dispose() { }
         public System.Buffers.OperationStatus Flush(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static int GetMaxCompressedLength(int inputSize) { throw null; }
-        public void Reset() { }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
-        public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, System.IO.Compression.CompressionLevel compressionLevel, System.IO.Compression.ZlibCompressionFormat format) { throw null; }
-    }
-    public sealed partial class ZlibEncoderOptions
-    {
-        public ZlibEncoderOptions() { }
-        public int CompressionLevel { get { throw null; } set { } }
-        public System.IO.Compression.ZLibCompressionStrategy CompressionStrategy { get { throw null; } set { } }
-        public System.IO.Compression.ZlibCompressionFormat Format { get { throw null; } set { } }
+        public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, System.IO.Compression.CompressionLevel compressionLevel) { throw null; }
     }
     public sealed partial class ZLibStream : System.IO.Stream
     {

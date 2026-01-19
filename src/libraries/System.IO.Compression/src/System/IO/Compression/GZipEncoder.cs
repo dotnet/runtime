@@ -6,53 +6,53 @@ using System.Buffers;
 namespace System.IO.Compression
 {
     /// <summary>
-    /// Provides methods and static methods to encode data in a streamless, non-allocating, and performant manner using the ZLib data format specification.
+    /// Provides methods and static methods to encode data in a streamless, non-allocating, and performant manner using the GZip data format specification.
     /// </summary>
-    public sealed class ZLibEncoder : IDisposable
+    public sealed class GZipEncoder : IDisposable
     {
         private readonly DeflateEncoder _deflateEncoder;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ZLibEncoder"/> class using the default compression level.
+        /// Initializes a new instance of the <see cref="GZipEncoder"/> class using the default compression level.
         /// </summary>
-        /// <exception cref="IOException">Failed to create the <see cref="ZLibEncoder"/> instance.</exception>
-        public ZLibEncoder()
+        /// <exception cref="IOException">Failed to create the <see cref="GZipEncoder"/> instance.</exception>
+        public GZipEncoder()
             : this(CompressionLevel.Optimal, ZLibCompressionStrategy.Default)
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ZLibEncoder"/> class using the specified compression level.
+        /// Initializes a new instance of the <see cref="GZipEncoder"/> class using the specified compression level.
         /// </summary>
         /// <param name="compressionLevel">The compression level to use.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="compressionLevel"/> is not a valid <see cref="CompressionLevel"/> value.</exception>
-        /// <exception cref="IOException">Failed to create the <see cref="ZLibEncoder"/> instance.</exception>
-        public ZLibEncoder(CompressionLevel compressionLevel)
+        /// <exception cref="IOException">Failed to create the <see cref="GZipEncoder"/> instance.</exception>
+        public GZipEncoder(CompressionLevel compressionLevel)
             : this(compressionLevel, ZLibCompressionStrategy.Default)
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ZLibEncoder"/> class using the specified compression level and strategy.
+        /// Initializes a new instance of the <see cref="GZipEncoder"/> class using the specified compression level and strategy.
         /// </summary>
         /// <param name="compressionLevel">The compression level to use.</param>
         /// <param name="strategy">The compression strategy to use.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="compressionLevel"/> is not a valid <see cref="CompressionLevel"/> value.</exception>
-        /// <exception cref="IOException">Failed to create the <see cref="ZLibEncoder"/> instance.</exception>
-        public ZLibEncoder(CompressionLevel compressionLevel, ZLibCompressionStrategy strategy)
+        /// <exception cref="IOException">Failed to create the <see cref="GZipEncoder"/> instance.</exception>
+        public GZipEncoder(CompressionLevel compressionLevel, ZLibCompressionStrategy strategy)
         {
-            _deflateEncoder = new DeflateEncoder(compressionLevel, strategy, ZLibNative.ZLib_DefaultWindowBits);
+            _deflateEncoder = new DeflateEncoder(compressionLevel, strategy, ZLibNative.GZip_DefaultWindowBits);
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ZLibEncoder"/> class using the specified options.
+        /// Initializes a new instance of the <see cref="GZipEncoder"/> class using the specified options.
         /// </summary>
         /// <param name="options">The compression options.</param>
         /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
-        /// <exception cref="IOException">Failed to create the <see cref="ZLibEncoder"/> instance.</exception>
-        public ZLibEncoder(ZLibCompressionOptions options)
+        /// <exception cref="IOException">Failed to create the <see cref="GZipEncoder"/> instance.</exception>
+        public GZipEncoder(ZLibCompressionOptions options)
         {
-            _deflateEncoder = new DeflateEncoder(options, ZLibNative.ZLib_DefaultWindowBits);
+            _deflateEncoder = new DeflateEncoder(options, ZLibNative.GZip_DefaultWindowBits);
         }
 
         /// <summary>
@@ -66,7 +66,14 @@ namespace System.IO.Compression
         /// <param name="inputSize">The input size to get the maximum expected compressed length from.</param>
         /// <returns>A number representing the maximum compressed length for the provided input size.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="inputSize"/> is negative.</exception>
-        public static int GetMaxCompressedLength(int inputSize) => DeflateEncoder.GetMaxCompressedLength(inputSize);
+        public static int GetMaxCompressedLength(int inputSize)
+        {
+            // GZip has a larger header than raw deflate, so add extra overhead
+            int baseLength = DeflateEncoder.GetMaxCompressedLength(inputSize);
+
+            // GZip adds ~18 bytes header/trailer overhead
+            return baseLength + 10;
+        }
 
         /// <summary>
         /// Compresses a read-only byte span into a destination span.
@@ -109,7 +116,7 @@ namespace System.IO.Compression
         /// <returns><see langword="true"/> if the compression operation was successful; <see langword="false"/> otherwise.</returns>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, CompressionLevel compressionLevel)
         {
-            using var encoder = new ZLibEncoder(compressionLevel);
+            using var encoder = new GZipEncoder(compressionLevel);
             OperationStatus status = encoder.Compress(source, destination, out int consumed, out bytesWritten, isFinalBlock: true);
 
             return status == OperationStatus.Done && consumed == source.Length;

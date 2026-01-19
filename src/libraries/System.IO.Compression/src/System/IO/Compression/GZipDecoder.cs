@@ -6,19 +6,19 @@ using System.Buffers;
 namespace System.IO.Compression
 {
     /// <summary>
-    /// Provides methods and static methods to decode data compressed in the ZLib data format in a streamless, non-allocating, and performant manner.
+    /// Provides methods and static methods to decode data compressed in the GZip data format in a streamless, non-allocating, and performant manner.
     /// </summary>
-    public sealed class ZLibDecoder : IDisposable
+    public sealed class GZipDecoder : IDisposable
     {
         private readonly DeflateDecoder _deflateDecoder;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ZLibDecoder"/> class.
+        /// Initializes a new instance of the <see cref="GZipDecoder"/> class.
         /// </summary>
-        /// <exception cref="IOException">Failed to create the <see cref="ZLibDecoder"/> instance.</exception>
-        public ZLibDecoder()
+        /// <exception cref="IOException">Failed to create the <see cref="GZipDecoder"/> instance.</exception>
+        public GZipDecoder()
         {
-            _deflateDecoder = new DeflateDecoder(ZLibNative.ZLib_DefaultWindowBits);
+            _deflateDecoder = new DeflateDecoder(ZLibNative.GZip_DefaultWindowBits);
         }
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace System.IO.Compression
         /// <returns><see langword="true"/> if the decompression operation was successful; <see langword="false"/> otherwise.</returns>
         public static bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
-            using var decoder = new ZLibDecoder();
+            using var decoder = new GZipDecoder();
             OperationStatus status = decoder.Decompress(source, destination, out int consumed, out bytesWritten);
 
             return status == OperationStatus.Done && consumed == source.Length;
