@@ -9096,9 +9096,11 @@ namespace System.Diagnostics.CodeAnalysis
     public sealed partial class StringSyntaxAttribute : System.Attribute
     {
         public const string CompositeFormat = "CompositeFormat";
+        public const string CSharp = "C#";
         public const string DateOnlyFormat = "DateOnlyFormat";
         public const string DateTimeFormat = "DateTimeFormat";
         public const string EnumFormat = "EnumFormat";
+        public const string FSharp = "F#";
         public const string GuidFormat = "GuidFormat";
         public const string Json = "Json";
         public const string NumericFormat = "NumericFormat";
@@ -9106,6 +9108,7 @@ namespace System.Diagnostics.CodeAnalysis
         public const string TimeOnlyFormat = "TimeOnlyFormat";
         public const string TimeSpanFormat = "TimeSpanFormat";
         public const string Uri = "Uri";
+        public const string VisualBasic = "Visual Basic";
         public const string Xml = "Xml";
         public StringSyntaxAttribute(string syntax) { }
         public StringSyntaxAttribute(string syntax, params object?[] arguments) { }
@@ -11063,6 +11066,7 @@ namespace System.IO
         public virtual System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
         public virtual System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public virtual System.Threading.Tasks.Task WriteAsync(string? value) { throw null; }
+        public System.Threading.Tasks.Task WriteAsync(string? value, System.Threading.CancellationToken cancellationToken) { throw null; }
         public virtual System.Threading.Tasks.Task WriteAsync(System.Text.StringBuilder? value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public virtual void WriteLine() { }
         public virtual void WriteLine(bool value) { }
@@ -11089,12 +11093,14 @@ namespace System.IO
         [System.CLSCompliantAttribute(false)]
         public virtual void WriteLine(ulong value) { }
         public virtual System.Threading.Tasks.Task WriteLineAsync() { throw null; }
+        public System.Threading.Tasks.Task WriteLineAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(char value) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(System.Text.Rune value) { throw null; }
         public System.Threading.Tasks.Task WriteLineAsync(char[]? buffer) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(char[] buffer, int index, int count) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(string? value) { throw null; }
+        public System.Threading.Tasks.Task WriteLineAsync(string? value, System.Threading.CancellationToken cancellationToken) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(System.Text.StringBuilder? value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     [System.FlagsAttribute]
@@ -14127,6 +14133,7 @@ namespace System.Runtime.CompilerServices
         [System.ObsoleteAttribute("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData { get { throw null; } }
         public static System.IntPtr AllocateTypeAssociatedMemory(System.Type type, int size) { throw null; }
+        public static System.IntPtr AllocateTypeAssociatedMemory(System.Type type, int size, int alignment) { throw null; }
         public static object? Box(ref byte target, System.RuntimeTypeHandle type) { throw null; }
         public static System.ReadOnlySpan<T> CreateSpan<T>(System.RuntimeFieldHandle fldHandle) { throw null; }
         public static void EnsureSufficientExecutionStack() { }
@@ -14530,6 +14537,7 @@ namespace System.Runtime.InteropServices
     public enum ExtendedLayoutKind
     {
         CStruct = 0,
+        CUnion = 1,
     }
     public partial class ExternalException : System.SystemException
     {
@@ -14622,6 +14630,7 @@ namespace System.Runtime.InteropServices
         public static System.Span<byte> AsBytes<T>(System.Span<T> span) where T : struct { throw null; }
         public static System.Memory<T> AsMemory<T>(System.ReadOnlyMemory<T> memory) { throw null; }
         public static ref readonly T AsRef<T>(System.ReadOnlySpan<byte> span) where T : struct { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(1)]
         public static ref T AsRef<T>(System.Span<byte> span) where T : struct { throw null; }
         public static System.ReadOnlySpan<TTo> Cast<TFrom, TTo>(System.ReadOnlySpan<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
         public static System.Span<TTo> Cast<TFrom, TTo>(System.Span<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
@@ -17033,6 +17042,7 @@ namespace System
     public partial class Uri : System.IEquatable<System.Uri>, System.IFormattable, System.ISpanFormattable, System.Runtime.Serialization.ISerializable
     {
         public static readonly string SchemeDelimiter;
+        public static readonly string UriSchemeData;
         public static readonly string UriSchemeFile;
         public static readonly string UriSchemeFtp;
         public static readonly string UriSchemeFtps;

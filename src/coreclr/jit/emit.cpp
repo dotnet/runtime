@@ -1729,6 +1729,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
         assert(info->idFinallyCall == false);
         assert(info->idCatchRet == false);
         assert(info->idCallSig == nullptr);
+        assert(info->idTargetBlock == nullptr);
 
         info->idNum  = emitInsCount;
         info->idSize = sz;
@@ -2299,10 +2300,7 @@ void emitter::emitGeneratePrologEpilog()
     if (emitComp->verbose)
     {
         printf("%d prologs, %d epilogs", prologCnt, epilogCnt);
-        if (emitComp->UsesFunclets())
-        {
-            printf(", %d funclet prologs, %d funclet epilogs", funcletPrologCnt, funcletEpilogCnt);
-        }
+        printf(", %d funclet prologs, %d funclet epilogs", funcletPrologCnt, funcletEpilogCnt);
         printf("\n");
 
         // prolog/epilog code doesn't use this yet
@@ -2513,7 +2511,6 @@ void emitter::emitEndFnEpilog()
 
 void emitter::emitBegFuncletProlog(insGroup* igPh)
 {
-    assert(emitComp->UsesFunclets());
     emitBegPrologEpilog(igPh);
 }
 
@@ -2524,7 +2521,6 @@ void emitter::emitBegFuncletProlog(insGroup* igPh)
 
 void emitter::emitEndFuncletProlog()
 {
-    assert(emitComp->UsesFunclets());
     emitEndPrologEpilog();
 }
 
@@ -2535,7 +2531,6 @@ void emitter::emitEndFuncletProlog()
 
 void emitter::emitBegFuncletEpilog(insGroup* igPh)
 {
-    assert(emitComp->UsesFunclets());
     emitBegPrologEpilog(igPh);
 }
 
@@ -2546,7 +2541,6 @@ void emitter::emitBegFuncletEpilog(insGroup* igPh)
 
 void emitter::emitEndFuncletEpilog()
 {
-    assert(emitComp->UsesFunclets());
     emitEndPrologEpilog();
 }
 
@@ -6761,7 +6755,7 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
     emitFullGCinfo = fullPtrMap;
 #if TARGET_X86
     // On x86 with funclets we emit full ptr map even for EBP frames
-    emitFullArgInfo = comp->UsesFunclets() ? fullPtrMap : !emitHasFramePtr;
+    emitFullArgInfo = fullPtrMap;
 #else
     emitFullArgInfo = !emitHasFramePtr;
 #endif
@@ -7055,8 +7049,7 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
         {
             emitSyncThisObjReg = thisDsc->GetRegNum();
 
-            if (emitSyncThisObjReg == (int)REG_ARG_0 &&
-                (codeGen->intRegState.rsCalleeRegArgMaskLiveIn & genRegMask(REG_ARG_0)))
+            if (emitSyncThisObjReg == (int)REG_ARG_0 && (codeGen->calleeRegArgMaskLiveIn & genRegMask(REG_ARG_0)))
             {
                 if (emitFullGCinfo)
                 {
@@ -7163,16 +7156,6 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
                 assert(indx < emitComp->lvaTrackedCount);
 
                 // printf("Variable #%2u/%2u is at stack offset %d\n", num, indx, offs);
-
-#if defined(JIT32_GCENCODER) && defined(FEATURE_EH_WINDOWS_X86)
-                // Remember the frame offset of the "this" argument for synchronized methods.
-                if (!emitComp->UsesFunclets() && emitComp->lvaIsOriginalThisArg(num) &&
-                    emitComp->lvaKeepAliveAndReportThis())
-                {
-                    emitSyncThisObjOffs = offs;
-                    offs |= this_OFFSET_FLAG;
-                }
-#endif // JIT32_GCENCODER && FEATURE_EH_WINDOWS_X86
 
                 if (dsc->TypeIs(TYP_BYREF))
                 {
@@ -8023,7 +8006,7 @@ void emitter::emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataSecO
     emitEnsureDataSectionAlignment(TARGET_POINTER_SIZE);
 
     UNATIVE_OFFSET secOffs     = emitConsDsc.dsdOffs;
-    unsigned       emittedSize = sizeof(emitter::dataAsyncResumeInfo) * numEntries;
+    unsigned       emittedSize = sizeof(CORINFO_AsyncResumeInfo) * numEntries;
     emitConsDsc.dsdOffs += emittedSize;
 
     dataSection* secDesc = (dataSection*)emitGetMem(roundUp(sizeof(dataSection) + numEntries * sizeof(emitLocation)));
@@ -8560,9 +8543,9 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
         {
             JITDUMP("  section %u, size %u, async resume info\n", secNum++, dscSize);
 
-            size_t numElems = dscSize / sizeof(emitter::dataAsyncResumeInfo);
+            size_t numElems = dscSize / sizeof(CORINFO_AsyncResumeInfo);
 
-            emitter::dataAsyncResumeInfo* aDstRW = (emitter::dataAsyncResumeInfo*)dstRW;
+            CORINFO_AsyncResumeInfo* aDstRW = (CORINFO_AsyncResumeInfo*)dstRW;
             for (size_t i = 0; i < numElems; i++)
             {
                 emitLocation* emitLoc = &((emitLocation*)dsc->dsCont)[i];
@@ -8735,7 +8718,7 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
             {
                 if (i > 0)
                 {
-                    sprintf_s(label, ArrLen(label), "RWD%02zu", i * sizeof(dataAsyncResumeInfo));
+                    sprintf_s(label, ArrLen(label), "RWD%02zu", i * sizeof(CORINFO_AsyncResumeInfo));
                     printf(labelFormat, label);
                 }
 
@@ -8918,13 +8901,6 @@ void emitter::emitGCvarLiveSet(int offs, GCtype gcType, BYTE* addr, ssize_t disp
     desc->vpdNext = nullptr;
 
     /* the lower 2 bits encode props about the stk ptr */
-
-#if defined(JIT32_GCENCODER) && defined(FEATURE_EH_WINDOWS_X86)
-    if (!emitComp->UsesFunclets() && offs == emitSyncThisObjOffs)
-    {
-        desc->vpdVarNum |= this_OFFSET_FLAG;
-    }
-#endif
 
     if (gcType == GCT_BYREF)
     {
@@ -10689,13 +10665,13 @@ const char* emitter::emitOffsetToLabel(unsigned offs)
 regMaskTP emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 {
     // Is it a helper with a special saved set?
-    bool isNoGCHelper = emitNoGChelper(methHnd);
+    bool            isNoGCHelper = emitNoGChelper(methHnd);
+    CorInfoHelpFunc helper       = Compiler::eeGetHelperNum(methHnd);
+
     if (isNoGCHelper)
     {
-        CorInfoHelpFunc helpFunc = Compiler::eeGetHelperNum(methHnd);
-
         // Get the set of registers that this call kills and remove it from the saved set.
-        regMaskTP savedSet = RBM_ALLINT & ~emitGetGCRegsKilledByNoGCCall(helpFunc);
+        regMaskTP savedSet = RBM_ALLINT & ~emitGetGCRegsKilledByNoGCCall(helper);
 
 #ifdef DEBUG
         if (emitComp->verbose)
@@ -10708,6 +10684,13 @@ regMaskTP emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 #endif
         return savedSet;
     }
+#ifdef RBM_INTERFACELOOKUP_FOR_SLOT_TRASH
+    else if (helper == CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT)
+    {
+        // This one is not no-gc, but it preserves arg registers.
+        return RBM_ALLINT & ~RBM_INTERFACELOOKUP_FOR_SLOT_TRASH;
+    }
+#endif
     else
     {
         // This is the saved set of registers after a normal call.

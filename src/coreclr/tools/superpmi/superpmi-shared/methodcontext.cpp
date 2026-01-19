@@ -2099,29 +2099,6 @@ unsigned MethodContext::repGetFieldOffset(CORINFO_FIELD_HANDLE field)
     return result;
 }
 
-void MethodContext::recGetLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle, CorInfoHelpFunc result)
-{
-    if (GetLazyStringLiteralHelper == nullptr)
-        GetLazyStringLiteralHelper = new LightWeightMap<DWORDLONG, DWORD>();
-
-    DWORDLONG key = CastHandle(handle);
-    DWORD value = (DWORD)result;
-    GetLazyStringLiteralHelper->Add(key, value);
-    DEBUG_REC(dmpGetLazyStringLiteralHelper(key, value));
-}
-void MethodContext::dmpGetLazyStringLiteralHelper(DWORDLONG key, DWORD value)
-{
-    printf("GetLazyStringLiteralHelper key mod-%016" PRIX64 ", value res-%u", key, value);
-}
-CorInfoHelpFunc MethodContext::repGetLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle)
-{
-    DWORDLONG key = CastHandle(handle);
-    DWORD value = LookupByKeyOrMiss(GetLazyStringLiteralHelper, key, ": key %016" PRIX64 "", key);
-    DEBUG_REP(dmpGetLazyStringLiteralHelper(key, value));
-    CorInfoHelpFunc result = (CorInfoHelpFunc)value;
-    return result;
-}
-
 void MethodContext::recGetUnBoxHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc result)
 {
     if (GetUnBoxHelper == nullptr)
@@ -3271,12 +3248,12 @@ void MethodContext::recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
         key.pResolvedTokenVirtualMethod = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(info->pResolvedTokenVirtualMethod, ResolveToken);
 
     Agnostic_ResolveVirtualMethodResult result;
-    result.returnValue                = returnValue;
-    result.devirtualizedMethod        = CastHandle(info->devirtualizedMethod);
-    result.isInstantiatingStub        = info->isInstantiatingStub;
-    result.exactContext               = CastHandle(info->exactContext);
-    result.detail                     = (DWORD) info->detail;
-    result.wasArrayInterfaceDevirt    = info->wasArrayInterfaceDevirt;
+    result.returnValue         = returnValue;
+    result.devirtualizedMethod = CastHandle(info->devirtualizedMethod);
+    result.isInstantiatingStub = info->isInstantiatingStub;
+    result.exactContext        = CastHandle(info->exactContext);
+    result.detail              = (DWORD)info->detail;
+    result.needsMethodContext  = info->needsMethodContext;
 
     if (returnValue)
     {
@@ -3301,11 +3278,11 @@ void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodK
         key.context,
         key.pResolvedTokenVirtualMethodNonNull,
         key.pResolvedTokenVirtualMethodNonNull ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.pResolvedTokenVirtualMethod).c_str() : "???");
-    printf(", value returnValue-%s, devirtMethod-%016" PRIX64 ", instantiatingStub-%s, wasArrayInterfaceDevirt-%s, exactContext-%016" PRIX64 ", detail-%d, tokDvMeth{%s}, tokDvUnboxMeth{%s}",
+    printf(", value returnValue-%s, devirtMethod-%016" PRIX64 ", instantiatingStub-%s, needsMethodContext-%s, exactContext-%016" PRIX64 ", detail-%d, tokDvMeth{%s}, tokDvUnboxMeth{%s}",
         result.returnValue ? "true" : "false",
         result.devirtualizedMethod,
         result.isInstantiatingStub ? "true" : "false",
-        result.wasArrayInterfaceDevirt ? "true" : "false",
+        result.needsMethodContext ? "true" : "false",
         result.exactContext,
         result.detail,
         result.returnValue ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(result.resolvedTokenDevirtualizedMethod).c_str() : "???",
@@ -3330,7 +3307,7 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
 
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) result.devirtualizedMethod;
     info->isInstantiatingStub = result.isInstantiatingStub;
-    info->wasArrayInterfaceDevirt = result.wasArrayInterfaceDevirt;
+    info->needsMethodContext  = result.needsMethodContext;
     info->exactContext = (CORINFO_CONTEXT_HANDLE) result.exactContext;
     info->detail = (CORINFO_DEVIRTUALIZATION_DETAIL) result.detail;
     if (result.returnValue)

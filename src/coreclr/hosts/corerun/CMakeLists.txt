@@ -61,7 +61,7 @@ else()
             set(JS_SYSTEM_NATIVE_BROWSER
                 "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.js")
             set(JS_SYSTEM_BROWSER_UTILS
-                "${STATIC_LIB_DESTINATION}/libSystem.Browser.Utils.js")
+                "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.Utils.js")
             set(JS_CORE_RUN
                 "${CMAKE_CURRENT_SOURCE_DIR}/wasm/libCorerun.extpost.js")
             set_target_properties(corerun PROPERTIES
@@ -69,13 +69,13 @@ else()
                 LINK_FLAGS "--js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_BROWSER_UTILS} --extern-post-js ${JS_CORE_RUN}"
                 RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
             target_link_options(corerun PRIVATE
-                -sEXIT_RUNTIME=0
                 -sINITIAL_MEMORY=134217728
                 -sMAXIMUM_MEMORY=2147483648
                 -sALLOW_MEMORY_GROWTH=1
                 -sSTACK_SIZE=5MB
                 -sMODULARIZE=1
                 -sEXPORT_ES6=1
+                -sEXIT_RUNTIME=1
                 -sEXPORTED_RUNTIME_METHODS=ENV,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
                 -sEXPORTED_FUNCTIONS=_main,${CMAKE_EMCC_EXPORTED_FUNCTIONS}
                 -sEXPORT_NAME=createDotnetRuntime

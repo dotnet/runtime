@@ -4,6 +4,9 @@ parameters:
   - name: testGroup
     type: string
     default: outerloop
+  - name: stages
+    type: stageList
+    default: []
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -55,3 +58,5 @@ extends:
             testGroup: ${{ parameters.testGroup }}
             liveLibrariesBuildConfig: Release
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+    - ${{ each stage in parameters.stages }}:
+        - ${{ stage }}
