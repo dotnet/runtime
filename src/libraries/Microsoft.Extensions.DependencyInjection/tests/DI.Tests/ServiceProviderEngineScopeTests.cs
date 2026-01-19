@@ -3,9 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
@@ -39,6 +41,127 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             foreach (var serviceProviderInterface in typeof(ServiceProvider).GetInterfaces())
             {
                 Assert.Contains(serviceProviderInterface, engineScopeInterfaces);
+            }
+        }
+
+        [Fact]
+        public void Dispose_ServiceThrows_DisposesAllAndThrows()
+        {
+            var services = new ServiceCollection();
+            services.AddKeyedTransient("throws", (_, _) => new TestDisposable(true));
+            services.AddKeyedTransient("doesnotthrow", (_, _) => new TestDisposable(false));
+
+
+            var scope = services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>().CreateScope().ServiceProvider;
+
+            var disposables = new TestDisposable[]
+            {
+                scope.GetRequiredKeyedService<TestDisposable>("throws"),
+                scope.GetRequiredKeyedService<TestDisposable>("doesnotthrow")
+            };
+
+            var exception = Assert.Throws<InvalidOperationException>(() => ((IDisposable)scope).Dispose());
+            Assert.Equal(TestDisposable.ErrorMessage, exception.Message);
+            Assert.All(disposables, disposable => Assert.True(disposable.IsDisposed));
+        }
+
+        [Fact]
+        public void Dispose_TwoServicesThrows_DisposesAllAndThrowsAgggregatedException()
+        {
+            var services = new ServiceCollection();
+            services.AddKeyedTransient("throws", (_, _) => new TestDisposable(true));
+            services.AddKeyedTransient("doesnotthrow", (_, _) => new TestDisposable(false));
+           
+
+            var scope = services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>().CreateScope().ServiceProvider;
+
+            var disposables = new TestDisposable[]
+            {
+                scope.GetRequiredKeyedService<TestDisposable>("throws"),
+                scope.GetRequiredKeyedService<TestDisposable>("doesnotthrow"),
+                scope.GetRequiredKeyedService<TestDisposable>("throws"),
+                scope.GetRequiredKeyedService<TestDisposable>("doesnotthrow"),
+            };
+
+            var exception = Assert.Throws<AggregateException>(() => ((IDisposable)scope).Dispose());
+            Assert.Equal(2, exception.InnerExceptions.Count);
+            Assert.All(exception.InnerExceptions, ex => Assert.IsType<InvalidOperationException>(ex));
+            Assert.All(disposables, disposable => Assert.True(disposable.IsDisposed));
+        }
+
+        [Fact]
+        public async Task DisposeAsync_ServiceThrows_DisposesAllAndThrows()
+        {
+            var services = new ServiceCollection();
+            services.AddKeyedTransient("throws", (_, _) => new TestDisposable(true));
+            services.AddKeyedTransient("doesnotthrow", (_, _) => new TestDisposable(false));
+
+
+            var scope = services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>().CreateScope().ServiceProvider;
+
+            var disposables = new TestDisposable[]
+            {
+                scope.GetRequiredKeyedService<TestDisposable>("throws"),
+                scope.GetRequiredKeyedService<TestDisposable>("doesnotthrow")
+            };
+
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(async() => await ((IAsyncDisposable)scope).DisposeAsync());
+            Assert.Equal(TestDisposable.ErrorMessage, exception.Message);
+            Assert.All(disposables, disposable => Assert.True(disposable.IsDisposed));
+        }
+
+        [Fact]
+        public async Task DisposeAsync_TwoServicesThrows_DisposesAllAndThrowsAggregateException()
+        {
+            var services = new ServiceCollection();
+            services.AddKeyedTransient("throws", (_, _) => new TestDisposable(true));
+            services.AddKeyedTransient("doesnotthrow", (_, _) => new TestDisposable(false));
+
+
+            var scope = services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>().CreateScope().ServiceProvider;
+
+            var disposables = new TestDisposable[]
+            {
+                scope.GetRequiredKeyedService<TestDisposable>("throws"),
+                scope.GetRequiredKeyedService<TestDisposable>("doesnotthrow"),
+                scope.GetRequiredKeyedService<TestDisposable>("throws"),
+                scope.GetRequiredKeyedService<TestDisposable>("doesnotthrow"),
+            };
+
+            var exception = await Assert.ThrowsAsync<AggregateException>(async () => await ((IAsyncDisposable)scope).DisposeAsync());
+            Assert.Equal(2, exception.InnerExceptions.Count);
+            Assert.All(exception.InnerExceptions, ex => Assert.IsType<InvalidOperationException>(ex));
+            Assert.All(disposables, disposable => Assert.True(disposable.IsDisposed));
+        }
+
+        private class TestDisposable : IDisposable, IAsyncDisposable
+        {
+            public const string ErrorMessage = "Dispose failed.";
+
+            private readonly bool _throwsOnDispose;
+            public int DisposedCounter { get; private set; }
+            public bool IsDisposed => DisposedCounter > 0;
+
+            public TestDisposable(bool throwsOnDispose)
+            {
+                _throwsOnDispose = throwsOnDispose;
+            }
+
+            public void Dispose()
+            {
+                if (_throwsOnDispose)
+                {
+                    DisposedCounter++;
+                    throw new InvalidOperationException(ErrorMessage);
+                }
+
+                DisposedCounter++;
+            }
+
+            public ValueTask DisposeAsync()
+            {
+                Dispose();
+                return default;
             }
         }
     }

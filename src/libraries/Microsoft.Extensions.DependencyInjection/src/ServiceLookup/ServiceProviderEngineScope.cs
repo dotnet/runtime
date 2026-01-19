@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Internal;
 
@@ -120,40 +121,65 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public void Dispose()
         {
             List<object>? toDispose = BeginDispose();
+            var exceptions = default(List<Exception>);
+            var index = (toDispose?.Count ?? 0) - 1;
 
-            if (toDispose != null)
+            while (index >= 0)
             {
-                for (int i = toDispose.Count - 1; i >= 0; i--)
+                try
                 {
-                    if (toDispose[i] is IDisposable disposable)
+                    for (; index >= 0; index--)
                     {
-                        disposable.Dispose();
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException(SR.Format(SR.AsyncDisposableServiceDispose, TypeNameHelper.GetTypeDisplayName(toDispose[i])));
+                        if (toDispose![index] is IDisposable disposable)
+                        {
+                            disposable.Dispose();
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException(SR.Format(SR.AsyncDisposableServiceDispose, TypeNameHelper.GetTypeDisplayName(toDispose[index])));
+                        }
                     }
                 }
+                catch (Exception ex)
+                {
+                    exceptions ??= new List<Exception>();
+                    exceptions.Add(ex);
+                    index--;
+                }
             }
+
+            if (exceptions is null)
+            {
+                return;
+            }
+
+            if (exceptions.Count == 1)
+            {
+                throw exceptions[0];
+            }
+
+            throw new AggregateException(exceptions);
         }
 
         public ValueTask DisposeAsync()
         {
             List<object>? toDispose = BeginDispose();
+            var exceptions = default(List<Exception>);
+            var index = toDispose is null ? -1 : toDispose.Count - 1;
 
-            if (toDispose != null)
+            while (index >= 0)
             {
                 try
                 {
-                    for (int i = toDispose.Count - 1; i >= 0; i--)
+                    for (; index >= 0; index--)
                     {
-                        object disposable = toDispose[i];
+                        object disposable = toDispose![index];
                         if (disposable is IAsyncDisposable asyncDisposable)
                         {
                             ValueTask vt = asyncDisposable.DisposeAsync();
                             if (!vt.IsCompletedSuccessfully)
                             {
-                                return Await(i, vt, toDispose);
+                                return Await(index, vt, toDispose);
                             }
 
                             // If its a IValueTaskSource backed ValueTask,
@@ -168,11 +194,23 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
                 catch (Exception ex)
                 {
-                    return new ValueTask(Task.FromException(ex));
+                    exceptions ??= new List<Exception>();
+                    exceptions.Add(ex);
+                    index--;
                 }
             }
 
-            return default;
+            if (exceptions is null)
+            {
+                return default;
+            }
+
+            if (exceptions.Count == 1)
+            {
+                return new ValueTask(Task.FromException(exceptions[0]));
+            }
+
+            return new ValueTask(Task.FromException(new AggregateException(exceptions)));
 
             static async ValueTask Await(int i, ValueTask vt, List<object> toDispose)
             {
