@@ -110,6 +110,7 @@ export async function fetchLike(url: string, init?: RequestInit, expectedContent
         return responseLike(url, null, {
             status: 500,
             statusText: "ERR28: " + e,
+            headers: {},
         });
     }
     throw new Error("No fetch implementation available");
