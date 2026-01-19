@@ -47,7 +47,7 @@
     <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
     <Compile Include="ZLibCompressionOptionsUnitTests.cs" />
-    <Compile Include="ZlibEncoderDecoderTests.cs" />
+    <Compile Include="DeflateZLibGZipEncoderDecoderTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="ZipArchive\zip_CreateTests.Unix.cs" />
