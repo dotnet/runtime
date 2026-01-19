@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using Xunit;
 
 namespace System.IO.Compression
@@ -119,10 +117,18 @@ namespace System.IO.Compression
             Assert.Throws<ArgumentOutOfRangeException>("maxWindowLog", () => new ZstandardDecoder(dictionary, maxWindowLog: 33));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
-        public void GetMaxCompressedLength_TruncationOn32Bit_ThrowsArgumentOutOfRangeException()
+        [Fact]
+        public void GetMaxCompressedLength_LargerThanMax_ThrowsArgumentOutOfRangeException()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("inputLength", () => GetMaxCompressedLength(uint.MaxValue + 1L));
+            // unfortunately, the max argument is platform dependent due to internal use of size_t
+            Assert.Throws<ArgumentOutOfRangeException>("inputLength", () => GetMaxCompressedLength(nint.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("inputLength", () => GetMaxCompressedLength(nint.MaxValue + 1L));
+
+            if (!Environment.Is64BitProcess)
+            {
+                // the API defines the argument as long, so test also uint.MaxValue + 1 on 32-bit
+                Assert.Throws<ArgumentOutOfRangeException>("inputLength", () => GetMaxCompressedLength(uint.MaxValue + 1L));
+            }
         }
 
         [Fact]

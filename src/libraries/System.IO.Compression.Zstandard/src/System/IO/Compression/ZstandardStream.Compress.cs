@@ -195,7 +195,7 @@ namespace System.IO.Compression
 
                     if (lastResult == OperationStatus.InvalidData)
                     {
-                        throw new InvalidOperationException(SR.ZstandardStream_Compress_InvalidData);
+                        throw new InvalidDataException(SR.ZstandardStream_Compress_InvalidData);
                     }
                     if (bytesWritten > 0)
                     {

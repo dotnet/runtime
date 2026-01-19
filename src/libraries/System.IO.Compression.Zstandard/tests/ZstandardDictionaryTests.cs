@@ -3,7 +3,6 @@
 
 using System.Buffers;
 using System.Linq;
-using System.Reflection;
 using Xunit;
 
 namespace System.IO.Compression
@@ -86,6 +85,9 @@ namespace System.IO.Compression
             // Invalid max dictionary size
             Assert.Throws<ArgumentOutOfRangeException>(() => ZstandardDictionary.Train("AbbCCCddddEEEEE"u8.ToArray(), new int[] { 1, 2, 3, 4, 5 }, -50));
             Assert.Throws<ArgumentOutOfRangeException>(() => ZstandardDictionary.Train("AbbCCCddddEEEEE"u8.ToArray(), new int[] { 1, 2, 3, 4, 5 }, 0));
+
+            // negative sample length
+            Assert.Throws<ArgumentException>(() => ZstandardDictionary.Train("AbbCCCddddEEEEE"u8.ToArray(), new int[] { 1, -2, 3, 4, 5 }, 50));
         }
 
         [Fact]

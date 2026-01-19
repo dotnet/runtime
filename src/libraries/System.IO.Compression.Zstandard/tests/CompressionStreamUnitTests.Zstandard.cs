@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Threading.Tasks;
 using System.Linq;
-using Xunit;
-using Xunit.Sdk;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Xunit.Sdk;
+using Xunit;
 
 namespace System.IO.Compression
 {
@@ -116,20 +116,84 @@ namespace System.IO.Compression
         }
 
         [Theory]
-        [InlineData(-1)]
-        [InlineData(2)]
-        public void ZstandardStream_SetSourceLength_SizeDiffers_InvalidDataException(long delta)
+        [InlineData(true, -1)]
+        [InlineData(false, -1)]
+        [InlineData(true, 2)]
+        [InlineData(false, 2)]
+        public async Task ZstandardStream_SetSourceLength_SizeDiffers_InvalidDataException(bool async, long delta)
         {
             byte[] testData = ZstandardTestUtils.CreateTestData();
             using MemoryStream output = new();
             ZstandardStream compressionStream = new(output, CompressionLevel.Optimal);
 
             compressionStream.SetSourceLength(testData.Length + delta);
-            Assert.Throws<InvalidDataException>(() =>
+            await Assert.ThrowsAsync<InvalidDataException>(async () =>
             {
-                compressionStream.Write(testData, 0, testData.Length);
-                compressionStream.Dispose();
+                // for shorter source length, the error occurs during Write/WriteAsync
+                // for longer source length, the error occurs as part of Dispose/DisposeAsync
+                if (async)
+                {
+                    await compressionStream.WriteAsync(testData, 0, testData.Length);
+                    await compressionStream.DisposeAsync();
+                }
+                else
+                {
+                    compressionStream.Write(testData, 0, testData.Length);
+                    compressionStream.Dispose();
+                }
             });
+        }
+
+        [Fact]
+        public void ZstandardStream_DecompressInvalidData_InvalidDataException()
+        {
+            byte[] invalidCompressedData = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05 };
+            using MemoryStream input = new(invalidCompressedData);
+            using ZstandardStream decompressionStream = new(input, CompressionMode.Decompress);
+            byte[] buffer = new byte[16];
+
+            Assert.Throws<InvalidDataException>(() => decompressionStream.Read(buffer, 0, buffer.Length));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ZstandardStream_Roundtrip_WithDictionary(bool async)
+        {
+            byte[] dictionaryData = ZstandardTestUtils.CreateSampleDictionary();
+            using ZstandardDictionary dictionary = ZstandardDictionary.Create(dictionaryData);
+
+            byte[] testData = ZstandardTestUtils.CreateTestData(5000);
+
+            using MemoryStream compressedStream = new();
+            using (ZstandardStream compressionStream = new(compressedStream, CompressionMode.Compress, dictionary, leaveOpen: true))
+            {
+                if (async)
+                {
+                    await compressionStream.WriteAsync(testData, 0, testData.Length);
+                }
+                else
+                {
+                    compressionStream.Write(testData, 0, testData.Length);
+                }
+            }
+
+            compressedStream.Position = 0;
+
+            using MemoryStream decompressedStream = new();
+            using (ZstandardStream decompressionStream = new(compressedStream, CompressionMode.Decompress, dictionary))
+            {
+                if (async)
+                {
+                    await decompressionStream.CopyToAsync(decompressedStream);
+                }
+                else
+                {
+                    decompressionStream.CopyTo(decompressedStream);
+                }
+            }
+
+            Assert.Equal(testData, decompressedStream.ToArray());
         }
 
         [InlineData(TestScenario.ReadAsync)]

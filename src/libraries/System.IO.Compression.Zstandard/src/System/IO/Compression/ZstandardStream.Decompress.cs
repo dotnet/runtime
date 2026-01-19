@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -41,7 +42,7 @@ namespace System.IO.Compression
 
             if (lastResult == OperationStatus.InvalidData)
             {
-                throw new InvalidOperationException(SR.ZstandardStream_Decompress_InvalidData);
+                throw new InvalidDataException(SR.ZstandardStream_Decompress_InvalidData);
             }
 
             // If we successfully decompressed any bytes, or if we've reached the end of the decompression, we're done.
@@ -283,11 +284,13 @@ namespace System.IO.Compression
             }
         }
 
+        [DoesNotReturn]
         private static void ThrowInvalidStream() =>
             // The stream is either malicious or poorly implemented and returned a number of
             // bytes larger than the buffer supplied to it.
             throw new InvalidDataException(SR.ZstandardStream_Decompress_InvalidStream);
 
+        [DoesNotReturn]
         private static void ThrowTruncatedInvalidData() =>
             throw new InvalidDataException(SR.ZstandardStream_Decompress_TruncatedData);
     }
