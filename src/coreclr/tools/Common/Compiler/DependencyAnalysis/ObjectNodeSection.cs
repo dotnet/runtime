@@ -38,7 +38,6 @@ namespace ILCompiler.DependencyAnalysis
             NeedsAlignment = needsAlign;
         }
 
-        public static readonly ObjectNodeSection XDataSection = new ObjectNodeSection("xdata", SectionType.ReadOnly);
         public static readonly ObjectNodeSection DataSection = new ObjectNodeSection("data", SectionType.Writeable);
         public static readonly ObjectNodeSection ReadOnlyDataSection = new ObjectNodeSection("rdata", SectionType.ReadOnly);
         public static readonly ObjectNodeSection FoldableReadOnlyDataSection = new ObjectNodeSection("rdata", SectionType.ReadOnly);
@@ -57,12 +56,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public static readonly ObjectNodeSection ModulesWindowsContentSection = new ObjectNodeSection(".modules$I", SectionType.ReadOnly);
         public static readonly ObjectNodeSection ModulesUnixContentSection = new ObjectNodeSection("__modules", SectionType.Writeable);
-
-        public static readonly ObjectNodeSection DebugDirectorySection = new ObjectNodeSection("debug", SectionType.Debug);
-        public static readonly ObjectNodeSection CorMetaSection = new ObjectNodeSection("cormeta", SectionType.ReadOnly);
-        public static readonly ObjectNodeSection Win32ResourcesSection = new ObjectNodeSection("rsrc", SectionType.ReadOnly);
-        public static readonly ObjectNodeSection PDataSection = new ObjectNodeSection("pdata", SectionType.ReadOnly);
-
         public static readonly ObjectNodeSection WasmCodeSection = new ObjectNodeSection("wasm.code", SectionType.Executable, needsAlign: false);
     }
 }
