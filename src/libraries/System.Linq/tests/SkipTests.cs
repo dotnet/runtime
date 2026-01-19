@@ -414,6 +414,8 @@ namespace System.Linq.Tests
                 Assert.Empty(source.Skip(2).Distinct().ToList());
                 Assert.Empty(source.Skip(2).OrderBy(x => x).ToArray());
                 Assert.Empty(source.Skip(2).OrderBy(x => x).ToList());
+                Assert.False(source.Skip(2).Contains(1));
+                Assert.False(source.Skip(2).Contains(2));
             }
         }
     }
