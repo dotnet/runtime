@@ -163,16 +163,18 @@ class CallStubGenerator
     PCODE GetFPReg32RangeRoutine(int x1, int x2);
 #endif // TARGET_ARM64
     PCODE GetGPRegRangeRoutine(int r1, int r2);
+    template<typename ArgIteratorType>
+    ReturnType GetReturnType(ArgIteratorType *pArgIt);
+    CallStubHeader::InvokeFunctionPtr GetInvokeFunctionPtr(ReturnType returnType);
+    PCODE GetInterpreterReturnTypeHandler(ReturnType returnType);
 #ifdef TARGET_ARM
     PCODE GetRegRoutine_4B(int r1, int r2);
     PCODE GetStackRoutine_4B();
 #endif // TARGET_ARM
-    ReturnType GetReturnType(ArgIterator *pArgIt);
-    CallStubHeader::InvokeFunctionPtr GetInvokeFunctionPtr(ReturnType returnType);
-    PCODE GetInterpreterReturnTypeHandler(ReturnType returnType);
 
     // Process the argument described by argLocDesc. This function is called for each argument in the method signature.
-    void ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocDesc, PCODE *pRoutines);
+    template<typename ArgIteratorType>
+    void ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& argLocDesc, PCODE *pRoutines);
 public:
     // Generate the call stub for the given method.
     CallStubHeader *GenerateCallStub(MethodDesc *pMD, AllocMemTracker *pamTracker, bool interpreterToNative);
@@ -188,6 +190,8 @@ private:
         return sizeof(CallStubHeader) + ((numArgs + 1) * 3 + 1) * sizeof(PCODE);
     }
     void ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDesc *pMD);
+    template<typename ArgIteratorType>
+    void ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfoCallConvExtension unmanagedCallConv, MetaSig &sig, PCODE *pRoutines, MethodDesc *pMD);
 
     void TerminateCurrentRoutineIfNotOfNewType(RoutineType type, PCODE *pRoutines);
 };

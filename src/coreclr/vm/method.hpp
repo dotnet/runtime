@@ -1619,6 +1619,13 @@ public:
     // Returns the address of the native code.
     PCODE GetNativeCode();
 
+    // Returns either the jitted code or the interpreter code (will not return the InterpreterStub which GetNativeCode might return)
+    PCODE GetCodeForInterpreterOrJitted()
+    {
+        WRAPPER_NO_CONTRACT;
+        return GetInterpreterCodeFromInterpreterPrecodeIfPresent(GetNativeCode());
+    }
+
     // Returns GetNativeCode() if it exists, but also checks to see if there
     // is a non-default code version that is populated with a code body and returns that.
     // Perf warning: takes the CodeVersionManagerLock on every call
