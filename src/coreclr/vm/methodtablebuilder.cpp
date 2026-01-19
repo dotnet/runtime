@@ -8319,10 +8319,11 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
     {
         if (!pParentMT->IsValueTypeClass()
             || hasGCFields
+            || bmtFP->fIsByRefLikeType
             || isAutoLayoutOrHasAutoLayoutField)
         {
             // CStruct layout types can't have a parent type, GC fields
-            // or auto layout fields.
+            // byreflike types, or auto layout fields.
             BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
         }
 
@@ -8332,6 +8333,27 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
         pLayoutInfo->SetIsBlittable(TRUE);
 
         HandleCStructLayout(pByValueClassCache);
+        break;
+    }
+
+    case EEClassLayoutInfo::LayoutType::CUnion:
+    {
+        if (!pParentMT->IsValueTypeClass()
+            || hasGCFields
+            || bmtFP->fIsByRefLikeType
+            || isAutoLayoutOrHasAutoLayoutField)
+        {
+            // CUnion layout types can't have a parent type, GC fields
+            // byreflike types, or auto layout fields.
+            BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
+        }
+
+        // Explicit size is not used for CUnion layout.
+        pLayoutInfo->SetHasExplicitSize(FALSE);
+        // CUnion layouts are always blittable
+        pLayoutInfo->SetIsBlittable(TRUE);
+
+        HandleCUnionLayout(pByValueClassCache);
         break;
     }
 
@@ -8582,35 +8604,34 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
             {
                 MethodTable * pByValueMT = pByValueClassCache[i];
 
+                int alignmentRequirement;
 #if !defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4)
                 if (pByValueMT->GetNumInstanceFieldBytes() >= DATA_ALIGNMENT)
                 {
-                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, DATA_ALIGNMENT);
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, DATA_ALIGNMENT);
+                    alignmentRequirement = DATA_ALIGNMENT;
                 }
                 else
-#elif defined(FEATURE_64BIT_ALIGNMENT)
-                if (pByValueMT->RequiresAlign8())
-                {
-                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, 8);
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, 8);
-                }
-                else
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // !defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4)
                 if (pByValueMT->ContainsGCPointers())
                 {
                     // this field type has GC pointers in it, which need to be pointer-size aligned
                     // so do this if it has not been done already
-                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, TARGET_POINTER_SIZE);
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, TARGET_POINTER_SIZE);
+                    alignmentRequirement = TARGET_POINTER_SIZE;
                     containsGCPointers = true;
                 }
                 else
                 {
-                    int fieldAlignmentRequirement = pByValueMT->GetFieldAlignmentRequirement();
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, fieldAlignmentRequirement);
-                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, fieldAlignmentRequirement);
+                    alignmentRequirement = pByValueMT->GetFieldAlignmentRequirement();
                 }
+#if defined(FEATURE_64BIT_ALIGNMENT)
+                if (pByValueMT->RequiresAlign8())
+                {
+                    alignmentRequirement = max(8, alignmentRequirement);
+                }
+#endif // FEATURE_64BIT_ALIGNMENT
+
+                largestAlignmentRequirement = max(largestAlignmentRequirement, alignmentRequirement);
+                dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, alignmentRequirement);
 
                 pFieldDescList[i].SetOffset(dwCumulativeInstanceFieldPos - dwOffsetBias);
                 dwCumulativeInstanceFieldPos += pByValueMT->GetNumInstanceFieldBytes();
@@ -8825,6 +8846,33 @@ VOID MethodTableBuilder::HandleCStructLayout(MethodTable** pByValueClassCache)
     }
 }
 
+VOID MethodTableBuilder::HandleCUnionLayout(MethodTable** pByValueClassCache)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(HasLayout());
+
+    EEClassLayoutInfo* pLayoutInfo = GetLayoutInfo();
+
+    CONSISTENCY_CHECK(pLayoutInfo != nullptr);
+
+    bmtFP->NumInstanceFieldBytes = pLayoutInfo->InitializeCUnionFieldLayout(
+        GetHalfBakedClass()->GetFieldDescList(),
+        pByValueClassCache,
+        bmtEnumFields->dwNumDeclaredFields
+    );
+
+    if (bmtFP->NumInlineArrayElements != 0)
+    {
+        BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
+    }
+
+    if (pLayoutInfo->IsZeroSized())
+    {
+        BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
+    }
+}
+
 //*******************************************************************************
 // this accesses the field size which is temporarily stored in m_pMTOfEnclosingClass
 // during class loading. Don't use any other time
@@ -8874,7 +8922,7 @@ void MethodTableBuilder::SystemVAmd64CheckForPassStructInRegister(MethodTable** 
     const bool useNativeLayout = false;
     // Iterate through the fields and make sure they meet requirements to pass in registers
     SystemVStructRegisterPassingHelper helper((unsigned int)totalStructSize);
-    if (GetHalfBakedMethodTable()->ClassifyEightBytes(&helper, 0, 0, useNativeLayout, pByValueClassCache))
+    if (GetHalfBakedMethodTable()->ClassifyEightBytes(&helper, useNativeLayout, pByValueClassCache))
     {
         LOG((LF_JIT, LL_EVERYTHING, "**** SystemVAmd64CheckForPassStructInRegister: struct %s is enregisterable\n",
                this->GetDebugClassName()));
@@ -8898,7 +8946,7 @@ void MethodTableBuilder::StoreEightByteClassification(SystemVStructRegisterPassi
     LoaderAllocator* pAllocator = MethodTableBuilder::GetLoaderAllocator();
     AllocMemTracker* pamTracker = MethodTableBuilder::GetMemTracker();
     EnsureOptionalFieldsAreAllocated(eeClass, pamTracker, pAllocator->GetLowFrequencyHeap());
-    eeClass->SetEightByteClassification(helper->eightByteCount, helper->eightByteClassifications, helper->eightByteSizes);
+    eeClass->SetEightByteClassification(SystemVEightByteRegistersInfo(*helper));
 }
 
 #endif // UNIX_AMD64_ABI
@@ -12572,6 +12620,10 @@ BOOL HasLayoutMetadata(Assembly* pAssembly, IMDInternalImport* pInternalImport, 
         if (kind == CorExtendedLayoutKind::CStruct)
         {
             *pLayoutType = EEClassLayoutInfo::LayoutType::CStruct;
+        }
+        else if (kind == CorExtendedLayoutKind::CUnion)
+        {
+            *pLayoutType = EEClassLayoutInfo::LayoutType::CUnion;
         }
         else
         {

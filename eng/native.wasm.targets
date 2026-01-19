@@ -38,15 +38,9 @@
       <EmccExportedRuntimeMethod Include="UTF8ArrayToString" />
       <EmccExportedRuntimeMethod Include="lengthBytesUTF8" />
       <EmccExportedRuntimeMethod Include="stringToUTF8Array" />
-      <EmccExportedRuntimeMethod Include="FS_createPath" />
-      <EmccExportedRuntimeMethod Include="FS_createDataFile" />
-      <EmccExportedRuntimeMethod Include="removeRunDependency" />
-      <EmccExportedRuntimeMethod Include="addRunDependency" />
-      <EmccExportedRuntimeMethod Include="addFunction" />
       <EmccExportedRuntimeMethod Include="safeSetTimeout" />
       <EmccExportedRuntimeMethod Include="runtimeKeepalivePush" />
       <EmccExportedRuntimeMethod Include="runtimeKeepalivePop" />
-      <EmccExportedRuntimeMethod Include="maybeExit" />
       <EmccExportedRuntimeMethod Include="abort" />
 
       <EmccExportedFunction Include="_free" />
@@ -60,8 +54,6 @@
       <EmccExportedFunction Include="stackAlloc" />
       <EmccExportedFunction Include="stackRestore" />
       <EmccExportedFunction Include="stackSave" />
-      <!-- TODO-WASM hide -->
-      <EmccExportedFunction Include="_GetDotNetRuntimeContractDescriptor" />
     </ItemGroup>
     <PropertyGroup>
       <_EmccExportedRuntimeMethods>@(EmccExportedRuntimeMethod -> '%(Identity)',',')</_EmccExportedRuntimeMethods>

@@ -4066,6 +4066,7 @@ public:
     void lvaAssignVirtualFrameOffsetsToLocals();
     bool lvaParamHasLocalStackSpace(unsigned lclNum);
     int lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, int stkOffs);
+    int lvaAllocAsyncContexts(int stkOffs);
 #ifdef TARGET_AMD64
     // Returns true if compCalleeRegsPushed (including RBP if used as frame pointer) is even.
     bool lvaIsCalleeSavedIntRegCountEven();
@@ -4196,7 +4197,7 @@ public:
 
     PhaseStatus lvaMarkLocalVars(); // Local variable ref-counting
     void lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers);
-    void lvaMarkLocalVars(BasicBlock* block, bool isRecompute);
+    void lvaMarkLocalVars(BasicBlock* block);
 
     void lvaAllocOutgoingArgSpaceVar(); // Set up lvaOutgoingArgSpaceVar
 
@@ -4391,7 +4392,7 @@ public:
 protected:
     //---------------- Local variable ref-counting ----------------------------
 
-    void lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt, bool isRecompute);
+    void lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt);
     bool IsDominatedByExceptionalEntry(BasicBlock* block);
     void SetHasExceptionalUsesHint(LclVarDsc* varDsc);
 
@@ -4577,6 +4578,7 @@ protected:
                            const BYTE*             codeEndp,
                            BoxPatterns             opts);
     void impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken);
+    bool impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     void impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
@@ -4829,7 +4831,7 @@ public:
     bool impIsLegalRetBuf(GenTree* retBuf, GenTreeCall* call);
     GenTree* impStoreStructPtr(GenTree* destAddr, GenTree* value, unsigned curLevel, GenTreeFlags indirFlags = GTF_EMPTY);
 
-    GenTree* impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags* pDerefFlags);
+    GenTree* impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags allowedMustPreserveIndirFlags, GenTreeFlags* pIndirFlags);
 
     var_types impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* simdBaseType = nullptr);
 
@@ -5544,8 +5546,8 @@ public:
     Statement* fgNewStmtFromTree(GenTree* tree, const DebugInfo& di);
 
     GenTreeQmark* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
-    bool fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
-    void fgExpandQmarkNodes();
+    bool fgExpandQmarkStmt(BasicBlock* block, Statement* stmt, bool onlyEarlyQmarks);
+    PhaseStatus fgExpandQmarkNodes(bool early);
 
     bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
     bool fgSimpleLowerBswap16(LIR::Range& range, GenTree* op);
@@ -7412,6 +7414,7 @@ public:
 #define OMF_HAS_EXPANDABLE_CAST                0x00080000 // Method contains casts eligible for late expansion
 #define OMF_HAS_STACK_ARRAY                    0x00100000 // Method contains stack allocated arrays
 #define OMF_HAS_BOUNDS_CHECKS                  0x00200000 // Method contains bounds checks
+#define OMF_HAS_EARLY_QMARKS                   0x00400000 // Method contains early expandable QMARKs
 
     // clang-format on
 
@@ -9862,7 +9865,7 @@ public:
     bool fgIsDoingEarlyLiveness         = false;
     bool fgDidEarlyLiveness             = false;
     bool compPostImportationCleanupDone = false;
-    bool compLSRADone                   = false;
+    bool compRegAllocDone               = false;
     bool compRationalIRForm             = false;
 
     bool compGeneratingProlog       = false;
@@ -10492,7 +10495,8 @@ public:
         // Do not stress tailcalls in IL stubs as the runtime creates several IL
         // stubs to implement the tailcall mechanism, which would then
         // recursively create more IL stubs.
-        return !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) &&
+        // Tailcalls are also not allowed out of async methods, so do not stress in those either.
+        return !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && !compIsAsync() &&
                (JitConfig.TailcallStress() != 0 || compStressCompile(STRESS_TAILCALL, 5));
 #else
         return false;
@@ -11245,18 +11249,23 @@ public:
 #endif
     };
 
-    GSCookie*           gsGlobalSecurityCookieAddr; // Address of global cookie for unsafe buffer checks
-    GSCookie            gsGlobalSecurityCookieVal;  // Value of global cookie if addr is NULL
-    ShadowParamVarInfo* gsShadowVarInfo = nullptr;  // Table used by shadow param analysis code
+    GSCookie*           gsGlobalSecurityCookieAddr;     // Address of global cookie for unsafe buffer checks
+    GSCookie            gsGlobalSecurityCookieVal;      // Value of global cookie if addr is NULL
+    ShadowParamVarInfo* gsShadowVarInfo      = nullptr; // Table used by shadow param analysis code
+    unsigned            gsShadowVarInfoCount = 0;
 
     PhaseStatus gsPhase();
     void        gsGSChecksInitCookie();   // Grabs cookie variable
-    void        gsCopyShadowParams();     // Identify vulnerable params and create dhadow copies
+    void        gsCopyShadowParams();     // Identify vulnerable params and create shadow copies
     bool        gsFindVulnerableParams(); // Shadow param analysis code
-    void        gsParamsToShadows();      // Insert copy code and replave param uses by shadow
-
-    static fgWalkPreFn gsMarkPtrsAndAssignGroups; // Shadow param analysis tree-walk
-    static fgWalkPreFn gsReplaceShadowParams;     // Shadow param replacement tree-walk
+    template <typename TVisit>
+    void gsVisitDependentLocals(GenTree* tree, TVisit visit);
+    void gsMarkPointers(GenTree* tree);
+    void gsUnionAssignGroups(unsigned lclNum1, unsigned lclNum2, GenTree* reason);
+    void gsParamsToShadows(); // Insert copy code and replace param uses by shadow
+    void gsCopyIntoShadow(unsigned lclNum, unsigned shadowLclNum);
+    bool gsCreateShadowingLocals();
+    void gsRewriteTreeForShadowParam(GenTree* tree);
 
 #define DEFAULT_MAX_INLINE_SIZE                                                                                        \
     100 // Methods with >  DEFAULT_MAX_INLINE_SIZE IL bytes will never be inlined.

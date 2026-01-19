@@ -4345,6 +4345,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         return;
     }
 
+    DoPhase(this, PHASE_EARLY_QMARK_EXPANSION, [this]() {
+        return fgExpandQmarkNodes(/*early*/ true);
+    });
+
     // If instrumenting, add block and class probes.
     //
     if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
@@ -4542,7 +4546,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Decide the kind of code we want to generate
         fgSetOptions();
 
-        fgExpandQmarkNodes();
+        fgExpandQmarkNodes(/*early*/ false);
 
 #ifdef DEBUG
         compCurBB = nullptr;
@@ -4552,10 +4556,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         activePhaseChecks |= PhaseChecks::CHECK_IR;
     };
     DoPhase(this, PHASE_POST_MORPH, postMorphPhase);
-
-    // GS security checks for unsafe buffers
-    //
-    DoPhase(this, PHASE_GS_COOKIE, &Compiler::gsPhase);
 
     if (opts.OptimizationEnabled())
     {
@@ -4947,6 +4947,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     {
         DoPhase(this, PHASE_ASYNC, &Compiler::TransformAsync);
     }
+
+    // GS security checks for unsafe buffers
+    //
+    DoPhase(this, PHASE_GS_COOKIE, &Compiler::gsPhase);
 
 #ifdef TARGET_WASM
     // Transform any strongly connected components into reducible flow.
@@ -5648,6 +5652,22 @@ void Compiler::generatePatchpointInfo()
         patchpointInfo->SetMonitorAcquiredOffset(varDsc->GetStackOffset() + offsetAdjust);
         JITDUMP("--OSR-- monitor acquired V%02u virtual offset is %d\n", lvaMonAcquired,
                 patchpointInfo->MonitorAcquiredOffset());
+    }
+
+    if (lvaAsyncExecutionContextVar != BAD_VAR_NUM)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lvaAsyncExecutionContextVar);
+        patchpointInfo->SetAsyncExecutionContextOffset(varDsc->GetStackOffset() + offsetAdjust);
+        JITDUMP("--OSR-- async execution context V%02u virtual offset is %d\n", lvaAsyncExecutionContextVar,
+                patchpointInfo->AsyncExecutionContextOffset());
+    }
+
+    if (lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lvaAsyncSynchronizationContextVar);
+        patchpointInfo->SetAsyncSynchronizationContextOffset(varDsc->GetStackOffset() + offsetAdjust);
+        JITDUMP("--OSR-- async synchronization context V%02u virtual offset is %d\n", lvaAsyncSynchronizationContextVar,
+                patchpointInfo->AsyncSynchronizationContextOffset());
     }
 
 #if defined(TARGET_AMD64)
@@ -10372,7 +10392,8 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
         {
             // Sanity check for promoted fields of OSR locals.
             //
-            if (varNum >= info.compLocalsCount)
+            if ((varNum >= info.compLocalsCount) && (varNum != lvaMonAcquired) &&
+                (varNum != lvaAsyncExecutionContextVar) && (varNum != lvaAsyncSynchronizationContextVar))
             {
                 assert(varDsc->lvIsStructField);
                 assert(varDsc->lvParentLcl < info.compLocalsCount);
@@ -10489,6 +10510,8 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
             return "Decl method cannot be represented in R2R image";
         case CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE:
             return "Support for type equivalence in devirtualization is not yet implemented in crossgen2";
+        case CORINFO_DEVIRTUALIZATION_FAILED_GENERIC_VIRTUAL:
+            return "Devirtualization of generic virtual methods is not yet implemented in crossgen2";
         default:
             return "undefined";
     }
