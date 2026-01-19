@@ -5709,9 +5709,7 @@ AdjustContextForJITHelpers(
     CONTEXT             tempContext;
     CONTEXT*            pExceptionContext = pContext;
 
-    bool fInWriteBarrier = IsIPInWriteBarrierHelper(f_IP);
-    bool fInJITStackProbe = IsIPInJITStackProbe(f_IP);
-    BOOL fExcluded = fInWriteBarrier || fInJITStackProbe;
+    BOOL fExcluded = IsIPInMarkedJitHelper(f_IP);
 
     if (fExcluded)
     {
@@ -5723,7 +5721,7 @@ AdjustContextForJITHelpers(
             pContext = &tempContext;
         }
 
-        if (fInWriteBarrier)
+        if (IsIPInWriteBarrierHelper(f_IP))
         {
             // Write barriers are leaf functions that do not set up a frame.
             // We can unwind them with a simple LR/RA/stack-pop extraction.
@@ -5737,7 +5735,7 @@ AdjustContextForJITHelpers(
             SetIP(pContext, ControlPCPostAdjustment);
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
         }
-        else if (fInJITStackProbe)
+        else
         {
             // JIT_StackProbe has a known frame layout on each platform.
             UnwindJITStackProbeToCaller(pContext);
