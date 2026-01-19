@@ -55,7 +55,7 @@ namespace System.IO.Compression
         // For WinZip AES: contains [salt][encryption key][HMAC key][password verifier]
         // For ZipCrypto: contains [key0][key1][key2] as 12 bytes
         private byte[]? _derivedEncryptionKeyMaterial;
-
+        internal const ushort AesEncryptionMarker = 99;
         // Initializes a ZipArchiveEntry instance for an existing archive entry.
         internal ZipArchiveEntry(ZipArchive archive, ZipCentralDirectoryFileHeader cd)
         {
@@ -746,7 +746,7 @@ namespace System.IO.Compression
 
             // For AES encryption, write compression method 99 (Aes) in the header
             // _headerCompressionMethod preserves the original value from the central directory
-            ushort compressionMethodToWrite = UseAesEncryption() ? (ushort)ZipCompressionMethod.Aes : (ushort)CompressionMethod;
+            ushort compressionMethodToWrite = UseAesEncryption() ? (ushort)AesEncryptionMarker : (ushort)CompressionMethod;
             BinaryPrimitives.WriteUInt16LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.CompressionMethod..], compressionMethodToWrite);
 
             BinaryPrimitives.WriteUInt32LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.LastModified..], ZipHelper.DateTimeToDosTime(_lastModified.DateTime));
@@ -929,7 +929,7 @@ namespace System.IO.Compression
 
         private bool IsZipCryptoEncrypted()
         {
-            return (_generalPurposeBitFlag & BitFlagValues.IsEncrypted) != 0 && _headerCompressionMethod != ZipCompressionMethod.Aes;
+            return (_generalPurposeBitFlag & BitFlagValues.IsEncrypted) != 0 && (ushort)_headerCompressionMethod != AesEncryptionMarker;
         }
 
         private bool UseAesEncryption()
@@ -954,7 +954,7 @@ namespace System.IO.Compression
             if (password.IsEmpty)
                 throw new InvalidDataException(SR.PasswordRequired);
 
-            bool isAesEncrypted = _headerCompressionMethod == ZipCompressionMethod.Aes;
+            bool isAesEncrypted = (ushort)_headerCompressionMethod == AesEncryptionMarker;
 
             if (!isAesEncrypted && IsZipCryptoEncrypted())
             {
@@ -1005,7 +1005,7 @@ namespace System.IO.Compression
                 default:
                     // We should not get here with Aes as CompressionMethod anymore
                     // as it should have been replaced with the actual compression method
-                    Debug.Assert(CompressionMethod != ZipCompressionMethod.Aes,
+                    Debug.Assert((ushort)CompressionMethod != AesEncryptionMarker,
                         "AES compression method should have been replaced with actual compression method");
 
                     // Fallback to stored if we somehow get here
@@ -1040,12 +1040,6 @@ namespace System.IO.Compression
 
             // Get decompressed stream
             Stream decompressedStream = GetDataDecompressor(streamToDecompress);
-
-            if (UseAesEncryption() && _aeVersion == 1)
-            {
-                // Wrap with CRC validator for AE-1
-                return new CrcValidatingReadStream(decompressedStream, _crc32, _uncompressedSize);
-            }
 
             return decompressedStream;
         }
@@ -1232,7 +1226,7 @@ namespace System.IO.Compression
                     message = SR.LocalFileHeaderCorrupt;
                     return false;
                 }
-                else if (IsEncrypted && _headerCompressionMethod == ZipCompressionMethod.Aes)
+                else if (IsEncrypted && (ushort)_headerCompressionMethod == AesEncryptionMarker)
                 {
                     _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
                     // AES case - skip the local file header and validate it exists.
@@ -1406,7 +1400,7 @@ namespace System.IO.Compression
                     _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
 
                     // Set compression method to 99 (AES indicator) in the header
-                    CompressionMethod = ZipCompressionMethod.Aes;
+                    CompressionMethod = (ZipCompressionMethod)AesEncryptionMarker;
                     compressedSizeTruncated = 0;
                     uncompressedSizeTruncated = 0;
                     aesExtraField = CreateAesExtraField();
@@ -1500,7 +1494,7 @@ namespace System.IO.Compression
             BinaryPrimitives.WriteUInt16LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.GeneralPurposeBitFlags..], (ushort)_generalPurposeBitFlag);
 
             // For AES encryption, write compression method 99 (Aes) in the header
-            ushort compressionMethodToWrite = UseAesEncryption() ? (ushort)ZipCompressionMethod.Aes : (ushort)CompressionMethod;
+            ushort compressionMethodToWrite = UseAesEncryption() ? (ushort)AesEncryptionMarker : (ushort)CompressionMethod;
             BinaryPrimitives.WriteUInt16LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.CompressionMethod..], compressionMethodToWrite);
 
             BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.LastModified..], ZipHelper.DateTimeToDosTime(_lastModified.DateTime));
@@ -1634,7 +1628,7 @@ namespace System.IO.Compression
                                 }
 
                                 // Restore CompressionMethod to Aes for central directory
-                                CompressionMethod = ZipCompressionMethod.Aes;
+                                CompressionMethod = (ZipCompressionMethod)AesEncryptionMarker;
                             }
                             else
                             {
@@ -1690,7 +1684,7 @@ namespace System.IO.Compression
                     // AES extra field (the original one in _lhUnknownExtraFields will be used).
                     if (savedEncryption is EncryptionMethod.Aes128 or EncryptionMethod.Aes192 or EncryptionMethod.Aes256)
                     {
-                        CompressionMethod = ZipCompressionMethod.Aes;
+                        CompressionMethod = (ZipCompressionMethod)AesEncryptionMarker;
                         Encryption = EncryptionMethod.None;
                     }
 

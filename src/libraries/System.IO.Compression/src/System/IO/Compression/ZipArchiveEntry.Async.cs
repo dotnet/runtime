@@ -94,7 +94,7 @@ public partial class ZipArchiveEntry
         }
     }
 
-    public async Task<Stream> OpenAsync(string? password = null, EncryptionMethod encryptionMethod = EncryptionMethod.Aes256, CancellationToken cancellationToken = default)
+    public async Task<Stream> OpenAsync(string? password, EncryptionMethod encryptionMethod = EncryptionMethod.Aes256, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         ThrowIfInvalidArchive();
@@ -370,7 +370,7 @@ public partial class ZipArchiveEntry
             message = SR.LocalFileHeaderCorrupt;
             return (false, message);
         }
-        else if (IsEncrypted && _headerCompressionMethod == ZipCompressionMethod.Aes)
+        else if (IsEncrypted && (ushort)_headerCompressionMethod == AesEncryptionMarker)
         {
             _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
             // AES case - skip the local file header and validate it exists.
@@ -522,8 +522,8 @@ public partial class ZipArchiveEntry
                                 await _storedUncompressedData.CopyToAsync(crcStream, cancellationToken).ConfigureAwait(false);
                             }
 
-                            // Restore CompressionMethod to Aes for central directory
-                            CompressionMethod = ZipCompressionMethod.Aes;
+                            // Restore CompressionMethod - AesCompressionMethodValue is used directly when writing headers
+                            CompressionMethod = savedMethod;
                         }
                         else
                         {
@@ -573,14 +573,11 @@ public partial class ZipArchiveEntry
                 // The original AES extra field is preserved in _lhUnknownExtraFields.
                 BitFlagValues savedFlags = _generalPurposeBitFlag;
                 EncryptionMethod savedEncryption = Encryption;
-                ZipCompressionMethod savedCompressionMethod = CompressionMethod;
 
-                // For AES entries: set CompressionMethod to Aes so header writes method 99,
-                // but clear Encryption so WriteLocalFileHeaderAsync doesn't create a new
+                // For AES entries: clear Encryption so WriteLocalFileHeaderAsync doesn't create a new
                 // AES extra field (the original one in _lhUnknownExtraFields will be used).
                 if (savedEncryption is EncryptionMethod.Aes128 or EncryptionMethod.Aes192 or EncryptionMethod.Aes256)
                 {
-                    CompressionMethod = ZipCompressionMethod.Aes;
                     Encryption = EncryptionMethod.None;
                 }
 
@@ -589,7 +586,6 @@ public partial class ZipArchiveEntry
                 // Restore original state
                 _generalPurposeBitFlag = savedFlags;
                 Encryption = savedEncryption;
-                CompressionMethod = savedCompressionMethod;
 
                 // according to ZIP specs, zero-byte files MUST NOT include file data
                 if (_uncompressedSize != 0)

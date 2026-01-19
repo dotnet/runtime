@@ -127,11 +127,11 @@ namespace System.IO.Compression
         public string Name { get { throw null; } }
         public void Delete() { }
         public System.IO.Stream Open() { throw null; }
+        public System.IO.Stream Open(System.IO.FileAccess access) { throw null; }
         public System.IO.Stream Open(string? password = null, System.IO.Compression.ZipArchiveEntry.EncryptionMethod encryptionMethod = System.IO.Compression.ZipArchiveEntry.EncryptionMethod.Aes256) { throw null; }
-        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(string? password = null, System.IO.Compression.ZipArchiveEntry.EncryptionMethod encryptionMethod = System.IO.Compression.ZipArchiveEntry.EncryptionMethod.Aes256, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public System.IO.Stream Open(FileAccess access) { throw null; }
-        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.IO.FileAccess access, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(string? password, System.IO.Compression.ZipArchiveEntry.EncryptionMethod encryptionMethod = System.IO.Compression.ZipArchiveEntry.EncryptionMethod.Aes256, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override string ToString() { throw null; }
         public enum EncryptionMethod : byte
         {
@@ -153,7 +153,6 @@ namespace System.IO.Compression
         Stored = 0,
         Deflate = 8,
         Deflate64 = 9,
-        Aes = 99
     }
     public sealed partial class ZLibCompressionOptions
     {

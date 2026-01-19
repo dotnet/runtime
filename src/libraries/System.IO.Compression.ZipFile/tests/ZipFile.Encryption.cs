@@ -886,8 +886,6 @@ namespace System.IO.Compression.Tests
 
         #region CompressionMethod Property Tests for Encrypted Entries
 
-        #region CompressionMethod Property Tests for Encrypted Entries
-
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
         public async Task CompressionMethod_AesEncryptedEntries_ReturnsActualCompressionMethod(bool async)
@@ -925,10 +923,11 @@ namespace System.IO.Compression.Tests
 
         #endregion
 
-        #endregion
+        #region Zip64 Tests for Encrypted Entries
 
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        [SkipOnCI("Skipping large disk space test on CI machines.")]
         public async Task Encryption_TrueZip64_LargeEntry_RoundTrip(ZipArchiveEntry.EncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -1025,6 +1024,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        [SkipOnCI("Skipping large disk space test on CI machines.")]
         public async Task Encryption_TrueZip64_LargeEntry_UpdateMode_Throws(ZipArchiveEntry.EncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -1082,7 +1082,7 @@ namespace System.IO.Compression.Tests
 
                     // Opening the entry in update mode requires decrypting into memory,
                     // which should fail for entries larger than memorystream MaxValue (~2GB)
-                    Assert.ThrowsAny<Exception>(() => entry.Open(password));
+                    Assert.Throws<InvalidDataException>(() => entry.Open(password));
                 }
             }
             finally
@@ -1095,5 +1095,6 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        #endregion
     }
 }

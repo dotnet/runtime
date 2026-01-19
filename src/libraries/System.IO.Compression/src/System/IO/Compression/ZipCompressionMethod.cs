@@ -24,11 +24,6 @@ namespace System.IO.Compression
         /// <summary>
         /// The entry is compressed using the Deflate64 algorithm.
         /// </summary>
-        Deflate64 = 0x9,
-
-        /// <summary>
-        /// The entry is encrypted using AES standard.
-        /// </summary>
-        Aes = 99
+        Deflate64 = 0x9
     }
 }
