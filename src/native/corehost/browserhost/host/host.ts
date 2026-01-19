@@ -136,7 +136,11 @@ export function initializeCoreCLR(): number {
         buffers.push(valuePtr as any);
     }
 
-    return _ems_._BrowserHost_InitializeCoreCLR(propertyCount, appctx_keys, appctx_values);
+    const res = _ems_._BrowserHost_InitializeCoreCLR(propertyCount, appctx_keys, appctx_values);
+    for (const buf of buffers) {
+        _ems_._free(buf as any);
+    }
+    return res;
 }
 
 // bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);
