@@ -639,6 +639,10 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:Mono.Linker.MethodAction.ConvertToPNSE</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.MessageCategory.WarningAsError</Target>
   </Suppression>
   <Suppression>
