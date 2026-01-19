@@ -26,8 +26,6 @@ internal static partial class Interop
             internal char StatusCode;
         }
 
-        // See caller: ProcessManager.SunOS.cs
-
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadThreadInfo", SetLastError = true)]
         private static unsafe partial int ReadThreadInfo(int pid, int tid, ThreadInfo* threadInfo);
 
