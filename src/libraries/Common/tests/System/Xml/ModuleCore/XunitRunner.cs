@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit.Sdk;
+using Xunit.v3;
 
 namespace OLEDB.Test.ModuleCore
 {
@@ -36,9 +37,9 @@ namespace OLEDB.Test.ModuleCore
             }
         }
 
-        private static Type ToRuntimeType(ITypeInfo typeInfo)
+        private static Type ToRuntimeType(_ITypeInfo typeInfo)
         {
-            var reflectionTypeInfo = typeInfo as IReflectionTypeInfo;
+            var reflectionTypeInfo = typeInfo as _IReflectionTypeInfo;
             if (reflectionTypeInfo != null)
                 return reflectionTypeInfo.Type;
 
@@ -51,23 +52,24 @@ namespace OLEDB.Test.ModuleCore
             throw new Exception($"Could not find runtime type `{typeInfo.Name}`");
         }
 
-        private static Type GetDeclaringType(IMethodInfo methodInfo)
+        private static Type GetDeclaringType(_IMethodInfo methodInfo)
         {
-            var reflectionMethodInfo = methodInfo as IReflectionMethodInfo;
+            var reflectionMethodInfo = methodInfo as _IReflectionMethodInfo;
             if (reflectionMethodInfo != null)
                 return reflectionMethodInfo.MethodInfo.DeclaringType;
 
             return ToRuntimeType(methodInfo.Type);
         }
 
-        public virtual IEnumerable<object[]> GetData(IAttributeInfo dataAttribute, IMethodInfo testMethod)
+        public virtual ValueTask<IReadOnlyCollection<ITheoryDataRow>?> GetData(_IAttributeInfo dataAttribute, _IMethodInfo testMethod, DisposalTracker disposalTracker)
         {
             string methodName = (string)dataAttribute.GetConstructorArguments().Single();
             Func<CTestModule> moduleGenerator = XmlTestsAttribute.GetGenerator(GetDeclaringType(testMethod), methodName);
-            return GenerateTestCases(moduleGenerator);
+            var data = GenerateTestCases(moduleGenerator).Select(args => new TheoryDataRow(args)).ToList();
+            return new ValueTask<IReadOnlyCollection<ITheoryDataRow>?>(data);
         }
 
-        public virtual bool SupportsDiscoveryEnumeration(IAttributeInfo dataAttribute, IMethodInfo testMethod) => true;
+        public virtual bool SupportsDiscoveryEnumeration(_IAttributeInfo dataAttribute, _IMethodInfo testMethod) => true;
     }
 
     [DataDiscoverer("OLEDB.Test.ModuleCore.XmlInlineDataDiscoverer", "ModuleCore")]

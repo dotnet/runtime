@@ -118,13 +118,19 @@ namespace System.Data.Tests.SqlTypes
                     TheoryData<string, string> filesAndBaselines = new TheoryData<string, string>();
 
                     // Use the Text XML files as their own baselines
-                    filesAndBaselines.Append(text.Select(f => new string[] { TextXmlFileName(f), TextXmlFileName(f) }).ToArray());
+                    foreach (var item in text.Select(f => new string[] { TextXmlFileName(f), TextXmlFileName(f) }))
+                    {
+                        filesAndBaselines.Add(item[0], item[1]);
+                    }
 
                     // Use the matching Text XML files as the baselines for the SQL Binary XML files
-                    filesAndBaselines.Append(binary
+                    foreach (var item in binary
                         .Select(Path.GetFileNameWithoutExtension)
                         .Intersect(text.Select(Path.GetFileNameWithoutExtension))
-                        .Select(f => new string[] { SqlBinaryXmlFileName(f), TextXmlFileName(f) }).ToArray());
+                        .Select(f => new string[] { SqlBinaryXmlFileName(f), TextXmlFileName(f) }))
+                    {
+                        filesAndBaselines.Add(item[0], item[1]);
+                    }
 
                     _filesAndBaselines = filesAndBaselines;
 

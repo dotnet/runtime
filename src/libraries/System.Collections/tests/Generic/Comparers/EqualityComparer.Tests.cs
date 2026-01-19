@@ -17,8 +17,8 @@ namespace System.Collections.Generic.Tests
                 get
                 {
 #if !TEST_SINGLE_FILE
-                    return this.Select(array => array[0])
-                        .Concat(this.Select(array => array[1]))
+                    return this.Select(row => row.Data[0])
+                        .Concat(this.Select(row => row.Data[1]))
                         .Cast<T>();
 #else
                     return this.Select(row => row.Data.Item1)
