@@ -64,12 +64,5 @@ namespace ILCompiler.DependencyAnalysis
         public static readonly ObjectNodeSection PDataSection = new ObjectNodeSection("pdata", SectionType.ReadOnly);
 
         public static readonly ObjectNodeSection WasmCodeSection = new ObjectNodeSection("wasm.code", SectionType.Executable, needsAlign: false);
-        // TODO-Wasm: consider alignment of data sections
-        public static readonly ObjectNodeSection WasmDataSection = new ObjectNodeSection("wasm.data", SectionType.Writeable, needsAlign: false);
-        public static readonly ObjectNodeSection WasmCombinedDataSection = new ObjectNodeSection("wasm.alldata", SectionType.Writeable, needsAlign: false);
-        public static readonly ObjectNodeSection WasmFunctionSection = new ObjectNodeSection("wasm.function", SectionType.ReadOnly, needsAlign: false);
-        public static readonly ObjectNodeSection WasmTypeSection = new ObjectNodeSection("wasm.type", SectionType.ReadOnly, needsAlign: false);
-        public static readonly ObjectNodeSection WasmExportSection = new ObjectNodeSection("wasm.export", SectionType.ReadOnly, needsAlign: false);
-        public static readonly ObjectNodeSection WasmMemorySection = new ObjectNodeSection("wasm.memory", SectionType.ReadOnly, needsAlign: false);
     }
 }

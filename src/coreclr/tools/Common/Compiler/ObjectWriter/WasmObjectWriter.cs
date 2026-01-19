@@ -20,6 +20,7 @@ namespace ILCompiler.ObjectWriter
 {
     internal static class WasmObjectNodeSection
     {
+        // TODO-WASM: Consider alignment needs for data sections
         public static readonly ObjectNodeSection DataSection = new ObjectNodeSection("wasm.data", SectionType.Writeable, needsAlign: false);
         public static readonly ObjectNodeSection CombinedDataSection = new ObjectNodeSection("wasm.alldata", SectionType.Writeable, needsAlign: false);
         public static readonly ObjectNodeSection FunctionSection = new ObjectNodeSection("wasm.function", SectionType.ReadOnly, needsAlign: false);
