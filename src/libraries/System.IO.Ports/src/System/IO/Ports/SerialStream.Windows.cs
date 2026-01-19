@@ -1308,7 +1308,7 @@ namespace System.IO.Ports
         private static int ConvertMaxBaudBitMaskToBaudRate(int baudBitMask)
         {
             const uint BAUD_USER = 0x10000000;
-            if (baudBitMask == 0 || baudBitMask == BAUD_USER)
+            if (baudBitMask <= 0 || baudBitMask == BAUD_USER)
             {
                 return 0;
             }
