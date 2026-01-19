@@ -1313,7 +1313,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
-        public async Task InvalidConstrainedOpenGenericThrowsWhenResolvedAsEnumerable()
+        public void InvalidConstrainedOpenGenericIsSkippedInEnumerableButThrowsInSingleResolution()
         {
             var sc = new ServiceCollection();
             sc.AddSingleton(typeof(IBB<>), typeof(GenericBB<>));

@@ -353,8 +353,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                                 }
                                 else if (slot == 0)
                                 {
-                                    // if the last registration has incompatible constraints,
-                                    // we still need to update the slot to allow direct resolution to correctly throw later
+                                    // If the last registration has incompatible constraints, we still need to update the slot.
+                                    // This ensures that single service resolution (GetService) will attempt to resolve using the last
+                                    // registration and throw an ArgumentException, maintaining "last wins" semantics. During enumerable
+                                    // resolution (GetServices), the incompatible registration is simply skipped.
                                     UpdateSlot(registrationKey);
                                 }
                             }
