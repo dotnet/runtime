@@ -133,7 +133,7 @@ export function responseLike(url: string, body: ArrayBuffer | null, options: Res
         return response;
     }
     return <Response><any>{
-        ok: body !== null && options.status == 200,
+        ok: body !== null && options.status === 200,
         headers: {
             ...options.headers,
             get: () => null
