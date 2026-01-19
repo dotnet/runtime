@@ -110,6 +110,7 @@ export async function fetchLike(url: string, init?: RequestInit, expectedContent
         return responseLike(url, null, {
             status: 500,
             statusText: "ERR28: " + e,
+            headers: {},
         });
     }
     throw new Error("No fetch implementation available");
@@ -117,13 +118,25 @@ export async function fetchLike(url: string, init?: RequestInit, expectedContent
 
 export function responseLike(url: string, body: ArrayBuffer | null, options: ResponseInit): Response {
     if (typeof globalThis.Response === "function") {
-        return new Response(body, options);
+        const response = new Response(body, options);
+
+        // Best-effort alignment with the fallback object shape:
+        // only define `url` if it does not already exist on the response.
+        if (typeof (response as any).url === "undefined") {
+            try {
+                Object.defineProperty(response, "url", { value: url });
+            } catch {
+                // Ignore if the implementation does not allow redefining `url`
+            }
+        }
+
+        return response;
     }
     return <Response><any>{
-        ok: body !== null && options.status == 200,
+        ok: body !== null && options.status === 200,
         headers: {
             ...options.headers,
-            get: () => null
+            get: (name: string) => (options.headers as any)[name] || null
         },
         url,
         arrayBuffer: () => Promise.resolve(body),

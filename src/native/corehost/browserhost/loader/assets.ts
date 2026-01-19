@@ -39,7 +39,7 @@ export async function loadJSModule(asset: JsAsset): Promise<any> {
         }
         assetInternal.behavior = "js-module-dotnet";
         if (typeof loadBootResourceCallback === "function") {
-            const type = runtimeToBlazorAssetTypeMap[assetInternal.behavior];
+            const type = behaviorToBlazorAssetTypeMap[assetInternal.behavior];
             dotnetAssert.check(type, `Unsupported asset behavior: ${assetInternal.behavior}`);
             const customLoadResult = loadBootResourceCallback(type, assetInternal.name, asset.resolvedUrl!, assetInternal.integrity!, assetInternal.behavior);
             dotnetAssert.check(typeof customLoadResult === "string", "loadBootResourceCallback for JS modules must return string URL");
@@ -218,18 +218,16 @@ async function loadResourceRetry(asset: AssetEntryInternal): Promise<Response> {
         try {
             response = await loadResourceThrottle(asset);
             if (!response) {
-                response = {
-                    ok: false,
-                    status: -1,
+                response = responseLike(asset.resolvedUrl!, null, {
+                    status: 404,
                     statusText: "No response",
-                } as any;
+                });
             }
         } catch (err: any) {
-            response = {
-                ok: false,
-                status: -1,
+            response = responseLike(asset.resolvedUrl!, null, {
+                status: 500,
                 statusText: err.message || "Exception during fetch",
-            } as any;
+            });
         }
         return response;
     }
@@ -264,7 +262,8 @@ async function loadResourceThrottle(asset: AssetEntryInternal): Promise<Response
 }
 
 async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
-    const expectedContentType = asset.behavior === "dotnetwasm" ? "application/wasm" : "application/octet-stream";
+    const expectedContentType = behaviorToContentTypeMap[asset.behavior];
+    dotnetAssert.check(expectedContentType, `Unsupported asset behavior: ${asset.behavior}`);
     if (asset.buffer) {
         const arrayBuffer = await asset.buffer;
         return responseLike(asset.resolvedUrl!, arrayBuffer, {
@@ -280,7 +279,7 @@ async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
         return asset.pendingDownload.response;
     }
     if (typeof loadBootResourceCallback === "function") {
-        const type = runtimeToBlazorAssetTypeMap[asset.behavior];
+        const type = behaviorToBlazorAssetTypeMap[asset.behavior];
         dotnetAssert.check(type, `Unsupported asset behavior: ${asset.behavior}`);
         const customLoadResult = loadBootResourceCallback(type, asset.name, asset.resolvedUrl!, asset.integrity!, asset.behavior);
         if (typeof customLoadResult === "string") {
@@ -326,7 +325,7 @@ export function verifyAllAssetsDownloaded(): void {
     dotnetAssert.check(downloadedAssetsCount === totalAssetsToDownload, `Not all assets were downloaded. Downloaded ${downloadedAssetsCount} out of ${totalAssetsToDownload}`);
 }
 
-const runtimeToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | undefined } = {
+const behaviorToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | undefined } = {
     "resource": "assembly",
     "assembly": "assembly",
     "pdb": "pdb",
@@ -338,4 +337,14 @@ const runtimeToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType 
     "js-module-native": "dotnetjs",
     "js-module-runtime": "dotnetjs",
     "js-module-threads": "dotnetjs"
+};
+
+const behaviorToContentTypeMap: { [key: string]: string | undefined } = {
+    "resource": "application/octet-stream",
+    "assembly": "application/octet-stream",
+    "pdb": "application/octet-stream",
+    "icu": "application/octet-stream",
+    "vfs": "application/octet-stream",
+    "manifest": "application/json",
+    "dotnetwasm": "application/wasm",
 };
