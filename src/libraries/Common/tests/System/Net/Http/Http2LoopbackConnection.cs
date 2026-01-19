@@ -399,7 +399,10 @@ namespace System.Net.Test.Common
 
         public async Task ShutdownSendAsync()
         {
-            await _connectionSocket?.ShutdownAsync(SocketShutdown.Send);
+            if (_connectionSocket != null)
+            {
+                await _connectionSocket.ShutdownAsync(SocketShutdown.Send);
+            }
         }
 
         // This will cause a server-initiated shutdown of the connection.
