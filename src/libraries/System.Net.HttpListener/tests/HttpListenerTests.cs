@@ -170,5 +170,26 @@ namespace System.Net.Tests
             listener.Close();
             await listenerTask.WaitAsync(TimeSpan.FromSeconds(10));
         }
+
+        [Fact]
+        [OuterLoop]
+        public async Task GetContext_StopIsCalled_ThrowsHttpListenerExceptionWithOperationAborted()
+        {
+            using var listenerFactory = new HttpListenerFactory();
+            var listener = listenerFactory.GetListener();
+            listener.Start();
+
+            var listenerTask = Task.Run(() =>
+            {
+                HttpListenerException exception = Assert.Throws<HttpListenerException>(() => listener.GetContext());
+                Assert.Equal((int)SocketError.OperationAborted, exception.ErrorCode);
+                return exception;
+            });
+
+            await Task.Delay(1000); // Wait for listenerTask to call GetContext.
+            listener.Stop();
+            listener.Close();
+            await listenerTask.WaitAsync(TimeSpan.FromSeconds(10));
+        }
     }
 }
