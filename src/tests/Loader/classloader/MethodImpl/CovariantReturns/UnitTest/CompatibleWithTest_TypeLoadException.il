@@ -1,5 +1,7 @@
 .assembly extern System.Console { }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .ver 0:0:0:0 }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly extern System.Collections { }
 .assembly extern System.Runtime { }
 .assembly extern mscorlib { }
@@ -788,6 +790,7 @@
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
             01 00 00 00
         )
+        .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('Doesn''t pass after LLVM AOT compilation.') type([TestLibrary]TestLibrary.Utilities) string[1] ('IsNativeAot') }
         .entrypoint
         .locals init ( bool result )
 

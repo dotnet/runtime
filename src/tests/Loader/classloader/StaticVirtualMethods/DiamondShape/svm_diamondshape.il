@@ -13,6 +13,8 @@
   .ver 4:0:0:0
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .ver 0:0:0:0 }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 // TODO: use the contract once this is exposed from contracts
 .assembly extern System.Runtime { }
 
@@ -1526,6 +1528,7 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('https://github.com/dotnet/runtime/issues/72589') type([TestLibrary]TestLibrary.Utilities) string[1] ('IsNativeAot') }
     .entrypoint
     // Code size       23 (0x17)
     .maxstack  1

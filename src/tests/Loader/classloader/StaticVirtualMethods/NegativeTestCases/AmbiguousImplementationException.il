@@ -12,6 +12,8 @@
   .ver 8:0:0:0
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .ver 0:0:0:0 }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly extern xunit.assert
 {
   .publickeytoken = (8D 05 B1 BB 7A 6F DB 6C )                         // ....zo.l
@@ -348,6 +350,7 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [System.Runtime]System.Type, string[]) = {string('https://github.com/dotnet/runtimelab/issues/155: Compatible TypeLoadException for invalid inputs') type([TestLibrary]TestLibrary.Utilities) string[1] ('IsNativeAot') }
     .entrypoint
     // Code size       452 (0x1c4)
     .maxstack  2
