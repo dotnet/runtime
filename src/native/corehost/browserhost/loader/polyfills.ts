@@ -136,7 +136,7 @@ export function responseLike(url: string, body: ArrayBuffer | null, options: Res
         ok: body !== null && options.status === 200,
         headers: {
             ...options.headers,
-            get: () => null
+            get: (name: string) => (options.headers as any)[name] || null
         },
         url,
         arrayBuffer: () => Promise.resolve(body),

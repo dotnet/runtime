@@ -218,18 +218,16 @@ async function loadResourceRetry(asset: AssetEntryInternal): Promise<Response> {
         try {
             response = await loadResourceThrottle(asset);
             if (!response) {
-                response = {
-                    ok: false,
-                    status: -1,
+                response = responseLike(asset.resolvedUrl!, null, {
+                    status: 404,
                     statusText: "No response",
-                } as any;
+                });
             }
         } catch (err: any) {
-            response = {
-                ok: false,
-                status: -1,
+            response = responseLike(asset.resolvedUrl!, null, {
+                status: 500,
                 statusText: err.message || "Exception during fetch",
-            } as any;
+            });
         }
         return response;
     }
