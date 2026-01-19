@@ -88,9 +88,13 @@ function normalizeConfig(target: LoaderConfigInternal) {
     normalizeResources(target.resources!);
     if (!target.environmentVariables) target.environmentVariables = {};
     if (!target.runtimeOptions) target.runtimeOptions = [];
-    if (!target.runtimeConfig) target.runtimeConfig = {
-        runtimeOptions: { configProperties: {} },
-    };
+    if (!target.runtimeConfig) {
+        target.runtimeConfig = { runtimeOptions: { configProperties: {} }, };
+    } else if (!target.runtimeConfig.runtimeOptions) {
+        target.runtimeConfig.runtimeOptions = { configProperties: {} };
+    } else if (!target.runtimeConfig.runtimeOptions.configProperties) {
+        target.runtimeConfig.runtimeOptions.configProperties = {};
+    }
 }
 
 function normalizeResources(target: Assets) {
