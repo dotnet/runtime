@@ -1314,7 +1314,7 @@ namespace System.IO.Ports
             }
 
             // Windows passes value obtained from driver. According to docs, it should be single
-            // bit coresponding to supported max baudrate (bits up to baud 128K are defined) or
+            // bit corresponding to supported max baudrate (bits up to baud 128K are defined) or
             // BAUD_USER if device support arbitrary baudrate. But some device drivers (for example,
             // Silicon Labs USB to UART convertors) provides maximum baudrate value as decimal
             // value instead. Because no common baudrate is power of 2, we assume that when we get
@@ -1326,13 +1326,13 @@ namespace System.IO.Ports
             }
 
             // https://learn.microsoft.com/windows/win32/api/winbase/ns-winbase-commprop
-            // i-th value corespond to (1 << i) bitmask
+            // i-th value correspond to (1 << i) bitmask
             ReadOnlySpan<int> bauds = [75, 110, 135, 150, 300, 600, 1200, 1800, 2400, 4800, 7200, 9600, 14400, 19200, 38400, 56000, 128000, 115200, 57600];
 
             int index = BitOperations.TrailingZeroCount((uint)baudBitMask);
 
-            // bit which has not defined macro. Rather enforce no limitation and give a try rather
-            // then restricting usage of such device.
+            // Bit for which no macro is defined. Rather than restricting usage of such a device,
+            // enforce no limitation and give it a try.
             if (index >= bauds.Length)
             {
                 return 0;
