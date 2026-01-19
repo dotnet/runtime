@@ -509,6 +509,10 @@ namespace System.Net.Sockets
             // OK to dispose now.
             FreeInternals();
 
+            // Dispose the CancellationTokenSource if it was created.
+            _multipleConnectCancellation?.Dispose();
+            _multipleConnectCancellation = null;
+
             // FileStreams may be created when using SendPacketsAsync - this Disposes them.
             FinishOperationSendPackets();
 
@@ -723,10 +727,8 @@ namespace System.Net.Sockets
                 _ = Core(internalArgsV6, addressesTask6, endPoint.Port, socketType, protocolType, state, cancellationToken);
                 return true;
             }
-            else
-            {
-                _ = Core(internalArgs, addressesTask, endPoint.Port, socketType, protocolType, null, cancellationToken);
-            }
+
+            _ = Core(internalArgs, addressesTask, endPoint.Port, socketType, protocolType, null, cancellationToken);
 #pragma warning restore
 
             // Determine whether the async operation already completed and stored the results into `this`.
@@ -843,7 +845,7 @@ namespace System.Net.Sockets
                 }
                 finally
                 {
-                    // Close the sockets as needed.
+                    // Dispose the temporary sockets that were not used (not connected).
                     if (tempSocketIPv4 != null && !tempSocketIPv4.Connected)
                     {
                         tempSocketIPv4.Dispose();
@@ -851,17 +853,6 @@ namespace System.Net.Sockets
                     if (tempSocketIPv6 != null && !tempSocketIPv6.Connected)
                     {
                         tempSocketIPv6.Dispose();
-                    }
-                    if (_currentSocket != null)
-                    {
-                        // If the caller-provided socket was a temporary and isn't connected now, or if the failed with an abortive exception,
-                        // dispose of the socket.
-                        if ((!_userSocket && !_currentSocket.Connected) ||
-                            caughtException is OperationCanceledException ||
-                            (caughtException is SocketException se && se.SocketErrorCode == SocketError.OperationAborted))
-                        {
-                            _currentSocket.Dispose();
-                        }
                     }
 
                     if (parallelState != null)
@@ -879,6 +870,18 @@ namespace System.Net.Sockets
                     }
                     else
                     {
+                        if (_currentSocket != null)
+                        {
+                            // If the caller-provided socket was a temporary and isn't connected now, or if it failed with an abortive exception,
+                            // dispose of the socket.
+                            if ((!_userSocket && !_currentSocket.Connected) ||
+                                caughtException is OperationCanceledException ||
+                                (caughtException is SocketException se && se.SocketErrorCode == SocketError.OperationAborted))
+                            {
+                                _currentSocket.Dispose();
+                            }
+                        }
+
                         // Store the results.
                         if (caughtException != null)
                         {
@@ -957,6 +960,11 @@ namespace System.Net.Sockets
                     {
                         _saea._connectSocket = _saea._currentSocket = socket;
                         _saea.SetResults(SocketError.Success, bytesTransferred, flags);
+                    }
+                    else
+                    {
+                        // Another parallel connect already won - dispose the losing socket.
+                        socket?.Dispose();
                     }
                 }
                 else if (count == 2)    // We ignore failures on first socket since we have one more pending.
