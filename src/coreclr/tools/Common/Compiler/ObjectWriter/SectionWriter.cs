@@ -21,7 +21,7 @@ namespace ILCompiler.ObjectWriter
         private readonly ObjectWriter _objectWriter;
         private readonly SectionData _sectionData;
 
-        LengthEncodeFormat _lengthEncodeFormat;
+        private readonly LengthEncodeFormat _lengthEncodeFormat;
 
         public int SectionIndex { get; init; }
         public readonly IBufferWriter<byte> Buffer => _sectionData.BufferWriter;
