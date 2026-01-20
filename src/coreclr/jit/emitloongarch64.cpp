@@ -3411,7 +3411,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             if (id->idIsReloc())
             {
                 // get the addr-offset of the data.
-                imm = (ssize_t)emitConsBlock - (ssize_t)(dstRW - writeableOffset) + dataOffs;
+                imm = (ssize_t)emitDataOffsetToPtr(dataOffs) - (ssize_t)(dstRW - writeableOffset);
                 assert(imm > 0);
                 assert(!(imm & 3));
 
@@ -3453,7 +3453,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             else
             {
                 // get the addr of the data.
-                imm = (ssize_t)emitConsBlock + dataOffs;
+                imm = (ssize_t)emitDataOffsetToPtr(dataOffs);
 
                 code = emitInsCode(INS_lu12i_w);
                 if (ins == INS_bl)
