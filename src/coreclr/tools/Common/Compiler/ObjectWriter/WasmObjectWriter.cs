@@ -27,6 +27,7 @@ namespace ILCompiler.ObjectWriter
         public static readonly ObjectNodeSection TypeSection = new ObjectNodeSection("wasm.type", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection ExportSection = new ObjectNodeSection("wasm.export", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection MemorySection = new ObjectNodeSection("wasm.memory", SectionType.ReadOnly, needsAlign: false);
+        public static readonly ObjectNodeSection TableSection = new ObjectNodeSection("wasm.table", SectionType.ReadOnly, needsAlign: false);
     }
 
     /// <summary>
@@ -105,6 +106,7 @@ namespace ILCompiler.ObjectWriter
         {
             { WasmObjectNodeSection.MemorySection, WasmSectionType.Memory },
             { WasmObjectNodeSection.FunctionSection, WasmSectionType.Function },
+            { WasmObjectNodeSection.TableSection, WasmSectionType.Table },
             { WasmObjectNodeSection.ExportSection, WasmSectionType.Export },
             { WasmObjectNodeSection.TypeSection, WasmSectionType.Type },
             { ObjectNodeSection.WasmCodeSection, WasmSectionType.Code }
@@ -203,6 +205,17 @@ namespace ILCompiler.ObjectWriter
             GetOrCreateSection(WasmObjectNodeSection.CombinedDataSection);
             ulong dataContentSize = (ulong)SectionByName(WasmObjectNodeSection.CombinedDataSection.Name).ContentSize;
             WriteMemorySection(dataContentSize + DataStartOffset);
+            WriteTableSection();
+        }
+
+        private void WriteTableSection()
+        {
+            SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.TableSection);
+            writer.WriteByte(0x01); // number of tables
+            writer.WriteByte(0x70); // element type: funcref
+            writer.WriteByte(0x01); // table limits: flags (0 = only minimum)
+            writer.WriteULEB128((ulong)0);
+            writer.WriteULEB128((ulong)_methodCount); // table limits: initial size
         }
 
         private void PrependCount(WasmSection section, int count)
@@ -239,6 +252,8 @@ namespace ILCompiler.ObjectWriter
             SectionByName(WasmObjectNodeSection.TypeSection.Name).Emit(outputFileStream, logger);
             // Function section
             SectionByName(WasmObjectNodeSection.FunctionSection.Name).Emit(outputFileStream, logger);
+            // Table section
+            SectionByName(WasmObjectNodeSection.TableSection.Name).Emit(outputFileStream, logger);
             // Memory section
             SectionByName(WasmObjectNodeSection.MemorySection.Name).Emit(outputFileStream, logger);
             // Export section
