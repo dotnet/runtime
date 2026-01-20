@@ -29,6 +29,11 @@ namespace System.Formats.Tar
         /// <exception cref="DirectoryNotFoundException">The <paramref name="sourceDirectoryName"/> directory path was not found.</exception>
         /// <exception cref="IOException">An I/O exception occurred.</exception>
         public static void CreateFromDirectory(string sourceDirectoryName, Stream destination, bool includeBaseDirectory)
+            => CreateFromDirectory(sourceDirectoryName, destination, includeBaseDirectory, TarEntryFormat.Pax);
+
+        /// <inheritdoc cref="CreateFromDirectory(string, Stream, bool)" />
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
+        public static void CreateFromDirectory(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, TarEntryFormat format)
         {
             ArgumentException.ThrowIfNullOrEmpty(sourceDirectoryName);
             ArgumentNullException.ThrowIfNull(destination);
@@ -46,7 +51,7 @@ namespace System.Formats.Tar
             // Rely on Path.GetFullPath for validation of paths
             sourceDirectoryName = Path.GetFullPath(sourceDirectoryName);
 
-            CreateFromDirectoryInternal(sourceDirectoryName, destination, includeBaseDirectory, leaveOpen: true);
+            CreateFromDirectoryInternal(sourceDirectoryName, destination, includeBaseDirectory, leaveOpen: true, format);
         }
 
         /// <summary>
@@ -64,6 +69,11 @@ namespace System.Formats.Tar
         /// <exception cref="DirectoryNotFoundException">The <paramref name="sourceDirectoryName"/> directory path was not found.</exception>
         /// <exception cref="IOException">An I/O exception occurred.</exception>
         public static Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, CancellationToken cancellationToken = default)
+            => CreateFromDirectoryAsync(sourceDirectoryName, destination, includeBaseDirectory, TarEntryFormat.Pax, cancellationToken);
+
+        /// <inheritdoc cref="CreateFromDirectoryAsync(string, Stream, bool, CancellationToken)" />
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
+        public static Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, TarEntryFormat format, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -85,7 +95,7 @@ namespace System.Formats.Tar
             // Rely on Path.GetFullPath for validation of paths
             sourceDirectoryName = Path.GetFullPath(sourceDirectoryName);
 
-            return CreateFromDirectoryInternalAsync(sourceDirectoryName, destination, includeBaseDirectory, leaveOpen: true, cancellationToken);
+            return CreateFromDirectoryInternalAsync(sourceDirectoryName, destination, includeBaseDirectory, leaveOpen: true, format, cancellationToken);
         }
 
         /// <summary>
@@ -99,6 +109,11 @@ namespace System.Formats.Tar
         /// <exception cref="DirectoryNotFoundException">The <paramref name="sourceDirectoryName"/> directory path was not found.</exception>
         /// <exception cref="IOException">An I/O exception occurred.</exception>
         public static void CreateFromDirectory(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory)
+            => CreateFromDirectory(sourceDirectoryName, destinationFileName, includeBaseDirectory, TarEntryFormat.Pax);
+
+        /// <inheritdoc cref="CreateFromDirectory(string, string, bool)" />
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
+        public static void CreateFromDirectory(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, TarEntryFormat format)
         {
             ArgumentException.ThrowIfNullOrEmpty(sourceDirectoryName);
             ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
@@ -115,7 +130,7 @@ namespace System.Formats.Tar
             // Throws if the destination file exists
             using FileStream fs = new(destinationFileName, FileMode.CreateNew, FileAccess.Write);
 
-            CreateFromDirectoryInternal(sourceDirectoryName, fs, includeBaseDirectory, leaveOpen: false);
+            CreateFromDirectoryInternal(sourceDirectoryName, fs, includeBaseDirectory, leaveOpen: false, format);
         }
 
         /// <summary>
@@ -131,6 +146,11 @@ namespace System.Formats.Tar
         /// <exception cref="DirectoryNotFoundException">The <paramref name="sourceDirectoryName"/> directory path was not found.</exception>
         /// <exception cref="IOException">An I/O exception occurred.</exception>
         public static Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, CancellationToken cancellationToken = default)
+            => CreateFromDirectoryAsync(sourceDirectoryName, destinationFileName, includeBaseDirectory, TarEntryFormat.Pax, cancellationToken);
+
+        /// <inheritdoc cref="CreateFromDirectoryAsync(string, string, bool, CancellationToken)" />
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
+        public static Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, TarEntryFormat format, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -148,7 +168,7 @@ namespace System.Formats.Tar
                 return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceDirectoryName)));
             }
 
-            return CreateFromDirectoryInternalAsync(sourceDirectoryName, destinationFileName, includeBaseDirectory, cancellationToken);
+            return CreateFromDirectoryInternalAsync(sourceDirectoryName, destinationFileName, includeBaseDirectory, format, cancellationToken);
         }
 
         /// <summary>
@@ -323,11 +343,11 @@ namespace System.Formats.Tar
 
         // Creates an archive from the contents of a directory.
         // It assumes the sourceDirectoryName is a fully qualified path, and allows choosing if the archive stream should be left open or not.
-        private static void CreateFromDirectoryInternal(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, bool leaveOpen)
+        private static void CreateFromDirectoryInternal(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, bool leaveOpen, TarEntryFormat format)
         {
             VerifyCreateFromDirectoryArguments(sourceDirectoryName, destination);
 
-            using (TarWriter writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen))
+            using (TarWriter writer = new TarWriter(destination, format, leaveOpen))
             {
                 DirectoryInfo di = new(sourceDirectoryName);
 
@@ -353,7 +373,7 @@ namespace System.Formats.Tar
         }
 
         // Asynchronously creates a tar archive from the contents of the specified directory, and outputs them into the specified path.
-        private static async Task CreateFromDirectoryInternalAsync(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, CancellationToken cancellationToken)
+        private static async Task CreateFromDirectoryInternalAsync(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, TarEntryFormat format, CancellationToken cancellationToken)
         {
             Debug.Assert(!string.IsNullOrEmpty(sourceDirectoryName));
             Debug.Assert(!string.IsNullOrEmpty(destinationFileName));
@@ -370,18 +390,18 @@ namespace System.Formats.Tar
             FileStream archive = new(destinationFileName, options);
             await using (archive.ConfigureAwait(false))
             {
-                await CreateFromDirectoryInternalAsync(sourceDirectoryName, archive, includeBaseDirectory, leaveOpen: false, cancellationToken).ConfigureAwait(false);
+                await CreateFromDirectoryInternalAsync(sourceDirectoryName, archive, includeBaseDirectory, leaveOpen: false, format, cancellationToken).ConfigureAwait(false);
             }
         }
 
         // Asynchronously creates an archive from the contents of a directory.
         // It assumes the sourceDirectoryName is a fully qualified path, and allows choosing if the archive stream should be left open or not.
-        private static async Task CreateFromDirectoryInternalAsync(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, bool leaveOpen, CancellationToken cancellationToken)
+        private static async Task CreateFromDirectoryInternalAsync(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, bool leaveOpen, TarEntryFormat format, CancellationToken cancellationToken)
         {
             VerifyCreateFromDirectoryArguments(sourceDirectoryName, destination);
             cancellationToken.ThrowIfCancellationRequested();
 
-            TarWriter writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen);
+            TarWriter writer = new TarWriter(destination, format, leaveOpen);
             await using (writer.ConfigureAwait(false))
             {
                 DirectoryInfo di = new(sourceDirectoryName);
