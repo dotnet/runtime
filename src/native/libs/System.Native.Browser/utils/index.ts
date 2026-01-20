@@ -13,7 +13,7 @@ import {
     zeroRegion,
     isSharedArrayBuffer,
 } from "./memory";
-import { stringToUTF16, stringToUTF16Ptr, stringToUTF8Ptr, utf16ToString } from "./strings";
+import { stringToUTF16, stringToUTF16Ptr, stringToUTF8, stringToUTF8Ptr, utf16ToString } from "./strings";
 import { abortPosix, abortTimers, getExitStatus, setEnvironmentVariable } from "./host";
 import { dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "../utils/cross-module";
 import { initPolyfills } from "../utils/polyfills";
@@ -47,6 +47,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         stringToUTF16,
         stringToUTF16Ptr,
         stringToUTF8Ptr,
+        stringToUTF8,
         zeroRegion,
         isSharedArrayBuffer,
         abortTimers,
@@ -61,6 +62,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
             map.stringToUTF16,
             map.stringToUTF16Ptr,
             map.stringToUTF8Ptr,
+            map.stringToUTF8,
             map.zeroRegion,
             map.isSharedArrayBuffer,
             map.abortTimers,
