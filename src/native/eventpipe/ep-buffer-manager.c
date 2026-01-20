@@ -822,8 +822,9 @@ buffer_manager_convert_buffer_to_read_only (
 
 	// Now that the writer thread has released its cached pointer to this buffer, we can safely
 	// mark it as read-only.
+	// For buffer_manager's coordination of event writing and reading operations, defensively transition the buffer state under the buffer manager lock.
 	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section2)
-		ep_buffer_convert_to_read_only (new_read_buffer, buffer_manager);
+		ep_buffer_convert_to_read_only (new_read_buffer);
 	EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section2)
 
 ep_on_exit:

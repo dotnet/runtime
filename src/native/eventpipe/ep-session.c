@@ -493,6 +493,8 @@ ep_session_suspend_write_event (EventPipeSession *session)
 	// Need to disable the session before calling this method.
 	EP_ASSERT (!ep_is_session_enabled ((EventPipeSessionID)session));
 
+	ep_requires_lock_held ();
+
 	DN_DEFAULT_LOCAL_ALLOCATOR (allocator, dn_vector_ptr_default_local_allocator_byte_size);
 
 	dn_vector_ptr_custom_init_params_t params = {0, };
@@ -504,11 +506,12 @@ ep_session_suspend_write_event (EventPipeSession *session)
 	if (dn_vector_ptr_custom_init (&threads, &params)) {
 		ep_thread_get_threads (&threads);
 		DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThread *, thread, &threads) {
+			// Frequently ensure the session remains disabled and removed from the session array.
+			// The yield below opens a window for a newly allocated session to inherit this session's index,
+			// leading to a stale cached session pointer should the slot not have been cleared.
+			EP_ASSERT (!ep_is_session_enabled ((EventPipeSessionID)session));
 			if (thread) {
 				// The session is disabled, so wait for any in-progress writes to complete.
-				// Callers should have removed the session from the array as !ep_is_session_enabled asserts above.
-				// This yield opens a window for a newly allocated session to inherit this session's index,
-				// leading to a stale cached session pointer should the slot not have been cleared.
 				EP_YIELD_WHILE (ep_thread_get_session_use_in_progress (thread) == session->index);
 
 				// Since we've already disabled the session, the thread won't call back in to this
@@ -519,6 +522,8 @@ ep_session_suspend_write_event (EventPipeSession *session)
 
 		dn_vector_ptr_dispose (&threads);
 	}
+
+	ep_requires_lock_held ();
 }
 
 void
