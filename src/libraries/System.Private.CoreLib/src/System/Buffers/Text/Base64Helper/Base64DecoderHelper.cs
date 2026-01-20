@@ -312,13 +312,7 @@ namespace System.Buffers.Text
 
                     // The DecodeFrom helper will return DestinationTooSmall if the destination is too small,
                     // regardless of whether it's actually too small once you skip whitespace characters.
-                    // As long as we're making progress, try to trim whitespace characters again and continue.
-                    if (status == OperationStatus.DestinationTooSmall && localConsumed == 0)
-                    {
-                        // If the input contains whitespace in the middle of the next Base64 block AND the destination is small,
-                        // the DecodeFrom helper may be unable to make forward progress. Fall back to block-wise decoding.
-                        return decoder.DecodeWithWhiteSpaceBlockwiseWrapper(decoder, source, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
-                    }
+                    // In that case we loop again and fall back to block-wise decoding if we can't make progress.
 
                     source = source.Slice(localConsumed);
                     bytes = bytes.Slice(localWritten);
