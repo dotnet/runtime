@@ -3518,7 +3518,8 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
         if (blendVariableId != NI_Illegal)
         {
             // result = BlendVariable op3 (right) op2 (left) op1 (mask)
-            resultNode = comp->gtNewSimdHWIntrinsicNode(simdType, op3, op2, op1, blendVariableId, simdBaseType, simdSize);
+            resultNode =
+                comp->gtNewSimdHWIntrinsicNode(simdType, op3, op2, op1, blendVariableId, simdBaseType, simdSize);
         }
     }
 
@@ -3545,7 +3546,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
             op1 = op1Use.Def();
 
             GenTree* tmp1 = comp->gtClone(op1);
-            GenTree* tmp2 = comp->gtNewSimdBinOpNode(GT_AND, simdType, op2, op1, simdBaseType, simdSize);
+            GenTree* tmp2 = comp->gtNewSimdBinOpNode(GT_AND, simdType, op1, op2, simdBaseType, simdSize);
             GenTree* tmp3 = comp->gtNewSimdBinOpNode(GT_AND_NOT, simdType, op3, tmp1, simdBaseType, simdSize);
             resultNode    = comp->gtNewSimdBinOpNode(GT_OR, simdType, tmp2, tmp3, simdBaseType, simdSize);
 
