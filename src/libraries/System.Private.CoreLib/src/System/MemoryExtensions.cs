@@ -1990,7 +1990,7 @@ namespace System
             // When highInclusive < lowInclusive, the range is invalid and all values are outside it.
             if (lowInclusive.CompareTo(highInclusive) > 0)
             {
-                return span.Length > 0 ? 0 : -1;
+                return span.IsEmpty ? -1 : 0;
             }
 
             if (Vector128.IsHardwareAccelerated)
@@ -2132,7 +2132,7 @@ namespace System
             // When highInclusive < lowInclusive, the range is invalid and all values are outside it.
             if (lowInclusive.CompareTo(highInclusive) > 0)
             {
-                return span.Length > 0 ? span.Length - 1 : -1;
+                return span.IsEmpty ? -1 : span.Length - 1;
             }
 
             if (Vector128.IsHardwareAccelerated)
