@@ -1112,6 +1112,18 @@ public static class Test
 
     private sealed class DefaultTestOutputHelper : ITestOutputHelper
     {
+        public string Output => throw new NotSupportedException();
+
+        public void Write(string message)
+        {
+            if (s_verbose) Console.Write(""TestOutputHelper: "" + message);
+        }
+
+        public void Write(string format, params object[] args)
+        {
+            if (s_verbose) Console.Write(""TestOutputHelper: "" + string.Format(format, args));
+        }
+
         public void WriteLine(string message)
         {
             if (s_verbose) Console.WriteLine(""TestOutputHelper: "" + message);
@@ -1136,7 +1148,6 @@ $@"<Project Sdk=""Microsoft.NET.Sdk"">
   <ItemGroup>
     <Reference Include=""xunit.core""><HintPath>#HelperAssemblyLocation#xunit.core.dll</HintPath></Reference>
     <Reference Include=""xunit.assert""><HintPath>#HelperAssemblyLocation#xunit.assert.dll</HintPath></Reference>
-    <Reference Include=""xunit.abstractions""><HintPath>#HelperAssemblyLocation#xunit.abstractions.dll</HintPath></Reference>
     <Reference Include=""Microsoft.DotNet.XUnitExtensions""><HintPath>#HelperAssemblyLocation#Microsoft.DotNet.XUnitExtensions.dll</HintPath></Reference>
     <Reference Include=""TestUtilities""><HintPath>#HelperAssemblyLocation#TestUtilities.dll</HintPath></Reference>
     <Reference Include=""#TestAssembly#""><HintPath>#TestAssemblyLocation#</HintPath></Reference>

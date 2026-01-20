@@ -8,6 +8,8 @@ using System.Linq;
 using System.Reflection;
 using System.Resources;
 using System.Text.RegularExpressions;
+using Xunit;
+
 namespace System.Xml.Tests
 {
     public class LineInfo

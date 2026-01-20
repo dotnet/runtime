@@ -115,7 +115,6 @@ $(_XunitEpilog)
       <_XunitProlog Condition=" '$(_XunitProlog)'=='' and '$(IsMobile)'=='false' ">
         <![CDATA[
 using Xunit%3B
-using Xunit.Abstractions%3B
 using System%3B
 using System.Collections.Generic%3B
 using System.Diagnostics%3B
@@ -169,7 +168,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <_XunitProlog Condition=" '$(_XunitProlog)'=='' and '$(IsMobile)'=='true' ">
         <![CDATA[
 using Xunit%3B
-using Xunit.Abstractions%3B
 using System%3B
 using System.Collections.Generic%3B
 using System.Diagnostics%3B

@@ -4,6 +4,8 @@
 using System;
 using System.Globalization;
 using System.Xml;
+using Xunit;
+
 public class CustomUrlResolver : XmlUrlResolver
 {
     private ITestOutputHelper _output;
