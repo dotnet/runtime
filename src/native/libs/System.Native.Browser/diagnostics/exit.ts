@@ -25,6 +25,7 @@ function onExit(exitCode: number, reason: any, silent: boolean): boolean {
     if (!loaderConfig) {
         return true;
     }
+    dotnetRuntimeExports.stopThrottlingPrevention();
     if (exitCode === 0 && loaderConfig.interopCleanupOnExit) {
         dotnetRuntimeExports.forceDisposeProxies(true, true);
     }

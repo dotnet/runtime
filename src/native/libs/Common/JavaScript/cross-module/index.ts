@@ -107,6 +107,7 @@ export function dotnetUpdateInternalsSubscriber() {
             cancelPromise: table[4],
             invokeJSFunction: table[5],
             forceDisposeProxies: table[6],
+            stopThrottlingPrevention: table[7],
         };
         Object.assign(runtime, runtimerLocal);
     }
@@ -169,6 +170,7 @@ export function dotnetUpdateInternalsSubscriber() {
     // keep in sync with nativeBrowserExportsToTable()
     function nativeBrowserExportsFromTable(table: NativeBrowserExportsTable, interop: NativeBrowserExports): void {
         const interopLocal: NativeBrowserExports = {
+            runBackgroundTicks: table[0],
         };
         Object.assign(interop, interopLocal);
     }

@@ -37,6 +37,7 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     _SystemInteropJS_ReleaseJSOwnedObjectByGCHandle: (args: JSMarshalerArguments) => void;
     _SystemInteropJS_BindAssemblyExports: (args: JSMarshalerArguments) => void;
     _SystemInteropJS_CallJSExport: (methodHandle: CSFnHandle, args: JSMarshalerArguments) => void;
+    _runBackgroundTicks: () => void;
 
     FS: {
         createPath: (parent: string, path: string, canRead?: boolean, canWrite?: boolean) => string;

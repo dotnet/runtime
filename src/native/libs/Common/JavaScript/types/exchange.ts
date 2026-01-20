@@ -15,8 +15,10 @@ import type { bindJSImportST, invokeJSFunction, invokeJSImportST } from "../../.
 import type { forceDisposeProxies, releaseCSOwnedObject } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/gc-handles";
 import type { resolveOrRejectPromise } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/marshal-to-js";
 import type { cancelPromise } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/cancelable-promise";
+import type { stopThrottlingPrevention } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/throttling";
 
 import type { symbolicateStackTrace } from "../../../System.Native.Browser/diagnostics/symbolicate";
+import type { runBackgroundTicks } from "../../../System.Native.Browser/native/scheduling";
 import type { EmsAmbientSymbolsType } from "../types";
 
 export type RuntimeExports = {
@@ -27,6 +29,7 @@ export type RuntimeExports = {
     cancelPromise: typeof cancelPromise,
     invokeJSFunction: typeof invokeJSFunction,
     forceDisposeProxies: typeof forceDisposeProxies,
+    stopThrottlingPrevention: typeof stopThrottlingPrevention,
 }
 
 export type RuntimeExportsTable = [
@@ -37,6 +40,7 @@ export type RuntimeExportsTable = [
     typeof cancelPromise,
     typeof invokeJSFunction,
     typeof forceDisposeProxies,
+    typeof stopThrottlingPrevention,
 ]
 
 export type LoggerType = {
@@ -120,9 +124,11 @@ export type InteropJavaScriptExportsTable = [
 ]
 
 export type NativeBrowserExports = {
+    runBackgroundTicks: typeof runBackgroundTicks,
 }
 
 export type NativeBrowserExportsTable = [
+    typeof runBackgroundTicks,
 ]
 
 export type BrowserUtilsExports = {

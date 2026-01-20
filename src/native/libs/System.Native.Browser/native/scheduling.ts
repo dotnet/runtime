@@ -31,3 +31,7 @@ export function SystemJS_ScheduleBackgroundJob(): void {
     }
 }
 
+export function runBackgroundTicks(): void {
+    _ems_._SystemJS_ExecuteTimerCallback();
+    _ems_._SystemJS_ExecuteBackgroundJobCallback();
+}
