@@ -6,7 +6,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get install -y --no-install-recommends apache2 libapache2-mod-auth-kerb procps krb5-user iputils-ping dnsutils nano \
                                                libapache2-mod-auth-ntlm-winbind samba samba-dsdb-modules samba-vfs-modules \
-                                               proftpd-basic openssl
+                                               proftpd-basic proftpd-mod-crypto openssl
 WORKDIR /setup
 
 COPY ./common/krb5.conf /etc/
