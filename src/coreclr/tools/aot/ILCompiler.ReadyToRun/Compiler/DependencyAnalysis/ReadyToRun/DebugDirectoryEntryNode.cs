@@ -30,12 +30,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            if (factory.Target.IsWasm)
-            {
-                return ObjectNodeSection.ReadOnlyDataSection;
-            }
-
-            return ObjectNodeSection.TextSection;
+            return ObjectNodeSection.ReadOnlyDataSection;
         }
 
         public override bool IsShareable => false;
