@@ -150,7 +150,7 @@ public class ComputeWasmBuildAssets : Task
                     candidate.SetMetadata("RelatedAsset", relatedAssetPath);
 
                     Log.LogMessage(MessageImportance.Low, "Found satellite assembly '{0}' asset for inferred candidate '{1}' with culture '{2}'", candidate.ItemSpec, relatedAssetPath, culture);
-                    
+
                     assetCandidates.Add(candidate);
                     continue;
                 }
