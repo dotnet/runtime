@@ -55,13 +55,12 @@ namespace System.Threading
         internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
             int millisecondsTimeout, bool repeating)
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 #if TARGET_WINDOWS
             Debug.Assert(!ThreadPool.UseWindowsThreadPool);
 #endif
             GC.SuppressFinalize(this);
 
-            Thread.ThrowIfNoThreadStart();
             _waitHandle = waitHandle.SafeWaitHandle;
             _callbackHelper = callbackHelper;
             _signedMillisecondsTimeout = millisecondsTimeout;

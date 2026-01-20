@@ -77,7 +77,7 @@ namespace System.Threading
         public static bool Wait(object obj, int millisecondsTimeout)
         {
             ArgumentNullException.ThrowIfNull(obj);
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 #if FEATURE_WASM_MANAGED_THREADS
             Thread.AssureBlockingPossible();
 #endif

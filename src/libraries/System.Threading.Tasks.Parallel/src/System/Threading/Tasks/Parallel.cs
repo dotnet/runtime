@@ -131,12 +131,12 @@ namespace System.Threading.Tasks
     public static partial class Parallel
     {
 
-        [UnsupportedOSPlatformGuard("browser")]
-        [UnsupportedOSPlatformGuard("wasi")]
+        [SupportedOSPlatformGuard("browser")]
+        [SupportedOSPlatformGuard("wasi")]
 #if !FEATURE_SINGLE_THREADED
-        internal static bool IsThreadStartSupported => true;
+        internal static bool IsSingleThreaded => true;
 #else
-        internal static bool IsThreadStartSupported => false;
+        internal static bool IsSingleThreaded => false;
 #endif
 
         // static counter for generating unique Fork/Join Context IDs to be used in ETW events
@@ -248,7 +248,7 @@ namespace System.Threading.Tasks
             {
                 // If we've gotten this far, it's time to process the actions.
 
-                if (!IsThreadStartSupported ||
+                if (!!IsSingleThreaded ||
                     // This is more efficient for a large number of actions, or for enforcing MaxDegreeOfParallelism:
                     (actionsCopy.Length > SMALL_ACTIONCOUNT_LIMIT) ||
                     (parallelOptions.MaxDegreeOfParallelism != -1 && parallelOptions.MaxDegreeOfParallelism < actionsCopy.Length)

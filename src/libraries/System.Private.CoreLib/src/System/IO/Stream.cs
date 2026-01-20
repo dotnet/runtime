@@ -216,7 +216,7 @@ namespace System.IO
             // thread if it does a second IO request until the first one completes.
             SemaphoreSlim semaphore = EnsureAsyncActiveSemaphoreInitialized();
             Task? semaphoreTask = null;
-            if (!Thread.IsThreadStartSupported || serializeAsynchronously)
+            if (Thread.IsSingleThreaded || serializeAsynchronously)
             {
                 semaphoreTask = semaphore.WaitAsync();
             }
@@ -490,7 +490,7 @@ namespace System.IO
             // thread if it does a second IO request until the first one completes.
             SemaphoreSlim semaphore = EnsureAsyncActiveSemaphoreInitialized();
             Task? semaphoreTask = null;
-            if (!Thread.IsThreadStartSupported || serializeAsynchronously)
+            if (Thread.IsSingleThreaded || serializeAsynchronously)
             {
                 semaphoreTask = semaphore.WaitAsync(); // kick off the asynchronous wait, but don't block
             }

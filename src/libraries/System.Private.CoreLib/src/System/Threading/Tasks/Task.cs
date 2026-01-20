@@ -2976,7 +2976,7 @@ namespace System.Threading.Tasks
                 return true;
             }
 
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             // ETW event for Task Wait Begin
             TplEventSource log = TplEventSource.Log;
@@ -3061,7 +3061,7 @@ namespace System.Threading.Tasks
             bool returnValue = SpinWait(millisecondsTimeout);
             if (!returnValue)
             {
-                Thread.ThrowIfNoThreadStart();
+                Thread.ThrowIfSingleThreaded();
 
                 // We're about to block waiting for the task to complete, which is expensive, and if
                 // the task being waited on depends on some other work to run, this thread could end up
@@ -3141,7 +3141,7 @@ namespace System.Threading.Tasks
         {
             if (IsCompleted) return true;
 
-            if (!Thread.IsThreadStartSupported)
+            if (Thread.IsSingleThreaded)
             {
                 return false;
             }
@@ -4712,7 +4712,7 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static void WaitAll(params Task[] tasks)
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             if (tasks is null)
             {
@@ -4739,7 +4739,7 @@ namespace System.Threading.Tasks
         [UnsupportedOSPlatform("browser")]
         public static void WaitAll(params ReadOnlySpan<Task> tasks)
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             bool waitResult = WaitAllCore(tasks, Timeout.Infinite, default);
             Debug.Assert(waitResult, "expected wait to succeed");
@@ -4778,7 +4778,7 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, TimeSpan timeout)
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds is < -1 or > int.MaxValue)
@@ -4824,7 +4824,7 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, int millisecondsTimeout)
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             if (tasks is null)
             {
@@ -4860,7 +4860,7 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static void WaitAll(Task[] tasks, CancellationToken cancellationToken)
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             if (tasks is null)
             {
@@ -4908,7 +4908,7 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             if (tasks is null)
             {
@@ -4932,7 +4932,7 @@ namespace System.Threading.Tasks
         [UnsupportedOSPlatform("browser")]
         public static void WaitAll(IEnumerable<Task> tasks, CancellationToken cancellationToken = default)
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             if (tasks is null)
             {
@@ -4952,7 +4952,7 @@ namespace System.Threading.Tasks
         [UnsupportedOSPlatform("browser")]
         private static bool WaitAllCore(ReadOnlySpan<Task> tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             if (millisecondsTimeout < -1)
             {
@@ -5084,7 +5084,7 @@ namespace System.Threading.Tasks
         [UnsupportedOSPlatform("browser")]
         private static bool WaitAllBlockingCore(List<Task> tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             Debug.Assert(tasks != null, "Expected a non-null list of tasks");
             Debug.Assert(tasks.Count > 0, "Expected at least one task");
@@ -5354,7 +5354,7 @@ namespace System.Threading.Tasks
 
             if (signaledTaskIndex == -1 && tasks.Length != 0)
             {
-                Thread.ThrowIfNoThreadStart();
+                Thread.ThrowIfSingleThreaded();
 
                 Task<Task> firstCompleted = TaskFactory.CommonCWAnyLogic(tasks, isSyncBlocking: true);
                 bool waitCompleted = firstCompleted.Wait(millisecondsTimeout, cancellationToken);

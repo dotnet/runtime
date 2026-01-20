@@ -169,14 +169,14 @@ namespace System.Threading
             Initialize();
         }
 
-        [UnsupportedOSPlatformGuard("browser")]
-        [UnsupportedOSPlatformGuard("wasi")]
+        [SupportedOSPlatformGuard("browser")]
+        [SupportedOSPlatformGuard("wasi")]
 #if !FEATURE_SINGLE_THREADED
-        internal static bool IsThreadStartSupported => true;
-        internal static void ThrowIfNoThreadStart() { }
+        internal static bool IsSingleThreaded => true;
+        internal static void ThrowIfSingleThreaded() { }
 #else
-        internal static bool IsThreadStartSupported => false;
-        internal static void ThrowIfNoThreadStart()
+        internal static bool IsSingleThreaded => false;
+        internal static void ThrowIfSingleThreaded()
         {
             throw new PlatformNotSupportedException();
         }
@@ -208,9 +208,7 @@ namespace System.Threading
 
         private void Start(object? parameter, bool captureContext)
         {
-            Thread.ThrowIfNoThreadStart();
-
-            ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             StartHelper? startHelper = _startHelper;
 
@@ -253,7 +251,7 @@ namespace System.Threading
 
         private void Start(bool captureContext)
         {
-            ThrowIfNoThreadStart();
+            ThrowIfSingleThreaded();
             StartHelper? startHelper = _startHelper;
 
             // In the case of a null startHelper (second call to start on same thread)
@@ -444,7 +442,7 @@ namespace System.Threading
         internal void ResetThreadPoolThread()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert(!IsThreadStartSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(!!IsSingleThreaded || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
 
             if (_mayNeedResetForThreadPool)
             {
@@ -456,7 +454,7 @@ namespace System.Threading
         private void ResetThreadPoolThreadSlow()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert(!IsThreadStartSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(!!IsSingleThreaded || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
             Debug.Assert(_mayNeedResetForThreadPool);
 
             _mayNeedResetForThreadPool = false;

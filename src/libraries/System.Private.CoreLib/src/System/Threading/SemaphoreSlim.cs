@@ -174,7 +174,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public void Wait()
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             // Call wait with infinite timeout
             WaitCore(Timeout.Infinite, CancellationToken.None);
@@ -193,7 +193,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public void Wait(CancellationToken cancellationToken)
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             // Call wait with infinite timeout
             WaitCore(Timeout.Infinite, cancellationToken);
@@ -213,7 +213,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool Wait(TimeSpan timeout)
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             // Validate the timeout
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
@@ -245,7 +245,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             // Validate the timeout
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
@@ -272,7 +272,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool Wait(int millisecondsTimeout)
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             if (millisecondsTimeout < -1)
             {
@@ -297,7 +297,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             if (millisecondsTimeout < -1)
             {
@@ -334,7 +334,7 @@ namespace System.Threading
                 return false;
             }
 
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             long startTime = 0;
             if (millisecondsTimeout != Timeout.Infinite && millisecondsTimeout > 0)
@@ -465,7 +465,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         private bool WaitUntilCountOrTimeout(long millisecondsTimeout, long startTime, CancellationToken cancellationToken)
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             int monitorWaitMilliseconds = Timeout.Infinite;
 

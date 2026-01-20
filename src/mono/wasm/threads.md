@@ -32,8 +32,8 @@ assemblies.
 ### Implementation assemblies ###
 
 The implementation (in `System.Private.CoreLib`) we check
-`System.Threading.Thread.IsThreadStartSupported` or call
-`System.Threading.Thread.ThrowIfNoThreadStart()` to guard code paths that depends on
+`System.Threading.Thread.IsSingleThreaded` or call
+`System.Threading.Thread.ThrowIfSingleThreaded()` to guard code paths that depends on
 multi-threading.  The property is a boolean constant that will allow the IL trimmer or the
 JIT/interpreter/AOT to drop the multi-threaded implementation in the single-threaded CoreLib.
 

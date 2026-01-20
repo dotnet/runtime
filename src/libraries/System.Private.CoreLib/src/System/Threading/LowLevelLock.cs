@@ -153,7 +153,7 @@ namespace System.Threading
         {
             VerifyIsNotLocked();
 
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             // Spin a bit to see if the lock becomes available, before forcing the thread into a wait state
             if (_spinWaiter.SpinWaitForCondition(s_spinWaitTryAcquireCallback, this, SpinCount, SpinSleep0Threshold))

@@ -1468,7 +1468,7 @@ namespace System.Threading
              bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
              )
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             if (millisecondsTimeOutInterval > (uint)int.MaxValue && millisecondsTimeOutInterval != uint.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
@@ -1487,7 +1487,7 @@ namespace System.Threading
              bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
              )
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             if (millisecondsTimeOutInterval > (uint)int.MaxValue && millisecondsTimeOutInterval != uint.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
@@ -1520,7 +1520,7 @@ namespace System.Threading
              bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
              )
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeOutInterval, -1);
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
@@ -1537,7 +1537,7 @@ namespace System.Threading
             bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
         )
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeOutInterval, -1);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(millisecondsTimeOutInterval, int.MaxValue);
@@ -1555,7 +1555,7 @@ namespace System.Threading
             bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
         )
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeOutInterval, -1);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(millisecondsTimeOutInterval, int.MaxValue);
@@ -1573,7 +1573,7 @@ namespace System.Threading
                           bool executeOnlyOnce
                           )
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             long tm = (long)timeout.TotalMilliseconds;
 
@@ -1594,7 +1594,7 @@ namespace System.Threading
                           bool executeOnlyOnce
                           )
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             long tm = (long)timeout.TotalMilliseconds;
 

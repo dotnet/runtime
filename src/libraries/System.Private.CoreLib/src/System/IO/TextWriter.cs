@@ -883,7 +883,7 @@ namespace System.IO
         {
             ArgumentNullException.ThrowIfNull(writer);
 
-            return !Thread.IsThreadStartSupported || writer is SyncTextWriter
+            return Thread.IsSingleThreaded || writer is SyncTextWriter
                     ? writer
                     : new SyncTextWriter(writer);
         }
