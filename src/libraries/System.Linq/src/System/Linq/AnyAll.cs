@@ -15,6 +15,11 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
+            if (source is ICollection<TSource> gc)
+            {
+                return gc.Count != 0;
+            }
+
             if (!IsSizeOptimized && source is Iterator<TSource> iterator)
             {
                 int count = iterator.GetCount(onlyIfCheap: true);
