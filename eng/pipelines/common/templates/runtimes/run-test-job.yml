@@ -19,6 +19,7 @@ parameters:
   tieringTest: false
   runtimeVariant: ''
   variables: {}
+  jobParameters: {}
   pool: ''
   runtimeFlavor: 'coreclr'
   shouldContinueOnError: false
