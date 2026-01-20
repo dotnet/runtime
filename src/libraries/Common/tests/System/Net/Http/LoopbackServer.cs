@@ -155,7 +155,10 @@ namespace System.Net.Test.Common
             }
             catch (Exception)
             {
-                await closableWrapper?.CloseAsync();
+                if (closableWrapper is not null)
+                {
+                    await closableWrapper.CloseAsync().ConfigureAwait(false);
+                }
                 throw;
             }
         }
