@@ -3525,7 +3525,19 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
 
     if (resultNode == nullptr)
     {
-        if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+        if (op3->IsVectorZero())
+        {
+            BlockRange().Remove(op3);
+
+            resultNode = comp->gtNewSimdBinOpNode(GT_AND, simdType, op1, op2, simdBaseType, simdSize);
+        }
+        else if (op2->IsVectorZero())
+        {
+            BlockRange().Remove(op2);
+
+            resultNode = comp->gtNewSimdBinOpNode(GT_AND_NOT, simdType, op3, op1, simdBaseType, simdSize);
+        }
+        else if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512))
         {
             // We can't use the mask, but we can emit a ternary logic node
             GenTree* control = comp->gtNewIconNode(0xCA); // (B & A) | (C & ~A)

@@ -9392,6 +9392,9 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
         }
 
 #if defined(TARGET_XARCH)
+        case NI_X86Base_BlendVariable:
+        case NI_AVX_BlendVariable:
+        case NI_AVX2_BlendVariable:
         case NI_AVX512_BlendVariableMask:
         {
             if (IsVNConstant(arg2VN))
