@@ -153,9 +153,7 @@ namespace System.IO.Compression
         {
             ArgumentOutOfRangeException.ThrowIfNegative(inputSize);
 
-            // ZLib's compressBound formula: inputSize + (inputSize >> 12) + (inputSize >> 14) + (inputSize >> 25) + 13
-            // We use a conservative estimate
-            return inputSize + (inputSize >> 12) + (inputSize >> 14) + (inputSize >> 25) + 18;
+            return (long)Interop.ZLib.compressBound((uint)inputSize);
         }
 
         /// <summary>

@@ -21,3 +21,4 @@ EXPORTS
     CompressionNative_InflateEnd
     CompressionNative_InflateInit2_
     CompressionNative_InflateReset2_
+    CompressionNative_CompressBound
