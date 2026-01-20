@@ -396,7 +396,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             TaskCompletionSource<long> tcs = new TaskCompletionSource<long>();
             var res = JavaScriptTestHelper.invoke1_TaskOfLong(tcs.Task, nameof(JavaScriptTestHelper.AwaitTaskOfInt64));
-            tcs.SetResult(value); // incompleted task marshalls promise and resolves on completion
+            tcs.SetResult(value); // unresolved task marshalls promise and resolves on completion
             await Task.Yield();
             var rr = await res;
             await Task.Yield();
