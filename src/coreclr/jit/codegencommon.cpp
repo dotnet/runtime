@@ -2929,6 +2929,7 @@ public:
     }
 #endif
 };
+#endif // !TARGET_WASM
 
 // -----------------------------------------------------------------------------
 // genParamStackType: Get the type that a part of a parameter passed in a
@@ -2998,6 +2999,7 @@ var_types CodeGen::genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& se
     }
 }
 
+#ifndef TARGET_WASM
 // -----------------------------------------------------------------------------
 // genSpillOrAddRegisterParam: Handle a register parameter either by homing it
 // to stack immediately, or by adding it to the register graph.
@@ -3012,7 +3014,7 @@ var_types CodeGen::genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& se
 void CodeGen::genSpillOrAddRegisterParam(
     unsigned lclNum, unsigned offset, unsigned paramLclNum, const ABIPassingSegment& segment, RegGraph* graph)
 {
-    regMaskTP paramRegs = intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn;
+    regMaskTP paramRegs = calleeRegArgMaskLiveIn;
 
     if (!segment.IsPassedInRegister() || ((paramRegs & genRegMask(segment.GetRegister())) == 0))
     {
@@ -3115,7 +3117,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
     }
 #endif
 
-    regMaskTP paramRegs = intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn;
+    regMaskTP paramRegs = calleeRegArgMaskLiveIn;
     if (compiler->opts.OptimizationDisabled())
     {
         // All registers are going to frame
@@ -3217,7 +3219,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 
     INDEBUG(graph.Validate());
 
-    regMaskTP busyRegs = intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn;
+    regMaskTP busyRegs = calleeRegArgMaskLiveIn;
     while (true)
     {
         RegNode* node = graph.FindNodeToProcess();
@@ -3358,13 +3360,13 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 //
 regMaskTP CodeGen::genGetParameterHomingTempRegisterCandidates()
 {
-    regMaskTP regs = RBM_CALLEE_TRASH | intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn |
-                     regSet.rsGetModifiedRegsMask();
+    regMaskTP regs = RBM_CALLEE_TRASH | calleeRegArgMaskLiveIn | regSet.rsGetModifiedRegsMask();
     // We may have reserved register that the backend needs to access stack
     // locals. We cannot place state in that register.
     regs &= ~regSet.rsMaskResvd;
     return regs;
 }
+#endif // !TARGET_WASM
 
 /*****************************************************************************
  * If any incoming stack arguments live in registers, load them.
@@ -3429,18 +3431,15 @@ void CodeGen::genEnregisterIncomingStackArgs()
             continue;
         }
 
-        /* Load the incoming parameter into the register */
-
-        /* Figure out the home offset of the incoming argument */
-
+        // Load the incoming parameter into the register.
         regNumber regNum = varDsc->GetArgInitReg();
         assert(regNum != REG_STK);
 
-        var_types regType = varDsc->GetStackSlotHomeType();
 #ifdef TARGET_LOONGARCH64
         {
-            bool FPbased;
-            int  base = compiler->lvaFrameAddress(varNum, &FPbased);
+            bool      FPbased;
+            int       base    = compiler->lvaFrameAddress(varNum, &FPbased);
+            var_types regType = varDsc->GetStackSlotHomeType();
 
             if (emitter::isValidSimm12(base))
             {
@@ -3466,13 +3465,12 @@ void CodeGen::genEnregisterIncomingStackArgs()
             }
         }
 #else  // !TARGET_LOONGARCH64
-        GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, 0);
+        genLoadLocalIntoReg(regNum, varNum);
 #endif // !TARGET_LOONGARCH64
 
         regSet.verifyRegUsed(regNum);
     }
 }
-#endif // !TARGET_WASM
 
 /*-------------------------------------------------------------------------
  *
@@ -3680,25 +3678,24 @@ void CodeGen::genCheckUseBlockInit()
 
 #endif // TARGET_64BIT
 
+#ifdef TARGET_ARM
     if (genUseBlockInit)
     {
-        regMaskTP maskCalleeRegArgMask = intRegState.rsCalleeRegArgMaskLiveIn;
-
-#ifdef TARGET_ARM
         //
         // On the Arm if we are using a block init to initialize, then we
         // must force spill R4/R5/R6 so that we can use them during
         // zero-initialization process.
         //
-        int forceSpillRegCount = genCountBits(maskCalleeRegArgMask & ~genPrespilledUnmappedRegs()) - 1;
+        regMaskTP maskCalleeRegArgMask = calleeRegArgMaskLiveIn & RBM_ALLINT;
+        int       forceSpillRegCount   = genCountBits(maskCalleeRegArgMask & ~genPrespilledUnmappedRegs()) - 1;
         if (forceSpillRegCount > 0)
             regSet.rsSetRegsModified(RBM_R4);
         if (forceSpillRegCount > 1)
             regSet.rsSetRegsModified(RBM_R5);
         if (forceSpillRegCount > 2)
             regSet.rsSetRegsModified(RBM_R6);
-#endif // TARGET_ARM
     }
+#endif // TARGET_ARM
 }
 
 #ifndef TARGET_WASM
@@ -3849,8 +3846,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
     }
     else if (genInitStkLclCnt > 0)
     {
-        assert((genRegMask(initReg) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // initReg is not a live incoming
-                                                                                   // argument reg
+        assert((genRegMask(initReg) & calleeRegArgMaskLiveIn) == 0); // initReg is not a live incoming argument reg
 
         /* Initialize any lvMustInit vars on the stack */
 
@@ -4220,6 +4216,7 @@ void CodeGen::genHomeSwiftStructStackParameters()
     }
 }
 #endif
+#endif // !TARGET_WASM
 
 //-----------------------------------------------------------------------------
 // genHomeStackPartOfSplitParameter: Home the tail (stack) portion of a split parameter next to where the head
@@ -4270,6 +4267,7 @@ void CodeGen::genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegS
 #endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 }
 
+#ifndef TARGET_WASM
 /*-----------------------------------------------------------------------------
  *
  *  Save the generic context argument.
@@ -4653,7 +4651,7 @@ void CodeGen::genFinalizeFrame()
     // Parameter homing may need an additional register to handle conflicts if
     // all callee trash registers are used by parameters.
     regMaskTP homingCandidates = genGetParameterHomingTempRegisterCandidates();
-    if (((homingCandidates & ~intRegState.rsCalleeRegArgMaskLiveIn) & RBM_ALLINT) == RBM_NONE)
+    if (((homingCandidates & ~calleeRegArgMaskLiveIn) & RBM_ALLINT) == RBM_NONE)
     {
         regMaskTP extraRegMask = RBM_ALLINT & ~homingCandidates & ~regSet.rsMaskResvd;
         assert(extraRegMask != RBM_NONE);
@@ -4662,7 +4660,7 @@ void CodeGen::genFinalizeFrame()
         regSet.rsSetRegsModified(genRegMask(extraReg));
     }
 
-    if (((homingCandidates & ~floatRegState.rsCalleeRegArgMaskLiveIn) & RBM_ALLFLOAT) == RBM_NONE)
+    if (((homingCandidates & ~calleeRegArgMaskLiveIn) & RBM_ALLFLOAT) == RBM_NONE)
     {
         regMaskTP extraRegMask = RBM_ALLFLOAT & ~homingCandidates & ~regSet.rsMaskResvd;
         assert(extraRegMask != RBM_NONE);
@@ -4839,9 +4837,7 @@ void CodeGen::genFnProlog()
 
     GetEmitter()->emitBegProlog();
 
-#if !defined(TARGET_WASM)
     compiler->unwindBegProlog();
-#endif // !defined(TARGET_WASM)
 
     // Do this so we can put the prolog instruction group ahead of
     // other instruction groups
@@ -4860,7 +4856,7 @@ void CodeGen::genFnProlog()
         psiBegProlog();
     }
 
-#if !defined(TARGET_WASM)
+    genBeginFnProlog();
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // For arm64 OSR, emit a "phantom prolog" to account for the actions taken
@@ -4923,6 +4919,7 @@ void CodeGen::genFnProlog()
     regMaskTP initFltRegs = RBM_NONE; // FP registers which must be init'ed.
     regMaskTP initDblRegs = RBM_NONE;
 
+#ifndef TARGET_WASM
     unsigned   varNum;
     LclVarDsc* varDsc;
 
@@ -5095,9 +5092,9 @@ void CodeGen::genFnProlog()
     // On the ARM we will spill any incoming struct args in the first instruction in the prolog
     // Ditto for all enregistered user arguments in a varargs method.
     // These registers will be available to use for the initReg.  We just remove
-    // all of these registers from the rsCalleeRegArgMaskLiveIn.
+    // all of these registers from the calleeRegArgMaskLiveIn.
     //
-    intRegState.rsCalleeRegArgMaskLiveIn &= ~genPrespilledUnmappedRegs();
+    calleeRegArgMaskLiveIn &= ~genPrespilledUnmappedRegs();
 #endif
 
     /* Choose the register to use for zero initialization */
@@ -5108,7 +5105,7 @@ void CodeGen::genFnProlog()
     // If initReg is ever set to zero, this variable is set to true and zero initializing initReg
     // will be skipped.
     bool      initRegZeroed = false;
-    regMaskTP excludeMask   = intRegState.rsCalleeRegArgMaskLiveIn;
+    regMaskTP excludeMask   = calleeRegArgMaskLiveIn;
 #if defined(TARGET_AMD64)
     // we'd require eEVEX present to enable EGPRs in HWIntrinsics.
     if (!compiler->canUseEvexEncoding())
@@ -5219,6 +5216,11 @@ void CodeGen::genFnProlog()
         compiler->unwindPushMaskInt(regSet.rsMaskPreSpillRegs(true));
     }
 #endif // TARGET_ARM
+#else  // TARGET_WASM
+    regNumber initReg       = REG_NA;
+    bool      initRegZeroed = false;
+    bool      isOSRx64Root  = false;
+#endif // TARGET_WASM
 
     unsigned extraFrameSize = 0;
 
@@ -5328,8 +5330,7 @@ void CodeGen::genFnProlog()
 
     if (maskStackAlloc == RBM_NONE)
     {
-        genAllocLclFrame(compiler->compLclFrameSize + extraFrameSize, initReg, &initRegZeroed,
-                         intRegState.rsCalleeRegArgMaskLiveIn);
+        genAllocLclFrame(compiler->compLclFrameSize + extraFrameSize, initReg, &initRegZeroed, calleeRegArgMaskLiveIn);
     }
 #endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
@@ -5384,6 +5385,7 @@ void CodeGen::genFnProlog()
     }
 #endif // TARGET_ARM
 
+#ifndef TARGET_WASM // TODO-WASM: temporary; un-undefine as needed.
     //
     // Zero out the frame as needed
     //
@@ -5401,19 +5403,17 @@ void CodeGen::genFnProlog()
 #endif // JIT32_GCENCODER
 
     // Set up the GS security cookie
-
     genSetGSSecurityCookie(initReg, &initRegZeroed);
 
 #ifdef PROFILING_SUPPORTED
-
     // Insert a function entry callback for profiling, if requested.
     // OSR methods aren't called, so don't have enter hooks.
     if (!compiler->opts.IsOSR())
     {
         genProfilingEnterCallback(initReg, &initRegZeroed);
     }
-
 #endif // PROFILING_SUPPORTED
+#endif // !TARGET_WASM
 
     // For OSR we may have a zero-length prolog. That's not supported
     // when the method must report a generics context,/ so add a nop if so.
@@ -5455,7 +5455,7 @@ void CodeGen::genFnProlog()
         // consider it to be live
         if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
         {
-            intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_ERROR;
+            calleeRegArgMaskLiveIn &= ~RBM_SWIFT_ERROR;
         }
     }
 #endif
@@ -5489,7 +5489,7 @@ void CodeGen::genFnProlog()
 
         genHomeStackPartOfSplitParameter(initReg, &initRegZeroed);
 
-        if ((intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn) != RBM_NONE)
+        if (calleeRegArgMaskLiveIn != RBM_NONE)
         {
             genHomeRegisterParams(initReg, &initRegZeroed);
         }
@@ -5498,6 +5498,7 @@ void CodeGen::genFnProlog()
         genEnregisterIncomingStackArgs();
     }
 
+#ifndef TARGET_WASM
     /* Initialize any must-init registers variables now */
 
     if (initRegs)
@@ -5545,6 +5546,7 @@ void CodeGen::genFnProlog()
 
         genZeroInitFltRegs(initFltRegs, initDblRegs, initReg);
     }
+#endif // !TARGET_WASM
 
     //-----------------------------------------------------------------------------
 
@@ -5635,15 +5637,18 @@ void CodeGen::genFnProlog()
     }
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
-#else  // defined(TARGET_WASM)
-    genWasmLocals();
-    GetEmitter()->emitMarkPrologEnd();
-#endif // !defined(TARGET_WASM)
-
     GetEmitter()->emitEndProlog();
 }
 
 #if !defined(TARGET_WASM)
+//----------------------------------------------------------------------------------
+// genBeginFnProlog: target-specific prolog generation hook.
+//
+// Called by "genFnProlog" before emitting any instructions into the prolog.
+//
+void CodeGen::genBeginFnProlog()
+{
+}
 
 //----------------------------------------------------------------------------------
 // genEmitJumpTable: emit jump table and return its base offset
@@ -8015,6 +8020,20 @@ void CodeGen::genStackPointerCheck(bool      doStackPointerCheck,
 }
 
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
+
+//------------------------------------------------------------------------
+// genLoadLocalIntoReg: set the register to "load(local on stack)".
+//
+// Arguments:
+//    targetReg - The register to load into
+//    lclNum    - The local on stack to load from
+//
+void CodeGen::genLoadLocalIntoReg(regNumber regNum, unsigned lclNum)
+{
+    LclVarDsc* varDsc  = compiler->lvaGetDesc(lclNum);
+    var_types  regType = varDsc->GetStackSlotHomeType();
+    GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, lclNum, 0);
+}
 #endif // !TARGET_WASM
 
 unsigned CodeGenInterface::getCurrentStackLevel() const
