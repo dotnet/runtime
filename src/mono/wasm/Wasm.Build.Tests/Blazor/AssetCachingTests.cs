@@ -47,7 +47,7 @@ public class AssetCachingTests : BlazorWasmTestBase
                 await page.GotoAsync($"{baseUrl}counter");
                 await counterLoaded.Task;
 
-                var requestLogClient = new BlazorWebWasmLogClient(baseUrl);
+                using var requestLogClient = new BlazorWebWasmLogClient(baseUrl);
                 var firstLoadRequestLogs = await requestLogClient.GetRequestLogsAsync();
                 var firstLoadWasmRequests = firstLoadRequestLogs.Where(log => log.Path.EndsWith(".wasm"));
 
