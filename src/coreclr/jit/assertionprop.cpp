@@ -3195,10 +3195,10 @@ bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock,
                 // Avoid propagating if the weighted use cost is significantly greater than the def cost.
                 // NOTE: this currently does not take "a float living across a call" case into account
                 // where we might end up with spill/restore on ABIs without callee-saved registers
-                const weight_t defBlockWeight = defBlock->getBBWeight(this);
-                const weight_t lclblockWeight = destBlock->getBBWeight(this);
+                const weight_t defBlockWeight = defBlock->bbWeight;
+                const weight_t lclblockWeight = destBlock->bbWeight;
 
-                if ((defBlockWeight > 0) && ((lclblockWeight / defBlockWeight) >= BB_LOOP_WEIGHT_SCALE))
+                if ((defBlockWeight > BB_ZERO_WEIGHT) && ((lclblockWeight / defBlockWeight) >= BB_LOOP_WEIGHT_SCALE))
                 {
                     JITDUMP("Constant propagation inside loop " FMT_BB " is not profitable\n", destBlock->bbNum);
                     return false;
