@@ -305,7 +305,6 @@
     <Compile Include="IBC\IBCProfileParser.cs" />
     <Compile Include="IL\Stubs\InstanceCalliHelperIntrinsics.cs" />
     <Compile Include="IL\Stubs\PInvokeILEmitter.cs" />
-    <Compile Include="IL\Stubs\ILStubReferences.cs" />
     <Compile Include="Interop\IL\Marshaller.ReadyToRun.cs" />
     <Compile Include="Compiler\PerfEventSource.cs" />
     <Compile Include="ObjectWriter\ProfileFileBuilder.cs" />
