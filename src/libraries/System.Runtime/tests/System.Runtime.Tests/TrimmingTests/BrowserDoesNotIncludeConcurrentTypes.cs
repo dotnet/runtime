@@ -4,17 +4,17 @@
 using System;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 
 
 /// <summary>
+/// Tests that concurrent collections are not included in a trimmed app targeting browser.
 /// Tests that concurrent collections are not included in a trimmed app targeting browser.
 /// The idea is that the runtime should not depend on these types when running in a browser.
 /// Motivation: application size.
 /// </summary>
 class Program
 {
-    static async Task<int> Main(string[] args)
+    static int Main(string[] args)
     {
         var bagType = GetTypeByName("ConcurrentBag`1");
         if (bagType != null)
