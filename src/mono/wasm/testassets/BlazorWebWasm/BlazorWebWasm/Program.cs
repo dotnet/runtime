@@ -11,6 +11,7 @@ builder.Services.AddRazorComponents()
 var app = builder.Build();
 
 var requestLogs = new List<BlazorWebWasmRequestLog>();
+var requestLogsLock = new object();
 
 app.Use(async (context, next) =>
 {
@@ -21,7 +22,10 @@ app.Use(async (context, next) =>
         context.Request.Path,
         context.Response.StatusCode
     );
-    requestLogs.Add(logEntry);
+    lock (requestLogsLock)
+    {
+        requestLogs.Add(logEntry);
+    }
 });
 
 // Configure the HTTP request pipeline.
@@ -45,7 +49,19 @@ app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(BlazorWebWasm.Client._Imports).Assembly);
 
-app.MapGet("/request-logs", () => requestLogs);
-app.MapDelete("/request-logs", () => requestLogs.Clear());
+app.MapGet("/request-logs", () =>
+{
+    lock (requestLogsLock)
+    {
+        return requestLogs.ToList();
+    }
+});
+app.MapDelete("/request-logs", () =>
+{
+    lock (requestLogsLock)
+    {
+        requestLogs.Clear();
+    }
+});
 
 app.Run();
