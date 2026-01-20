@@ -16,7 +16,7 @@ app.Use(async (context, next) =>
 {
     await next.Invoke();
     var logEntry = new BlazorWebWasmRequestLog(
-        DateTime.Now,
+        DateTime.UtcNow,
         context.Request.Method,
         context.Request.Path,
         context.Response.StatusCode
