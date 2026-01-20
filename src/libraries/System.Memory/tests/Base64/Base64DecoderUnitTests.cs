@@ -1003,5 +1003,22 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(4, written4);
             Assert.Equal(new byte[] { 1, 2, 3, 4 }, destination4);
         }
+
+        [Fact]
+        public void DecodingWithEmbeddedWhiteSpaceIntoSmallDestination_TrailingWhiteSpacesAreConsumed()
+        {
+            byte[] input = "        8J+N        i    f    C    f        jYk="u8.ToArray();
+
+            // The actual decoded data is 8 bytes long.
+            // If we provide a destination buffer with 6 bytes, we can decode two blocks (6 bytes) and leave 2 bytes undecoded.
+            // But even though there are 2 bytes left undecoded, we should still consume as much input as possible,
+            // such that all trailing whitespace are also consumed.
+
+            byte[] destination = new byte[6];
+            Assert.Equal(OperationStatus.DestinationTooSmall, Base64.DecodeFromUtf8(input, destination, out int consumed, out int written));
+            Assert.Equal((byte)'j', input[consumed]); // byte right after the spaces
+            Assert.Equal(destination.Length, written);
+            Assert.Equal(new byte[] { 240, 159, 141, 137, 240, 159 }, destination);
+        }
     }
 }
