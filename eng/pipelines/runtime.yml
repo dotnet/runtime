@@ -111,7 +111,7 @@ extends:
           - browser_wasm
           - browser_wasm_win
           jobParameters:
-            nameSuffix: CoreCLR_Libraries
+            nameSuffix: CoreCLR_ReleaseLibraries
             buildArgs: -s clr+libs+libs.tests+packs -c Release -lc $(_BuildConfig) /p:TestWasmBuildTests=true /p:ArchiveTests=true /p:InstallWorkloadForTesting=false
             timeoutInMinutes: 120
             postBuildSteps:

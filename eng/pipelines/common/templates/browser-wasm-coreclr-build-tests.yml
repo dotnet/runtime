@@ -42,9 +42,9 @@ jobs:
       jobParameters:
         dependsOn:
           - ${{ if eq(platform, 'browser_wasm') }}:
-            - build_browser_wasm_linux_checked_CoreCLR_Libraries
+            - build_browser_wasm_linux_checked_CoreCLR_ReleaseLibraries
           - ${{ if eq(platform, 'browser_wasm_win') }}:
-            - build_browser_wasm_windows_checked_CoreCLR_Libraries
+            - build_browser_wasm_windows_checked_CoreCLR_ReleaseLibraries
         isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
         testGroup: innerloop
         nameSuffix: CoreCLR_WasmBuildTests
