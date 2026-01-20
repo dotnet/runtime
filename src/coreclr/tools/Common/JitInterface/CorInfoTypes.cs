@@ -328,8 +328,11 @@ namespace Internal.JitInterface
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct AllocMemChunk
     {
-        // in
-        // Alignment can be 0 for default alignment for code chunks
+        // Alignment of the chunk. Different restrictions apply for different types
+        // of chunks, and the value must generally be a power of two.
+        // - For the hot code chunk the maximal supported alignment is 32. 0 indicates default alignment.
+        // - For the cold code chunk the value must always be 0.
+        // - For read-only data chunks the max supported alignment is 64. An explicit alignment must always be requested.
         public uint alignment;
         public uint size;
         public CorJitAllocMemFlag flags;

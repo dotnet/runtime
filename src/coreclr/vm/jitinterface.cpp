@@ -12690,21 +12690,21 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
 
     for (unsigned i = 0; i < pArgs->chunksCount; i++)
     {
-        _ASSERTE((pArgs->chunks[i].flags & CORJIT_ALLOCMEM_COLD_CODE) == 0);
-        _ASSERTE((CountBits(pArgs->chunks[i].alignment) == 1) && (pArgs->chunks[i].alignment <= 64));
+        AllocMemChunk& chunk = pArgs->chunks[i];
+        _ASSERTE((chunk.flags & CORJIT_ALLOCMEM_COLD_CODE) == 0);
 
-        if ((pArgs->chunks[i].flags & CORJIT_ALLOCMEM_HOT_CODE) != 0)
+        if ((chunk.flags & CORJIT_ALLOCMEM_HOT_CODE) != 0)
         {
-            codeSize += pArgs->chunks[i].size;
+            codeSize += chunk.size;
         }
         else
         {
-            roDataSize += pArgs->chunks[i].size;
+            roDataSize += chunk.size;
         }
 
-        totalSize.AlignUp(pArgs->chunks[i].alignment);
-        totalSize += pArgs->chunks[i].size;
-        alignment = max(alignment, pArgs->chunks[i].alignment);
+        totalSize.AlignUp(chunk.alignment);
+        totalSize += chunk.size;
+        alignment = max(alignment, chunk.alignment);
     }
 
     totalSize.AlignUp(sizeof(DWORD));
@@ -12750,10 +12750,11 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
 
     for (unsigned i = 0; i < pArgs->chunksCount; i++)
     {
-        offset = AlignUp(offset, pArgs->chunks[i].alignment);
-        pArgs->chunks[i].block = start + offset;
-        pArgs->chunks[i].blockRW = start + offset + writeableOffset;
-        offset += pArgs->chunks[i].size;
+        AllocMemChunk& chunk = pArgs->chunks[i];
+        offset = AlignUp(offset, chunk.alignment);
+        chunk.block = start + offset;
+        chunk.blockRW = start + offset + writeableOffset;
+        offset += chunk.size;
     }
 
     offset = AlignUp(offset, sizeof(DWORD));
