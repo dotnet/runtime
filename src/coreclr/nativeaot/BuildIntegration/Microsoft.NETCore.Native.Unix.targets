@@ -120,7 +120,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Exec Command="&quot;$(Xcrun)&quot; --sdk $(_AppleSdkName) --show-sdk-path" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(SysRoot)' == '' and '$(_IsiOSLikePlatform)' == 'true'" ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="SysRoot" />
     </Exec>
-    <Error Condition="!Exists('$(SysRoot)') and '$(_IsiOSLikePlatform)' == 'true' and '$(_SkipiOSLikePlatformValidation)' != 'true'"
+    <Error Condition="'$(_SkipiOSLikePlatformValidation)' != 'true' and '$(_IsiOSLikePlatform)' == 'true' and !Exists('$(SysRoot)')"
       Text="Apple SDK was not found in: '$(SysRoot)'" />
 
     <!--
