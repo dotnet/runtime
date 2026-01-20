@@ -122,7 +122,14 @@ namespace System.Net.Test.Common
             var state = _websocket.State;
             if (state != WebSocketState.Open && state != WebSocketState.Connecting && state != WebSocketState.CloseSent) return;
 
-            await _websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing remoteLoop", CancellationToken.None);
+            try
+            {
+                await _websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing remoteLoop", CancellationToken.None);
+            }
+            catch (Exception)
+            {
+                // Ignore exceptions during WebSocket close in test cleanup.
+            }
         }
     }
 
