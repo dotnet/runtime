@@ -103,6 +103,9 @@
     <RuntimeVariant Condition="'$(__MonoFullAot)' == '1'">llvmfullaot</RuntimeVariant>
 
     <MonoBinDir>$(__MonoBinDir)</MonoBinDir>
+
+    <!-- The SDK for VB.NET converts the DefineConstants variable to be , delimited instead of ; delimeted, and the logic below which appends a ; to the list causes a problem, as it can result in the property having a leading ;. -->
+    <DefineConstants Condition="'$(DefineConstants)' == ''">UNUSED_CONSTANT</DefineConstants>
   </PropertyGroup>
 
   <!-- Setup Default symbol and optimization for Configuration -->
@@ -120,6 +123,11 @@
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
     <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
     <DefineConstants>$(DefineConstants);DEBUG;TRACE;XUNIT_PERF</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup>
+     <!-- The SDK for VB.NET requires the DefineConstants variable to be , delimited instead of ; -->
+     <DefineConstants Condition="'$(MSBuildProjectExtension)' == '.vbproj'">$(DefineConstants.Replace(';',','))</DefineConstants>
   </PropertyGroup>
 
   <!-- Setup the default output and intermediate paths -->

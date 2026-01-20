@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="bug123254.vb" />
+  </ItemGroup>
+</Project>
