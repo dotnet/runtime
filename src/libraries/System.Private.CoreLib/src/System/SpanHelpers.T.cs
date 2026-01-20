@@ -3446,12 +3446,6 @@ namespace System
         internal static int IndexOfAnyInRange<T>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
             where T : IComparable<T>
         {
-            // When highInclusive < lowInclusive, the range is invalid and no values can match.
-            if (lowInclusive.CompareTo(highInclusive) > 0)
-            {
-                return -1;
-            }
-
             for (int i = 0; i < length; i++)
             {
                 ref T current = ref Unsafe.Add(ref searchSpace, i);
@@ -3467,12 +3461,6 @@ namespace System
         internal static int IndexOfAnyExceptInRange<T>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
             where T : IComparable<T>
         {
-            // When highInclusive < lowInclusive, the range is invalid and all values are outside it.
-            if (lowInclusive.CompareTo(highInclusive) > 0)
-            {
-                return length > 0 ? 0 : -1;
-            }
-
             for (int i = 0; i < length; i++)
             {
                 ref T current = ref Unsafe.Add(ref searchSpace, i);
@@ -3517,16 +3505,6 @@ namespace System
             where TNegator : struct, INegator<T>
         {
             // T must be a type whose comparison operator semantics match that of Vector128/256.
-
-            // When highInclusive < lowInclusive, the range is invalid.
-            // For IndexOfAnyInRange, return -1 (no match).
-            // For IndexOfAnyExceptInRange, every value is outside the range, so return 0 if length > 0.
-            if (highInclusive < lowInclusive)
-            {
-                return typeof(TNegator) == typeof(DontNegate<T>)
-                    ? -1
-                    : (length > 0 ? 0 : -1);
-            }
 
             if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
             {
@@ -3634,12 +3612,6 @@ namespace System
         internal static int LastIndexOfAnyInRange<T>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
             where T : IComparable<T>
         {
-            // When highInclusive < lowInclusive, the range is invalid and no values can match.
-            if (lowInclusive.CompareTo(highInclusive) > 0)
-            {
-                return -1;
-            }
-
             for (int i = length - 1; i >= 0; i--)
             {
                 ref T current = ref Unsafe.Add(ref searchSpace, i);
@@ -3655,12 +3627,6 @@ namespace System
         internal static int LastIndexOfAnyExceptInRange<T>(ref T searchSpace, T lowInclusive, T highInclusive, int length)
             where T : IComparable<T>
         {
-            // When highInclusive < lowInclusive, the range is invalid and all values are outside it.
-            if (lowInclusive.CompareTo(highInclusive) > 0)
-            {
-                return length > 0 ? length - 1 : -1;
-            }
-
             for (int i = length - 1; i >= 0; i--)
             {
                 ref T current = ref Unsafe.Add(ref searchSpace, i);
@@ -3686,16 +3652,6 @@ namespace System
             where TNegator : struct, INegator<T>
         {
             // T must be a type whose comparison operator semantics match that of Vector128/256.
-
-            // When highInclusive < lowInclusive, the range is invalid.
-            // For LastIndexOfAnyInRange, return -1 (no match).
-            // For LastIndexOfAnyExceptInRange, every value is outside the range, so return the last index if length > 0.
-            if (highInclusive < lowInclusive)
-            {
-                return typeof(TNegator) == typeof(DontNegate<T>)
-                    ? -1
-                    : (length > 0 ? length - 1 : -1);
-            }
 
             if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
             {
