@@ -153,6 +153,8 @@ namespace System.Threading
         {
             VerifyIsNotLocked();
 
+            Thread.ThrowIfNoThreadStart();
+
             // Spin a bit to see if the lock becomes available, before forcing the thread into a wait state
             if (_spinWaiter.SpinWaitForCondition(s_spinWaitTryAcquireCallback, this, SpinCount, SpinSleep0Threshold))
             {
@@ -160,9 +162,6 @@ namespace System.Threading
                 SetOwnerThreadToCurrent();
                 return;
             }
-#if FEATURE_SINGLE_THREADED
-            if (OperatingSystem.IsBrowser()) throw new PlatformNotSupportedException();
-#endif
 
             _monitor.Acquire();
 

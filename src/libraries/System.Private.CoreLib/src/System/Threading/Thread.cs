@@ -169,22 +169,18 @@ namespace System.Threading
             Initialize();
         }
 
-#if (!TARGET_BROWSER && !TARGET_WASI) || FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatformGuard("browser")]
         [UnsupportedOSPlatformGuard("wasi")]
+#if !FEATURE_SINGLE_THREADED
         internal static bool IsThreadStartSupported => true;
+        internal static void ThrowIfNoThreadStart() { }
 #else
-        [UnsupportedOSPlatformGuard("browser")]
-        [UnsupportedOSPlatformGuard("wasi")]
         internal static bool IsThreadStartSupported => false;
-#endif
-
         internal static void ThrowIfNoThreadStart()
         {
-            if (IsThreadStartSupported)
-                return;
             throw new PlatformNotSupportedException();
         }
+#endif
 
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>, and optionally supplies an object containing data to be used by the method the thread executes.</summary>
         /// <param name="parameter">An object that contains data to be used by the method the thread executes.</param>
@@ -212,9 +208,8 @@ namespace System.Threading
 
         private void Start(object? parameter, bool captureContext)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
+            Thread.ThrowIfNoThreadStart();
+
             ThrowIfNoThreadStart();
 
             StartHelper? startHelper = _startHelper;

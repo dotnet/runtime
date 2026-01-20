@@ -145,9 +145,8 @@ namespace System.Threading
         /// </summary>
         public static void SpinWait(int iterations)
         {
-#if FEATURE_SINGLE_THREADED
-            if (OperatingSystem.IsBrowser()) return;
-#endif
+            if (!Thread.IsThreadStartSupported) return;
+
             if (iterations < SpinWaitCoopThreshold)
             {
                 SpinWaitInternal(iterations);
