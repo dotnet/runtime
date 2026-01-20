@@ -87,6 +87,15 @@ void WasmRegAlloc::IdentifyCandidates()
     for (unsigned lclNum = 0; lclNum < m_compiler->lvaCount; lclNum++)
     {
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+
+        if (lclNum == m_compiler->lvaWasmSpArg)
+        {
+            varDsc->lvLRACandidate = true;
+            m_spReg                = MakeWasmReg(m_compiler->lvaWasmSpArg, TYP_I_IMPL);
+            varDsc->SetRegNum(m_spReg);
+            continue;
+        }
+
         varDsc->SetRegNum(REG_STK);
         varDsc->lvLRACandidate = isRegCandidate(varDsc);
 

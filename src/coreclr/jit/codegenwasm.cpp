@@ -32,17 +32,7 @@ void CodeGen::genMarkLabelsForCodegen()
 void CodeGen::genBeginFnProlog()
 {
     // TODO-WASM: proper local count, local declarations, and shadow stack maintenance
-    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, (unsigned)WasmValueType::Count - 1);
-    // Emit 1 local of each supported value type to ensure
-    // the declarations can be encoded.
-    // TODO-WASM: remove and declare locals based on RA assignments once this is supported.
-    int localOffset  = 0;
-    int countPerType = 1;
-    for (unsigned i = (uint8_t)WasmValueType::Invalid + 1; i < (unsigned)WasmValueType::Count; i++)
-    {
-        GetEmitter()->emitIns_I_Ty(INS_local_decl, countPerType, static_cast<WasmValueType>(i), localOffset);
-        localOffset += countPerType;
-    }
+    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, 0);
 }
 
 //------------------------------------------------------------------------
@@ -150,6 +140,13 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
+        // We don't need to home the stack pointer
+        //
+        if (lclNum == compiler->lvaWasmSpArg)
+        {
+            continue;
+        }
+
         LclVarDsc*                   lclDsc  = compiler->lvaGetDesc(lclNum);
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
 
@@ -499,6 +496,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_STOREIND:
             genCodeForStoreInd(treeNode->AsStoreInd());
+            break;
+
+        case GT_PUTARG_REG:
+            genPutArgReg(treeNode->AsOp());
             break;
 
         default:
@@ -1079,6 +1080,20 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     }
 
     genUpdateLife(tree);
+}
+
+//---------------------------------------------------------------------
+// genPutArgReg - generate code for a GT_PUTARG_REG node
+//
+// Arguments
+//    tree - the GT_PUTARG_REG node
+//
+void CodeGen::genPutArgReg(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_PUTARG_REG));
+    GenTree* const op1 = tree->gtOp1;
+    genConsumeReg(op1);
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
