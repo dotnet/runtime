@@ -37,7 +37,7 @@ namespace ILCompiler.ObjectWriter
     internal sealed class WasmObjectWriter : ObjectWriter
     {
         protected override CodeDataLayout LayoutMode => CodeDataLayout.Separate;
-        private const int DataStartOffset = 0x10000; // Start data at 64KB offset to leave space for stack, etc.
+        private const int DataStartOffset = 0x10000; // Start of linear memory for data segments (leaving 1 page for stack)
 
         public WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
             : base(factory, options, outputInfoBuilder)
@@ -136,10 +136,10 @@ namespace ILCompiler.ObjectWriter
             // This is a no-op for now under Wasm
         }
 
-        private WasmDataSection CreateCombinedDataSection()
+        private WasmDataSection CreateCombinedDataSection(int dataStartOffset)
         {
             IEnumerable<WasmSection> dataSections = _sections.Where(s => s.Type == WasmSectionType.Data);
-            int offset = 0;
+            int offset = dataStartOffset;
             List<WasmDataSegment> segments = new();
             foreach (WasmSection wasmSection in dataSections)
             {
@@ -185,7 +185,7 @@ namespace ILCompiler.ObjectWriter
             WasmSection wasmSection;
             if (section == WasmObjectNodeSection.CombinedDataSection)
             {
-                wasmSection = CreateCombinedDataSection();
+                wasmSection = CreateCombinedDataSection(DataStartOffset);
             }
             else
             {
