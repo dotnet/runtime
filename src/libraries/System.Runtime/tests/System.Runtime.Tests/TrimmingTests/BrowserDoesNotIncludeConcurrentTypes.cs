@@ -8,9 +8,9 @@ using System.Reflection;
 
 /// <summary>
 /// Tests that concurrent collections are not included in a trimmed app targeting browser.
-/// Tests that concurrent collections are not included in a trimmed app targeting browser.
 /// The idea is that the runtime should not depend on these types when running in a browser.
 /// Motivation: application size.
+/// Except ConcurrentDictionary which is used by other parts of the runtime and many apps.
 /// </summary>
 class Program
 {
