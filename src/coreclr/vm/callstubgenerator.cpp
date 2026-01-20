@@ -1977,8 +1977,6 @@ extern "C" void CallJittedMethodRetI1(PCODE *routines, int8_t*pArgs, int8_t*pRet
 extern "C" void CallJittedMethodRetU1(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRetI2(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRetU2(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
-extern "C" void CallJittedMethodRetI4(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
-extern "C" void CallJittedMethodRetU4(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRetI8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void InterpreterStubRetVoid();
 extern "C" void InterpreterStubRetDouble();
@@ -2083,10 +2081,6 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
             INVOKE_FUNCTION_PTR(CallJittedMethodRetI2);
         case ReturnTypeU2:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetU2);
-        case ReturnTypeI4:
-            INVOKE_FUNCTION_PTR(CallJittedMethodRetI4);
-        case ReturnTypeU4:
-            INVOKE_FUNCTION_PTR(CallJittedMethodRetU4);
 #ifdef TARGET_AMD64
 #ifdef TARGET_WINDOWS
         case ReturnTypeBuffArg1:
@@ -2184,8 +2178,6 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
         case ReturnTypeI8:
         case ReturnTypeI2:
         case ReturnTypeU2:
-        case ReturnTypeI4:
-        case ReturnTypeU4:
             RETURN_TYPE_HANDLER(InterpreterStubRetI8);
 #ifdef TARGET_AMD64
         case ReturnTypeBuffArg1:
@@ -3089,9 +3081,7 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
             case ELEMENT_TYPE_U2:
                 return ReturnTypeU2;
             case ELEMENT_TYPE_I4:
-                return ReturnTypeI4;
             case ELEMENT_TYPE_U4:
-                return ReturnTypeU4;
             case ELEMENT_TYPE_I8:
             case ELEMENT_TYPE_U8:
             case ELEMENT_TYPE_I:
