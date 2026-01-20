@@ -528,12 +528,12 @@ namespace System.Text.Json.Serialization.Tests
         public async Task GenericStructIReadOnlySetWrapperT()
         {
             {
-                GenericStructISetWrapper<int> obj = new GenericStructISetWrapper<int>() { 10, 20 };
+                GenericStructIReadOnlySetWrapper<int> obj = new GenericStructIReadOnlySetWrapper<int>() { 10, 20 };
                 Assert.Equal("[10,20]", await Serializer.SerializeWrapper(obj));
             }
 
             {
-                GenericStructISetWrapper<int> obj = default;
+                GenericStructIReadOnlySetWrapper<int> obj = default;
                 Assert.Equal("[]", await Serializer.SerializeWrapper(obj));
             }
         }
