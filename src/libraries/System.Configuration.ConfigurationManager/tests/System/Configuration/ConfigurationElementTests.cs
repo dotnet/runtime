@@ -146,6 +146,7 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix only applies to .NET Core")]
         public void IndexerWithUndefinedPropertyReturnsNull()
         {
             Assert.Null(new SimpleElement().TestGetPropertyValue("UndefinedProperty"));
