@@ -47,10 +47,12 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
             // So there messages are should be present only when we are lazily loading satellites.
             expectedOutput.Add(m => Assert.Equal("default: hello", m));
             expectedOutput.Add(m => Assert.Equal("es-ES without satellite: hello", m));
+            expectedOutput.Add(m => Assert.Equal("fr-FR without satellite: hello", m));
         }
 
         expectedOutput.Add(m => Assert.Equal("default: hello", m));
         expectedOutput.Add(m => Assert.Equal("es-ES with satellite: hola", m));
+        expectedOutput.Add(m => Assert.Equal("fr-FR with satellite: bonjour", m));
 
         Assert.Collection(
             result.TestOutput,
@@ -94,8 +96,10 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
             result.TestOutput,
             m => Assert.Equal("default: hello", m),
             m => Assert.Equal("es-ES without satellite: hello", m),
+            m => Assert.Equal("fr-FR without satellite: hello", m),
             m => Assert.Equal("default: hello", m),
-            m => Assert.Equal("es-ES with satellite: hola", m)
+            m => Assert.Equal("es-ES with satellite: hola", m),
+            m => Assert.Equal("fr-FR with satellite: bonjour", m)
         );
     }
 }
