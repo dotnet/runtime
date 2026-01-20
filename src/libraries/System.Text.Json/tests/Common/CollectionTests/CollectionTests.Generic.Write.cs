@@ -528,7 +528,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task GenericStructIReadOnlySetWrapperT()
         {
             {
-                GenericStructIReadOnlySetWrapper<int> obj = new GenericStructIReadOnlySetWrapper<int>() { 10, 20 };
+                GenericStructIReadOnlySetWrapper<int> obj = new GenericStructIReadOnlySetWrapper<int>().Initialize(new HashSet<int> { 10, 20 });
                 Assert.Equal("[10,20]", await Serializer.SerializeWrapper(obj));
             }
 
