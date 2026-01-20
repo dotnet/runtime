@@ -11,7 +11,7 @@ namespace Wasm.Build.Tests.Blazor;
 /// <summary>
 /// Client for interacting with the request log API exposed by the BlazorWebWasm test server app.
 /// </summary>
-internal class BlazorWebWasmLogClient
+internal class BlazorWebWasmLogClient : IDisposable
 {
     private readonly HttpClient _httpClient;
 
@@ -35,5 +35,10 @@ internal class BlazorWebWasmLogClient
     {
         var response = await _httpClient.DeleteAsync("request-logs");
         response.EnsureSuccessStatusCode();
+    }
+
+    public void Dispose()
+    {
+        _httpClient?.Dispose();
     }
 }
