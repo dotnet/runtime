@@ -45,7 +45,6 @@ class Program
             Console.WriteLine("Failed: System.Collections.Concurrent assembly is present");
             return -6;
         }
-        
         return 100;
     }
 
