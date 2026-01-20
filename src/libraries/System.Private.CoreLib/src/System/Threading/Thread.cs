@@ -169,19 +169,6 @@ namespace System.Threading
             Initialize();
         }
 
-        [SupportedOSPlatformGuard("browser")]
-        [SupportedOSPlatformGuard("wasi")]
-#if !FEATURE_SINGLE_THREADED
-        internal static bool IsSingleThreaded => true;
-        internal static void ThrowIfSingleThreaded() { }
-#else
-        internal static bool IsSingleThreaded => false;
-        internal static void ThrowIfSingleThreaded()
-        {
-            throw new PlatformNotSupportedException();
-        }
-#endif
-
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>, and optionally supplies an object containing data to be used by the method the thread executes.</summary>
         /// <param name="parameter">An object that contains data to be used by the method the thread executes.</param>
         /// <exception cref="ThreadStateException">The thread has already been started.</exception>
@@ -750,6 +737,26 @@ namespace System.Threading
             return ProcessorIdCache.GetCurrentProcessorId();
         }
 
+        [SupportedOSPlatformGuard("browser")]
+        [SupportedOSPlatformGuard("wasi")]
+#if FEATURE_SINGLE_THREADED
+        internal static bool IsSingleThreaded => true;
+        internal static void ThrowIfSingleThreaded()
+        {
+            throw new PlatformNotSupportedException();
+        }
+#else
+        internal static bool IsSingleThreaded => false;
+#if FEATURE_WASM_MANAGED_THREADS
+        internal static void ThrowIfSingleThreaded() 
+        {
+            AssureBlockingPossible();
+        }
+#else
+        internal static void ThrowIfSingleThreaded() { }
+#endif
+#endif
+
 #if FEATURE_WASM_MANAGED_THREADS
         [ThreadStatic]
         public static bool ThrowOnBlockingWaitOnJSInteropThread;
@@ -792,6 +799,10 @@ namespace System.Threading
                 ThrowOnBlockingWaitOnJSInteropThread = flag;
                 WarnOnBlockingWaitOnJSInteropThread = wflag;
             }
+        }
+#else
+        internal static unsafe void AssureBlockingPossible()
+        {
         }
 #endif
 

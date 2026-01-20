@@ -322,9 +322,7 @@ namespace System.Threading
         private bool WaitCore(long millisecondsTimeout, CancellationToken cancellationToken)
         {
             CheckDispose();
-#if FEATURE_WASM_MANAGED_THREADS
-            Thread.AssureBlockingPossible();
-#endif
+
             cancellationToken.ThrowIfCancellationRequested();
 
             // Perf: Check the stack timeout parameter before checking the volatile count

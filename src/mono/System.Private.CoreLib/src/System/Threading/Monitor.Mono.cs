@@ -78,9 +78,7 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(obj);
             Thread.ThrowIfSingleThreaded();
-#if FEATURE_WASM_MANAGED_THREADS
-            Thread.AssureBlockingPossible();
-#endif
+
             return ObjWait(millisecondsTimeout, obj);
         }
 
