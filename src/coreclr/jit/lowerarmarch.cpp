@@ -3524,18 +3524,16 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
     }
     else
     {
+        // Look for cases like this to convert to conditional increment
+        // if (myvar==0) myvar = 1;
+        // If we're comparing a local to a constant int, and branch has a use of the value+1
+
         if (!cond->OperIs(GT_CMP))
         {
             return;
         }
-        // Look for cases like this to convert to conditional increment
-        // if (myvar==0) myvar = 1;
-        // If we're comparing a local to a constant int, and reassigning that local to a value that is 1 larger
-        if (!cond->gtGetOp1()->IsIntegralConst() && !cond->gtGetOp2()->IsIntegralConst())
-        {
-            return;
-        }
-        if (!cond->gtGetOp1()->OperIs(GT_LCL_VAR) && !cond->gtGetOp2()->OperIs(GT_LCL_VAR))
+        if ((!cond->gtGetOp1()->IsIntegralConst() && !cond->gtGetOp2()->IsIntegralConst()) ||
+            (!cond->gtGetOp1()->OperIs(GT_LCL_VAR) && !cond->gtGetOp2()->OperIs(GT_LCL_VAR)))
         {
             return;
         }
@@ -3560,6 +3558,7 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
         {
             return;
         }
+        // Look for constVal+1 along the branch where the local is known to be == constVal
         if (code == GenCondition::EQ &&
             (!trueVal->IsIntegralConst() || trueVal->AsIntCon()->IntegralValue() - constVal != 1))
         {
