@@ -2,18 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { LoaderConfigInternal } from "./types";
-import { dotnetLogger, dotnetLoaderExports, dotnetApi, dotnetBrowserUtilsExports } from "./cross-module";
+import { dotnetLogger, dotnetLoaderExports, dotnetApi, dotnetBrowserUtilsExports, dotnetRuntimeExports } from "./cross-module";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB } from "./per-module";
 import { teardownProxyConsole } from "./console-proxy";
 import { symbolicateStackTrace } from "./symbolicate";
 
-let config: LoaderConfigInternal = null as any;
+let loaderConfig: LoaderConfigInternal = null as any;
 export function registerExit() {
     if (!dotnetApi || !dotnetApi.getConfig || !dotnetLoaderExports) {
         return;
     }
-    config = dotnetApi.getConfig() as LoaderConfigInternal;
-    if (!config) {
+    loaderConfig = dotnetApi.getConfig() as LoaderConfigInternal;
+    if (!loaderConfig) {
         return;
     }
     installUnhandledErrorHandler();
@@ -22,21 +22,24 @@ export function registerExit() {
 }
 
 function onExit(exitCode: number, reason: any, silent: boolean): boolean {
-    if (!config) {
+    if (!loaderConfig) {
         return true;
     }
+    if (exitCode === 0 && loaderConfig.interopCleanupOnExit) {
+        dotnetRuntimeExports.forceDisposeProxies(true, true);
+    }
     uninstallUnhandledErrorHandler();
-    if (config.logExitCode) {
+    if (loaderConfig.logExitCode) {
         if (!silent) {
             logExitReason(exitCode, reason);
         }
         logExitCode(exitCode);
     }
-    if (ENVIRONMENT_IS_WEB && config.appendElementOnExit) {
+    if (ENVIRONMENT_IS_WEB && loaderConfig.appendElementOnExit) {
         appendElementOnExit(exitCode);
     }
 
-    if (ENVIRONMENT_IS_NODE && config.asyncFlushOnExit && exitCode === 0) {
+    if (ENVIRONMENT_IS_NODE && loaderConfig.asyncFlushOnExit && exitCode === 0) {
         // this would NOT call Node's exit() immediately, it's a hanging promise
         (async function flush() {
             try {
@@ -53,7 +56,7 @@ function onExit(exitCode: number, reason: any, silent: boolean): boolean {
 function logExitReason(exit_code: number, reason: any) {
     if (exit_code !== 0 && reason) {
         const exitStatus = isExitStatus(reason);
-        if (typeof reason == "string") {
+        if (typeof reason === "string") {
             dotnetLogger.error(reason);
         } else {
             if (reason.stack === undefined && !exitStatus) {
@@ -78,13 +81,14 @@ function isExitStatus(reason: any): boolean {
 }
 
 function logExitCode(exitCode: number): void {
-    const message = config.logExitCode
+    const message = loaderConfig.logExitCode
         ? "WASM EXIT " + exitCode
         : undefined;
-    if (config.forwardConsole) {
+    if (loaderConfig.forwardConsole) {
         teardownProxyConsole(message);
     } else if (message) {
-        dotnetLogger.info(message);
+        // eslint-disable-next-line no-console
+        console.log(message);
     }
 }
 
@@ -100,7 +104,7 @@ function appendElementOnExit(exitCode: number): void {
 
 function installUnhandledErrorHandler() {
     // it seems that emscripten already does the right thing for NodeJs and that there is no good solution for V8 shell.
-    if (ENVIRONMENT_IS_WEB && config.exitOnUnhandledError) {
+    if (ENVIRONMENT_IS_WEB && loaderConfig.exitOnUnhandledError) {
         globalThis.addEventListener("unhandledrejection", unhandledRejectionHandler);
         globalThis.addEventListener("error", errorHandler);
     }

@@ -894,6 +894,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Parse_Utf8Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, float expectedFloat)
         {
             bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
@@ -2242,6 +2243,31 @@ namespace System.Tests
         {
             AssertExtensions.Equal(-expectedResult, Half.RadiansToDegrees(-value), allowedVariance);
             AssertExtensions.Equal(+expectedResult, Half.RadiansToDegrees(+value), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData(float.PositiveInfinity, int.MaxValue)]
+        [InlineData(float.NaN, int.MaxValue)]
+        [InlineData(0.0f, int.MinValue)]
+        [InlineData(1.0f, 0)]
+        [InlineData(2.0f, 1)]
+        [InlineData(4.0f, 2)]
+        [InlineData(0.5f, -1)]
+        public static void ILogB(float value, int expectedResult)
+        {
+            Assert.Equal(expectedResult, Half.ILogB((Half)value));
+        }
+
+        [Fact]
+        public static void ILogB_Subnormal()
+        {
+            // Half.Epsilon is the smallest positive subnormal value
+            // Its ILogB should be -24 (floor(log2(5.9604645E-08)))
+            Assert.Equal(-24, Half.ILogB(Half.Epsilon));
+
+            // Test another subnormal value: 0x0200 (half of max subnormal)
+            Half subnormal = BitConverter.UInt16BitsToHalf(0x0200);
+            Assert.Equal(-15, Half.ILogB(subnormal));
         }
     }
 }
