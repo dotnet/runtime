@@ -11390,9 +11390,10 @@ void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
 
     _ASSERTE(pArgs->chunksCount == 1);
 
-    ULONG codeSize      = pArgs->chunks[0].size;
-    uint8_t **codeBlock    = &pArgs->chunks[0].block;
-    uint8_t **codeBlockRW  = &pArgs->chunks[0].blockRW;
+    unsigned codeAlign    = std::max((unsigned)CODE_SIZE_ALIGN, pArgs->chunks[0].alignment);
+    ULONG codeSize        = pArgs->chunks[0].size;
+    uint8_t **codeBlock   = &pArgs->chunks[0].block;
+    uint8_t **codeBlockRW = &pArgs->chunks[0].blockRW;
     S_SIZE_T totalSize = S_SIZE_T(codeSize);
 
     _ASSERTE(m_CodeHeader == 0 &&
@@ -11420,7 +11421,7 @@ void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
             codeSize, 0, totalSize.Value(), 0, GetClrInstanceId());
     }
 
-    m_jitManager->AllocCode<InterpreterCodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), 0, 0, &m_CodeHeader, &m_CodeHeaderRW,
+    m_jitManager->AllocCode<InterpreterCodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), 0, codeAlign, &m_CodeHeader, &m_CodeHeaderRW,
         &m_codeWriteBufferSize, &m_pCodeHeap, &m_pRealCodeHeader, 0);
 
     BYTE* current = (BYTE *)((InterpreterCodeHeader*)m_CodeHeader)->GetCodeStartAddress();
