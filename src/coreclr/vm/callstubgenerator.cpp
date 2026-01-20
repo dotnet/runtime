@@ -3028,7 +3028,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
                 sig.GetByRefType(&thArgType);
             }
 
-            if (thArgType.IsTypeDesc() && !thArgType.AsTypeDesc()->GetTypeParam().IsNull()))
+            if (thArgType.IsTypeDesc() && !thArgType.AsTypeDesc()->GetTypeParam().IsNull())
             {
                 MethodTable* pArgMT = thArgType.AsTypeDesc()->GetTypeParam().AsMethodTable();
                 if (!pArgMT->IsValueType())
