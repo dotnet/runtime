@@ -238,7 +238,7 @@ namespace System.Threading
 
         private void Start(bool captureContext)
         {
-            ThrowIfSingleThreaded();
+            Thread.ThrowIfSingleThreaded();
             StartHelper? startHelper = _startHelper;
 
             // In the case of a null startHelper (second call to start on same thread)
