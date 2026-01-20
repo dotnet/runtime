@@ -2407,7 +2407,8 @@ NESTED_ENTRY CallJittedMethodRetI4, _TEXT, NoHandler
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
-    sxth x0, w0
+    blr x11
+    sxtw x0, w0
     ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRetI4_NoSwiftError)
     str x21, [x11]
