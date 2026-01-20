@@ -142,6 +142,12 @@ namespace Internal.JitInterface
             ConstrainedType = constrainedType;
             Unboxing = unboxing;
             OwningType = GetMethodTokenOwningType(this, constrainedType, context, devirtualizedMethodOwner, out OwningTypeNotDerivedFromToken);
+            if (method.IsAsync && method.IsAsyncVariant() && token.Module is MutableModule)
+            {
+                var ecmaMethod = (EcmaMethod)method.GetTypicalMethodDefinition().GetPrimaryMethodDesc();
+                Token = new (ecmaMethod.Module, ecmaMethod.Handle);
+                OwningTypeNotDerivedFromToken = true;
+            }
         }
 
         private static TypeDesc GetMethodTokenOwningType(MethodWithToken methodToken, TypeDesc constrainedType, object context, TypeDesc devirtualizedMethodOwner, out bool owningTypeNotDerivedFromToken)

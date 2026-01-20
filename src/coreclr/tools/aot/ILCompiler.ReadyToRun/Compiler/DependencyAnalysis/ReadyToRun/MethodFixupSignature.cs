@@ -113,7 +113,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             MethodWithToken method = _method;
 
-            if (factory.CompilationModuleGroup.VersionsWithMethodBody(method.Method) && !(method.Token.Module is MutableModule))
+            if (factory.CompilationModuleGroup.VersionsWithMethodBody(method.Method) && !method.Method.IsAsyncVariant())
             {
                 if (method.Token.TokenType == CorTokenType.mdtMethodSpec)
                 {
