@@ -58,6 +58,7 @@ namespace ILLink.Shared.TypeSystemProxy
                     "Array" => WellKnownType.System_Array,
                     "Attribute" => WellKnownType.System_Attribute,
                     "Object" => WellKnownType.System_Object,
+                    "NotSupportedException" => WellKnownType.System_NotSupportedException,
                     "PlatformNotSupportedException" => WellKnownType.System_PlatformNotSupportedException,
                     "Void" => WellKnownType.System_Void,
                     _ => null
