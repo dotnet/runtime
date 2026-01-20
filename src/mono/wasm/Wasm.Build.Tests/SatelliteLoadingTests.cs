@@ -102,4 +102,26 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
             m => Assert.Equal("fr-FR with satellite: bonjour", m)
         );
     }
+
+    [Fact, TestCategory("no-fingerprinting")]
+    public void SatelliteAssembliesFromPackageReference()
+    {
+        Configuration config = Configuration.Release;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "SatelliteLoadingTestsFromPackageReference");
+        BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: "-p:TestSatelliteAssembliesFromPackage=true"));
+
+        string binFrameworkDir = GetBinFrameworkDir(config, forPublish: false);
+
+        // Microsoft.CodeAnalysis.CSharp has satellite assemblies for multiple locales
+        // Verify that at least some of them are present in the AppBundle
+        string[] expectedLocales = ["cs", "de", "es", "fr", "it", "ja", "ko", "pl", "pt-BR", "ru", "tr", "zh-Hans", "zh-Hant"];
+        foreach (string locale in expectedLocales)
+        {
+            string satelliteDir = Path.Combine(binFrameworkDir, locale);
+            Assert.True(Directory.Exists(satelliteDir), $"Expected satellite directory '{locale}' to exist in {binFrameworkDir}");
+
+            string[] satelliteFiles = Directory.GetFiles(satelliteDir, "Microsoft.CodeAnalysis.CSharp.resources*");
+            Assert.True(satelliteFiles.Length > 0, $"Expected Microsoft.CodeAnalysis.CSharp.resources.dll in {satelliteDir}");
+        }
+    }
 }
