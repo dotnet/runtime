@@ -416,88 +416,64 @@ namespace System.Net
             return true;
         }
 
-        // Pre-allocated arrays for RFC 6761 localhost handling to avoid allocations on hot path.
-        // IPv6 is listed first to match Windows resolver behavior.
-        private static readonly IPAddress[] s_localhostIPv4 = [IPAddress.Loopback];
-        private static readonly IPAddress[] s_localhostIPv6 = [IPAddress.IPv6Loopback];
-        private static readonly IPAddress[] s_localhostBoth = [IPAddress.IPv6Loopback, IPAddress.Loopback];
-
         /// <summary>
         /// Checks if the given host name matches a reserved name or is a subdomain of it.
         /// For example, IsReservedName("foo.localhost", "localhost") returns true.
+        /// Also handles trailing dots: IsReservedName("foo.localhost.", "localhost") returns true.
         /// Returns false for malformed hostnames (starting with dot or containing consecutive dots).
         /// </summary>
         private static bool IsReservedName(string hostName, string reservedName)
         {
             // Reject malformed hostnames - let OS resolver handle them (and reject them)
-            if (hostName.StartsWith('.') || hostName.Contains(".."))
+            if (hostName.StartsWith('.') || hostName.Contains("..", StringComparison.Ordinal))
             {
                 return false;
             }
 
-            // Matches "reservedName" exactly, or "*.reservedName" (subdomain)
-            return hostName.EndsWith(reservedName, StringComparison.OrdinalIgnoreCase) &&
-                   (hostName.Length == reservedName.Length ||
-                    hostName[hostName.Length - reservedName.Length - 1] == '.');
-        }
-
-        /// <summary>
-        /// Returns the loopback addresses filtered by address family and OS support.
-        /// </summary>
-        private static IPAddress[] GetLoopbackAddresses(AddressFamily addressFamily)
-        {
-            bool supportsIPv4 = addressFamily is AddressFamily.Unspecified or AddressFamily.InterNetwork;
-            bool supportsIPv6 = (addressFamily is AddressFamily.Unspecified or AddressFamily.InterNetworkV6) &&
-                                SocketProtocolSupportPal.OSSupportsIPv6;
-
-            return (supportsIPv4, supportsIPv6) switch
+            // Strip trailing dot if present (DNS root notation)
+            ReadOnlySpan<char> hostSpan = hostName.AsSpan();
+            if (hostSpan.Length > 0 && hostSpan[hostSpan.Length - 1] == '.')
             {
-                (true, true) => s_localhostBoth,
-                (true, false) => s_localhostIPv4,
-                (false, true) => s_localhostIPv6,
-                _ => Array.Empty<IPAddress>()
-            };
+                hostSpan = hostSpan.Slice(0, hostSpan.Length - 1);
+            }
+
+            // Matches "reservedName" exactly, or "*.reservedName" (subdomain)
+            return hostSpan.EndsWith(reservedName, StringComparison.OrdinalIgnoreCase) &&
+                   (hostSpan.Length == reservedName.Length ||
+                    hostSpan[hostSpan.Length - reservedName.Length - 1] == '.');
         }
 
         /// <summary>
-        /// Tries to handle RFC 6761 special-use domain names.
-        /// Returns true if the host name is a reserved name (result or exception will be set).
+        /// Checks if the given host name is a subdomain of localhost (e.g., "foo.localhost").
+        /// Plain "localhost" or "localhost." returns false.
         /// </summary>
-        private static bool TryHandleRfc6761SpecialName(
-            string hostName,
-            bool justAddresses,
-            AddressFamily addressFamily,
-            out object? result,
-            out SocketException? exception)
+        private static bool IsLocalhostSubdomain(string hostName)
+        {
+            // Strip trailing dot for length comparison
+            int length = hostName.Length;
+            if (length > 0 && hostName[length - 1] == '.')
+            {
+                length--;
+            }
+
+            // Must be longer than "localhost" (not just equal with trailing dot)
+            return length > "localhost".Length && IsReservedName(hostName, "localhost");
+        }
+
+        /// <summary>
+        /// Tries to handle RFC 6761 "invalid" domain names.
+        /// Returns true if the host name is an invalid domain (exception will be set).
+        /// </summary>
+        private static bool TryHandleRfc6761InvalidDomain(string hostName, out SocketException? exception)
         {
             // RFC 6761 Section 6.4: "invalid" and "*.invalid" must always return NXDOMAIN.
             if (IsReservedName(hostName, "invalid"))
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Returning NXDOMAIN for 'invalid' domain");
-                result = null;
                 exception = CreateException(SocketError.HostNotFound, 0);
                 return true;
             }
 
-            // RFC 6761 Section 6.3: "*.localhost" subdomains must resolve to loopback.
-            // Note: Plain "localhost" is handled by the OS resolver (preserves /etc/hosts customizations).
-            if (hostName.Length > "localhost".Length && IsReservedName(hostName, "localhost"))
-            {
-                IPAddress[] addresses = GetLoopbackAddresses(addressFamily);
-
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, $"RFC 6761: Returning loopback for localhost subdomain, {addresses.Length} addresses");
-
-                result = justAddresses ? (object)addresses : new IPHostEntry
-                {
-                    HostName = hostName,
-                    Aliases = Array.Empty<string>(),
-                    AddressList = addresses
-                };
-                exception = null;
-                return true;
-            }
-
-            result = null;
             exception = null;
             return false;
         }
@@ -515,18 +491,15 @@ namespace System.Net
             // NameResolutionActivity may have already been set if we're being called from RunAsync.
             NameResolutionActivity activity = activityOrDefault ?? NameResolutionTelemetry.Log.BeforeResolution(hostName);
 
-            // Handle RFC 6761 special-use domain names before calling the OS resolver.
-            if (TryHandleRfc6761SpecialName(hostName, justAddresses, addressFamily, out object? rfc6761Result, out SocketException? rfc6761Exception))
+            // RFC 6761 Section 6.4: "invalid" domains must return NXDOMAIN.
+            if (TryHandleRfc6761InvalidDomain(hostName, out SocketException? invalidDomainException))
             {
-                if (rfc6761Exception is not null)
-                {
-                    NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: null, exception: rfc6761Exception);
-                    throw rfc6761Exception;
-                }
-
-                NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: rfc6761Result);
-                return rfc6761Result!;
+                NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: null, exception: invalidDomainException);
+                throw invalidDomainException!;
             }
+
+            // Track if this is a localhost subdomain for fallback handling.
+            bool isLocalhostSubdomain = IsLocalhostSubdomain(hostName);
 
             object result;
             try
@@ -535,8 +508,24 @@ namespace System.Net
 
                 if (errorCode != SocketError.Success)
                 {
+                    // RFC 6761 Section 6.3: If localhost subdomain fails, fall back to resolving plain "localhost".
+                    if (isLocalhostSubdomain)
+                    {
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost subdomain resolution failed, falling back to 'localhost'");
+                        NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: null, exception: CreateException(errorCode, nativeErrorCode));
+                        return GetHostEntryOrAddressesCore("localhost", justAddresses, addressFamily);
+                    }
+
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(hostName, $"{hostName} DNS lookup failed with {errorCode}");
                     throw CreateException(errorCode, nativeErrorCode);
+                }
+
+                // RFC 6761 Section 6.3: If localhost subdomain returns empty addresses, fall back to plain "localhost".
+                if (isLocalhostSubdomain && addresses.Length == 0)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost subdomain returned empty, falling back to 'localhost'");
+                    NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: justAddresses ? addresses : (object)new IPHostEntry { AddressList = addresses, HostName = newHostName!, Aliases = aliases }, exception: null);
+                    return GetHostEntryOrAddressesCore("localhost", justAddresses, addressFamily);
                 }
 
                 result = justAddresses ? (object)
@@ -691,24 +680,19 @@ namespace System.Net
                         Task.FromResult((IPHostEntry)resultOnFailure);
                 }
 
-                // Handle RFC 6761 special-use domain names before calling the OS resolver.
-                if (TryHandleRfc6761SpecialName(hostName, justAddresses, family, out object? rfc6761Result, out SocketException? rfc6761Exception))
+                // RFC 6761 Section 6.4: "invalid" domains must return NXDOMAIN.
+                if (TryHandleRfc6761InvalidDomain(hostName, out SocketException? invalidDomainException))
                 {
                     NameResolutionActivity activity = NameResolutionTelemetry.Log.BeforeResolution(hostName);
-
-                    if (rfc6761Exception is not null)
-                    {
-                        NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: null, exception: rfc6761Exception);
-                        return justAddresses ? (Task)
-                            Task.FromException<IPAddress[]>(rfc6761Exception) :
-                            Task.FromException<IPHostEntry>(rfc6761Exception);
-                    }
-
-                    NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: rfc6761Result);
+                    NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: null, exception: invalidDomainException);
                     return justAddresses ? (Task)
-                        Task.FromResult((IPAddress[])rfc6761Result!) :
-                        Task.FromResult((IPHostEntry)rfc6761Result!);
+                        Task.FromException<IPAddress[]>(invalidDomainException!) :
+                        Task.FromException<IPHostEntry>(invalidDomainException!);
                 }
+
+                // For localhost subdomains (RFC 6761 Section 6.3), we try the OS resolver first.
+                // If it fails or returns empty, we fall back to resolving plain "localhost".
+                // This fallback logic is handled in GetHostEntryOrAddressesCore and GetAddrInfoWithTelemetryAsync.
 
                 if (NameResolutionPal.SupportsGetAddrInfoAsync)
                 {
@@ -718,8 +702,11 @@ namespace System.Net
                     // instead of calling the synchronous version in the ThreadPool.
                     // If it fails, we will fall back to ThreadPool as well.
 
+                    // Always use the telemetry-enabled path for localhost subdomains to ensure fallback handling.
+                    // For other hostnames, use the non-telemetry path if diagnostics are disabled.
+                    bool isLocalhostSubdomain = IsLocalhostSubdomain(hostName);
                     Task? t;
-                    if (NameResolutionTelemetry.AnyDiagnosticsEnabled())
+                    if (NameResolutionTelemetry.AnyDiagnosticsEnabled() || isLocalhostSubdomain)
                     {
                         t = justAddresses
                             ? GetAddrInfoWithTelemetryAsync<IPAddress[]>(hostName, justAddresses, family, cancellationToken)
@@ -773,22 +760,59 @@ namespace System.Net
 
             if (task != null)
             {
-                return CompleteAsync(task, hostName, startingTimestamp);
+                bool isLocalhostSubdomain = IsLocalhostSubdomain(hostName);
+                return CompleteAsync(task, hostName, justAddresses, addressFamily, isLocalhostSubdomain, startingTimestamp, cancellationToken);
             }
 
             // If resolution even did not start don't bother with telemetry.
             // We will retry on thread-pool.
             return null;
 
-            static async Task<T> CompleteAsync(Task task, string hostName, long startingTimeStamp)
+            static async Task<T> CompleteAsync(Task task, string hostName, bool justAddresses, AddressFamily addressFamily, bool isLocalhostSubdomain, long startingTimeStamp, CancellationToken cancellationToken)
             {
                 NameResolutionActivity activity = NameResolutionTelemetry.Log.BeforeResolution(hostName, startingTimeStamp);
                 Exception? exception = null;
                 T? result = null;
+                bool fallbackOccurred = false;
                 try
                 {
                     result = await ((Task<T>)task).ConfigureAwait(false);
+
+                    // RFC 6761 Section 6.3: If localhost subdomain returns empty addresses, fall back to plain "localhost".
+                    if (isLocalhostSubdomain && result is IPAddress[] addresses && addresses.Length == 0)
+                    {
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost subdomain returned empty, falling back to 'localhost'");
+                        NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: result, exception: null);
+                        fallbackOccurred = true;
+
+                        // Resolve plain "localhost" instead
+                        return await ((Task<T>)(justAddresses
+                            ? (Task)Dns.GetHostAddressesAsync("localhost", addressFamily, cancellationToken)
+                            : Dns.GetHostEntryAsync("localhost", addressFamily, cancellationToken))).ConfigureAwait(false);
+                    }
+
+                    if (isLocalhostSubdomain && result is IPHostEntry entry && entry.AddressList.Length == 0)
+                    {
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost subdomain returned empty, falling back to 'localhost'");
+                        NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: result, exception: null);
+                        fallbackOccurred = true;
+
+                        // Resolve plain "localhost" instead
+                        return await ((Task<T>)(Task)Dns.GetHostEntryAsync("localhost", addressFamily, cancellationToken)).ConfigureAwait(false);
+                    }
+
                     return result;
+                }
+                catch (SocketException ex) when (isLocalhostSubdomain)
+                {
+                    // RFC 6761 Section 6.3: If localhost subdomain fails, fall back to resolving plain "localhost".
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost subdomain resolution failed, falling back to 'localhost'");
+                    NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: null, exception: ex);
+                    fallbackOccurred = true;
+
+                    return await ((Task<T>)(justAddresses
+                        ? (Task)Dns.GetHostAddressesAsync("localhost", addressFamily, cancellationToken)
+                        : Dns.GetHostEntryAsync("localhost", addressFamily, cancellationToken))).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -797,7 +821,10 @@ namespace System.Net
                 }
                 finally
                 {
-                    NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: result, exception: exception);
+                    if (!fallbackOccurred)
+                    {
+                        NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: result, exception: exception);
+                    }
                 }
             }
         }
