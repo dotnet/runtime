@@ -61,19 +61,19 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData("$.$type", @"{ ""$type"" : ""derivedClass1"", ""$type"" : ""derivedClass1"", ""Number"" : 42 }")]
-        [InlineData("$.$type", @"{ ""$type"" : ""derivedClass1"", ""Number"" : 42, ""$type"" : ""derivedClass1""}")]
-        [InlineData("$.$id", @"{ ""$type"" : ""derivedClass1"", ""Number"" : 42, ""$id"" : ""referenceId""}")]
-        [InlineData("$.$id", @"{ ""$type"" : ""derivedClass1"", """" : 42, ""$id"" : ""referenceId""}")]
-        [InlineData("$.$values", @"{ ""Number"" : 42, ""$values"" : [] }")]
-        [InlineData("$.$type", @"{ ""Number"" : 42, ""$type"" : ""derivedClass"" }")]
+        [InlineData("$['$type']", @"{ ""$type"" : ""derivedClass1"", ""$type"" : ""derivedClass1"", ""Number"" : 42 }")]
+        [InlineData("$['$type']", @"{ ""$type"" : ""derivedClass1"", ""Number"" : 42, ""$type"" : ""derivedClass1""}")]
+        [InlineData("$['$id']", @"{ ""$type"" : ""derivedClass1"", ""Number"" : 42, ""$id"" : ""referenceId""}")]
+        [InlineData("$['$id']", @"{ ""$type"" : ""derivedClass1"", """" : 42, ""$id"" : ""referenceId""}")]
+        [InlineData("$['$values']", @"{ ""Number"" : 42, ""$values"" : [] }")]
+        [InlineData("$['$type']", @"{ ""Number"" : 42, ""$type"" : ""derivedClass"" }")]
         [InlineData("$", @"{ ""$type"" : ""invalidDiscriminator"", ""Number"" : 42 }")]
         [InlineData("$", @"{ ""$type"" : 0, ""Number"" : 42 }")]
-        [InlineData("$.$type", @"{ ""$type"" : false, ""Number"" : 42 }")]
-        [InlineData("$.$type", @"{ ""$type"" : {}, ""Number"" : 42 }")]
-        [InlineData("$.$type", @"{ ""$type"" : [], ""Number"" : 42 }")]
-        [InlineData("$.$id", @"{ ""$id"" : ""1"", ""Number"" : 42 }")]
-        [InlineData("$.$ref", @"{ ""$ref"" : ""1"" }")]
+        [InlineData("$['$type']", @"{ ""$type"" : false, ""Number"" : 42 }")]
+        [InlineData("$['$type']", @"{ ""$type"" : {}, ""Number"" : 42 }")]
+        [InlineData("$['$type']", @"{ ""$type"" : [], ""Number"" : 42 }")]
+        [InlineData("$['$id']", @"{ ""$id"" : ""1"", ""Number"" : 42 }")]
+        [InlineData("$['$ref']", @"{ ""$ref"" : ""1"" }")]
         public async Task PolymorphicClass_InvalidTypeDiscriminatorMetadata_ShouldThrowJsonException(string expectedJsonPath, string json)
         {
             JsonException exception = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<PolymorphicClass>(json));
@@ -114,12 +114,12 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData("$.$type", """{"Number":42, "$type":"derivedClass1", "String": "str", "$type":"derivedClass1"}""")]
-        [InlineData("$.$type", """{"$type":"derivedCollection", "$values": [42,42,42], "$type":"derivedCollection"}""")]
-        [InlineData("$.$values", """{"$type":"derivedCollection", "NonMetadataProp": {}, "$values": [42,42,42]}""")]
+        [InlineData("$['$type']", """{"Number":42, "$type":"derivedClass1", "String": "str", "$type":"derivedClass1"}""")]
+        [InlineData("$['$type']", """{"$type":"derivedCollection", "$values": [42,42,42], "$type":"derivedCollection"}""")]
+        [InlineData("$['$values']", """{"$type":"derivedCollection", "NonMetadataProp": {}, "$values": [42,42,42]}""")]
         [InlineData("$.NonMetadataProp", """{"$type":"derivedCollection", "$values": [42,42,42], "NonMetadataProp": {}}""")]
         [InlineData("$.NonMetadataProp", """{"$values": [42,42,42], "$type":"derivedCollection", "NonMetadataProp": {}}""")]
-        [InlineData("$.$values", """{"$type":"derivedCollection", "$values": [42,42,42], "$values": [42,42,42]}""")]
+        [InlineData("$['$values']", """{"$type":"derivedCollection", "$values": [42,42,42], "$values": [42,42,42]}""")]
         public async Task PolymorphicClass_AllowOutOfOrderMetadata_RejectsInvalidInputs(string expectedJsonPath, string json)
         {
             JsonException exception = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<PolymorphicClass>(json, s_optionsWithAllowOutOfOrderMetadata));
@@ -182,21 +182,21 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData("$.$type", @"{ ""$type"" : ""derivedClass1"", ""Number"" : 42 }")]
+        [InlineData("$['$type']", @"{ ""$type"" : ""derivedClass1"", ""Number"" : 42 }")]
         [InlineData("$._case", @"{ ""_case"" : ""derivedClass1"", ""_case"" : ""derivedClass1"", ""Number"" : 42 }")]
         [InlineData("$._case", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""_case"" : ""derivedClass1""}")]
-        [InlineData("$.$type", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$type"" : ""derivedClass1""}")]
-        [InlineData("$.$id", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$id"" : ""referenceId""}")]
-        [InlineData("$.$id", @"{ ""_case"" : ""derivedClass1"", """" : 42, ""$id"" : ""referenceId""}")]
-        [InlineData("$.$values", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$values"" : [] }")]
+        [InlineData("$['$type']", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$type"" : ""derivedClass1""}")]
+        [InlineData("$['$id']", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$id"" : ""referenceId""}")]
+        [InlineData("$['$id']", @"{ ""_case"" : ""derivedClass1"", """" : 42, ""$id"" : ""referenceId""}")]
+        [InlineData("$['$values']", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$values"" : [] }")]
         [InlineData("$._case", @"{ ""Number"" : 42, ""_case"" : ""derivedClass1"" }")]
         [InlineData("$", @"{ ""_case"" : ""invalidDiscriminator"", ""Number"" : 42 }")]
         [InlineData("$", @"{ ""_case"" : 0, ""Number"" : 42 }")]
         [InlineData("$._case", @"{ ""_case"" : false, ""Number"" : 42 }")]
         [InlineData("$._case", @"{ ""_case"" : {}, ""Number"" : 42 }")]
         [InlineData("$._case", @"{ ""_case"" : [], ""Number"" : 42 }")]
-        [InlineData("$.$id", @"{ ""$id"" : ""1"", ""Number"" : 42 }")]
-        [InlineData("$.$ref", @"{ ""$ref"" : ""1"" }")]
+        [InlineData("$['$id']", @"{ ""$id"" : ""1"", ""Number"" : 42 }")]
+        [InlineData("$['$ref']", @"{ ""$ref"" : ""1"" }")]
         public async Task PolymorphicClass_CustomConfigWithBaseTypeFallback_InvalidTypeDiscriminatorMetadata_ShouldThrowJsonException(string expectedJsonPath, string json)
         {
             JsonException exception = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<PolymorphicClass>(json, PolymorphicClass.CustomConfigWithBaseTypeFallback));
@@ -259,21 +259,21 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData("$.$type", @"{ ""$type"" : ""derivedClass1"", ""Number"" : 42 }")]
+        [InlineData("$['$type']", @"{ ""$type"" : ""derivedClass1"", ""Number"" : 42 }")]
         [InlineData("$._case", @"{ ""_case"" : ""derivedClass1"", ""_case"" : ""derivedClass1"", ""Number"" : 42 }")]
         [InlineData("$._case", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""_case"" : ""derivedClass1""}")]
-        [InlineData("$.$type", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$type"" : ""derivedClass1""}")]
-        [InlineData("$.$id", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$id"" : ""referenceId""}")]
-        [InlineData("$.$id", @"{ ""_case"" : ""derivedClass1"", """" : 42, ""$id"" : ""referenceId""}")]
-        [InlineData("$.$values", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$values"" : [] }")]
+        [InlineData("$['$type']", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$type"" : ""derivedClass1""}")]
+        [InlineData("$['$id']", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$id"" : ""referenceId""}")]
+        [InlineData("$['$id']", @"{ ""_case"" : ""derivedClass1"", """" : 42, ""$id"" : ""referenceId""}")]
+        [InlineData("$['$values']", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$values"" : [] }")]
         [InlineData("$._case", @"{ ""Number"" : 42, ""_case"" : ""derivedClass1"" }")]
         [InlineData("$", @"{ ""_case"" : ""invalidDiscriminator"", ""Number"" : 42 }")]
         [InlineData("$", @"{ ""_case"" : 0, ""Number"" : 42 }")]
         [InlineData("$._case", @"{ ""_case"" : false, ""Number"" : 42 }")]
         [InlineData("$._case", @"{ ""_case"" : {}, ""Number"" : 42 }")]
         [InlineData("$._case", @"{ ""_case"" : [], ""Number"" : 42 }")]
-        [InlineData("$.$id", @"{ ""$id"" : ""1"", ""Number"" : 42 }")]
-        [InlineData("$.$ref", @"{ ""$ref"" : ""1"" }")]
+        [InlineData("$['$id']", @"{ ""$id"" : ""1"", ""Number"" : 42 }")]
+        [InlineData("$['$ref']", @"{ ""$ref"" : ""1"" }")]
         public async Task PolymorphicClass_CustomConfigWithNearestAncestorFallback_InvalidTypeDiscriminatorMetadata_ShouldThrowJsonException(string expectedJsonPath, string json)
         {
             JsonException exception = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<PolymorphicClass>(json, PolymorphicClass.CustomConfigWithBaseTypeFallback));
@@ -1327,17 +1327,17 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData("$.$type", @"{ ""$type"" : ""derivedClass"", ""$type"" : ""derivedClass"", ""Number"" : 42 }")]
-        [InlineData("$.$type", @"{ ""$type"" : ""derivedClass"", ""Number"" : 42, ""$type"" : ""derivedClass""}")]
-        [InlineData("$.$id", @"{ ""$type"" : ""derivedClass"", ""Number"" : 42, ""$id"" : ""referenceId""}")]
-        [InlineData("$.$values", @"{ ""$type"" : ""derivedClass"", ""Number"" : 42, ""$values"" : [] }")]
+        [InlineData("$['$type']", @"{ ""$type"" : ""derivedClass"", ""$type"" : ""derivedClass"", ""Number"" : 42 }")]
+        [InlineData("$['$type']", @"{ ""$type"" : ""derivedClass"", ""Number"" : 42, ""$type"" : ""derivedClass""}")]
+        [InlineData("$['$id']", @"{ ""$type"" : ""derivedClass"", ""Number"" : 42, ""$id"" : ""referenceId""}")]
+        [InlineData("$['$values']", @"{ ""$type"" : ""derivedClass"", ""Number"" : 42, ""$values"" : [] }")]
         [InlineData("$", @"{ ""$type"" : ""invalidDiscriminator"", ""Number"" : 42 }")]
         [InlineData("$", @"{ ""$type"" : 0, ""Number"" : 42 }")]
-        [InlineData("$.$type", @"{ ""$type"" : false, ""Number"" : 42 }")]
-        [InlineData("$.$type", @"{ ""$type"" : {}, ""Number"" : 42 }")]
-        [InlineData("$.$type", @"{ ""$type"" : [], ""Number"" : 42 }")]
-        [InlineData("$.$id", @"{ ""$id"" : ""1"", ""Number"" : 42 }")]
-        [InlineData("$.$ref", @"{ ""$ref"" : ""1"" }")]
+        [InlineData("$['$type']", @"{ ""$type"" : false, ""Number"" : 42 }")]
+        [InlineData("$['$type']", @"{ ""$type"" : {}, ""Number"" : 42 }")]
+        [InlineData("$['$type']", @"{ ""$type"" : [], ""Number"" : 42 }")]
+        [InlineData("$['$id']", @"{ ""$id"" : ""1"", ""Number"" : 42 }")]
+        [InlineData("$['$ref']", @"{ ""$ref"" : ""1"" }")]
         public async Task PolymorphicInterface_InvalidTypeDiscriminatorMetadata_ShouldThrowJsonException(string expectedJsonPath, string json)
         {
             JsonException exception = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<PolymorphicInterface>(json, PolymorphicClass.CustomConfigWithBaseTypeFallback));
@@ -1647,8 +1647,8 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData("$.UnsupportedProperty", @"{ ""$type"" : ""derivedList"", ""UnsupportedProperty"" : 42 }")]
         [InlineData("$.UnsupportedProperty", @"{ ""$type"" : ""derivedList"", ""$values"" : [], ""UnsupportedProperty"" : 42 }")]
-        [InlineData("$.$id", @"{ ""$id"" : 42, ""$values"" : [] }")]
-        [InlineData("$.$ref", @"{ ""$ref"" : 42 }")]
+        [InlineData("$['$id']", @"{ ""$id"" : 42, ""$values"" : [] }")]
+        [InlineData("$['$ref']", @"{ ""$ref"" : 42 }")]
         public async Task PolymorphicList_InvalidTypeDiscriminatorMetadata_ShouldThrowJsonException(string expectedJsonPath, string json)
         {
             JsonException exception = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<PolymorphicList>(json));
@@ -1891,12 +1891,12 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData("$.$ref", @"{ ""$type"" : ""derivedList"", ""UserProperty"" : 42, ""$ref"" : ""42"" }")]
-        [InlineData("$.$type", @"{ ""$type"" : ""derivedList"", ""UserProperty"" : 42, ""$type"" : ""derivedDictionary"" }")]
-        [InlineData("$.$type", @"{ ""UserProperty"" : 42, ""$type"" : ""derivedDictionary"" }")]
-        [InlineData("$.$values", @"{ ""$type"" : ""derivedDictionary"", ""$values"" : [] }")]
-        [InlineData("$.$id", @"{ ""$id"" : 42, ""UserProperty"" : 42 }")]
-        [InlineData("$.$ref", @"{ ""$ref"" : 42 }")]
+        [InlineData("$['$ref']", @"{ ""$type"" : ""derivedList"", ""UserProperty"" : 42, ""$ref"" : ""42"" }")]
+        [InlineData("$['$type']", @"{ ""$type"" : ""derivedList"", ""UserProperty"" : 42, ""$type"" : ""derivedDictionary"" }")]
+        [InlineData("$['$type']", @"{ ""UserProperty"" : 42, ""$type"" : ""derivedDictionary"" }")]
+        [InlineData("$['$values']", @"{ ""$type"" : ""derivedDictionary"", ""$values"" : [] }")]
+        [InlineData("$['$id']", @"{ ""$id"" : 42, ""UserProperty"" : 42 }")]
+        [InlineData("$['$ref']", @"{ ""$ref"" : 42 }")]
         public async Task PolymorphicDictionary_InvalidTypeDiscriminatorMetadata_ShouldThrowJsonException(string expectedJsonPath, string json)
         {
             JsonException exception = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<PolymorphicDictionary>(json));
@@ -2340,19 +2340,19 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData("$[1].$ref", """[{ "$id" : "1" }, { "NonMetadataProperty": [1,2,3], "$ref" : "1" }]""")]
+        [InlineData("$[1]['$ref']", """[{ "$id" : "1" }, { "NonMetadataProperty": [1,2,3], "$ref" : "1" }]""")]
         [InlineData("$[1].NonMetadataProperty", """[{ "$id" : "1" }, { "$ref" : "1", "NonMetadataProperty": [1,2,3] }]""")]
-        [InlineData("$[1].$ref", """[{ "$id" : "1" }, { "$type": "derivedClass1", "$ref" : "1" }]""")]
-        [InlineData("$[1].$type", """[{ "$id" : "1" }, { "$ref" : "1", "$type": "derivedClass1" }]""")]
-        [InlineData("$[1].$id", """[{ "$id" : "1" }, { "$ref" : "1", "$id": "1" }]""")]
-        [InlineData("$[1].$ref", """[{ "$id" : "1" }, { "$id": "1", "$ref" : "1" }]""")]
-        [InlineData("$[1].$ref", """[{ "$id" : "1" }, { "$values": [1, 2, 3], "$ref" : "1" }]""")]
-        [InlineData("$[1].$values", """[{ "$id" : "1" }, { "$ref" : "1", "$values": [1, 2, 3] }]""")]
+        [InlineData("$[1]['$ref']", """[{ "$id" : "1" }, { "$type": "derivedClass1", "$ref" : "1" }]""")]
+        [InlineData("$[1]['$type']", """[{ "$id" : "1" }, { "$ref" : "1", "$type": "derivedClass1" }]""")]
+        [InlineData("$[1]['$id']", """[{ "$id" : "1" }, { "$ref" : "1", "$id": "1" }]""")]
+        [InlineData("$[1]['$ref']", """[{ "$id" : "1" }, { "$id": "1", "$ref" : "1" }]""")]
+        [InlineData("$[1]['$ref']", """[{ "$id" : "1" }, { "$values": [1, 2, 3], "$ref" : "1" }]""")]
+        [InlineData("$[1]['$values']", """[{ "$id" : "1" }, { "$ref" : "1", "$values": [1, 2, 3] }]""")]
         [InlineData("$[0].NonMetadataProperty", """[{ "$type" : "derivedCollection", "$values": [42,42,42], "$id" : "1", "NonMetadataProperty": {}}, { "$ref" : "1" }]""")]
-        [InlineData("$[0].$values", """[{ "$type" : "derivedCollection", "$id" : "1", "NonMetadataProperty": {}, "$values": [42,42,42]}, { "$ref" : "1" }]""")]
-        [InlineData("$[1].$ref", """[{ "$type" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "$type" : "derivedCollection", "$ref" : "1" }]""")]
-        [InlineData("$[1].$values", """[{ "$type" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "$ref" : "1", "$values" : [1,2,3] }]""")]
-        [InlineData("$[1].$ref", """[{ "$type" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "$values" : [1,2,3], "$ref" : "1" }]""")]
+        [InlineData("$[0]['$values']", """[{ "$type" : "derivedCollection", "$id" : "1", "NonMetadataProperty": {}, "$values": [42,42,42]}, { "$ref" : "1" }]""")]
+        [InlineData("$[1]['$ref']", """[{ "$type" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "$type" : "derivedCollection", "$ref" : "1" }]""")]
+        [InlineData("$[1]['$values']", """[{ "$type" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "$ref" : "1", "$values" : [1,2,3] }]""")]
+        [InlineData("$[1]['$ref']", """[{ "$type" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "$values" : [1,2,3], "$ref" : "1" }]""")]
         public async Task ReferencePreservation_AllowOutOfOrderMetadata_RejectsInvalidMetadata(string expectedJsonPath, string json)
         {
             JsonException exception = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<PolymorphicClass[]>(json, s_jsonSerializerOptionsPreserveRefsAndAllowReadAhead));
@@ -2374,19 +2374,19 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData("$[1].$ref", """[{ "$id" : "1" }, { "NonMetadataProperty": [1,2,3], "$ref" : "1" }]""")]
+        [InlineData("$[1]['$ref']", """[{ "$id" : "1" }, { "NonMetadataProperty": [1,2,3], "$ref" : "1" }]""")]
         [InlineData("$[1].NonMetadataProperty", """[{ "$id" : "1" }, { "$ref" : "1", "NonMetadataProperty": [1,2,3] }]""")]
-        [InlineData("$[1].$ref", """[{ "$id" : "1" }, { "case": "derivedClass", "$ref" : "1" }]""")]
+        [InlineData("$[1]['$ref']", """[{ "$id" : "1" }, { "case": "derivedClass", "$ref" : "1" }]""")]
         [InlineData("$[1].case", """[{ "$id" : "1" }, { "$ref" : "1", "case": "derivedClass" }]""")]
-        [InlineData("$[1].$id", """[{ "$id" : "1" }, { "$ref" : "1", "$id": "1" }]""")]
-        [InlineData("$[1].$ref", """[{ "$id" : "1" }, { "$id": "1", "$ref" : "1" }]""")]
-        [InlineData("$[1].$ref", """[{ "$id" : "1" }, { "$values": [1, 2, 3], "$ref" : "1" }]""")]
-        [InlineData("$[1].$values", """[{ "$id" : "1" }, { "$ref" : "1", "$values": [1, 2, 3] }]""")]
+        [InlineData("$[1]['$id']", """[{ "$id" : "1" }, { "$ref" : "1", "$id": "1" }]""")]
+        [InlineData("$[1]['$ref']", """[{ "$id" : "1" }, { "$id": "1", "$ref" : "1" }]""")]
+        [InlineData("$[1]['$ref']", """[{ "$id" : "1" }, { "$values": [1, 2, 3], "$ref" : "1" }]""")]
+        [InlineData("$[1]['$values']", """[{ "$id" : "1" }, { "$ref" : "1", "$values": [1, 2, 3] }]""")]
         [InlineData("$[0].NonMetadataProperty", """[{ "case" : "derivedCollection", "$values": [42,42,42], "$id" : "1", "NonMetadataProperty": {}}, { "$ref" : "1" }]""")]
-        [InlineData("$[0].$values", """[{ "case" : "derivedCollection", "$id" : "1", "NonMetadataProperty": {}, "$values": [42,42,42]}, { "$ref" : "1" }]""")]
-        [InlineData("$[1].$ref", """[{ "case" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "case" : "derivedCollection", "$ref" : "1" }]""")]
-        [InlineData("$[1].$values", """[{ "case" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "$ref" : "1", "$values" : [1,2,3] }]""")]
-        [InlineData("$[1].$ref", """[{ "case" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "$values" : [1,2,3], "$ref" : "1" }]""")]
+        [InlineData("$[0]['$values']", """[{ "case" : "derivedCollection", "$id" : "1", "NonMetadataProperty": {}, "$values": [42,42,42]}, { "$ref" : "1" }]""")]
+        [InlineData("$[1]['$ref']", """[{ "case" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "case" : "derivedCollection", "$ref" : "1" }]""")]
+        [InlineData("$[1]['$values']", """[{ "case" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "$ref" : "1", "$values" : [1,2,3] }]""")]
+        [InlineData("$[1]['$ref']", """[{ "case" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "$values" : [1,2,3], "$ref" : "1" }]""")]
         public async Task ReferencePreservation_CustomTypeDiscriminator_AllowOutOfOrderMetadata_RejectsInvalidMetadata(string expectedJsonPath, string json)
         {
             JsonException exception = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<PolymorphicClassWithCustomTypeDiscriminator[]>(json, s_jsonSerializerOptionsPreserveRefsAndAllowReadAhead));

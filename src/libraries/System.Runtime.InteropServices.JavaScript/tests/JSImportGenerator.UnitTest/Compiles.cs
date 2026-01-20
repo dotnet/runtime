@@ -162,7 +162,7 @@ namespace JSImportGenerator.Unit.Tests
                                 static global::System.Runtime.InteropServices.JavaScript.JSFunctionBinding __signature_Annotated_1583225186;
                             }
 
-                            """.ReplaceLineEndings("\r\n"), Encoding.UTF8)),
+                            """.ReplaceLineEndings("\r\n"), Encoding.UTF8, SourceHashAlgorithm.Sha256)),
                         (typeof(Microsoft.Interop.JavaScript.JSExportGenerator),
                         "JSExports.g.cs",
                         SourceText.From("""
@@ -261,7 +261,7 @@ namespace JSImportGenerator.Unit.Tests
                                 }
                             }
 
-                            """.ReplaceLineEndings("\r\n"), Encoding.UTF8)),
+                            """.ReplaceLineEndings("\r\n"), Encoding.UTF8, SourceHashAlgorithm.Sha256)),
                     }
                 },
             };
@@ -327,7 +327,7 @@ namespace JSImportGenerator.Unit.Tests
                                 static global::System.Runtime.InteropServices.JavaScript.JSFunctionBinding __signature_Import1_622134597;
                             }
 
-                            """.ReplaceLineEndings("\r\n"), Encoding.UTF8)),
+                            """.ReplaceLineEndings("\r\n"), Encoding.UTF8, SourceHashAlgorithm.Sha256)),
                         (typeof(Microsoft.Interop.JavaScript.JSExportGenerator),
                         "JSExports.g.cs",
                         SourceText.From("""
@@ -383,7 +383,7 @@ namespace JSImportGenerator.Unit.Tests
                                 }
                             }
 
-                            """.ReplaceLineEndings("\r\n"), Encoding.UTF8)),
+                            """.ReplaceLineEndings("\r\n"), Encoding.UTF8, SourceHashAlgorithm.Sha256)),
                     }
                 },
             };

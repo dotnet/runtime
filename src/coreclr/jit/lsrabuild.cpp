@@ -2208,12 +2208,10 @@ void LinearScan::buildIntervals()
     // Assign these RefPositions to the (nonexistent) BB0.
     curBBNum = 0;
 
-    RegState* intRegState                   = &compiler->codeGen->intRegState;
-    RegState* floatRegState                 = &compiler->codeGen->floatRegState;
-    intRegState->rsCalleeRegArgMaskLiveIn   = RBM_NONE;
-    floatRegState->rsCalleeRegArgMaskLiveIn = RBM_NONE;
-    regsInUseThisLocation                   = RBM_NONE;
-    regsInUseNextLocation                   = RBM_NONE;
+    regMaskTP* calleeRegArgMaskLiveIn = &compiler->codeGen->calleeRegArgMaskLiveIn;
+    *calleeRegArgMaskLiveIn           = RBM_NONE;
+    regsInUseThisLocation             = RBM_NONE;
+    regsInUseNextLocation             = RBM_NONE;
 
     // Compute live incoming parameter registers. The liveness is based on the
     // locals we are expecting to store the registers into in the prolog.
@@ -2257,8 +2255,7 @@ void LinearScan::buildIntervals()
 
             if (isLive)
             {
-                RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;
-                regState->rsCalleeRegArgMaskLiveIn |= seg.GetRegisterMask();
+                *calleeRegArgMaskLiveIn |= seg.GetRegisterMask();
             }
         }
     }
@@ -2338,7 +2335,7 @@ void LinearScan::buildIntervals()
     // If there is a secret stub param, it is also live in
     if (compiler->info.compPublishStubParam)
     {
-        intRegState->rsCalleeRegArgMaskLiveIn.AddGprRegs(RBM_SECRET_STUB_PARAM.GetIntRegSet() DEBUG_ARG(RBM_ALLINT));
+        calleeRegArgMaskLiveIn->AddGprRegs(RBM_SECRET_STUB_PARAM.GetIntRegSet() DEBUG_ARG(RBM_ALLINT));
 
         LclVarDsc* stubParamDsc = compiler->lvaGetDesc(compiler->lvaStubArgumentVar);
         if (isCandidateVar(stubParamDsc))
@@ -2871,8 +2868,8 @@ void LinearScan::stressSetRandomParameterPreferences()
 {
     CLRRandom rng;
     rng.Init(compiler->info.compMethodHash());
-    regMaskTP intRegs   = compiler->codeGen->intRegState.rsCalleeRegArgMaskLiveIn;
-    regMaskTP floatRegs = compiler->codeGen->floatRegState.rsCalleeRegArgMaskLiveIn;
+    regMaskTP intRegs   = compiler->codeGen->calleeRegArgMaskLiveIn & RBM_ALLINT;
+    regMaskTP floatRegs = compiler->codeGen->calleeRegArgMaskLiveIn & RBM_ALLFLOAT;
 
     for (unsigned int varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
     {

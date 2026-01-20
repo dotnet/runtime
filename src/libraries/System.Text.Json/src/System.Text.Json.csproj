@@ -394,6 +394,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CommonPath)System\IO\StreamExtensions.netstandard.cs" Link="Common\System\IO\StreamExtensions.netstandard.cs" />
+    <Compile Include="$(CommonPath)System\Text\StringBuilderExtensions.cs" Link="Common\System\Text\StringBuilderExtensions.cs" />
     <Compile Include="System\Collections\Generic\StackExtensions.netstandard.cs" />
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="Common\System\Buffers\ArrayBufferWriter.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />

@@ -463,9 +463,9 @@ bool        VarIsInReg(ICorDebugInfo::VarLoc varLoc)
         // touching anything in the frame header.
         // This is necessary to ensure that any JIT temporaries in the old version can't be mistaken
         // for ObjRefs now.
-        size_t frameHeaderSize = GetSizeOfFrameHeaderForEnC( newInfo );
+        size_t frameHeaderSize = GetSizeOfFrameHeaderForEnC(pNewCodeInfo->GetMethodDesc(), newInfo);
         _ASSERTE( frameHeaderSize <= oldInfo->stackSize );
-        _ASSERTE( GetSizeOfFrameHeaderForEnC( oldInfo ) == frameHeaderSize );
+        _ASSERTE( GetSizeOfFrameHeaderForEnC(pOldCodeInfo->GetMethodDesc(), oldInfo) == frameHeaderSize );
 
 #elif defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
 

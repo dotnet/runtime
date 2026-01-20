@@ -177,11 +177,6 @@ namespace System.Net.WebSockets.Client.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Certificates not supported on browser")]
         public async Task RemoteCertificateValidationCallback_PassedRemoteCertificateInfo(bool secure)
         {
-            if (PlatformDetection.IsWindows7)
-            {
-                return; // see https://github.com/dotnet/runtime/issues/1491#issuecomment-376392057 for more details
-            }
-
             bool callbackInvoked = false;
 
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -214,11 +209,6 @@ namespace System.Net.WebSockets.Client.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials not supported on browser")]
         public async Task ClientCertificates_ValidCertificate_ServerReceivesCertificateAndConnectAsyncSucceeds()
         {
-            if (PlatformDetection.IsWindows7)
-            {
-                return; // see https://github.com/dotnet/runtime/issues/1491#issuecomment-376392057 for more details
-            }
-
             using (X509Certificate2 clientCert = Test.Common.Configuration.Certificates.GetClientCertificate())
             {
                 await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -251,11 +241,6 @@ namespace System.Net.WebSockets.Client.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials not supported on browser")]
         public async Task Connect_ViaProxy_ProxyTunnelRequestIssued(string scheme)
         {
-            if (PlatformDetection.IsWindows7)
-            {
-                return; // see https://github.com/dotnet/runtime/issues/1491#issuecomment-376392057 for more details
-            }
-
             bool connectionAccepted = false;
 
             await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>

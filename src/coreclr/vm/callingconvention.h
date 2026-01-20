@@ -51,8 +51,11 @@ struct ArgLocDesc
 
 #if defined(UNIX_AMD64_ABI)
 
-    EEClass* m_eeClass;           // For structs passed in register, it points to the EEClass of the struct
+#ifdef DEBUG
+    TypeHandle m_thStructInRegs;           // For structs passed in register, add a debug field to make it a bit easier to debug
+#endif // DEBUG
 
+    SystemVEightByteRegistersInfo m_eightByteInfo;
 #endif // UNIX_AMD64_ABI
 
 #ifdef FEATURE_HFA
@@ -104,7 +107,7 @@ struct ArgLocDesc
         m_structFields = {};
 #endif
 #if defined(UNIX_AMD64_ABI)
-        m_eeClass = NULL;
+        m_eightByteInfo.InitEmpty();
 #endif
     }
 };
@@ -1380,14 +1383,15 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     case ELEMENT_TYPE_VALUETYPE:
     {
-        MethodTable *pMT = m_argTypeHandle.GetMethodTable();
-        if (this->IsRegPassedStruct(pMT))
+        if (this->IsRegPassedStruct(m_argTypeHandle))
         {
-            EEClass* eeClass = pMT->GetClass();
             cGenRegs = 0;
-            for (int i = 0; i < eeClass->GetNumberEightBytes(); i++)
+            SystemVEightByteRegistersInfo eightByteInfo = this->GetEightByteRegistersInfo(m_argTypeHandle);
+
+            uint8_t numberEightBytes = eightByteInfo.GetNumEightBytes();
+            for (int i = 0; i < numberEightBytes; i++)
             {
-                switch (eeClass->GetEightByteClassification(i))
+                switch (eightByteInfo.GetEightByteClassification(i))
                 {
                     case SystemVClassificationTypeInteger:
                     case SystemVClassificationTypeIntegerReference:
@@ -1411,7 +1415,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 m_argLocDescForStructInRegs.m_cFloatReg = cFPRegs;
                 m_argLocDescForStructInRegs.m_idxGenReg = m_idxGenReg;
                 m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
-                m_argLocDescForStructInRegs.m_eeClass = eeClass;
+#ifdef DEBUG
+                m_argLocDescForStructInRegs.m_thStructInRegs = m_argTypeHandle;
+#endif
+                m_argLocDescForStructInRegs.m_eightByteInfo = eightByteInfo;
 
                 m_hasArgLocDescForStructInRegs = true;
 
@@ -1953,30 +1960,29 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
             _ASSERTE(!thValueType.IsNull());
 
 #if defined(UNIX_AMD64_ABI)
-            MethodTable *pMT = thValueType.AsMethodTable();
-            if (pMT->IsRegPassedStruct())
+            if (this->IsRegPassedStruct(thValueType))
             {
-                EEClass* eeClass = pMT->GetClass();
-
-                if (eeClass->GetNumberEightBytes() == 1)
+                SystemVEightByteRegistersInfo eightByteInfo = this->GetEightByteRegistersInfo(thValueType);
+                if (eightByteInfo.GetNumEightBytes() == 1)
                 {
                     // Structs occupying just one eightbyte are treated as int / double
-                    if (eeClass->GetEightByteClassification(0) == SystemVClassificationTypeSSE)
+                    if (eightByteInfo.GetEightByteClassification(0) == SystemVClassificationTypeSSE)
                     {
                         flags |= sizeof(double) << RETURN_FP_SIZE_SHIFT;
                     }
                 }
                 else
                 {
+                    _ASSERTE(eightByteInfo.GetNumEightBytes() == 2);
                     // Size of the struct is 16 bytes
                     flags |= (16 << RETURN_FP_SIZE_SHIFT);
                     // The lowest two bits of the size encode the order of the int and SSE fields
-                    if (eeClass->GetEightByteClassification(0) == SystemVClassificationTypeSSE)
+                    if (eightByteInfo.GetEightByteClassification(0) == SystemVClassificationTypeSSE)
                     {
                         flags |= (1 << RETURN_FP_SIZE_SHIFT);
                     }
 
-                    if (eeClass->GetEightByteClassification(1) == SystemVClassificationTypeSSE)
+                    if (eightByteInfo.GetEightByteClassification(1) == SystemVClassificationTypeSSE)
                     {
                         flags |= (2 << RETURN_FP_SIZE_SHIFT);
                     }
@@ -2248,10 +2254,17 @@ protected:
         m_pSig->Reset();
     }
 
-    FORCEINLINE BOOL IsRegPassedStruct(MethodTable* pMT)
+    FORCEINLINE BOOL IsRegPassedStruct(TypeHandle th)
     {
-        return pMT->IsRegPassedStruct();
+        return th.AsMethodTable()->IsRegPassedStruct();
     }
+
+#if defined(UNIX_AMD64_ABI)
+    FORCEINLINE SystemVEightByteRegistersInfo GetEightByteRegistersInfo(TypeHandle th)
+    {
+        return th.AsMethodTable()->GetClass()->GetEightByteRegistersInfo();
+    }
+#endif // defined(UNIX_AMD64_ABI)
 
 public:
     BOOL HasThis()
@@ -2326,6 +2339,25 @@ public:
         // Enums are normalized to their underlying type when passing to and from functions.
         // This occurs in both managed and native calling conventions.
         return type == ELEMENT_TYPE_VALUETYPE && !thValueType.IsEnum();
+    }
+};
+
+class ArgIteratorBaseForPInvoke : public ArgIteratorBase
+{
+protected:
+    BOOL IsRegPassedStruct(TypeHandle th);
+
+#if defined(UNIX_AMD64_ABI)
+    SystemVEightByteRegistersInfo GetEightByteRegistersInfo(TypeHandle th);
+#endif
+};
+
+class PInvokeArgIterator : public ArgIteratorTemplate<ArgIteratorBaseForPInvoke>
+{
+public:
+    PInvokeArgIterator(MetaSig* pSig)
+    {
+        m_pSig = pSig;
     }
 };
 

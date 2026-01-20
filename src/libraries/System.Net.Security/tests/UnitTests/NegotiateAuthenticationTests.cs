@@ -17,12 +17,22 @@ namespace System.Net.Security.Tests
 {
     public class NegotiateAuthenticationTests
     {
-        private static bool IsNtlmAvailable => Capability.IsNtlmInstalled() || OperatingSystem.IsAndroid() || OperatingSystem.IsTvOS();
+        // Ubuntu 24 and 26 ship with broekn gss-ntlmssp 1.2
+        private static bool UseManagedNtlm => PlatformDetection.IsUbuntu24 || PlatformDetection.IsUbuntu26;
+        private static bool IsNtlmAvailable => UseManagedNtlm || Capability.IsNtlmInstalled() || OperatingSystem.IsAndroid() || OperatingSystem.IsTvOS();
         private static bool IsNtlmUnavailable => !IsNtlmAvailable;
 
         private static NetworkCredential s_testCredentialRight = new NetworkCredential("rightusername", "rightpassword");
         private static NetworkCredential s_testCredentialWrong = new NetworkCredential("rightusername", "wrongpassword");
         private static readonly byte[] s_Hello = "Hello"u8.ToArray();
+
+        static NegotiateAuthenticationTests()
+        {
+            if (UseManagedNtlm)
+            {
+                AppContext.SetSwitch("System.Net.Security.UseManagedNtlm", true);
+            }
+        }
 
         [Fact]
         public void Constructor_Overloads_Validation()
@@ -85,7 +95,6 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(IsNtlmUnavailable))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/111639", typeof(PlatformDetection), nameof(PlatformDetection.IsUbuntu24OrHigher))]
         public void Package_Unsupported_NTLM()
         {
             NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "NTLM", Credential = s_testCredentialRight, TargetName = "HTTP/foo" };

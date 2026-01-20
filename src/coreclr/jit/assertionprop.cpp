@@ -5786,7 +5786,8 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
             //           default: %name.Length is >= 8 here%
             //       }
             //
-            if ((value > 0) && !vnStore->IsVNConstant(opVN))
+            // NOTE: if offset != 0, we only know that "X + offset >= maxJumpIdx", which is not very useful.
+            if ((offset == 0) && (value > 0) && !vnStore->IsVNConstant(opVN))
             {
                 AssertionDsc dsc   = {};
                 dsc.assertionKind  = OAK_NOT_EQUAL;

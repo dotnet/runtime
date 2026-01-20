@@ -47,7 +47,7 @@
 #include <sys/vfs.h>
 #elif HAVE_STATFS_MOUNT // BSD
 #include <sys/mount.h>
-#elif HAVE_SYS_STATVFS_H && !HAVE_NON_LEGACY_STATFS // SunOS
+#elif HAVE_SYS_STATVFS_H && !HAVE_NON_LEGACY_STATFS && HAVE_STATVFS_BASETYPE // SunOS
 #include <sys/types.h>
 #include <sys/statvfs.h>
 #if HAVE_STATFS_VFS
@@ -58,6 +58,10 @@
 #ifdef TARGET_SUNOS
 #include <sys/param.h>
 #endif
+
+#ifdef TARGET_HAIKU
+#include <fs_info.h>
+#endif // TARGET_HAIKU
 
 #ifdef _AIX
 #include <alloca.h>
@@ -402,7 +406,7 @@ int32_t SystemNative_IsMemfdSupported(void)
     }
 #endif
 
-    // Note that the name has no affect on file descriptor behavior. From linux manpage: 
+    // Note that the name has no affect on file descriptor behavior. From linux manpage:
     //   Names do not affect the behavior of the file descriptor, and as such multiple files can have the same name without any side effects.
     int32_t fd = (int32_t)syscall(__NR_memfd_create, "test", MFD_CLOEXEC | MFD_ALLOW_SEALING);
     if (fd < 0) return 0;
@@ -801,8 +805,14 @@ void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint
 {
 #if !defined(TARGET_WASI)
     dev_t castedDev = (dev_t)dev;
+#if !defined(TARGET_HAIKU)
     *majorNumber = (uint32_t)major(castedDev);
     *minorNumber = (uint32_t)minor(castedDev);
+#else
+    // Haiku has no concept of major/minor numbers, but it does have device IDs.
+    *majorNumber = 0;
+    *minorNumber = (uint32_t)dev;
+#endif // TARGET_HAIKU
 #else /* TARGET_WASI */
     dev_t castedDev = (dev_t)dev;
     *majorNumber = 0;
@@ -813,7 +823,12 @@ void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint
 int32_t SystemNative_MkNod(const char* pathName, uint32_t mode, uint32_t major, uint32_t minor)
 {
 #if !defined(TARGET_WASI)
+#if !defined(TARGET_HAIKU)
     dev_t dev = (dev_t)makedev(major, minor);
+#else
+    (void)major;
+    dev_t dev = (dev_t)minor;
+#endif // !TARGET_HAIKU
 
     int32_t result;
     while ((result = mknod(pathName, (mode_t)mode, dev)) < 0 && errno == EINTR);
@@ -1036,13 +1051,13 @@ int32_t SystemNative_MAdvise(void* address, uint64_t length, int32_t advice)
     switch (advice)
     {
         case PAL_MADV_DONTFORK:
-#if defined(MADV_DONTFORK) && !defined(TARGET_WASI)
+#if defined(MADV_DONTFORK) && !defined(TARGET_WASM)
             return madvise(address, (size_t)length, MADV_DONTFORK);
 #else
             (void)address, (void)length, (void)advice;
             errno = ENOTSUP;
             return -1;
-#endif
+#endif // MADV_DONTFORK && !TARGET_WASM
         default:
             break; // fall through to error
     }
@@ -1560,7 +1575,7 @@ static int16_t ConvertLockType(int16_t managedLockType)
     }
 }
 
-#if !HAVE_NON_LEGACY_STATFS || defined(TARGET_APPLE) || defined(TARGET_FREEBSD)
+#if !HAVE_NON_LEGACY_STATFS || defined(TARGET_APPLE) || defined(TARGET_FREEBSD) || defined(TARGET_HAIKU)
 static uint32_t MapFileSystemNameToEnum(const char* fileSystemName)
 {
     uint32_t result = 0;
@@ -1719,9 +1734,29 @@ uint32_t SystemNative_GetFileSystemType(intptr_t fd)
     uint32_t result = (uint32_t)statfsArgs.f_type;
     return result;
 #endif
+#elif defined(TARGET_HAIKU)
+    struct stat st;
+    int fstatRes;
+    while ((fstatRes = fstat(ToFileDescriptor(fd), &st)) == -1 && errno == EINTR);
+    if (fstatRes == -1) return 0;
+
+    struct fs_info info;
+    int fsStatDevRes;
+    while ((fsStatDevRes = fs_stat_dev(st.st_dev, &info)) == -1 && errno == EINTR);
+    if (fsStatDevRes == -1) return 0;
+
+    if (strcmp(info.fsh_name, "bfs") == 0)
+    {
+        // Haiku names its own BFS filesystem "bfs", but on Linux and some other UNIXes
+        // it is called "befs" to avoid confusion with Boot File System.
+        strncpy(info.fsh_name, "befs", sizeof(info.fsh_name) - 1);
+        info.fsh_name[sizeof(info.fsh_name) - 1] = '\0';
+    }
+
+    return MapFileSystemNameToEnum(info.fsh_name);
 #elif defined(TARGET_WASI)
     return EINTR;
-#elif !HAVE_NON_LEGACY_STATFS
+#elif !HAVE_NON_LEGACY_STATFS && HAVE_STATVFS_BASETYPE
     int statfsRes;
     struct statvfs statfsArgs;
     while ((statfsRes = fstatvfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
@@ -1814,31 +1849,97 @@ int32_t SystemNative_CanGetHiddenFlag(void)
 #endif
 }
 
-int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStatus)
+int32_t SystemNative_ReadThreadInfo(int32_t pid, int32_t tid, ThreadInfo* threadInfo)
 {
 #ifdef __sun
-    char statusFilename[64];
-    snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/psinfo", pid);
+    char infoFilename[64];
+    snprintf(infoFilename, sizeof(infoFilename), "/proc/%d/lwp/%d/lwpsinfo", pid, tid);
 
     intptr_t fd;
-    while ((fd = open(statusFilename, O_RDONLY)) < 0 && errno == EINTR);
+    while ((fd = open(infoFilename, O_RDONLY)) < 0 && errno == EINTR);
     if (fd < 0)
     {
         return 0;
     }
 
-    psinfo_t status;
-    int result = Common_Read(fd, &status, sizeof(psinfo_t));
+    lwpsinfo_t pr;
+    int result = Common_Read(fd, &pr, sizeof(pr));
     close(fd);
-    if (result >= 0)
+    if (result < sizeof (pr))
     {
-        processStatus->ResidentSetSize = status.pr_rssize * 1024; // pr_rssize is in Kbytes
-        return 1;
+        errno = EIO;
+        return -1;
+    }
+
+    threadInfo->Tid = pr.pr_lwpid;
+    threadInfo->Priority = pr.pr_pri;
+    threadInfo->NiceVal = pr.pr_nice;
+    // Status code, a char: ...
+    threadInfo->StatusCode = (uchar_t)pr.pr_sname;
+    // Thread start time and CPU time
+    threadInfo->StartTime = pr.pr_start.tv_sec;
+    threadInfo->StartTimeNsec = pr.pr_start.tv_nsec;
+    threadInfo->CpuTotalTime = pr.pr_time.tv_sec;
+    threadInfo->CpuTotalTimeNsec = pr.pr_time.tv_nsec;
+
+    return 0;
+#else
+    (void)pid, (void)tid, (void)threadInfo;
+    errno = ENOTSUP;
+    return -1;
+#endif // __sun
+}
+
+// The struct passing is limited, so the args string is handled separately here.
+int32_t SystemNative_ReadProcessInfo(int32_t pid, ProcessInfo* processInfo, uint8_t *argBuf, int32_t argBufSize)
+{
+#ifdef __sun
+    if (argBufSize != 0 && argBufSize < PRARGSZ)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    char infoFilename[64];
+    snprintf(infoFilename, sizeof(infoFilename), "/proc/%d/psinfo", pid);
+
+    intptr_t fd;
+    while ((fd = open(infoFilename, O_RDONLY)) < 0 && errno == EINTR);
+    if (fd < 0)
+    {
+        return 0;
+    }
+
+    psinfo_t pr;
+    int result = Common_Read(fd, &pr, sizeof(pr));
+    close(fd);
+    if (result < sizeof (pr))
+    {
+        errno = EIO;
+        return -1;
+    }
+
+    processInfo->Pid = pr.pr_pid;
+    processInfo->ParentPid = pr.pr_ppid;
+    processInfo->SessionId = pr.pr_sid;
+    processInfo->Priority = pr.pr_lwp.pr_pri;
+    processInfo->NiceVal = pr.pr_lwp.pr_nice;
+    // pr_size and pr_rsize are in Kbytes.
+    processInfo->VirtualSize = (uint64_t)pr.pr_size * 1024;
+    processInfo->ResidentSetSize = (uint64_t)pr.pr_rssize * 1024;
+    processInfo->StartTime = pr.pr_start.tv_sec;
+    processInfo->StartTimeNsec = pr.pr_start.tv_nsec;
+    processInfo->CpuTotalTime = pr.pr_time.tv_sec;
+    processInfo->CpuTotalTimeNsec = pr.pr_time.tv_nsec;
+
+    if (argBuf != NULL && argBufSize != 0)
+    {
+        SafeStringCopy((char*)argBuf, PRARGSZ, pr.pr_psargs);
     }
 
     return 0;
 #else
-    (void)pid, (void)processStatus;
+    (void)pid, (void)processInfo, (void)argBuf, (void)argBufSize;
     errno = ENOTSUP;
     return -1;
 #endif // __sun
@@ -1895,7 +1996,7 @@ static int GetAllowedVectorCount(IOVector* vectors, int32_t vectorCount)
     // For macOS preadv and pwritev can fail with EINVAL when the total length
     // of all vectors overflows a 32-bit integer.
     size_t totalLength = 0;
-    for (int i = 0; i < allowedCount; i++) 
+    for (int i = 0; i < allowedCount; i++)
     {
         assert(INT_MAX >= vectors[i].Count);
 

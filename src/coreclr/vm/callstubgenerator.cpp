@@ -2489,9 +2489,6 @@ bool isNativePrimitiveStructType(MethodTable* pMT)
 
 void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDesc *pMD)
 {
-    bool rewriteMetaSigFromExplicitThisToHasThis = false;
-    bool unmanagedThisCallConv = false;
-
     bool hasUnmanagedCallConv = false;
     CorInfoCallConvExtension unmanagedCallConv = CorInfoCallConvExtension::C;
 
@@ -2525,12 +2522,40 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
                 unmanagedCallConv = CorInfoCallConvExtension::Thiscall;
                 hasUnmanagedCallConv = true;
                 break;
+            case IMAGE_CEE_UNMANAGED_CALLCONV_C:
+                unmanagedCallConv = CorInfoCallConvExtension::C;
+                hasUnmanagedCallConv = true;
+                break;
+            case IMAGE_CEE_UNMANAGED_CALLCONV_STDCALL:
+                unmanagedCallConv = CorInfoCallConvExtension::Stdcall;
+                hasUnmanagedCallConv = true;
+                break;
+            case IMAGE_CEE_UNMANAGED_CALLCONV_FASTCALL:
+                unmanagedCallConv = CorInfoCallConvExtension::Fastcall;
+                hasUnmanagedCallConv = true;
+                break;
             case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
                 unmanagedCallConv = GetUnmanagedCallConvExtension(&sig);
                 hasUnmanagedCallConv = true;
                 break;
         }
     }
+
+    if (hasUnmanagedCallConv)
+    {
+        ComputeCallStubWorker<PInvokeArgIterator>(hasUnmanagedCallConv, unmanagedCallConv, sig, pRoutines, pMD);
+    }
+    else
+    {
+        ComputeCallStubWorker<ArgIterator>(hasUnmanagedCallConv, unmanagedCallConv, sig, pRoutines, pMD);
+    }
+}
+
+template<typename ArgIteratorType>
+void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfoCallConvExtension unmanagedCallConv, MetaSig &sig, PCODE *pRoutines, MethodDesc *pMD)
+{
+    bool unmanagedThisCallConv = false;
+    bool rewriteMetaSigFromExplicitThisToHasThis = false;
 
     if (hasUnmanagedCallConv)
     {
@@ -2628,7 +2653,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
         sig = newSig;
     }
 
-    ArgIterator argIt(&sig);
+    ArgIteratorType argIt(&sig);
     int32_t interpreterStackOffset = 0;
 
     m_currentRoutineType = RoutineType::None;
@@ -2666,7 +2691,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
         // In the Interpreter calling convention the argument after the "this" pointer is the parameter type
         ArgLocDesc paramArgLocDesc;
         argIt.GetParamTypeLoc(&paramArgLocDesc);
-        ProcessArgument(NULL, paramArgLocDesc, pRoutines);
+        ProcessArgument<ArgIteratorType>(NULL, paramArgLocDesc, pRoutines);
         interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
     }
 
@@ -2678,7 +2703,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
         // In the Interpreter calling convention the argument after the param type is the async continuation
         ArgLocDesc asyncContinuationLocDesc;
         argIt.GetAsyncContinuationLoc(&asyncContinuationLocDesc);
-        ProcessArgument(NULL, asyncContinuationLocDesc, pRoutines);
+        ProcessArgument<ArgIteratorType>(NULL, asyncContinuationLocDesc, pRoutines);
         interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
     }
 
@@ -2726,19 +2751,14 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
         interpreterStackOffset += interpStackSlotSize;
 
 #ifdef UNIX_AMD64_ABI
-        if (argIt.GetArgLocDescForStructInRegs() != NULL)
+        ArgLocDesc* argLocDescForStructInRegs = argIt.GetArgLocDescForStructInRegs();
+        if (argLocDescForStructInRegs != NULL)
         {
-            TypeHandle argTypeHandle;
-            CorElementType corType = argIt.GetArgType(&argTypeHandle);
-            _ASSERTE(corType == ELEMENT_TYPE_VALUETYPE);
-
-            MethodTable *pMT = argTypeHandle.AsMethodTable();
-            EEClass *pEEClass = pMT->GetClass();
-            int numEightBytes = pEEClass->GetNumberEightBytes();
+            int numEightBytes = argLocDescForStructInRegs->m_eightByteInfo.GetNumEightBytes();
             for (int i = 0; i < numEightBytes; i++)
             {
                 ArgLocDesc argLocDescEightByte = {};
-                SystemVClassificationType eightByteType = pEEClass->GetEightByteClassification(i);
+                SystemVClassificationType eightByteType = argLocDescForStructInRegs->m_eightByteInfo.GetEightByteClassification(i);
                 switch (eightByteType)
                 {
                     case SystemVClassificationTypeInteger:
@@ -2806,7 +2826,8 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
 
 // Process the argument described by argLocDesc. This function is called for each argument in the method signature.
 // It updates the ranges of registers and emits entries into the routines array at discontinuities.
-void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocDesc, PCODE *pRoutines)
+template<typename ArgIteratorType>
+void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& argLocDesc, PCODE *pRoutines)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -3008,7 +3029,8 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
     m_currentRoutineType = argType;
 }
 
-CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArgIt)
+template<typename ArgIteratorType>
+CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *pArgIt)
 {
     if (pArgIt->HasRetBuffArg())
     {
@@ -3068,8 +3090,9 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
                 // POD structs smaller than 64 bits are returned in rax
                 return ReturnTypeI8;
 #else // TARGET_WINDOWS
-                if (thReturnValueType.AsMethodTable()->IsRegPassedStruct())
+                if (!pArgIt->HasRetBuffArg())
                 {
+                    _ASSERTE(thReturnValueType.IsNativeValueType() ||  thReturnValueType.AsMethodTable()->IsRegPassedStruct());
                     UINT fpReturnSize = pArgIt->GetFPReturnSize();
                     if (fpReturnSize == 0)
                     {

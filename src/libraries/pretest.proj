@@ -40,7 +40,7 @@
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets"
-          Condition="'$(TargetOS)' == 'browser' and '$(ContinuousIntegrationBuild)' == 'true' and '$(RuntimeFlavor)' == 'Mono'" />
+          Condition="'$(TargetOS)' == 'browser' and '$(ContinuousIntegrationBuild)' == 'true'" />
 
   <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets"
           Condition="'$(TargetOS)' == 'wasi' and '$(ContinuousIntegrationBuild)' == 'true'" />

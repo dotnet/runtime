@@ -5641,37 +5641,6 @@ void CordbProcess::RawDispatchEvent(
         }
         break;
 
-    case DB_IPCE_MDA_NOTIFICATION:
-        {
-            RSInitHolder<CordbMDA> pMDA(new CordbMDA(this, &pEvent->MDANotification)); // throws
-
-            // Ctor leaves both internal + ext Ref at 0, adding to neuter list bumps int-ref up to 1.
-            // Neutering will dump it back down to zero.
-            this->AddToNeuterOnExitList(pMDA);
-
-            // We bump up and down the external ref so that even if the callback doesn't touch the refs,
-            // our Ext-Release here will still cause a 1->0 ext-ref transition, which will get it
-            // swept on the neuter list.
-            RSExtSmartPtr<ICorDebugMDA> pExternalMDARef;
-            pMDA.TransferOwnershipExternal(&pExternalMDARef);
-            {
-                PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-
-                pCallback2->MDANotification(
-                    this,
-                    pThread, // may be null
-                    pExternalMDARef);
-
-                // pExternalMDARef's dtor will do an external release,
-                // which is very significant because it may be the one that does the 1->0 ext ref transition,
-                // which may mean cause the "NeuterAtWill" bit to get flipped on this CordbMDA object.
-                // Since this is an external release, do it in the PUBLIC_CALLBACK scope.
-                pExternalMDARef.Clear();
-            }
-
-            break;
-        }
-
     case DB_IPCE_CONTROL_C_EVENT:
         {
             hr = S_FALSE;
@@ -9701,14 +9670,6 @@ void CordbProcess::MarshalManagedEvent(DebuggerIPCEvent * pManagedEvent)
     // Do a pre-processing on the event
     switch (pManagedEvent->type & DB_IPCE_TYPE_MASK)
     {
-        case DB_IPCE_MDA_NOTIFICATION:
-        {
-            pManagedEvent->MDANotification.szName.CopyLSDataToRS(this->m_pDACDataTarget);
-            pManagedEvent->MDANotification.szDescription.CopyLSDataToRS(this->m_pDACDataTarget);
-            pManagedEvent->MDANotification.szXml.CopyLSDataToRS(this->m_pDACDataTarget);
-            break;
-        }
-
         case DB_IPCE_FIRST_LOG_MESSAGE:
         {
             pManagedEvent->FirstLogMessage.szContent.CopyLSDataToRS(this->m_pDACDataTarget);
@@ -11043,13 +11004,6 @@ void DeleteIPCEventHelper(DebuggerIPCEvent *pManagedEvent)
     }
     switch (pManagedEvent->type & DB_IPCE_TYPE_MASK)
     {
-        // so far only this event need to cleanup.
-        case DB_IPCE_MDA_NOTIFICATION:
-            pManagedEvent->MDANotification.szName.CleanUp();
-            pManagedEvent->MDANotification.szDescription.CleanUp();
-            pManagedEvent->MDANotification.szXml.CleanUp();
-            break;
-
         case DB_IPCE_FIRST_LOG_MESSAGE:
             pManagedEvent->FirstLogMessage.szContent.CleanUp();
             break;

@@ -26,7 +26,10 @@ public:
         : Phase(compiler, PHASE_LOWERING)
         , vtableCallTemp(BAD_VAR_NUM)
 #ifdef TARGET_ARM64
-        , m_blockIndirs(compiler->getAllocator(CMK_ArrayStack))
+        , m_blockIndirs(compiler->getAllocator(CMK_Lower))
+#endif
+#ifdef TARGET_WASM
+        , m_stackificationStack(compiler->getAllocator(CMK_Lower))
 #endif
     {
         m_regAlloc = static_cast<RegAllocImpl*>(regAlloc);
@@ -139,6 +142,7 @@ private:
     unsigned TryReuseLocalForParameterAccess(const LIR::Use& use, const LocalSet& storedToLocals);
 
     void     LowerBlock(BasicBlock* block);
+    void     AfterLowerBlock();
     GenTree* LowerNode(GenTree* node);
 
     bool IsCFGCallArgInvariantInRange(GenTree* node, GenTree* endExclusive);
@@ -625,6 +629,10 @@ private:
     };
     ArrayStack<SavedIndir> m_blockIndirs;
     bool                   m_ffrTrashed;
+#endif
+
+#ifdef TARGET_WASM
+    ArrayStack<GenTree*> m_stackificationStack;
 #endif
 };
 

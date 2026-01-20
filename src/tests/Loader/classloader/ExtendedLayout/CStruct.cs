@@ -102,4 +102,10 @@ public static class CStructTests
 
         Assert.Equal(4, Unsafe.ByteOffset(ref Unsafe.As<CStructWithPack, byte>(ref c), ref Unsafe.As<int, byte>(ref c.b)));
     }
+
+    [Fact]
+    public static void ByRefLike_ThrowTypeLoadException()
+    {
+        Assert.Throws<TypeLoadException>(() => typeof(CStructByRefLike));
+    }
 }

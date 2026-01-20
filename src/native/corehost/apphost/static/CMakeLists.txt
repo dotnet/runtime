@@ -61,7 +61,6 @@ if(CLR_CMAKE_TARGET_WIN32)
     add_compile_definitions(UNICODE)
     list(APPEND SOURCES
         ../apphost.windows.cpp
-        ${CLR_SRC_NATIVE_DIR}/libs/Common/delayloadhook_windows.cpp
     )
 
     list(APPEND HEADERS
@@ -119,12 +118,6 @@ if(CLR_CMAKE_TARGET_WIN32)
     # Incremental linking results in the linker inserting extra padding and routing function calls via thunks that can break the
     # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).
     add_linker_flag("/INCREMENTAL:NO")
-
-    # Delay load libraries required for WinRT as that is not supported on all platforms
-    add_linker_flag("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
-
-    # Delay load version.dll so that we can specify how to search when loading it as it is not part of Windows' known DLLs
-    add_linker_flag("/DELAYLOAD:version.dll")
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
@@ -144,8 +137,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         shlwapi.lib
         shell32.lib
         bcrypt.lib
-        RuntimeObject.lib
-        delayimp.lib
     )
 
     # additional requirements for System.IO.Compression.Native

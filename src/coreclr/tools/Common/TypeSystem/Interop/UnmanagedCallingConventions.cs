@@ -127,10 +127,10 @@ namespace Internal.TypeSystem
                 {
                     result = GetPlatformDefaultUnmanagedCallingConvention(method.Context);
                 }
-
-                if (method.HasCustomAttribute("System.Runtime.InteropServices", "SuppressGCTransitionAttribute"))
-                    result |= UnmanagedCallingConventions.IsSuppressGcTransition;
             }
+
+            if (method.HasCustomAttribute("System.Runtime.InteropServices", "SuppressGCTransitionAttribute"))
+                result |= UnmanagedCallingConventions.IsSuppressGcTransition;
 
             return result;
         }

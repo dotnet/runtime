@@ -1324,7 +1324,7 @@ namespace Internal.JitInterface
             info->exactContext = null;
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN;
             info->isInstantiatingStub = false;
-            info->wasArrayInterfaceDevirt = false;
+            info->needsMethodContext = false;
 
             TypeDesc objType = HandleToObject(info->objClass);
 
@@ -1340,7 +1340,12 @@ namespace Internal.JitInterface
             // Transform from the unboxing thunk to the normal method
             decl = decl.IsUnboxingThunk() ? decl.GetUnboxedMethod() : decl;
 
-            Debug.Assert(!decl.HasInstantiation);
+            if (decl.HasInstantiation)
+            {
+                // We cannot devirtualize generic virtual methods in AOT yet
+                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_GENERIC_VIRTUAL;
+                return false;
+            }
 
             if ((info->context != null) && decl.OwningType.IsInterface)
             {
@@ -2118,6 +2123,14 @@ namespace Internal.JitInterface
 
                 if (metadataType.IsInlineArray)
                     result |= CorInfoFlag.CORINFO_FLG_INDEXABLE_FIELDS;
+
+                if (metadataType.IsExtendedLayout)
+                {
+                    if (metadataType.GetClassLayout().Kind == MetadataLayoutKind.CUnion)
+                    {
+                        result |= CorInfoFlag.CORINFO_FLG_OVERLAPPING_FIELDS;
+                    }
+                }
             }
 
             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))

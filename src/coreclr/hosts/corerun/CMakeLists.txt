@@ -52,8 +52,14 @@ else()
         target_include_directories(corerun PRIVATE ./wasm/)
         target_link_libraries(corerun PRIVATE
             coreclr_static
+            System.IO.Compression.Native-Static
             System.Native-Static
             System.Native.TimeZoneData.Invariant)
+
+        # additional requirements for System.IO.Compression.Native
+        include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
+        append_extra_compression_libs(NATIVE_LIBS)
+
         # linker options for NodeJs, link in JavaScript helper, access to local filesystem
         if (CLR_CMAKE_TARGET_BROWSER)
             target_link_libraries(corerun PRIVATE

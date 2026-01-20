@@ -135,6 +135,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_IntArray_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Ctor_IntArray(int[] value, decimal expected)
         {
             Assert.Equal(expected, new decimal(value));
@@ -142,6 +143,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_IntArray_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Ctor_IntSpan(int[] value, decimal expected)
         {
             Assert.Equal(expected, new decimal(value.AsSpan()));
@@ -247,6 +249,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_Int_Int_Int_Bool_Byte_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Ctor_Int_Int_Int_Bool_Byte(int lo, int mid, int hi, bool isNegative, byte scale, decimal expected)
         {
             Assert.Equal(expected, new decimal(lo, mid, hi, isNegative, scale));
@@ -330,6 +333,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Add_Overflows_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Add_Overflows_ThrowsOverflowException(decimal d1, decimal d2)
         {
             Assert.Throws<OverflowException>(() => d1 + d2);
@@ -1117,6 +1121,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Remainder_Valid_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Remainder(decimal d1, decimal d2, decimal expected)
         {
             Assert.Equal(expected, d1 % d2);
@@ -1198,6 +1203,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Round_Digit_Valid_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Round_Digits_ReturnsExpected(decimal d, int digits, decimal expected)
         {
             Assert.Equal(expected, decimal.Round(d, digits));
@@ -1231,6 +1237,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Round_Digit_Mid_Valid_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Round_DigitsMode_ReturnsExpected(decimal d, int digits, MidpointRounding mode, decimal expected)
         {
             Assert.Equal(expected, decimal.Round(d, digits, mode));
@@ -1301,6 +1308,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Subtract_Valid_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Subtract(decimal d1, decimal d2, decimal expected)
         {
             Assert.Equal(expected, d1 - d2);
@@ -1319,6 +1327,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Subtract_Invalid_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Subtract_Invalid(decimal d1, decimal d2)
         {
             Assert.Throws<OverflowException>(() => decimal.Subtract(d1, d2));
@@ -1705,6 +1714,7 @@ namespace System.Tests
             Assert.Equal(expected, --d);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // too slow
         public static class BigIntegerCompare
         {
             [Fact]

@@ -85,7 +85,6 @@ ReturnKind GCInfo::getReturnKind()
 //
 void GCInfo::gcMarkFilterVarsPinned()
 {
-    assert(compiler->UsesFunclets());
     assert(compiler->ehAnyFunclets());
 
     for (EHblkDsc* const HBtab : EHClauses(compiler))
@@ -293,8 +292,6 @@ void GCInfo::gcMarkFilterVarsPinned()
 
 void GCInfo::gcInsertVarPtrDscSplit(varPtrDsc* desc, varPtrDsc* begin)
 {
-    assert(compiler->UsesFunclets());
-
 #ifndef JIT32_GCENCODER
     (void)begin;
     desc->vpdNext = gcVarPtrList;
@@ -332,8 +329,6 @@ void GCInfo::gcDumpVarPtrDsc(varPtrDsc* desc)
     const int    offs   = (desc->vpdVarNum & ~OFFSET_MASK);
     const GCtype gcType = (desc->vpdVarNum & byref_OFFSET_FLAG) ? GCT_BYREF : GCT_GCREF;
     const bool   isPin  = (desc->vpdVarNum & pinned_OFFSET_FLAG) != 0;
-
-    assert(compiler->UsesFunclets());
 
     printf("[%08X] %s%s var at [%s", dspPtr(desc), GCtypeStr(gcType), isPin ? "pinned-ptr" : "",
            compiler->isFramePointerUsed() ? STR_FPBASE : STR_SPBASE);
@@ -1590,24 +1585,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
     header->syncStartOffset = INVALID_SYNC_OFFSET;
     header->syncEndOffset   = INVALID_SYNC_OFFSET;
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    // JIT is responsible for synchronization on funclet-based EH model that x86/Linux uses.
-    if (!compiler->UsesFunclets() && compiler->info.compFlags & CORINFO_FLG_SYNCH)
-    {
-        assert(compiler->syncStartEmitCookie != nullptr);
-        header->syncStartOffset = compiler->GetEmitter()->emitCodeOffset(compiler->syncStartEmitCookie, 0);
-        assert(header->syncStartOffset != INVALID_SYNC_OFFSET);
-
-        assert(compiler->syncEndEmitCookie != nullptr);
-        header->syncEndOffset = compiler->GetEmitter()->emitCodeOffset(compiler->syncEndEmitCookie, 0);
-        assert(header->syncEndOffset != INVALID_SYNC_OFFSET);
-
-        assert(header->syncStartOffset < header->syncEndOffset);
-        // synchronized methods can't have more than 1 epilog
-        assert(header->epilogCount <= 1);
-    }
-#endif
-    if (compiler->UsesFunclets() && compiler->info.compFlags & CORINFO_FLG_SYNCH)
+    if (compiler->info.compFlags & CORINFO_FLG_SYNCH)
     {
         // While the sync start offset and end offset are not used by the stackwalker/EH system
         // in funclets mode, we do need to know if the code is synchronized if we are generating
@@ -2385,45 +2363,16 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
      **************************************************************************
      */
 
-    bool keepThisAlive = false;
-
     if (!compiler->info.compIsStatic)
     {
         unsigned thisArgNum = compiler->info.compThisArg;
-        gcIsUntrackedLocalOrNonEnregisteredArg(thisArgNum, &keepThisAlive);
+        gcIsUntrackedLocalOrNonEnregisteredArg(thisArgNum);
     }
 
     // First we check for the most common case - no lifetimes at all.
 
     if (header.varPtrTableSize != 0)
     {
-#if defined(FEATURE_EH_WINDOWS_X86)
-        if (!compiler->UsesFunclets() && keepThisAlive)
-        {
-            // Encoding of untracked variables does not support reporting
-            // "this". So report it as a tracked variable with a liveness
-            // extending over the entire method.
-
-            assert(compiler->lvaTable[compiler->info.compThisArg].TypeIs(TYP_REF));
-
-            unsigned varOffs = compiler->lvaTable[compiler->info.compThisArg].GetStackOffset();
-
-            /* For negative stack offsets we must reset the low bits,
-             * take abs and then set them back */
-
-            varOffs = abs(static_cast<int>(varOffs));
-            varOffs |= this_OFFSET_FLAG;
-
-            size_t sz = 0;
-            sz        = encodeUnsigned(mask ? (dest + sz) : NULL, varOffs);
-            sz += encodeUDelta(mask ? (dest + sz) : NULL, 0, 0);
-            sz += encodeUDelta(mask ? (dest + sz) : NULL, codeSize, 0);
-
-            dest += (sz & mask);
-            totalSize += sz;
-        }
-#endif // FEATURE_EH_WINDOWS_X86
-
         /* We'll use a delta encoding for the lifetime offsets */
 
         lastOffset = 0;
@@ -2665,7 +2614,6 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
                     assert((codeDelta & 0x7) == codeDelta);
                     *dest++ = 0xB0 | (BYTE)codeDelta;
-                    assert(compiler->UsesFunclets() || !compiler->isFramePointerUsed());
 
                     /* Remember the new 'last' offset */
 
@@ -2791,7 +2739,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
                     dest = gceByrefPrefixI(genRegPtrTemp, dest);
 
-                    if (!keepThisAlive && genRegPtrTemp->rpdIsThis)
+                    if (genRegPtrTemp->rpdIsThis)
                     {
                         // Mark with 'this' pointer prefix
                         *dest++ = 0xBC;
@@ -3230,7 +3178,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
             unsigned origCodeDelta = codeDelta;
 #endif
 
-            if (!keepThisAlive && genRegPtrTemp->rpdIsThis)
+            if (genRegPtrTemp->rpdIsThis)
             {
                 unsigned tmpMask = genRegPtrTemp->rpdCompiler.rpdAdd;
 
@@ -4760,22 +4708,6 @@ void GCInfo::gcMakeVarPtrTable(GcInfoEncoder* gcInfoEncoder, MakeRegPtrMode mode
     // Make sure any flags we hide in the offset are in the bits guaranteed
     // unused by alignment
     static_assert((OFFSET_MASK + 1) <= sizeof(int));
-
-#if defined(DEBUG) && defined(JIT32_GCENCODER) && defined(FEATURE_EH_WINDOWS_X86)
-    if (!compiler->UsesFunclets() && mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
-    {
-        // Tracked variables can't be pinned, and the encoding takes
-        // advantage of that by using the same bit for 'pinned' and 'this'
-        // Since we don't track 'this', we should never see either flag here.
-        // Check it now before we potentially add some pinned flags.
-        for (varPtrDsc* varTmp = gcVarPtrList; varTmp != nullptr; varTmp = varTmp->vpdNext)
-        {
-            const unsigned flags = varTmp->vpdVarNum & OFFSET_MASK;
-            assert((flags & pinned_OFFSET_FLAG) == 0);
-            assert((flags & this_OFFSET_FLAG) == 0);
-        }
-    }
-#endif
 
     // Only need to do this once, and only if we have EH.
     if ((mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS) && compiler->ehAnyFunclets())

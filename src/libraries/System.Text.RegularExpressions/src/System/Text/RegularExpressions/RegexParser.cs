@@ -1939,7 +1939,7 @@ namespace System.Text.RegularExpressions
         ];
 
         private static readonly SearchValues<char> s_metachars =
-            SearchValues.Create("\t\n\v\f\r #$()*+.?[\\^{|");
+            SearchValues.Create("\t\n\f\r #$()*+.?[\\^{|");
 
         /// <summary>Returns true for those characters that terminate a string of ordinary chars.</summary>
         private static bool IsSpecial(char ch) => ch <= '|' && Category[ch] >= S;

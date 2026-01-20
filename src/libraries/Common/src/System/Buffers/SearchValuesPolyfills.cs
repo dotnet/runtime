@@ -39,7 +39,7 @@ namespace System.Buffers
 
         internal sealed class CharSearchValuesPolyfill : SearchValues<char>
         {
-            private readonly uint[] _ascii = new uint[8];
+            private readonly uint[] _ascii = new uint[4];
             private readonly string _nonAscii;
 
             public CharSearchValuesPolyfill(ReadOnlySpan<char> values)

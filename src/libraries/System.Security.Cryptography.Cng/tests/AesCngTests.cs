@@ -34,12 +34,6 @@ namespace System.Security.Cryptography.Cng.Tests
             PaddingMode paddingMode,
             int feedbackSizeInBits = 0)
         {
-            // Windows 7 does not support CFB except in CFB8 mode.
-            if (cipherMode == CipherMode.CFB && feedbackSizeInBits != 8 && PlatformDetection.IsWindows7)
-            {
-                return;
-            }
-
             SymmetricCngTestHelpers.VerifyPersistedKey(
                 s_cngAlgorithm,
                 keySize,

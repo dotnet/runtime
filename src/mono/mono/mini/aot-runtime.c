@@ -3107,6 +3107,10 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoJitInfo *jinfo,
 		}
 	}
 	g_assert (nindex == ei_len + nested_len);
+	if (!async) {
+		g_free (ei);
+		g_free (type_info);
+	}
 }
 
 static gpointer

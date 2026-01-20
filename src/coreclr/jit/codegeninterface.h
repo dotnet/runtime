@@ -30,15 +30,6 @@
 class CodeGenInterface;
 class emitter;
 
-// Small helper types
-
-//-------------------- Register selection ---------------------------------
-
-struct RegState
-{
-    regMaskTP rsCalleeRegArgMaskLiveIn; // mask of register arguments (live on entry to method)
-};
-
 //-------------------- CodeGenInterface ---------------------------------
 // interface to hide the full CodeGen implementation from rest of Compiler
 
@@ -153,10 +144,9 @@ public:
                                    unsigned* mulPtr,
                                    ssize_t*  cnsPtr) = 0;
 
-    GCInfo   gcInfo;
-    RegSet   regSet;
-    RegState intRegState;
-    RegState floatRegState;
+    GCInfo    gcInfo;
+    RegSet    regSet;
+    regMaskTP calleeRegArgMaskLiveIn; // Mask of register arguments live on entry to the (root) method.
 
 #if HAS_FIXED_REGISTER_SET
     NodeInternalRegisters internalRegisters;

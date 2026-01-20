@@ -793,16 +793,6 @@ StackWalkAction Thread::StackWalkFramesEx(
     _ASSERTE(pRD);
     _ASSERTE(pCallback);
 
-    // when POPFRAMES we don't want to allow GC trigger.
-    // The only method that guarantees this now is COMPlusUnwindCallback
-#ifdef STACKWALKER_MAY_POP_FRAMES
-    ASSERT(!(flags & POPFRAMES) || pCallback == (PSTACKWALKFRAMESCALLBACK) COMPlusUnwindCallback);
-    ASSERT(!(flags & POPFRAMES) || pRD->pContextForUnwind != NULL);
-    ASSERT(!(flags & POPFRAMES) || (this == GetThread() && PreemptiveGCDisabled()));
-#else // STACKWALKER_MAY_POP_FRAMES
-    ASSERT(!(flags & POPFRAMES));
-#endif // STACKWALKER_MAY_POP_FRAMES
-
     // We haven't set the stackwalker thread type flag yet, so it shouldn't be set. Only
     // exception to this is if the current call is made by a hijacking profiler which
     // redirected this thread while it was previously in the middle of another stack walk
@@ -907,11 +897,6 @@ StackWalkAction Thread::StackWalkFrames(PSTACKWALKFRAMESCALLBACK pCallback,
         LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    starting with partial context\n"));
         FillRegDisplay(&rd, &ctx, !!(flags & LIGHTUNWIND));
     }
-
-#ifdef STACKWALKER_MAY_POP_FRAMES
-    if (flags & POPFRAMES)
-        rd.pContextForUnwind = &ctx;
-#endif
 
     return StackWalkFramesEx(&rd, pCallback, pData, flags, pStartFrame);
 }
@@ -1042,7 +1027,6 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
     _ASSERTE(pThread  != NULL);
     _ASSERTE(pRegDisp != NULL);
 
-    _ASSERTE(!(flags & POPFRAMES));
     _ASSERTE(pRegDisp->pCurrentContext);
 
     BEGIN_FORBID_TYPELOAD();
@@ -1142,9 +1126,6 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
-
-    // It is invalid to reset a stackwalk if we are popping frames along the way.
-    ASSERT(!(m_flags & POPFRAMES));
 
     BEGIN_FORBID_TYPELOAD();
 
@@ -1364,7 +1345,6 @@ BOOL StackFrameIterator::IsValid(void)
         // we started?
         BOOL bIsRealStartFrameUnchanged =
             (m_pStartFrame != NULL)
-            || (m_flags & POPFRAMES)
             || (m_pRealStartFrame == m_pThread->GetFrame());
 
 #ifdef FEATURE_HIJACK
@@ -2124,40 +2104,8 @@ StackWalkAction StackFrameIterator::NextRaw(void)
         }
 #endif // !defined(TARGET_X86) && defined(_DEBUG)
 
-#if defined(STACKWALKER_MAY_POP_FRAMES)
-        if (m_flags & POPFRAMES)
-        {
-            _ASSERTE(m_crawl.pFrame == m_crawl.pThread->GetFrame());
-
-            // If we got here, the current frame chose not to handle the
-            // exception. Give it a chance to do any termination work
-            // before we pop it off.
-
-            CLEAR_THREAD_TYPE_STACKWALKER();
-            END_FORBID_TYPELOAD();
-
-            m_crawl.pFrame->ExceptionUnwind();
-
-            BEGIN_FORBID_TYPELOAD();
-            SET_THREAD_TYPE_STACKWALKER(m_pThread);
-
-            // Pop off this frame and go on to the next one.
-            m_crawl.GotoNextFrame();
-
-            // When StackWalkFramesEx is originally called, we ensure
-            // that if POPFRAMES is set that the thread is in COOP mode
-            // and that running thread is walking itself. Thus, this
-            // COOP assertion is safe.
-            BEGIN_GCX_ASSERT_COOP;
-            m_crawl.pThread->SetFrame(m_crawl.pFrame);
-            END_GCX_ASSERT_COOP;
-        }
-        else
-#endif // STACKWALKER_MAY_POP_FRAMES
-        {
-            // go to the next frame
-            m_crawl.GotoNextFrame();
-        }
+        // go to the next frame
+        m_crawl.GotoNextFrame();
 
         // check for skipped frames again
         if (CheckForSkippedFrames())
@@ -2181,58 +2129,6 @@ StackWalkAction StackFrameIterator::NextRaw(void)
     }
     else if (m_frameState == SFITER_FRAMELESS_METHOD)
     {
-        // Now find out if we need to leave monitors
-
-#ifdef TARGET_X86
-        //
-        // For non-x86 platforms, the JIT generates try/finally to leave monitors; for x86, the VM handles the monitor
-        //
-#if defined(STACKWALKER_MAY_POP_FRAMES)
-        if (m_flags & POPFRAMES)
-        {
-            BEGIN_GCX_ASSERT_COOP;
-
-            if (m_crawl.pFunc->IsSynchronized())
-            {
-                MethodDesc *   pMD = m_crawl.pFunc;
-                OBJECTREF      orUnwind = NULL;
-
-                if (m_crawl.GetCodeManager()->IsInSynchronizedRegion(m_crawl.GetRelOffset(),
-                                                                    m_crawl.GetGCInfoToken(),
-                                                                    m_crawl.GetCodeManagerFlags()))
-                {
-                    if (pMD->IsStatic())
-                    {
-                        MethodTable * pMT = pMD->GetMethodTable();
-                        orUnwind = pMT->GetManagedClassObjectIfExists();
-
-                        _ASSERTE(orUnwind != NULL);
-                    }
-                    else
-                    {
-                        orUnwind = m_crawl.GetCodeManager()->GetInstance(
-                                                m_crawl.pRD,
-                                                m_crawl.GetCodeInfo());
-                    }
-
-                    _ASSERTE(orUnwind != NULL);
-                    VALIDATEOBJECTREF(orUnwind);
-
-                    if (orUnwind != NULL)
-                    {
-                        PREPARE_NONVIRTUAL_CALLSITE(METHOD__MONITOR__EXIT);
-                        DECLARE_ARGHOLDER_ARRAY(args, 1);
-                        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(orUnwind);
-                        CALL_MANAGED_METHOD_NORET(args);
-                    }
-                }
-            }
-
-            END_GCX_ASSERT_COOP;
-        }
-#endif // STACKWALKER_MAY_POP_FRAMES
-#endif // TARGET_X86
-
         // FaultingExceptionFrame is special case where it gets
         // pushed on the stack after the frame is running
         _ASSERTE((m_crawl.pFrame == FRAME_TOP) ||
@@ -2369,38 +2265,8 @@ StackWalkAction StackFrameIterator::NextRaw(void)
 
         if (!pInlinedFrame)
         {
-#if defined(STACKWALKER_MAY_POP_FRAMES)
-            if (m_flags & POPFRAMES)
-            {
-                // If we got here, the current frame chose not to handle the
-                // exception. Give it a chance to do any termination work
-                // before we pop it off.
-
-                CLEAR_THREAD_TYPE_STACKWALKER();
-                END_FORBID_TYPELOAD();
-
-                m_crawl.pFrame->ExceptionUnwind();
-
-                BEGIN_FORBID_TYPELOAD();
-                SET_THREAD_TYPE_STACKWALKER(m_pThread);
-
-                // Pop off this frame and go on to the next one.
-                m_crawl.GotoNextFrame();
-
-                // When StackWalkFramesEx is originally called, we ensure
-                // that if POPFRAMES is set that the thread is in COOP mode
-                // and that running thread is walking itself. Thus, this
-                // COOP assertion is safe.
-                BEGIN_GCX_ASSERT_COOP;
-                m_crawl.pThread->SetFrame(m_crawl.pFrame);
-                END_GCX_ASSERT_COOP;
-            }
-            else
-#endif // STACKWALKER_MAY_POP_FRAMES
-            {
-                // Go to the next frame.
-                m_crawl.GotoNextFrame();
-            }
+            // Go to the next frame.
+            m_crawl.GotoNextFrame();
         }
     }
     else if (m_frameState == SFITER_NATIVE_MARKER_FRAME)
@@ -2692,18 +2558,6 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
         if (fHandleSkippedFrames)
         {
             m_crawl.GotoNextFrame();
-#ifdef STACKWALKER_MAY_POP_FRAMES
-            if (m_flags & POPFRAMES)
-            {
-                // When StackWalkFramesEx is originally called, we ensure
-                // that if POPFRAMES is set that the thread is in COOP mode
-                // and that running thread is walking itself. Thus, this
-                // COOP assertion is safe.
-                BEGIN_GCX_ASSERT_COOP;
-                m_crawl.pThread->SetFrame(m_crawl.pFrame);
-                END_GCX_ASSERT_COOP;
-            }
-#endif // STACKWALKER_MAY_POP_FRAMES
         }
         else
         {

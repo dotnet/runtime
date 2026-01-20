@@ -1465,7 +1465,6 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
              * abort exceptions to work. Insert a NOP in the empty block
              * to ensure we generate code for the block, if we keep it.
              */
-            if (UsesFunclets())
             {
                 BasicBlock* succBlock = block->GetTarget();
 

@@ -832,14 +832,7 @@ inline bool BasicBlock::HasPotentialEHSuccs(Compiler* comp)
  */
 inline FuncInfoDsc* Compiler::funCurrentFunc()
 {
-    if (UsesFunclets())
-    {
-        return funGetFunc(compCurrFuncIdx);
-    }
-    else
-    {
-        return &compFuncInfoRoot;
-    }
+    return funGetFunc(compCurrFuncIdx);
 }
 
 /*****************************************************************************
@@ -849,17 +842,10 @@ inline FuncInfoDsc* Compiler::funCurrentFunc()
  */
 inline void Compiler::funSetCurrentFunc(unsigned funcIdx)
 {
-    if (UsesFunclets())
-    {
-        assert(fgFuncletsCreated);
-        assert(FitsIn<unsigned short>(funcIdx));
-        noway_assert(funcIdx < compFuncInfoCount);
-        compCurrFuncIdx = (unsigned short)funcIdx;
-    }
-    else
-    {
-        assert(funcIdx == 0);
-    }
+    assert(fgFuncletsCreated);
+    assert(FitsIn<unsigned short>(funcIdx));
+    noway_assert(funcIdx < compFuncInfoCount);
+    compCurrFuncIdx = (unsigned short)funcIdx;
 }
 
 /*****************************************************************************
@@ -869,17 +855,9 @@ inline void Compiler::funSetCurrentFunc(unsigned funcIdx)
  */
 inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
 {
-    if (UsesFunclets())
-    {
-        assert(fgFuncletsCreated);
-        assert(funcIdx < compFuncInfoCount);
-        return &compFuncInfos[funcIdx];
-    }
-    else
-    {
-        assert(funcIdx == 0);
-        return &compFuncInfoRoot;
-    }
+    assert(fgFuncletsCreated);
+    assert(funcIdx < compFuncInfoCount);
+    return &compFuncInfos[funcIdx];
 }
 
 /*****************************************************************************
@@ -892,30 +870,23 @@ inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
  */
 inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 {
-    if (UsesFunclets())
-    {
-        assert(bbIsFuncletBeg(block));
+    assert(bbIsFuncletBeg(block));
 
-        EHblkDsc*    eh      = ehGetDsc(block->getHndIndex());
-        unsigned int funcIdx = eh->ebdFuncIndex;
-        if (eh->ebdHndBeg != block)
-        {
-            // If this is a filter EH clause, but we want the funclet
-            // for the filter (not the filter handler), it is the previous one
-            noway_assert(eh->HasFilter());
-            noway_assert(eh->ebdFilter == block);
-            assert(funGetFunc(funcIdx)->funKind == FUNC_HANDLER);
-            assert(funGetFunc(funcIdx)->funEHIndex == funGetFunc(funcIdx - 1)->funEHIndex);
-            assert(funGetFunc(funcIdx - 1)->funKind == FUNC_FILTER);
-            funcIdx--;
-        }
-
-        return funcIdx;
-    }
-    else
+    EHblkDsc*    eh      = ehGetDsc(block->getHndIndex());
+    unsigned int funcIdx = eh->ebdFuncIndex;
+    if (eh->ebdHndBeg != block)
     {
-        return 0;
+        // If this is a filter EH clause, but we want the funclet
+        // for the filter (not the filter handler), it is the previous one
+        noway_assert(eh->HasFilter());
+        noway_assert(eh->ebdFilter == block);
+        assert(funGetFunc(funcIdx)->funKind == FUNC_HANDLER);
+        assert(funGetFunc(funcIdx)->funEHIndex == funGetFunc(funcIdx - 1)->funEHIndex);
+        assert(funGetFunc(funcIdx - 1)->funKind == FUNC_FILTER);
+        funcIdx--;
     }
+
+    return funcIdx;
 }
 
 #if HAS_FIXED_REGISTER_SET
@@ -4517,9 +4488,6 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
         case GT_START_NONGC:
         case GT_START_PREEMPTGC:
         case GT_PROF_HOOK:
-#if defined(FEATURE_EH_WINDOWS_X86)
-        case GT_END_LFIN:
-#endif // FEATURE_EH_WINDOWS_X86
         case GT_PHI_ARG:
         case GT_JMPTABLE:
         case GT_PHYSREG:

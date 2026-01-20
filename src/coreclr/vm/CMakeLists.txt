@@ -947,6 +947,11 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
         exceptionhandling.cpp
         gcinfodecoder.cpp
     )
+    if (GEN_PINVOKE)
+        list(APPEND VM_SOURCES_WKS_ARCH
+            ${ARCH_SOURCES_DIR}/callhelpers-pinvoke.cpp
+        )
+    endif(GEN_PINVOKE)
 endif()
 
 set(VM_SOURCES_DAC_ARCH

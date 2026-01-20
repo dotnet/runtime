@@ -2,43 +2,42 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import BuildConfiguration from "consts:configuration";
-import { Module, dotnetApi } from "./cross-module";
-
+import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function setEnvironmentVariable(name: string, value: string): void {
     throw new Error("Not implemented");
 }
 
 export function getExitStatus(): new (exitCode: number) => any {
-    return ExitStatus as any;
+    return _ems_.ExitStatus as any;
 }
 
 export function abortTimers(): void {
-    if (DOTNET.lastScheduledTimerId) {
-        globalThis.clearTimeout(DOTNET.lastScheduledTimerId);
-        Module.runtimeKeepalivePop();
-        DOTNET.lastScheduledTimerId = undefined;
+    if (_ems_.DOTNET.lastScheduledTimerId) {
+        globalThis.clearTimeout(_ems_.DOTNET.lastScheduledTimerId);
+        _ems_.runtimeKeepalivePop();
+        _ems_.DOTNET.lastScheduledTimerId = undefined;
     }
-    if (DOTNET.lastScheduledThreadPoolId) {
-        globalThis.clearTimeout(DOTNET.lastScheduledThreadPoolId);
-        Module.runtimeKeepalivePop();
-        DOTNET.lastScheduledThreadPoolId = undefined;
+    if (_ems_.DOTNET.lastScheduledThreadPoolId) {
+        globalThis.clearTimeout(_ems_.DOTNET.lastScheduledThreadPoolId);
+        _ems_.runtimeKeepalivePop();
+        _ems_.DOTNET.lastScheduledThreadPoolId = undefined;
     }
 }
 
 export function abortPosix(exitCode: number): void {
-    ABORT = true;
-    EXITSTATUS = exitCode;
+    _ems_.ABORT = true;
+    _ems_.EXITSTATUS = exitCode;
     try {
         if (BuildConfiguration === "Debug") {
-            _exit(exitCode, true);
+            _ems_._exit(exitCode, true);
         } else {
-            _emscripten_force_exit(exitCode);
+            _ems_._emscripten_force_exit(exitCode);
         }
     } catch (error: any) {
         // do not propagate ExitStatus exception
         if (error.status === undefined) {
-            dotnetApi.exit(1, error);
+            _ems_.dotnetApi.exit(1, error);
             throw error;
         }
     }

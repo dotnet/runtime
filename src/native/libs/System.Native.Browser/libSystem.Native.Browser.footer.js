@@ -19,7 +19,7 @@
         const exports = {};
         libNativeBrowser(exports);
 
-        let commonDeps = ["$BROWSER_UTILS", "GetDotNetRuntimeContractDescriptor"];
+        let commonDeps = ["$BROWSER_UTILS", "SystemJS_ExecuteTimerCallback", "SystemJS_ExecuteBackgroundJobCallback"];
         const lib = {
             $DOTNET: {
                 selfInitialize: () => {
@@ -37,11 +37,8 @@
 
         for (const exportName of Reflect.ownKeys(exports)) {
             const name = String(exportName);
-            if (name === "dotnetInitializeModule" || name === "gitHash") continue;
-            const fn = lib[name] = exports[name];
-            if (fn.__deps) {
-                lib[name + "__deps"] = fn.__deps;
-            }
+            if (name === "dotnetInitializeModule") continue;
+            lib[name] = exports[name];
         }
 
         autoAddDeps(lib, "$DOTNET");

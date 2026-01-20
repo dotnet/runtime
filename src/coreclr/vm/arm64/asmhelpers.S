@@ -2752,3 +2752,56 @@ NESTED_END CallJittedMethodRet4Vector128, _TEXT
 
 
 #endif // FEATURE_INTERPRETER
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Throw_Impl
+// implementation written in C.
+//
+// Stack layout (from low to high address):
+//   sp+0:     FloatArgumentRegisters (q0-q7, 128 bytes)
+//   sp+128:   TransitionBlock start (176 bytes)
+//             - CalleeSavedRegisters (fp, lr, x19-x28 - 96 bytes)
+//             - padding (8 bytes)
+//             - x8 (8 bytes)
+//             - ArgumentRegisters (x0-x7, 64 bytes)
+//
+// Input state:
+//   x0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Throw, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS x1
+    // x0 already contains exception object
+    // x1 contains pointer to TransitionBlock
+    bl      C_FUNC(IL_Throw_Impl)
+    // Should never return
+    brk     #0
+NESTED_END IL_Throw, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_ThrowExact_Impl
+// implementation written in C.
+//
+// Input state:
+//   x0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_ThrowExact, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS x1
+    // x0 already contains exception object
+    // x1 contains pointer to TransitionBlock
+    bl      C_FUNC(IL_ThrowExact_Impl)
+    // Should never return
+    brk     #0
+NESTED_END IL_ThrowExact, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Rethrow_Impl
+// implementation written in C.
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS x0
+    // x0 contains pointer to TransitionBlock
+    bl      C_FUNC(IL_Rethrow_Impl)
+    // Should never return
+    brk     #0
+NESTED_END IL_Rethrow, _TEXT
+

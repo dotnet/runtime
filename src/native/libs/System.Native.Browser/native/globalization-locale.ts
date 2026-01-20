@@ -2,21 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { Int32Ptr, VoidPtr } from "../types";
-import { } from "./cross-linked"; // ensure ambient symbols are declared
+import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 
 // char16_t* SystemJS_GetLocaleInfo (const uint16_t* locale, int32_t localeLength, const uint16_t* culture, int32_t cultureLength, const uint16_t* result, int32_t resultMaxLength, int *resultLength);
 export function SystemJS_GetLocaleInfo(culture: number, cultureLength: number, locale: number, localeLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
     const OUTER_SEPARATOR = "##";
     try {
-        const localeNameOriginal = dotnetBrowserUtilsExports.utf16ToString(<any>locale, <any>(locale + 2 * localeLength));
+        const localeNameOriginal = _ems_.dotnetBrowserUtilsExports.utf16ToString(<any>locale, <any>(locale + 2 * localeLength));
         const localeName = normalizeLocale(localeNameOriginal);
         if (!localeName && localeNameOriginal) {
             // handle non-standard or malformed locales by forwarding the locale code
-            dotnetBrowserUtilsExports.stringToUTF16(dst, dst + 2 * localeNameOriginal.length, localeNameOriginal);
-            dotnetApi.setHeapI32(dstLength, localeNameOriginal.length);
-            return VoidPtrNull;
+            _ems_.dotnetBrowserUtilsExports.stringToUTF16(dst, dst + 2 * localeNameOriginal.length, localeNameOriginal);
+            _ems_.dotnetApi.setHeapI32(dstLength, localeNameOriginal.length);
+            return 0 as any;
         }
-        const cultureNameOriginal = dotnetBrowserUtilsExports.utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
+        const cultureNameOriginal = _ems_.dotnetBrowserUtilsExports.utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const cultureName = normalizeLocale(cultureNameOriginal);
 
         if (!localeName || !cultureName)
@@ -43,9 +43,9 @@ export function SystemJS_GetLocaleInfo(culture: number, cultureLength: number, l
                 } catch (error) {
                     if (error instanceof RangeError && localeNameOriginal) {
                         // handle non-standard or malformed locales by forwarding the locale code, e.g. "xx-u-xx"
-                        dotnetBrowserUtilsExports.stringToUTF16(dst, dst + 2 * localeNameOriginal.length, localeNameOriginal);
-                        dotnetApi.setHeapI32(dstLength, localeNameOriginal.length);
-                        return VoidPtrNull;
+                        _ems_.dotnetBrowserUtilsExports.stringToUTF16(dst, dst + 2 * localeNameOriginal.length, localeNameOriginal);
+                        _ems_.dotnetApi.setHeapI32(dstLength, localeNameOriginal.length);
+                        return 0 as any;
                     }
                     throw error;
                 }
@@ -65,12 +65,12 @@ export function SystemJS_GetLocaleInfo(culture: number, cultureLength: number, l
         if (result.length > dstMaxLength)
             throw new Error(`Locale info for locale=${localeName} exceeds length of ${dstMaxLength}.`);
 
-        dotnetBrowserUtilsExports.stringToUTF16(dst, dst + 2 * result.length, result);
-        dotnetApi.setHeapI32(dstLength, result.length);
-        return VoidPtrNull;
+        _ems_.dotnetBrowserUtilsExports.stringToUTF16(dst, dst + 2 * result.length, result);
+        _ems_.dotnetApi.setHeapI32(dstLength, result.length);
+        return 0 as any;
     } catch (ex: any) {
-        dotnetApi.setHeapI32(dstLength, -1);
-        return dotnetBrowserUtilsExports.stringToUTF16Ptr(ex.toString());
+        _ems_.dotnetApi.setHeapI32(dstLength, -1);
+        return _ems_.dotnetBrowserUtilsExports.stringToUTF16Ptr(ex.toString());
     }
 
     function normalizeLocale(locale: string | null) {

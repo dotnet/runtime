@@ -434,7 +434,7 @@ struct RangeOps
         });
     }
 
-    static Range ShiftRight(Range& r1, Range& r2)
+    static Range ShiftRight(Range& r1, Range& r2, bool logical)
     {
         Limit& r1lo = r1.LowerLimit();
         Limit& r1hi = r1.UpperLimit();
@@ -444,6 +444,7 @@ struct RangeOps
         Range result = Limit(Limit::keUnknown);
 
         // For now we only support r1 >> positive_cns (to simplify)
+        // Hence, it doesn't matter if it's logical or arithmetic shift right (for now).
         if (!r2lo.IsConstant() || !r2hi.IsConstant() || (r2lo.cns < 0) || (r2hi.cns < 0))
         {
             return result;
@@ -468,6 +469,89 @@ struct RangeOps
             result.uLimit = ShiftRightConstantLimit(r1hi, r2hi);
         }
 
+        return result;
+    }
+
+    static Range ShiftLeft(Range& r1, Range& r2)
+    {
+        // help the next step a bit, convert the LSH rhs to a multiply
+        Range convertedOp2Range = ConvertShiftToMultiply(r2);
+        return Multiply(r1, convertedOp2Range);
+    }
+
+    static Range Or(Range& r1, Range& r2)
+    {
+        // For OR we require both operands to be constant to produce a constant result.
+        // No useful information can be derived if only one operand is constant.
+        //
+        // Example: [0..3] | [1..255] = [1..255]
+        //          [X..Y] | [1..255] = [unknown..unknown]
+        //
+        return ApplyRangeOp(r1, r2, [](Limit& a, Limit& b) {
+            if (a.IsConstant() && b.IsConstant() && (a.GetConstant() >= 0) && (b.GetConstant() >= 0))
+            {
+                return Limit(Limit::keConstant, a.GetConstant() | b.GetConstant());
+            }
+            return Limit(Limit::keUnknown);
+        });
+    }
+
+    static Range And(Range& r1, Range& r2)
+    {
+        Limit& r1lo = r1.LowerLimit();
+        Limit& r2lo = r2.LowerLimit();
+
+        Limit& r1hi = r1.UpperLimit();
+        Limit& r2hi = r2.UpperLimit();
+
+        Range result = Limit(Limit::keUnknown);
+
+        // if either lower bound is a non-negative constant, result >= 0
+        if ((r1lo.IsConstant() && (r1lo.GetConstant() >= 0)) || (r2lo.IsConstant() && (r2lo.GetConstant() >= 0)))
+        {
+            // Example: [4.. ] & [unknown.. ] = [4.. ]
+            result.lLimit = Limit(Limit::keConstant, 0);
+        }
+        // Even if both r1 and r2 lower bounds are known non-negative constants, still the best we can do
+        // is >= 0 in a general case due to the way bitwise AND works.
+
+        // if either upper bound is a non-negative constant, result <= cns
+        if (r2hi.IsConstant() && (r2hi.GetConstant() >= 0))
+        {
+            // Example: [ ..X] & [ ..5] = [ ..5]
+            result.uLimit = Limit(Limit::keConstant, r2hi.GetConstant());
+        }
+        else if (r1hi.IsConstant() && (r1hi.GetConstant() >= 0))
+        {
+            // Example: [ ..5] & [ ..X] = [ ..5]
+            result.uLimit = Limit(Limit::keConstant, r1hi.GetConstant());
+        }
+
+        // Both upper bounds are constant, take the min
+        if (r1hi.IsConstant() && r2hi.IsConstant() && (r1hi.GetConstant() >= 0) && (r2hi.GetConstant() >= 0))
+        {
+            // Example: [ ..7] & [ ..5] = [ ..5]
+            result.uLimit = Limit(Limit::keConstant, min(r1hi.GetConstant(), r2hi.GetConstant()));
+        }
+
+        return result;
+    }
+
+    static Range UnsignedMod(Range& r1, Range& r2)
+    {
+        Range result = Limit(Limit::keUnknown);
+
+        Limit& r2lo = r2.LowerLimit();
+        Limit& r2hi = r2.UpperLimit();
+
+        // For X UMOD Y we only handle the case when Y is a fixed non-negative constant.
+        // Example: X % 5 -> [0..4]
+        //
+        if (r2lo.IsConstant() && r2lo.Equals(r2hi) && (r2lo.GetConstant() > 0))
+        {
+            result.lLimit = Limit(Limit::keConstant, 0);
+            result.uLimit = Limit(Limit::keConstant, r2lo.GetConstant() - 1);
+        }
         return result;
     }
 

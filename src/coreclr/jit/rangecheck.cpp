@@ -1135,6 +1135,51 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
     }
 }
 
+class AssertionsAccumulator final : public GenTreeVisitor<AssertionsAccumulator>
+{
+    int        m_Budget;
+    ASSERT_TP* m_pAssertions;
+    GenTree*   m_op;
+
+public:
+    enum
+    {
+        DoPostOrder       = true,
+        UseExecutionOrder = true
+    };
+
+    int GetBudgetLeft() const
+    {
+        return m_Budget;
+    }
+
+    AssertionsAccumulator(Compiler* compiler, int budget, ASSERT_TP* pAssertions, GenTree* op)
+        : GenTreeVisitor(compiler)
+        , m_Budget(budget)
+        , m_pAssertions(pAssertions)
+        , m_op(op)
+    {
+    }
+
+    fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+    {
+        if ((*use == m_op) || (--m_Budget <= 0))
+        {
+            // We've found the op or run out of budget -> abort.
+            return fgWalkResult::WALK_ABORT;
+        }
+
+        if ((*use)->GeneratesAssertion())
+        {
+            AssertionInfo info = (*use)->GetAssertionInfo();
+            // Normally, we extend the assertions by calling optImpliedAssertions, but that
+            // doesn't seem to improve anything here, so we just add the assertion directly.
+            BitVecOps::AddElemD(m_compiler->apTraits, *m_pAssertions, info.GetAssertionIndex() - 1);
+        }
+        return fgWalkResult::WALK_CONTINUE;
+    }
+};
+
 // Merge assertions from the pred edges of the block, i.e., check for any assertions about "op's" value numbers for phi
 // arguments. If not a phi argument, check if we have assertions about local variables.
 void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DEBUGARG(int indent))
@@ -1142,6 +1187,11 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
     JITDUMP("Merging assertions from pred edges of " FMT_BB " for op [%06d] " FMT_VN "\n", block->bbNum,
             Compiler::dspTreeID(op), m_pCompiler->vnStore->VNConservativeNormalValue(op->gtVNPair));
     ASSERT_TP assertions = BitVecOps::UninitVal();
+
+    if (m_pCompiler->GetAssertionCount() < 1)
+    {
+        return;
+    }
 
     // If we have a phi arg, we can get to the block from it and use its assertion out.
     if (op->OperIs(GT_PHI_ARG))
@@ -1158,9 +1208,34 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
     else if (op->IsLocal())
     {
         assertions = block->bbAssertionIn;
+
+        // bbAssertionIn is a bit conservative and will not include intra-block assertions.
+        // e.g. created by GT_BOUNDS_CHECK nodes prior to the 'op' in the current block.
+        // For that, we walk the trees in the block until we find "op" and collect assertions
+        // along the way. It doesn't seem to be profitable for anything other than bounds checks
+        // (ArrBnds assertions), so we limit the search to only those blocks that may have bounds
+        // checks. It also helps reduce the cost of this search as it's not cheap.
+        //
+        if (block->HasFlag(BBF_MAY_HAVE_BOUNDS_CHECKS))
+        {
+            // We're going to be adding to 'assertions', so make a copy first.
+            assertions = BitVecOps::MakeCopy(m_pCompiler->apTraits, assertions);
+
+            // JIT-TP: Limit the search budget to avoid spending too much time here.
+            int budget = 50;
+            for (Statement* stmt : block->Statements())
+            {
+                AssertionsAccumulator visitor(m_pCompiler, budget, &assertions, op);
+                if (visitor.WalkTree(stmt->GetRootNodePointer(), nullptr) == Compiler::fgWalkResult::WALK_ABORT)
+                {
+                    break;
+                }
+                budget = visitor.GetBudgetLeft();
+            }
+        }
     }
 
-    if (!BitVecOps::MayBeUninit(assertions) && (m_pCompiler->GetAssertionCount() > 0))
+    if (!BitVecOps::MayBeUninit(assertions))
     {
         // Perform the merge step to fine tune the range value.
         MergeEdgeAssertions(op->AsLclVarCommon(), assertions, pRange);
@@ -1170,7 +1245,7 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
 // Compute the range for a binary operation.
 Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool monIncreasing DEBUGARG(int indent))
 {
-    assert(binop->OperIs(GT_ADD, GT_XOR, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL));
+    assert(binop->OperIs(GT_ADD, GT_OR, GT_XOR, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL));
 
     // For XOR we only care about Log2 pattern for now
     if (binop->OperIs(GT_XOR))
@@ -1204,154 +1279,63 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
         std::swap(op1IsCns, op2IsCns);
     }
 
-    // Special cases for binops where op2 is a constant
-    if (binop->OperIs(GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD))
-    {
-        if (!op2IsCns)
+    // Get range (cached or compute) for an operand, merging assertions as needed.
+    auto getRange = [this, block, monIncreasing DEBUGARG(indent)](GenTree* op) -> Range {
+        Range* opRangeCached = nullptr;
+        Range  opRange       = Limit(Limit::keUndef);
+        // Check if the range value is already cached.
+        if (!GetRangeMap()->Lookup(op, &opRangeCached))
         {
-            // only cns is supported for op2 at the moment for &,%,<<,>> operators
-            return Range(Limit::keUnknown);
-        }
-
-        ssize_t op2Cns = vnStore->CoercedConstantValue<ssize_t>(op2VN);
-        if (!FitsIn<int>(op2Cns))
-        {
-            return Range(Limit::keUnknown);
-        }
-
-        int op1op2Cns = 0;
-        int icon      = -1;
-        if (binop->OperIs(GT_AND))
-        {
-            // x & cns -> [0..cns]
-            icon = static_cast<int>(op2Cns);
-        }
-        else if (binop->OperIs(GT_UMOD))
-        {
-            // x % cns -> [0..cns-1]
-            icon = static_cast<int>(op2Cns) - 1;
-        }
-        else if (binop->OperIs(GT_RSH, GT_LSH) && op1->OperIs(GT_AND) &&
-                 vnStore->IsVNIntegralConstant<int>(op1->AsOp()->gtGetOp2()->gtVNPair.GetConservative(), &op1op2Cns))
-        {
-            // (x & cns1) >> cns2 -> [0..cns1>>cns2]
-            int icon1 = op1op2Cns;
-            int icon2 = static_cast<int>(op2Cns);
-            if ((icon1 >= 0) && (icon2 >= 0) && (icon2 < 32))
-            {
-                icon = binop->OperIs(GT_RSH) ? (icon1 >> icon2) : (icon1 << icon2);
-            }
-        }
-        else if (binop->OperIs(GT_RSZ))
-        {
-            // (x u>> cns) -> [0..(x's max value >> cns)]
-            int shiftBy = static_cast<int>(op2->AsIntCon()->IconValue());
-            if (shiftBy < 0)
-            {
-                return Range(Limit::keUnknown);
-            }
-
-            int op1Width = (int)(genTypeSize(op1) * BITS_PER_BYTE);
-            if (shiftBy >= op1Width)
-            {
-                return Range(Limit(Limit::keConstant, 0));
-            }
-
-            // Calculate max possible value of op1, e.g. UINT_MAX for TYP_INT/TYP_UINT
-            uint64_t maxValue = (1ULL << op1Width) - 1;
-            icon              = (int)(maxValue >> static_cast<int>(op2->AsIntCon()->IconValue()));
-        }
-
-        if (icon >= 0)
-        {
-            Range range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, icon));
-            JITDUMP("Limit range to %s\n", range.ToString(m_pCompiler));
-            return range;
-        }
-        // Generalized range computation not implemented for these operators
-        else if (binop->OperIs(GT_AND, GT_UMOD))
-        {
-            return Range(Limit::keUnknown);
-        }
-    }
-
-    // other operators are expected to be handled above.
-    assert(binop->OperIs(GT_ADD, GT_MUL, GT_LSH, GT_RSH, GT_RSZ));
-
-    Range* op1RangeCached = nullptr;
-    Range  op1Range       = Limit(Limit::keUndef);
-    // Check if the range value is already cached.
-    if (!GetRangeMap()->Lookup(op1, &op1RangeCached))
-    {
-        // If we already have the op in the path, then, just rely on assertions, else
-        // find the range.
-        if (GetSearchPath()->Lookup(op1))
-        {
-            op1Range = Range(Limit(Limit::keDependent));
+            // If we already have the op in the path, then, just rely on assertions, else
+            // find the range.
+            opRange = GetSearchPath()->Lookup(op) ? Range(Limit(Limit::keDependent))
+                                                  : GetRangeWorker(block, op, monIncreasing DEBUGARG(indent));
+            MergeAssertion(block, op, &opRange DEBUGARG(indent + 1));
         }
         else
         {
-            op1Range = GetRangeWorker(block, op1, monIncreasing DEBUGARG(indent));
+            opRange = *opRangeCached;
         }
-        MergeAssertion(block, op1, &op1Range DEBUGARG(indent + 1));
-    }
-    else
-    {
-        op1Range = *op1RangeCached;
-    }
+        assert(opRange.IsValid());
+        return opRange;
+    };
 
-    Range* op2RangeCached;
-    Range  op2Range = Limit(Limit::keUndef);
-    // Check if the range value is already cached.
-    if (!GetRangeMap()->Lookup(op2, &op2RangeCached))
-    {
-        // If we already have the op in the path, then, just rely on assertions, else
-        // find the range.
-        if (GetSearchPath()->Lookup(op2))
-        {
-            op2Range = Range(Limit(Limit::keDependent));
-        }
-        else
-        {
-            op2Range = GetRangeWorker(block, op2, monIncreasing DEBUGARG(indent));
-        }
-        MergeAssertion(block, op2, &op2Range DEBUGARG(indent + 1));
-    }
-    else
-    {
-        op2Range = *op2RangeCached;
-    }
-
-    assert(op1Range.IsValid());
-    assert(op2Range.IsValid());
+    Range op1Range = getRange(op1);
+    Range op2Range = getRange(op2);
 
     Range r = Range(Limit::keUnknown);
-    if (binop->OperIs(GT_ADD))
+    switch (binop->OperGet())
     {
-        r = RangeOps::Add(op1Range, op2Range);
-        JITDUMP("BinOp add ranges %s %s = %s\n", op1Range.ToString(m_pCompiler), op2Range.ToString(m_pCompiler),
-                r.ToString(m_pCompiler));
+        case GT_ADD:
+            r = RangeOps::Add(op1Range, op2Range);
+            break;
+        case GT_MUL:
+            r = RangeOps::Multiply(op1Range, op2Range);
+            break;
+        case GT_RSH:
+            r = RangeOps::ShiftRight(op1Range, op2Range, /*logical*/ false);
+            break;
+        case GT_RSZ:
+            r = RangeOps::ShiftRight(op1Range, op2Range, /*logical*/ true);
+            break;
+        case GT_LSH:
+            r = RangeOps::ShiftLeft(op1Range, op2Range);
+            break;
+        case GT_AND:
+            r = RangeOps::And(op1Range, op2Range);
+            break;
+        case GT_OR:
+            r = RangeOps::Or(op1Range, op2Range);
+            break;
+        case GT_UMOD:
+            r = RangeOps::UnsignedMod(op1Range, op2Range);
+            break;
+        default:
+            return Range(Limit::keUnknown);
     }
-    else if (binop->OperIs(GT_MUL))
-    {
-        r = RangeOps::Multiply(op1Range, op2Range);
-        JITDUMP("BinOp multiply ranges %s %s = %s\n", op1Range.ToString(m_pCompiler), op2Range.ToString(m_pCompiler),
-                r.ToString(m_pCompiler));
-    }
-    else if (binop->OperIs(GT_LSH))
-    {
-        // help the next step a bit, convert the LSH rhs to a multiply
-        Range convertedOp2Range = RangeOps::ConvertShiftToMultiply(op2Range);
-        r                       = RangeOps::Multiply(op1Range, convertedOp2Range);
-        JITDUMP("BinOp multiply ranges %s %s = %s\n", op1Range.ToString(m_pCompiler),
-                convertedOp2Range.ToString(m_pCompiler), r.ToString(m_pCompiler));
-    }
-    else if (binop->OperIs(GT_RSH))
-    {
-        r = RangeOps::ShiftRight(op1Range, op2Range);
-        JITDUMP("Right shift range: %s >> %s = %s\n", op1Range.ToString(m_pCompiler), op2Range.ToString(m_pCompiler),
-                r.ToString(m_pCompiler));
-    }
+
+    JITDUMP("BinOp %s %s %s = %s\n", op1Range.ToString(m_pCompiler), GenTree::OpName(binop->OperGet()),
+            op2Range.ToString(m_pCompiler), r.ToString(m_pCompiler));
 
     // Some binops may produce invalid ranges, e.g. <0, 1> * <-1, -1> = <0, -1>
     if (!r.IsValid())
@@ -1547,6 +1531,15 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop, const Ra
         Range convertedOp2Range = RangeOps::ConvertShiftToMultiply(*op2Range);
         return MultiplyOverflows(op1Range->UpperLimit(), convertedOp2Range.UpperLimit());
     }
+    if (binop->OperIs(GT_OR))
+    {
+        // Conservatively give up on possibly negative operands.
+        if (op1Range->LowerLimit().IsConstant() && op2Range->LowerLimit().IsConstant() &&
+            (op1Range->LowerLimit().GetConstant() >= 0) && (op2Range->LowerLimit().GetConstant() >= 0))
+        {
+            return false;
+        }
+    }
 
     return true;
 }
@@ -1653,8 +1646,8 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
     {
         overflows = DoesVarDefOverflow(block, expr->AsLclVarCommon(), range);
     }
-    // Check if add overflows.
-    else if (expr->OperIs(GT_ADD, GT_MUL, GT_LSH))
+    // Check if these bin ops overflow.
+    else if (expr->OperIs(GT_ADD, GT_OR, GT_MUL, GT_LSH))
     {
         overflows = DoesBinOpOverflow(block, expr->AsOp(), range);
     }
@@ -1755,7 +1748,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         MergeAssertion(block, expr, &range DEBUGARG(indent + 1));
     }
     // compute the range for binary operation
-    else if (expr->OperIs(GT_XOR, GT_ADD, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL))
+    else if (expr->OperIs(GT_XOR, GT_OR, GT_ADD, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL))
     {
         range = ComputeRangeForBinOp(block, expr->AsOp(), monIncreasing DEBUGARG(indent + 1));
     }

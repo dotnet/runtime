@@ -119,4 +119,37 @@ public class Async2ExecutionContext
     {
         s_local.Value = 123;
     }
+
+    [Fact]
+    public static int TestRestoreTier0ContextInOsr()
+    {
+        return TestRestoreTier0ContextInOsrAsync().GetAwaiter().GetResult();
+    }
+
+    private static AsyncLocal<int> s_osrLocal = new AsyncLocal<int>();
+    private static async Task<int> TestRestoreTier0ContextInOsrAsync()
+    {
+        s_osrLocal.Value = 100;
+
+        await LoopWithOsrTransition();
+
+        return s_osrLocal.Value;
+    }
+
+    private static async Task LoopWithOsrTransition()
+    {
+        s_osrLocal.Value = 101;
+
+        int val = 0;
+        for (int i = 0; i < 10005; i++)
+        {
+            val += i;
+            if (i > 10000)
+            {
+                await Task.Delay(50);
+            }
+        }
+
+        s_osrLocal.Value = val;
+    }
 }

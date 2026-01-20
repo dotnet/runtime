@@ -557,6 +557,14 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     {
         delta_PSP -= TARGET_POINTER_SIZE;
     }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta_PSP -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta_PSP -= TARGET_POINTER_SIZE;
+    }
 
     funcletFrameSize = funcletFrameSize - delta_PSP;
     funcletFrameSize = roundUp((unsigned)funcletFrameSize, STACK_ALIGN);
@@ -742,16 +750,15 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
     regMaskTP availMask = regSet.rsGetModifiedRegsMask() | RBM_INT_CALLEE_TRASH; // Set of available registers
     // see: src/jit/registerloongarch64.h
-    availMask &= ~intRegState.rsCalleeRegArgMaskLiveIn; // Remove all of the incoming argument registers as they are
-                                                        // currently live
-    availMask &= ~genRegMask(initReg); // Remove the pre-calculated initReg as we will zero it and maybe use it for
-                                       // a large constant.
+    availMask &= ~calleeRegArgMaskLiveIn; // Remove all of the incoming argument registers as they are currently live
+    availMask &= ~genRegMask(initReg);    // Remove the pre-calculated initReg as we will zero it and maybe use it for
+                                          // a large constant.
 
     rAddr           = initReg;
     *pInitRegZeroed = false;
 
     // rAddr is not a live incoming argument reg
-    assert((genRegMask(rAddr) & intRegState.rsCalleeRegArgMaskLiveIn) == 0);
+    assert((genRegMask(rAddr) & calleeRegArgMaskLiveIn) == 0);
     assert(untrLclLo % 4 == 0);
 
     if (emitter::isValidSimm12(untrLclLo))
@@ -796,8 +803,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         availMask &= ~regMask;
 
         noway_assert(uCntSlots >= 2);
-        assert((genRegMask(rCnt) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // rCnt is not a live incoming
-                                                                                // argument reg
+        assert((genRegMask(rCnt) & calleeRegArgMaskLiveIn) == 0); // rCnt is not a live incoming argument reg
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, rCnt, (ssize_t)uCntSlots / 2);
 
         // TODO-LOONGARCH64: maybe optimize further
@@ -3705,6 +3711,14 @@ int CodeGenInterface::genSPtoFPdelta() const
     {
         delta -= TARGET_POINTER_SIZE;
     }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta -= TARGET_POINTER_SIZE;
+    }
 
     assert(delta >= 0);
     return delta;
@@ -6119,6 +6133,16 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
             preservedAreaSize += 1; // bool for synchronized methods
         }
 
+        if (compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
+        }
+
+        if (compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
+        }
+
         // Used to signal both that the method is compiled for EnC, and also the size of the block at the top of the
         // frame
         gcInfoEncoder->SetSizeOfEditAndContinuePreservedArea(preservedAreaSize);
@@ -6764,6 +6788,14 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     {
         localFrameSize -= TARGET_POINTER_SIZE;
     }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
 
 #ifdef DEBUG
     if (compiler->opts.disAsm)
@@ -6827,6 +6859,14 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     int totalFrameSize = genTotalFrameSize();
     int localFrameSize = compiler->compLclFrameSize;
     if ((compiler->lvaMonAcquired != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
     {
         localFrameSize -= TARGET_POINTER_SIZE;
     }

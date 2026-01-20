@@ -82,7 +82,7 @@ DISTANCE_FROM_CHILDSP_TO_CALLERSP               equ DISTANCE_FROM_CHILDSP_TO_RET
 ; everything between the base of the ReturnBlock and the top of the StackPassedArgs.
 ;
 
-UNIVERSAL_TRANSITION macro FunctionName
+UNIVERSAL_TRANSITION macro FunctionName, ExitSequence
 
 NESTED_ENTRY Rhp&FunctionName, _TEXT
 
@@ -144,12 +144,13 @@ ALTERNATE_ENTRY ReturnFrom&FunctionName
         ; Pop the space that was allocated between the ChildSP and the caller return address.
         add             rsp, DISTANCE_FROM_CHILDSP_TO_RETADDR
 
-        TAILJMP_RAX
+        ExitSequence
 
 NESTED_END Rhp&FunctionName, _TEXT
 
         endm
 
-        UNIVERSAL_TRANSITION UniversalTransitionTailCall
+        UNIVERSAL_TRANSITION UniversalTransitionTailCall, TAILJMP_RAX
+        UNIVERSAL_TRANSITION UniversalTransitionReturnResult, ret
 
 end

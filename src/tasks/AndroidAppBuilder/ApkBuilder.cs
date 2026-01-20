@@ -416,7 +416,7 @@ public partial class ApkBuilder
         string javaActivityPath = Path.Combine(javaSrcFolder, "MainActivity.java");
         string monoRunnerPath = Path.Combine(javaSrcFolder, "MonoRunner.java");
 
-        Regex checkNumerics = DotNumberRegex();
+        Regex checkNumerics = DotNumberRegex;
         if (!string.IsNullOrEmpty(ProjectName) && checkNumerics.IsMatch(ProjectName))
             ProjectName = checkNumerics.Replace(ProjectName, @"_$1");
 
@@ -666,7 +666,7 @@ public partial class ApkBuilder
     }
 
     [GeneratedRegex(@"\.(\d)")]
-    private static partial Regex DotNumberRegex();
+    private static partial Regex DotNumberRegex { get; }
 
     private string RenderMonodroidCoreClrTemplate(string monodroidContent)
     {

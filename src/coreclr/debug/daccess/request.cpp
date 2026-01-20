@@ -227,7 +227,7 @@ BOOL DacValidateMD(PTR_MethodDesc pMD)
 
         if (retval && pMD->HasNativeCode() && !pMD->IsFCall())
         {
-            PCODE jitCodeAddr = pMD->GetNativeCode();
+            PCODE jitCodeAddr = pMD->GetCodeForInterpreterOrJitted();
 
             MethodDesc *pMDCheck = ExecutionManager::GetCodeMethodDesc(jitCodeAddr);
             if (pMDCheck)
@@ -901,7 +901,7 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
 void CopyNativeCodeVersionToReJitData(NativeCodeVersion nativeCodeVersion, NativeCodeVersion activeCodeVersion, DacpReJitData * pReJitData)
 {
     pReJitData->rejitID = nativeCodeVersion.GetILCodeVersion().GetVersionId();
-    pReJitData->NativeCodeAddr = nativeCodeVersion.GetNativeCode();
+    pReJitData->NativeCodeAddr = GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCodeVersion.GetNativeCode());
 
     if (nativeCodeVersion != activeCodeVersion)
     {
@@ -1011,7 +1011,7 @@ HRESULT ClrDataAccess::GetMethodDescData(
         if (!requestedNativeCodeVersion.IsNull() && requestedNativeCodeVersion.GetNativeCode() != (PCODE)NULL)
         {
             methodDescData->bHasNativeCode = TRUE;
-            methodDescData->NativeCodeAddr = TO_CDADDR(PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode()));
+            methodDescData->NativeCodeAddr = TO_CDADDR(PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(requestedNativeCodeVersion.GetNativeCode())));
         }
         else
         {
@@ -1235,7 +1235,7 @@ HRESULT ClrDataAccess::GetTieredVersions(
         int count = 0;
         for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
         {
-            TADDR pNativeCode = PCODEToPINSTR((*iter).GetNativeCode());
+            TADDR pNativeCode = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent((*iter).GetNativeCode()));
             nativeCodeAddrs[count].NativeCodeAddr = pNativeCode;
             PTR_NativeCodeVersionNode pNode = (*iter).AsNode();
             nativeCodeAddrs[count].NativeCodeVersionNodePtr = PTR_CDADDR(pNode);

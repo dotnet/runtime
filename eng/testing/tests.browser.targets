@@ -12,7 +12,6 @@
     <DisableBuildCompression>true</DisableBuildCompression>
     <PublishTrimmed>false</PublishTrimmed>
     <PublishTrimmed Condition="'$(RunAOTCompilation)' == 'true' or '$(TestTrimming)' == 'true'">true</PublishTrimmed>
-    <WasmTestSupport Condition="'$(RuntimeFlavor)' == 'CoreCLR'">true</WasmTestSupport>
     <_WasmInTreeDefaults>false</_WasmInTreeDefaults>
 
     <ResolveWasmOutputsDependsOn>
@@ -52,6 +51,18 @@
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
     <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">true</EventSourceSupport>
     <NullabilityInfoContextSupport Condition="'$(NullabilityInfoContextSupport)' == ''">true</NullabilityInfoContextSupport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+    <WasmTestSupport>true</WasmTestSupport>
+    <WasmTestExitOnUnhandledError>true</WasmTestExitOnUnhandledError>
+    <WasmTestAppendElementOnExit>true</WasmTestAppendElementOnExit>
+    <WasmTestLogExitCode>true</WasmTestLogExitCode>
+  </PropertyGroup>
+
+  <!-- TODO-WASM https://github.com/dotnet/runtime/issues/120248 (CoreCLR on wasm defaults) -->
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
+    <WasmEnableWebcil>false</WasmEnableWebcil>
   </PropertyGroup>
 
   <ItemGroup>

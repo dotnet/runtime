@@ -86,7 +86,6 @@ if(CLR_CMAKE_HOST_WIN32)
         version.lib
         shlwapi.lib
         bcrypt.lib
-        RuntimeObject.lib
         coreclrminipal
     )
 else()

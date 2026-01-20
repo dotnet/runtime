@@ -79,7 +79,7 @@ static const gint16 opidx [] = {
 #ifndef DISABLE_LOGGING
 const char*
 mono_inst_name (int op) {
-	if (op >= OP_LOAD && op <= OP_LAST)
+	if (op >= OP_LOAD && op < OP_LAST)
 		return (const char*)&opstr + opidx [op - OP_LOAD];
 	if (op < OP_LOAD)
 		return mono_opcode_name (op);

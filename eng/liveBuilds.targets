@@ -205,8 +205,9 @@
                                           Include="$(LibrariesNativeArtifactsPath)System.Globalization.Native.dll;$(LibrariesNativeArtifactsPath)System.Globalization.Native.so;$(LibrariesNativeArtifactsPath)System.Globalization.Native.dylib" />
 
       <!-- For Apple mobile with CoreCLR, these native libs are already installed to the CoreCLR shared framework.
-           Exclude them from LibrariesRuntimeFiles to avoid duplicate publish output files. -->
-      <ExcludeNativeLibrariesRuntimeFiles Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'"
+           Exclude them from LibrariesRuntimeFiles to avoid duplicate publish output files.
+           This does not apply to NativeAOT because we do not reach back into CoreCLR sharedFramework artifacts. -->
+      <ExcludeNativeLibrariesRuntimeFiles Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(BuildNativeAOTRuntimePack)' != 'true'"
                                           Include="$(LibrariesNativeArtifactsPath)libSystem.Globalization.Native.a;
                                                    $(LibrariesNativeArtifactsPath)libSystem.IO.Compression.Native.a;
                                                    $(LibrariesNativeArtifactsPath)libSystem.Native.a;
