@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: debugger.cpp
 //
-
-//
 // Debugger runtime controller routines.
-//
 //*****************************************************************************
 
 #include "stdafx.h"
@@ -2032,47 +2030,6 @@ HRESULT Debugger::StartupPhase2(Thread * pThread)
     dbgLockHolder.Release();
 
 
-#ifdef _DEBUG
-    // Give chance for stress harnesses to launch a managed debugger when a managed app starts up.
-    // This lets us run a set of managed apps under a debugger.
-    if (!CORDebuggerAttached())
-    {
-        #define DBG_ATTACH_ON_STARTUP_ENV_VAR W("DOTNET_DbgAttachOnStartup")
-        PathString temp;
-        // We explicitly just check the env because we don't want a switch this invasive to be global.
-        DWORD fAttach = WszGetEnvironmentVariable(DBG_ATTACH_ON_STARTUP_ENV_VAR, temp) > 0;
-
-        if (fAttach)
-        {
-            // Remove the env var from our process so that the debugger we spin up won't inherit it.
-            // Else, if the debugger is managed, we'll have an infinite recursion.
-            BOOL fOk = SetEnvironmentVariable(DBG_ATTACH_ON_STARTUP_ENV_VAR, NULL);
-
-            if (fOk)
-            {
-                // We've already created the helper thread (which can service the attach request)
-                // So just do a normal jit-attach now.
-
-                SString szName(W("DebuggerStressStartup"));
-                SString szDescription(W("MDA used for debugger-stress scenario. This is fired to trigger a jit-attach")
-                    W("to allow us to attach a debugger to any managed app that starts up.")
-                    W("This MDA is only fired when the 'DbgAttachOnStartup' CLR knob/reg-key is set on checked builds."));
-                SString szXML(W("<xml>See the description</xml>"));
-
-                SendMDANotification(
-                    NULL, // NULL b/c we don't have a thread yet
-                    &szName,
-                    &szDescription,
-                    &szXML,
-                    ((CorDebugMDAFlags) 0 ),
-                    TRUE // this will force the jit-attach
-                );
-            }
-        }
-    }
-#endif
-
-
     return hr;
 }
 
@@ -3512,13 +3469,11 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
     csi.GetStackInfo(ticket, thread, LEAF_MOST_FRAME, NULL);
 
     ULONG offsetNatFrom = csi.m_activeFrame.relOffset;
-#if defined(FEATURE_EH_FUNCLETS)
     if (csi.m_activeFrame.IsFuncletFrame())
     {
         offsetNatFrom = (ULONG)((SIZE_T)GetControlPC(&(csi.m_activeFrame.registers)) -
                                 (SIZE_T)(dji->m_addrOfCode));
     }
-#endif // FEATURE_EH_FUNCLETS
 
     _ASSERTE(dji != NULL);
 
@@ -3527,11 +3482,10 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
     // the size of the individual funclets or the parent method.
     pbBase = (BYTE*)CORDB_ADDRESS_TO_PTR(dji->m_addrOfCode);
     dwSize = (DWORD)dji->m_sizeOfCode;
-#if defined(FEATURE_EH_FUNCLETS)
+
     // Currently, method offsets are not bigger than 4 bytes even on WIN64.
     // Assert that it is so here.
     _ASSERTE((SIZE_T)dwSize == dji->m_sizeOfCode);
-#endif // FEATURE_EH_FUNCLETS
 
 
     // Create our structure for analyzing this.
@@ -3539,10 +3493,8 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
     // CanSetIP & SetIP.</TODO>
     int           cFunclet  = 0;
     const DWORD * rgFunclet = NULL;
-#if defined(FEATURE_EH_FUNCLETS)
     cFunclet  = dji->GetFuncletCount();
     rgFunclet = dji->m_rgFunclet;
-#endif // FEATURE_EH_FUNCLETS
 
     EHRangeTree* pEHRT = new (nothrow) EHRangeTree(csi.m_activeFrame.pIJM,
                                                    csi.m_activeFrame.MethodToken,
@@ -3580,14 +3532,8 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
         // Caveat: we need to go to a sequence point
         if (fIsIL )
         {
-#if defined(FEATURE_EH_FUNCLETS)
             int funcletIndexFrom = dji->GetFuncletIndex((CORDB_ADDRESS)offsetNatFrom, DebuggerJitInfo::GFIM_BYOFFSET);
             offsetNatTo = dji->MapILOffsetToNativeForSetIP(offsetILTo, funcletIndexFrom, pEHRT, &exact);
-#else  // FEATURE_EH_FUNCLETS
-            DebuggerJitInfo::ILToNativeOffsetIterator it;
-            dji->InitILToNativeOffsetIterator(it, offsetILTo);
-            offsetNatTo = it.CurrentAssertOnlyOne(&exact);
-#endif // FEATURE_EH_FUNCLETS
 
             if (!exact)
             {
@@ -11383,7 +11329,6 @@ HRESULT Debugger::GetAndSendInterceptCommand(DebuggerIPCEvent *event)
 
                     ULONG relOffset = csi.m_activeFrame.relOffset;
 
-#if defined(FEATURE_EH_FUNCLETS)
                     int funcletIndex = PARENT_METHOD_INDEX;
 
                     // For funclets, we need to make sure that the stack empty sequence point we use is
@@ -11395,7 +11340,6 @@ HRESULT Debugger::GetAndSendInterceptCommand(DebuggerIPCEvent *event)
 
                     // Refer to the loop using pMap below.
                     DebuggerILToNativeMap* pMap = NULL;
-#endif // FEATURE_EH_FUNCLETS
 
                     for (unsigned int i = 0; i < pJitInfo->GetSequenceMapCount(); i++)
                     {
@@ -11432,23 +11376,18 @@ HRESULT Debugger::GetAndSendInterceptCommand(DebuggerIPCEvent *event)
                         }
 
                         if ((foundOffset < startOffset) && (startOffset <= relOffset)
-#if defined(FEATURE_EH_FUNCLETS)
                             // Check if we are still in the same funclet.
                             && (funcletIndex == pJitInfo->GetFuncletIndex(startOffset, DebuggerJitInfo::GFIM_BYOFFSET))
-#endif // FEATURE_EH_FUNCLETS
                            )
                         {
                             LOG((LF_CORDB, LL_INFO10000, "D::HIPCE: updating breakpoint at native offset 0x%zx\n",
                                  startOffset));
                             foundOffset = startOffset;
-#if defined(FEATURE_EH_FUNCLETS)
                             // Save the map entry for modification later.
                             pMap = &(pJitInfo->GetSequenceMap()[i]);
-#endif // FEATURE_EH_FUNCLETS
                         }
                     }
 
-#if defined(FEATURE_EH_FUNCLETS)
                     // This is nasty.  Starting recently we could have multiple sequence points with the same IL offset
                     // in the SAME funclet/parent method (previously different sequence points with the same IL offset
                     // imply that they are in different funclet/parent method).  Fortunately, we only run into this
@@ -11468,7 +11407,6 @@ HRESULT Debugger::GetAndSendInterceptCommand(DebuggerIPCEvent *event)
                         }
                     }
                     _ASSERTE(foundOffset < relOffset);
-#endif // FEATURE_EH_FUNCLETS
 
                     //
                     // Set up a breakpoint on the intercept IP
@@ -12452,12 +12390,7 @@ bool Debugger::IsThreadAtSafePlaceWorker(Thread *thread)
         CONTEXT ctx;
         ZeroMemory(&rd, sizeof(rd));
         ZeroMemory(&ctx, sizeof(ctx));
-#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
-        rd.ControlPC = ctx.Eip;
-        rd.PCTAddr = (TADDR)&(ctx.Eip);
-#else
         FillRegDisplay(&rd, &ctx);
-#endif
 
         if (ISREDIRECTEDTHREAD(thread))
         {
@@ -13209,7 +13142,7 @@ void STDCALL ExceptionHijackWorker(
     // call SetThreadContext on ourself to fix us.
 }
 
-#if defined(FEATURE_EH_FUNCLETS) && !defined(TARGET_UNIX)
+#ifndef TARGET_UNIX
 
 #if defined(TARGET_AMD64)
 // ----------------------------------------------------------------------------
@@ -13302,7 +13235,7 @@ ExceptionHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord,
     // exactly the behavior we want.
     return ExceptionCollidedUnwind;
 }
-#endif // FEATURE_EH_FUNCLETS && !TARGET_UNIX
+#endif // !TARGET_UNIX
 
 
 // UEF Prototype from excep.cpp
@@ -14083,205 +14016,6 @@ void SetLSBufferFromSString(Ls_Rs_StringBuffer * pBuffer, SString & str)
         (BYTE*) str.GetUnicode(),
         (str.GetCount() +1)* sizeof(WCHAR)
     );
-}
-
-//*************************************************************
-// structure that we to marshal MDA Notification event data.
-//*************************************************************
-struct SendMDANotificationParams
-{
-    Thread * m_pThread; // may be NULL. Lets us send on behalf of other threads.
-
-    // Pass SStrings by ptr in case to guarantee that they're shared (in case we internally modify their storage).
-    SString * m_szName;
-    SString * m_szDescription;
-    SString * m_szXML;
-    CorDebugMDAFlags m_flags;
-
-    SendMDANotificationParams(
-        Thread * pThread, // may be NULL. Lets us send on behalf of other threads.
-        SString * szName,
-        SString * szDescription,
-        SString * szXML,
-        CorDebugMDAFlags flags
-    ) :
-        m_pThread(pThread),
-        m_szName(szName),
-        m_szDescription(szDescription),
-        m_szXML(szXML),
-        m_flags(flags)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-};
-
-//-----------------------------------------------------------------------------
-// Actually send the MDA event. (Could be on any thread)
-// Parameters:
-//    params - data to initialize the IPC event.
-//-----------------------------------------------------------------------------
-void Debugger::SendRawMDANotification(
-    SendMDANotificationParams * params
-)
-{
-    // Send the unload assembly event to the Right Side.
-    DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
-
-    Thread * pThread = params->m_pThread;
-    InitIPCEvent(ipce,
-                 DB_IPCE_MDA_NOTIFICATION,
-                 pThread);
-
-    SetLSBufferFromSString(&ipce->MDANotification.szName, *(params->m_szName));
-    SetLSBufferFromSString(&ipce->MDANotification.szDescription, *(params->m_szDescription));
-    SetLSBufferFromSString(&ipce->MDANotification.szXml, *(params->m_szXML));
-    ipce->MDANotification.dwOSThreadId = GetCurrentThreadId();
-    ipce->MDANotification.flags = params->m_flags;
-
-    m_pRCThread->SendIPCEvent();
-}
-
-//-----------------------------------------------------------------------------
-// Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
-// Called by EE to send a MDA debug event. This will block on the debug event
-// until the RS continues us.
-// Debugger may or may not be attached. If bAttached, then this
-// will trigger a jitattach as well.
-// See MDA documentation for what szName, szDescription + szXML should look like.
-// The debugger just passes them through.
-//
-// Parameters:
-//   pThread - thread for debug event.  May be null.
-//   szName - short name of MDA.
-//   szDescription - full description of MDA.
-//   szXML - xml string for MDA.
-//   bAttach - do a JIT-attach
-//-----------------------------------------------------------------------------
-void Debugger::SendMDANotification(
-    Thread * pThread, // may be NULL. Lets us send on behalf of other threads.
-    SString * szName,
-    SString * szDescription,
-    SString * szXML,
-    CorDebugMDAFlags flags,
-    BOOL bAttach
-)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(szName != NULL);
-    _ASSERTE(szDescription != NULL);
-    _ASSERTE(szXML != NULL);
-
-    // Note: we normally don't send events like this when there is an unrecoverable error. However,
-    // if a host attempts to setup fiber mode on a thread, then we'll set an unrecoverable error
-    // and use an MDA to 1) tell the user and 2) get the Right Side to notice the unrecoverable error.
-    // Therefore, we'll go ahead and send a MDA event if the unrecoverable error is
-    // CORDBG_E_CANNOT_DEBUG_FIBER_PROCESS.
-    DebuggerIPCControlBlock *pDCB = m_pRCThread->GetDCB();
-
-
-    // If the MDA is occurring very early in startup before the DCB is setup, then bail.
-    if (pDCB == NULL)
-    {
-        return;
-    }
-
-    if (CORDBUnrecoverableError(this) && (pDCB->m_errorHR != CORDBG_E_CANNOT_DEBUG_FIBER_PROCESS))
-    {
-        return;
-    }
-
-    // Validate flags. Make sure that folks don't start passing flags that we don't handle.
-    // If pThread != current thread, caller should either pass in MDA_FLAG_SLIP or guarantee
-    // that pThread is not slipping.
-    _ASSERTE((flags & ~(MDA_FLAG_SLIP)) == 0);
-
-    // Helper thread should not be triggering MDAs. The helper thread is executing code in a very constrained
-    // and controlled region and shouldn't be able to do anything dangerous.
-    // If we revise this in the future, we should probably just post the event to the RS w/ use the MDA_FLAG_SLIP flag,
-    // and then not bother suspending the runtime. The RS will get it on its next event.
-    // The jit-attach logic below assumes we're not on the helper. (If we are on the helper, then a debugger should already
-    // be attached)
-    if (ThisIsHelperThreadWorker())
-    {
-        CONSISTENCY_CHECK_MSGF(false, ("MDA '%s' fired on *helper* thread.\r\nDesc:%s",
-            szName->GetUnicode(), szDescription->GetUnicode()
-        ));
-
-        // If for some reason we're wrong about the assert above, we'll just ignore the MDA (rather than potentially deadlock)
-        return;
-    }
-
-    // Public entry point into the debugger. May cause a jit-attach, so we may need to be lazily-init.
-    if (!HasLazyData())
-    {
-        DebuggerLockHolder dbgLockHolder(this);
-        // This is an entry path into the debugger, so make sure we're inited.
-        LazyInit();
-    }
-
-
-    // Cases:
-    // 1) Debugger already attached, send event normally (ignore severity)
-    // 2) No debugger attached, Non-severe probe - ignore.
-    // 3) No debugger attached, Severe-probe - do a jit-attach.
-    bool fTryJitAttach = bAttach == TRUE;
-
-    // Check case #2 - no debugger, and no jit-attach. Early opt out.
-    if (!CORDebuggerAttached() && !fTryJitAttach)
-    {
-        return;
-    }
-
-    if (pThread == NULL)
-    {
-        // If there's no thread object, then we're not blocking after the event,
-        // and thus this probe may slip.
-        flags = (CorDebugMDAFlags) (flags | MDA_FLAG_SLIP);
-    }
-
-    {
-        GCX_PREEMP_EEINTERFACE_TOGGLE_IFTHREAD();
-
-        // For "Severe" probes, we'll do a jit attach dialog
-        if (fTryJitAttach)
-        {
-            // May return:
-            // - S_OK if we do a jit-attach,
-            // - S_FALSE if a debugger is already attached.
-            // - Error in other cases..
-
-            JitAttach(pThread, NULL, TRUE, FALSE);
-        }
-
-        // Debugger may be attached now...
-        if (CORDebuggerAttached())
-        {
-            SendMDANotificationParams params(pThread, szName, szDescription, szXML, flags);
-
-            // Non-attach case. Send like normal event.
-            // This includes if someone launch the debugger during the meantime.
-            // just send the event
-            SENDIPCEVENT_BEGIN(this, pThread);
-
-            // Send Log message event to the Right Side
-            SendRawMDANotification(&params);
-
-            // Stop all Runtime threads
-            // Even if we don't have a managed thead object, this will catch us at the next good spot.
-            TrapAllRuntimeThreads();
-
-            // Let other Runtime threads handle their events.
-            SENDIPCEVENT_END;
-        }
-    } // end of GCX_PREEMP_EEINTERFACE_TOGGLE()
 }
 
 //*************************************************************
@@ -16364,12 +16098,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
         return;
     }
 
-#ifndef FEATURE_EH_FUNCLETS
-    // Reset pContext; it's only valid for active (top-most) frame.
-    pRD->pContext = NULL;
-#endif // !FEATURE_EH_FUNCLETS
-
-
 #ifdef TARGET_X86
     // Update all registers in the reg display from the CONTEXT we stored when the thread was hijacked for this func
     // eval. We have to update all registers, not just the callee saved registers, because we can hijack a thread at any
@@ -16383,20 +16111,12 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     pRD->SetEbpLocation(&(pDE->m_context.Ebp));
     SetRegdisplayPCTAddr(pRD, GetReturnAddressPtr());
 
-#ifdef FEATURE_EH_FUNCLETS
-
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Esp = (DWORD)GetSP(&pDE->m_context);
 
     SyncRegDisplayToCurrentContext(pRD);
-
-#else // FEATURE_EH_FUNCLETS
-
-    pRD->SP = (DWORD)GetSP(&pDE->m_context);
-
-#endif // FEATURE_EH_FUNCLETS
 
 #elif defined(TARGET_AMD64)
     pRD->IsCallerContextValid = FALSE;

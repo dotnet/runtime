@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*  EXCEP.CPP:
- *
- */
-
 #include "common.h"
 
 #include "frames.h"
@@ -33,9 +29,7 @@
 #ifdef FEATURE_COMINTEROP
 #include<roerrorapi.h>
 #endif
-#ifdef FEATURE_EH_FUNCLETS
 #include "exceptionhandling.h"
-#endif
 
 #include <errorrep.h>
 #ifndef TARGET_UNIX
@@ -99,8 +93,6 @@ BOOL IsExceptionFromManagedCode(const EXCEPTION_RECORD * pExceptionRecord)
 
 PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord();
 BOOL IsUnmanagedToManagedSEHHandler(EXCEPTION_REGISTRATION_RECORD*);
-
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow);
 
 //-------------------------------------------------------------------------------
 // Basically, this asks whether the exception is a managed exception thrown by
@@ -920,7 +912,6 @@ bool EHRangeTreeNode::TryContains(EHRangeTreeNode* pNode)
         }
     }
 
-#ifdef FEATURE_EH_FUNCLETS
     // If we are boot-strapping the tree, don't recurse down because the result could be unreliable.  Note that
     // even if we don't recurse, given a particular node, we can still always find its most specific container with
     // the logic above, i.e. it's always safe to do one depth level of checking.
@@ -965,7 +956,6 @@ bool EHRangeTreeNode::TryContains(EHRangeTreeNode* pNode)
             }
         }
     }
-#endif // FEATURE_EH_FUNCLETS
 
     return false;
 }
@@ -1017,7 +1007,6 @@ bool EHRangeTreeNode::HandlerContains(EHRangeTreeNode* pNode)
         }
     }
 
-#ifdef FEATURE_EH_FUNCLETS
     // Refer to the comment in TryContains().
     if (!m_pTree->m_fInitializing)
     {
@@ -1041,7 +1030,6 @@ bool EHRangeTreeNode::HandlerContains(EHRangeTreeNode* pNode)
             }
         }
     }
-#endif // FEATURE_EH_FUNCLETS
 
     return false;
 }
@@ -1093,7 +1081,6 @@ bool EHRangeTreeNode::FilterContains(EHRangeTreeNode* pNode)
         }
     }
 
-#ifdef FEATURE_EH_FUNCLETS
     // Refer to the comment in TryContains().
     if (!m_pTree->m_fInitializing)
     {
@@ -1117,7 +1104,6 @@ bool EHRangeTreeNode::FilterContains(EHRangeTreeNode* pNode)
             }
         }
     }
-#endif // FEATURE_EH_FUNCLETS
 
     return false;
 }
@@ -1230,7 +1216,6 @@ EHRangeTree::EHRangeTree(IJitManager* pIJM,
 
         if (pEHClause->Flags == COR_ILEXCEPTION_CLAUSE_FILTER)
         {
-#ifdef FEATURE_EH_FUNCLETS
             // Because of funclets, there is no way to guarantee the placement of a filter.
             // Thus, we need to loop through the funclets to find the end offset.
             for (int f = 0; f < cFunclet; f++)
@@ -1251,19 +1236,6 @@ EHRangeTree::EHRangeTree(IJitManager* pIJM,
                     break;
                 }
             }
-#else  // FEATURE_EH_FUNCLETS
-            // On x86, since the filter doesn't have an end FilterPC, the only way we can know the size
-            // of the filter is if it's located immediately prior to it's handler and immediately after
-            // its try region.  We assume that this is, and if it isn't, we're so amazingly hosed that
-            // we can't continue.
-            if ((pEHClause->FilterOffset >= pEHClause->HandlerStartPC) ||
-                (pEHClause->FilterOffset < pEHClause->TryEndPC))
-        {
-            m_hrInit = CORDBG_E_SET_IP_IMPOSSIBLE;
-            goto LError;
-        }
-            pNodeCur->m_FilterEndPC = pEHClause->HandlerStartPC;
-#endif // FEATURE_EH_FUNCLETS
         }
 
         pNodeCur->MarkAsRange();
@@ -1490,72 +1462,6 @@ const char *TCFStringFromConst(TRY_CATCH_FINALLY tcf)
 }
 #endif //LOGGING
 
-#ifndef FEATURE_EH_FUNCLETS
-// We're unwinding if we'll return to the EE's code.  Otherwise
-// we'll return to someplace in the current code.  Anywhere outside
-// this function is "EE code".
-bool FinallyIsUnwinding(EHRangeTreeNode *pNode,
-                        ICodeManager* pEECM,
-                        PREGDISPLAY pReg,
-                        SLOT addrStart)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END;
-
-    const BYTE *pbRetAddr = pEECM->GetFinallyReturnAddr(pReg);
-
-    if (pbRetAddr < (const BYTE *)addrStart)
-        return true;
-
-    DWORD offset = (DWORD)(size_t)(pbRetAddr - addrStart);
-    EHRangeTreeNode *pRoot = pNode->m_pTree->m_root;
-
-    if (!pRoot->Contains(offset))
-        return true;
-    else
-        return false;
-}
-
-BOOL LeaveCatch(ICodeManager* pEECM,
-                Thread *pThread,
-                CONTEXT *pCtx,
-                GCInfoToken gcInfoToken,
-                unsigned offset)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // We can assert these things here, and skip a call
-    // to COMPlusCheckForAbort later.
-
-            // If no abort has been requested,
-    _ASSERTE((pThread->GetThrowable() != NULL) ||
-            // or if there is a pending exception.
-            (!pThread->IsAbortRequested()) );
-
-    LPVOID esp = COMPlusEndCatchWorker(pThread);
-
-    PopNestedExceptionRecords(esp, pCtx, pThread->GetExceptionListPtr());
-
-    // Do JIT-specific work
-    pEECM->LeaveCatch(gcInfoToken, offset, pCtx);
-
-    SetSP(pCtx, (UINT_PTR)esp);
-    return TRUE;
-}
-#endif // FEATURE_EH_FUNCLETS
-
 TRY_CATCH_FINALLY GetTcf(EHRangeTreeNode *pNode,
                          unsigned offset)
 {
@@ -1711,30 +1617,7 @@ HRESULT IsLegalTransition(Thread *pThread,
                 case TCF_NONE:
                 case TCF_TRY:
                 {
-#if !defined(FEATURE_EH_FUNCLETS)
-                    CONTEXT *pFilterCtx = pThread->GetFilterContext();
-                    if (pFilterCtx == NULL)
-                        return CORDBG_E_SET_IP_IMPOSSIBLE;
-
-                    if (!fCanSetIPOnly)
-                    {
-                        if (!LeaveCatch(pEECM,
-                                        pThread,
-                                        pFilterCtx,
-                                        gcInfoToken,
-                                        offFrom))
-                            return E_FAIL;
-                    }
-                    return S_OK;
-#else  // FEATURE_EH_FUNCLETS
-                    // <NOTE>
-                    // Setting IP out of a catch clause is not supported for FEATURE_EH_FUNCLETS because of funclets.
-                    // This scenario is disabled with approval from VS because it's not considered to
-                    // be a common user scenario.
-                    // </NOTE>
                     return CORDBG_E_CANT_SET_IP_OUT_OF_CATCH_ON_WIN64;
-#endif // !FEATURE_EH_FUNCLETS
-                    break;
                 }
 
                 case TCF_FILTER:
@@ -1767,36 +1650,7 @@ HRESULT IsLegalTransition(Thread *pThread,
                 case TCF_NONE:
                 case TCF_TRY:
                 {
-#ifndef FEATURE_EH_FUNCLETS
-                    if (!FinallyIsUnwinding(pNode, pEECM, pReg, addrStart))
-                    {
-                        CONTEXT *pFilterCtx = pThread->GetFilterContext();
-                        if (pFilterCtx == NULL)
-                            return CORDBG_E_SET_IP_IMPOSSIBLE;
-
-                        if (!fCanSetIPOnly)
-                        {
-                            if (!pEECM->LeaveFinally(gcInfoToken,
-                                                     offFrom,
-                                                     pFilterCtx))
-                                return E_FAIL;
-                        }
-                        return S_OK;
-                    }
-                    else
-                    {
-                        return CORDBG_E_CANT_SET_IP_OUT_OF_FINALLY;
-                    }
-#else // !FEATURE_EH_FUNCLETS
-                    // <NOTE>
-                    // Setting IP out of a non-unwinding finally clause is not supported on FEATURE_EH_FUNCLETS because of funclets.
-                    // This scenario is disabled with approval from VS because it's not considered to be a common user
-                    // scenario.
-                    // </NOTE>
                     return CORDBG_E_CANT_SET_IP_OUT_OF_FINALLY_ON_WIN64;
-#endif // FEATURE_EH_FUNCLETS
-
-                    break;
                 }
 
                 case TCF_FILTER:
@@ -2048,78 +1902,6 @@ BOOL IsInFirstFrameOfHandler(Thread *pThread, IJitManager *pJitManager, const ME
     return FALSE;
 } // BOOL IsInFirstFrameOfHandler()
 
-
-#if !defined(FEATURE_EH_FUNCLETS)
-
-//******************************************************************************
-// LookForHandler -- search for a function that will handle the exception.
-//******************************************************************************
-LFH LookForHandler(                         // LFH return types
-    const EXCEPTION_POINTERS *pExceptionPointers, // The ExceptionRecord and ExceptionContext
-    Thread      *pThread,                   // Thread on which to look (always current?)
-    ThrowCallbackType *tct)                 // Structure to pass back to callback functions.
-{
-    // We don't want to use a runtime contract here since this codepath is used during
-    // the processing of a hard SO. Contracts use a significant amount of stack
-    // which we can't afford for those cases.
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-    // go through to find if anyone handles the exception
-    StackWalkAction action = pThread->StackWalkFrames((PSTACKWALKFRAMESCALLBACK)COMPlusThrowCallback,
-                                 tct,
-                                 0,     //can't use FUNCTIONSONLY because the callback uses non-function frames to stop the walk
-                                 tct->pBottomFrame);
-
-    // If someone handles it, the action will be SWA_ABORT with pFunc and dHandler indicating the
-        // function and handler that is handling the exception. Debugger can put a hook in here.
-    if (action == SWA_ABORT && tct->pFunc != NULL)
-        return LFH_FOUND;
-
-    // nobody is handling it
-    return LFH_NOT_FOUND;
-} // LFH LookForHandler()
-
-StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData);
-
-//******************************************************************************
-//  UnwindFrames
-//******************************************************************************
-void UnwindFrames(                      // No return value.
-    Thread      *pThread,               // Thread to unwind.
-    ThrowCallbackType *tct)             // Structure to pass back to callback function.
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-    if (pThread->IsExceptionInProgress())
-    {
-        pThread->GetExceptionState()->GetFlags()->SetUnwindHasStarted();
-    }
-
-    #ifdef DEBUGGING_SUPPORTED
-        //
-        // If a debugger is attached, notify it that unwinding is going on.
-        //
-        if (CORDebuggerAttached())
-        {
-            g_pDebugInterface->ManagedExceptionUnwindBegin(pThread);
-        }
-    #endif // DEBUGGING_SUPPORTED
-
-    LOG((LF_EH, LL_INFO1000, "UnwindFrames: going to: pFunc:%#X, pStack:%#X\n",
-        tct->pFunc, tct->pStack));
-
-    pThread->StackWalkFrames((PSTACKWALKFRAMESCALLBACK)COMPlusUnwindCallback,
-                             tct,
-                             POPFRAMES,
-                             tct->pBottomFrame);
-} // void UnwindFrames()
-
-#endif // !defined(FEATURE_EH_FUNCLETS)
-
 // Copy a context record, being careful about whether or not the target
 // is large enough to support CONTEXT_EXTENDED_REGISTERS.
 //
@@ -2181,73 +1963,6 @@ ReplaceExceptionContextRecord(CONTEXT *pTarget, CONTEXT *pSource)
 #endif // !CONTEXT_EXTENDED_REGISTERS
 }
 
-VOID FixupOnRethrow(Thread* pCurThread, EXCEPTION_POINTERS* pExceptionPointers)
-{
-    WRAPPER_NO_CONTRACT;
-
-    ThreadExceptionState* pExState = pCurThread->GetExceptionState();
-
-    // Don't allow rethrow of a STATUS_STACK_OVERFLOW -- it's a new throw of the CLR exception.
-    if (pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW)
-    {
-        return;
-    }
-
-    // For COMPLUS exceptions, we don't need the original context for our rethrow.
-    if (!(pExState->IsComPlusException()))
-    {
-        _ASSERTE(pExState->GetExceptionRecord());
-
-        // don't copy parm args as have already supplied them on the throw
-        memcpy((void*)pExceptionPointers->ExceptionRecord,
-               (void*)pExState->GetExceptionRecord(),
-               offsetof(EXCEPTION_RECORD, ExceptionInformation));
-
-// Replacing the exception context breaks unwinding on AMD64.  It also breaks exception dispatch on IA64.
-// The info saved by pExState will be given to exception filters.
-#ifndef FEATURE_EH_FUNCLETS
-        // Restore original context if available.
-        if (pExState->GetContextRecord())
-        {
-            ReplaceExceptionContextRecord(pExceptionPointers->ContextRecord,
-                                          pExState->GetContextRecord());
-        }
-#endif // !FEATURE_EH_FUNCLETS
-    }
-
-    pExState->GetFlags()->SetIsRethrown();
-}
-
-struct RaiseExceptionFilterParam
-{
-    BOOL isRethrown;
-};
-
-LONG RaiseExceptionFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    RaiseExceptionFilterParam *pParam = (RaiseExceptionFilterParam *) pv;
-
-    if (1 == pParam->isRethrown)
-    {
-        // need to reset the EH info back to the original thrown exception
-        FixupOnRethrow(GetThread(), ep);
-#ifdef FEATURE_EH_FUNCLETS
-        // only do this once
-        pParam->isRethrown++;
-#endif // FEATURE_EH_FUNCLETS
-    }
-    else
-    {
-        CONSISTENCY_CHECK((2 == pParam->isRethrown) || (0 == pParam->isRethrown));
-    }
-
-    return EXCEPTION_CONTINUE_SEARCH;
-}
-
 HRESULT GetHRFromThrowable(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
@@ -2269,14 +1984,14 @@ HRESULT GetHRFromThrowable(OBJECTREF throwable)
     return hr;
 }
 
-VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL rethrow, BOOL fForStackOverflow)
+VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    STRESS_LOG3(LF_EH, LL_INFO100, "******* MANAGED EXCEPTION THROWN: Object thrown: %p MT %pT rethrow %d\n",
-                OBJECTREFToObject(throwable), (throwable!=0)?throwable->GetMethodTable():0, rethrow);
+    STRESS_LOG2(LF_EH, LL_INFO100, "******* MANAGED EXCEPTION THROWN: Object thrown: %p MT %pT\n",
+                OBJECTREFToObject(throwable), (throwable!=0)?throwable->GetMethodTable():0);
 
 #ifdef STRESS_LOG
     // Any object could have been thrown, but System.Exception objects have useful information for the stress log
@@ -2299,26 +2014,16 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     }
 #endif
 
-    struct Param : RaiseExceptionFilterParam
-    {
-        OBJECTREF throwable;
-        BOOL fForStackOverflow;
-        ULONG_PTR exceptionArgs[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE];
-        Thread *pThread;
-        ThreadExceptionState* pExState;
-    } param;
-    param.isRethrown = rethrow ? 1 : 0; // normalize because we use it as a count in RaiseExceptionFilter
-    param.throwable = throwable;
-    param.fForStackOverflow = fForStackOverflow;
-    param.pThread = GetThread();
+    ULONG_PTR exceptionArgs[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE];
+    Thread* pThread = GetThread();
 
-    _ASSERTE(param.pThread);
-    param.pExState = param.pThread->GetExceptionState();
+    _ASSERTE(pThread);
+    ThreadExceptionState* pExState = pThread->GetExceptionState();
 
-    if (param.pThread->IsRudeAbortInitiated())
+    if (pThread->IsRudeAbortInitiated())
     {
         // Nobody should be able to swallow rude thread abort.
-        param.throwable = CLRException::GetBestThreadAbortException();
+        throwable = CLRException::GetBestThreadAbortException();
     }
 
 #if 0
@@ -2326,7 +2031,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
 #ifdef _DEBUG
     // If ThreadAbort exception is thrown, the thread should be marked with AbortRequest.
     // If not, we may see unhandled exception.
-    if (param.throwable->GetMethodTable() == g_pThreadAbortExceptionClass)
+    if (throwable->GetMethodTable() == g_pThreadAbortExceptionClass)
     {
         _ASSERTE(GetThread()->IsAbortRequested()
 #ifdef TARGET_X86
@@ -2339,76 +2044,41 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
 #endif
 
     // raise
-    PAL_TRY(Param *, pParam, &param)
+
+    ULONG argCount = 0;
+    ULONG flags = 0;
+    ULONG code = 0;
+
+    // Always save the current object in the handle so on rethrow we can reuse it. This is important as it
+    // contains stack trace info.
+    //
+    // Note: we use SafeSetLastThrownObject, which will try to set the throwable and if there are any problems,
+    // it will set the throwable to something appropriate (like OOM exception) and return the new
+    // exception. Thus, the user's exception object can be replaced here.
+    throwable = pThread->SafeSetLastThrownObject(throwable);
+
+    ULONG_PTR hr = GetHRFromThrowable(throwable);
+
+    argCount = MarkAsThrownByUs(exceptionArgs, hr);
+    flags = EXCEPTION_NONCONTINUABLE;
+    code = EXCEPTION_COMPLUS;
+
+    if (pThread->IsAbortInitiated () && IsExceptionOfType(kThreadAbortException,&throwable))
     {
-        //_ASSERTE(! pParam->isRethrown || pParam->pExState->m_pExceptionRecord);
-        ULONG_PTR *args = NULL;
-        ULONG argCount = 0;
-        ULONG flags = 0;
-        ULONG code = 0;
+        pThread->ResetPreparingAbort();
 
-        // Always save the current object in the handle so on rethrow we can reuse it. This is important as it
-        // contains stack trace info.
-        //
-        // Note: we use SafeSetLastThrownObject, which will try to set the throwable and if there are any problems,
-        // it will set the throwable to something appropriate (like OOM exception) and return the new
-        // exception. Thus, the user's exception object can be replaced here.
-        pParam->throwable = pParam->pThread->SafeSetLastThrownObject(pParam->throwable);
-
-        if (!pParam->isRethrown ||
-             pParam->pExState->IsComPlusException() ||
-            (pParam->pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW))
+        if (pThread->GetFrame() == FRAME_TOP)
         {
-            ULONG_PTR hr = GetHRFromThrowable(pParam->throwable);
-
-            args = pParam->exceptionArgs;
-            argCount = MarkAsThrownByUs(args, hr);
-            flags = EXCEPTION_NONCONTINUABLE;
-            code = EXCEPTION_COMPLUS;
+            // There is no more managed code on stack.
+            pThread->ResetAbort();
         }
-        else
-        {
-            // Exception code should be consistent.
-            _ASSERTE((DWORD)(pParam->pExState->GetExceptionRecord()->ExceptionCode) == pParam->pExState->GetExceptionCode());
-
-            args     = pParam->pExState->GetExceptionRecord()->ExceptionInformation;
-            argCount = pParam->pExState->GetExceptionRecord()->NumberParameters;
-            flags    = pParam->pExState->GetExceptionRecord()->ExceptionFlags;
-            code     = pParam->pExState->GetExceptionRecord()->ExceptionCode;
-        }
-
-        if (pParam->pThread->IsAbortInitiated () && IsExceptionOfType(kThreadAbortException,&pParam->throwable))
-        {
-            pParam->pThread->ResetPreparingAbort();
-
-            if (pParam->pThread->GetFrame() == FRAME_TOP)
-            {
-                // There is no more managed code on stack.
-                pParam->pThread->ResetAbort();
-            }
-        }
-
-        // Can't access the exception object when are in pre-emptive, so find out before
-        // if its an SO.
-        BOOL fIsStackOverflow = IsExceptionOfType(kStackOverflowException, &pParam->throwable);
-
-        if (fIsStackOverflow || pParam->fForStackOverflow)
-        {
-            // Don't probe if we're already handling an SO.  Just throw the exception.
-            RaiseException(code, flags, argCount, args);
-        }
-
-        // This needs to be both here and inside the handler below
-        // enable preemptive mode before call into OS
-        GCX_PREEMP_NO_DTOR();
-
-        // In non-debug, we can just raise the exception once we've probed.
-        RaiseException(code, flags, argCount, args);
     }
-    PAL_EXCEPT_FILTER (RaiseExceptionFilter)
-    {
-    }
-    PAL_ENDTRY
+
+    // Enable preemptive mode before call into OS
+    GCX_PREEMP_NO_DTOR();
+
+    RaiseException(code, flags, argCount, exceptionArgs);
+
     _ASSERTE(!"Cannot continue after CLR exception");      // Debugger can bring you here.
     // For example,
     // Debugger breaks in due to second chance exception (unhandled)
@@ -2418,9 +2088,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     UNREACHABLE();
 }
 
-
-// INSTALL_COMPLUS_EXCEPTION_HANDLER has a filter, so must put the call in a separate fcn
-static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable, BOOL rethrow)
+static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2432,18 +2100,16 @@ static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable, BOOL r
 
     _ASSERTE(throwable != CLRException::GetPreallocatedStackOverflowException());
 
-    // TODO: Do we need to install COMPlusFrameHandler here?
-    INSTALL_COMPLUS_EXCEPTION_HANDLER();
     if (throwable == NULL)
     {
         _ASSERTE(!"RealCOMPlusThrow(OBJECTREF) called with NULL argument. Somebody forgot to post an exception!");
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
-    RaiseTheExceptionInternalOnly(throwable, rethrow);
-    UNINSTALL_COMPLUS_EXCEPTION_HANDLER();
+
+    RaiseTheExceptionInternalOnly(throwable);
 }
 
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow)
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2456,44 +2122,29 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow)
 
     _ASSERTE(IsException(throwable->GetMethodTable()));
 
-    // This may look a bit odd, but there is an explanation.  The rethrow boolean
-    //  means that an actual RaiseException(EXCEPTION_COMPLUS,...) is being re-thrown,
-    //  and that the exception context saved on the Thread object should replace
-    //  the exception context from the upcoming RaiseException().  There is logic
-    //  in the stack trace code to preserve MOST of the stack trace, but to drop the
-    //  last element of the stack trace (has to do with having the address of the rethrow
-    //  instead of the address of the original call in the stack trace.  That is
-    //  controversial itself, but we won't get into that here.)
-    // However, if this is not re-raising that original exception, but rather a new
+    // If this is not re-raising that original exception, but rather a new
     //  os exception for what may be an existing exception object, it is generally
     //  a good thing to preserve the stack trace.
-    if (!rethrow)
-    {
-        Thread *pThread = GetThread();
-        pThread->IncPreventAbort();
-        ExceptionPreserveStackTrace(throwable);
-        pThread->DecPreventAbort();
-    }
 
-    RealCOMPlusThrowWorker(throwable, rethrow);
+    Thread *pThread = GetThread();
+    pThread->IncPreventAbort();
+    ExceptionPreserveStackTrace(throwable);
+    pThread->DecPreventAbort();
+
+    RealCOMPlusThrowWorker(throwable);
 
     GCPROTECT_END();
 }
 
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
+#ifdef TARGET_WASM
+EXCEPTION_DISPOSITION SetTargetFrame(PAL_SEHException& ex, UINT_PTR targetSP)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    RealCOMPlusThrow(throwable, FALSE);
+    ex.TargetFrameSp = targetSP;
+    return EXCEPTION_CONTINUE_SEARCH;
 }
+#endif // TARGET_WASM
 
-VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *exceptionObj)
+VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *exceptionObj, UINT_PTR targetSP)
 {
     CONTRACTL
     {
@@ -2503,8 +2154,31 @@ VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *
     }
     CONTRACTL_END;
 
-    OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
-    RealCOMPlusThrowWorker(throwable, FALSE);
+    // On WASM, the exception needs to keep propagating until it reaches the target frame. On other platforms,
+    // this is ensured by unwinding stack up to the target frame before propagating the exception. This
+    // difference is due to the fact that on WASM we don't have native stack unwinding support.
+#ifdef TARGET_WASM
+    struct Param
+    {
+        Object *exceptionObj;
+        UINT_PTR targetSP;
+    } param = { exceptionObj, targetSP };
+
+    PAL_TRY(Param *, pParam, &param)
+    {
+        OBJECTREF throwable = ObjectToOBJECTREF(pParam->exceptionObj);
+#else
+        OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
+#endif // TARGET_WASM
+        RealCOMPlusThrowWorker(throwable);
+#ifdef TARGET_WASM
+    }
+    PAL_EXCEPT(SetTargetFrame(ex, __param->targetSP))
+    {
+    }
+    PAL_ENDTRY
+#endif // TARGET_WASM
+    UNREACHABLE();
 }
 
 // this function finds the managed callback to get a resource
@@ -2759,27 +2433,6 @@ DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord)
     }
 }
 
-#ifdef _DEBUG
-#ifndef FEATURE_EH_FUNCLETS
-// check if anyone has written to the stack above the handler which would wipe out the EH registration
-void CheckStackBarrier(EXCEPTION_REGISTRATION_RECORD *exRecord)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (exRecord->Handler != (PEXCEPTION_ROUTINE)COMPlusFrameHandler)
-        return;
-
-    DWORD *stackOverwriteBarrier = (DWORD *)((BYTE*)exRecord - offsetof(FrameHandlerExRecordWithBarrier, m_ExRecord));
-    for (int i =0; i < STACK_OVERWRITE_BARRIER_SIZE; i++) {
-        if (*(stackOverwriteBarrier+i) != STACK_OVERWRITE_BARRIER_VALUE) {
-            // to debug this error, you must determine who erroneously overwrote the stack
-            _ASSERTE(!"Fatal error: the stack has been overwritten");
-        }
-    }
-}
-#endif // FEATURE_EH_FUNCLETS
-#endif // _DEBUG
-
 //-------------------------------------------------------------------------
 // A marker for JIT -> EE transition when we know we're in preemptive
 // gc mode.  As we leave the EE, we fix a few things:
@@ -2812,28 +2465,6 @@ void COMPlusCooperativeTransitionHandler(Frame* pFrame)
     // Pop the frame chain.
     UnwindFrameChain(pThread, pFrame);
     CONSISTENCY_CHECK(pFrame == pThread->GetFrame());
-
-#ifndef FEATURE_EH_FUNCLETS
-    // An exception is being thrown through here.  The CLR exception
-    // info keeps a pointer to a frame that is used by the next
-    // CLR Exception Handler as the starting point of its crawl.
-    // We may have popped this marker -- in which case, we need to
-    // update it to the current frame.
-    //
-    ThreadExceptionState* pExState = pThread->GetExceptionState();
-    Frame*  pSearchBoundary = NULL;
-
-    if (pThread->IsExceptionInProgress())
-    {
-        pSearchBoundary = pExState->m_currentExInfo.m_pSearchBoundary;
-    }
-
-    if (pSearchBoundary && pSearchBoundary < pFrame)
-    {
-        LOG((LF_EH, LL_INFO1000, "\tpExInfo->m_pSearchBoundary = %08x\n", (void*)pFrame));
-        pExState->m_currentExInfo.m_pSearchBoundary = pFrame;
-    }
-#endif // FEATURE_EH_FUNCLETS
 }
 
     // Restore us to preemptive gc mode.
@@ -3289,10 +2920,6 @@ LONG NotifyDebuggerLastChance(Thread *pThread,
 
     LONG retval = EXCEPTION_CONTINUE_SEARCH;
 
-    // Debugger does func-evals inside this call, which may take nested exceptions. We need a nested exception
-    // handler to allow this.
-    INSTALL_NESTED_EXCEPTION_HANDLER(pThread->GetFrame());
-
     EXCEPTION_POINTERS dummy;
     dummy.ExceptionRecord = NULL;
     dummy.ContextRecord = NULL;
@@ -3315,8 +2942,6 @@ LONG NotifyDebuggerLastChance(Thread *pThread,
     {
         retval = EXCEPTION_CONTINUE_EXECUTION;
     }
-
-    UNINSTALL_NESTED_EXCEPTION_HANDLER();
 
 #ifdef DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
     EX_TRY
@@ -4219,22 +3844,6 @@ BOOL UpdateCurrentThrowable(PEXCEPTION_RECORD pExceptionRecord)
         //  NotifyAppDomainsOfUnhandledException, which needs to get a throwable
         //  from somewhere, with which to notify the AppDomains.
         useLastThrownObject = TRUE;
-
-        if (IsComPlusException(pExceptionRecord))
-        {
-#ifndef FEATURE_EH_FUNCLETS
-            OBJECTREF oThrowable = pThread->LastThrownObject();
-
-            // @TODO: we have a problem on Win64 where we won't have any place to
-            //        store the throwable on an unhandled exception.  Currently this
-            //        only effects the managed debugging services as they will try
-            //        to inspect the thread to see what the throwable is on an unhandled
-            //        exception.. (but clearly it needs to be fixed asap)
-            //        We have the same problem in EEPolicy::LogFatalError().
-            LOG((LF_EH, LL_INFO100, "UpdateCurrentThrowable: setting throwable to %s\n", (oThrowable == NULL) ? "NULL" : oThrowable->GetMethodTable()->GetDebugClassName()));
-            pThread->SafeSetThrowables(oThrowable);
-#endif // FEATURE_EH_FUNCLETS
-        }
     }
 
     return useLastThrownObject;
@@ -4742,9 +4351,7 @@ static SString GetExceptionMessageWrapper(Thread* pThread, OBJECTREF throwable)
 
     StackSString result;
 
-    INSTALL_NESTED_EXCEPTION_HANDLER(pThread->GetFrame());
     GetExceptionMessage(throwable, result);
-    UNINSTALL_NESTED_EXCEPTION_HANDLER();
 
     return SString{ result };
 }
@@ -5076,39 +4683,9 @@ void NotifyAppDomainsOfUnhandledException(
     // Send up the unhandled exception appdomain event.
     if (pThread->DetermineIfGuardPagePresent())
     {
-        // x86 only
-#if !defined(FEATURE_EH_FUNCLETS)
-        // If the Thread object's exception state's exception pointers
-        //  is null, use the passed-in pointer.
-        BOOL bSetPointers = FALSE;
-
-        ThreadExceptionState* pExceptionState = pThread->GetExceptionState();
-
-        if (pExceptionState->GetExceptionPointers() == NULL)
-        {
-            bSetPointers = TRUE;
-            pExceptionState->SetExceptionPointers(pExceptionPointers);
-        }
-
-#endif // !defined(FEATURE_EH_FUNCLETS)
-
-        INSTALL_NESTED_EXCEPTION_HANDLER(pThread->GetFrame());
-
         // This guy will never throw, but it will need a spot to store
         // any nested exceptions it might find.
         AppDomain::OnUnhandledException(&throwable);
-
-        UNINSTALL_NESTED_EXCEPTION_HANDLER();
-
-#if !defined(FEATURE_EH_FUNCLETS)
-
-        if (bSetPointers)
-        {
-            pExceptionState->SetExceptionPointers(NULL);
-        }
-
-#endif // !defined(FEATURE_EH_FUNCLETS)
-
     }
 
     GCPROTECT_END();
@@ -5470,37 +5047,12 @@ void AdjustContextForThreadStop(Thread* pThread,
 
     _ASSERTE(pThread->m_OSContext);
 
-#ifndef FEATURE_EH_FUNCLETS
-    SetIP(pContext, GetIP(pThread->m_OSContext));
-    SetSP(pContext, (GetSP(pThread->m_OSContext)));
-
-    if (GetFP(pThread->m_OSContext) != 0)  // ebp = 0 implies that we got here with the right values for ebp
-    {
-        SetFP(pContext, GetFP(pThread->m_OSContext));
-    }
-
-    // We might have been interrupted execution at a point where the jit has roots in
-    // registers.  We just need to store a "safe" value in here so that the collector
-    // doesn't trap.  We're not going to use these objects after the exception.
-    //
-    // Only callee saved registers are going to be reported by the faulting excepiton frame.
-#if defined(TARGET_X86)
-    // Ebx,esi,edi are important.  Eax,ecx,edx are not.
-    pContext->Ebx = 0;
-    pContext->Edi = 0;
-    pContext->Esi = 0;
-#else
-    PORTABILITY_ASSERT("AdjustContextForThreadStop");
-#endif
-
-#else // !FEATURE_EH_FUNCLETS
     CopyOSContext(pContext, pThread->m_OSContext);
 #if defined(TARGET_ARM) && defined(_DEBUG)
     // Make sure that the thumb bit is set on the IP of the original abort context we just restored.
     PCODE controlPC = GetIP(pContext);
     _ASSERTE(controlPC & THUMB_CODE);
 #endif // TARGET_ARM
-#endif // !FEATURE_EH_FUNCLETS
 
     pThread->ResetThrowControlForThread();
 
@@ -5809,8 +5361,6 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
 EXTERN_C void JIT_StackProbe_End();
 #endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
-#ifdef FEATURE_EH_FUNCLETS
-
 #ifndef TARGET_X86
 EXTERN_C void JIT_WriteBarrier_End();
 EXTERN_C void JIT_CheckedWriteBarrier_End();
@@ -5860,7 +5410,6 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
     return FALSE;
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 }
-#endif // FEATURE_EH_FUNCLETS
 
 typedef uint8_t CODE_LOCATION;
 EXTERN_C CODE_LOCATION RhpAssignRefAVLocation;
@@ -6044,7 +5593,7 @@ AdjustContextForJITHelpers(
     }
 
     return FALSE;
-#elif defined(FEATURE_EH_FUNCLETS) // TARGET_X86 && !TARGET_UNIX
+#else // TARGET_X86 && !TARGET_UNIX
     PCODE f_IP = GetIP(pContext);
 
     CONTEXT             tempContext;
@@ -6110,13 +5659,10 @@ AdjustContextForJITHelpers(
     }
 
     return FALSE;
-#else // FEATURE_EH_FUNCLETS
-    PORTABILITY_ASSERT("AdjustContextForJITHelpers");
-    return FALSE;
-#endif // ELSE
+#endif // TARGET_X86 && !TARGET_UNIX
 }
 
-#if defined(USE_FEF) && !defined(TARGET_UNIX)
+#ifndef TARGET_UNIX
 
 struct HandleManagedFaultFilterParam
 {
@@ -6181,7 +5727,7 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
     UNREACHABLE();
 }
 
-#endif // USE_FEF && !TARGET_UNIX
+#endif // !TARGET_UNIX
 
 //
 // Init a new frame
@@ -6189,21 +5735,9 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
 void FaultingExceptionFrame::Init(CONTEXT *pContext)
 {
     WRAPPER_NO_CONTRACT;
-#ifndef FEATURE_EH_FUNCLETS
-#ifdef TARGET_X86
-    CalleeSavedRegisters *pRegs = GetCalleeSavedRegisters();
-#define CALLEE_SAVED_REGISTER(regname) pRegs->regname = pContext->regname;
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-    m_ReturnAddress = ::GetIP(pContext);
-    m_Esp = (DWORD)GetSP(pContext);
-#else // TARGET_X86
-    PORTABILITY_ASSERT("FaultingExceptionFrame::Init");
-#endif // _TARGET_???_ (ELSE)
-#else // !FEATURE_EH_FUNCLETS
+
     m_ReturnAddress = ::GetIP(pContext);
     CopyOSContext(&m_ctx, pContext);
-#endif // !FEATURE_EH_FUNCLETS
 
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
     m_SSP = 0;
@@ -6270,19 +5804,6 @@ bool ShouldHandleManagedFault(
     if (exceptionCode == STATUS_CLR_GCCOVER_CODE)
         return false;
 #endif // _DEBUG
-
-#ifndef FEATURE_EH_FUNCLETS
-    // If there's any frame below the ESP of the exception, then we can forget it.
-    if (pThread->m_pFrame < dac_cast<PTR_VOID>(GetSP(pContext)))
-        return false;
-
-    // If we're a subsequent handler forget it.
-    EXCEPTION_REGISTRATION_RECORD* pBottomMostHandler = pThread->GetExceptionState()->m_currentExInfo.m_pBottomMostHandler;
-    if (pBottomMostHandler != NULL && pEstablisherFrame > pBottomMostHandler)
-    {
-        return false;
-    }
-#endif // FEATURE_EH_FUNCLETS
 
     {
         // If it's not a fault in jitted code, forget it.
@@ -6402,21 +5923,21 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
     // 1.  pThread refers to *this* thread.
     // 2.  If another thread tries to hijack this thread, it will see we are not in managed
     //     code (and thus won't try to hijack us).
-#if defined(FEATURE_EH_FUNCLETS) && defined(FEATURE_HIJACK)
+#if defined(FEATURE_HIJACK)
     if (pThread != NULL)
     {
         pThread->UnhijackThreadNoAlloc();
     }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(FEATURE_HIJACK)
+#endif // FEATURE_HIJACK
 
     if (pExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW)
     {
         //
         // Not an Out-of-memory situation, so no need for a forbid fault region here
         //
-#ifdef FEATURE_EH_FUNCLETS
+
         EEPolicy::HandleStackOverflow();
-#endif // FEATURE_EH_FUNCLETS
+
         return VEH_CONTINUE_SEARCH;
     }
 
@@ -6472,15 +5993,10 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExcepti
         return action;
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
-
     if (action == VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION)
     {
         return action;
     }
-
-#endif // defined(FEATURE_EH_FUNCLETS)
-
 
     //
     // In OOM situations, this call better not fault.
@@ -6535,7 +6051,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExcepti
         return (VEH_ACTION)UserBreakpointFilter(pExceptionInfo);
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
     BOOL fShouldHandleManagedFault;
 
     {
@@ -6552,7 +6067,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExcepti
     {
         return VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION;
     }
-#endif // defined(FEATURE_EH_FUNCLETS)
 
     return VEH_EXECUTE_HANDLER;
 }
@@ -6652,16 +6166,14 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                 //
                 // On 64-bit, some additional work is required..
                 pContext->ContextFlags &= ~CONTEXT_EXCEPTION_ACTIVE;
-#ifdef FEATURE_EH_FUNCLETS
+
                 return VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION;
-#endif // defined(FEATURE_EH_FUNCLETS)
             }
             else if (AdjustContextForVirtualStub(pExceptionRecord, pContext))
             {
                 pContext->ContextFlags &= ~CONTEXT_EXCEPTION_ACTIVE;
-#ifdef FEATURE_EH_FUNCLETS
+
                 return VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION;
-#endif
             }
 
             // Remember the EIP for stress debugging purposes.
@@ -7034,15 +6546,6 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
         return EXCEPTION_CONTINUE_SEARCH;
     }
 
-#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
-    if (dwCode == EXCEPTION_BREAKPOINT || dwCode == EXCEPTION_SINGLE_STEP)
-    {
-        // For interop debugging, debugger bashes our managed exception handler.
-        // Interop debugging does not work with real vectored exception handler :(
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
-#endif
-
     if (NtCurrentTeb()->ThreadLocalStoragePointer == NULL)
     {
         // Ignore exceptions early during thread startup before the thread is fully initialized by the OS
@@ -7104,7 +6607,6 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
         {
             VEH_ACTION action = CLRVectoredExceptionHandler(pExceptionInfo);
 
-#ifdef FEATURE_EH_FUNCLETS
             if (VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION == action)
             {
                 //
@@ -7113,7 +6615,6 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
                 HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
                 return EXCEPTION_CONTINUE_EXECUTION;
             }
-#endif // FEATURE_EH_FUNCLETS
 
             if (VEH_EXECUTE_HANDLER == action)
             {
@@ -7132,20 +6633,6 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
         }
 
 #ifdef _DEBUG
-#ifndef FEATURE_EH_FUNCLETS
-        {
-            CantAllocHolder caHolder;
-
-            PEXCEPTION_REGISTRATION_RECORD pRecord = GetCurrentSEHRecord();
-            while (pRecord != EXCEPTION_CHAIN_END)
-            {
-                STRESS_LOG2(LF_EH, LL_INFO10000, "CLRVectoredExceptionHandlerShim: FS:0 %p:%p\n",
-                            pRecord, pRecord->Handler);
-                pRecord = pRecord->Next;
-            }
-        }
-#endif // FEATURE_EH_FUNCLETS
-
         {
             // The call to "CLRVectoredExceptionHandler" above can return EXCEPTION_CONTINUE_SEARCH
             // for different scenarios like StackOverFlow/SOFT_SO, or if it is forbidden to enter the EE.
@@ -7184,14 +6671,6 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
             }
         }
 #endif // _DEBUG
-
-#ifndef FEATURE_EH_FUNCLETS
-        {
-            CantAllocHolder caHolder;
-            STRESS_LOG1(LF_EH, LL_INFO1000, "CLRVectoredExceptionHandlerShim: returning %d\n", result);
-        }
-#endif // FEATURE_EH_FUNCLETS
-
     }
     else if (bIsGCMarker)
     {
@@ -7283,7 +6762,6 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
 
     Exception::Delete(pException);
 
-#ifdef FEATURE_EH_FUNCLETS
     if (!nativeRethrow)
     {
         Thread *pThread = GetThread();
@@ -7306,9 +6784,8 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
         }
     }
     else
-#endif // FEATURE_EH_FUNCLETS
     {
-        RaiseTheExceptionInternalOnly(orThrowable, FALSE);
+        RaiseTheExceptionInternalOnly(orThrowable);
     }
 }
 
@@ -7859,78 +7336,6 @@ void StripFileInfoFromStackTrace(SString &ssStackTrace)
     }
     ssStackTrace.Truncate(end);
 }
-
-#ifdef _DEBUG
-//==============================================================================
-// This function will set a thread state indicating if an exception is escaping
-// the last CLR personality routine on the stack in a reverse pinvoke scenario.
-//
-// If the exception continues to go unhandled, it will eventually reach the OS
-// that will start invoking the UEFs. Since CLR registers its UEF only to handle
-// unhandled exceptions on such reverse pinvoke threads, we will assert this
-// state in our UEF to ensure it does not get called for any other reason.
-//
-// This function should be called only if the personality routine returned
-// EXCEPTION_CONTINUE_SEARCH.
-//==============================================================================
-void SetReversePInvokeEscapingUnhandledExceptionStatus(BOOL fIsUnwinding,
-#if defined(TARGET_X86)
-                                                       EXCEPTION_REGISTRATION_RECORD * pEstablisherFrame
-#elif defined(FEATURE_EH_FUNCLETS)
-                                                       PVOID pEstablisherFrame
-#else
-#error Unsupported platform
-#endif
-                                                       )
-{
-#ifndef DACCESS_COMPILE
-
-    LIMITED_METHOD_CONTRACT;
-
-    Thread *pCurThread = GetThread();
-    if (pCurThread->GetExceptionState()->IsExceptionInProgress())
-    {
-        if (!fIsUnwinding)
-        {
-            // Get the top-most Frame of this thread.
-            Frame* pCurFrame = pCurThread->GetFrame();
-            Frame* pTopMostFrame = pCurFrame;
-            while (pCurFrame && (pCurFrame != FRAME_TOP))
-            {
-                pTopMostFrame = pCurFrame;
-                pCurFrame = pCurFrame->PtrNextFrame();
-            }
-
-            // Is the exception escaping the last CLR personality routine on the stack of a
-            // reverse pinvoke thread?
-            if (((pTopMostFrame == NULL) || (pTopMostFrame == FRAME_TOP)) ||
-                ((void *)(pEstablisherFrame) > (void *)(pTopMostFrame)))
-            {
-                LOG((LF_EH, LL_INFO100, "SetReversePInvokeEscapingUnhandledExceptionStatus: setting Ex_RPInvokeEscapingException\n"));
-                // Set the flag on the thread indicating the exception is escaping the
-                // top most reverse pinvoke exception handler.
-                pCurThread->GetExceptionState()->GetFlags()->SetReversePInvokeEscapingException();
-            }
-        }
-        else
-        {
-            // Since we are unwinding, simply unset the flag indicating escaping unhandled exception
-            // if it was set.
-            if (pCurThread->GetExceptionState()->GetFlags()->ReversePInvokeEscapingException())
-            {
-                LOG((LF_EH, LL_INFO100, "SetReversePInvokeEscapingUnhandledExceptionStatus: unsetting Ex_RPInvokeEscapingException\n"));
-                pCurThread->GetExceptionState()->GetFlags()->ResetReversePInvokeEscapingException();
-            }
-        }
-    }
-    else
-    {
-        LOG((LF_EH, LL_INFO100, "SetReversePInvokeEscapingUnhandledExceptionStatus: not setting Ex_RPInvokeEscapingException since no exception is in progress.\n"));
-    }
-#endif // !DACCESS_COMPILE
-}
-
-#endif // _DEBUG
 
 #ifndef TARGET_UNIX
 
@@ -10410,8 +9815,6 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
     }
 }
 
-
-#ifdef FEATURE_EH_FUNCLETS
 struct TAResetStateCallbackData
 {
     // Do we have more managed code up the stack?
@@ -10462,34 +9865,6 @@ StackWalkAction TAResetStateCallback(CrawlFrame* pCf, void* data)
 
     return retStatus;
 }
-#endif // FEATURE_EH_FUNCLETS
-
-// This function will reset the thread abort state against the specified thread if it is determined that
-// there is no more managed code on the stack.
-//
-// Note: This function should be invoked ONLY during unwind.
-#ifndef FEATURE_EH_FUNCLETS
-void ResetThreadAbortState(PTR_Thread pThread, void *pEstablisherFrame)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(pThread != NULL);
-        PRECONDITION(pEstablisherFrame != NULL);
-    }
-    CONTRACTL_END;
-
-    if (pThread->IsAbortRequested())
-    {
-        if (GetNextCOMPlusSEHRecord(static_cast<EXCEPTION_REGISTRATION_RECORD *>(pEstablisherFrame)) == EXCEPTION_CHAIN_END)
-        {
-            _ASSERTE(!"Topmost handler and abort requested.");
-        }
-    }
-}
-#endif // !FEATURE_EH_FUNCLETS
 #endif // !DACCESS_COMPILE
 
 
@@ -11315,7 +10690,6 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-#ifdef FEATURE_EH_FUNCLETS
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = *dac_cast<PTR_SIZE_T>((TADDR)m_ContextPointers.regname);
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
@@ -11342,16 +10716,6 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
-#elif defined(TARGET_X86)
-#define CALLEE_SAVED_REGISTER(regname) pRD->Set##regname##Location(&m_Context.regname);
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-    pRD->ControlPC = ::GetIP(&m_Context);
-    pRD->SP = ::GetSP(&m_Context);
-#else // FEATURE_EH_FUNCLETS
-    PORTABILITY_ASSERT("SoftwareExceptionFrame::UpdateRegDisplay_Impl");
-#endif // FEATURE_EH_FUNCLETS
 }
 
 #ifndef DACCESS_COMPILE
@@ -11368,7 +10732,6 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     m_Context.Eax = 0;
     m_Context.Ecx = pTransitionBlock->m_argumentRegisters.ECX;
     m_Context.Edx = pTransitionBlock->m_argumentRegisters.EDX;
-#ifdef FEATURE_EH_FUNCLETS
     m_ContextPointers.Ecx = &m_Context.Ecx;
     m_ContextPointers.Edx = &m_Context.Edx;
 
@@ -11377,54 +10740,395 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     m_ContextPointers.reg = &m_Context.reg;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
-#else // FEATURE_EH_FUNCLETS
-#define CALLEE_SAVED_REGISTER(reg) \
-    m_Context.reg = pTransitionBlock->m_calleeSavedRegisters.reg;
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-#endif // FEATURE_EH_FUNCLETS
 
     m_Context.Esp = (UINT_PTR)(pTransitionBlock + 1);
     m_Context.Eip = pTransitionBlock->m_ReturnAddress;
     m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
 }
 
-#endif // TARGET_X86
+#elif defined(TARGET_AMD64)
 
-//
-// Init a new frame
-//
-void SoftwareExceptionFrame::Init()
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
 {
-    WRAPPER_NO_CONTRACT;
+    LIMITED_METHOD_CONTRACT;
 
-    // On x86 we initialize the context state from transition block in
-    // UpdateContextFromTransitionBlock method.
-#ifndef TARGET_X86
-#define CALLEE_SAVED_REGISTER(regname) m_ContextPointers.regname = NULL;
+#ifdef UNIX_AMD64_ABI
+    // On Unix AMD64, there are no non-volatile FP registers, so we only need
+    // control registers and integer callee-saved registers. We don't need to
+    // capture argument registers or FP state for exception handling.
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+    m_Context.SegCs = 0;
+    m_Context.SegSs = 0;
+    m_Context.EFlags = 0;
+    m_Context.Rax = 0;
+#else
+    // On Windows AMD64, we need FP state because xmm6-xmm15 are non-volatile
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+    m_Context.SegCs = 0;
+    m_Context.SegSs = 0;
+    m_Context.EFlags = 0;
+
+    // Read FP callee-saved registers (xmm6-xmm15) from the stack
+    // They are stored at negative offsets from TransitionBlock:
+    // Layout: [shadow (32)] [xmm6-xmm15 (160)] [xmm0-xmm3 (64)] [arg regs (32)] [padding (8)] [CalleeSavedRegs] [RetAddr]
+    // xmm6 is at sp+32, TransitionBlock is at sp+296, so xmm6 is at TransitionBlock - 264
+    M128A *pFpCalleeSaved = (M128A*)((BYTE*)pTransitionBlock - 264);
+
+    m_Context.Xmm6 = pFpCalleeSaved[0];
+    m_Context.Xmm7 = pFpCalleeSaved[1];
+    m_Context.Xmm8 = pFpCalleeSaved[2];
+    m_Context.Xmm9 = pFpCalleeSaved[3];
+    m_Context.Xmm10 = pFpCalleeSaved[4];
+    m_Context.Xmm11 = pFpCalleeSaved[5];
+    m_Context.Xmm12 = pFpCalleeSaved[6];
+    m_Context.Xmm13 = pFpCalleeSaved[7];
+    m_Context.Xmm14 = pFpCalleeSaved[8];
+    m_Context.Xmm15 = pFpCalleeSaved[9];
+
+    // Initialize FP control/status in FltSave - this is what fxrstor restores from
+    m_Context.FltSave.ControlWord = 0x27F;  // Default x87 control word
+    m_Context.FltSave.MxCsr = 0x1F80;       // Default MXCSR value (all exceptions masked)
+    m_Context.FltSave.MxCsr_Mask = 0x1FFF;  // MXCSR mask
+    m_Context.MxCsr = 0x1F80;               // Default MXCSR value (all exceptions masked)
+#endif
+
+#define CALLEE_SAVED_REGISTER(reg) \
+    m_Context.reg = pTransitionBlock->m_calleeSavedRegisters.reg; \
+    m_ContextPointers.reg = &m_Context.reg;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
-#ifndef TARGET_UNIX
-    Thread::VirtualUnwindCallFrame(&m_Context, &m_ContextPointers);
-#else // !TARGET_UNIX
-    BOOL success = PAL_VirtualUnwind(&m_Context, &m_ContextPointers);
-    if (!success)
-    {
-        _ASSERTE(!"SoftwareExceptionFrame::Init failed");
-        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-    }
-#endif // !TARGET_UNIX
-
-#define CALLEE_SAVED_REGISTER(regname) if (m_ContextPointers.regname == NULL) m_ContextPointers.regname = &m_Context.regname;
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-    _ASSERTE(ExecutionManager::IsManagedCode(::GetIP(&m_Context)));
-
-    m_ReturnAddress = ::GetIP(&m_Context);
-#endif // !TARGET_X86
+    m_Context.Rsp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Rip = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
 }
+
+#elif defined(TARGET_ARM)
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+
+    // Copy argument registers (R0-R3)
+    m_Context.R0 = pTransitionBlock->m_argumentRegisters.r[0];
+    m_Context.R1 = pTransitionBlock->m_argumentRegisters.r[1];
+    m_Context.R2 = pTransitionBlock->m_argumentRegisters.r[2];
+    m_Context.R3 = pTransitionBlock->m_argumentRegisters.r[3];
+
+    // Copy callee-saved registers (R4-R11, Lr)
+    m_Context.R4 = pTransitionBlock->m_calleeSavedRegisters.r4;
+    m_Context.R5 = pTransitionBlock->m_calleeSavedRegisters.r5;
+    m_Context.R6 = pTransitionBlock->m_calleeSavedRegisters.r6;
+    m_Context.R7 = pTransitionBlock->m_calleeSavedRegisters.r7;
+    m_Context.R8 = pTransitionBlock->m_calleeSavedRegisters.r8;
+    m_Context.R9 = pTransitionBlock->m_calleeSavedRegisters.r9;
+    m_Context.R10 = pTransitionBlock->m_calleeSavedRegisters.r10;
+    m_Context.R11 = pTransitionBlock->m_calleeSavedRegisters.r11;
+    m_Context.Lr = pTransitionBlock->m_calleeSavedRegisters.r14; // r14 is link register
+
+    // Copy floating point argument registers (d0-d7 / s0-s15)
+    FloatArgumentRegisters *pFloatArgs = (FloatArgumentRegisters*)((BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters());
+    for (int i = 0; i < 8; i++)
+    {
+        m_Context.D[i] = pFloatArgs->d[i];
+    }
+
+    // Read FP callee-saved registers (d8-d15) from the stack
+    // They are stored at negative offset from TransitionBlock:
+    // Layout: [d8-d15 (64 bytes)] [padding (4)] [d0-d7 (64 bytes)] [padding (4)] [TransitionBlock]
+    // FP callee-saved are at TransitionBlock - 136 (64 + 4 + 64 + 4)
+    UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 136);
+    for (int i = 0; i < 8; i++)
+    {
+        m_Context.D[8 + i] = pFpCalleeSaved[i];
+    }
+
+    // Initialize FP status/control register
+    m_Context.Fpscr = 0;
+
+    // Set up context pointers for callee-saved registers
+    m_ContextPointers.R4 = &m_Context.R4;
+    m_ContextPointers.R5 = &m_Context.R5;
+    m_ContextPointers.R6 = &m_Context.R6;
+    m_ContextPointers.R7 = &m_Context.R7;
+    m_ContextPointers.R8 = &m_Context.R8;
+    m_ContextPointers.R9 = &m_Context.R9;
+    m_ContextPointers.R10 = &m_Context.R10;
+    m_ContextPointers.R11 = &m_Context.R11;
+    m_ContextPointers.Lr = &m_Context.Lr;
+
+    m_Context.Sp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Pc = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+}
+
+#elif defined(TARGET_ARM64)
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+
+    // Copy argument registers (X0-X7)
+    for (int i = 0; i < 8; i++)
+    {
+        m_Context.X[i] = pTransitionBlock->m_argumentRegisters.x[i];
+    }
+
+    // Copy return buffer register (X8)
+    m_Context.X8 = pTransitionBlock->m_x8RetBuffReg;
+
+    // Copy callee-saved registers (X19-X28)
+    m_Context.X19 = pTransitionBlock->m_calleeSavedRegisters.x19;
+    m_Context.X20 = pTransitionBlock->m_calleeSavedRegisters.x20;
+    m_Context.X21 = pTransitionBlock->m_calleeSavedRegisters.x21;
+    m_Context.X22 = pTransitionBlock->m_calleeSavedRegisters.x22;
+    m_Context.X23 = pTransitionBlock->m_calleeSavedRegisters.x23;
+    m_Context.X24 = pTransitionBlock->m_calleeSavedRegisters.x24;
+    m_Context.X25 = pTransitionBlock->m_calleeSavedRegisters.x25;
+    m_Context.X26 = pTransitionBlock->m_calleeSavedRegisters.x26;
+    m_Context.X27 = pTransitionBlock->m_calleeSavedRegisters.x27;
+    m_Context.X28 = pTransitionBlock->m_calleeSavedRegisters.x28;
+
+    // Copy frame pointer and link register
+    m_Context.Fp = pTransitionBlock->m_calleeSavedRegisters.x29;
+    m_Context.Lr = pTransitionBlock->m_calleeSavedRegisters.x30;
+
+    // Copy floating point argument registers (V0-V7)
+    FloatArgumentRegisters *pFloatArgs = (FloatArgumentRegisters*)((BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters());
+    for (int i = 0; i < 8; i++)
+    {
+        m_Context.V[i] = pFloatArgs->q[i];
+    }
+
+    // Read FP callee-saved registers (d8-d15) from the stack
+    // They are stored at negative offset from TransitionBlock:
+    // Layout: [d8-d15 (64 bytes)] [q0-q7 (128 bytes)] [TransitionBlock]
+    // FP callee-saved are at TransitionBlock - 192 (64 + 128)
+    UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 192);
+    m_Context.V[8].Low = pFpCalleeSaved[0];
+    m_Context.V[8].High = 0;
+    m_Context.V[9].Low = pFpCalleeSaved[1];
+    m_Context.V[9].High = 0;
+    m_Context.V[10].Low = pFpCalleeSaved[2];
+    m_Context.V[10].High = 0;
+    m_Context.V[11].Low = pFpCalleeSaved[3];
+    m_Context.V[11].High = 0;
+    m_Context.V[12].Low = pFpCalleeSaved[4];
+    m_Context.V[12].High = 0;
+    m_Context.V[13].Low = pFpCalleeSaved[5];
+    m_Context.V[13].High = 0;
+    m_Context.V[14].Low = pFpCalleeSaved[6];
+    m_Context.V[14].High = 0;
+    m_Context.V[15].Low = pFpCalleeSaved[7];
+    m_Context.V[15].High = 0;
+
+    // Initialize remaining V registers (V16-V31) to zero - these are caller-saved
+    for (int i = 16; i < 32; i++)
+    {
+        m_Context.V[i].Low = 0;
+        m_Context.V[i].High = 0;
+    }
+    // Initialize FP control/status registers
+    m_Context.Fpcr = 0;
+    m_Context.Fpsr = 0;
+
+    // Set up context pointers for callee-saved registers
+    m_ContextPointers.X19 = &m_Context.X19;
+    m_ContextPointers.X20 = &m_Context.X20;
+    m_ContextPointers.X21 = &m_Context.X21;
+    m_ContextPointers.X22 = &m_Context.X22;
+    m_ContextPointers.X23 = &m_Context.X23;
+    m_ContextPointers.X24 = &m_Context.X24;
+    m_ContextPointers.X25 = &m_Context.X25;
+    m_ContextPointers.X26 = &m_Context.X26;
+    m_ContextPointers.X27 = &m_Context.X27;
+    m_ContextPointers.X28 = &m_Context.X28;
+    m_ContextPointers.Fp = &m_Context.Fp;
+    m_ContextPointers.Lr = &m_Context.Lr;
+
+    m_Context.Sp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Pc = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+}
+
+#elif defined(TARGET_LOONGARCH64)
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+
+    // Copy argument registers (A0-A7)
+    m_Context.A0 = pTransitionBlock->m_argumentRegisters.a[0];
+    m_Context.A1 = pTransitionBlock->m_argumentRegisters.a[1];
+    m_Context.A2 = pTransitionBlock->m_argumentRegisters.a[2];
+    m_Context.A3 = pTransitionBlock->m_argumentRegisters.a[3];
+    m_Context.A4 = pTransitionBlock->m_argumentRegisters.a[4];
+    m_Context.A5 = pTransitionBlock->m_argumentRegisters.a[5];
+    m_Context.A6 = pTransitionBlock->m_argumentRegisters.a[6];
+    m_Context.A7 = pTransitionBlock->m_argumentRegisters.a[7];
+
+    // Copy callee-saved registers (Fp, Ra, S0-S8)
+    m_Context.Fp = pTransitionBlock->m_calleeSavedRegisters.fp;
+    m_Context.Ra = pTransitionBlock->m_calleeSavedRegisters.ra;
+    m_Context.S0 = pTransitionBlock->m_calleeSavedRegisters.s0;
+    m_Context.S1 = pTransitionBlock->m_calleeSavedRegisters.s1;
+    m_Context.S2 = pTransitionBlock->m_calleeSavedRegisters.s2;
+    m_Context.S3 = pTransitionBlock->m_calleeSavedRegisters.s3;
+    m_Context.S4 = pTransitionBlock->m_calleeSavedRegisters.s4;
+    m_Context.S5 = pTransitionBlock->m_calleeSavedRegisters.s5;
+    m_Context.S6 = pTransitionBlock->m_calleeSavedRegisters.s6;
+    m_Context.S7 = pTransitionBlock->m_calleeSavedRegisters.s7;
+    m_Context.S8 = pTransitionBlock->m_calleeSavedRegisters.s8;
+
+    // Copy floating point argument registers (fa0-fa7)
+    // F[] array in CONTEXT is 4*32 elements for LSX/LASX support.
+    // Each FP register takes 4 slots (for 256-bit LASX vectors).
+    // For 64-bit doubles, we only use the first slot of each register.
+    FloatArgumentRegisters *pFloatArgs = (FloatArgumentRegisters*)((BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters());
+    for (int i = 0; i < 8; i++)
+    {
+        memcpy(&m_Context.F[i * 4], &pFloatArgs->f[i], sizeof(double));
+    }
+
+    // Read FP callee-saved registers (f24-f31) from the stack
+    // They are stored at negative offset from TransitionBlock:
+    // Layout: [f24-f31 (64 bytes)] [fa0-fa7 (64 bytes)] [TransitionBlock]
+    // FP callee-saved are at TransitionBlock - 128 (64 + 64)
+    UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 128);
+    for (int i = 0; i < 8; i++)
+    {
+        // f24-f31 map to indices 24-31 in the F array, each taking 4 slots
+        memcpy(&m_Context.F[(24 + i) * 4], &pFpCalleeSaved[i], sizeof(double));
+    }
+
+    // Initialize remaining F registers (f8-f23) to zero
+    for (int i = 8; i < 24; i++)
+    {
+        memset(&m_Context.F[i * 4], 0, sizeof(double) * 4);
+    }
+    // Initialize FP control/status register
+    m_Context.Fcsr = 0;
+
+    // Set up context pointers for callee-saved registers
+    m_ContextPointers.S0 = &m_Context.S0;
+    m_ContextPointers.S1 = &m_Context.S1;
+    m_ContextPointers.S2 = &m_Context.S2;
+    m_ContextPointers.S3 = &m_Context.S3;
+    m_ContextPointers.S4 = &m_Context.S4;
+    m_ContextPointers.S5 = &m_Context.S5;
+    m_ContextPointers.S6 = &m_Context.S6;
+    m_ContextPointers.S7 = &m_Context.S7;
+    m_ContextPointers.S8 = &m_Context.S8;
+    m_ContextPointers.Fp = &m_Context.Fp;
+    m_ContextPointers.Ra = &m_Context.Ra;
+
+    m_Context.Sp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Pc = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+}
+
+#elif defined(TARGET_RISCV64)
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+
+    // Copy argument registers (A0-A7)
+    m_Context.A0 = pTransitionBlock->m_argumentRegisters.a[0];
+    m_Context.A1 = pTransitionBlock->m_argumentRegisters.a[1];
+    m_Context.A2 = pTransitionBlock->m_argumentRegisters.a[2];
+    m_Context.A3 = pTransitionBlock->m_argumentRegisters.a[3];
+    m_Context.A4 = pTransitionBlock->m_argumentRegisters.a[4];
+    m_Context.A5 = pTransitionBlock->m_argumentRegisters.a[5];
+    m_Context.A6 = pTransitionBlock->m_argumentRegisters.a[6];
+    m_Context.A7 = pTransitionBlock->m_argumentRegisters.a[7];
+
+    // Copy callee-saved registers (Fp, Ra, S1-S11, Tp, Gp)
+    m_Context.Fp = pTransitionBlock->m_calleeSavedRegisters.fp;
+    m_Context.Ra = pTransitionBlock->m_calleeSavedRegisters.ra;
+    m_Context.S1 = pTransitionBlock->m_calleeSavedRegisters.s1;
+    m_Context.S2 = pTransitionBlock->m_calleeSavedRegisters.s2;
+    m_Context.S3 = pTransitionBlock->m_calleeSavedRegisters.s3;
+    m_Context.S4 = pTransitionBlock->m_calleeSavedRegisters.s4;
+    m_Context.S5 = pTransitionBlock->m_calleeSavedRegisters.s5;
+    m_Context.S6 = pTransitionBlock->m_calleeSavedRegisters.s6;
+    m_Context.S7 = pTransitionBlock->m_calleeSavedRegisters.s7;
+    m_Context.S8 = pTransitionBlock->m_calleeSavedRegisters.s8;
+    m_Context.S9 = pTransitionBlock->m_calleeSavedRegisters.s9;
+    m_Context.S10 = pTransitionBlock->m_calleeSavedRegisters.s10;
+    m_Context.S11 = pTransitionBlock->m_calleeSavedRegisters.s11;
+    m_Context.Tp = pTransitionBlock->m_calleeSavedRegisters.tp;
+    m_Context.Gp = pTransitionBlock->m_calleeSavedRegisters.gp;
+
+    // Initialize all F registers to zero first
+    memset(m_Context.F, 0, sizeof(m_Context.F));
+    // Copy floating point argument registers (fa0-fa7)
+    FloatArgumentRegisters *pFloatArgs = (FloatArgumentRegisters*)((BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters());
+    for (int i = 0; i < 8; i++)
+    {
+        // F[10-17] are fa0-fa7 in RISC-V register naming
+        memcpy(&m_Context.F[10 + i], &pFloatArgs->f[i], sizeof(double));
+    }
+
+    // Read FP callee-saved registers (fs0-fs11) from the stack
+    // They are stored at negative offset from TransitionBlock:
+    // Layout: [fs0-fs11 (96 bytes)] [fa0-fa7 (64 bytes)] [TransitionBlock]
+    // FP callee-saved are at TransitionBlock - 160 (96 + 64)
+    // RISC-V FP callee-saved: fs0=f8, fs1=f9, fs2-fs11=f18-f27
+    UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 160);
+    memcpy(&m_Context.F[8], &pFpCalleeSaved[0], sizeof(double));   // fs0 = f8
+    memcpy(&m_Context.F[9], &pFpCalleeSaved[1], sizeof(double));   // fs1 = f9
+    for (int i = 0; i < 10; i++)
+    {
+        memcpy(&m_Context.F[18 + i], &pFpCalleeSaved[2 + i], sizeof(double));  // fs2-fs11 = f18-f27
+    }
+
+    // Initialize FP control/status register
+    m_Context.Fcsr = 0;
+
+    // Set up context pointers for callee-saved registers
+    m_ContextPointers.S1 = &m_Context.S1;
+    m_ContextPointers.S2 = &m_Context.S2;
+    m_ContextPointers.S3 = &m_Context.S3;
+    m_ContextPointers.S4 = &m_Context.S4;
+    m_ContextPointers.S5 = &m_Context.S5;
+    m_ContextPointers.S6 = &m_Context.S6;
+    m_ContextPointers.S7 = &m_Context.S7;
+    m_ContextPointers.S8 = &m_Context.S8;
+    m_ContextPointers.S9 = &m_Context.S9;
+    m_ContextPointers.S10 = &m_Context.S10;
+    m_ContextPointers.S11 = &m_Context.S11;
+    m_ContextPointers.Fp = &m_Context.Fp;
+    m_ContextPointers.Gp = &m_Context.Gp;
+    m_ContextPointers.Tp = &m_Context.Tp;
+    m_ContextPointers.Ra = &m_Context.Ra;
+
+    m_Context.Sp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Pc = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+}
+
+#elif defined(TARGET_WASM)
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // WASM cannot capture execution context, so just zero everything
+    memset(&m_Context, 0, sizeof(m_Context));
+    memset(&m_ContextPointers, 0, sizeof(m_ContextPointers));
+    m_ReturnAddress = 0;
+}
+
+#endif // TARGET_X86
 
 //
 // Init and Link in a new frame
@@ -11432,8 +11136,6 @@ void SoftwareExceptionFrame::Init()
 void SoftwareExceptionFrame::InitAndLink(Thread *pThread)
 {
     WRAPPER_NO_CONTRACT;
-
-    Init();
 
     Push(pThread);
 }
