@@ -697,6 +697,7 @@ public:
 
     bool ContainsAllOneType(TypeHandle th)
     {
+        LIMITED_METHOD_DAC_CONTRACT;
         for (DWORD i = GetNumArgs(); i > 0;)
         {
             if ((*this)[--i] != th)
@@ -704,6 +705,8 @@ public:
         }
         return true;
     }
+
+    bool EligibleForSpecialMarkerTypeUsage(MethodTable* pOwnerMT);
 
 private:
     // Note that for DAC builds, m_pArgs may be host allocated buffer, not a copy of an object marshalled by DAC.

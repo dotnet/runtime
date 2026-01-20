@@ -9875,7 +9875,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                         else
                         {
                             // case 4 (We have an exact interface)
-                            if (pItfPossiblyApprox->GetInstantiation().ContainsAllOneType(pMT->GetSpecialInstantiationType()))
+                            if (pItfPossiblyApprox->GetInstantiation().EligibleForSpecialMarkerTypeUsage(pMT))
                             {
                                 // Validated that all generic arguments are the same, and that the first generic argument in the instantiation is exactly the value of calling GetSpecialInstantiationType on pMT
                                 // Then use the special marker type here

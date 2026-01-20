@@ -8937,3 +8937,19 @@ void MethodTable::GetStaticsOffsets(StaticsOffsetType offsetType, bool fGenericS
         *dwGCOffset = (uint32_t)sizeof(TADDR) * 2;
     }
 }
+
+bool Instantiation::EligibleForSpecialMarkerTypeUsage(MethodTable* pOwnerMT)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (pOwnerMT == NULL)
+        return false;
+
+    if (GetNumArgs() > MethodTable::MaxGenericParametersForSpecialMarkerType)
+        return false;
+
+    if (!ContainsAllOneType(pOwnerMT->GetSpecialInstantiationType()))
+        return false;
+
+    return true;
+}
