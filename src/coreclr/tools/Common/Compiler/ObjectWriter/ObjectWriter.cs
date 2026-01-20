@@ -53,7 +53,7 @@ namespace ILCompiler.ObjectWriter
             _outputInfoBuilder = outputInfoBuilder;
             _isSingleFileCompilation = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation;
 
-            // Padding byte for code sections (NOP for x86/x64) and null for Wasm
+            // Padding byte for code sections (NOP for x86/x64)
             _insPaddingByte = factory.Target.Architecture switch
             {
                 TargetArchitecture.X86 => 0x90,
