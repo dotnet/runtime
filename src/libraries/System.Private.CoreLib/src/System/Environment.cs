@@ -43,7 +43,7 @@ namespace System
         public static int ProcessorCount { get; } = GetProcessorCount();
 #else
         internal const bool IsSingleProcessor = true;
-        public static int ProcessorCount { get; } = 1;
+        public static int ProcessorCount => 1;
 #endif
         private static volatile sbyte s_privilegedProcess;
 
