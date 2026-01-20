@@ -7030,8 +7030,8 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 #ifdef JIT32_GCENCODER
     if (emitComp->lvaKeepAliveAndReportThis())
     {
-        assert(emitComp->lvaIsOriginalThisArg(emitComp->lvaArg0Var));
-        LclVarDsc* thisDsc = emitComp->lvaGetDesc(emitComp->lvaArg0Var);
+        assert(emitComp->lvaIsOriginalThisArg(0));
+        LclVarDsc* thisDsc = emitComp->lvaGetDesc(0U);
 
         /* If "this" (which is passed in as a register argument in REG_ARG_0)
            is enregistered, we normally spot the "mov REG_ARG_0 -> thisReg"
