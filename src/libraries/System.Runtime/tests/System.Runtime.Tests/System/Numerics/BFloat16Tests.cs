@@ -2271,6 +2271,31 @@ namespace System.Numerics.Tests
             AssertEqual(+expectedResult, BFloat16.RadiansToDegrees(+value), allowedVariance);
         }
 
+        [Theory]
+        [InlineData(float.PositiveInfinity, int.MaxValue)]
+        [InlineData(float.NaN, int.MaxValue)]
+        [InlineData(0.0f, int.MinValue)]
+        [InlineData(1.0f, 0)]
+        [InlineData(2.0f, 1)]
+        [InlineData(4.0f, 2)]
+        [InlineData(0.5f, -1)]
+        public static void ILogB(float value, int expectedResult)
+        {
+            Assert.Equal(expectedResult, BFloat16.ILogB((BFloat16)value));
+        }
+
+        [Fact]
+        public static void ILogB_Subnormal()
+        {
+            // BFloat16.Epsilon is the smallest positive subnormal value
+            // Its ILogB should be -133
+            Assert.Equal(-133, BFloat16.ILogB(BFloat16.Epsilon));
+
+            // Test another subnormal value: 0x0040 (half of max subnormal)
+            BFloat16 subnormal = BitConverter.UInt16BitsToBFloat16(0x0040);
+            Assert.Equal(-127, BFloat16.ILogB(subnormal));
+        }
+
         public static IEnumerable<object[]> TryWriteSignificandBigEndianTest_TestData() =>
         [
             [BFloat16.NegativeInfinity, 1, new byte[] { 0x80 }],
