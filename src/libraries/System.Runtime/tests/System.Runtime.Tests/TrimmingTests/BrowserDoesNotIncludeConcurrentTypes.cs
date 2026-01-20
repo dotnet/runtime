@@ -10,18 +10,12 @@ using System.Threading.Tasks;
 /// <summary>
 /// Tests that concurrent collections are not included in a trimmed app targeting browser.
 /// The idea is that the runtime should not depend on these types when running in a browser.
-/// Motivation: application size and wasted CPU cycles these types would use to stay thread safe.
+/// Motivation: application size.
 /// </summary>
 class Program
 {
     static async Task<int> Main(string[] args)
     {
-        var dictType = GetTypeByName("ConcurrentDictionary`2");
-        if (dictType != null)
-        {
-            Console.WriteLine("Failed ConcurrentDictionary");
-            return -1;
-        }
         var bagType = GetTypeByName("ConcurrentBag`1");
         if (bagType != null)
         {

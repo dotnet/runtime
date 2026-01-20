@@ -11,7 +11,4 @@
     <type fullname="System.ComponentModel.LicenseManager/CLRLicenseContext" />
     <type fullname="System.ComponentModel.LicenseManager/LicInfoHelperLicenseContext" />
   </assembly>
-  <assembly fullname="System.Private.CoreLib">
-      <type fullname="System.Collections.Concurrent.ConcurrentDictionary`2" />
-  </assembly>
 </linker>

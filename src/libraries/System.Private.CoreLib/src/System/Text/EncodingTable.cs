@@ -5,11 +5,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
-#if FEATURE_SINGLE_THREADED
-using CodePageDictionary = System.Collections.Generic.Dictionary<string, int>;
-#else
-using CodePageDictionary = System.Collections.Concurrent.ConcurrentDictionary<string, int>;
-#endif
 
 namespace System.Text
 {
@@ -20,7 +15,7 @@ namespace System.Text
     //
     internal static partial class EncodingTable
     {
-        private static readonly CodePageDictionary s_nameToCodePage = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly ConcurrentDictionary<string, int> s_nameToCodePage = new(StringComparer.OrdinalIgnoreCase);
         private static CodePageDataItem?[]? s_codePageToCodePageData;
 
         /*=================================GetCodePageFromName==========================
@@ -37,17 +32,7 @@ namespace System.Text
         {
             ArgumentNullException.ThrowIfNull(name);
 
-#if FEATURE_SINGLE_THREADED
-            if (s_nameToCodePage.TryGetValue(name, out int codePage))
-            {
-                return codePage;
-            }
-            codePage = InternalGetCodePageFromName(name);
-            s_nameToCodePage[name] = codePage;
-            return codePage;
-#else
             return s_nameToCodePage.GetOrAdd(name, InternalGetCodePageFromName);
-#endif
         }
 
         // Find the data item by binary searching the table.
