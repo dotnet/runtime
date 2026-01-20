@@ -258,7 +258,7 @@
          than the sdk version specified in global.json
     -->
     <!-- NETCoreSdkVersion is normally set by the SDK, but for non-SDK projects we need extract from global.json -->
-    <_GlobalJsonContent>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)../global.json'))</_GlobalJsonContent>
+    <_GlobalJsonContent>$([System.IO.File]::ReadAllText('$([MSBuild]::GetPathOfFileAbove('global.json', '$(MSBuildThisFileDirectory)'))'))</_GlobalJsonContent>
     <_GlobalJsonSdkVersion Condition="'$(_GlobalJsonContent)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(_GlobalJsonContent), '"sdk"\s*:\s*\{[^\}]*"version"\s*:\s*"([^"]+)"', System.Text.RegularExpressions.RegexOptions.Singleline).Groups[1].Value)</_GlobalJsonSdkVersion>
     <_DotnetSdkVersion>$(MicrosoftDotNetApiCompatTaskVersion)</_DotnetSdkVersion>
     <SdkVersionForWorkloadTesting Condition="$([System.String]::Compare('$(_GlobalJsonSdkVersion)', '$(_DotnetSdkVersion)')) &lt;= 0">$(_DotnetSdkVersion)</SdkVersionForWorkloadTesting>
