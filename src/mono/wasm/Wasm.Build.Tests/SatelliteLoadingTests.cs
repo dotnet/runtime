@@ -70,7 +70,7 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
         var appCsprojPath = Path.Combine(_projectDir, "WasmBasicTestApp.csproj");
         var appCsproj = XDocument.Load(appCsprojPath);
 
-        var projectReference = appCsproj.Descendants("ProjectReference").Where(pr => pr.Attribute("Include")?.Value?.Contains("ResourceLibrary") ?? false).Single();
+        var projectReference = appCsproj.Descendants("ProjectReference").Single(pr => pr.Attribute("Include")?.Value?.Contains("ResourceLibrary") ?? false);
         var itemGroup = projectReference.Parent!;
         projectReference.Remove();
 
