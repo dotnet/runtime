@@ -2621,7 +2621,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 if (op1->IsVectorZero())
                 {
-                    binOp = comp->gtNewSimdBinOpNode(GT_AND, simdType, op2, op3, simdBaseType, simdSize);
+                    binOp = comp->gtNewSimdBinOpNode(GT_AND, simdType, op3, op2, simdBaseType, simdSize);
                     BlockRange().Remove(op1);
                 }
                 else
