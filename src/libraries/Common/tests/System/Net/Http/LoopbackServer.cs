@@ -682,7 +682,10 @@ namespace System.Net.Test.Common
                     // This seems to help avoid connection reset issues caused by buffered data
                     // that has not been sent/acked when the graceful shutdown timeout expires.
                     // This may throw if the socket was already closed, so eat any exception.
-                    await _socket?.ShutdownAsync(SocketShutdown.Send);
+                    if (_socket is not null)
+                    {
+                        await _socket.ShutdownAsync(SocketShutdown.Send).ConfigureAwait(false);
+                    }
                 }
                 catch (Exception) { }
 
