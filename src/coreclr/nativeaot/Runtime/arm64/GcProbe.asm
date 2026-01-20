@@ -103,7 +103,6 @@ PROBE_FRAME_SIZE    field 0
 ;;
 ;; Register state on exit:
 ;;  x4: thread pointer
-;;  x2: preserved
 ;;  x3: trashed
 ;;
     MACRO
