@@ -21,9 +21,48 @@ namespace JIT.opt.ValueNumbering
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int DoubleNotInt(int value) => ~~value;
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static byte DoubleNotByte(byte value) => (byte)(~~value);
+        
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long DoubleNotLong(long value) => ~~value;
+        
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static uint DoubleNotUInt(uint value) => ~~value;
+
         // Test case: nested double NOT
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int QuadNotInt(int value) => ~~(~~value);
+
+        // LONGER CHAINS
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int TripleNot(int value) => ~~~value;
+        
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int SixNot(int value) => ~~~~~~value;
+
+        // LOCAL VARIABLE PATTERN 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int DoubleNotViaLocal(int value)
+        {
+            int temp = ~value;
+            return ~temp;
+        }
+
+        // ACROSS BLOCKS
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AcrossBlocks(int value, bool condition)
+        {
+            int temp = condition ? ~value : ~value;
+            return ~temp;
+        }
+
+        // WITH OTHER OPERATIONS
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int NotWithAddition(int a, int b) => ~~(a + b);
+        
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int NotInsideExpression(int a, int b) => (~~a) + (~~b);
 
         [Fact]
         public static int TestEntryPoint()
@@ -74,6 +113,75 @@ namespace JIT.opt.ValueNumbering
             {
                 Console.WriteLine("FAIL: QuadNotInt(99) returned " + QuadNotInt(99) + ", expected 99");
                 return 107;
+            }
+
+            // Test DoubleNotByte
+            if (DoubleNotByte(200) != 200)
+            {
+                Console.WriteLine("FAIL: DoubleNotByte(200) returned " + DoubleNotByte(200) + ", expected 200");
+                return 108;
+            }
+
+            // Test DoubleNotLong
+            if (DoubleNotLong(123456789L) != 123456789L)
+            {
+                Console.WriteLine("FAIL: DoubleNotLong(123456789L) returned " + DoubleNotLong(123456789L) + ", expected 123456789L");
+                return 109;
+            }
+
+            // Test DoubleNotUInt
+            if (DoubleNotUInt(4000000000U) != 4000000000U)
+            {
+                Console.WriteLine("FAIL: DoubleNotUInt(4000000000U) returned " + DoubleNotUInt(4000000000U) + ", expected 4000000000U");
+                return 110;
+            }
+
+            // Test TripleNot
+            if (TripleNot(42) != ~42)
+            {
+                Console.WriteLine("FAIL: TripleNot(42) returned " + TripleNot(42) + ", expected " + ~42);
+                return 111;
+            }
+
+            // Test SixNot
+            if (SixNot(42) != 42)
+            {
+                Console.WriteLine("FAIL: SixNot(42) returned " + SixNot(42) + ", expected 42");
+                return 112;
+            }
+
+            // Test DoubleNotViaLocal
+            if (DoubleNotViaLocal(42) != 42)
+            {
+                Console.WriteLine("FAIL: DoubleNotViaLocal(42) returned " + DoubleNotViaLocal(42) + ", expected 42");
+                return 113;
+            }
+
+            // Test AcrossBlocks
+            if (AcrossBlocks(42, true) != 42)
+            {
+                Console.WriteLine("FAIL: AcrossBlocks(42, true) returned " + AcrossBlocks(42, true) + ", expected 42");
+                return 114;
+            }
+
+            if (AcrossBlocks(42, false) != 42)
+            {
+                Console.WriteLine("FAIL: AcrossBlocks(42, false) returned " + AcrossBlocks(42, false) + ", expected 42");
+                return 115;
+            }
+
+            // Test NotWithAddition
+            if (NotWithAddition(10, 20) != 30)
+            {
+                Console.WriteLine("FAIL: NotWithAddition(10, 20) returned " + NotWithAddition(10, 20) + ", expected 30");
+                return 116;
+            }
+
+            // Test NotInsideExpression
+            if (NotInsideExpression(10, 20) != 30)
+            {
+                Console.WriteLine("FAIL: NotInsideExpression(10, 20) returned " + NotInsideExpression(10, 20) + ", expected 30");
+                return 117;
             }
 
             Console.WriteLine("PASS: All double NOT optimizations work correctly");
