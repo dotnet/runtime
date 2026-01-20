@@ -71,7 +71,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         return;
     }
 
-    unsigned initialSPLclIndex = 0; // TODO-WASM: remove this hardcoding once we have the SP arg local.
+    unsigned initialSPLclIndex = compiler->lvaWasmSpArg;
     unsigned spLclIndex        = WasmRegToIndex(spReg);
     assert(initialSPLclIndex == spLclIndex);
     if (frameSize != 0)
