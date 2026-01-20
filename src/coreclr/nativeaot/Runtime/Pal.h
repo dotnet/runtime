@@ -107,9 +107,9 @@ typedef struct _EXCEPTION_RECORD EXCEPTION_RECORD, *PEXCEPTION_RECORD;
 #define STATUS_NATIVEAOT_UNMANAGED_HELPER_NULL_REFERENCE ((uint32_t   )0x00000042L)
 
 #ifdef TARGET_UNIX
-#define NULL_AREA_SIZE                   (4*1024)
+#define NULL_AREA_SIZE                   0
 #else
-#define NULL_AREA_SIZE                   (64*1024)
+#define NULL_AREA_SIZE                   0
 #endif
 
 #ifdef TARGET_UNIX
