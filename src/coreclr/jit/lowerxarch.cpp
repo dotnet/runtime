@@ -3540,10 +3540,13 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
             assert(simdSize != 64);
 
             // We'll need the mask twice
-            LIR::Use op1Use;
-            LIR::Use::MakeDummyUse(newNodes, op1, &op1Use);
-            op1Use.ReplaceWithLclVar(comp);
-            op1 = op1Use.Def();
+            if (!op1->OperIs(GT_LCL_VAR))
+            {
+                LIR::Use op1Use;
+                LIR::Use::MakeDummyUse(newNodes, op1, &op1Use);
+                op1Use.ReplaceWithLclVar(comp);
+                op1 = op1Use.Def();
+            }
 
             GenTree* tmp1 = comp->gtClone(op1);
             GenTree* tmp2 = comp->gtNewSimdBinOpNode(GT_AND, simdType, op1, op2, simdBaseType, simdSize);
