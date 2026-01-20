@@ -65,7 +65,7 @@ namespace System.Runtime.Tests
                 Assert.True(beforeCompiledMethodCount > 0, $"Compiled method count not greater than 0! ({beforeCompiledMethodCount})");
             }
 
-            if (PlatformDetection.IsMonoInterpreter || PlatformDetection.IsBrowser)
+            if (PlatformDetection.IsBrowser)
             {
                 // Before and after will most likely be the same with the mono interpreter and in browser because of low precision timers
                 Assert.True(afterCompilationTime >= beforeCompilationTime, $"CompilationTime: after not greater than before! (after: {afterCompilationTime}, before: {beforeCompilationTime})");
