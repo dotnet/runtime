@@ -167,17 +167,23 @@ namespace System.SpanTests
             }
         }
 
-        [Fact]
-        public void InvalidRange_HighLessThanLow_ReturnsMinus1()
+        [Theory]
+        [InlineData(100, 50)]   // Clearly invalid range
+        [InlineData(100, 99)]   // Off-by-one case
+        [InlineData(50, 49)]    // Another off-by-one case
+        [InlineData(1, 0)]      // Small values
+        [InlineData(0, -1)]     // Includes negative value
+        [InlineData(-10, -20)]  // Both negative values
+        [InlineData(200, 100)]  // Original issue case
+        public void InvalidRange_HighLessThanLow_ReturnsMinus1(int low, int high)
         {
             // When highInclusive < lowInclusive, the range is invalid and no values should match
             for (int length = 1; length <= 64; length++)
             {
                 T[] array = Enumerable.Range(0, length).Select(Create).ToArray();
 
-                // Test with a clearly invalid range where high < low
-                T lowInclusive = Create(100);
-                T highInclusive = Create(50);
+                T lowInclusive = Create(low);
+                T highInclusive = Create(high);
 
                 // IndexOfAnyInRange should return -1 (no match)
                 Assert.Equal(-1, IndexOfAnyInRange(array, lowInclusive, highInclusive));
