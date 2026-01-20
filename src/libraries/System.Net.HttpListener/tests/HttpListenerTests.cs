@@ -179,14 +179,21 @@ namespace System.Net.Tests
             var listener = listenerFactory.GetListener();
             listener.Start();
 
+            using var cts = new CancellationTokenSource();
+            var getContextStarted = new TaskCompletionSource<bool>();
+
             var listenerTask = Task.Run(() =>
             {
+                // Signal that we're about to call GetContext
+                getContextStarted.SetResult(true);
                 HttpListenerException exception = Assert.Throws<HttpListenerException>(() => listener.GetContext());
                 Assert.Equal((int)SocketError.OperationAborted, exception.ErrorCode);
                 return exception;
             });
 
-            await Task.Delay(1000); // Wait for listenerTask to call GetContext.
+            // Wait until GetContext is called before stopping
+            await getContextStarted.Task;
+            await Task.Delay(100); // Small delay to ensure GetContext is blocking
             listener.Stop();
             listener.Close();
             await listenerTask.WaitAsync(TimeSpan.FromSeconds(10));
