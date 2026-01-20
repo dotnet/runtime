@@ -609,7 +609,6 @@ GetProcessInfo(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name)
 
     // Try reading the executable name from the /proc/<pid>/exe link. Prefer this name to the
     // one reported by status if it is available because the status name is often truncated
-    // Try reading the executable name from the /proc/<pid>/exe link.
     char exePath[128];
     int chars = snprintf(exePath, sizeof(exePath), "/proc/%d/exe", pid);
     if (chars > 0 && (size_t)chars < sizeof(exePath))
