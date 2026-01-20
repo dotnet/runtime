@@ -1182,6 +1182,69 @@ END_PROLOGUE
         ret
 NESTED_END CallJittedMethodRetDouble, _TEXT
 
+NESTED_ENTRY CallJittedMethodRetI1, _TEXT
+        push_nonvol_reg rbp
+        set_frame rbp, 0
+        push_vol_reg r8
+        push_vol_reg rax ; align
+END_PROLOGUE
+        add r9, 20h ; argument save area + alignment
+        sub rsp, r9 ; total stack space
+        mov r11, rcx ; The routines list
+        mov r10, rdx ; interpreter stack args
+        call qword ptr [r11]
+        movsx rax, al  ; Sign extend 1 byte to 64 bit
+        mov rdx, [rbp + 48]
+        mov [rdx], rcx
+        mov r8, [rbp - 8]
+        mov qword ptr [r8], rax
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetI1, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetI2, _TEXT
+        push_nonvol_reg rbp
+        set_frame rbp, 0
+        push_vol_reg r8
+        push_vol_reg rax ; align
+END_PROLOGUE
+        add r9, 20h ; argument save area + alignment
+        sub rsp, r9 ; total stack space
+        mov r11, rcx ; The routines list
+        mov r10, rdx ; interpreter stack args
+        call qword ptr [r11]
+        movsx rax, ax  ; Sign extend 2 bytes to 64 bit
+        mov rdx, [rbp + 48]
+        mov [rdx], rcx
+        mov r8, [rbp - 8]
+        mov qword ptr [r8], rax
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetI2, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetI4, _TEXT
+        push_nonvol_reg rbp
+        set_frame rbp, 0
+        push_vol_reg r8
+        push_vol_reg rax ; align
+END_PROLOGUE
+        add r9, 20h ; argument save area + alignment
+        sub rsp, r9 ; total stack space
+        mov r11, rcx ; The routines list
+        mov r10, rdx ; interpreter stack args
+        call qword ptr [r11]
+        movsxd rax, eax  ; Sign extend 4 bytes to 64 bit
+        mov rdx, [rbp + 48]
+        mov [rdx], rcx
+        mov r8, [rbp - 8]
+        mov qword ptr [r8], rax
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetI4, _TEXT
+
 NESTED_ENTRY CallJittedMethodRetI8, _TEXT
         push_nonvol_reg rbp
         set_frame rbp, 0
@@ -1201,6 +1264,69 @@ END_PROLOGUE
         pop rbp
         ret
 NESTED_END CallJittedMethodRetI8, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetU1, _TEXT
+        push_nonvol_reg rbp
+        set_frame rbp, 0
+        push_vol_reg r8
+        push_vol_reg rax ; align
+END_PROLOGUE
+        add r9, 20h ; argument save area + alignment
+        sub rsp, r9 ; total stack space
+        mov r11, rcx ; The routines list
+        mov r10, rdx ; interpreter stack args
+        call qword ptr [r11]
+        movzx rax, al  ; Zero extend 1 byte to 64 bit
+        mov rdx, [rbp + 48]
+        mov [rdx], rcx
+        mov r8, [rbp - 8]
+        mov qword ptr [r8], rax
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetU1, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetU2, _TEXT
+        push_nonvol_reg rbp
+        set_frame rbp, 0
+        push_vol_reg r8
+        push_vol_reg rax ; align
+END_PROLOGUE
+        add r9, 20h ; argument save area + alignment
+        sub rsp, r9 ; total stack space
+        mov r11, rcx ; The routines list
+        mov r10, rdx ; interpreter stack args
+        call qword ptr [r11]
+        movzx rax, ax  ; Zero extend 2 bytes to 64 bit
+        mov rdx, [rbp + 48]
+        mov [rdx], rcx
+        mov r8, [rbp - 8]
+        mov qword ptr [r8], rax
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetU2, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetU4, _TEXT
+        push_nonvol_reg rbp
+        set_frame rbp, 0
+        push_vol_reg r8
+        push_vol_reg rax ; align
+END_PROLOGUE
+        add r9, 20h ; argument save area + alignment
+        sub rsp, r9 ; total stack space
+        mov r11, rcx ; The routines list
+        mov r10, rdx ; interpreter stack args
+        call qword ptr [r11]
+        mov eax, eax  ; Zero extend 4 bytes to 64 bit (clearing upper 32 bits)
+        mov rdx, [rbp + 48]
+        mov [rdx], rcx
+        mov r8, [rbp - 8]
+        mov qword ptr [r8], rax
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetU4, _TEXT
 
 endif ; FEATURE_INTERPRETER
 
