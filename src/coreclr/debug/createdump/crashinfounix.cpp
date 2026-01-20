@@ -591,18 +591,18 @@ GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name)
                 if (chars > 0 && (size_t)chars < sizeof(exePath))
                 {
                     struct stat sb;
-                    if (lstat(exePath, &sb) != -1) 
+                    if (lstat(exePath, &sb) != -1)
                     {
                         ssize_t bufSize = sb.st_size == 0 ? 4096 : sb.st_size + 1;
-                        char *buf = (char*) malloc(bufSize);
-                        if (buf != NULL) 
+                        char *buf = static_cast<char*>(malloc(bufSize));
+                        if (buf != nullptr)
                         {
-                            ssize_t nbytes = readlink(exePath, buf, bufSize);
-                            if (nbytes != -1) 
+                            ssize_t nbytes = readlink(exePath, buf, bufSize - 1);
+                            if (nbytes != -1)
                             {
-                                buf[nbytes] = '\0'; 
+                                buf[nbytes] = '\0';
                                 char* executableName = strrchr(buf, '/');
-                                *name = strdup((executableName != nullptr) ? (executableName + 1) : buf);
+                                *name = (executableName != nullptr) ? (executableName + 1) : buf;
                                 free(buf);
                                 continue;
                             }
@@ -610,7 +610,7 @@ GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name)
                         }
                     }
                 }
-                
+
                 // Failed to read the executable name from the link, fallback to name from status.
                 char* n = strchr(line + 6, '\n');
                 if (n != nullptr)
