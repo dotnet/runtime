@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Linq;
+using System.Runtime.Serialization;
 using Xunit;
 
 namespace System.IO.Compression
@@ -118,17 +119,22 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        public void GetMaxCompressedLength_LargerThanMax_ThrowsArgumentOutOfRangeException()
+        public void GetMaxCompressedLength_OutOfRange_ThrowsArgumentOutOfRangeException()
         {
             // unfortunately, the max argument is platform dependent due to internal use of size_t
-            Assert.Throws<ArgumentOutOfRangeException>("inputLength", () => GetMaxCompressedLength(nint.MaxValue));
-            Assert.Throws<ArgumentOutOfRangeException>("inputLength", () => GetMaxCompressedLength(nint.MaxValue + 1L));
+            // on the native library side. So we test up to the smaller of the two limits.
 
-            if (!Environment.Is64BitProcess)
-            {
-                // the API defines the argument as long, so test also uint.MaxValue + 1 on 32-bit
-                Assert.Throws<ArgumentOutOfRangeException>("inputLength", () => GetMaxCompressedLength(uint.MaxValue + 1L));
-            }
+            long maxValue = (long)Math.Min((ulong)long.MaxValue, (ulong)nuint.MaxValue);
+            // since the returned value is slightly larger than the input, we
+            // expect the value to overflow the signed long range
+            Assert.Throws<ArgumentOutOfRangeException>("inputLength", () => GetMaxCompressedLength(maxValue));
+
+            // on 64-bit platforms, this overflows and tests negative inputs
+            // on 32-bit platforms, this is in range for long, but out of range for size_t used natively
+            Assert.Throws<ArgumentOutOfRangeException>("inputLength", () => GetMaxCompressedLength(maxValue + 1L));
+
+            // test also the negative explicitly
+            Assert.Throws<ArgumentOutOfRangeException>("inputLength", () => GetMaxCompressedLength(-1));
         }
 
         [Fact]
