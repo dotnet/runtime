@@ -4,11 +4,13 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates.Asn1;
+using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -25,7 +27,7 @@ namespace System.Security.Cryptography.X509Certificates
                 X509Persistence.CryptographyFeatureName,
                 X509Persistence.OcspSubFeatureName);
 
-        private static readonly ConcurrentDictionary<string, WeakReference<CachedCrlEntry>> s_crlCache = new();
+        private static readonly MruCrlCache s_crlCache = new();
 
         private const ulong X509_R_CERT_ALREADY_IN_HASH_TABLE = 0x0B07D065;
 
@@ -84,11 +86,9 @@ namespace System.Security.Cryptography.X509Certificates
                 verificationTime.Kind != DateTimeKind.Utc,
                 "UTC verificationTime should have been normalized to Local");
 
-            if (s_crlCache.TryGetValue(crlFileName, out WeakReference<CachedCrlEntry>? cacheEntryRef))
+            if (s_crlCache.TryGetValueAndUpRef(crlFileName, out CachedCrlEntry? cacheEntry))
             {
-                Debug.Assert(cacheEntryRef is not null);
-
-                if (cacheEntryRef.TryGetTarget(out CachedCrlEntry? cacheEntry))
+                try
                 {
                     Debug.Assert(cacheEntry is not null);
 
@@ -108,9 +108,9 @@ namespace System.Security.Cryptography.X509Certificates
                         OpenSslX509ChainEventSource.Log.CrlCacheInMemoryExpired(verificationTime, cacheEntry.Expiration);
                     }
                 }
-                else if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                finally
                 {
-                    OpenSslX509ChainEventSource.Log.CrlCacheInMemoryCollected();
+                    cacheEntry.CrlHandle.DangerousRelease();
                 }
             }
             else if (OpenSslX509ChainEventSource.Log.IsEnabled())
@@ -135,60 +135,15 @@ namespace System.Security.Cryptography.X509Certificates
         private static void UpdateCacheAndAttachCrl(string crlFileName, SafeX509StoreHandle store, CachedCrlEntry newEntry)
         {
             Debug.Assert(!newEntry.CrlHandle.IsInvalid);
+            CachedCrlEntry toAttach = s_crlCache.AddOrUpdateAndUpRef(crlFileName, newEntry);
 
-            WeakReference<CachedCrlEntry> cacheEntryRef = UpdateCache(crlFileName, new WeakReference<CachedCrlEntry>(newEntry));
-
-            if (!cacheEntryRef.TryGetTarget(out CachedCrlEntry? cacheEntry))
+            try
             {
-                // If AddOrUpdate picks another entry, but that gets collected between there and here,
-                // use the disk cache entry we loaded instead of spinning or fresh download.
-                cacheEntry = newEntry;
+                AttachCrl(store, toAttach.CrlHandle);
             }
-
-            Debug.Assert(cacheEntry is not null);
-
-            if (!ReferenceEquals(cacheEntry, newEntry))
+            finally
             {
-                // Another thread inserted a better entry than we were trying to,
-                // dispose our CRL.
-                newEntry.CrlHandle.Dispose();
-            }
-
-            // We've already touched the collection, so purge off anything collected.
-            foreach (KeyValuePair<string, WeakReference<CachedCrlEntry>> kvp in s_crlCache)
-            {
-                if (!kvp.Value.TryGetTarget(out _))
-                {
-                    s_crlCache.TryRemove(kvp);
-                }
-            }
-
-            AttachCrl(store, cacheEntry.CrlHandle);
-
-            static WeakReference<CachedCrlEntry> UpdateCache(string key, WeakReference<CachedCrlEntry> newWeakRef)
-            {
-                return s_crlCache.AddOrUpdate(
-                    key,
-                    newWeakRef,
-                    (key, cur) =>
-                    {
-                        bool hasCur = cur.TryGetTarget(out CachedCrlEntry? curEntry);
-                        bool hasNew = newWeakRef.TryGetTarget(out CachedCrlEntry? innerNewEntry);
-
-                        if (hasCur && hasNew)
-                        {
-                            Debug.Assert(curEntry is not null);
-                            Debug.Assert(innerNewEntry is not null);
-
-                            // Keep the one with the later expiration
-                            return curEntry.Expiration >= innerNewEntry.Expiration ? cur : newWeakRef;
-                        }
-
-                        // The target of the WeakReference passed in here is still rooted,
-                        // so if one of cur and new is missing, it has to have been cur.
-                        Debug.Assert(hasNew);
-                        return newWeakRef;
-                    });
+                toAttach.CrlHandle.DangerousRelease();
             }
         }
 
@@ -522,6 +477,233 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             return null;
+        }
+
+        // The MRU CRL cache always does a DangerousAddReference before returning the value,
+        // so that neither cooperative GC pruning nor a cache-value refresh trigger ReleaseHandle
+        // on a CRL entry in use.
+        private sealed class MruCrlCache
+        {
+            private readonly Lock _lock = new();
+
+            private int _count = -1;
+            private Node? _head;
+            private Node? _expire;
+
+            internal CachedCrlEntry AddOrUpdateAndUpRef(string key, CachedCrlEntry value)
+            {
+                Debug.Assert(key is not null);
+                Debug.Assert(value is not null);
+                Debug.Assert(value.CrlHandle is not null && !value.CrlHandle.IsInvalid);
+                // Don't assert/enforce anything about expiration, because a) clock-skew, or b)
+                // the caller might have a verification time that's in the past.
+
+                int hashCode = key.GetHashCode();
+                CachedCrlEntry ret = value;
+
+                lock (_lock)
+                {
+                    // The first time we add something, create the Jacquard to monitor for GC.
+                    if (_count < 0)
+                    {
+                        new Jacquard(this);
+                        _count = 0;
+                    }
+
+                    bool ignore = false;
+
+                    if (TryGetNode(hashCode, key, out Node? current))
+                    {
+                        Debug.Assert(current is not null);
+
+                        if (current.Value.Expiration >= value.Expiration)
+                        {
+                            value.CrlHandle.Dispose();
+                            ret = current.Value;
+                        }
+                        else
+                        {
+                            current.Value.CrlHandle.Dispose();
+                            current.Value = value;
+                        }
+                    }
+                    else
+                    {
+                        Node node = new Node(key, value);
+                        node.Next = _head;
+                        _head = node;
+                        _count++;
+                    }
+
+                    ret.CrlHandle.DangerousAddRef(ref ignore);
+                }
+
+                return ret;
+            }
+
+            internal bool TryGetValueAndUpRef(string key, [NotNullWhen(true)] out CachedCrlEntry? value)
+            {
+                lock (_lock)
+                {
+                    if (TryGetNode(key.GetHashCode(), key, out Node? node))
+                    {
+                        bool ignore = false;
+                        node.Value.CrlHandle.DangerousAddRef(ref ignore);
+                        value = node.Value;
+                        return true;
+                    }
+                }
+
+                value = null;
+                return false;
+            }
+
+            private bool TryGetNode(int hashCode, string key, [NotNullWhen(true)] out Node? value)
+            {
+                Debug.Assert(_lock.IsHeldByCurrentThread);
+
+                Node? previous = null;
+                Node? current = _head;
+
+                while (current is not null)
+                {
+                    if (current.MatchesKey(hashCode, key))
+                    {
+                        if (current.Value is null)
+                        {
+                            // If the value has been cleared, that means the GC cooperation pruned the list from here,
+                            // so we can now unlink this node.
+                            previous?.Next = null;
+                            value = null;
+                            return false;
+                        }
+
+                        // Move the found node to the head of the list, maintaining MRU ordering.
+                        if (previous != null)
+                        {
+                            previous.Next = current.Next;
+                            current.Next = _head;
+                            _head = current;
+                        }
+
+                        value = current;
+                        return true;
+                    }
+
+                    previous = current;
+                    current = current.Next;
+                }
+
+                value = null;
+                return false;
+            }
+
+            private void PruneForGC()
+            {
+                // The general flow:
+                // * The current head is where we expire next time.
+                // * Under the lock: If there is an expire node, determine the new count by walking to it,
+                //   and unlink it from the previous node.
+                // * After the lock: Dispose all the values from the prune node onward.
+
+                Node? prune;
+                int countStart;
+                int countEnd;
+
+                lock (_lock)
+                {
+                    prune = _expire;
+                    _expire = _head;
+                    countStart = _count;
+
+                    if (prune is null)
+                    {
+                        _expire = _head;
+                        return;
+                    }
+
+                    if (prune == _head)
+                    {
+                        _count = 0;
+                        _head = null;
+                        _expire = null;
+                    }
+                    else
+                    {
+                        Debug.Assert(_head is not null);
+                        int count = 1;
+                        Node current = _head;
+
+                        while (current.Next != prune && current.Next is not null)
+                        {
+                            count++;
+                            current = current.Next;
+                        }
+
+                        if (current is not null)
+                        {
+                            current.Next = null;
+                            _count = count;
+                        }
+                        else
+                        {
+                            Debug.Fail("Prune node not found in list");
+                        }
+                    }
+
+                    countEnd = _count;
+                }
+
+                // `prune` and beyond are now unlinked from the list, so we can dispose its values without holding the lock.
+                while (prune is not null)
+                {
+                    prune.Value.CrlHandle.Dispose();
+                    prune = prune.Next;
+                }
+
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.CrlCacheInMemoryPruned(countStart - countEnd, countEnd);
+                }
+            }
+
+            private sealed class Node
+            {
+                private readonly int _keyHashCode;
+
+                internal string Key { get; }
+                internal CachedCrlEntry Value { get; set; }
+                internal Node? Next { get; set; }
+
+                internal Node(string key, CachedCrlEntry value)
+                {
+                    Key = key;
+                    _keyHashCode = key.GetHashCode();
+                    Value = value;
+                }
+
+                internal bool MatchesKey(int hashCode, string key)
+                {
+                    return _keyHashCode == hashCode && Key.Equals(key, StringComparison.Ordinal);
+                }
+            }
+
+            private sealed class Jacquard
+            {
+                private readonly MruCrlCache _owner;
+
+                internal Jacquard(MruCrlCache owner)
+                {
+                    _owner = owner;
+                    GC.ReRegisterForFinalize(this);
+                }
+
+                ~Jacquard()
+                {
+                    GC.ReRegisterForFinalize(this);
+                    _owner.PruneForGC();
+                }
+            }
         }
 
         private sealed class CachedCrlEntry
