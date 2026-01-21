@@ -5874,7 +5874,37 @@ void Interpreter::LdObjValueClassWork(CORINFO_CLASS_HANDLE valueClsHnd, unsigned
     }
     else
     {
-        OpStackSet<INT64>(ind, GetSmallStructValue(src, sz));
+	if (sz == 1)
+	{
+		 CorInfoType cit = it.ToCorInfoType();
+		if (CorInfoTypeIsUnsigned(cit))
+		{
+			OpStackSet<UINT64>(ind, *reinterpret_cast<UINT8*>(src));
+		}
+		else
+		{
+			OpStackSet<INT64>(ind, *reinterpret_cast<INT8*>(src));
+		}
+	}
+	else if (sz == 2)
+	{
+		CorInfoType cit = it.ToCorInfoType();
+		if (CorInfoTypeIsUnsigned(cit))
+		 {
+		     OpStackSet<UINT64>(ind, *reinterpret_cast<UINT16*>(src));
+		 }
+		 else
+		 {
+		     OpStackSet<INT64>(ind, *reinterpret_cast<INT16*>(src));
+		 }
+	}
+	else if (sz == 4)
+	{
+		OpStackSet<INT64>(ind, *reinterpret_cast<INT32*>(src));
+	}
+	else{
+		OpStackSet<INT64>(ind, GetSmallStructValue(src, sz));
+	}
     }
 
     OpStackTypeSet(ind, it.StackNormalize());
@@ -9974,22 +10004,22 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         }
         // AV -> NullRef translation is NYI for the interpreter,
         // so we should manually check and throw the correct exception.
-        if (args[curArgSlot] == NULL)
-        {
+        //if (args[curArgSlot] == NULL)
+        //{
             // If we're calling a constructor, we bypass this check since the runtime
             // should have thrown OOM if it was unable to allocate an instance.
-            if (m_callThisArg == NULL)
-            {
-                _ASSERTE(!methToCall->IsStatic());
-                ThrowNullPointerException();
-            }
+          //  if (m_callThisArg == NULL)
+           // {
+           //     _ASSERTE(!methToCall->IsStatic());
+           //     ThrowNullPointerException();
+           // }
             // ...except in the case of strings, which are both
             // allocated and initialized by their special constructor.
-            else
-            {
-                _ASSERTE(methToCall->IsCtor() && methToCall->GetMethodTable()->IsString());
-            }
-        }
+            //else
+            //{
+            //    _ASSERTE(methToCall->IsCtor() && methToCall->GetMethodTable()->IsString());
+            //}
+        //}
         curArgSlot++;
     }
 

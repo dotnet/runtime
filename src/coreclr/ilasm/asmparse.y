@@ -1376,8 +1376,20 @@ instr                   : instr_none                         { PASM->EmitOpcode(
                                                                            L,sizeof(float)));
                                                                if(L < sizeof(float)) {YYERROR; }
                                                                else {
-                                                                   double f = (L >= sizeof(double)) ? *((double *)($2->ptr()))
-                                                                                    : (double)(*(float *)($2->ptr()));
+                                                                   double f;
+#if BIGENDIAN
+                                                                   // Use CoreCLR's endianness macros to interpret hex bytes as little-endian
+                                                                   if (L >= sizeof(double)) {
+                                                                       UINT64 bits = GET_UNALIGNED_VAL64($2->ptr());
+                                                                       f = *((double*)&bits);
+                                                                   } else {
+                                                                       UINT32 bits = GET_UNALIGNED_VAL32($2->ptr());
+                                                                       f = (double)*((float*)&bits);
+                                                                   }
+#else
+                                                                   f = (L >= sizeof(double)) ? *((double *)($2->ptr()))
+                                                                                     : (double)(*(float *)($2->ptr()));
+#endif
                                                                    PASM->EmitInstrR($1,&f); }
                                                                delete $2; }
                         | instr_brtarget int32               { PASM->EmitInstrBrOffset($1, $2); }
