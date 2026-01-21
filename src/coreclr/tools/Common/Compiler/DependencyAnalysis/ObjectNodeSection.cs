@@ -33,7 +33,7 @@ namespace ILCompiler.DependencyAnalysis
         public ObjectNodeSection(string name, SectionType type) : this(name, type, null)
         { }
 
-        public ObjectNodeSection(string name, SectionType type, bool needsAlign = true) : this(name, type, null)
+        public ObjectNodeSection(string name, SectionType type, bool needsAlign) : this(name, type, null)
         {
             NeedsAlignment = needsAlign;
         }

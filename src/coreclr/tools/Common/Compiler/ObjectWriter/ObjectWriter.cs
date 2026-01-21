@@ -395,7 +395,6 @@ namespace ILCompiler.ObjectWriter
                 // such as DebugDirectoryEntryNode and AssemblyStubNode
                 if (depNode is ISymbolRangeNode symbolRange && LayoutMode == CodeDataLayout.Unified)
                 {
-                    logger.LogMessage($"Deferring emission of symbol range node {GetMangledName(symbolRange)}");
                     symbolRangeNodes.Add(symbolRange);
                     continue;
                 }
@@ -455,7 +454,7 @@ namespace ILCompiler.ObjectWriter
                     // Record only information we can get from the MethodDesc here. The actual
                     // body will be emitted by the call to EmitData() at the end
                     // of this loop iteration.
-                    RecordMethod((ISymbolDefinitionNode)node, methodNode.Method, logger);
+                    RecordMethodSignature((ISymbolDefinitionNode)node, methodNode.Method, logger);
                 }
                 else if (node is AssemblyStubNode && LayoutMode is CodeDataLayout.Separate)
                 {
@@ -660,7 +659,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected virtual void RecordMethod(ISymbolDefinitionNode node, MethodDesc desc, Logger logger)
+        private protected virtual void RecordMethodSignature(ISymbolDefinitionNode node, MethodDesc desc, Logger logger)
         {
             if (LayoutMode != CodeDataLayout.Separate)
             {
