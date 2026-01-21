@@ -417,11 +417,11 @@ namespace System.IO.Compression
         }
 
         /// <summary>Sets the length of the uncompressed data for the next compression operation.</summary>
-        /// <param name="length">The length of the data to be compressed.</param>
+        /// <param name="length">The length of the source data in bytes.</param>
         /// <remarks>
-        /// Setting the source length is optional. If set, the information will be stored in the header of the compressed data. This method may be called only before the first <see cref="Compress"/> method call, or after <see cref="Reset"/>.
-        /// Calling <see cref="Reset"/> clears the length. The length is validated during compression and not respecting
-        /// the value causes <see cref="OperationStatus.InvalidData"/>.
+        /// Setting the source length is optional. If set, the information is stored in the header of the compressed data. This method can be called only before the first <see cref="Compress"/> method call, or after <see cref="Reset"/>.
+        /// Calling <see cref="Reset"/> clears the length. The length is validated during compression and if the value is disrespected,
+        /// the operation status is <see cref="OperationStatus.InvalidData"/>.
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="length"/> is negative.</exception>
         /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>

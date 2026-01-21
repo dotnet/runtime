@@ -69,12 +69,10 @@ namespace System.IO.Compression
             _encoderOwned = false;
         }
 
-        /// <summary>
-        /// Sets the length of the source (uncompressed) to be compressed.
-        /// </summary>
+        /// <summary>Sets the length of the uncompressed data that will be compressed by this instance.</summary>
         /// <param name="length">The length of the source data in bytes.</param>
         /// <remarks>
-        /// Setting the source length is optional. If set, the information will be stored in the header of the compressed data. This method must be called before writing any data to the stream. The set length is validated during compression, and not respecting the value causes an <see cref="InvalidDataException"/> to be thrown.
+        /// Setting the source length is optional. If set, the information is stored in the header of the compressed data. This method must be called before writing any data to the stream. The length is validated during compression, and not respecting the value causes an <see cref="InvalidDataException"/> to be thrown.
         /// </remarks>
         /// <exception cref="InvalidOperationException">Attempting to set the source size on a decompression stream, or compression has already started.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="length"/> is negative.</exception>

@@ -131,13 +131,11 @@ namespace System.IO.Compression
         public override bool CanSeek => false;
 
         /// <summary>This property is not supported and always throws a <see cref="NotSupportedException" />.</summary>
-        /// <value>A long value.</value>
-        /// <exception cref="NotSupportedException">This property is not supported on this stream.</exception>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override long Length => throw new NotSupportedException();
 
         /// <summary>This property is not supported and always throws a <see cref="NotSupportedException" />.</summary>
-        /// <value>A long value.</value>
-        /// <exception cref="NotSupportedException">This property is not supported on this stream.</exception>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override long Position
         {
             get => throw new NotSupportedException();
@@ -148,12 +146,12 @@ namespace System.IO.Compression
         /// <param name="offset">The byte offset relative to the <paramref name="origin" /> parameter.</param>
         /// <param name="origin">One of the <see cref="SeekOrigin" /> values that indicates the reference point used to obtain the new position.</param>
         /// <returns>The new position within the current stream.</returns>
-        /// <exception cref="NotSupportedException">This property is not supported on this stream.</exception>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
 
         /// <summary>This operation is not supported and always throws a <see cref="NotSupportedException" />.</summary>
         /// <param name="value">The desired length of the current stream in bytes.</param>
-        /// <exception cref="NotSupportedException">This property is not supported on this stream.</exception>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override void SetLength(long value) => throw new NotSupportedException();
 
         /// <summary>Releases the unmanaged resources used by the <see cref="ZstandardStream" /> and optionally releases the managed resources.</summary>

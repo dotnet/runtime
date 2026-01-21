@@ -76,6 +76,6 @@
     <value>Sample lengths must be positive values.</value>
   </data>
   <data name="Zstd_InternalError" xml:space="preserve">
-    <value>An internal error has occured: {0}.</value>
+    <value>An internal error has occurred: {0}.</value>
   </data>
 </root>
