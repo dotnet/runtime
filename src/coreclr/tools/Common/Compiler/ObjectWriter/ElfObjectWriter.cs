@@ -367,7 +367,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList, Logger logger)
+        private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
             switch (_machine)
             {
@@ -638,7 +638,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected override void EmitObjectFile(Stream outputFileStream, Logger logger)
+        private protected override void EmitObjectFile(Stream outputFileStream)
         {
             switch (_machine)
             {

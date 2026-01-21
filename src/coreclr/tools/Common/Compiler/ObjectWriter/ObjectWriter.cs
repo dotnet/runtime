@@ -171,7 +171,6 @@ namespace ILCompiler.ObjectWriter
         }
 
         private unsafe void EmitOrResolveRelocation(
-            Logger logger,
             int sectionIndex,
             long offset,
             Span<byte> data,
@@ -182,11 +181,6 @@ namespace ILCompiler.ObjectWriter
             if (_nodeFactory.Target.IsWasm)
             {
                 // TODO-WASM: Implement or resolve relocations
-                if (logger.IsVerbose)
-                {
-                    logger.LogMessage($"Emitting relocation for {symbolName} in section {sectionIndex} of type {relocType} at offset {offset}");
-                }
-
                 return;
             }
 
@@ -284,7 +278,7 @@ namespace ILCompiler.ObjectWriter
         /// <remarks>
         /// This methods is guaranteed to run after <see cref="EmitSymbolTable" />.
         /// </remarks>
-        private protected abstract void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList, Logger logger);
+        private protected abstract void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList);
 
         /// <summary>
         /// Emit new symbol definition at specified location in a given section.
@@ -334,7 +328,7 @@ namespace ILCompiler.ObjectWriter
         {
         }
 
-        private protected abstract void EmitObjectFile(Stream outputFileStream, Logger logger = null);
+        private protected abstract void EmitObjectFile(Stream outputFileStream);
 
         partial void EmitDebugInfo(IReadOnlyCollection<DependencyNode> nodes, Logger logger);
 
@@ -454,7 +448,7 @@ namespace ILCompiler.ObjectWriter
                     // Record only information we can get from the MethodDesc here. The actual
                     // body will be emitted by the call to EmitData() at the end
                     // of this loop iteration.
-                    RecordMethodSignature((ISymbolDefinitionNode)node, methodNode.Method, logger);
+                    RecordMethodSignature((ISymbolDefinitionNode)node, methodNode.Method);
                 }
                 else if (node is AssemblyStubNode && LayoutMode is CodeDataLayout.Separate)
                 {
@@ -610,7 +604,6 @@ namespace ILCompiler.ObjectWriter
                     Utf8String relocSymbolName = GetMangledName(relocTarget);
 
                     EmitOrResolveRelocation(
-                        logger,
                         blockToRelocate.SectionIndex,
                         blockToRelocate.Offset + reloc.Offset,
                         blockToRelocate.Data.AsSpan(reloc.Offset),
@@ -639,11 +632,11 @@ namespace ILCompiler.ObjectWriter
             int relocSectionIndex = 0;
             foreach (List<SymbolicRelocation> relocationList in _sectionIndexToRelocations)
             {
-                EmitRelocations(relocSectionIndex, relocationList, logger);
+                EmitRelocations(relocSectionIndex, relocationList);
                 relocSectionIndex++;
             }
 
-            EmitObjectFile(outputFileStream, logger);
+            EmitObjectFile(outputFileStream);
 
             if (checksumRelocations.Count > 0)
             {
@@ -659,7 +652,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected virtual void RecordMethodSignature(ISymbolDefinitionNode node, MethodDesc desc, Logger logger)
+        private protected virtual void RecordMethodSignature(ISymbolDefinitionNode node, MethodDesc desc)
         {
             if (LayoutMode != CodeDataLayout.Separate)
             {
