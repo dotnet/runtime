@@ -60,6 +60,9 @@ export class Queue<T> {
         return (this.queue.length > 0 ? this.queue[this.offset] : undefined);
     }
 
+    /** Drains the queue by dequeuing all items and invoking the provided callback for each item.
+     * @param onEach - A function to invoke for each item dequeued from the queue.
+     */
     drain(onEach: (item: T) => void): void {
         while (this.getLength()) {
             const item = this.dequeue()!;
