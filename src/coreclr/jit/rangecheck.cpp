@@ -728,58 +728,48 @@ bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_
             case VNF_UMOD:
             {
                 // Get ranges of both operands and perform the same operation on the ranges.
-                Range op1 = Range(Limit(Limit::keUnknown));
-                Range op2 = Range(Limit(Limit::keUnknown));
-                if (TryGetRangeFromAssertions(comp, funcApp.m_args[0], assertions, &op1) &&
-                    TryGetRangeFromAssertions(comp, funcApp.m_args[1], assertions, &op2))
+                Range r1 = Range(Limit(Limit::keUnknown));
+                Range r2 = Range(Limit(Limit::keUnknown));
+                if (TryGetRangeFromAssertions(comp, funcApp.m_args[0], assertions, &r1) &&
+                    TryGetRangeFromAssertions(comp, funcApp.m_args[1], assertions, &r2))
                 {
                     Range binOpResult = Range(Limit(Limit::keUnknown));
-                    if (funcApp.m_func == VNF_ADD)
+                    switch (funcApp.m_func)
                     {
-                        binOpResult = RangeOps::Add(op1, op2);
-                    }
-                    else if (funcApp.m_func == VNF_MUL)
-                    {
-                        binOpResult = RangeOps::Multiply(op1, op2);
-                    }
-                    else if (funcApp.m_func == VNF_AND)
-                    {
-                        binOpResult = RangeOps::And(op1, op2);
-                    }
-                    else if (funcApp.m_func == VNF_OR)
-                    {
-                        binOpResult = RangeOps::Or(op1, op2);
-                    }
-                    else if (funcApp.m_func == VNF_LSH)
-                    {
-                        binOpResult = RangeOps::ShiftLeft(op1, op2);
-                    }
-                    else if (funcApp.m_func == VNF_RSH)
-                    {
-                        binOpResult = RangeOps::ShiftRight(op1, op2, /*logical*/ false);
-                    }
-                    else if (funcApp.m_func == VNF_RSZ)
-                    {
-                        binOpResult = RangeOps::ShiftRight(op1, op2, /*logical*/ true);
-                    }
-                    else if (funcApp.m_func == VNF_UMOD)
-                    {
-                        binOpResult = RangeOps::UnsignedMod(op1, op2);
-                    }
-                    else
-                    {
-                        assert(!"unknown binop");
+                        case VNF_ADD:
+                            binOpResult = RangeOps::Add(r1, r2);
+                            break;
+                        case VNF_MUL:
+                            binOpResult = RangeOps::Multiply(r1, r2);
+                            break;
+                        case VNF_AND:
+                            binOpResult = RangeOps::And(r1, r2);
+                            break;
+                        case VNF_OR:
+                            binOpResult = RangeOps::Or(r1, r2);
+                            break;
+                        case VNF_LSH:
+                            binOpResult = RangeOps::ShiftLeft(r1, r2);
+                            break;
+                        case VNF_RSH:
+                            binOpResult = RangeOps::ShiftRight(r1, r2, /*logical*/ false);
+                            break;
+                        case VNF_RSZ:
+                            binOpResult = RangeOps::ShiftRight(r1, r2, /*logical*/ true);
+                            break;
+                        case VNF_UMOD:
+                            binOpResult = RangeOps::UnsignedMod(r1, r2);
+                            break;
+                        default:
+                            unreached();
                     }
 
                     if (binOpResult.IsConstantRange())
                     {
                         result = binOpResult;
                     }
-                    else
-                    {
-                        // if the result is unknown (or may overflow), we'll just analyze the binop itself based on the
-                        // assertions
-                    }
+                    // if the result is unknown (or may overflow), we'll just analyze the binop itself based on the
+                    // assertions
                 }
                 break;
             }
@@ -819,13 +809,8 @@ bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_
 
     MergeEdgeAssertions(comp, num, ValueNumStore::NoVN, assertions, &result, false);
     assert(result.IsConstantRange());
-
-    if (result.IsConstantRange())
-    {
-        *pRange = result;
-        return true;
-    }
-    return false;
+    *pRange = result;
+    return true;
 }
 
 //------------------------------------------------------------------------
