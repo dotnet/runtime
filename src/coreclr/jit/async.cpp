@@ -2006,14 +2006,13 @@ BasicBlock* AsyncTransformation::RethrowExceptionOnResumption(BasicBlock*       
 {
     JITDUMP("  We need to rethrow an exception\n");
 
-    BasicBlock* rethrowExceptionBB =
-        m_comp->fgNewBBinRegion(BBJ_THROW, block, /* runRarely */ true, /* insertAtEnd */ true);
+    BasicBlock* rethrowExceptionBB = m_comp->fgNewBBafter(BBJ_THROW, block, /* extendRegion */ true);
+
     JITDUMP("  Created " FMT_BB " to rethrow exception on resumption\n", rethrowExceptionBB->bbNum);
 
-    // If this ends up placed after 'block' then ensure it does not break
-    // debugging. We split 'block' at the call, so a BBF_INTERNAL block after
-    // it would result in broken debug info.
-    if ((rethrowExceptionBB->Prev() == block) && !block->HasFlag(BBF_INTERNAL))
+    // We split 'block' at the call, so a BBF_INTERNAL block after it would
+    // result in broken debug info if the block came from IL.
+    if (!block->HasFlag(BBF_INTERNAL))
     {
         rethrowExceptionBB->RemoveFlags(BBF_INTERNAL);
         // Non-internal blocks must be marked imported
