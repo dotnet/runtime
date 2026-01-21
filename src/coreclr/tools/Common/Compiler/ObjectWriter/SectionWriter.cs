@@ -21,7 +21,7 @@ namespace ILCompiler.ObjectWriter
         private readonly ObjectWriter _objectWriter;
         private readonly SectionData _sectionData;
 
-        private readonly LengthEncodeFormat _lengthEncodeFormat;
+        private readonly Params _params;
 
         public int SectionIndex { get; init; }
         public readonly IBufferWriter<byte> Buffer => _sectionData.BufferWriter;
@@ -40,15 +40,17 @@ namespace ILCompiler.ObjectWriter
             _objectWriter = objectWriter;
             SectionIndex = sectionIndex;
             _sectionData = sectionData;
-            _lengthEncodeFormat = ps.LengthEncodeFormat;
+            _params = ps;
         }
 
         private readonly void EmitLengthPrefix(ulong length)
         {
-            switch (_lengthEncodeFormat)
+            switch (_params.LengthEncodeFormat)
             {
                 case LengthEncodeFormat.ULEB128:
                     WriteULEB128(length);
+                    break;
+                case LengthEncodeFormat.None:
                     break;
                 default:
                     throw new InvalidOperationException("Length prefix encoding not specified");
@@ -57,10 +59,7 @@ namespace ILCompiler.ObjectWriter
 
         public readonly void EmitData(ReadOnlyMemory<byte> data)
         {
-            if (_lengthEncodeFormat != LengthEncodeFormat.None)
-            {
-                EmitLengthPrefix((ulong)data.Length);
-            }
+            EmitLengthPrefix((ulong)data.Length);
             _sectionData.AppendData(data);
         }
 

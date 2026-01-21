@@ -276,7 +276,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList, Logger logger)
+        private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
             CoffSectionHeader sectionHeader = _sections[sectionIndex].Header;
             List<CoffRelocation> coffRelocations = _sections[sectionIndex].Relocations;
@@ -376,7 +376,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected override void EmitObjectFile(Stream outputFileStream, Logger logger)
+        private protected override void EmitObjectFile(Stream outputFileStream)
         {
             var stringTable = new CoffStringTable();
             var coffHeader = new CoffHeader

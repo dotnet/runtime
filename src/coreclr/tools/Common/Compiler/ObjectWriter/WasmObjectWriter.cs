@@ -15,6 +15,7 @@ using Internal.TypeSystem;
 
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
+using System.Collections.Immutable;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -50,35 +51,54 @@ namespace ILCompiler.ObjectWriter
         }
 
         private Dictionary<WasmFuncType, int> _uniqueSignatures = new();
-        private SortedDictionary<string, int> _uniqueSymbols = new();
+        private Dictionary<string, int> _uniqueSymbols = new();
         private int _signatureCount = 0;
         private int _methodCount = 0;
 
-        private protected override void RecordMethod(ISymbolDefinitionNode symbol, MethodDesc desc, Logger logger)
+        private protected override void RecordMethodSignature(ISymbolDefinitionNode symbol, MethodDesc desc)
         {
-            WasmFuncType signature = WasmAbiContext.GetSignature(desc);
-            if (!_uniqueSignatures.ContainsKey(signature))
-            {
-                // assign an index to the signature
-                _uniqueSignatures[signature] = _signatureCount;
-                _signatureCount++;
-                WriteType(signature, logger);
-            }
-
-            int signatureIndex = _uniqueSignatures[signature];
+            // Ensure the signature is recorded with a unique index if we haven't seen an equivalent one yet.
+            MaybeWriteType(desc);
+            // Use the signature index to write a new function signature index into the function signature section.
+            WriteSignatureIndexForFunction(desc);
 
             _uniqueSymbols.Add(symbol.GetMangledName(_nodeFactory.NameMangler), _methodCount);
-            WriteFunctionIndex(signatureIndex);
             _methodCount++;
         }
 
-        private void WriteFunctionIndex(int signatureIndex)
+        private void MaybeWriteType(MethodDesc desc)
+        {
+            WasmFuncType signature = WasmAbiContext.GetSignature(desc);
+            if (_uniqueSignatures.ContainsKey(signature))
+            {
+                return;
+            }
+
+            // assign the next available index for the signature
+            int signatureIndex = _signatureCount;
+            _uniqueSignatures[signature] = signatureIndex;
+            _signatureCount++;
+
+            SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.TypeSection);
+            int signatureSize = signature.EncodeSize();
+            signature.Encode(writer.Buffer.GetSpan(signatureSize));
+            writer.Buffer.Advance(signatureSize);
+        }
+
+        private void WriteSignatureIndexForFunction(MethodDesc desc)
         {
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.FunctionSection);
+
+            WasmFuncType signature = WasmAbiContext.GetSignature(desc);
+            if (!_uniqueSignatures.TryGetValue(signature, out int signatureIndex))
+            {
+                throw new InvalidOperationException($"Signature index not found for function: {desc.GetName()}");
+            }
+
             writer.WriteULEB128((ulong)signatureIndex);
         }
 
-        private void WriteExport(string methodName, int functionIndex)
+        private void WriteFunctionExport(string methodName, int functionIndex)
         {
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.ExportSection);
             int length = Encoding.UTF8.GetByteCount(methodName);
@@ -87,19 +107,7 @@ namespace ILCompiler.ObjectWriter
             writer.WriteByte(0x00); // export kind: function
             writer.WriteULEB128((ulong)functionIndex);
         }
-
-        private void WriteType(WasmFuncType signature, Logger logger)
-        {
-            SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.TypeSection);
-            if (logger.IsVerbose)
-            {
-                logger.LogMessage($"Emitting function signature: {signature}");
-            }
-            int signatureSize = signature.EncodeSize();
-            signature.Encode(writer.Buffer.GetSpan(signatureSize));
-            writer.Buffer.Advance(signatureSize);
-        }
-
+  
         private List<WasmSection> _sections = new();
         private Dictionary<string, int> _sectionNameToIndex = new();
         private Dictionary<ObjectNodeSection, WasmSectionType> sectionToType = new()
@@ -117,6 +125,7 @@ namespace ILCompiler.ObjectWriter
             if (!sectionToType.ContainsKey(section))
             {
                 // All other sections map to generic data segments in Wasm
+                // TODO-WASM: Consider making the mapping explicit for every possible node type.
                 return WasmSectionType.Data;
             }
             return sectionToType[section];
@@ -220,15 +229,7 @@ namespace ILCompiler.ObjectWriter
 
         private void PrependCount(WasmSection section, int count)
         {
-            ArrayBufferWriter<byte> prependBuffer = new();
-            int writtenSize = (int)DwarfHelper.SizeOfULEB128((ulong)count);
-            Span<byte> prepend = prependBuffer.GetSpan(writtenSize); // max ULEB128 size for count
-            DwarfHelper.WriteULEB128(prepend, (ulong)count);
-            prependBuffer.Advance(writtenSize);
-
-            // create stream from buffer
-            MemoryStream prependStream = new(prependBuffer.WrittenMemory.ToArray());
-            section.PrependStream = prependStream;
+            section.PrependCount = count;
         }
 
         private WasmSection SectionByName(string name)
@@ -237,46 +238,33 @@ namespace ILCompiler.ObjectWriter
             return _sections[index];
         } 
 
-        private protected override void EmitObjectFile(Stream outputFileStream, Logger logger)
+        private protected override void EmitObjectFile(Stream outputFileStream)
         {
-            if (logger.IsVerbose)
-            {
-                foreach (var section in _sections)
-                {
-                    logger.LogMessage($"Section: {section.Name} of kind {section.Type}");
-                }
-            }
-
             EmitWasmHeader(outputFileStream);
+
+            // TODO-WASM: Consider refactoring to loop over an in-order list of sections, skipping any that are missing,
+            // So that we can maintain section ordering invariants without assuming the existence of certain sections.
+            
             // Type section
-            SectionByName(WasmObjectNodeSection.TypeSection.Name).Emit(outputFileStream, logger);
+            SectionByName(WasmObjectNodeSection.TypeSection.Name).Emit(outputFileStream);
             // Function section
-            SectionByName(WasmObjectNodeSection.FunctionSection.Name).Emit(outputFileStream, logger);
-            // Table section
-            SectionByName(WasmObjectNodeSection.TableSection.Name).Emit(outputFileStream, logger);
+            SectionByName(WasmObjectNodeSection.TableSection.Name).Emit(outputFileStream);
+            SectionByName(WasmObjectNodeSection.FunctionSection.Name).Emit(outputFileStream);
             // Memory section
-            SectionByName(WasmObjectNodeSection.MemorySection.Name).Emit(outputFileStream, logger);
+            SectionByName(WasmObjectNodeSection.MemorySection.Name).Emit(outputFileStream);
             // Export section
-            SectionByName(WasmObjectNodeSection.ExportSection.Name).Emit(outputFileStream, logger);
+            SectionByName(WasmObjectNodeSection.ExportSection.Name).Emit(outputFileStream);
             // Code section
             WasmSection codeSection = SectionByName(ObjectNodeSection.WasmCodeSection.Name);
             PrependCount(codeSection, _methodCount);
-            codeSection.Emit(outputFileStream, logger);
+            codeSection.Emit(outputFileStream);
             // Data section (all segments)
-            SectionByName(WasmObjectNodeSection.CombinedDataSection.Name).Emit(outputFileStream, logger);
+            SectionByName(WasmObjectNodeSection.CombinedDataSection.Name).Emit(outputFileStream);
         }
 
-        private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList, Logger logger)
+        private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
-            if (logger.IsVerbose)
-            {
-                logger.LogMessage($"Emitting relocations for section index {sectionIndex}: {_sections[sectionIndex].Name}");
-                // This is a no-op for now under Wasm
-                foreach (SymbolicRelocation reloc in relocationList)
-                {
-                    logger.LogMessage($"Emitting reloc: {reloc.SymbolName} for offset {reloc.Offset}");
-                }
-            }
+            // This is a no-op for now under Wasm
         }
 
         // For now, this function just prepares the function, exports, and type sections for emission by prepending the counts.
@@ -287,11 +275,12 @@ namespace ILCompiler.ObjectWriter
             int typeIdx = _sectionNameToIndex[WasmObjectNodeSection.TypeSection.Name];
             PrependCount(_sections[typeIdx], _uniqueSignatures.Count);
 
+            string[] functionExports = _uniqueSymbols.Keys.ToArray();
             // TODO-WASM: Handle exports better (e.g., only export public methods, etc.)
             // Also, see if we could leverage definedSymbols for this instead of doing our own bookkeeping in _uniqueSymbols.
-            foreach ((string name, int idx) in _uniqueSymbols)
+            foreach (string name in functionExports.OrderBy(name => name))
             {
-                WriteExport(name, idx);
+                WriteFunctionExport(name, _uniqueSymbols[name]);
             }
 
             int exportIdx = _sectionNameToIndex[WasmObjectNodeSection.ExportSection.Name];
@@ -314,14 +303,17 @@ namespace ILCompiler.ObjectWriter
         public WasmSectionType Type { get; }
         public Utf8String Name { get; }
 
-        // Prepend stream is used for sections that need to write some data before the main data stream.
-        // These are generally array-based sections which need to write a count before their actual data.
-        private Stream _prependStream;
+        public int? PrependCount = null;
+        public int PrependCountSize => PrependCount.HasValue ? (int)DwarfHelper.SizeOfULEB128((ulong)PrependCount.Value) : 0;
 
-        public Stream PrependStream
+        private int EncodePrependCount(Span<byte> dest)
         {
-            get { return _prependStream ?? MemoryStream.Null; }
-            set { _prependStream = value ?? MemoryStream.Null; }
+            if (PrependCount.HasValue)
+            {
+                return DwarfHelper.WriteULEB128(dest, (ulong)PrependCount.Value);
+            }
+
+            return 0;
         }
 
         public Stream Stream
@@ -344,7 +336,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        public virtual int ContentSize => (int)(PrependStream.Length + Stream.Length);
+        public virtual int ContentSize => (int)_dataStream.Length + PrependCountSize;
 
         public virtual int EncodeSize()
         {
@@ -365,38 +357,32 @@ namespace ILCompiler.ObjectWriter
             return 1 + (int)encodeLength;
         }
 
-        public virtual int Emit(Stream outputFileStream, Logger logger)
+        public virtual int Emit(Stream outputFileStream)
         {
             Span<byte> headerBuffer = stackalloc byte[HeaderSize];
             EncodeHeader(headerBuffer);
 
             outputFileStream.Write(headerBuffer);
-            if (logger.IsVerbose)
+
+            if (PrependCount.HasValue)
             {
-                logger.LogMessage($"Wrote section header of size {headerBuffer.Length} bytes.");
+                Span<byte> prependCount = stackalloc byte[PrependCountSize];
+                int encoded = EncodePrependCount(prependCount);
+                outputFileStream.Write(prependCount);
             }
 
-            PrependStream.CopyTo(outputFileStream);
-            if (logger.IsVerbose)
-            {
-                logger.LogMessage($"Wrote prepend stream of size {PrependStream.Length} bytes.");
-            }
 
             Stream.CopyTo(outputFileStream);
-            if (logger.IsVerbose)
-            {
-                logger.LogMessage($"Emitted section: {Name} of type `{Type}` with size {Stream.Length} bytes.");
-            }
 
-            return HeaderSize + (int)(PrependStream.Length + Stream.Length);
+            return HeaderSize + (int)(PrependCountSize + Stream.Length);
         }
 
-        public WasmSection(WasmSectionType type, Stream stream, Utf8String name, Stream prepend = null)
+        public WasmSection(WasmSectionType type, Stream stream, Utf8String name, int? prependCount = null)
         {
             Type = type;
             Name = name;
             _dataStream = stream;
-            _prependStream = prepend;
+            PrependCount = prependCount;
         }
     }
 
@@ -424,33 +410,21 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        public override int Emit(Stream outputFileStream, Logger logger)
+        public override int Emit(Stream outputFileStream)
         {
             Span<byte> headerBuffer = stackalloc byte[HeaderSize];
             base.EncodeHeader(headerBuffer);
 
             outputFileStream.Write(headerBuffer);
-            if (logger.IsVerbose)
-            {
-                logger.LogMessage($"Wrote data section header of size {headerBuffer.Length} bytes.");
-            }
 
             // Write number of segments
             Span<byte> countBuffer = stackalloc byte[(int)DwarfHelper.SizeOfULEB128((ulong)_segments.Count)];
             int countSize = DwarfHelper.WriteULEB128(countBuffer, (ulong)_segments.Count);
             outputFileStream.Write(countBuffer.Slice(0, countSize));
-            if (logger.IsVerbose)
-            {
-                logger.LogMessage($"Wrote data segment count of size {countSize} bytes.");
-            }
             int totalSize = HeaderSize + countSize;
             foreach (WasmDataSegment segment in _segments)
             {
-                totalSize += segment.Emit(outputFileStream, logger);
-            }
-            if (logger.IsVerbose)
-            {
-                logger.LogMessage($"Emitted data section: {Name} with total size {totalSize} bytes.");
+                totalSize += segment.Emit(outputFileStream);
             }
             return totalSize;
         }
@@ -528,23 +502,15 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        public int Emit(Stream outputFileStream, Logger logger)
+        public int Emit(Stream outputFileStream)
         {
             Span<byte> headerBuffer = stackalloc byte[HeaderSize];
             int headerSize = EncodeHeader(headerBuffer);
             Debug.Assert(headerSize == HeaderSize);
 
             outputFileStream.Write(headerBuffer);
-            if (logger.IsVerbose)
-            {
-                logger.LogMessage($"Wrote data segment header of size {headerBuffer.Length} bytes.");
-            }
 
             _stream.CopyTo(outputFileStream);
-            if (logger.IsVerbose)
-            {
-                logger.LogMessage($"Wrote data segment contents of size {(int)_stream.Length} bytes.");
-            }
 
             return headerSize + (int)_stream.Length;
         }

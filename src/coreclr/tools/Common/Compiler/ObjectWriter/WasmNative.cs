@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Collections.Generic;
-using System.Numerics;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -217,6 +216,7 @@ namespace ILCompiler.ObjectWriter
         {
             int pos = 0;
             buffer[pos++] = (byte)_kind; // the kind is the opcode, either i32.const or i64.const
+
             pos += DwarfHelper.WriteSLEB128(buffer.Slice(pos), ConstValue);
 
             buffer[pos++] = 0x0B; // end opcode
