@@ -3781,7 +3781,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
     // Update bookkeeping on the generic context.
     if (lvaKeepAliveAndReportThis())
     {
-        lvaGetDesc(lvaArg0Var)->lvImplicitlyReferenced = reportParamTypeArg;
+        lvaGetDesc(info.compThisArg)->lvImplicitlyReferenced = reportParamTypeArg;
     }
     else if (lvaReportParamTypeArg())
     {
