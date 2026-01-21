@@ -148,13 +148,6 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
-        // We don't need to home the stack pointer
-        //
-        if (lclNum == compiler->lvaWasmSpArg)
-        {
-            continue;
-        }
-
         LclVarDsc*                   lclDsc  = compiler->lvaGetDesc(lclNum);
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
 

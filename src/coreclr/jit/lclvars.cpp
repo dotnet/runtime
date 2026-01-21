@@ -499,6 +499,7 @@ void Compiler::lvaInitWasmStackPtr(unsigned* curVarNum)
     LclVarDsc* varDsc = lvaGetDesc(*curVarNum);
     varDsc->lvType    = TYP_I_IMPL;
     varDsc->lvIsParam = 1;
+    varDsc->lvOnFrame = true;
     lvaWasmSpArg      = *curVarNum;
     (*curVarNum)++;
 }
@@ -509,6 +510,7 @@ void Compiler::lvaInitWasmPortableEntryPtr(unsigned* curVarNum)
     LclVarDsc* varDsc = lvaGetDesc(*curVarNum);
     varDsc->lvType    = TYP_I_IMPL;
     varDsc->lvIsParam = 1;
+    varDsc->lvOnFrame = true;
     (*curVarNum)++;
 }
 
@@ -887,13 +889,6 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
         else if (i == lvaSwiftErrorArg)
         {
             wellKnownArg = WellKnownArg::SwiftError;
-        }
-#endif
-
-#if defined(TARGET_WASM)
-        if (i == lvaWasmSpArg)
-        {
-            wellKnownArg = WellKnownArg::WasmShadowStackPointer;
         }
 #endif
 
