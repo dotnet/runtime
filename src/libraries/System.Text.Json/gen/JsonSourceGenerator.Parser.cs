@@ -101,6 +101,15 @@ namespace System.Text.Json.SourceGeneration
                     return null;
                 }
 
+                // When a context class is split across multiple partial declarations with
+                // [JsonSerializable] attributes on different partials, we only want to
+                // generate code once (from the canonical partial) to avoid duplicate hintNames.
+                if (!IsCanonicalPartialDeclaration(contextTypeSymbol, contextClassDeclaration))
+                {
+                    _contextClassLocation = null;
+                    return null;
+                }
+
                 ParseJsonSerializerContextAttributes(contextTypeSymbol,
                     out List<TypeToGenerate>? rootSerializableTypes,
                     out SourceGenerationOptionsSpec? options);
@@ -256,6 +265,46 @@ namespace System.Text.Json.SourceGeneration
                         options = ParseJsonSourceGenerationOptionsAttribute(contextClassSymbol, attributeData);
                     }
                 }
+            }
+
+            /// <summary>
+            /// Determines if the given class declaration is the canonical partial declaration
+            /// for the context type. When a context class is split across multiple partial
+            /// declarations with [JsonSerializable] attributes on different partials, we only
+            /// want to generate code once (from the canonical partial) to avoid duplicate hintNames.
+            /// The canonical partial is determined by picking the first syntax tree alphabetically
+            /// by file path among all trees that have at least one [JsonSerializable] attribute.
+            /// </summary>
+            private bool IsCanonicalPartialDeclaration(INamedTypeSymbol contextTypeSymbol, ClassDeclarationSyntax contextClassDeclaration)
+            {
+                Debug.Assert(_knownSymbols.JsonSerializableAttributeType != null);
+
+                // Collect all distinct syntax trees that have [JsonSerializable] attributes for this type
+                SyntaxTree? canonicalTree = null;
+
+                foreach (AttributeData attributeData in contextTypeSymbol.GetAttributes())
+                {
+                    if (!SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.JsonSerializableAttributeType))
+                    {
+                        continue;
+                    }
+
+                    SyntaxTree? attributeTree = attributeData.ApplicationSyntaxReference?.SyntaxTree;
+                    if (attributeTree is null)
+                    {
+                        continue;
+                    }
+
+                    // Pick the first tree alphabetically by file path
+                    if (canonicalTree is null ||
+                        string.Compare(attributeTree.FilePath, canonicalTree.FilePath, StringComparison.Ordinal) < 0)
+                    {
+                        canonicalTree = attributeTree;
+                    }
+                }
+
+                // This partial is canonical if its syntax tree is the canonical tree
+                return canonicalTree is null || canonicalTree == contextClassDeclaration.SyntaxTree;
             }
 
             private SourceGenerationOptionsSpec ParseJsonSourceGenerationOptionsAttribute(INamedTypeSymbol contextType, AttributeData attributeData)

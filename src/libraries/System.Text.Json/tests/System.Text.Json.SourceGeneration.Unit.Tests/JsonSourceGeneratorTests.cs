@@ -1035,5 +1035,89 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 Assert.Empty(errors);
             }
         }
+
+        [Fact]
+        public void PartialContextClassWithAttributesOnMultipleDeclarations()
+        {
+            // Test for https://github.com/dotnet/runtime/issues/97460
+            // When a JsonSerializerContext is defined across multiple partial class declarations
+            // with [JsonSerializable] attributes on different declarations, the generator should
+            // successfully generate code without duplicate hintName errors.
+
+            string source1 = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    public class MyClass1
+                    {
+                        public int Value { get; set; }
+                    }
+
+                    public class MyClass2
+                    {
+                        public string Name { get; set; }
+                    }
+
+                    [JsonSerializable(typeof(MyClass1))]
+                    internal partial class SerializerContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            string source2 = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyClass2))]
+                    internal partial class SerializerContext
+                    {
+                    }
+                }
+                """;
+
+            // Create compilation with multiple syntax trees to simulate partial class declarations in different files
+            Compilation compilation = CSharpCompilation.Create(
+                "TestAssembly",
+                syntaxTrees:
+                [
+                    CSharpSyntaxTree.ParseText(source1, CompilationHelper.CreateParseOptions()),
+                    CSharpSyntaxTree.ParseText(source2, CompilationHelper.CreateParseOptions()),
+                ],
+                references:
+                [
+                    MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+                    MetadataReference.CreateFromFile(typeof(JsonSerializerOptions).Assembly.Location),
+#if NET
+                    MetadataReference.CreateFromFile(typeof(System.Collections.Generic.LinkedList<>).Assembly.Location),
+                    MetadataReference.CreateFromFile(System.Reflection.Assembly.Load(new System.Reflection.AssemblyName("System.Runtime")).Location),
+#endif
+                ],
+                options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+
+            // Verify no errors
+            var errors = result.Diagnostics
+                .Where(d => d.Severity == DiagnosticSeverity.Error)
+                .ToList();
+
+            Assert.Empty(errors);
+
+            // Verify a single combined context was generated containing both types
+            // (not two separate contexts, which would cause duplicate hintName errors)
+            Assert.Equal(1, result.ContextGenerationSpecs.Length);
+            result.AssertContainsType("global::HelloWorld.MyClass1");
+            result.AssertContainsType("global::HelloWorld.MyClass2");
+
+            // Verify the generated code compiles without errors
+            var compilationErrors = result.NewCompilation.GetDiagnostics()
+                .Where(d => d.Severity == DiagnosticSeverity.Error)
+                .ToList();
+
+            Assert.Empty(compilationErrors);
+        }
     }
 }
