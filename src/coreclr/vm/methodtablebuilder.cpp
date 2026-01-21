@@ -9855,7 +9855,6 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                         else if (pItfPossiblyApprox->IsSpecialMarkerTypeForGenericCasting() && !pNewIntfMT->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap())
                         {
                             // We are in case 2 or 3 above
-                            TypeHandle instantiationType;
                             bool pNewIntfMTIsSpecialMarkerType = pNewIntfMT->IsSpecialMarkerTypeForGenericCasting() && !pMT->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap();
                             if (pNewIntfMTIsSpecialMarkerType)
                             {

@@ -142,13 +142,9 @@ Public Class GitHub_123254
     End Interface
 
     ' Test path for forcing the interface map out of the supporting special marker types due to a conflict with the concept of special marker types
-    <Fact>
+    ' I could only find a way to hit this path with reflection, and since reflection is imperfect on NativeAOT, just skip this test there.
+    <ConditionalFact(GetType(TestLibrary.Utilities), NameOf(TestLibrary.Utilities.IsNotNativeAot))>
     Public Shared Sub Test_Method5()
-        ' I could only find a way to hit this path with reflection, and since reflection is imperfect on NativeAOT, just skip this test there.
-        if (TestLibrary.Utilities.IsNativeAot)
-            Return
-        End If
-
         ' Test indirect implementation of interface
         Dim testClassType As Type = GetType(TestClass5(Of Integer)).GetGenericTypeDefinition().MakeGenericType(GetType(ILayer1_5(Of Integer)).GetGenericTypeDefinition().GetGenericArguments()(0))
         Console.WriteLine("testClassType first generic argument: " & testClassType.GetGenericArguments()(0).Name)
@@ -159,6 +155,15 @@ Public Class GitHub_123254
         Next
 
         ' Test direct implementation of interface
+        testClassType = GetType(TestClass6(Of Integer)).GetGenericTypeDefinition().MakeGenericType(GetType(ILayer1_5(Of Integer)).GetGenericTypeDefinition().GetGenericArguments()(0))
+        Console.WriteLine("testClassType first generic argument: " & testClassType.GetGenericArguments()(0).Name)
+        For Each iface As Type In testClassType.GetInterfaces()
+            Console.WriteLine("IFace name: " & iface.Name)
+            Console.WriteLine("IFace first generic argument: " & iface.GetGenericArguments()(0).Name)
+            Assert.Equal("Z", iface.GetGenericArguments()(0).Name)
+        Next
+
+        ' Test implementation via containing interface
         testClassType = GetType(ILayer3_5(Of Integer)).GetGenericTypeDefinition().MakeGenericType(GetType(ILayer1_5(Of Integer)).GetGenericTypeDefinition().GetGenericArguments()(0))
         Console.WriteLine("testClassType first generic argument: " & testClassType.GetGenericArguments()(0).Name)
         For Each iface As Type In testClassType.GetInterfaces()
