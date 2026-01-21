@@ -24,17 +24,17 @@ namespace System
             {
                 goto CannotVectorize;
             }
-            
+
             if (!Vector.IsHardwareAccelerated)
             {
                 goto CannotVectorize;
             }
-            
+
             if (sizeof(T) > Vector<byte>.Count)
             {
                 goto CannotVectorize;
             }
-            
+
             if (!BitOperations.IsPow2(sizeof(T)))
             {
                 goto CannotVectorize;
