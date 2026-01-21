@@ -5717,6 +5717,9 @@ GenTree* Compiler::optAssertionProp_Not(ASSERT_VALARG_TP assertions, GenTreeOp* 
         replacement         = gtNewOperNode(GT_NOT, notNode->TypeGet(), clonedBase);
     }
 
+    // Morph the replacement tree to ensure it's in the correct form
+    replacement = fgMorphTree(replacement);
+
     // Update the tree
     return optAssertionProp_Update(replacement, notNode, stmt);
 }
