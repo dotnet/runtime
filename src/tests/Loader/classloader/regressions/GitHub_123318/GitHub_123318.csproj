@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Remove this before checkin, as its not actually needed for the test -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GitHub_123318.cs" />

@@ -706,8 +706,6 @@ public:
         return true;
     }
 
-    bool EligibleForSpecialMarkerTypeUsage(MethodTable* pOwnerMT);
-
 private:
     // Note that for DAC builds, m_pArgs may be host allocated buffer, not a copy of an object marshalled by DAC.
     TypeHandle* m_pArgs;

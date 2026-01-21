@@ -9838,8 +9838,11 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                         // Otherwise, we should insert the exact instantiation of the interface
                         // HOWEVER: If the exact instantiation IS a special marker interface, we need to retry with exact interfaces to avoid ambiguity situations
                         // 
-                        // NOTE: This is also part of the logic which determines if we need to call SetMayHaveOpenInterfacesInInterfaceMap. What will happen is that if we have both an case where we want to insert a special marker type
-                        // but it satisfies the condition of also being an EXACT instantiation we want to retry, and use the retryWithExactInterfaces logic.
+                        // NOTE: This is also part of the logic which determines if we need to call SetMayHaveOpenInterfacesInInterfaceMap. The CLR type system has a bug in its structure
+                        //       such that if you attempt to instantiate a type over its own type parameter from the open type, we will load the GenericTypeDefinition instead of loading
+                        //       a type explicitly instantiated over those type parameters. We re-use the GenericTypeDefinition as the special marker type, which leads to a conflict
+                        //       when something like that happens. So, we need to detect when something like that happens, and set the MayHaveOpenInterfacesInInterfaceMap flag,
+                        //       and avoid using the special marker type in those situations.
                         MethodTable *pItfToInsert = NULL;
                         bool intendedExactMatch = false;
 
@@ -9854,7 +9857,6 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                             // We are in case 2 or 3 above
                             TypeHandle instantiationType;
                             bool pNewIntfMTIsSpecialMarkerType = pNewIntfMT->IsSpecialMarkerTypeForGenericCasting() && !pMT->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap();
-                            bool mustUseSpecialMarkerType = false;
                             if (pNewIntfMTIsSpecialMarkerType)
                             {
                                 // case 2
@@ -9878,7 +9880,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                         else
                         {
                             // case 4 (We have an exact interface)
-                            if (pItfPossiblyApprox->GetInstantiation().EligibleForSpecialMarkerTypeUsage(pMT))
+                            if (ClassLoader::EligibleForSpecialMarkerTypeUsage(pItfPossiblyApprox->GetInstantiation(), pMT))
                             {
                                 // Validated that all generic arguments are the same, and that the first generic argument in the instantiation is exactly the value of calling GetSpecialInstantiationType on pMT
                                 // Then use the special marker type here
@@ -9891,12 +9893,25 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                             }
                         }
 
-                        if (pItfToInsert->IsSpecialMarkerTypeForGenericCasting() && intendedExactMatch)
+                        if (pItfToInsert->IsSpecialMarkerTypeForGenericCasting())
                         {
-                            // We are trying to insert a special marker type into the interface list, but it is exactly the same as the exact instantiation we should actually want, we need to set the
-                            // MayHaveOpenInterfacesInInterfaceMap flag, so trigger the retry logic.
-                            retry = true;
-                            break;
+                            if (intendedExactMatch)
+                            {
+                                // We are trying to insert a special marker type into the interface list, but it is exactly the same as the exact instantiation we should actually want, we need to set the
+                                // MayHaveOpenInterfacesInInterfaceMap flag, so trigger the retry logic.
+                                retry = true;
+                                break;
+                            }
+                            else if (pMT->GetSpecialInstantiationType() == pItfToInsert->GetInstantiation()[0])
+                            {
+                                // We are trying to insert a special marker type into the interface list, but the first generic argument
+                                // in the instantiation is exactly the value of calling GetSpecialInstantiationType on pMT.
+                                // This implies that the special marker type is actually the exact instantiation that we should be using, which
+                                // will cause the same ambiguity situation as above. Trigger a retry, which will set MayHaveOpenInterfacesInInterfaceMap
+                                // and disable the special marker type behavior for this type.
+                                retry = true;
+                                break;
+                            }
                         }
 
                         if (!intendedExactMatch)

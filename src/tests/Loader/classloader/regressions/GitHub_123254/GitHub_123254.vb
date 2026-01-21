@@ -6,9 +6,17 @@ Imports System.Collections
 Imports System.Collections.Generic
 Imports Xunit
 
+' This test needs to be written in VB, since the C# compiler has a different rule around
+' filling in the InterfaceImpl table. Notably, the C# compiler will emit into the table, all of the
+' interfaces that are transitively implemented by a class that the C# compiler is aware of, and
+' the VB compiler will only emit the interfaces as specified in the source. In practice, this isn't
+' supposed to have any meaningful impact unless the set of assemblies being used at runtime does not
+' match the set of assemblies used at compile time, but it does impact some of the runtimes internal
+' algorithms around interface resolution, notably the behavior of LoadExactInterfaceMap has an optimization
+' that avoids doing quite a lot of work.
 Public Class GitHub_123254
 
-    ' Test the scenario where the implied interface is is in the interface map of a containing interface as a special marker type, and the containing interface itself is ALSO a special marker type.
+    ' Test the scenario where the implied interface is in the interface map of a containing interface as a special marker type, and the containing interface itself is ALSO a special marker type.
     ' The critical path is that when establishing the interface map for ILayer3_1(Of T) we find read ILayer1_1(Of T) as a special marker type member of ILayer2_1(Of T), and the ILayer2_1(Of T) itself is a special marker type.
     <Fact>
     Public Shared Sub Test_Method1()
@@ -39,7 +47,7 @@ Public Class GitHub_123254
         Function GetEnumerator() As IEnumerator(Of T)
     End Interface
 
-    ' Test the scenario where the implied interface is is in the interface map of a containing interface as a special marker type, and the containing interface itself is NOT a special marker type.
+    ' Test the scenario where the implied interface is in the interface map of a containing interface as a special marker type, and the containing interface itself is NOT a special marker type.
     ' The critical path is that when establishing the interface map for ILayer3_2(Of T) we find read ILayer1_2(Of T) as a special marker type member of ILayer2_2(Of T), and the ILayer2_2(Of T) itself is a special marker type.
     ' Then, it will also turn out that even though we had a special marker type in the interface map we're expanding, we will need to put an exact type into the map since that's what we actually need.
     <Fact>
@@ -70,7 +78,7 @@ Public Class GitHub_123254
         Function GetEnumerator() As IEnumerator(Of T)
     End Interface
 
-    ' Test the scenario where the implied interface is is in the interface map of a containing interface as a special marker type, and the containing interface itself is NOT a special marker type.
+    ' Test the scenario where the implied interface is in the interface map of a containing interface as a special marker type, and the containing interface itself is NOT a special marker type.
     ' The critical path is that when establishing the interface map for TestClass3 we find read ILayer1_3(Of T) as a special marker type member of ILayer3_3(Of TestClass, Integer), but when we place
     ' the interface onto TestClass3 we find that we can use the special marker type even though the containing interface is not the special marker type.
     <Fact>
@@ -101,7 +109,7 @@ Public Class GitHub_123254
         Function GetEnumerator() As IEnumerator(Of T)
     End Interface
 
-    ' Test the scenario where the implied interface is is in the interface map of a containing interface as a special marker type, and the containing interface itself is NOT a special marker type.
+    ' Test the scenario where the implied interface is in the interface map of a containing interface as a special marker type, and the containing interface itself is NOT a special marker type.
     ' The critical path is that when establishing the interface map for TestClass4 we find read ILayer3_4(Of String) and then under that there are exact types ILayer2_4(Of Integer) and ILayer1_4(Of TestClass4)
     ' Then the algorithm will decide to put a special marker type for ILayer1_4(Of T) into the map since it is the appropriate shape, and we will place the exact type ILayer2_4(Of Integer) into the map since that is the exact type needed.
     <Fact>
@@ -137,7 +145,7 @@ Public Class GitHub_123254
     <Fact>
     Public Shared Sub Test_Method5()
         ' I could only find a way to hit this path with reflection, and since reflection is imperfect on NativeAOT, just skip this test there.
-        if (Not TestLibrary.Utilities.IsNativeAot)
+        if (TestLibrary.Utilities.IsNativeAot)
             Return
         End If
 
@@ -151,7 +159,7 @@ Public Class GitHub_123254
         Next
 
         ' Test direct implementation of interface
-        testClassType = GetType(TestClass6(Of Integer)).GetGenericTypeDefinition().MakeGenericType(GetType(ILayer1_5(Of Integer)).GetGenericTypeDefinition().GetGenericArguments()(0))
+        testClassType = GetType(ILayer3_5(Of Integer)).GetGenericTypeDefinition().MakeGenericType(GetType(ILayer1_5(Of Integer)).GetGenericTypeDefinition().GetGenericArguments()(0))
         Console.WriteLine("testClassType first generic argument: " & testClassType.GetGenericArguments()(0).Name)
         For Each iface As Type In testClassType.GetInterfaces()
             Console.WriteLine("IFace name: " & iface.Name)
@@ -171,6 +179,10 @@ Public Class GitHub_123254
         Sub GetEnumerator(argument As TestClass5(Of U)) Implements ILayer1_5(Of U).GetEnumerator
         End Sub
     End Structure
+
+    Public Interface ILayer3_5(Of R)
+        Inherits ILayer2_5(Of R, Integer)
+    End Interface
 
     Public Interface ILayer2_5(Of V, W)
         Inherits ILayer1_5(Of V)

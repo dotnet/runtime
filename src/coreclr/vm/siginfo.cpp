@@ -1618,9 +1618,17 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
                 Instantiation genericLoadInst(thisinst, ntypars);
 
-                if (genericLoadInst.EligibleForSpecialMarkerTypeUsage(pMTInterfaceMapOwner))
+                if (ClassLoader::EligibleForSpecialMarkerTypeUsage(genericLoadInst, pMTInterfaceMapOwner))
                 {
                     thRet = ClassLoader::LoadTypeDefThrowing(pGenericTypeModule, tkGenericType, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, level);
+                    if (thRet.AsMethodTable()->GetInstantiation()[0] == pMTInterfaceMapOwner->GetSpecialInstantiationType())
+                    {
+                        // We loaded the special marker type, but it is ALSO the exact expected type which isn't a valid combination
+                        // In this case return something else (object) to indicate that
+                        // we found an invalid situation and this function should be retried without the special marker type logic enabled.
+                        thRet = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_OBJECT));
+                        break;
+                    }
                 }
                 else
                 {
