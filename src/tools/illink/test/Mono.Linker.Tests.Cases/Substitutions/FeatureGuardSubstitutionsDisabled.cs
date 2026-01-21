@@ -47,7 +47,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
         static bool FeatureSwitch => throw null;
 
         [Kept]
-        [ExpectedWarning("IL2026", Tool.Analyzer, "Analyzer does not support compiler-generated code warning suppression")]
+        [ExpectedWarning("IL2026", Tool.Analyzer, "Analyzer does not suport feature guard substitutions")]
         // Feature switches are still substituted when feature guard substitutions are disabled
         [ExpectBodyModified]
         static void TestFeatureSwitch()
