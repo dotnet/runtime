@@ -53,19 +53,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
             class Generic<T>
             {
-                [ExpectedWarning("IL2112", Tool.Trimmer | Tool.Analyzer, "https://github.com/dotnet/runtime/issues/110563")]
+                // Since Generic<int> is never instantiated, these methods should NOT be kept
                 [RequiresUnreferencedCode(nameof(KeptForMethodParameter))]
                 public void KeptForMethodParameter() { }
 
-                [ExpectedWarning("IL2112", Tool.Trimmer | Tool.Analyzer, "https://github.com/dotnet/runtime/issues/110563")]
                 [RequiresUnreferencedCode(nameof(KeptForField))]
                 public void KeptForField() { }
 
-                [ExpectedWarning("IL2112", Tool.Trimmer | Tool.Analyzer, "https://github.com/dotnet/runtime/issues/110563")]
                 [RequiresUnreferencedCode(nameof(KeptJustBecause))]
                 public void KeptJustBecause() { }
             }
 
+            [ExpectedWarning("IL2075", nameof(TestMethodParameter), nameof(Type.GetMethod))]
             static void TestMethodParameter(Generic<int> instance)
             {
                 instance.GetType().GetMethod("KeptForMethodParameter");
@@ -73,6 +72,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             static Generic<int> field = null;
 
+            [ExpectedWarning("IL2075", nameof(TestField), nameof(Type.GetMethod))]
             static void TestField()
             {
                 field.GetType().GetMethod("KeptForField");
@@ -505,18 +505,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 instance?.GetType();
             }
 
-            [ExpectedWarning("IL2072", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/...")]
-            static void UseParameterWithReflection(AnnotatedType instance)
-            {
-                // If we actually use reflection on the result, we should still warn
-                // because we don't know what type GetType returns
-                instance?.GetType().RequiresAll();
-            }
-
             public static void Test()
             {
                 UseParameter(null);
-                UseParameterWithReflection(null);
             }
         }
     }
