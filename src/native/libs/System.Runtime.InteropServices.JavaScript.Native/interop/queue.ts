@@ -10,7 +10,6 @@ export class Queue<T> {
         this.queue = [];
         this.offset = 0;
     }
-    // initialise the queue and offset
 
     // Returns the length of the queue.
     getLength(): number {
