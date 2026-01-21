@@ -329,8 +329,71 @@ public partial class ZipArchiveEntry
         if (checkOpenable)
             await ThrowIfNotOpenableAsync(needToUncompress: true, needToLoadIntoMemory: false, cancellationToken).ConfigureAwait(false);
 
-        return OpenInReadModeGetDataCompressor(
-            await GetOffsetOfCompressedDataAsync(cancellationToken).ConfigureAwait(false), password);
+        return await OpenInReadModeGetDataCompressorAsync(
+            await GetOffsetOfCompressedDataAsync(cancellationToken).ConfigureAwait(false), password, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<Stream> OpenInReadModeGetDataCompressorAsync(long offsetOfCompressedData, ReadOnlyMemory<char> password, CancellationToken cancellationToken)
+    {
+        Stream compressedStream = new SubReadStream(_archive.ArchiveStream, offsetOfCompressedData, _compressedSize);
+        Stream streamToDecompress;
+
+        if (IsEncrypted)
+        {
+            // Use the shared helper that handles key caching
+            streamToDecompress = await WrapWithDecryptionIfNeededAsync(compressedStream, password, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            streamToDecompress = compressedStream;
+        }
+
+        // Get decompressed stream
+        Stream decompressedStream = GetDataDecompressor(streamToDecompress);
+
+        return decompressedStream;
+    }
+
+    private async Task<Stream> WrapWithDecryptionIfNeededAsync(Stream compressedStream, ReadOnlyMemory<char> password, CancellationToken cancellationToken)
+    {
+        if (password.IsEmpty)
+            throw new InvalidDataException(SR.PasswordRequired);
+
+        bool isAesEncrypted = (ushort)_headerCompressionMethod == AesEncryptionMarker;
+
+        if (!isAesEncrypted && IsZipCryptoEncrypted())
+        {
+            byte expectedCheckByte = CalculateZipCryptoCheckByte();
+            byte[] keyMaterial = ZipCryptoStream.CreateKey(password);
+            return await ZipCryptoStream.CreateAsync(compressedStream, keyMaterial, expectedCheckByte, encrypting: false, cancellationToken).ConfigureAwait(false);
+        }
+        else if (isAesEncrypted)
+        {
+            int keySizeBits = GetAesKeySizeBits();
+
+            // Read salt from stream to derive keys
+            int saltSize = WinZipAesStream.GetSaltSize(keySizeBits);
+            byte[] salt = new byte[saltSize];
+            await compressedStream.ReadExactlyAsync(salt, cancellationToken).ConfigureAwait(false);
+
+            // Seek back so WinZipAesStream can read the header (salt + password verifier)
+            compressedStream.Seek(-saltSize, SeekOrigin.Current);
+
+            // Derive key material from the provided password
+            byte[] keyMaterial = WinZipAesStream.CreateKey(password, salt, keySizeBits);
+
+            return await WinZipAesStream.CreateAsync(
+                baseStream: compressedStream,
+                keyMaterial: keyMaterial,
+                keySizeBits: keySizeBits,
+                totalStreamSize: _compressedSize,
+                encrypting: false,
+                leaveOpen: false,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+        }
+
+        // Not encrypted - return as-is
+        return compressedStream;
     }
 
     private async Task<WrappedStream> OpenInUpdateModeAsync(bool loadExistingContent = true, CancellationToken cancellationToken = default, string? password = null)
@@ -478,10 +541,11 @@ public partial class ZipArchiveEntry
 
                     ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
 
-                    var encryptionStream = new ZipCryptoStream(
+                    var encryptionStream = ZipCryptoStream.Create(
                         baseStream: _archive.ArchiveStream,
                         keyBytes: _derivedEncryptionKeyMaterial,
                         passwordVerifierLow2Bytes: verifierLow2Bytes,
+                        encrypting: true,
                         crc32: null,
                         leaveOpen: true);
                     await using (encryptionStream.ConfigureAwait(false))
@@ -526,11 +590,12 @@ public partial class ZipArchiveEntry
                     // The AES extra field stores the real compression method
                     bool useDeflate = _compressionLevel != CompressionLevel.NoCompression;
 
-                    var encryptionStream = new WinZipAesStream(
+                    var encryptionStream = WinZipAesStream.Create(
                         baseStream: _archive.ArchiveStream,
                         keyMaterial: _derivedEncryptionKeyMaterial,
-                        encrypting: true,
                         keySizeBits: keySizeBits,
+                        totalStreamSize: -1,
+                        encrypting: true,
                         leaveOpen: true);
                     await using (encryptionStream.ConfigureAwait(false))
                     {

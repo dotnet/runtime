@@ -983,7 +983,7 @@ namespace System.IO.Compression
             {
                 byte expectedCheckByte = CalculateZipCryptoCheckByte();
                 byte[] keyMaterial = ZipCryptoStream.CreateKey(password);
-                return new ZipCryptoStream(compressedStream, keyMaterial, expectedCheckByte);
+                return ZipCryptoStream.Create(compressedStream, keyMaterial, expectedCheckByte, encrypting: false);
             }
             else if (isAesEncrypted)
             {
@@ -1000,12 +1000,12 @@ namespace System.IO.Compression
                 // Derive key material from the provided password
                 byte[] keyMaterial = WinZipAesStream.CreateKey(password, salt, keySizeBits);
 
-                return new WinZipAesStream(
+                return WinZipAesStream.Create(
                     baseStream: compressedStream,
                     keyMaterial: keyMaterial,
-                    encrypting: false,
                     keySizeBits: keySizeBits,
-                    totalStreamSize: _compressedSize);
+                    totalStreamSize: _compressedSize,
+                    encrypting: false);
             }
 
             // Not encrypted - return as-is
@@ -1095,10 +1095,11 @@ namespace System.IO.Compression
                 byte[] keyMaterial = ZipCryptoStream.CreateKey(password.AsMemory());
                 ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
 
-                targetStream = new ZipCryptoStream(
+                targetStream = ZipCryptoStream.Create(
                     baseStream: _archive.ArchiveStream,
                     keyBytes: keyMaterial,
                     passwordVerifierLow2Bytes: verifierLow2Bytes,
+                    encrypting: true,
                     crc32: null,
                     leaveOpen: true);
             }
@@ -1120,11 +1121,12 @@ namespace System.IO.Compression
                 // Derive key material from password with new random salt
                 byte[] keyMaterial = WinZipAesStream.CreateKey(password.AsMemory(), salt: null, keySizeBits);
 
-                targetStream = new WinZipAesStream(
+                targetStream = WinZipAesStream.Create(
                     baseStream: _archive.ArchiveStream,
                     keyMaterial: keyMaterial,
-                    encrypting: true,
                     keySizeBits: keySizeBits,
+                    totalStreamSize: -1,
+                    encrypting: true,
                     leaveOpen: true);
             }
 
@@ -1584,10 +1586,11 @@ namespace System.IO.Compression
 
                         ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
 
-                        using (var encryptionStream = new ZipCryptoStream(
+                        using (var encryptionStream = ZipCryptoStream.Create(
                             baseStream: _archive.ArchiveStream,
                             keyBytes: _derivedEncryptionKeyMaterial,
                             passwordVerifierLow2Bytes: verifierLow2Bytes,
+                            encrypting: true,
                             crc32: null,
                             leaveOpen: true))
                         {
@@ -1630,11 +1633,12 @@ namespace System.IO.Compression
                         // The AES extra field stores the real compression method
                         bool useDeflate = _compressionLevel != CompressionLevel.NoCompression;
 
-                        using (var encryptionStream = new WinZipAesStream(
+                        using (var encryptionStream = WinZipAesStream.Create(
                             baseStream: _archive.ArchiveStream,
                             keyMaterial: _derivedEncryptionKeyMaterial,
-                            encrypting: true,
                             keySizeBits: keySizeBits,
+                            totalStreamSize: -1,
+                            encrypting: true,
                             leaveOpen: true))
                         {
                             // Only compress/write if there's data
