@@ -74,7 +74,7 @@ namespace Mono.Linker
             return substitutionInfo;
         }
 
-        public AttributeInfo? ProcessAttributes(AssemblyDefinition assembly, LinkContext context)
+        internal AttributeInfo? ProcessAttributes(AssemblyDefinition assembly, LinkContext context)
         {
             if (context.Annotations.GetAction(assembly) == AssemblyAction.Skip)
                 return null;

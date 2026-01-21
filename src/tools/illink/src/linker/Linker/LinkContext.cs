@@ -44,7 +44,7 @@ using Mono.Linker.Steps;
 namespace Mono.Linker
 {
 
-    public class UnintializedContextFactory
+    internal class UnintializedContextFactory
     {
         public virtual AnnotationStore CreateAnnotationStore(LinkContext context) => new AnnotationStore(context);
         public virtual MarkingHelpers CreateMarkingHelpers(LinkContext context) => new MarkingHelpers(context);
@@ -148,7 +148,7 @@ namespace Mono.Linker
             get { return _actions; }
         }
 
-        public AssemblyResolver Resolver
+        internal AssemblyResolver Resolver
         {
             get { return _resolver; }
         }
@@ -205,7 +205,7 @@ namespace Mono.Linker
         {
         }
 
-        protected LinkContext(Pipeline pipeline, ILogger logger, string outputDirectory, UnintializedContextFactory factory)
+        internal LinkContext(Pipeline pipeline, ILogger logger, string outputDirectory, UnintializedContextFactory factory)
         {
             ArgumentNullException.ThrowIfNull(logger);
 
