@@ -103,9 +103,6 @@
     <RuntimeVariant Condition="'$(__MonoFullAot)' == '1'">llvmfullaot</RuntimeVariant>
 
     <MonoBinDir>$(__MonoBinDir)</MonoBinDir>
-
-    <!-- The SDK for VB.NET converts the DefineConstants variable to be , delimited instead of ; delimited, and the logic below which appends a ; to the list causes a problem, as it can result in the property having a leading ;. -->
-    <DefineConstants Condition="'$(DefineConstants)' == ''">UNUSED_CONSTANT</DefineConstants>
   </PropertyGroup>
 
   <!-- Setup Default symbol and optimization for Configuration -->
