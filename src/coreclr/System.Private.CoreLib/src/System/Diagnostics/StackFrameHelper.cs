@@ -50,10 +50,12 @@ namespace System.Diagnostics
             int loadedPeSize, bool isFileLayout, IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset,
             out string? sourceFile, out int sourceLine, out int sourceColumn);
 
+#if !TARGET_BROWSER
         private static object? s_stackTraceSymbolsCache;
 
         [ThreadStatic]
         private static int t_reentrancy;
+#endif
 
         public StackFrameHelper()
         {
@@ -90,11 +92,13 @@ namespace System.Diagnostics
         // rgiLineNumber and rgiColumnNumber fields using the portable PDB reader if not already
         // done by GetStackFramesInternal (on Windows for old PDB format).
         //
-
+#pragma warning disable CA1822
         internal void InitializeSourceInfo(bool fNeedFileInfo, Exception? exception)
+#pragma warning restore CA1822
         {
             StackTrace.GetStackFramesInternal(this, fNeedFileInfo, exception);
 
+#if !TARGET_BROWSER
             if (!fNeedFileInfo)
                 return;
 
@@ -131,6 +135,7 @@ namespace System.Diagnostics
             {
                 t_reentrancy--;
             }
+#endif
         }
 
         public MethodBase? GetMethodBase(int i)
