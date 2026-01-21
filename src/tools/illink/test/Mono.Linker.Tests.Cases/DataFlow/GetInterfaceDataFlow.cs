@@ -190,7 +190,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [ExpectedWarning("IL2072", nameof(Type.GetInterfaceMap))]
             static void TestDirectCall()
             {
-                // This should warn: @interface doesn't have the required annotations
                 var @interface = typeof(TestType).GetInterfaces()[0];
                 _ = typeof(TestType).GetInterfaceMap(@interface);
             }
@@ -198,9 +197,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [ExpectedWarning("IL2072", nameof(Type.GetInterfaceMap))]
             static void TestFieldAccess()
             {
-                // This should also warn: @interface doesn't have the required annotations
-                // even though we're accessing a field on the return value.
-                // Regression test for https://github.com/dotnet/runtime/issues/117849
                 var @interface = typeof(TestType).GetInterfaces()[0];
                 _ = typeof(TestType).GetInterfaceMap(@interface).TargetMethods;
             }
@@ -208,14 +204,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [ExpectedWarning("IL2072", nameof(Type.GetInterfaceMap))]
             static void TestMultipleFieldAccess()
             {
-                // Should warn even with multiple field/property accesses
                 var @interface = typeof(TestType).GetInterfaces()[0];
                 _ = typeof(TestType).GetInterfaceMap(@interface).TargetMethods.Length;
             }
 
             static void TestWithAnnotation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
             {
-                // This should not warn: interfaceType has the required annotations
                 _ = typeof(TestType).GetInterfaceMap(interfaceType);
                 _ = typeof(TestType).GetInterfaceMap(interfaceType).TargetMethods;
             }
