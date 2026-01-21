@@ -10,7 +10,7 @@ import GitHash from "consts:gitHash";
 export { SystemJS_RandomBytes } from "./crypto";
 export { SystemJS_GetLocaleInfo } from "./globalization-locale";
 export { SystemJS_RejectMainPromise, SystemJS_ResolveMainPromise, SystemJS_ConsoleClear } from "./main";
-export { SystemJS_ScheduleTimer, SystemJS_ScheduleBackgroundJob, runBackgroundTicks } from "./scheduling";
+export { SystemJS_ScheduleTimer, SystemJS_ScheduleBackgroundJob } from "./scheduling";
 
 export const gitHash = GitHash;
 export function dotnetInitializeModule(internals: InternalExchange): void {
@@ -24,7 +24,6 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     }
 
     internals[InternalExchangeIndex.NativeBrowserExportsTable] = nativeBrowserExportsToTable({
-        runBackgroundTicks: _ems_._runBackgroundTicks,
     });
     _ems_.dotnetUpdateInternals(internals, _ems_.dotnetUpdateInternalsSubscriber);
 
@@ -32,7 +31,6 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     function nativeBrowserExportsToTable(map: NativeBrowserExports): NativeBrowserExportsTable {
         // keep in sync with nativeBrowserExportsFromTable()
         return [
-            map.runBackgroundTicks,
         ];
     }
 }

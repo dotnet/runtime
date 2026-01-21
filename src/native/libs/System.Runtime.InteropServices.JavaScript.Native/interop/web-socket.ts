@@ -3,7 +3,7 @@
 
 import type { EmscriptenModuleInternal, PromiseCompletionSource, VoidPtr } from "./types";
 
-import { preventTimerThrottling } from "./throttling";
+import { preventTimerThrottling } from "./scheduling";
 import { Queue } from "./queue";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL } from "./per-module";
 import { assertJsInterop, utf8ToStringRelaxed } from "./utils";

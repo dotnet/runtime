@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { dotnetApi, dotnetNativeBrowserExports } from "./cross-module";
+import { dotnetApi, dotnetBrowserUtilsExports } from "./cross-module";
 import { jsInteropState } from "./marshal";
 import { ENVIRONMENT_IS_WEB } from "./per-module";
 import { isRuntimeRunning } from "./utils";
 
 let spreadTimersMaximum = 0;
-const antiThrottlingIds: Set<number> = new Set();
+const pendingJsTimers: Set<number> = new Set();
 
 export function initializeScheduling(): void {
     if (ENVIRONMENT_IS_WEB && globalThis.navigator) {
@@ -22,11 +22,11 @@ export function initializeScheduling(): void {
     }
 }
 
-export function stopThrottlingPrevention(): void {
-    for (const id of antiThrottlingIds) {
+export function abortInteropTimers(): void {
+    for (const id of pendingJsTimers) {
         globalThis.clearTimeout(id);
     }
-    antiThrottlingIds.clear();
+    pendingJsTimers.clear();
     spreadTimersMaximum = 0;
 }
 
@@ -47,15 +47,15 @@ export function preventTimerThrottling(): void {
             value: -1,
         };
         id.value = dotnetApi.Module.safeSetTimeout(() => preventTimerThrottlingTick(id), delay);
-        antiThrottlingIds.add(id.value);
+        pendingJsTimers.add(id.value);
     }
     spreadTimersMaximum = desiredReachTime;
 
     function preventTimerThrottlingTick(id: { value: number }) {
-        antiThrottlingIds.delete(id.value);
+        pendingJsTimers.delete(id.value);
         if (!isRuntimeRunning()) {
             return;
         }
-        dotnetNativeBrowserExports.runBackgroundTicks();
+        dotnetBrowserUtilsExports.runBackgroundTimers();
     }
 }
