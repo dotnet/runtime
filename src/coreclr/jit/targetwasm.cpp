@@ -64,10 +64,10 @@ ABIPassingInformation WasmClassifier::Classify(Compiler*    comp,
             case 4:
             case 8:
             {
-                var_types primtiveType = GetPrimitiveTypeForTrivialStruct(comp, clsHnd);
-                if (primtiveType != TYP_UNDEF)
+                var_types primitiveType = GetPrimitiveTypeForTrivialStruct(comp, clsHnd);
+                if (primitiveType != TYP_UNDEF)
                 {
-                    abiType   = genActualType(primtiveType);
+                    abiType   = genActualType(primitiveType);
                     passByRef = false;
                 }
                 break;
