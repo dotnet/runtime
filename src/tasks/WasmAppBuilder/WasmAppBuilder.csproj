@@ -49,6 +49,8 @@
         <WasmPInvokeModule Include="libSystem.Native.Browser" />
         <WasmPInvokeModule Include="libSystem.IO.Compression.Native" />
         <WasmPInvokeModule Include="libSystem.Globalization.Native" />
+        <WasmPInvokeModule Include="libSystem.Native.Browser" />
+        <WasmPInvokeModule Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
       </ItemGroup>
 
       <Message Importance="high" Text="Running ManagedToNativeGenerator on @(WasmPInvokeAssembly)" />
