@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <NoWarn>$(NoWarn),CA1050,CA1850,CA1845,CA1859,CA1866,CS8632,NU5128</NoWarn>
     <RootNamespace>Microsoft.NET.Sdk.WebAssembly</RootNamespace>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
@@ -19,11 +19,8 @@
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
-      <_PublishFramework Remove="@(_PublishFramework)" />
-      <_PublishFramework Include="$(TargetFrameworks)" />
-
-      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\*.dll" TargetPath="tools\%(_PublishFramework.Identity)" />
-      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\*.pdb" TargetPath="tools\%(_PublishFramework.Identity)" />
+      <FilesToPackage Include="$(OutputPath)*.dll" TargetPath="tools" />
+      <FilesToPackage Include="$(OutputPath)*.pdb" TargetPath="tools" />
     </ItemGroup>
   </Target>
 </Project>
