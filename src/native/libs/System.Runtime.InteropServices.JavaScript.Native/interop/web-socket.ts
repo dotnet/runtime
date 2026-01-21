@@ -357,7 +357,7 @@ function webSocketOnMessage(ws: WebSocketExtension, event: MessageEvent) {
         });
     } else {
         if (event.data.constructor.name !== "ArrayBuffer") {
-            throw new Error("ERR19: WebSocket receive expected ArrayBuffer");
+            throw new Error("ERR22: WebSocket receive expected ArrayBuffer");
         }
         eventQueue.enqueue({
             type: 1, // WebSocketMessageType.Binary
