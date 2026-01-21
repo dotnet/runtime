@@ -65,9 +65,9 @@ namespace System.Runtime.Tests
                 Assert.True(beforeCompiledMethodCount > 0, $"Compiled method count not greater than 0! ({beforeCompiledMethodCount})");
             }
 
-            if (PlatformDetection.IsBrowser)
+            if (PlatformDetection.IsMonoInterpreter || PlatformDetection.IsBrowser)
             {
-                // Before and after will most likely be the same in browser because of low precision timers
+                // Before and after will most likely be the same with the interpreter and in browser because of low precision timers
                 Assert.True(afterCompilationTime >= beforeCompilationTime, $"CompilationTime: after not greater than before! (after: {afterCompilationTime}, before: {beforeCompilationTime})");
             }
             else
@@ -75,16 +75,8 @@ namespace System.Runtime.Tests
                 Assert.True(afterCompilationTime > beforeCompilationTime, $"CompilationTime: after not greater than before! (after: {afterCompilationTime}, before: {beforeCompilationTime})");
             }
 
-            if (PlatformDetection.IsMonoInterpreter)
-            {
-                Assert.True(afterCompiledILBytes >= beforeCompiledILBytes, $"Compiled IL bytes: after not greater than before! (after: {afterCompiledILBytes}, before: {beforeCompiledILBytes})");
-                Assert.True(afterCompiledMethodCount >= beforeCompiledMethodCount, $"Compiled method count: after not greater than before! (after: {afterCompiledMethodCount}, before: {beforeCompiledMethodCount})");
-            }
-            else
-            {
-                Assert.True(afterCompiledILBytes > beforeCompiledILBytes, $"Compiled IL bytes: after not greater than before! (after: {afterCompiledILBytes}, before: {beforeCompiledILBytes})");
-                Assert.True(afterCompiledMethodCount > beforeCompiledMethodCount, $"Compiled method count: after not greater than before! (after: {afterCompiledMethodCount}, before: {beforeCompiledMethodCount})");
-            }
+            Assert.True(afterCompiledILBytes > beforeCompiledILBytes, $"Compiled IL bytes: after not greater than before! (after: {afterCompiledILBytes}, before: {beforeCompiledILBytes})");
+            Assert.True(afterCompiledMethodCount > beforeCompiledMethodCount, $"Compiled method count: after not greater than before! (after: {afterCompiledMethodCount}, before: {beforeCompiledMethodCount})");
         }
 
 
