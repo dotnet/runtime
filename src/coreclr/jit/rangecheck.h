@@ -311,54 +311,16 @@ struct Range
 
         return true;
     }
+
+    bool IsConstantRange() const
+    {
+        return lLimit.IsConstant() && uLimit.IsConstant() && IsValid();
+    }
 };
 
 // Helpers for operations performed on ranges
 struct RangeOps
 {
-    // Perform 'value' + 'cns'
-    static Limit AddConstantLimit(const Limit& value, const Limit& cns)
-    {
-        assert(cns.IsConstant());
-        Limit l = value;
-        if (l.AddConstant(cns.GetConstant()))
-        {
-            return l;
-        }
-        return Limit(Limit::keUnknown);
-    }
-
-    // Perform 'value' - 'cns'
-    static Limit SubtractConstantLimit(const Limit& value, const Limit& cns)
-    {
-        assert(cns.IsConstant());
-
-        if (cns.GetConstant() == INT_MIN)
-        {
-            // Subtracting INT_MIN would overflow
-            return Limit(Limit::keUnknown);
-        }
-
-        Limit l = value;
-        if (l.AddConstant(-cns.GetConstant()))
-        {
-            return l;
-        }
-        return Limit(Limit::keUnknown);
-    }
-
-    // Perform 'value' * 'cns'
-    static Limit MultiplyConstantLimit(const Limit& value, const Limit& cns)
-    {
-        assert(cns.IsConstant());
-        Limit l = value;
-        if (l.MultiplyConstant(cns.GetConstant()))
-        {
-            return l;
-        }
-        return Limit(Limit::keUnknown);
-    }
-
     // Perform 'value' >> 'cns'
     static Limit ShiftRightConstantLimit(const Limit& value, const Limit& cns)
     {
@@ -380,57 +342,33 @@ struct RangeOps
         Limit& r2lo = r2.LowerLimit();
         Limit& r2hi = r2.UpperLimit();
 
-        Range result = Limit(Limit::keUnknown);
-
-        // Check lo ranges if they are dependent and not unknown.
-        if ((r1lo.IsDependent() && !r1lo.IsUnknown()) || (r2lo.IsDependent() && !r2lo.IsUnknown()))
-        {
-            result.lLimit = Limit(Limit::keDependent);
-        }
-        // Check hi ranges if they are dependent and not unknown.
-        if ((r1hi.IsDependent() && !r1hi.IsUnknown()) || (r2hi.IsDependent() && !r2hi.IsUnknown()))
-        {
-            result.uLimit = Limit(Limit::keDependent);
-        }
-
-        if (r1lo.IsConstant())
-        {
-            result.lLimit = op(r2lo, r1lo);
-        }
-        if (r2lo.IsConstant())
-        {
-            result.lLimit = op(r1lo, r2lo);
-        }
-        if (r1hi.IsConstant())
-        {
-            result.uLimit = op(r2hi, r1hi);
-        }
-        if (r2hi.IsConstant())
-        {
-            result.uLimit = op(r1hi, r2hi);
-        }
-
+        Range result  = Limit(Limit::keUnknown);
+        result.lLimit = (r1lo.IsDependent() || r2lo.IsDependent()) ? Limit(Limit::keDependent) : op(r1lo, r2lo);
+        result.uLimit = (r1hi.IsDependent() || r2hi.IsDependent()) ? Limit(Limit::keDependent) : op(r1hi, r2hi);
         return result;
     }
 
     static Range Add(Range& r1, Range& r2)
     {
-        return ApplyRangeOp(r1, r2, [](Limit& a, Limit& b) {
-            return AddConstantLimit(a, b);
-        });
-    }
-
-    static Range Subtract(Range& r1, Range& r2)
-    {
-        return ApplyRangeOp(r1, r2, [](Limit& a, Limit& b) {
-            return SubtractConstantLimit(a, b);
+        return ApplyRangeOp(r1, r2, [](Limit a, Limit b) {
+            // Since addition is commutative, move constant to the second operand.
+            if (a.IsConstant() && !b.IsConstant())
+            {
+                std::swap(a, b);
+            }
+            return (b.IsConstant() && a.AddConstant(b.GetConstant())) ? a : Limit(Limit::keUnknown);
         });
     }
 
     static Range Multiply(Range& r1, Range& r2)
     {
-        return ApplyRangeOp(r1, r2, [](Limit& a, Limit& b) {
-            return MultiplyConstantLimit(a, b);
+        return ApplyRangeOp(r1, r2, [](Limit a, Limit b) {
+            // Since multiplication is commutative, move constant to the second operand.
+            if (a.IsConstant() && !b.IsConstant())
+            {
+                std::swap(a, b);
+            }
+            return (b.IsConstant() && a.MultiplyConstant(b.GetConstant())) ? a : Limit(Limit::keUnknown);
         });
     }
 
