@@ -14,21 +14,19 @@ namespace ILLink.Shared
     /// Helper class for parsing DebuggerDisplayAttribute strings to extract member references.
     /// This is shared between the ILLinker and the Roslyn analyzer to ensure consistent behavior.
     /// </summary>
-    public static partial class DebuggerDisplayAttributeHelper
+    public static class DebuggerDisplayAttributeHelper
     {
         /// <summary>
         /// Regex pattern to match member references in DebuggerDisplay strings.
         /// Matches expressions like {MemberName} or {MemberName,nq}
         /// </summary>
-        [GeneratedRegex("{[^{}]+}")]
-        private static partial Regex DebuggerDisplayAttributeValueRegex();
+        private static readonly Regex s_debuggerDisplayAttributeValueRegex = new Regex("{[^{}]+}", RegexOptions.Compiled);
 
         /// <summary>
         /// Regex pattern to detect the ",nq" suffix which asks the expression evaluator
         /// to remove quotes when displaying the final value.
         /// </summary>
-        [GeneratedRegex(@".+,\s*nq")]
-        private static partial Regex ContainsNqSuffixRegex();
+        private static readonly Regex s_containsNqSuffixRegex = new Regex(@".+,\s*nq", RegexOptions.Compiled);
 
         /// <summary>
         /// Parses a DebuggerDisplay format string and returns member names referenced in it.
@@ -44,13 +42,13 @@ namespace ILLink.Shared
             if (string.IsNullOrEmpty(displayString))
                 return true;
 
-            foreach (Match match in DebuggerDisplayAttributeValueRegex().Matches(displayString))
+            foreach (Match match in s_debuggerDisplayAttributeValueRegex.Matches(displayString))
             {
                 // Remove '{' and '}'
                 string realMatch = match.Value.Substring(1, match.Value.Length - 2);
 
                 // Remove ",nq" suffix if present
-                if (ContainsNqSuffixRegex().IsMatch(realMatch))
+                if (s_containsNqSuffixRegex.IsMatch(realMatch))
                 {
                     realMatch = realMatch.Substring(0, realMatch.LastIndexOf(','));
                 }
@@ -66,7 +64,7 @@ namespace ILLink.Shared
                     // We could implement support for this at some point, but for now it's important
                     // to make sure at least we don't crash trying to find some method on the current
                     // type when it exists on some other type
-                    if (methodName.Contains('.'))
+                    if (methodName.Contains("."))
                         return false; // Cannot fully understand this reference
 
                     memberNames.Add(methodName);

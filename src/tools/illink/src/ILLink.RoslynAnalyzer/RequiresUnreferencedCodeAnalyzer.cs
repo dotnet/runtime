@@ -161,11 +161,8 @@ namespace ILLink.RoslynAnalyzer
                 member = methods.FirstOrDefault();
 
                 // If not a method, check for field or property
-                if (member == null)
-                {
-                    member = typeSymbol.GetMembers(memberName).FirstOrDefault(m =>
+                member ??= typeSymbol.GetMembers(memberName).FirstOrDefault(m =>
                         m.Kind == SymbolKind.Field || m.Kind == SymbolKind.Property);
-                }
 
                 if (member == null)
                     continue;
@@ -196,7 +193,9 @@ namespace ILLink.RoslynAnalyzer
             ISymbol referencedMember,
             AttributeData attribute)
         {
-            var attributeData = referencedMember.GetAttribute(RequiresAttributeName);
+            if (!referencedMember.TryGetAttribute(RequiresAttributeName, out var attributeData))
+                return;
+
             var message = GetMessageFromAttribute(attributeData);
             var url = GetUrlFromAttribute(attributeData);
 
