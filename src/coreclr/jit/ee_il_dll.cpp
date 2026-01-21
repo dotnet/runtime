@@ -1228,18 +1228,8 @@ void Compiler::eeAllocMem(AllocMemChunk& codeChunk,
     // Fix up data section pointers.
     for (unsigned i = 0; i < numDataChunks; i++)
     {
-        if ((dataChunks[i].flags & CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE) != 0)
-        {
-            // These are always passed to the EE as separate chunks since their relocations need special treatment
-            dataChunks[i].block   = chunks.BottomRef(curDataChunk).block;
-            dataChunks[i].blockRW = chunks.BottomRef(curDataChunk).blockRW;
-            curDataChunk++;
-        }
-        else
-        {
-            dataChunks[i].block   = codeChunk.block + (size_t)dataChunks[i].block;
-            dataChunks[i].blockRW = codeChunk.blockRW + (size_t)dataChunks[i].blockRW;
-        }
+        dataChunks[i].block   = codeChunk.block + (size_t)dataChunks[i].block;
+        dataChunks[i].blockRW = codeChunk.blockRW + (size_t)dataChunks[i].blockRW;
     }
 
 #else
