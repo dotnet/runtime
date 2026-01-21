@@ -208,7 +208,7 @@ namespace ILCompiler.ObjectWriter
 
         public int EncodeSize()
         {
-           uint valSize = DwarfHelper.SizeOfULEB128((ulong)ConstValue);
+           uint valSize = DwarfHelper.SizeOfSLEB128(ConstValue);
            return 1 + (int)valSize + 1; // opcode + value + end opcode 
         }
 
