@@ -534,15 +534,6 @@ function load_failing_tests {
     failingTests+=($(read_array "$(dirname "${BASH_SOURCE[0]}")/testsFailing.$ARCH.txt"))
 }
 
-function load_excluded_tests {
-    # Read the exclusion file and populate the excludedTests array
-    while IFS=, read -r dllPath reasonMessage; do
-        # Extract the directory path from the dllPath and add it to the excludedTests array
-        dirPath=$(dirname "$dllPath")
-        excludedTests+=("$dirPath")
-    done < "${CORE_ROOT}/TestExclusionList.txt"
-}
-
 function load_playlist_tests {
     # Load the list of tests that are enabled as a part of this test playlist.
     playlistTests=($(read_array "${playlistFile}"))
@@ -1281,7 +1272,6 @@ then
 else
     load_unsupported_tests
     load_failing_tests
-    load_excluded_tests
 fi
 
 scriptPath=$(dirname $0)
