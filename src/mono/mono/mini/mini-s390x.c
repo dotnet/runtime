@@ -4845,7 +4845,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			} else {
 				S390_SET (code, s390_r13, ins->inst_p0);
 				s390_le (code, ins->dreg, 0, s390_r13, 0);
-				s390_le (code, ins->dreg, 0, s390_r13, 0);
 			}
 		}
 			break;

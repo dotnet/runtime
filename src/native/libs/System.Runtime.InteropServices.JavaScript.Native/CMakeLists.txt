@@ -1,10 +1,6 @@
 project(System.Runtime.InteropServices.JavaScript.Native C)
 
-set(BROWSER_INTEROP_SOURCES)
-
-if (NOT GEN_PINVOKE)
-    set (BROWSER_INTEROP_SOURCES ${BROWSER_INTEROP_SOURCES} entrypoints.c)
-endif()
+set (BROWSER_INTEROP_SOURCES ${BROWSER_INTEROP_SOURCES} entrypoints.c)
 
 add_library(System.Runtime.InteropServices.JavaScript.Native-Static
     STATIC
