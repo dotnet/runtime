@@ -20,7 +20,7 @@
 {
 }
 .assembly extern xunit.core {}
-.assembly extern Microsoft.DotNet.XUnitExtensions { .ver 0:0:0:0 }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly extern TestLibrary { .ver 0:0:0:0 }
 .namespace GCTest_gcarr_il
 {
@@ -87,7 +87,7 @@
       IL_0030:  ldloc.0
       IL_0031:  ldloc.2
       			callvirt   instance class GCTest_gcarr_il.Test class GCTest_gcarr_il.Test[-10...10]::Get(int32)
-      			
+
       IL_0033:  callvirt   instance void GCTest_gcarr_il.Test::CheckValid()
       IL_0038:  ldloc.2
       IL_0039:  ldc.i4.1
@@ -112,7 +112,7 @@
       IL_0061:  ret
     } // end of method 'Test::Main'
 
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void .ctor() il managed
     {
       .maxstack  8

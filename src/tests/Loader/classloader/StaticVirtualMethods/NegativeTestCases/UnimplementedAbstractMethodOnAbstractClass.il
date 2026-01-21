@@ -3,7 +3,7 @@
 
 .assembly extern System.Console {}
 .assembly extern xunit.core {}
-.assembly extern Microsoft.DotNet.XUnitExtensions { .ver 0:0:0:0 }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly extern mscorlib {}
 .assembly extern System.Runtime {}
@@ -172,7 +172,7 @@ ConstraintCheckShouldFailDone: nop
         leave.s ConstraintCheckShouldSucceedDone
     }
 ConstraintCheckShouldSucceedDone: nop
-    
+
     call int32 [TypeHierarchyCommonCs]Statics::ReportResults()
     ret  } // end of method Main
 } // end of class TestEntrypoint
