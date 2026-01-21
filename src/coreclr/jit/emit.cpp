@@ -6732,10 +6732,10 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
 
     assert(emitCurIG == nullptr);
 
-    emitCodeBlock  = nullptr;
-    emitDataChunks = nullptr;
+    emitCodeBlock        = nullptr;
+    emitDataChunks       = nullptr;
     emitDataChunkOffsets = nullptr;
-    emitNumDataChunks = 0;
+    emitNumDataChunks    = 0;
 
     emitOffsAdj = 0;
 
@@ -6887,13 +6887,12 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
         numDataChunks++;
     }
 
-    emitDataChunks =
-        numDataChunks == 0 ? nullptr : new (emitComp, CMK_Codegen) AllocMemChunk[numDataChunks]{};
+    emitDataChunks       = numDataChunks == 0 ? nullptr : new (emitComp, CMK_Codegen) AllocMemChunk[numDataChunks]{};
     emitDataChunkOffsets = numDataChunks == 0 ? nullptr : new (emitComp, CMK_Codegen) unsigned[numDataChunks]{};
-    emitNumDataChunks = numDataChunks;
+    emitNumDataChunks    = numDataChunks;
 
-    AllocMemChunk* dataChunk = emitDataChunks;
-    unsigned* dataChunkOffset = emitDataChunkOffsets;
+    AllocMemChunk* dataChunk       = emitDataChunks;
+    unsigned*      dataChunkOffset = emitDataChunkOffsets;
 
     unsigned cumulativeOffset = 0;
     for (dataSection* sec = emitConsDsc.dsdList; sec != nullptr; sec = sec->dsNext, dataChunk++, dataChunkOffset++)
