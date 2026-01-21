@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <Compile Include="bug123254.vb" />
+    <Compile Include="GitHub_123254.vb" />
     <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

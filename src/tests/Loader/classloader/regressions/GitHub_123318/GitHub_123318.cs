@@ -7,7 +7,7 @@
 using System;
 using Xunit;
 
-public class Test_TooManyGenericParametersForSpecialMarkerTypeOptimization
+public class GitHub_123318
 {
     [Fact]
     public static void Test()

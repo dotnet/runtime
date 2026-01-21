@@ -4,6 +4,6 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="bug123318.cs" />
+    <Compile Include="GitHub_123318.cs" />
   </ItemGroup>
 </Project>
