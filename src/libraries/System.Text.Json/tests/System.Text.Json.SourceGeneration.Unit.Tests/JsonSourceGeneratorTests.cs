@@ -1090,6 +1090,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 [
                     MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                     MetadataReference.CreateFromFile(typeof(JsonSerializerOptions).Assembly.Location),
+                    MetadataReference.CreateFromFile(typeof(System.Text.Encodings.Web.JavaScriptEncoder).Assembly.Location),
 #if NET
                     MetadataReference.CreateFromFile(typeof(System.Collections.Generic.LinkedList<>).Assembly.Location),
                     MetadataReference.CreateFromFile(System.Reflection.Assembly.Load(new System.Reflection.AssemblyName("System.Runtime")).Location),
