@@ -132,7 +132,7 @@ ep_thread_unregister (EventPipeThread *thread)
 		// Setting this flag lets a thread trying to do a concurrent disable that it is not safe to delete
 		// session ID i. The if check above also ensures that once the session is unpublished this thread
 		// will eventually stop ever storing ID i into the session_use_in_progress flag. This is important to
-		// guarantee termination of the YIELD_WHILE loop in ep_session_suspend_write_event.
+		// guarantee termination of the YIELD_WHILE loop in ep_session_wait_for_inflight_thread_ops.
 		ep_thread_set_session_use_in_progress (thread, i);
 		{
 			EventPipeSession *const session = ep_volatile_load_session (i);
@@ -140,8 +140,9 @@ ep_thread_unregister (EventPipeThread *thread)
 			// the check and the load
 			if (session != NULL) {
 				EventPipeBufferManager *const buffer_manager = ep_session_get_buffer_manager (session);
-				EP_ASSERT (buffer_manager != NULL);
-				ep_rt_wait_event_set (ep_buffer_manager_get_rt_wait_event_ref (buffer_manager));
+				if (buffer_manager != NULL) {
+					ep_rt_wait_event_set (ep_buffer_manager_get_rt_wait_event_ref (buffer_manager));
+				}
 			}
 		}
 		// Do not reference session past this point, we are signaling disable_holding_lock that it is safe to

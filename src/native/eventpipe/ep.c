@@ -674,13 +674,13 @@ disable_holding_lock (
 
 		ep_volatile_store_allow_write (ep_volatile_load_allow_write () & ~(ep_session_get_mask (session)));
 
-		// Remove the session from the array before calling ep_session_suspend_write_event. This way
+		// Remove the session from the array before calling ep_session_wait_for_inflight_thread_ops. This way
 		// we can guarantee that either the event write got the pointer and will complete
 		// the write successfully, or it gets NULL and will bail.
 		EP_ASSERT (ep_volatile_load_session (ep_session_get_index (session)) == session);
 		ep_volatile_store_session (ep_session_get_index (session), NULL);
 
-		ep_session_suspend_write_event (session);
+		ep_session_wait_for_inflight_thread_ops (session);
 
 		bool ignored;
 		ep_session_write_all_buffers_to_file (session, &ignored); // Flush the buffers to the stream/file
@@ -842,7 +842,7 @@ write_event_2 (
 			// Setting this flag lets a thread trying to do a concurrent disable that it is not safe to delete
 			// session ID i. The if check above also ensures that once the session is unpublished this thread
 			// will eventually stop ever storing ID i into the session_use_in_progress flag. This is important to
-			// guarantee termination of the YIELD_WHILE loop in ep_session_suspend_write_event.
+			// guarantee termination of the YIELD_WHILE loop in ep_session_wait_for_inflight_thread_ops.
 			ep_thread_set_session_use_in_progress (current_thread, i);
 			{
 				EventPipeSession *const session = ep_volatile_load_session (i);

@@ -134,11 +134,12 @@ ep_session_execute_rundown (
 	EventPipeSession *session,
 	dn_vector_ptr_t *execution_checkpoints);
 
-// Force all in-progress writes to either finish or cancel
-// This is required to ensure we can safely flush and delete the buffers
+// Wait for all in-progress threads that depend on this session's pointer slot
+// in _ep_sessions remaining valid throughout its operation.
+// This is required to ensure we can safely flush, close, and free the session.
 // _Requires_lock_held (ep)
 void
-ep_session_suspend_write_event (EventPipeSession *session);
+ep_session_wait_for_inflight_thread_ops (EventPipeSession *session);
 
 // Write a sequence point into the output stream synchronously.
 void

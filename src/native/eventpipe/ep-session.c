@@ -485,8 +485,15 @@ ep_session_execute_rundown (
 	ep_rt_execute_rundown (execution_checkpoints);
 }
 
+// Coordinates an EventPipeSession being freed in disable_holding_lock with
+// threads operating on session pointer slots in the _ep_sessions session array.
+// It assumes 1) callers have already cleared the session pointer slot from the
+// _ep_sessions so all threads that already loaded the session pointer slot will
+// be properly awaited and 2) the config lock is held to prevent a new session
+// being allocated and inheriting the session pointer slot index, which would
+// cause threads to mistakenly operate on the wrong session.
 void
-ep_session_suspend_write_event (EventPipeSession *session)
+ep_session_wait_for_inflight_thread_ops (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
 
@@ -506,9 +513,9 @@ ep_session_suspend_write_event (EventPipeSession *session)
 	if (dn_vector_ptr_custom_init (&threads, &params)) {
 		ep_thread_get_threads (&threads);
 		DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThread *, thread, &threads) {
-			// Frequently ensure the session remains disabled and removed from the session array.
-			// The yield below opens a window for a newly allocated session to inherit this session's index,
-			// leading to a stale cached session pointer should the slot not have been cleared.
+			// The session slot must remain cleared from the _ep_sessions array from holding the config lock.
+			// Otherwise, if the config lock is removed, a newly allocated session could inherit the same slot
+			// and cause operating threads to mistake the new session for this one.
 			EP_ASSERT (!ep_is_session_enabled ((EventPipeSessionID)session));
 			if (thread) {
 				// The session is disabled, so wait for any in-progress writes to complete.
