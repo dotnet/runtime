@@ -136,7 +136,7 @@ Public Class GitHub_123254
     ' Test path for forcing the interface map out of the supporting special marker types due to a conflict with the concept of special marker types
     <Fact>
     Public Shared Sub Test_Method5()
-        ' I could only find a way to hit this path with reflection, and it since reflection is imperfect on NativeAOT, just skip this test there.
+        ' I could only find a way to hit this path with reflection, and since reflection is imperfect on NativeAOT, just skip this test there.
         if (Not TestLibrary.Utilities.IsNativeAot)
             Return
         End If
