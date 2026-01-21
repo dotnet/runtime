@@ -7022,17 +7022,17 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
     // ControllerStackInfo doesn't report IL stubs, so if we are in an IL stub, we need
     // to handle the single-step specially.  There are probably other problems when we stop
     // in an IL stub.  We need to revisit this later.
-    bool fIsILStub = false;
+    bool fIsInteropStub = false;
     if ((context != NULL) &&
         g_pEEInterface->IsManagedNativeCode(reinterpret_cast<const BYTE *>(GetIP(context))))
     {
         MethodDesc * pMD = g_pEEInterface->GetNativeCodeMethodDesc(GetIP(context));
         if (pMD != NULL)
         {
-            fIsILStub = pMD->IsInteropStub();
+            fIsInteropStub = pMD->IsInteropStub();
         }
     }
-    LOG((LF_CORDB, LL_INFO10000, "DS::S - fIsILStub = %d\n", fIsILStub));
+    LOG((LF_CORDB, LL_INFO10000, "DS::S - fIsInteropStub = %d\n", fIsInteropStub));
 
     ControllerStackInfo info;
 
@@ -7097,7 +7097,7 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
         rangeCount = 0;
     }
 
-    if (fIsILStub)
+    if (fIsInteropStub)
     {
         // Don't use the ControllerStackInfo if we are in an IL stub.
         m_fp = fp;
@@ -7117,7 +7117,7 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
     LOG((LF_CORDB,LL_INFO10000,"DS::Step %p STEP_NORMAL\n",this));
     m_reason = STEP_NORMAL; //assume it'll be a normal step & set it to
     //something else if we walk over it
-    if (fIsILStub)
+    if (fIsInteropStub)
     {
         LOG((LF_CORDB, LL_INFO10000, "DS::Step: stepping in an IL stub\n"));
 
