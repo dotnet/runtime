@@ -231,8 +231,8 @@ sequence_point_fini (EventPipeSequencePoint *sequence_point)
 
 	// Each entry in the map owns a ref-count on the corresponding thread
 	if (dn_umap_size (sequence_point->thread_sequence_numbers) != 0) {
-		DN_UMAP_FOREACH_KEY_BEGIN (EventPipeThreadSessionState *, key, sequence_point->thread_sequence_numbers) {
-			ep_thread_release (ep_thread_session_state_get_thread (key));
+		DN_UMAP_FOREACH_KEY_BEGIN (EventPipeThread *, key, sequence_point->thread_sequence_numbers) {
+			ep_thread_release (key);
 		} DN_UMAP_FOREACH_END;
 	}
 

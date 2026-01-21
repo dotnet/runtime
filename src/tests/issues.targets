@@ -1,6 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="GetListOfTestCmds">
-    
     <Target Name="GetFilteredExcludeList" Returns="@(FilteredExcludeList)">
         <ItemGroup>
             <FilteredExcludeList Include="$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.FullPath)').Replace('\', '/')),%(ExcludeList.Issue)" Condition="'%(ExcludeList.Extension)' == '.dll'" />

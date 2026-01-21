@@ -5,6 +5,7 @@
 
   <PropertyGroup>
     <EventSourceSupport Condition="'$(TestBuildMode)' == 'nativeaot'">true</EventSourceSupport>
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
 
     <RunAnalyzers>true</RunAnalyzers>
     <NoWarn>$(NoWarn);xUnit1013</NoWarn>
