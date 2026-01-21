@@ -6,6 +6,8 @@ using System.Xml;
 using Microsoft.Test.ModuleCore;
 using Xunit;
 
+using TestResult = Microsoft.Test.ModuleCore.TestResult;
+
 namespace CoreXml.Test.XLinq
 {
     public partial class XNodeReaderFunctionalTests : TestModule
