@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -8,12 +8,12 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class MethodReadOnlyDataNode : ObjectNode, ISymbolDefinitionNode
+    public class MethodReadWriteDataNode : ObjectNode, ISymbolDefinitionNode
     {
         private MethodDesc _owningMethod;
         private ObjectData _data;
 
-        public MethodReadOnlyDataNode(MethodDesc owningMethod)
+        public MethodReadWriteDataNode(MethodDesc owningMethod)
         {
             _owningMethod = owningMethod;
         }
@@ -27,13 +27,13 @@ namespace ILCompiler.DependencyAnalysis
 #endif
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
-            => ObjectNodeSection.ReadOnlyDataSection;
+            => ObjectNodeSection.DataSection;
 
         public override bool StaticDependenciesAreComputed => _data != null;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__readonlydata_"u8).Append(nameMangler.GetMangledMethodName(_owningMethod));
+            sb.Append("__readwritedata_"u8).Append(nameMangler.GetMangledMethodName(_owningMethod));
         }
         public int Offset => 0;
         public override bool IsShareable => true;
@@ -56,7 +56,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return comparer.Compare(_owningMethod, ((MethodReadOnlyDataNode)other)._owningMethod);
+            return comparer.Compare(_owningMethod, ((MethodReadWriteDataNode)other)._owningMethod);
         }
 #endif
     }
