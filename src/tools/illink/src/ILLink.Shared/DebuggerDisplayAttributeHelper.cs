@@ -48,6 +48,7 @@ namespace ILLink.Shared
                 string realMatch = match.Value.Substring(1, match.Value.Length - 2);
 
                 // Remove ",nq" suffix if present
+                // The regex check above ensures there's a comma, so LastIndexOf will not return -1
                 if (s_containsNqSuffixRegex.IsMatch(realMatch))
                 {
                     realMatch = realMatch.Substring(0, realMatch.LastIndexOf(','));

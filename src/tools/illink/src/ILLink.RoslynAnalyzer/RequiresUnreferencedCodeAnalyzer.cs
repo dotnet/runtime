@@ -153,6 +153,8 @@ namespace ILLink.RoslynAnalyzer
             foreach (var memberName in memberNames)
             {
                 // Try to find the member on the type
+                // Note: If both a method and property exist with the same name, we prioritize the method
+                // since DebuggerDisplay distinguishes methods with "()" suffix. This matches ILLinker behavior.
                 ISymbol? member = null;
 
                 // Check for method with no parameters (methods are referenced with "()" in DebuggerDisplay)
