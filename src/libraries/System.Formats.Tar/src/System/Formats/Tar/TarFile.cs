@@ -35,7 +35,7 @@ namespace System.Formats.Tar
         /// Creates a tar stream that contains all the filesystem entries from the specified directory.
         /// </summary>
         /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
-        /// <param name="destination">The destination stream the archive.</param>
+        /// <param name="destination">The destination stream of the archive.</param>
         /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the archive entry names.</param>
         /// <param name="format">The format of the tar entries.</param>
         /// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName"/> or <paramref name="destination"/> is <see langword="null"/>.</exception>
