@@ -2653,23 +2653,6 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
             }
         }
 
-        // Optimize NOT(NOT(x)) => x
-        //
-        // This optimization is safe because:
-        // - Bitwise NOT is a pure operation with no side effects
-        // - The type system preserves the transformation: NOT is applied to integral types and
-        //   two consecutive NOT operations on the same type result in the original value
-        // - Value numbering operates on SSA form, so the operands are immutable
-        //
-        if ((*resultVN == NoVN) && (func == VNFunc(GT_NOT)))
-        {
-            VNFuncApp innerFunc;
-            if (GetVNFunc(arg0VN, &innerFunc) && (innerFunc.m_func == VNFunc(GT_NOT)))
-            {
-                *resultVN = innerFunc.m_args[0];
-            }
-        }
-
         // Try to perform constant-folding.
         //
         if ((*resultVN == NoVN) && VNEvalCanFoldUnaryFunc(typ, func, arg0VN))
