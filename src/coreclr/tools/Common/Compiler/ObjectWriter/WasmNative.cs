@@ -208,8 +208,7 @@ namespace ILCompiler.ObjectWriter
 
         public int EncodeSize()
         {
-            uint valSize = (ConstValue < 0) ? DwarfHelper.SizeOfSLEB128(ConstValue) :
-                DwarfHelper.SizeOfULEB128((ulong)ConstValue);
+           uint valSize = DwarfHelper.SizeOfULEB128((ulong)ConstValue);
            return 1 + (int)valSize + 1; // opcode + value + end opcode 
         }
 
@@ -217,14 +216,8 @@ namespace ILCompiler.ObjectWriter
         {
             int pos = 0;
             buffer[pos++] = (byte)_kind; // the kind is the opcode, either i32.const or i64.const
-            if (ConstValue < 0)
-            {
-                pos += DwarfHelper.WriteSLEB128(buffer.Slice(pos), ConstValue);
-            }
-            else
-            {
-                pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), (ulong)ConstValue);
-            }
+
+            pos += DwarfHelper.WriteSLEB128(buffer.Slice(pos), ConstValue);
 
             buffer[pos++] = 0x0B; // end opcode
             return pos;
