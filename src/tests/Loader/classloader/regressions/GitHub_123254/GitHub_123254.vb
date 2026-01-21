@@ -141,7 +141,7 @@ Public Class GitHub_123254
             Return
         End If
 
-        ' Test indirect implmenentation of interface
+        ' Test indirect implementation of interface
         Dim testClassType As Type = GetType(TestClass5(Of Integer)).GetGenericTypeDefinition().MakeGenericType(GetType(ILayer1_5(Of Integer)).GetGenericTypeDefinition().GetGenericArguments()(0))
         Console.WriteLine("testClassType first generic argument: " & testClassType.GetGenericArguments()(0).Name)
         For Each iface As Type In testClassType.GetInterfaces()
