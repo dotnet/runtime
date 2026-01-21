@@ -323,18 +323,6 @@ struct Range
 // Helpers for operations performed on ranges
 struct RangeOps
 {
-    // Perform 'value' >> 'cns'
-    static Limit ShiftRightConstantLimit(const Limit& value, const Limit& cns)
-    {
-        assert(value.IsConstant());
-        Limit result = value;
-        if (result.ShiftRightConstant(cns.GetConstant()))
-        {
-            return result;
-        }
-        return Limit(Limit::keUnknown);
-    }
-
     // Given two ranges "r1" and "r2", perform a generic 'op' operation on the ranges.
     template <typename Operation>
     static Range ApplyRangeOp(Range& r1, Range& r2, Operation op)
@@ -376,40 +364,15 @@ struct RangeOps
 
     static Range ShiftRight(Range& r1, Range& r2, bool logical)
     {
-        Limit& r1lo = r1.LowerLimit();
-        Limit& r1hi = r1.UpperLimit();
-        Limit& r2lo = r2.LowerLimit();
-        Limit& r2hi = r2.UpperLimit();
-
-        Range result = Limit(Limit::keUnknown);
-
-        // For now we only support r1 >> positive_cns (to simplify)
-        // Hence, it doesn't matter if it's logical or arithmetic shift right (for now).
-        if (!r2lo.IsConstant() || !r2hi.IsConstant() || (r2lo.cns < 0) || (r2hi.cns < 0))
-        {
-            return result;
-        }
-
-        // Check lo ranges if they are dependent and not unknown.
-        if (r1lo.IsDependent())
-        {
-            result.lLimit = Limit(Limit::keDependent);
-        }
-        else if (r1lo.IsConstant())
-        {
-            result.lLimit = ShiftRightConstantLimit(r1lo, r2lo);
-        }
-
-        if (r1hi.IsDependent())
-        {
-            result.uLimit = Limit(Limit::keDependent);
-        }
-        else if (r1hi.IsConstant())
-        {
-            result.uLimit = ShiftRightConstantLimit(r1hi, r2hi);
-        }
-
-        return result;
+        return ApplyRangeOp(r1, r2, [](Limit a, Limit b) {
+            // For now, we only support r1 >> positive_cns (to simplify)
+            // Hence, it doesn't matter if it's logical or arithmetic shift right (for now).
+            if (a.IsConstant() && b.IsConstant() && (a.GetConstant() >= 0) && (b.GetConstant() >= 0))
+            {
+                return a.ShiftRightConstant(b.GetConstant()) ? a : Limit(Limit::keUnknown);
+            }
+            return Limit(Limit::keUnknown);
+        });
     }
 
     static Range ShiftLeft(Range& r1, Range& r2)
