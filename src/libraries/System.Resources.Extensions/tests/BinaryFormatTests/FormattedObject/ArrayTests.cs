@@ -24,12 +24,13 @@ public class ArrayTests : Common.ArrayTests<FormattedObjectSerializer>
         Assert.Equal(strings, arrayRecord.GetArray());
     }
 
-    public static TheoryData<string?[]> StringArray_Parse_Data => new()
-    {
+    public static TheoryData<string?[]> StringArray_Parse_Data => new(s_stringArrays);
+    private static readonly string?[][] s_stringArrays =
+    [
         new string?[] { "one", "two" },
         new string?[] { "yes", "no", null },
         new string?[] { "same", "same", "same" }
-    };
+    ];
 
     [Theory]
     [MemberData(nameof(PrimitiveArray_Parse_Data))]
@@ -48,7 +49,15 @@ public class ArrayTests : Common.ArrayTests<FormattedObjectSerializer>
         new DateTime[] { DateTime.MaxValue }
     };
 
-    public static IEnumerable<object[]> Array_TestData => StringArray_Parse_Data.Concat<object[]>(PrimitiveArray_Parse_Data);
+    public static TheoryData<Array> Array_TestData
+    {
+        get
+        {
+            var data = new TheoryData<Array>(s_stringArrays);
+            data.AddRange(PrimitiveArray_Parse_Data);
+            return data;
+        }
+    }
 
     public static TheoryData<Array> Array_UnsupportedTestData => new()
     {

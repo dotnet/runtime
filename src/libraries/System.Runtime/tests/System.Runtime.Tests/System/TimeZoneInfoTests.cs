@@ -56,7 +56,7 @@ namespace System.Tests
 
         //  Due to ICU size limitations, full daylight/standard names are not included for the browser.
         //  Name abbreviations, if available, are used instead
-        public static IEnumerable<object[]> Platform_TimeZoneNamesTestData()
+        public static IReadOnlyCollection<TheoryDataRow<TimeZoneInfo, string, string, string, string, string>> Platform_TimeZoneNamesTestData()
         {
             if (PlatformDetection.IsBrowser || PlatformDetection.IsWasi)
                 return new TheoryData<TimeZoneInfo, string, string, string, string, string>
