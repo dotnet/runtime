@@ -741,6 +741,7 @@ namespace System.Threading
         [SupportedOSPlatformGuard("wasi")]
 #if FEATURE_SINGLE_THREADED
         internal static bool IsSingleThreaded => true;
+        [DoesNotReturn]
         internal static void ThrowIfSingleThreaded()
         {
             throw new PlatformNotSupportedException();

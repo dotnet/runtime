@@ -133,7 +133,7 @@ namespace System.Threading.Tasks
 
         [SupportedOSPlatformGuard("browser")]
         [SupportedOSPlatformGuard("wasi")]
-#if !FEATURE_SINGLE_THREADED
+#if FEATURE_SINGLE_THREADED
         internal static bool IsSingleThreaded => true;
 #else
         internal static bool IsSingleThreaded => false;
