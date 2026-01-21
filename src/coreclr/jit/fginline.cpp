@@ -586,8 +586,8 @@ private:
 
         if (tree->OperIs(GT_CALL))
         {
-            GenTreeCall*          call   = tree->AsCall();
-            bool tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler);
+            GenTreeCall* call          = tree->AsCall();
+            bool         tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler);
 
 #ifdef DEBUG
             tryLateDevirt = tryLateDevirt && (JitConfig.JitEnableLateDevirtualization() == 1);
