@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
+    <TargetFramework>$(BundledNETCoreAppTargetFramework)</TargetFramework>
     <IsPackable>true</IsPackable>
     <IsShipping>false</IsShipping>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
@@ -14,10 +14,8 @@
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeSymbols>false</IncludeSymbols>
-
-    <_generateRuntimeGraphTargetFramework Condition="'$(MSBuildRuntimeType)' == 'core'">$(NetCoreAppToolCurrent)</_generateRuntimeGraphTargetFramework>
-    <_generateRuntimeGraphTargetFramework Condition="'$(MSBuildRuntimeType)' != 'core'">$(NetFrameworkToolCurrent)</_generateRuntimeGraphTargetFramework>
-    <_generateRuntimeGraphTask>$([MSBuild]::NormalizePath('$(BaseOutputPath)', $(Configuration), '$(_generateRuntimeGraphTargetFramework)', '$(AssemblyName).dll'))</_generateRuntimeGraphTask>
+    <!-- TODO: Remove when a newer SDK with that property exposed is available. -->
+    <NetCoreSdkRoot Condition="'$(NetCoreSdkRoot)' == ''">$([System.IO.Path]::GetDirectoryName('$(BundledRuntimeIdentifierGraphFile)'))\</NetCoreSdkRoot>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DotNetBuildSourceOnly)' == 'true'">
@@ -46,18 +44,14 @@
     <Content Include="$(BaseOutputPath)PortableRuntimeIdentifierGraph.json" PackagePath="/" />
   </ItemGroup>
 
+  <!-- Reference these assemblies from the SDK directly. We do this to avoid bringing the package closure for assemblies we don't use here. -->
   <ItemGroup>
-    <!-- Manually reference these assemblies which are provided by MSBuild / .NET SDK -->
-    <PackageDownloadAndReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkVersion)" Folder="ref/net472" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net472'))" />
-    <PackageDownloadAndReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkVersion)" Folder="ref/net8.0" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))" />
-    <PackageDownloadAndReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" Folder="ref/net472" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net472'))" />
-    <PackageDownloadAndReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" Folder="ref/net8.0" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))" />
-    <PackageDownloadAndReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" Folder="lib/netstandard2.0" />
+    <Reference Include="$(NetCoreSdkRoot)Microsoft.Build.Framework.dll" Private="false" />
+    <Reference Include="$(NetCoreSdkRoot)Microsoft.Build.Utilities.Core.dll" Private="false" />
+    <Reference Include="$(NetCoreSdkRoot)Newtonsoft.Json.dll" Private="false" />
   </ItemGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)PackageDownloadAndReference.targets" />
-
-  <UsingTask TaskName="UpdateRuntimeIdentifierGraph" AssemblyFile="$(_generateRuntimeGraphTask)"/>
+  <UsingTask TaskName="UpdateRuntimeIdentifierGraph" AssemblyFile="$(TargetPath)" Runtime="NET" TaskFactory="TaskHostFactory" />
   <Target Name="UpdateRuntimeIdentifierGraph"
           AfterTargets="Build"
           Condition="'@(AdditionalRuntimeIdentifiers)' != ''">

@@ -134,20 +134,13 @@ public class ZipFile_Open : ZipFileTestBase
             await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenAsync(testArchive.Path, ZipArchiveMode.Update, default));
         }
 
-        await using (ZipArchive archive = await ZipFile.OpenReadAsync(bad("CDoffsetInBoundsWrong.zip"), default))
-        {
-            Assert.Throws<InvalidDataException>(() => { var x = archive.Entries; });
-        }
-
+        await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenReadAsync(bad("CDoffsetInBoundsWrong.zip"), default));
         using (TempFile testArchive = CreateTempCopyFile(bad("CDoffsetInBoundsWrong.zip"), GetTestFilePath()))
         {
             await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenAsync(testArchive.Path, ZipArchiveMode.Update, default));
         }
 
-        await using (ZipArchive archive = await ZipFile.OpenReadAsync(bad("numberOfEntriesDifferent.zip"), default))
-        {
-            Assert.Throws<InvalidDataException>(() => { var x = archive.Entries; });
-        }
+        await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenReadAsync(bad("numberOfEntriesDifferent.zip"), default));
         using (TempFile testArchive = CreateTempCopyFile(bad("numberOfEntriesDifferent.zip"), GetTestFilePath()))
         {
             await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenAsync(testArchive.Path, ZipArchiveMode.Update, default));

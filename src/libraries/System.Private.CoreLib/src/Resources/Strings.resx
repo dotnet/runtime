@@ -3092,9 +3092,6 @@
   <data name="NotSupported_MustBeModuleBuilder" xml:space="preserve">
     <value>Module argument must be a ModuleBuilder.</value>
   </data>
-  <data name="NotSupported_UnmanagedCallersOnlyTarget" xml:space="preserve">
-    <value>Methods with UnmanagedCallersOnlyAttribute cannot be used as delegate target.</value>
-  </data>
   <data name="NotSupported_NoCodepageData" xml:space="preserve">
     <value>No data is available for encoding {0}. For information on defining a custom encoding, see the documentation for the Encoding.RegisterProvider method.</value>
   </data>
@@ -3106,6 +3103,9 @@
   </data>
   <data name="NotSupported_NonReflectedType" xml:space="preserve">
     <value>Not supported in a non-reflected type.</value>
+  </data>
+  <data name="InvalidProgram_AsyncMethod" xml:space="preserve">
+    <value>Async methods with UnmanagedCallersOnlyAttribute are invalid.</value>
   </data>
   <data name="InvalidProgram_NonStaticMethod" xml:space="preserve">
     <value>Non-static methods with UnmanagedCallersOnlyAttribute are invalid.</value>
@@ -4176,25 +4176,25 @@
     <value>AssemblyName.GetAssemblyName() is not supported on this platform.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptions" xml:space="preserve">
-    <value>CompareOptions = {0} are not supported when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
+    <value>CompareOptions = {0} are not supported on Apple mobile platforms.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithMixedCompositions" xml:space="preserve">
-    <value>Mixed compositions in string not supported when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
+    <value>Mixed compositions in string are not supported on Apple mobile platforms.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptionsForCulture" xml:space="preserve">
-    <value>CompareOptions = {0} are not supported for culture = {1} when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
+    <value>CompareOptions = {0} are not supported for culture = {1} on Apple mobile platforms.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithMatchLength" xml:space="preserve">
-    <value>Match length calculation is not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this function.</value>
+    <value>Match length calculation is not supported on Apple mobile platforms.</value>
   </data>
   <data name="PlatformNotSupported_NonZeroLowerBound" xml:space="preserve">
     <value>Arrays with non-zero lower bounds are not supported.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalization" xml:space="preserve">
-    <value>{0} is not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.</value>
+    <value>{0} is not supported on Apple mobile platforms.</value>
   </data>
   <data name="PlatformNotSupportedWithReason_HybridGlobalization" xml:space="preserve">
-    <value>{0} is not supported for {1}, when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.</value>
+    <value>{0} is not supported for {1} on Apple mobile platforms.</value>
   </data>
   <data name="NotSupported_BodyRemoved" xml:space="preserve">
     <value>The body of this method was removed by the AOT compiler because it's not callable.</value>

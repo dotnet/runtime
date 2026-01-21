@@ -377,6 +377,27 @@ namespace System
 
         /// <summary>Gets the number of milliseconds elapsed since the system started.</summary>
         /// <value>A 64-bit signed integer containing the amount of time in milliseconds that has passed since the last time the computer was started.</value>
-        public static long TickCount64 => (long)Interop.Kernel32.GetTickCount64();
+        public static long TickCount64
+        {
+            get
+            {
+                unsafe
+                {
+                    // GetTickCount64 uses fixed resolution of 10-16ms for backward compatibility. Use
+                    // QueryUnbiasedInterruptTime instead which becomes more accurate if the underlying system
+                    // resolution is improved. This helps responsiveness in the case an app is trying to opt
+                    // into things like multimedia scenarios and additionally does not include "bias" from time
+                    // the system is spent asleep or in hibernation.
+
+                    ulong unbiasedTime;
+
+                    Interop.BOOL result = Interop.Kernel32.QueryUnbiasedInterruptTime(&unbiasedTime);
+                    // The P/Invoke is documented to only fail if a null-ptr is passed in
+                    Debug.Assert(result != Interop.BOOL.FALSE);
+
+                    return (long)(unbiasedTime / TimeSpan.TicksPerMillisecond);
+                }
+            }
+        }
     }
 }

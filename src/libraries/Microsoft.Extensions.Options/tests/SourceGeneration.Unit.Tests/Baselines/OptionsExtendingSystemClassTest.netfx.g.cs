@@ -17,7 +17,7 @@
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Test.EndPointsOptions options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "EndPointsOptions", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -63,7 +63,7 @@ namespace Test
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Test.RedisClientOptions options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "RedisClientOptions", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -114,7 +114,7 @@ namespace Test
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Test.RedisNamedClientOptions options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "RedisNamedClientOptions", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);

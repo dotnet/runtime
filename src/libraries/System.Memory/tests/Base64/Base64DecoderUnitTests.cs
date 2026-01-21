@@ -770,5 +770,255 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(expectedWritten, decodedByteCount);
             Assert.True(Base64TestHelper.VerifyDecodingCorrectness(expectedConsumed, expectedWritten, source, decodedBytes));
         }
+
+        [Fact]
+        public void DecodeFromCharsWithLargeSpan()
+        {
+            var rnd = new Random(42);
+            for (int i = 0; i < 5; i++)
+            {
+                int numBytes = rnd.Next(100, 1000 * 1000);
+                // Ensure we have a valid length (multiple of 4 for standard Base64)
+                numBytes = (numBytes / 4) * 4;
+
+                Span<char> source = new char[numBytes];
+                Base64TestHelper.InitializeDecodableChars(source, numBytes);
+
+                Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedLength(source.Length)];
+                Assert.Equal(OperationStatus.Done, Base64.DecodeFromChars(source, decodedBytes, out int consumed, out int decodedByteCount));
+                Assert.Equal(source.Length, consumed);
+
+                string sourceString = source.ToString();
+                byte[] expectedBytes = Convert.FromBase64String(sourceString);
+                Assert.True(expectedBytes.AsSpan().SequenceEqual(decodedBytes.Slice(0, decodedByteCount)));
+            }
+        }
+
+        [Theory]
+        [InlineData("\u5948cz/T", 0, 0)] // tests the scalar code-path with non-ASCII
+        [InlineData("z/Ta123\u5948", 4, 3)]
+        public void DecodeFromCharsNonAsciiInputInvalid(string inputString, int expectedConsumed, int expectedWritten)
+        {
+            Span<char> source = inputString.ToArray();
+            Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedLength(source.Length)];
+
+            Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromChars(source, decodedBytes, out int consumed, out int decodedByteCount));
+            Assert.Equal(expectedConsumed, consumed);
+            Assert.Equal(expectedWritten, decodedByteCount);
+        }
+
+        [Fact]
+        public void DecodeFromUtf8_ArrayOverload()
+        {
+            byte[] utf8Input = Encoding.UTF8.GetBytes("dGVzdA=="); // "test" encoded
+            byte[] result = Base64.DecodeFromUtf8(utf8Input);
+            Assert.Equal(4, result.Length);
+            Assert.Equal("test", Encoding.UTF8.GetString(result));
+        }
+
+        [Fact]
+        public void DecodeFromUtf8_SpanOverload()
+        {
+            byte[] utf8Input = Encoding.UTF8.GetBytes("dGVzdA=="); // "test" encoded
+            Span<byte> destination = new byte[10];
+            int bytesWritten = Base64.DecodeFromUtf8(utf8Input, destination);
+            Assert.Equal(4, bytesWritten);
+            Assert.Equal("test", Encoding.UTF8.GetString(destination.Slice(0, bytesWritten)));
+        }
+
+        [Fact]
+        public void TryDecodeFromUtf8_Success()
+        {
+            byte[] utf8Input = Encoding.UTF8.GetBytes("dGVzdA==");
+            Span<byte> destination = new byte[10];
+            Assert.True(Base64.TryDecodeFromUtf8(utf8Input, destination, out int bytesWritten));
+            Assert.Equal(4, bytesWritten);
+            Assert.Equal("test", Encoding.UTF8.GetString(destination.Slice(0, bytesWritten)));
+        }
+
+        [Fact]
+        public void TryDecodeFromUtf8_DestinationTooSmall()
+        {
+            byte[] utf8Input = Encoding.UTF8.GetBytes("dGVzdA==");
+            Span<byte> destination = new byte[2]; // Too small
+            Assert.False(Base64.TryDecodeFromUtf8(utf8Input, destination, out int bytesWritten));
+            Assert.Equal(0, bytesWritten);
+        }
+
+        [Fact]
+        public void DecodeFromChars_InvalidData()
+        {
+            string invalidInput = "@#$%";
+            byte[] destination = new byte[10];
+            Assert.Throws<FormatException>(() => Base64.DecodeFromChars(invalidInput, destination));
+            Assert.Throws<FormatException>(() => Base64.DecodeFromChars(invalidInput.AsSpan()));
+        }
+
+        [Fact]
+        public void DecodeFromChars_DestinationTooSmall()
+        {
+            string validInput = "dGVzdA=="; // "test" encoded
+            byte[] destination = new byte[2]; // Too small
+            Assert.Throws<ArgumentException>("destination", () => Base64.DecodeFromChars(validInput, destination));
+        }
+
+        [Fact]
+        public void TryDecodeFromChars_DestinationTooSmall()
+        {
+            string validInput = "dGVzdA=="; // "test" encoded
+            Span<byte> destination = new byte[2]; // Too small
+            Assert.False(Base64.TryDecodeFromChars(validInput, destination, out int bytesWritten));
+        }
+
+        [Fact]
+        public void DecodeFromChars_OperationStatus_DistinguishesBetweenInvalidAndDestinationTooSmall()
+        {
+            // This is the key use case from the issue - distinguishing between invalid data and destination too small
+            string validInput = "dGVzdA=="; // "test" encoded - produces 4 bytes
+            string invalidInput = "@#$%";
+            Span<byte> smallDestination = new byte[2];
+
+            // With destination too small, we should get DestinationTooSmall
+            OperationStatus status1 = Base64.DecodeFromChars(validInput, smallDestination, out int consumed1, out int written1);
+            Assert.Equal(OperationStatus.DestinationTooSmall, status1);
+            Assert.True(consumed1 > 0 || written1 >= 0); // Some progress was made or at least we know why it failed
+
+            // With invalid data, we should get InvalidData
+            OperationStatus status2 = Base64.DecodeFromChars(invalidInput, smallDestination, out int consumed2, out int written2);
+            Assert.Equal(OperationStatus.InvalidData, status2);
+            Assert.Equal(0, consumed2);
+            Assert.Equal(0, written2);
+        }
+
+        [Fact]
+        public void GetMaxDecodedLength_Matches_GetMaxDecodedFromUtf8Length()
+        {
+            for (int i = 0; i < 100; i++)
+            {
+                Assert.Equal(Base64.GetMaxDecodedFromUtf8Length(i), Base64.GetMaxDecodedLength(i));
+            }
+        }
+
+        [Fact]
+        public void DecodingWithWhiteSpaceIntoSmallDestination()
+        {
+            // Input "  zAww  " (8 bytes) contains "zAww" which decodes to 3 bytes.
+            // 'z' = 51, 'A' = 0, 'w' = 48, 'w' = 48 -> bits: 110011 000000 110000 110000 -> 0xCC 0x0C 0x30
+            // With destination of 3 bytes, this should succeed, not report "Destination too short".
+            byte[] input = Encoding.UTF8.GetBytes("  zAww  ");
+
+            byte[] destination5 = new byte[5];
+            OperationStatus status5 = Base64.DecodeFromUtf8(input, destination5, out int consumed5, out int written5);
+            Assert.Equal(OperationStatus.Done, status5);
+            Assert.Equal(input.Length, consumed5);
+            Assert.Equal(3, written5);
+
+            byte[] destination3 = new byte[3];
+            OperationStatus status3 = Base64.DecodeFromUtf8(input, destination3, out int consumed3, out int written3);
+            Assert.Equal(OperationStatus.Done, status3);
+            Assert.Equal(input.Length, consumed3);
+            Assert.Equal(3, written3);
+        }
+
+        [Fact]
+        public void DecodingWithOnlyWhiteSpaceIntoSmallDestination()
+        {
+            // Input "        " (8 spaces) decodes to 0 bytes.
+            // With destination of 1 byte, this should succeed, not report "Destination too short".
+            byte[] allSpaces = Encoding.UTF8.GetBytes(new string(' ', 8));
+
+            byte[] destination = new byte[1];
+            OperationStatus status = Base64.DecodeFromUtf8(allSpaces, destination, out int consumed, out int written);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(allSpaces.Length, consumed);
+            Assert.Equal(0, written);
+
+            // Also test with empty destination buffer
+            byte[] emptyDestination = Array.Empty<byte>();
+            OperationStatus statusEmpty = Base64.DecodeFromUtf8(allSpaces, emptyDestination, out int consumedEmpty, out int writtenEmpty);
+            Assert.Equal(OperationStatus.Done, statusEmpty);
+            Assert.Equal(allSpaces.Length, consumedEmpty);
+            Assert.Equal(0, writtenEmpty);
+        }
+
+        [Fact]
+        public void DecodingWithWhiteSpaceIntoSmallDestination_ActualDestinationTooSmall()
+        {
+            // Input "  AQID" (leading whitespace only) decodes to 3 bytes.
+            // With destination of 1 byte, this should correctly report "Destination too short".
+            // Note: Base64 requires input length to be multiple of 4, so we use "AQIDBA==" which decodes to 4 bytes.
+            byte[] input = Encoding.UTF8.GetBytes("  AQIDBA==");
+
+            byte[] destination1 = new byte[1];
+            OperationStatus status1 = Base64.DecodeFromUtf8(input, destination1, out _, out _);
+            Assert.Equal(OperationStatus.DestinationTooSmall, status1);
+
+            // With destination of 4 bytes, this should succeed.
+            byte[] destination4 = new byte[4];
+            OperationStatus status4 = Base64.DecodeFromUtf8(input, destination4, out int consumed4, out int written4);
+            Assert.Equal(OperationStatus.Done, status4);
+            Assert.Equal(input.Length, consumed4);
+            Assert.Equal(4, written4);
+            Assert.Equal(new byte[] { 1, 2, 3, 4 }, destination4);
+        }
+
+        [Fact]
+        public void DecodingWithEmbeddedWhiteSpaceIntoSmallDestination()
+        {
+            // Tests DecodeWithWhiteSpaceBlockwiseWrapper path - whitespace embedded in Base64 data.
+            // Input "z A w w" has whitespace in the middle. "zAww" decodes to 3 bytes.
+            byte[] input = Encoding.UTF8.GetBytes("z A w w");
+
+            byte[] destination3 = new byte[3];
+            OperationStatus status3 = Base64.DecodeFromUtf8(input, destination3, out int consumed3, out int written3);
+            Assert.Equal(OperationStatus.Done, status3);
+            Assert.Equal(input.Length, consumed3);
+            Assert.Equal(3, written3);
+
+            // Also test with larger embedded whitespace
+            byte[] input2 = Encoding.UTF8.GetBytes("z  A  w  w");
+            byte[] destination2 = new byte[3];
+            OperationStatus status2 = Base64.DecodeFromUtf8(input2, destination2, out int consumed2, out int written2);
+            Assert.Equal(OperationStatus.Done, status2);
+            Assert.Equal(input2.Length, consumed2);
+            Assert.Equal(3, written2);
+        }
+
+        [Fact]
+        public void DecodingWithEmbeddedWhiteSpaceIntoSmallDestination_ActualDestinationTooSmall()
+        {
+            // Tests DecodeWithWhiteSpaceBlockwiseWrapper path with actual destination too small.
+            // Input "A Q I D B A = =" (embedded whitespace) decodes to 4 bytes.
+            byte[] input = Encoding.UTF8.GetBytes("A Q I D B A = =");
+
+            byte[] destination1 = new byte[1];
+            OperationStatus status1 = Base64.DecodeFromUtf8(input, destination1, out _, out _);
+            Assert.Equal(OperationStatus.DestinationTooSmall, status1);
+
+            // With destination of 4 bytes, this should succeed.
+            byte[] destination4 = new byte[4];
+            OperationStatus status4 = Base64.DecodeFromUtf8(input, destination4, out int consumed4, out int written4);
+            Assert.Equal(OperationStatus.Done, status4);
+            Assert.Equal(input.Length, consumed4);
+            Assert.Equal(4, written4);
+            Assert.Equal(new byte[] { 1, 2, 3, 4 }, destination4);
+        }
+
+        [Fact]
+        public void DecodingWithEmbeddedWhiteSpaceIntoSmallDestination_TrailingWhiteSpacesAreConsumed()
+        {
+            byte[] input = "        8J+N        i    f    C    f        jYk="u8.ToArray();
+
+            // The actual decoded data is 8 bytes long.
+            // If we provide a destination buffer with 6 bytes, we can decode two blocks (6 bytes) and leave 2 bytes undecoded.
+            // But even though there are 2 bytes left undecoded, we should still consume as much input as possible,
+            // such that all trailing whitespace are also consumed.
+
+            byte[] destination = new byte[6];
+            Assert.Equal(OperationStatus.DestinationTooSmall, Base64.DecodeFromUtf8(input, destination, out int consumed, out int written));
+            Assert.Equal((byte)'j', input[consumed]); // byte right after the spaces
+            Assert.Equal(destination.Length, written);
+            Assert.Equal(new byte[] { 240, 159, 141, 137, 240, 159 }, destination);
+        }
     }
 }

@@ -769,7 +769,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         break;
                     }
                 case "Xunit.OuterLoopAttribute":
-                    if (options.GlobalOptions.Priority() == 0)
+                    if (options.GlobalOptions.CLRTestPriorityToBuild() == 0)
                     {
                         if (filterAttribute.AttributeConstructor!.Parameters.Length < 2)
                         {

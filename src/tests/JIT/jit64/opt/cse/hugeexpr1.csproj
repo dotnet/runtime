@@ -14,5 +14,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="hugeexpr1.cs" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

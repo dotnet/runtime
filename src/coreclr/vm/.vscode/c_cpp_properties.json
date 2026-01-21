@@ -14,8 +14,6 @@
                 "../../src/debug/inc/amd64",
                 "../../src/debug/inc/dump",
                 "../../src/md/inc",
-                "../../src/classlibnative/bcltype",
-                "../../src/classlibnative/inc",
                 "../../../../artifacts/obj/coreclr/windows.x64.Debug/src/inc",
                 "../../../../artifacts/obj/coreclr/windows.x64.Debug/src/inc/etw",
                 "../../src/vm/amd64"
