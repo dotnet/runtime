@@ -1173,23 +1173,15 @@ void Compiler::eeAllocMem(AllocMemChunk& codeChunk,
 
     for (unsigned i = 0; i < numDataChunks; i++)
     {
-        if ((dataChunks[i].flags & CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE) != 0)
-        {
-            // These are always passed to the EE as separate chunks since their relocations need special treatment
-            chunks.Push(dataChunks[i]);
-        }
-        else
-        {
-            // Increase size of the hot code chunk and store offset in data chunk
-            AllocMemChunk& codeChunk = chunks.BottomRef(0);
+        // Increase size of the hot code chunk and store offset in data chunk
+        AllocMemChunk& codeChunk = chunks.BottomRef(0);
 
-            codeChunk.size        = AlignUp(codeChunk.size, dataChunks[i].alignment);
-            dataChunks[i].block   = (uint8_t*)(uintptr_t)codeChunk.size;
-            dataChunks[i].blockRW = (uint8_t*)(uintptr_t)codeChunk.size;
-            codeChunk.size += dataChunks[i].size;
+        codeChunk.size        = AlignUp(codeChunk.size, dataChunks[i].alignment);
+        dataChunks[i].block   = (uint8_t*)(uintptr_t)codeChunk.size;
+        dataChunks[i].blockRW = (uint8_t*)(uintptr_t)codeChunk.size;
+        codeChunk.size += dataChunks[i].size;
 
-            codeChunk.alignment = max(codeChunk.alignment, dataChunks[i].alignment);
-        }
+        codeChunk.alignment = max(codeChunk.alignment, dataChunks[i].alignment);
     }
 
 #else
