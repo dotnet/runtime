@@ -493,7 +493,15 @@ void Compiler::lvaInitRetBuffArg(unsigned* curVarNum, bool useFixedRetBufReg)
 
 #if defined(TARGET_WASM)
 
-/*****************************************************************************/
+//-----------------------------------------------------------------------------
+// lvaInitWasmStackPtr: set up the wasm stack pointer argument
+//
+// Arguments:
+//   curVarNum - [in, out] the last used local var num [in, out]
+//
+// Notes:
+//   The managed calling convention for Wasm passes the stack pointer as first arg.
+//
 void Compiler::lvaInitWasmStackPtr(unsigned* curVarNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(*curVarNum);
@@ -504,9 +512,17 @@ void Compiler::lvaInitWasmStackPtr(unsigned* curVarNum)
     (*curVarNum)++;
 }
 
+//-----------------------------------------------------------------------------
+// lvaInitWasmPortableEntryPtr: set up the wasm portable entry pointer argument
+//
+// Arguments:
+//   curVarNum - [in, out] the last used local var num [in, out]
+//
+// Notes:
+//   This arg is currently unused in the JIT, and we may not need to model it.
+//
 void Compiler::lvaInitWasmPortableEntryPtr(unsigned* curVarNum)
 {
-    // This ends up never being used in the JIT, so perhaps it's not needed.
     LclVarDsc* varDsc = lvaGetDesc(*curVarNum);
     varDsc->lvType    = TYP_I_IMPL;
     varDsc->lvIsParam = 1;
