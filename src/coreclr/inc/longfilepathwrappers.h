@@ -5,6 +5,8 @@
 #define _WIN_PATH_APIS_WRAPPER_
 class SString;
 
+#include <dn-memmap.h>
+
 #ifdef HOST_WINDOWS
 
 HMODULE
@@ -26,6 +28,8 @@ CreateFileWrapper(
     );
 
 int u16_fopen_wrapper(FILE** stream, const WCHAR* filename, const WCHAR* mode);
+
+MemoryMappedFile* CreateMappedFileWrapper(const WCHAR* filename);
 
 BOOL
 CopyFileExWrapper(

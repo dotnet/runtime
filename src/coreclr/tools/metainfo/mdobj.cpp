@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <crtdbg.h>
 #include "mdinfo.h"
+#include <dn-memmap.h>
 
 #ifndef STRING_BUFFER_LEN
 #define STRING_BUFFER_LEN 4096
@@ -54,44 +55,6 @@ static HRESULT FindObjMetaData(PVOID pImage, PVOID *ppMetaData, long *pcbMetaDat
         return (E_FAIL);
     return (S_OK);
 }
-
-
-// This function returns the address to the MapView of file and file size.
-void GetMapViewOfFile(_In_ WCHAR *szFile, PBYTE *ppbMap, DWORD *pdwFileSize)
-{
-    HANDLE      hMapFile;
-    DWORD       dwHighSize;
-
-    HANDLE hFile = WszCreateFile(szFile,
-                               GENERIC_READ,
-                               FILE_SHARE_READ,
-                               NULL,
-                               OPEN_EXISTING,
-                               FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
-                               NULL);
-    if (hFile == INVALID_HANDLE_VALUE)
-        MDInfo::Error("CreateFileA failed!");
-
-    *pdwFileSize = GetFileSize(hFile, &dwHighSize);
-
-    if ((*pdwFileSize == 0xFFFFFFFF) && (GetLastError() != NO_ERROR))
-    {
-        CloseHandle(hFile);
-        MDInfo::Error("GetFileSize failed!");
-    }
-    _ASSERTE(dwHighSize == 0);
-
-    hMapFile = CreateFileMappingW(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
-    CloseHandle(hFile);
-    if (!hMapFile)
-        MDInfo::Error("CreateFileMappingW failed!");
-
-    *ppbMap = (PBYTE) MapViewOfFile(hMapFile, FILE_MAP_READ, 0, 0, 0);
-    CloseHandle(hMapFile);
-
-    if (!*ppbMap)
-        MDInfo::Error("MapViewOfFile failed!");
-} // void GetMapViewOfFile()
 
 // This function skips a member given the pointer to the member header
 // and returns a pointer to the next header.
@@ -177,7 +140,15 @@ void DisplayArchive(_In_z_ WCHAR* szFile, ULONG DumpFilter, _In_opt_z_ WCHAR* sz
     HRESULT     hr;
 	char		szString[1024];
 
-    GetMapViewOfFile(szFile, &pbMapAddress, &dwFileSize);
+    MemoryMappedFile* f = CreateMappedFile(szFile);
+    if (f == nullptr)
+    {
+        MDInfo::Error("MapViewOfFile failed!");
+        return;
+    }
+
+    pbMapAddress = (PBYTE)f->Address();
+    dwFileSize = (DWORD)f->Size();
     pbStartAddress = pbMapAddress;
 
     // Verify and skip archive signature.
@@ -241,7 +212,7 @@ void DisplayArchive(_In_z_ WCHAR* szFile, ULONG DumpFilter, _In_opt_z_ WCHAR* sz
         pbMapAddress = SkipMember(pbMapAddress);
     }
 
-    UnmapViewOfFile(pbStartAddress);
+    delete f;
 } // void DisplayArchive()
 
 // DisplayFile() function

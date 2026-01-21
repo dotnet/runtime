@@ -39,6 +39,13 @@
 #include "posterror.h"
 #include "pedecoder.h"
 #include "pedecoder.inl"
+#ifdef TARGET_UNIX
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <dn-stdio.h>
+#endif // TARGET_UNIX
 
 //********** Types. ***********************************************************
 #define SMALL_ALLOC_MAP_SIZE (64 * 1024) // 64 kb is the minimum size of virtual
@@ -90,9 +97,14 @@ void StgIO::CtorInit()
     m_bRewrite = false;
     m_bFreeMem = false;
     m_pIStream = 0;
+#ifdef TARGET_WINDOWS
     m_hFile = INVALID_HANDLE_VALUE;
     m_hModule = NULL;
     m_hMapping = 0;
+#else
+    m_fd = -1;
+    m_mmap = false;
+#endif // TARGET_WINDOWS
     m_pBaseData = 0;
     m_pData = 0;
     m_cbData = 0;
@@ -196,14 +208,24 @@ HRESULT StgIO::Open(                    // Return code.
         //<REVISIT_TODO>@future: This could chose to open the file in write through
         // mode, which would provide better Duribility (from ACID props),
         // but would be much slower.</REVISIT_TODO>
-
+        
         // Create the new file, overwriting only if caller allows it.
+#ifdef TARGET_WINDOWS
         if ((m_hFile = WszCreateFile(szName, GENERIC_READ | GENERIC_WRITE, 0, 0,
                 (fFlags & DBPROP_TMODEF_FAILIFTHERE) ? CREATE_NEW : CREATE_ALWAYS,
                 0, 0)) == INVALID_HANDLE_VALUE)
         {
             return (MapFileError(GetLastError()));
         }
+#else
+        MAKE_UTF8PTR_FROMWIDE_NOTHROW(u8Name, szName);
+        if ((m_fd = open(u8Name,
+            (fFlags & DBPROP_TMODEF_FAILIFTHERE) ? O_TRUNC : O_EXCL,
+            O_RDWR)) == -1)
+        {
+            return HRESULTFromErr(errno);
+        }
+#endif
 
         // Data will come from the file.
         m_iType = STGIO_HFILE;
@@ -212,9 +234,13 @@ HRESULT StgIO::Open(                    // Return code.
     // memory view, it has to be opened already, so no file open.
     else if ((fFlags & DBPROP_TMODEF_WRITE) == 0)
     {
+#ifdef TARGET_WINDOWS
         // We have not opened the file nor loaded it as module
         _ASSERTE(m_hFile == INVALID_HANDLE_VALUE);
         _ASSERTE(m_hModule == NULL);
+#else
+        _ASSERTE(m_fd == -1);
+#endif // TARGET_WINDOWS
 
         // Open the file for read.  Sharing is determined by caller, it can
         // allow other readers or be exclusive.
@@ -266,6 +292,7 @@ HRESULT StgIO::Open(                    // Return code.
 #endif //!DACCESS_COMPILE && !TARGET_UNIX
         }
 
+#ifdef TARGET_WINDOWS
         if (m_hModule == NULL)
         {   // We didn't get the loaded module (we either didn't want to or it failed)
             HandleHolder hFile(WszCreateFile(szName,
@@ -291,6 +318,27 @@ HRESULT StgIO::Open(                    // Return code.
 
             m_iType = STGIO_HFILE;
         }
+#else
+        MAKE_UTF8PTR_FROMWIDE_NOTHROW(u8Name, szName);
+        int fd = open(u8Name, O_RDONLY);
+        if (fd == -1)
+            return HRESULTFromErr(errno);
+
+        // Get size of file.
+        struct stat st;
+        if (fstat(fd, &st) != 0 || st.st_size == 0 || st.st_size >= UINT32_MAX)
+        {
+            // Can't read anything from an empty file.
+            close(fd);
+            return (PostError(CLDB_E_NO_DATA));
+        }
+
+        m_cbData = (ULONG)st.st_size;
+        
+        // Data will come from the file.
+        m_fd = fd;
+        m_iType = STGIO_HFILE;
+#endif // TARGET_WINDOWS
     }
 
 ErrExit:
@@ -356,6 +404,7 @@ void StgIO::Close()
         // Intentional fall through to file case, if we kept handle open.
         FALLTHROUGH;
 
+#if TARGET_WINDOWS
         case STGIO_HFILE:
         {
             // Free the file handle.
@@ -373,6 +422,15 @@ void StgIO::Close()
             m_hModule = NULL;
             break;
         }
+#else
+        case STGIO_HFILE:
+        {
+            // Free the file handle.
+            if (m_fd != -1)
+                close(m_fd);
+        }
+        break;
+#endif // TARGET_WINDOWS
 
         // Free the stream pointer.
         case STGIO_STREAM:
@@ -471,7 +529,11 @@ HRESULT StgIO::Read(                    // Return code.
         case STGIO_HFILE:
         case STGIO_HMODULE:
         {
+#ifdef TARGET_WINDOWS
             _ASSERTE((m_hFile != INVALID_HANDLE_VALUE) || (m_hModule != NULL));
+#else
+            _ASSERTE(m_fd != -1);
+#endif
 
             // Backing store does its own paging.
             if (IsBackingStore() || IsMemoryMapped())
@@ -488,8 +550,12 @@ HRESULT StgIO::Read(                    // Return code.
             // If there is no backing store, this is just a read operation.
             else
             {
+#ifdef TARGET_WINDOWS
                 _ASSERTE((m_iType == STGIO_HFILE) && (m_hFile != INVALID_HANDLE_VALUE));
                 _ASSERTE(m_hModule == NULL);
+#else
+                _ASSERTE((m_iType == STGIO_HFILE) && (m_fd != -1));
+#endif
 
                 ULONG   cbTemp = 0;
                 if (!pcbRead)
@@ -622,6 +688,7 @@ HRESULT StgIO::Seek(                    // New offset.
     {
         case STGIO_HFILE:
         {
+#ifdef TARGET_WINDOWS
             // Use the file system's move.
             _ASSERTE(m_hFile != INVALID_HANDLE_VALUE);
             cbRtn = ::SetFilePointer(m_hFile, lVal, 0, fMoveType);
@@ -636,6 +703,17 @@ HRESULT StgIO::Seek(                    // New offset.
                 }
                 m_cbOffset = cbRtn;
             }
+#else
+            _ASSERTE(m_fd != -1);
+            int64_t offRtn = (int64_t)lseek(m_fd, lVal,
+                fMoveType == FILE_BEGIN ? SEEK_SET :
+                (fMoveType == FILE_CURRENT ? SEEK_CUR : SEEK_END));
+            if (offRtn < 0 || offRtn > UINT32_MAX)
+            {
+                IfFailGo(STG_E_INVALIDFUNCTION);
+            }
+            m_cbOffset = (ULONG)offRtn;
+#endif
         }
         break;
 
@@ -784,6 +862,7 @@ HRESULT StgIO::MapFileToMem(            // Return code.
         // If it is for exclusive, then we need to keep the handle open so the
         // file is locked, preventing other readers.  Also leave it open if
         // in read/write mode so we can truncate and rewrite.
+#ifdef TARGET_WINDOWS
         if (m_hFile == INVALID_HANDLE_VALUE ||
             ((m_fFlags & DBPROP_TMODEF_EXCLUSIVE) == 0 && (m_fFlags & DBPROP_TMODEF_WRITE) == 0))
         {
@@ -793,6 +872,17 @@ HRESULT StgIO::MapFileToMem(            // Return code.
                 VERIFY(CloseHandle(m_hFile));
                 m_hFile = INVALID_HANDLE_VALUE;
             }
+#else
+        if (m_fd == -1 ||
+            ((m_fFlags & DBPROP_TMODEF_EXCLUSIVE) == 0 && (m_fFlags & DBPROP_TMODEF_WRITE) == 0))
+        {
+            // If there was a handle open, then free it.
+            if (m_fd != -1)
+            {
+                VERIFY(close(m_fd) == 0);
+                m_fd = -1;
+            }
+#endif
             // Free the stream pointer.
             else
             if (m_pIStream != 0)
@@ -814,13 +904,16 @@ HRESULT StgIO::MapFileToMem(            // Return code.
     else
     {
         // Now we will map, so better have it right.
+#ifdef TARGET_WINDOWS
         _ASSERTE(m_hFile != INVALID_HANDLE_VALUE || m_iType == STGIO_STREAM);
         _ASSERTE(m_rgPageMap == 0);
+#endif
 
         // For read mode, use a memory mapped file since the size will never
         // change for the life of the handle.
         if ((m_fFlags & DBPROP_TMODEF_WRITE) == 0 && m_iType != STGIO_STREAM)
         {
+#ifdef TARGET_WINDOWS
             // Create a mapping object for the file.
             _ASSERTE(m_hMapping == 0);
 
@@ -858,6 +951,16 @@ HRESULT StgIO::MapFileToMem(            // Return code.
                 m_pBaseData = m_pData = NULL;
                 goto ErrExit;
             }
+#else
+            _ASSERTE(!m_mmap);
+            if ((m_pBaseData = m_pData = mmap(nullptr, m_cbData, PROT_READ, 0, m_fd, 0)) == MAP_FAILED)
+            {
+                hr = HRESULTFromErr(errno);
+                m_pBaseData = m_pData = NULL;
+                goto ErrExit;
+            }
+            m_mmap = true;
+#endif
         }
         // In write mode, we need the hybrid combination of being able to back up
         // the data in memory via cache, but then later rewrite the contents and
@@ -898,9 +1001,11 @@ ErrExit:
     // Check for errors and clean up.
     if (FAILED(hr))
     {
+#ifdef TARGET_WINDOWS
         if (m_hMapping)
             CloseHandle(m_hMapping);
         m_hMapping = 0;
+#endif
         m_pBaseData = m_pData = 0;
         m_cbData = 0;
     }
@@ -924,6 +1029,7 @@ HRESULT StgIO::ReleaseMappingObject()   // Return code.
         return S_OK;
     }
 
+#ifdef TARGET_WINDOWS
     // Must have an allocated handle.
     _ASSERTE(m_hMapping != 0);
 
@@ -941,6 +1047,17 @@ HRESULT StgIO::ReleaseMappingObject()   // Return code.
         VERIFY(CloseHandle(m_hMapping));
         m_hMapping = 0;
     }
+#else
+    _ASSERTE(m_mmap);
+
+    if (m_pData)
+    {
+        VERIFY(munmap(m_pData, m_cbData) == 0);
+        m_pData = nullptr;
+    }
+
+    m_mmap = false;
+#endif
     return S_OK;
 }
 
@@ -1118,6 +1235,7 @@ HRESULT StgIO::FlushFileBuffers()
 {
     _ASSERTE(!IsReadOnly());
 
+#ifdef TARGET_WINDOWS
     if (m_hFile != INVALID_HANDLE_VALUE)
     {
         if (::FlushFileBuffers(m_hFile))
@@ -1125,6 +1243,15 @@ HRESULT StgIO::FlushFileBuffers()
         else
             return (MapFileError(GetLastError()));
     }
+#else
+    if (m_fd != -1)
+    {
+        if (fsync(m_fd) == 0)
+            return (S_OK);
+        else
+            return HRESULTFromErr(errno);
+    }
+#endif
     return (S_OK);
 }
 
@@ -1179,12 +1306,18 @@ HRESULT StgIO::WriteToDisk(             // Return code.
         case STGIO_HFILE:
         case STGIO_HFILEMEM:
         {
+#ifdef TARGET_WINDOWS
             // Use the file system's move.
             _ASSERTE(m_hFile != INVALID_HANDLE_VALUE);
 
             // Do the write to disk.
             if (!::WriteFile(m_hFile, pbBuff, cbWrite, pcbWritten, 0))
                 hr = MapFileError(GetLastError());
+#else
+            _ASSERTE(m_fd != -1);
+            if ((cbWritten = write(m_fd, pbBuff, cbWrite)) != cbWrite)
+                hr = HRESULTFromErr(errno);
+#endif
         }
         break;
 
@@ -1233,9 +1366,15 @@ HRESULT StgIO::ReadFromDisk(            // Return code.
     // Read only from file to avoid recursive logic.
     if (m_iType == STGIO_HFILE || m_iType == STGIO_HFILEMEM)
     {
+#ifdef TARGET_WINDOWS
         if (::ReadFile(m_hFile, pbBuff, cbBuff, pcbRead, 0))
             return (S_OK);
         return (MapFileError(GetLastError()));
+#else
+        if ((cbRead = read(m_fd, pbBuff, cbBuff)) >= 0)
+            return (S_OK);
+        return HRESULTFromErr(errno);
+#endif
     }
     // Read directly from stream.
     else
@@ -1254,11 +1393,20 @@ void StgIO::FreePageMap()
     if (m_bFreeMem && m_pBaseData)
         FreeMemory(m_pBaseData);
     // For mmf, close handles and free resources.
+#ifdef TARGET_WINDOWS
     else if (m_hMapping && m_pBaseData)
     {
         VERIFY(UnmapViewOfFile(m_pBaseData));
         VERIFY(CloseHandle(m_hMapping));
+        m_hMapping = 0;
     }
+#else
+    else if (m_mmap && m_pBaseData)
+    {
+        VERIFY(munmap(m_pBaseData, m_cbData) == 0);
+        m_mmap = false;
+    }
+#endif
     // For our own system, free memory.
     else if (m_rgPageMap && m_pBaseData)
     {
@@ -1271,7 +1419,6 @@ void StgIO::FreePageMap()
     }
 
     m_pBaseData = 0;
-    m_hMapping = 0;
     m_cbData = 0;
 }
 
