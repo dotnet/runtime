@@ -65,6 +65,9 @@ namespace System.Runtime.Tests
                 Assert.True(beforeCompiledMethodCount > 0, $"Compiled method count not greater than 0! ({beforeCompiledMethodCount})");
             }
 
+            //
+            // Mono does not include compilation of IL into interpreter byte code in there counters
+            //
             if (PlatformDetection.IsMonoInterpreter || PlatformDetection.IsBrowser)
             {
                 // Before and after can be same in browser because of low precision timers
