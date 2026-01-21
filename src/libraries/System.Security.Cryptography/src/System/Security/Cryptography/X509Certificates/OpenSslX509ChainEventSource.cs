@@ -63,7 +63,7 @@ namespace System.Security.Cryptography.X509Certificates
         private const int EventId_CrlCacheInMemoryHit = 49;
         private const int EventId_CrlCacheInMemoryExpired = 50;
         private const int EventId_CrlCacheInMemoryMiss = 51;
-        private const int EventId_CrlCacheInMemoryCollected = 52;
+        private const int EventId_CrlCacheInMemoryPruned = 52;
 
         private static string GetCertificateSubject(SafeX509Handle certHandle)
         {
@@ -782,14 +782,14 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [Event(
-            EventId_CrlCacheInMemoryCollected,
+            EventId_CrlCacheInMemoryPruned,
             Level = EventLevel.Verbose,
-            Message = "The in-memory CRL cache entry was garbage collected.")]
-        internal void CrlCacheInMemoryCollected()
+            Message = "The in-memory CRL cache was pruned. {0} entries removed, {1} entries remain.")]
+        internal void CrlCacheInMemoryPruned(int prunedCount, int remainingCount)
         {
             if (IsEnabled())
             {
-                WriteEvent(EventId_CrlCacheInMemoryCollected);
+                WriteEvent(EventId_CrlCacheInMemoryPruned, prunedCount, remainingCount);
             }
         }
 
