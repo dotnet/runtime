@@ -506,10 +506,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForStoreInd(treeNode->AsStoreInd());
             break;
 
-        case GT_PUTARG_REG:
-            genPutArgReg(treeNode->AsOp());
-            break;
-
         default:
 #ifdef DEBUG
             NYIRAW(GenTree::OpName(treeNode->OperGet()));
@@ -1088,20 +1084,6 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     }
 
     genUpdateLife(tree);
-}
-
-//---------------------------------------------------------------------
-// genPutArgReg - generate code for a GT_PUTARG_REG node
-//
-// Arguments
-//    tree - the GT_PUTARG_REG node
-//
-void CodeGen::genPutArgReg(GenTreeOp* tree)
-{
-    assert(tree->OperIs(GT_PUTARG_REG));
-    GenTree* const op1 = tree->gtOp1;
-    genConsumeReg(op1);
-    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
