@@ -30,7 +30,7 @@ namespace System.Numerics
         // Graph for ceiling division with negative divisor https://www.wolframalpha.com/input?i=Plot%5B%7BCeiling%5B-n%5D%2C+n+%2B+Ceiling%5B-n%5D%7D%2C+%7Bn%2C+-3%2C+3%7D%5D
 
         /// <summary>
-        /// AwayFromZero division (rounding away zero — round the division result away from zero to the nearest integer.
+        /// AwayFromZero division (rounding away zero) — round the division result away from zero to the nearest integer.
         /// </summary>
         AwayFromZero = 3,
         // Graph for AwayFromZero division with positive divisor https://www.wolframalpha.com/input?i=Plot%5B%7BIntegerPart%5Bn%5D+%2B+Sign%5Bn%5D%2C+n+-+IntegerPart%5Bn%5D+-+Sign%5Bn%5D%7D%2C+%7Bn%2C+-3%2C+3%7D%5D
