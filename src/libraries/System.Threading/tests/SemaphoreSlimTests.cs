@@ -44,7 +44,7 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest0_Helper(-1, 10, typeof(ArgumentOutOfRangeException));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunSemaphoreSlimTest1_Wait()
         {
             // Infinite timeout
@@ -63,7 +63,7 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest1_Wait_Helper(1, 10, TimeSpan.FromMilliseconds(uint.MaxValue), true, null);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunSemaphoreSlimTest1_Wait_NegativeCases()
         {
             // Invalid timeout

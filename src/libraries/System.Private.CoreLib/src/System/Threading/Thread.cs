@@ -749,7 +749,7 @@ namespace System.Threading
 #else
         internal static bool IsSingleThreaded => false;
 #if FEATURE_WASM_MANAGED_THREADS
-        internal static void ThrowIfSingleThreaded() 
+        internal static void ThrowIfSingleThreaded()
         {
             AssureBlockingPossible();
         }
