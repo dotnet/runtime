@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
 #if !SUPPORT_JIT
-        public override int ClassCode => 674507768;
+        public override int ClassCode => 689723708;
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
