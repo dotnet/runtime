@@ -150,7 +150,7 @@ Public Class GitHub_123254
             Assert.Equal("Z", iface.GetGenericArguments()(0).Name)
         Next
 
-        ' Test direct implmenentation of interface
+        ' Test direct implementation of interface
         testClassType = GetType(TestClass6(Of Integer)).GetGenericTypeDefinition().MakeGenericType(GetType(ILayer1_5(Of Integer)).GetGenericTypeDefinition().GetGenericArguments()(0))
         Console.WriteLine("testClassType first generic argument: " & testClassType.GetGenericArguments()(0).Name)
         For Each iface As Type In testClassType.GetInterfaces()
