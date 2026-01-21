@@ -16,6 +16,7 @@ namespace System.Collections.Concurrent.Tests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public class BlockingCollectionTests
     {
+        [Fact]
         public static void TestBasicScenarios()
         {
             BlockingCollection<int> bc = new BlockingCollection<int>(3);
@@ -53,6 +54,7 @@ namespace System.Collections.Concurrent.Tests
         /// BlockingCollection throws InvalidOperationException when calling CompleteAdding even after adding and taking all elements
         /// </summary>
         /// <returns></returns>
+        [Fact]
         public static void TestBugFix544259()
         {
             int count = 8;
@@ -87,6 +89,7 @@ namespace System.Collections.Concurrent.Tests
         // Since the change to wait as part of CTS.Dispose, the ODE no longer occurs
         // but we keep the test as a good example of how cleanup of linkedCTS must be carefully handled
         // to prevent users of the source CTS mistakenly calling methods on disposed targets.
+        [Fact]
         public static void TestBugFix626345()
         {
             const int noOfProducers = 1;
@@ -150,6 +153,7 @@ namespace System.Collections.Concurrent.Tests
         /// <summary>
         /// Making sure if TryTakeFromAny succeeds, it returns the correct index
         /// </summary>
+        [Fact]
         public static void TestBugFix914998()
         {
             var producer1 = new BlockingCollection<int>();
