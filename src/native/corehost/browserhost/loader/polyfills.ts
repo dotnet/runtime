@@ -69,7 +69,7 @@ export async function nodeUrl(): Promise<any> {
     return _nodeUrl;
 }
 
-export async function fetchLike(url: string, init?: RequestInit): Promise<Response> {
+export async function fetchLike(url: string, init?: RequestInit, expectedContentType?: string): Promise<Response> {
     try {
         await nodeFs();
         await nodeUrl();
@@ -85,60 +85,66 @@ export async function fetchLike(url: string, init?: RequestInit): Promise<Respon
             }
 
             const arrayBuffer = await _nodeFs.promises.readFile(url);
-            return <Response><any>{
-                ok: true,
+            return responseLike(url, arrayBuffer, {
+                status: 200,
+                statusText: "OK",
                 headers: {
-                    length: 0,
-                    get: () => null
-                },
-                url,
-                arrayBuffer: () => arrayBuffer,
-                json: () => {
-                    throw new Error("NotImplementedException");
-                },
-                text: () => {
-                    throw new Error("NotImplementedException");
+                    "Content-Length": arrayBuffer.byteLength.toString(),
+                    "Content-Type": expectedContentType || "application/octet-stream"
                 }
-            };
+            });
         } else if (hasFetch) {
             return globalThis.fetch(url, init || { credentials: "same-origin" });
         } else if (typeof (read) === "function") {
-            return <Response><any>{
-                ok: true,
-                url,
+            const arrayBuffer = read(url, "binary");
+            return responseLike(url, arrayBuffer, {
+                status: 200,
+                statusText: "OK",
                 headers: {
-                    length: 0,
-                    get: () => null
-                },
-                arrayBuffer: () => {
-                    return new Uint8Array(read(url, "binary"));
-                },
-                json: () => {
-                    return JSON.parse(read(url, "utf8"));
-                },
-                text: () => read(url, "utf8")
-            };
+                    "Content-Length": arrayBuffer.byteLength.toString(),
+                    "Content-Type": expectedContentType || "application/octet-stream"
+                }
+            });
         }
     } catch (e: any) {
-        return <Response><any>{
-            ok: false,
-            url,
+        return responseLike(url, null, {
             status: 500,
-            headers: {
-                length: 0,
-                get: () => null
-            },
             statusText: "ERR28: " + e,
-            arrayBuffer: () => {
-                throw e;
-            },
-            json: () => {
-                throw e;
-            },
-            text: () => {
-                throw e;
-            }
-        };
+            headers: {},
+        });
     }
     throw new Error("No fetch implementation available");
+}
+
+export function responseLike(url: string, body: ArrayBuffer | null, options: ResponseInit): Response {
+    if (typeof globalThis.Response === "function") {
+        const response = new Response(body, options);
+
+        // Best-effort alignment with the fallback object shape:
+        // only define `url` if it does not already exist on the response.
+        if (typeof (response as any).url === "undefined") {
+            try {
+                Object.defineProperty(response, "url", { value: url });
+            } catch {
+                // Ignore if the implementation does not allow redefining `url`
+            }
+        }
+
+        return response;
+    }
+    return <Response><any>{
+        ok: body !== null && options.status === 200,
+        headers: {
+            ...options.headers,
+            get: (name: string) => (options.headers as any)[name] || null
+        },
+        url,
+        arrayBuffer: () => Promise.resolve(body),
+        json: () => {
+            throw new Error("NotImplementedException");
+        },
+        text: () => {
+            throw new Error("NotImplementedException");
+        }
+    };
 }

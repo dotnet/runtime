@@ -44,11 +44,13 @@ extern "C"
     pal::hresult_t coreclr_set_error_writer(
         coreclr_error_writer_callback_fn error_writer);
 
+#if !GEN_PINVOKE
     const void* SystemResolveDllImport(const char* name);
     const void* SystemJSResolveDllImport(const char* name);
     const void* SystemJSInteropResolveDllImport(const char* name);
     const void* GlobalizationResolveDllImport(const char* name);
     const void* CompressionResolveDllImport(const char* name);
+#endif // not GEN_PINVOKE
 
     bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);
 }
@@ -62,6 +64,9 @@ static void log_error_info(const char* line)
     std::fprintf(stderr, "log error: %s\n", line);
 }
 
+#if GEN_PINVOKE
+const void* callhelpers_pinvoke_override(const char* library_name, const char* entry_point_name);
+#else
 static const void* pinvoke_override(const char* library_name, const char* entry_point_name)
 {
     if (strcmp(library_name, "libSystem.Native") == 0)
@@ -88,45 +93,26 @@ static const void* pinvoke_override(const char* library_name, const char* entry_
 
     return nullptr;
 }
+#endif // GEN_PINVOKE
 
-static pal::string_t app_path;
-static pal::string_t search_paths;
-static pal::string_t tpa;
-static const pal::string_t app_domain_name = "corehost";
-static const pal::string_t exe_path = "/managed";
-static std::vector<const char*> propertyKeys;
-static std::vector<const char*> propertyValues;
-static pal::char_t ptr_to_string_buffer[STRING_LENGTH("0xffffffffffffffff") + 1];
+static host_runtime_contract host_contract = { sizeof(host_runtime_contract), nullptr };
 
-// WASM-TODO: pass TPA via argument, not env
-// WASM-TODO: pass app_path via argument, not env
-// WASM-TODO: pass search_paths via argument, not env
-extern "C" int BrowserHost_InitializeCoreCLR(void)
+extern "C" void* BrowserHost_CreateHostContract(void)
 {
-    pal::getenv(HOST_PROPERTY_APP_PATHS, &app_path);
-    pal::getenv(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES, &search_paths);
-    pal::getenv(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES, &tpa);
-
-    // Set base initialization properties.
-    propertyKeys.push_back(HOST_PROPERTY_APP_PATHS);
-    propertyValues.push_back(app_path.c_str());
-    propertyKeys.push_back(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES);
-    propertyValues.push_back(search_paths.c_str());
-    propertyKeys.push_back(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES);
-    propertyValues.push_back(tpa.c_str());
-
-    host_runtime_contract host_contract = { sizeof(host_runtime_contract), nullptr };
+#if GEN_PINVOKE
+    host_contract.pinvoke_override = &callhelpers_pinvoke_override;
+#else
     host_contract.pinvoke_override = &pinvoke_override;
+#endif // GEN_PINVOKE
     host_contract.external_assembly_probe = &BrowserHost_ExternalAssemblyProbe;
+    return &host_contract;
+}
 
-    pal::snwprintf(ptr_to_string_buffer, ARRAY_SIZE(ptr_to_string_buffer), _X("0x%zx"), (size_t)(&host_contract));
-
-    propertyKeys.push_back(HOST_PROPERTY_RUNTIME_CONTRACT);
-    propertyValues.push_back(ptr_to_string_buffer);
-
+extern "C" int BrowserHost_InitializeCoreCLR(int propertiesCount, const char** propertyKeys, const char** propertyValues)
+{
     coreclr_set_error_writer(log_error_info);
 
-    int retval = coreclr_initialize(exe_path.c_str(), app_domain_name.c_str(), (int)propertyKeys.size(), propertyKeys.data(), propertyValues.data(), &CurrentClrInstance, &CurrentAppDomainId);
+    int retval = coreclr_initialize("/managed", "corehost", propertiesCount, propertyKeys, propertyValues, &CurrentClrInstance, &CurrentAppDomainId);
 
     if (retval < 0)
     {
