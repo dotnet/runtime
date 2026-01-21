@@ -160,14 +160,17 @@ namespace System.IO.Compression
             return true; // It is a file
         }
 
-        internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite)
+        internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite, string? password = null)
         {
             if (ExtractRelativeToDirectoryCheckIfFile(source, destinationDirectoryName, out string fileDestinationPath))
             {
                 // If it is a file:
                 // Create containing directory:
                 Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
-                source.ExtractToFile(fileDestinationPath, overwrite: overwrite);
+                if (!string.IsNullOrEmpty(password))
+                    source.ExtractToFile(fileDestinationPath, overwrite: overwrite, password: password);
+                else
+                    source.ExtractToFile(fileDestinationPath, overwrite: overwrite);
             }
         }
     }

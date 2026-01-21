@@ -1096,5 +1096,243 @@ namespace System.IO.Compression.Tests
         }
 
         #endregion
+
+        #region ExtractToFile Tests for Encrypted Entries
+
+        [Theory]
+        [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        public async Task ExtractToFile_EncryptedEntry_Success(ZipArchiveEntry.EncryptionMethod encryptionMethod, bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "TestPassword123";
+            string content = "Encrypted content for ExtractToFile test";
+            var entries = new[] { ("encrypted.txt", content, (string?)password, (ZipArchiveEntry.EncryptionMethod?)encryptionMethod) };
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                ZipArchiveEntry entry = archive.GetEntry("encrypted.txt");
+                Assert.NotNull(entry);
+                Assert.True(entry.IsEncrypted);
+
+                string destFile = GetTestFilePath();
+
+                if (async)
+                {
+                    await entry.ExtractToFileAsync(destFile, overwrite: false, password: password);
+                    Assert.Equal(content, await File.ReadAllTextAsync(destFile));
+                }
+                else
+                {
+                    entry.ExtractToFile(destFile, overwrite: false, password: password);
+                    Assert.Equal(content, File.ReadAllText(destFile));
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        public async Task ExtractToFile_EncryptedEntry_Overwrite_Success(ZipArchiveEntry.EncryptionMethod encryptionMethod, bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "TestPassword123";
+            string content = "Updated encrypted content";
+            var entries = new[] { ("encrypted.txt", content, (string?)password, (ZipArchiveEntry.EncryptionMethod?)encryptionMethod) };
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            string destFile = GetTestFilePath();
+            // Create an existing file to be overwritten
+            File.WriteAllText(destFile, "Original content to be overwritten");
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                ZipArchiveEntry entry = archive.GetEntry("encrypted.txt");
+                Assert.NotNull(entry);
+
+                if (async)
+                {
+                    await entry.ExtractToFileAsync(destFile, overwrite: true, password: password);
+                    Assert.Equal(content, await File.ReadAllTextAsync(destFile));
+                }
+                else
+                {
+                    entry.ExtractToFile(destFile, overwrite: true, password: password);
+                    Assert.Equal(content, File.ReadAllText(destFile));
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ExtractToFile_EncryptedEntry_WrongPassword_Throws(bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "CorrectPassword";
+            var entries = new[] { ("encrypted.txt", "content", (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes256) };
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                ZipArchiveEntry entry = archive.GetEntry("encrypted.txt");
+                Assert.NotNull(entry);
+                string destFile = GetTestFilePath();
+
+                if (async)
+                {
+                    await Assert.ThrowsAsync<InvalidDataException>(() => entry.ExtractToFileAsync(destFile, overwrite: false, password: "WrongPassword"));
+                }
+                else
+                {
+                    Assert.Throws<InvalidDataException>(() => entry.ExtractToFile(destFile, overwrite: false, password: "WrongPassword"));
+                }
+            }
+        }
+
+        #endregion
+
+        #region ExtractToDirectory Tests for Encrypted Entries
+
+        [Theory]
+        [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        public async Task ExtractToDirectory_MultipleEncryptedEntries_SamePassword_Success(ZipArchiveEntry.EncryptionMethod encryptionMethod, bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "SharedPassword";
+            var entries = new[]
+            {
+                ("file1.txt", "Content 1", (string?)password, (ZipArchiveEntry.EncryptionMethod?)encryptionMethod),
+                ("file2.txt", "Content 2", (string?)password, (ZipArchiveEntry.EncryptionMethod?)encryptionMethod),
+                ("subfolder/file3.txt", "Content 3", (string?)password, (ZipArchiveEntry.EncryptionMethod?)encryptionMethod),
+                ("subfolder/nested/file4.txt", "Content 4", (string?)password, (ZipArchiveEntry.EncryptionMethod?)encryptionMethod)
+            };
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            using TempDirectory tempDir = new TempDirectory(GetTestFilePath());
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                if (async)
+                {
+                    await archive.ExtractToDirectoryAsync(tempDir.Path, overwriteFiles: false, password);
+                }
+                else
+                {
+                    archive.ExtractToDirectory(tempDir.Path, overwriteFiles: false, password);
+                }
+            }
+
+            // Verify all files were extracted correctly
+            foreach (var (name, content, _, _) in entries)
+            {
+                string extractedPath = Path.Combine(tempDir.Path, name.Replace('/', Path.DirectorySeparatorChar));
+                Assert.True(File.Exists(extractedPath), $"File {name} should exist");
+                Assert.Equal(content, File.ReadAllText(extractedPath));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ExtractToDirectory_MultipleEntries_DifferentPasswords_Throws(bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            // Create entries with different passwords
+            var entries = new[]
+            {
+                ("file1.txt", "Content 1", (string?)"Password1", (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes256),
+                ("file2.txt", "Content 2", (string?)"Password2", (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes256),
+                ("file3.txt", "Content 3", (string?)"Password3", (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes256)
+            };
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            using TempDirectory tempDir = new TempDirectory(GetTestFilePath());
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                // Using Password1 should fail for file2 and file3
+                if (async)
+                {
+                    await Assert.ThrowsAsync<InvalidDataException>(() =>
+                        archive.ExtractToDirectoryAsync(tempDir.Path, overwriteFiles: false, "Password1"));
+                }
+                else
+                {
+                    Assert.Throws<InvalidDataException>(() =>
+                        archive.ExtractToDirectory(tempDir.Path, overwriteFiles: false, "Password1"));
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        public async Task ExtractToDirectory_EncryptedWithOverwrite_Success(ZipArchiveEntry.EncryptionMethod encryptionMethod, bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "TestPassword";
+            var entries = new[]
+            {
+                ("file1.txt", "New Content 1", (string?)password, (ZipArchiveEntry.EncryptionMethod?)encryptionMethod),
+                ("file2.txt", "New Content 2", (string?)password, (ZipArchiveEntry.EncryptionMethod?)encryptionMethod)
+            };
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            using TempDirectory tempDir = new TempDirectory(GetTestFilePath());
+
+            // Create existing files to be overwritten
+            File.WriteAllText(Path.Combine(tempDir.Path, "file1.txt"), "Old Content 1");
+            File.WriteAllText(Path.Combine(tempDir.Path, "file2.txt"), "Old Content 2");
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                if (async)
+                {
+                    await archive.ExtractToDirectoryAsync(tempDir.Path, overwriteFiles: true, password);
+                }
+                else
+                {
+                    archive.ExtractToDirectory(tempDir.Path, overwriteFiles: true, password);
+                }
+            }
+
+            // Verify files were overwritten with new content
+            Assert.Equal("New Content 1", File.ReadAllText(Path.Combine(tempDir.Path, "file1.txt")));
+            Assert.Equal("New Content 2", File.ReadAllText(Path.Combine(tempDir.Path, "file2.txt")));
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ExtractToDirectory_EncryptedWithoutOverwrite_ExistingFile_Throws(bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "TestPassword";
+            var entries = new[]
+            {
+                ("file1.txt", "New Content", (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes256)
+            };
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            using TempDirectory tempDir = new TempDirectory(GetTestFilePath());
+
+            // Create existing file that should not be overwritten
+            File.WriteAllText(Path.Combine(tempDir.Path, "file1.txt"), "Existing Content");
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                if (async)
+                {
+                    await Assert.ThrowsAsync<IOException>(() =>
+                        archive.ExtractToDirectoryAsync(tempDir.Path, overwriteFiles: false, password));
+                }
+                else
+                {
+                    Assert.Throws<IOException>(() =>
+                        archive.ExtractToDirectory(tempDir.Path, overwriteFiles: false, password));
+                }
+            }
+
+            // Verify existing file was not modified
+            Assert.Equal("Existing Content", File.ReadAllText(Path.Combine(tempDir.Path, "file1.txt")));
+        }
+
+        #endregion
     }
 }

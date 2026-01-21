@@ -413,13 +413,13 @@ namespace System.IO.Compression
 
 
         /// <summary>
-        /// Opens the entry. If the archive that the entry belongs to was opened in Read mode, the returned stream will be readable, and it may or may not be seekable. If Create mode, the returned stream will be writable and not seekable. If Update mode, the returned stream will be readable, writable, seekable, and support SetLength.
+        /// Opens the entry for reading or updating with the specified password.
         /// </summary>
         /// <returns>A Stream that represents the contents of the entry.</returns>
         /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
         /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
         /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
-        public Stream Open(string? password = null, EncryptionMethod encryptionMethod = EncryptionMethod.Aes256)
+        public Stream Open(string password)
         {
             ThrowIfInvalidArchive();
             switch (_archive.Mode)
@@ -431,7 +431,7 @@ namespace System.IO.Compression
                     }
                     return OpenInReadMode(checkOpenable: true, password.AsMemory());
                 case ZipArchiveMode.Create:
-                    return OpenInWriteMode(password, encryptionMethod);
+                    throw new Exception(SR.EntriesInCreateMode);
                 case ZipArchiveMode.Update:
                 default:
                     Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
@@ -442,6 +442,29 @@ namespace System.IO.Compression
                     return OpenInUpdateMode(loadExistingContent: true, password);
             }
         }
+
+        /// <summary>
+        /// Opens the entry for Creation with the specified encryption method.
+        /// </summary>
+        /// <returns>A Stream that represents the contents of the entry.</returns>
+        /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
+        /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
+        /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
+        public Stream Open(string password, EncryptionMethod encryptionMethod)
+        {
+            ThrowIfInvalidArchive();
+            switch (_archive.Mode)
+            {
+                case ZipArchiveMode.Read:
+                    throw new Exception(SR.EncryptionReadMode);
+                case ZipArchiveMode.Create:
+                    return OpenInWriteMode(password, encryptionMethod);
+                case ZipArchiveMode.Update:
+                default:
+                    throw new InvalidDataException(SR.EncryptionUpdateMode);
+            }
+        }
+
         /// <summary>
         /// Opens the entry with the specified access mode. This allows for more granular control over the returned stream's capabilities.
         /// </summary>

@@ -86,10 +86,10 @@ public static partial class ZipFileExtensions
         ExtractToFileFinalize(source, destinationFileName);
     }
 
-    public static async Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, string? password, CancellationToken cancellationToken = default) =>
+    public static async Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, string password, CancellationToken cancellationToken = default) =>
         await ExtractToFileAsync(source, destinationFileName, false, password, cancellationToken).ConfigureAwait(false);
 
-    public static async Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, bool overwrite, string? password, CancellationToken cancellationToken = default)
+    public static async Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, bool overwrite, string password, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -122,6 +122,19 @@ public static partial class ZipFileExtensions
             // Create containing directory:
             Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
             await source.ExtractToFileAsync(fileDestinationPath, overwrite: overwrite, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    internal static async Task ExtractRelativeToDirectoryAsync(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite, string password, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (ExtractRelativeToDirectoryCheckIfFile(source, destinationDirectoryName, out string fileDestinationPath))
+        {
+            // If it is a file:
+            // Create containing directory:
+            Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
+            await source.ExtractToFileAsync(fileDestinationPath, overwrite: overwrite, password:password, cancellationToken).ConfigureAwait(false);
         }
     }
 }

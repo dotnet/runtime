@@ -73,5 +73,16 @@ namespace System.IO.Compression
                 entry.ExtractRelativeToDirectory(destinationDirectoryName, overwriteFiles);
             }
         }
+
+        public static void ExtractToDirectory(this ZipArchive source, string destinationDirectoryName, bool overwriteFiles, string password)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(destinationDirectoryName);
+
+            foreach (ZipArchiveEntry entry in source.Entries)
+            {
+                entry.ExtractRelativeToDirectory(destinationDirectoryName, overwriteFiles);
+            }
+        }
     }
 }

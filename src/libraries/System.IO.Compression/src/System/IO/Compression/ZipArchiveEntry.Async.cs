@@ -94,7 +94,33 @@ public partial class ZipArchiveEntry
         }
     }
 
-    public async Task<Stream> OpenAsync(string? password, EncryptionMethod encryptionMethod = EncryptionMethod.Aes256, CancellationToken cancellationToken = default)
+    public async Task<Stream> OpenAsync(string password, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ThrowIfInvalidArchive();
+
+        switch (_archive.Mode)
+        {
+            case ZipArchiveMode.Read:
+                if (!IsEncrypted)
+                {
+                    throw new InvalidDataException(SR.EntryNotEncrypted);
+                }
+                return await OpenInReadModeAsync(checkOpenable: true, cancellationToken, password.AsMemory()).ConfigureAwait(false);
+            case ZipArchiveMode.Create:
+                throw new Exception(SR.EncryptionNotSpecified);
+            case ZipArchiveMode.Update:
+            default:
+                Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
+                if (!IsEncrypted)
+                {
+                    throw new InvalidDataException(SR.EntryNotEncrypted);
+                }
+                return await OpenInUpdateModeAsync(loadExistingContent: true, cancellationToken, password).ConfigureAwait(false);
+        }
+    }
+
+    public async Task<Stream> OpenAsync(string password, EncryptionMethod encryptionMethod, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         ThrowIfInvalidArchive();
