@@ -26,6 +26,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             NullValue.Test();
             NoValue.Test();
             UnknownValue.Test();
+            NeverInstantiatedType.Test();
         }
 
         class SealedConstructorAsSource
@@ -484,6 +485,38 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 TestType unknownValue = GetInstance();
                 // Should warn about the return value of GetType
                 unknownValue.GetType().RequiresAll();
+            }
+        }
+
+        class NeverInstantiatedType
+        {
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicMethods)]
+            class AnnotatedType
+            {
+                // This method should NOT be kept because AnnotatedType is never instantiated
+                void PrivateMethod() { }
+            }
+
+            static void UseParameter(AnnotatedType instance)
+            {
+                // Even though the static type has DAM annotations, since AnnotatedType is never
+                // instantiated, GetType() will never return it at runtime (it will throw NRE).
+                // Therefore, we shouldn't apply the DAM annotations.
+                instance?.GetType();
+            }
+
+            [ExpectedWarning("IL2072", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/...")]
+            static void UseParameterWithReflection(AnnotatedType instance)
+            {
+                // If we actually use reflection on the result, we should still warn
+                // because we don't know what type GetType returns
+                instance?.GetType().RequiresAll();
+            }
+
+            public static void Test()
+            {
+                UseParameter(null);
+                UseParameterWithReflection(null);
             }
         }
     }

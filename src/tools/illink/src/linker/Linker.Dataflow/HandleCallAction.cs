@@ -183,8 +183,14 @@ namespace ILLink.Shared.TrimAnalysis
                             // This should already be true for most cases (method params, fields, ...), but just in case
                             _reflectionMarker.MarkType(_diagnosticContext.Origin, staticType);
 
-                            var annotation = _markStep.DynamicallyAccessedMembersTypeHierarchy
-                                .ApplyDynamicallyAccessedMembersToTypeHierarchy(staticTypeDef);
+                            // If the type is never instantiated, GetType() will never actually return it at runtime,
+                            // so don't apply its DAM annotations.
+                            DynamicallyAccessedMemberTypes annotation = DynamicallyAccessedMemberTypes.None;
+                            if (_context.Annotations.IsInstantiated(staticTypeDef))
+                            {
+                                annotation = _markStep.DynamicallyAccessedMembersTypeHierarchy
+                                    .ApplyDynamicallyAccessedMembersToTypeHierarchy(staticTypeDef);
+                            }
 
                             // Return a value which is "unknown type" with annotation. For now we'll use the return value node
                             // for the method, which means we're loosing the information about which staticType this
