@@ -3948,7 +3948,7 @@ bool DebuggerController::DispatchTraceCall(Thread *thread,
                         _ASSERTE(info.HasReturnFrame());
 
                         // This check makes sure that we don't do this logic for inlined frames.
-                        if (info.GetReturnFrame().md->IsILStub() || info.GetReturnFrame().md->IsPInvoke())
+                        if (info.GetReturnFrame().md->IsInteropStub())
                         {
                             // Make sure that the frame pointer of the active frame is actually
                             // the address of an exit frame.
@@ -7029,7 +7029,7 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
         MethodDesc * pMD = g_pEEInterface->GetNativeCodeMethodDesc(GetIP(context));
         if (pMD != NULL)
         {
-            fIsILStub = pMD->IsILStub() || pMD->IsPInvoke();
+            fIsILStub = pMD->IsInteropStub();
         }
     }
     LOG((LF_CORDB, LL_INFO10000, "DS::S - fIsILStub = %d\n", fIsILStub));
@@ -7358,8 +7358,7 @@ TP_RESULT DebuggerStepper::TriggerPatch(DebuggerControllerPatch *patch,
                     {
                         // We're hitting this code path with MC++ assemblies
                         // that have an unmanaged entry point so the stub returns to CallDescrWorker.
-                        _ASSERTE(g_pEEInterface->GetNativeCodeMethodDesc(dac_cast<PCODE>(patch->address))->IsILStub() ||
-                                 g_pEEInterface->GetNativeCodeMethodDesc(dac_cast<PCODE>(patch->address))->IsPInvoke());
+                        _ASSERTE(g_pEEInterface->GetNativeCodeMethodDesc(dac_cast<PCODE>(patch->address))->IsInteropStub());
                     }
 
                 }
@@ -7626,7 +7625,7 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
     // a step out, or if we step-next off the end of a method called by an IL stub.  In either case,
     // we'll get a single step in an IL stub, which we want to ignore.  We also want to enable trace
     // call here, just in case this IL stub is about to call the managed target (in the reverse interop case).
-    if (fd->IsILStub() || fd->IsPInvoke())
+    if (fd->IsInteropStub())
     {
         LOG((LF_CORDB,LL_INFO10000, "DS::TSS: not in managed code, Returning false (case 0)!\n"));
         if (this->GetDCType() == DEBUGGER_CONTROLLER_STEPPER)

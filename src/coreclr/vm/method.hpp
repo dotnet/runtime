@@ -758,6 +758,14 @@ public:
         return mcPInvoke == GetClassification();
     }
 
+    // Returns true if this MethodDesc represents an interop method call.
+    // This includes IL stubs (DynamicMethodDesc) and PInvoke methods (PInvokeMethodDesc).
+    inline bool IsInteropStub()
+    {
+        WRAPPER_NO_CONTRACT;
+        return IsILStub() || IsPInvoke();
+    }
+
     inline DWORD IsInterface()
     {
         WRAPPER_NO_CONTRACT;
