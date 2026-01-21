@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using ILLink.Shared;
@@ -24,11 +25,12 @@ namespace ILLink.RoslynAnalyzer
         private static readonly DiagnosticDescriptor s_makeGenericMethodRule = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.MakeGenericMethod);
         private static readonly DiagnosticDescriptor s_requiresUnreferencedCodeOnStaticCtor = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresUnreferencedCodeOnStaticConstructor);
         private static readonly DiagnosticDescriptor s_requiresUnreferencedCodeOnEntryPoint = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresUnreferencedCodeOnEntryPoint);
+        private static readonly DiagnosticDescriptor s_debuggerDisplayReferencesRequiresUnreferencedCodeMember = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DebuggerDisplayReferencesRequiresUnreferencedCodeMember);
 
         private static readonly DiagnosticDescriptor s_referenceNotMarkedIsTrimmableRule = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.ReferenceNotMarkedIsTrimmable);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-            ImmutableArray.Create(s_makeGenericMethodRule, s_makeGenericTypeRule, s_requiresUnreferencedCodeRule, s_requiresUnreferencedCodeAttributeMismatch, s_requiresUnreferencedCodeOnStaticCtor, s_requiresUnreferencedCodeOnEntryPoint, s_referenceNotMarkedIsTrimmableRule);
+            ImmutableArray.Create(s_makeGenericMethodRule, s_makeGenericTypeRule, s_requiresUnreferencedCodeRule, s_requiresUnreferencedCodeAttributeMismatch, s_requiresUnreferencedCodeOnStaticCtor, s_requiresUnreferencedCodeOnEntryPoint, s_debuggerDisplayReferencesRequiresUnreferencedCodeMember, s_referenceNotMarkedIsTrimmableRule);
 
         private protected override string RequiresAttributeName => RequiresUnreferencedCodeAttribute;
 
@@ -87,6 +89,125 @@ namespace ILLink.RoslynAnalyzer
                     "IsTrimmable",
                     s_referenceNotMarkedIsTrimmableRule);
             });
+
+        private protected override ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)> ExtraSymbolActions =>
+            ImmutableArray.Create<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)>(
+                (AnalyzeTypeForDebuggerDisplay, new[] { SymbolKind.NamedType })
+            );
+
+        private void AnalyzeTypeForDebuggerDisplay(SymbolAnalysisContext context)
+        {
+            var typeSymbol = (INamedTypeSymbol)context.Symbol;
+
+            // Check for DebuggerDisplay attributes on the type
+            foreach (var attribute in typeSymbol.GetAttributes())
+            {
+                if (attribute.AttributeClass is not INamedTypeSymbol attributeClass)
+                    continue;
+
+                if (attributeClass.Name != "DebuggerDisplayAttribute" ||
+                    attributeClass.ContainingNamespace?.ToDisplayString() != "System.Diagnostics")
+                    continue;
+
+                AnalyzeDebuggerDisplayAttribute(context, typeSymbol, attribute);
+            }
+        }
+
+        private void AnalyzeDebuggerDisplayAttribute(
+            SymbolAnalysisContext context,
+            INamedTypeSymbol typeSymbol,
+            AttributeData attribute)
+        {
+            // Extract the format string from the attribute constructor argument
+            string? formatString = null;
+            if (attribute.ConstructorArguments.Length > 0 && attribute.ConstructorArguments[0].Value is string ctorArg)
+            {
+                formatString = ctorArg;
+            }
+
+            AnalyzeDebuggerDisplayString(context, typeSymbol, attribute, formatString);
+
+            // Also check the Name and Type properties
+            foreach (var namedArg in attribute.NamedArguments)
+            {
+                if ((namedArg.Key is "Name" or "Type") && namedArg.Value.Value is string propertyValue)
+                {
+                    AnalyzeDebuggerDisplayString(context, typeSymbol, attribute, propertyValue);
+                }
+            }
+        }
+
+        private void AnalyzeDebuggerDisplayString(
+            SymbolAnalysisContext context,
+            INamedTypeSymbol typeSymbol,
+            AttributeData attribute,
+            string? displayString)
+        {
+            if (!DebuggerDisplayAttributeHelper.TryParseMemberReferences(displayString, out var memberNames))
+            {
+                // If we can't fully understand the DebuggerDisplay string, we don't warn.
+                // This matches the ILLinker behavior to avoid false positives.
+                return;
+            }
+
+            foreach (var memberName in memberNames)
+            {
+                // Try to find the member on the type
+                ISymbol? member = null;
+
+                // Check for method with no parameters (methods are referenced with "()" in DebuggerDisplay)
+                var methods = typeSymbol.GetMembers(memberName).OfType<IMethodSymbol>()
+                    .Where(m => m.Parameters.Length == 0 && m.MethodKind == MethodKind.Ordinary);
+                member = methods.FirstOrDefault();
+
+                // If not a method, check for field or property
+                if (member == null)
+                {
+                    member = typeSymbol.GetMembers(memberName).FirstOrDefault(m =>
+                        m.Kind == SymbolKind.Field || m.Kind == SymbolKind.Property);
+                }
+
+                if (member == null)
+                    continue;
+
+                // Check if the member or its accessors have RequiresUnreferencedCode
+                if (member.HasAttribute(RequiresAttributeName))
+                {
+                    ReportDebuggerDisplayReferencesRUCMember(context, typeSymbol, member, attribute);
+                }
+                else if (member is IPropertySymbol property)
+                {
+                    // Check property accessors
+                    if (property.GetMethod?.HasAttribute(RequiresAttributeName) == true)
+                    {
+                        ReportDebuggerDisplayReferencesRUCMember(context, typeSymbol, property.GetMethod, attribute);
+                    }
+                    if (property.SetMethod?.HasAttribute(RequiresAttributeName) == true)
+                    {
+                        ReportDebuggerDisplayReferencesRUCMember(context, typeSymbol, property.SetMethod, attribute);
+                    }
+                }
+            }
+        }
+
+        private void ReportDebuggerDisplayReferencesRUCMember(
+            SymbolAnalysisContext context,
+            INamedTypeSymbol typeSymbol,
+            ISymbol referencedMember,
+            AttributeData attribute)
+        {
+            var attributeData = referencedMember.GetAttribute(RequiresAttributeName);
+            var message = GetMessageFromAttribute(attributeData);
+            var url = GetUrlFromAttribute(attributeData);
+
+            context.ReportDiagnostic(Diagnostic.Create(
+                s_debuggerDisplayReferencesRequiresUnreferencedCodeMember,
+                attribute.ApplicationSyntaxReference?.GetSyntax().GetLocation() ?? typeSymbol.Locations.FirstOrDefault(),
+                typeSymbol.ToDisplayString(),
+                referencedMember.ToDisplayString(),
+                message,
+                url));
+        }
 
         protected override bool VerifyAttributeArguments(AttributeData attribute) =>
             RequiresUnreferencedCodeUtils.VerifyRequiresUnreferencedCodeAttributeArguments(attribute);

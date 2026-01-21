@@ -657,6 +657,12 @@
   <data name="DynamicallyAccessedMembersIsNotAllowedOnExtensionPropertiesMessage" xml:space="preserve">
     <value>'DynamicallyAccessedMembersAttribute' on extension property '{0}' is not supported and has no effect. Apply the attribute to the accessor return value or value parameter instead.</value>
   </data>
+  <data name="DebuggerDisplayReferencesRequiresUnreferencedCodeMemberTitle" xml:space="preserve">
+    <value>DebuggerDisplay attribute references a member with RequiresUnreferencedCodeAttribute</value>
+  </data>
+  <data name="DebuggerDisplayReferencesRequiresUnreferencedCodeMemberMessage" xml:space="preserve">
+    <value>DebuggerDisplay attribute on '{0}' references member '{1}' which has 'RequiresUnreferencedCodeAttribute'. The member referenced by the attribute might be trimmed.{2}{3}</value>
+  </data>
   <data name="XmlCouldNotFindAnyTypeInNamespaceTitle" xml:space="preserve">
     <value>The XML descriptor specifies a namespace but there are no types found in such namespace.</value>
   </data>
