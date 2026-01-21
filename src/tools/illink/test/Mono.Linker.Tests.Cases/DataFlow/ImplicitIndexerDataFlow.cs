@@ -15,18 +15,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestTupleSwapWithImplicitIndexer();
 		}
 
-		[ExpectedWarning("IL2026", "--Method--", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/116619")]
 		static void TestTupleSwapWithImplicitIndexer()
 		{
-			Span<Type> types = stackalloc Type[2];
-			types[0] = typeof(int);
-			types[1] = RequiresUnreferencedCodeMethod();
+			Span<int> values = stackalloc int[2];
+			values[0] = 1;
+			values[1] = 2;
 
 			// This should not cause an assertion failure in the analyzer
-			(types[^1], types[^2]) = (types[^2], types[^1]);
+			// Tuple swap using implicit indexer (^1, ^2) on left-hand side of assignment
+			(values[^1], values[^2]) = (values[^2], values[^1]);
 		}
-
-		[System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("--Method--")]
-		static Type RequiresUnreferencedCodeMethod() => typeof(string);
 	}
 }
