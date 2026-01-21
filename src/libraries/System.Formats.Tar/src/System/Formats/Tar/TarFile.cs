@@ -613,7 +613,7 @@ namespace System.Formats.Tar
 
         private static void ValidateTarEntryFormat(TarEntryFormat format)
         {
-            if (format is not TarEntryFormat.V7 and not TarEntryFormat.Ustar and not TarEntryFormat.Pax and not TarEntryFormat.Gnu)
+            if (format is not (TarEntryFormat.V7 or TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu))
             {
                 throw new ArgumentOutOfRangeException(nameof(format));
             }
