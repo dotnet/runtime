@@ -2376,7 +2376,7 @@ int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
 //
 bool GenTreeCall::IsDevirtualizationCandidate(Compiler* compiler) const
 {
-    return IsVirtual() || IsGenericVirtual(compiler);
+    return IsVirtual() || (IsGenericVirtual(compiler) && (JitConfig.JitEnableGenericVirtualDevirtualization() != 0));
 }
 
 //-------------------------------------------------------------------------
