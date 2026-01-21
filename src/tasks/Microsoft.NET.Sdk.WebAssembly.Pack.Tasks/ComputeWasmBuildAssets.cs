@@ -155,7 +155,7 @@ public class ComputeWasmBuildAssets : Task
                     continue;
                 }
 
-                // Check for unique relative path before adding candidate.
+                // Check for unique file name before adding candidate
                 var candidateFileName = Path.GetFileName(candidate.ItemSpec);
                 if (!uniqueFileNames.Add(candidateFileName))
                 {
