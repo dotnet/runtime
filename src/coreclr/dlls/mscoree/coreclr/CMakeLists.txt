@@ -170,7 +170,7 @@ endif()
 if(TARGET coreclr)
     target_link_libraries(coreclr PUBLIC
         ${CORECLR_LIBRARIES}
-        $<LINK_LIBRARY:WHOLE_ARCHIVE,$<TARGET_NAME_IF_EXISTS:coreclrpal>> # force all PAL objects to be included so all exports are available
+        $<TARGET_NAME_IF_EXISTS:coreclrpal>
         ${CLRJIT_STATIC}
         ${CLRINTERPRETER_STATIC}
         cee_wks_core
