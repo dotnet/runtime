@@ -2460,11 +2460,11 @@ namespace System
             {
                 int chunkSize = Math.Min(source.Length, Base64LineBreakPosition / 4 * 3); // 76 base64 chars == 57 bytes
 
-                OperationStatus status = Base64.EncodeToChars(source.Slice(0, chunkSize), destination.Slice(writeOffset), out int bytesConsumed, out int bytesWritten);
+                OperationStatus status = Base64.EncodeToChars(source.Slice(0, chunkSize), destination.Slice(writeOffset), out int bytesConsumed, out int charsWritten);
                 Debug.Assert(status == OperationStatus.Done && bytesConsumed == chunkSize);
 
                 source = source.Slice(chunkSize);
-                writeOffset += bytesWritten;
+                writeOffset += charsWritten;
 
                 if (source.IsEmpty)
                 {
