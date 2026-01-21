@@ -481,7 +481,7 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_RISCV_X26, (unw_word_t *) &winContext->S10);
     unw_get_reg(cursor, UNW_RISCV_X27, (unw_word_t *) &winContext->S11);
 #elif (defined(HOST_UNIX) && defined(HOST_POWERPC64))
-    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->R31);
+    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->R1);
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Nip);
     unw_get_reg(cursor, UNW_PPC64_R14, (unw_word_t *) &winContext->R14);
     unw_get_reg(cursor, UNW_PPC64_R15, (unw_word_t *) &winContext->R15);
@@ -500,6 +500,7 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_PPC64_R28, (unw_word_t *) &winContext->R28);
     unw_get_reg(cursor, UNW_PPC64_R29, (unw_word_t *) &winContext->R29);
     unw_get_reg(cursor, UNW_PPC64_R30, (unw_word_t *) &winContext->R30);
+    unw_get_reg(cursor, UNW_PPC64_R31, (unw_word_t *) &winContext->R31);
 #else
 #error unsupported architecture
 #endif

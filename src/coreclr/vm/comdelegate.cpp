@@ -549,25 +549,6 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
             pGraphNodes[dstIndex].prev = srcIndex;
             pGraphNodes[dstIndex].ofs = entry.dstofs;
 
-#if defined(TARGET_POWERPC64)
-            if ((i+1) < pShuffleEntryArray->GetCount()) 
-            {
-                ShuffleEntry entryNext = (*pShuffleEntryArray)[i + 1];
-                if (entryNext.srcofs - entry.srcofs == 2)
-                {
-                    pGraphNodes[dstIndex].isSource = true;
-                }
-            }
-
-            if (i > 0)
-            {
-                ShuffleEntry entryPrev = (*pShuffleEntryArray)[i - 1];
-                if (entry.srcofs - entryPrev.srcofs == 2)
-                {
-                    pGraphNodes[srcIndex].prev = srcIndex - 1;
-                }
-            }
-#endif
         }
 
         // Now that we've built the graph, clear the array, we will regenerate it from the graph ensuring a proper order of shuffling

@@ -1029,17 +1029,19 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         pLoc->Init();
+	unsigned byteArgSize = GetArgSize();
+	unsigned cSlots = ALIGN_UP(byteArgSize, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
 
         if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
         {
             // Dividing by 8 as size of each register in FloatArgumentRegisters is 8 bytes.
             pLoc->m_idxFloatReg = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters()) / 8;
-            pLoc->m_cFloatReg = 1;
+            pLoc->m_cFloatReg = cSlots;
         }
         else if (!TransitionBlock::IsStackArgumentOffset(argOffset))
         {
             pLoc->m_idxGenReg = TransitionBlock::GetArgumentIndexFromOffset(argOffset);
-            pLoc->m_cGenReg = 1;
+            pLoc->m_cGenReg = cSlots;
         }
         else
         {
