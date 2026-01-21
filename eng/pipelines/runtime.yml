@@ -1595,7 +1595,6 @@ extends:
           buildConfig: checked
           platforms:
           - CoreClrTestBuildHost # Either osx_x64 or linux_x64
-          - browser_wasm
           jobParameters:
             testGroup: innerloop
             condition: >-
