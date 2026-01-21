@@ -11,7 +11,7 @@ builder.Services.AddRazorComponents()
 var app = builder.Build();
 
 var requestLogs = new List<BlazorWebWasmRequestLog>();
-var requestLogsLock = new object();
+var requestLogsLock = new Lock();
 
 app.Use(async (context, next) =>
 {
