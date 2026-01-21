@@ -2,6 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <IncludeSpanPolyfills>true</IncludeSpanPolyfills>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)-osx</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
@@ -76,6 +77,7 @@
     <Compile Include="Tests\Interop\procfsTests.cs" />
     <Compile Include="Tests\Interop\OSReleaseTests.cs" />
     <Compile Include="Tests\SourceGenerators\SourceWriterTests.cs" />
+    <Compile Include="Tests\System\Buffers\SearchValuesPolyfillTests.cs" />
     <Compile Include="Tests\System\IO\PathInternal.Tests.cs" />
     <Compile Include="Tests\System\IO\StringParserTests.cs" />
     <Compile Include="Tests\System\Net\HttpDateParserTests.cs" />

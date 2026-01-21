@@ -12,5 +12,11 @@ namespace System.Runtime.InteropServices
         /// The value type should have its fields laid out in accordance with the C language struct layout rules.
         /// </summary>
         CStruct = 0,
+
+        /// <summary>
+        /// The value type should have its fields laid out like a C union, where all fields are placed at offset 0.
+        /// This layout only supports value types without GC pointers.
+        /// </summary>
+        CUnion = 1,
     }
 }

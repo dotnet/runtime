@@ -27,10 +27,6 @@ internal sealed class Deflate64Fuzzer : IFuzzer
     }
 
 #pragma warning disable IL2026 // RequiresUnreferencedCode
-    private static readonly object _deflate64Value = Enum.ToObject(
-        typeof(ZipArchive).Assembly.GetType("System.IO.Compression.ZipArchiveEntry+CompressionMethodValues", throwOnError: true)!
-        , 0x9); // Deflate64
-
     private static readonly Type _deflateStreamType = typeof(ZipArchive).Assembly.GetType("System.IO.Compression.DeflateManagedStream", throwOnError: true)!;
 #pragma warning restore IL2026
 
@@ -41,7 +37,7 @@ internal sealed class Deflate64Fuzzer : IFuzzer
             _deflateStreamType,
             bindingAttr: BindingFlags.NonPublic | BindingFlags.Instance,
             binder: null,
-            args: new object[] { new MemoryStream(bytes, 0, length), _deflate64Value, -1L },
+            args: new object[] { new MemoryStream(bytes, 0, length), ZipCompressionMethod.Deflate64, -1L },
             culture: null)!;
 #pragma warning restore IL2077
     }
