@@ -21,13 +21,24 @@ namespace System
             // - T's size must be a whole power of 2
 
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
                 goto CannotVectorize;
+            }
+            
             if (!Vector.IsHardwareAccelerated)
+            {
                 goto CannotVectorize;
+            }
+            
             if (sizeof(T) > Vector<byte>.Count)
+            {
                 goto CannotVectorize;
+            }
+            
             if (!BitOperations.IsPow2(sizeof(T)))
+            {
                 goto CannotVectorize;
+            }
 
             if (numElements >= (uint)(Vector<byte>.Count / sizeof(T)))
             {
@@ -380,7 +391,9 @@ namespace System
                 while (length > 0)
                 {
                     if (value.Equals(Unsafe.Add(ref searchSpace, index)))
+                    {
                         return (int)index;
+                    }
 
                     index += 1;
                     length--;
@@ -1302,7 +1315,9 @@ namespace System
             Debug.Assert(length >= 0);
 
             if (Unsafe.AreSame(ref first, ref second))
+            {
                 return true;
+            }
 
             nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
             T lookUp0;
