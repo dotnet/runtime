@@ -337,5 +337,53 @@ namespace System.Collections.Tests
                 base.InsertItem(index, item);
             }
         }
+
+#if !NETFRAMEWORK
+        [Fact]
+        public static void EnumerableDebugView_Constructor_ThrowsOnNull()
+        {
+            Assert.Throws<ArgumentNullException>(() => new EnumerableDebugView<int>(null!));
+        }
+
+        [Fact]
+        public static void EnumerableDebugView_Items_ReturnsCorrectItems()
+        {
+            var list = new List<int> { 1, 2, 3, 4, 5 };
+            var debugView = new EnumerableDebugView<int>(list);
+
+            int[] items = debugView.Items;
+
+            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, items);
+        }
+
+        [Fact]
+        public static void EnumerableDebugView_Items_EmptyEnumerable_ReturnsEmptyArray()
+        {
+            var list = new List<string>();
+            var debugView = new EnumerableDebugView<string>(list);
+
+            string[] items = debugView.Items;
+
+            Assert.Empty(items);
+        }
+
+        [Fact]
+        public static void EnumerableDebugView_Items_WorksWithIEnumerableNotICollection()
+        {
+            // Use an IEnumerable that is not an ICollection
+            static IEnumerable<int> GetNumbers()
+            {
+                yield return 10;
+                yield return 20;
+                yield return 30;
+            }
+
+            var debugView = new EnumerableDebugView<int>(GetNumbers());
+
+            int[] items = debugView.Items;
+
+            Assert.Equal(new[] { 10, 20, 30 }, items);
+        }
+#endif
     }
 }

@@ -305,6 +305,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerStepThroughAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerTypeProxyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerVisualizerAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\EnumerableDebugView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebugProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DiagnosticMethodInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\StackFrame.cs" />
