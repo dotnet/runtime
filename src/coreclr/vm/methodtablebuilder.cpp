@@ -9904,7 +9904,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                             _ASSERTE(pItfToInsert->IsSpecialMarkerTypeForGenericCasting());
                         }
 
-                        duplicates |= InsertMethodTable(pItfToInsert, pExactMTs, nInterfacesCount, &nAssigned);;
+                        duplicates |= InsertMethodTable(pItfToInsert, pExactMTs, nInterfacesCount, &nAssigned);
                     }
                 }
             }
