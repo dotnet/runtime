@@ -2160,6 +2160,7 @@ public:
 
     void SetUnsigned()
     {
+        assert(OperIs(GT_ADD, GT_SUB, GT_CAST, GT_LE, GT_LT, GT_GT, GT_GE) || OperIsMul());
         gtFlags |= GTF_UNSIGNED;
     }
 
