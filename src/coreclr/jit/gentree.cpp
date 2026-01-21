@@ -11984,7 +11984,7 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
 #if defined(TARGET_WASM)
             else if (lclNum == lvaWasmSpArg)
             {
-                ilName = "WasmSP";
+                ilName = "SP";
             }
 #endif // defined(TARGET_WASM)
             else

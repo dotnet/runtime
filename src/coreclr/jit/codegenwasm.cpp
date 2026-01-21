@@ -61,8 +61,16 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         return;
     }
 
-    unsigned initialSPLclIndex = compiler->lvaWasmSpArg;
-    unsigned spLclIndex        = WasmRegToIndex(spReg);
+    // TODO-WASM: reverse pinvoke frame allocation
+    //
+    if (compiler->lvaWasmSpArg == BAD_VAR_NUM)
+    {
+        NYI_WASM("alloc local frame for reverse pinvoke");
+    }
+
+    unsigned initialSPLclIndex =
+        WasmRegToIndex(compiler->lvaGetParameterABIInfo(compiler->lvaWasmSpArg).Segment(0).GetRegister());
+    unsigned spLclIndex = WasmRegToIndex(spReg);
     assert(initialSPLclIndex == spLclIndex);
     if (frameSize != 0)
     {

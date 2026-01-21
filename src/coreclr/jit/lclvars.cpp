@@ -167,8 +167,11 @@ void Compiler::lvaInitTypeRef()
     }
 
 #if defined(TARGET_WASM)
-    // Wasm passes stack pointer as first arg, portable entry point as last arg
-    info.compArgsCount += 2;
+    if (!opts.IsReversePInvoke())
+    {
+        // Managed Wasm ABI passes stack pointer as first arg, portable entry point as last arg
+        info.compArgsCount += 2;
+    }
 #endif
 
     lvaCount = info.compLocalsCount = info.compArgsCount + info.compMethodInfo->locals.numArgs;
@@ -345,8 +348,11 @@ void Compiler::lvaInitArgs(bool hasRetBuffArg)
     unsigned varNum = 0;
 
 #if defined(TARGET_WASM)
-    // Wasm stack pointer is first arg
-    lvaInitWasmStackPtr(&varNum);
+    if (!opts.IsReversePInvoke())
+    {
+        // Wasm stack pointer is first arg
+        lvaInitWasmStackPtr(&varNum);
+    }
 #endif
 
     // Is there a "this" pointer ?
@@ -409,8 +415,11 @@ void Compiler::lvaInitArgs(bool hasRetBuffArg)
 #endif
 
 #if defined(TARGET_WASM)
-    // Wasm portable entry point is the very last arg
-    lvaInitWasmPortableEntryPtr(&varNum);
+    if (!opts.IsReversePInvoke())
+    {
+        // Wasm portable entry point is the very last arg
+        lvaInitWasmPortableEntryPtr(&varNum);
+    }
 #endif
 
     //----------------------------------------------------------------------
