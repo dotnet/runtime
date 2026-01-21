@@ -111,16 +111,20 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_WhereXcrun>0</_WhereXcrun>
     </PropertyGroup>
 
-    <Exec Command="command -v &quot;$(Xcrun)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(_IsiOSLikePlatform)' == 'true' And '$(SysRoot)' == ''">
+    <PropertyGroup>
+      <_HasDefaultSysRoot Condition="'$(SysRoot)' != ''">true</_HasDefaultSysRoot>
+    </PropertyGroup>
+
+    <Exec Command="command -v &quot;$(Xcrun)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(_IsiOSLikePlatform)' == 'true' And '$(_HasDefaultSysRoot)' != 'true'">
       <Output TaskParameter="ExitCode" PropertyName="_WhereXcrun" />
     </Exec>
     <Error Condition="'$(_WhereXcrun)' != '0' and '$(_IsiOSLikePlatform)' == 'true'"
       Text="'$(Xcrun)' not found in PATH. Make sure '$(Xcrun)' is available in PATH." />
 
-    <Exec Command="&quot;$(Xcrun)&quot; --sdk $(_AppleSdkName) --show-sdk-path" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(SysRoot)' == '' and '$(_IsiOSLikePlatform)' == 'true'" ConsoleToMsBuild="true">
+    <Exec Command="&quot;$(Xcrun)&quot; --sdk $(_AppleSdkName) --show-sdk-path" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(_HasDefaultSysRoot)' != 'true' and '$(_IsiOSLikePlatform)' == 'true'" ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="SysRoot" />
     </Exec>
-    <Error Condition="'$(_SkipiOSLikePlatformValidation)' != 'true' and '$(_IsiOSLikePlatform)' == 'true' and !Exists('$(SysRoot)')"
+    <Error Condition="'$(_HasDefaultSysRoot)' != 'true' and '$(_IsiOSLikePlatform)' == 'true' and !Exists('$(SysRoot)')"
       Text="Apple SDK was not found in: '$(SysRoot)'" />
 
     <!--
