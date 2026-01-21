@@ -1913,7 +1913,7 @@ namespace System.Diagnostics
             if (idData.Length != 16)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
-#if NET9_0_OR_GREATER
+#if NET
             return new ActivityTraceId(Convert.ToHexStringLower(idData));
 #else
             return new ActivityTraceId(HexConverter.ToString(idData, HexConverter.Casing.Lower));
@@ -1996,7 +1996,7 @@ namespace System.Diagnostics
                 span[1] = BinaryPrimitives.ReverseEndianness(span[1]);
             }
 
-#if NET9_0_OR_GREATER
+#if NET
             _hexString = Convert.ToHexStringLower(MemoryMarshal.AsBytes(span));
 #else
             _hexString = HexConverter.ToString(MemoryMarshal.AsBytes(span), HexConverter.Casing.Lower);
@@ -2081,7 +2081,7 @@ namespace System.Diagnostics
         {
             ulong id;
             ActivityTraceId.SetToRandomBytes(new Span<byte>(&id, sizeof(ulong)));
-#if NET9_0_OR_GREATER
+#if NET
             return new ActivitySpanId(Convert.ToHexStringLower(new ReadOnlySpan<byte>(&id, sizeof(ulong))));
 #else
             return new ActivitySpanId(HexConverter.ToString(new ReadOnlySpan<byte>(&id, sizeof(ulong)), HexConverter.Casing.Lower));
@@ -2092,7 +2092,7 @@ namespace System.Diagnostics
             if (idData.Length != 8)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
-#if NET9_0_OR_GREATER
+#if NET
             return new ActivitySpanId(Convert.ToHexStringLower(idData));
 #else
             return new ActivitySpanId(HexConverter.ToString(idData, HexConverter.Casing.Lower));
@@ -2164,7 +2164,7 @@ namespace System.Diagnostics
                 id = BinaryPrimitives.ReverseEndianness(id);
             }
 
-#if NET9_0_OR_GREATER
+#if NET
             _hexString = Convert.ToHexStringLower(new ReadOnlySpan<byte>(&id, sizeof(ulong)));
 #else
             _hexString = HexConverter.ToString(new ReadOnlySpan<byte>(&id, sizeof(ulong)), HexConverter.Casing.Lower);

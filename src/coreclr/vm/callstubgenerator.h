@@ -13,25 +13,27 @@ class AllocMemTracker;
 // stack, invokes the target method, and translates the return value back to the interpreter stack.
 struct CallStubHeader
 {
-    typedef void (*InvokeFunctionPtr)(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+    typedef void (*InvokeFunctionPtr)(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuationRet);
 
     // Number of routines in the Routines array. The last one is the target method to call.
     int NumRoutines;
     // Total stack size used for the arguments.
     int TotalStackSize;
+    bool HasContinuationRet; // Indicates whether the stub supports returning a continuation
     // This is a pointer to a helper function that invokes the target method. There are several
     // versions of this function, depending on the return type of the target method.
     InvokeFunctionPtr Invoke;
     // This is an array of routines that translate the arguments from the interpreter stack to the CPU registers and native stack.
     PCODE Routines[0];
 
-    CallStubHeader(int numRoutines, PCODE *pRoutines, int totalStackSize, InvokeFunctionPtr pInvokeFunction)
+    CallStubHeader(int numRoutines, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, InvokeFunctionPtr pInvokeFunction)
     {
         LIMITED_METHOD_CONTRACT;
 
         NumRoutines = numRoutines;
         TotalStackSize = totalStackSize;
         Invoke = pInvokeFunction;
+        HasContinuationRet = hasContinuationRet;
 
         memcpy(Routines, pRoutines, NumRoutines * sizeof(PCODE));
     }
@@ -41,7 +43,6 @@ struct CallStubHeader
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE(target != 0);
         VolatileStore(&Routines[NumRoutines - 1], target);
     }
 
@@ -158,12 +159,14 @@ class CallStubGenerator
     PCODE GetFPReg32RangeRoutine(int x1, int x2);
 #endif    
     PCODE GetGPRegRangeRoutine(int r1, int r2);
-    ReturnType GetReturnType(ArgIterator *pArgIt);
+    template<typename ArgIteratorType>
+    ReturnType GetReturnType(ArgIteratorType *pArgIt);
     CallStubHeader::InvokeFunctionPtr GetInvokeFunctionPtr(ReturnType returnType);
     PCODE GetInterpreterReturnTypeHandler(ReturnType returnType);
 
     // Process the argument described by argLocDesc. This function is called for each argument in the method signature.
-    void ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocDesc, PCODE *pRoutines);
+    template<typename ArgIteratorType>
+    void ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& argLocDesc, PCODE *pRoutines);
 public:
     // Generate the call stub for the given method.
     CallStubHeader *GenerateCallStub(MethodDesc *pMD, AllocMemTracker *pamTracker, bool interpreterToNative);
@@ -178,7 +181,9 @@ private:
         // The size of the routines array is three times the number of arguments plus one slot for the target method pointer.
         return sizeof(CallStubHeader) + ((numArgs + 1) * 3 + 1) * sizeof(PCODE);
     }
-    void ComputeCallStub(MetaSig &sig, PCODE *pRoutines);
+    void ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDesc *pMD);
+    template<typename ArgIteratorType>
+    void ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfoCallConvExtension unmanagedCallConv, MetaSig &sig, PCODE *pRoutines, MethodDesc *pMD);
 
     void TerminateCurrentRoutineIfNotOfNewType(RoutineType type, PCODE *pRoutines);
 };
