@@ -186,10 +186,12 @@ struct Limit
                 return true;
             case keBinOpArray:
             case keConstant:
-                // >> never overflows
-                assert((unsigned)i <= 31);
-                cns >>= i;
-                return true;
+                if ((unsigned)i <= 31)
+                {
+                    cns >>= i;
+                    return true;
+                }
+                return false;
             case keUndef:
             case keUnknown:
                 // For these values of 'type', conservatively return false
@@ -351,7 +353,7 @@ struct RangeOps
     static Range Add(Range& r1, Range& r2)
     {
         return ApplyRangeOp(r1, r2, [](Limit a, Limit b) {
-            // Since addition is commutative, move constant to the second operand.
+            // Since Add is commutative, move constant to the second operand.
             if (a.IsConstant() && !b.IsConstant())
             {
                 std::swap(a, b);
@@ -363,7 +365,7 @@ struct RangeOps
     static Range Multiply(Range& r1, Range& r2)
     {
         return ApplyRangeOp(r1, r2, [](Limit a, Limit b) {
-            // Since multiplication is commutative, move constant to the second operand.
+            // Since Multiply is commutative, move constant to the second operand.
             if (a.IsConstant() && !b.IsConstant())
             {
                 std::swap(a, b);
