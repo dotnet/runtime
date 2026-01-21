@@ -191,9 +191,9 @@ namespace System.IO.Compression
         /// <summary>Compresses the specified data.</summary>
         /// <param name="source">The data to compress.</param>
         /// <param name="destination">The buffer to write the compressed data to.</param>
-        /// <param name="bytesConsumed">The number of bytes consumed from the source.</param>
-        /// <param name="bytesWritten">The number of bytes written to the destination.</param>
-        /// <param name="isFinalBlock">True if this is the final block of data to compress.</param>
+        /// <param name="bytesConsumed">When this method returns, contains the number of bytes consumed from the source.</param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes written to the destination.</param>
+        /// <param name="isFinalBlock"><see langword="true" /> if this is the final block of data to compress.</param>
         /// <returns>An <see cref="OperationStatus"/> indicating the result of the operation.</returns>
         /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
         /// <exception cref="IOException">An error occurred during compression.</exception>
@@ -215,7 +215,7 @@ namespace System.IO.Compression
 
         /// <summary>Flushes any remaining processed data to the destination buffer.</summary>
         /// <param name="destination">The buffer to write the flushed data to.</param>
-        /// <param name="bytesWritten">The number of bytes written to the destination.</param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes written to the destination.</param>
         /// <returns>An <see cref="OperationStatus"/> indicating the result of the operation.</returns>
         /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
         /// <exception cref="IOException">An error occurred during the operation.</exception>
@@ -307,7 +307,7 @@ namespace System.IO.Compression
         /// <summary>Attempts to compress the specified data.</summary>
         /// <param name="source">The data to compress.</param>
         /// <param name="destination">The buffer to write the compressed data to.</param>
-        /// <param name="bytesWritten">The number of bytes written to the destination.</param>
+        /// <param name="bytesWritten">When this method returns <see langword="true" />, contains the number of bytes written to the destination.</param>
         /// <returns><see langword="true" /> on success; <see langword="false" /> if the destination buffer is too small.</returns>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
@@ -317,7 +317,7 @@ namespace System.IO.Compression
         /// <summary>Attempts to compress the specified data with the specified quality and window size.</summary>
         /// <param name="source">The data to compress.</param>
         /// <param name="destination">The buffer to write the compressed data to.</param>
-        /// <param name="bytesWritten">The number of bytes written to the destination.</param>
+        /// <param name="bytesWritten">When this method returns <see langword="true" />, contains the number of bytes written to the destination.</param>
         /// <param name="quality">The compression quality level.</param>
         /// <param name="windowLog">The window size for compression, expressed as base 2 logarithm.</param>
         /// <returns><see langword="true" /> on success; <see langword="false" /> if the destination buffer is too small.</returns>
@@ -330,7 +330,7 @@ namespace System.IO.Compression
         /// <summary>Attempts to compress the specified data with the specified dictionary and window size.</summary>
         /// <param name="source">The data to compress.</param>
         /// <param name="destination">The buffer to write the compressed data to.</param>
-        /// <param name="bytesWritten">The number of bytes written to the destination.</param>
+        /// <param name="bytesWritten">When this method returns <see langword="true" />, contains the number of bytes written to the destination.</param>
         /// <param name="dictionary">The compression dictionary to use.</param>
         /// <param name="windowLog">The window size for compression, expressed as base 2 logarithm.</param>
         /// <returns><see langword="true" /> on success; <see langword="false" /> if the destination buffer is too small.</returns>

@@ -119,8 +119,8 @@ namespace System.IO.Compression
         /// <summary>Decompresses the specified data.</summary>
         /// <param name="source">The compressed data to decompress.</param>
         /// <param name="destination">The buffer to write the decompressed data to.</param>
-        /// <param name="bytesConsumed">The number of bytes consumed from the source.</param>
-        /// <param name="bytesWritten">The number of bytes written to the destination.</param>
+        /// <param name="bytesConsumed">When this method returns, contains the number of bytes consumed from the source.</param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes written to the destination.</param>
         /// <returns>An <see cref="OperationStatus"/> indicating the result of the operation.</returns>
         /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
         /// <exception cref="IOException">An error occurred during decompression.</exception>
@@ -200,7 +200,7 @@ namespace System.IO.Compression
 
         /// <summary>Attempts to get the maximum decompressed length for the specified compressed data.</summary>
         /// <param name="data">The compressed data.</param>
-        /// <param name="length">The maximum decompressed length when this method returns true.</param>
+        /// <param name="length">When this method returns <see langword="true" />, contains the maximum decompressed length.</param>
         /// <returns><see langword="true" /> on success; <see langword="false" /> otherwise.</returns>
         public static bool TryGetMaxDecompressedLength(ReadOnlySpan<byte> data, out long length)
         {
@@ -233,9 +233,9 @@ namespace System.IO.Compression
         /// <summary>Attempts to decompress the specified data.</summary>
         /// <param name="source">The compressed data to decompress.</param>
         /// <param name="destination">The buffer to write the decompressed data to.</param>
-        /// <param name="bytesWritten">The number of bytes written to the destination.</param>
+        /// <param name="bytesWritten">When this method returns <see langword="true" />, contains the number of bytes written to the destination.</param>
         /// <returns><see langword="true" /> on success; <see langword="false" /> otherwise.</returns>
-        /// <remarks>If this method returns <see langword="false" />, <paramref name="destination" /> may be empty or contain partially decompressed data, with <paramref name="bytesWritten" /> being zero or greater than zero but less than the expected total.</remarks>
+        /// <remarks>If this method returns <see langword="false" />, <paramref name="destination" /> may be empty or contain partially decompressed data, and <paramref name="bytesWritten" /> might be zero or greater than zero but less than the expected total.</remarks>
         public static bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
             bytesWritten = 0;
@@ -269,10 +269,10 @@ namespace System.IO.Compression
         /// <param name="source">The compressed data to decompress.</param>
         /// <param name="dictionary">The decompression dictionary to use.</param>
         /// <param name="destination">The buffer to write the decompressed data to.</param>
-        /// <param name="bytesWritten">The number of bytes written to the destination.</param>
+        /// <param name="bytesWritten">When this method returns <see langword="true" />, contains the number of bytes written to the destination.</param>
         /// <returns><see langword="true" /> on success; <see langword="false" /> otherwise.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
-        /// <remarks>If this method returns <see langword="false" />, <paramref name="destination" /> may be empty or contain partially decompressed data, with <paramref name="bytesWritten" /> being zero.</remarks>
+        /// <remarks>If this method returns <see langword="false" />, <paramref name="destination" /> may be empty or contain partially decompressed data, and <paramref name="bytesWritten" /> might be zero or greater than zero but less than the expected total.</remarks>
         public static bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, ZstandardDictionary dictionary)
         {
             ArgumentNullException.ThrowIfNull(dictionary);

@@ -77,11 +77,11 @@ namespace System.IO.Compression
         /// <param name="sampleLengths">The lengths of the individual samples. The sum of these lengths must equal the length of <paramref name="samples"/>. Minimum of 5 samples is required.</param>
         /// <param name="maxDictionarySize">The maximum size of the dictionary to create.</param>
         /// <returns>A new <see cref="ZstandardDictionary"/> instance.</returns>
-        /// <exception cref="ArgumentException">Invalid sample data or lengths.</exception>
+        /// <exception cref="ArgumentException">The sample data or lengths are invalid.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxDictionarySize"/> is not between the minimum and maximum allowed values.</exception>
         /// <exception cref="IOException">Failed to train the dictionary.</exception>
         /// <remarks>
-        /// Recommended maximum dictionary size is 100KB, and that the size of the training data
+        /// The recommended maximum dictionary size is 100 KB, and the size of the training data
         /// should be approximately 100 times the size of the resulting dictionary.
         /// </remarks>
         public static ZstandardDictionary Train(ReadOnlySpan<byte> samples, ReadOnlySpan<int> sampleLengths, int maxDictionarySize)
