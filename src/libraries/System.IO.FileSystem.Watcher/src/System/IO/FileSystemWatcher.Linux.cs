@@ -210,7 +210,7 @@ namespace System.IO
                 _inotifyHandle.Dispose();
             }
 
-            private WatchedDirectory? AddOrUpdateWatchedDirectory(Watcher watcher, WatchedDirectory? parent, string directoryPath, Interop.Sys.NotifyEvents watchFilters, bool followLinks = false, bool ignoreMissing = true)
+            private WatchedDirectory? AddOrUpdateWatchedDirectory(Watcher watcher, WatchedDirectory? parent, string directoryPath, Interop.Sys.NotifyEvents watchFilters, bool ignoreMissing = true)
             {
                 Debug.Assert(!Monitor.IsEntered(watcher)); // We mustn't hold the watcher lock prior to taking the _addLock.
 
@@ -237,16 +237,17 @@ namespace System.IO
                         Interop.Sys.NotifyEvents mask = watchFilters |
                             Interop.Sys.NotifyEvents.IN_ONLYDIR |     // we only allow watches on directories
                             Interop.Sys.NotifyEvents.IN_EXCL_UNLINK | // we want to stop monitoring unlinked files
-                            (followLinks ? 0 : Interop.Sys.NotifyEvents.IN_DONT_FOLLOW);
+                            (parent == null ? 0 : Interop.Sys.NotifyEvents.IN_DONT_FOLLOW); // Follow links only for the root path, not the subdirs.
 
                         // To support multiple FileSystemWatchers on the same inotify instance, we need to use IN_MASK_ADD
                         // so we don't remove events another watcher is interested in.
                         // The downside is that we won't unsubscribe from events that are unique to a watcher when it stops.
                         mask |= Interop.Sys.NotifyEvents.IN_MASK_ADD;
 
+                        // Track when directories are added/removed.
                         if (watcher.IncludeSubdirectories)
                         {
-                            mask |= Interop.Sys.NotifyEvents.IN_CREATE | Interop.Sys.NotifyEvents.IN_MOVED_TO | Interop.Sys.NotifyEvents.IN_MOVED_FROM;
+                            mask |= Interop.Sys.NotifyEvents.IN_MOVED_TO | Interop.Sys.NotifyEvents.IN_MOVED_FROM;
                         }
 
                         int wd = Interop.Sys.INotifyAddWatch(_inotifyHandle, directoryPath, (uint)mask);
@@ -303,7 +304,7 @@ namespace System.IO
                                     return dir;
                                 }
 
-                                // The current watch is watching a different directory, use the new watch instead.
+                                // The current watch is watching a different directory which was moved/deleted, use the new watch instead.
                                 bool removeINotifyWatches = false;
 
                                 RemoveWatchedDirectoryFromParentAndWatches(dir, ref removeINotifyWatches);
@@ -987,7 +988,6 @@ namespace System.IO
                 private readonly Channel<WatcherEvent> _eventQueue;
                 private INotify? _inotify;
                 private bool _emitEvents;
-                private WatchedDirectory? _rootDirectory;
 
                 public string BasePath { get; }
                 public NotifyFilters NotifyFilters { get; }
@@ -1000,12 +1000,12 @@ namespace System.IO
                     get
                     {
                         Debug.Assert(Monitor.IsEntered(this));
-                        return _rootDirectory;
+                        return field;
                     }
                     set
                     {
                         Debug.Assert(Monitor.IsEntered(this));
-                        _rootDirectory = value;
+                        field = value;
                     }
                 }
 
@@ -1058,7 +1058,7 @@ namespace System.IO
                     _emitEvents = true;
 
                     WatchedDirectory? CreateRootWatch()
-                        => _inotify.AddOrUpdateWatchedDirectory(this, parent: null, BasePath, WatchFilters, followLinks: true, ignoreMissing: false);
+                        => _inotify.AddOrUpdateWatchedDirectory(this, parent: null, BasePath, WatchFilters, ignoreMissing: false);
                 }
 
                 public void Stop()
@@ -1198,7 +1198,7 @@ namespace System.IO
                     return true;
 
                     WatchedDirectory? AddOrUpdateWatch(WatchedDirectory parent, string path)
-                        => _inotify.AddOrUpdateWatchedDirectory(this, parent, path, WatchFilters, followLinks: false, ignoreMissing: true);
+                        => _inotify.AddOrUpdateWatchedDirectory(this, parent, path, WatchFilters, ignoreMissing: true);
                 }
 
                 internal void QueueEvent(WatcherEvent ev)
