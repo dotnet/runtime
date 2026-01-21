@@ -307,10 +307,15 @@ namespace System.Buffers.Text
                     status = DecodeFrom(decoder, source, bytes, out localConsumed, out int localWritten, isFinalBlock, ignoreWhiteSpace: false);
                     bytesConsumed += localConsumed;
                     bytesWritten += localWritten;
-                    if (status is not OperationStatus.InvalidData)
+
+                    if (status is OperationStatus.Done or OperationStatus.NeedMoreData)
                     {
                         break;
                     }
+
+                    // The DecodeFrom helper will return DestinationTooSmall if the destination is too small,
+                    // regardless of whether it's actually too small once you skip whitespace characters.
+                    // In that case we loop again and fall back to block-wise decoding if we can't make progress.
 
                     source = source.Slice(localConsumed);
                     bytes = bytes.Slice(localWritten);

@@ -16,6 +16,7 @@ set(SOURCES
     gcheapenumerationprofiler/gcheapenumerationprofiler.cpp
     gcheapenumerationprofiler/gcheapenumerationprofiler.def
     gcprofiler/gcprofiler.cpp
+    gcskipobjectsallocatedbyclasscallbackprofiler/gcskipobjectsallocatedbyclasscallbackprofiler.cpp
     getappdomainstaticaddress/getappdomainstaticaddress.cpp
     handlesprofiler/handlesprofiler.cpp
     inlining/inlining.cpp

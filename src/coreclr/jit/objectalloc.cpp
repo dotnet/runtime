@@ -1107,6 +1107,13 @@ bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
             return false;
         }
 
+        // Bail out if the array is definitely too large - we don't want to even start building its layout.
+        if (ClassLayoutBuilder::IsArrayTooLarge(comp, clsHnd, (unsigned)length, m_StackAllocMaxSize))
+        {
+            *reason = "[array is too large]";
+            return false;
+        }
+
         ClassLayout* const layout = comp->typGetArrayLayout(clsHnd, (unsigned)length);
         classSize                 = layout->GetSize();
     }
