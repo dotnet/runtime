@@ -60,6 +60,10 @@ namespace System.Security.Cryptography.X509Certificates
         private const int EventId_RevocationCheckStop = 46;
         private const int EventId_CrlIdentifiersDetermined = 47;
         private const int EventId_StapledOcspPresent = 48;
+        private const int EventId_CrlCacheInMemoryHit = 49;
+        private const int EventId_CrlCacheInMemoryExpired = 50;
+        private const int EventId_CrlCacheInMemoryMiss = 51;
+        private const int EventId_CrlCacheInMemoryCollected = 52;
 
         private static string GetCertificateSubject(SafeX509Handle certHandle)
         {
@@ -429,7 +433,7 @@ namespace System.Security.Cryptography.X509Certificates
             EventId_CrlCacheCheckStart,
             Level = EventLevel.Verbose,
             Opcode = EventOpcode.Start,
-            Message = "Checking for a cached CRL.")]
+            Message = "Checking for a CRL cached on disk.")]
         internal void CrlCacheCheckStart()
         {
             if (IsEnabled())
@@ -477,7 +481,7 @@ namespace System.Security.Cryptography.X509Certificates
         [Event(
             EventId_CrlCacheExpired,
             Level = EventLevel.Verbose,
-            Message = "The cached CRL's nextUpdate value ({1:O}) is not after the verification time ({0:O}).")]
+            Message = "The CRL cached on disk has a nextUpdate value ({1:O}) that is after the verification time ({0:O}).")]
         internal void CrlCacheExpired(DateTime verificationTime, DateTime nextUpdate)
         {
             if (IsEnabled())
@@ -489,7 +493,7 @@ namespace System.Security.Cryptography.X509Certificates
         [Event(
             EventId_CrlCacheFileBasedExpiry,
             Level = EventLevel.Verbose,
-            Message = "The cached crl has no nextUpdate value, basing nextUpdate on the file write time.")]
+            Message = "The CRL cached on disk has no nextUpdate value, basing nextUpdate on the file write time.")]
         internal void CrlCacheFileBasedExpiry()
         {
             if (IsEnabled())
@@ -501,7 +505,7 @@ namespace System.Security.Cryptography.X509Certificates
         [Event(
             EventId_CrlCacheAcceptedFile,
             Level = EventLevel.Verbose,
-            Message = "The cached crl nextUpdate value ({0:O}) is acceptable, using the cached file.")]
+            Message = "The CRL cached on disk has a nextUpdate value ({0:O}) that is acceptable, using the cached file.")]
         internal void CrlCacheAcceptedFile(DateTime nextUpdate)
         {
             if (IsEnabled())
@@ -525,7 +529,7 @@ namespace System.Security.Cryptography.X509Certificates
         [Event(
             EventId_CrlCacheWriteSucceeded,
             Level = EventLevel.Verbose,
-            Message = "The downloaded CRL was successfully written to the cache.")]
+            Message = "The downloaded CRL was successfully written to the disk cache.")]
         internal void CrlCacheWriteSucceeded()
         {
             if (IsEnabled())
@@ -750,6 +754,54 @@ namespace System.Security.Cryptography.X509Certificates
             if (IsEnabled())
             {
                 WriteEvent(EventId_StapledOcspPresent);
+            }
+        }
+
+        [Event(
+            EventId_CrlCacheInMemoryHit,
+            Level = EventLevel.Verbose,
+            Message = "The in-memory CRL cache has a valid entry for the requested CRL, expiration at {0:O}.")]
+        internal void CrlCacheInMemoryHit(DateTime expiration)
+        {
+            if (IsEnabled())
+            {
+                WriteEvent(EventId_CrlCacheInMemoryHit, expiration);
+            }
+        }
+
+        [Event(
+            EventId_CrlCacheInMemoryExpired,
+            Level = EventLevel.Verbose,
+            Message = "The in-memory cached CRL's nextUpdate value ({1:O}) is not after the verification time ({0:O}).")]
+        internal void CrlCacheInMemoryExpired(DateTime verificationTime, DateTime nextUpdate)
+        {
+            if (IsEnabled())
+            {
+                WriteEvent(EventId_CrlCacheExpired, verificationTime, nextUpdate);
+            }
+        }
+
+        [Event(
+            EventId_CrlCacheInMemoryCollected,
+            Level = EventLevel.Verbose,
+            Message = "The in-memory CRL cache entry was garbage collected.")]
+        internal void CrlCacheInMemoryCollected()
+        {
+            if (IsEnabled())
+            {
+                WriteEvent(EventId_CrlCacheInMemoryCollected);
+            }
+        }
+
+        [Event(
+            EventId_CrlCacheInMemoryMiss,
+            Level = EventLevel.Verbose,
+            Message = "The in-memory CRL cache has no entry for the requested CRL.")]
+        internal void CrlCacheInMemoryMiss()
+        {
+            if (IsEnabled())
+            {
+                WriteEvent(EventId_CrlCacheInMemoryMiss);
             }
         }
     }
