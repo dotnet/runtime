@@ -7510,7 +7510,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
 
     if (emitConsDsc.dsdOffs != 0)
     {
-        emitOutputDataSec(&emitConsDsc, dataChunks);
+        emitOutputDataSec(&emitConsDsc, emitDataChunks);
     }
 
     /* Make sure all GC ref variables are marked as dead */
