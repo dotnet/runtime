@@ -86,7 +86,7 @@ LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
 	mfspr 5, 1
 	std %r5, CONTEXT_XER(%r3)
 	mflr %r5
-	std %r5, CONTEXT_LINK(%r3)
+	std %r5, CONTEXT_NIP(%r3)
 	mfspr 5, 9
 	std %r5, CONTEXT_CTR(%r3)
 
@@ -177,7 +177,7 @@ LEAF_ENTRY RtlRestoreContext, _TEXT
 	mtlr %r0
 
 	// Restore Control Register - CTR
-	ld %r12, CONTEXT_LINK(%r3)
+	ld %r12, CONTEXT_NIP(%r3)
 	mtctr %r12
 
 	// Restore R3 register
