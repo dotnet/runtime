@@ -1025,9 +1025,9 @@ public:
         STATIC_CONTRACT_WRAPPER;
     }
 
-    NewInterfaceArrayHolder(INTERFACE ** value) :
+    NewInterfaceArrayHolder(INTERFACE ** value, ULONG32 cElements) :
         NewArrayHolder<INTERFACE *>(value),
-        m_cElements(0)
+        m_cElements(cElements)
     {
         STATIC_CONTRACT_WRAPPER;
     }

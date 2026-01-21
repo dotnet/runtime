@@ -1715,7 +1715,7 @@ public:
     //    the most recent one
     // Arguments:
     //    Input:
-    //        codeAddress  - the beginning of the code hot code region
+    //        codeAddress  - any code address within the method body
     //    Output (required):
     //        pCodeInfo     - data structure describing the native code regions.
     //    Output (optional):
