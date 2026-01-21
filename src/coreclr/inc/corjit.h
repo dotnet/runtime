@@ -77,11 +77,10 @@ enum CheckedWriteBarrierKinds {
 
 struct AllocMemChunk
 {
-    // Alignment of the chunk. Different restrictions apply for different types
-    // of chunks, and the value must generally be a power of two.
-    // - For the hot code chunk the maximal supported alignment is 32. 0 indicates default alignment.
-    // - For the cold code chunk the value must always be 0.
-    // - For read-only data chunks the max supported alignment is 64. An explicit alignment must always be requested.
+    // Alignment of the chunk. Must be a power of two with the following restrictions:
+    // - For the hot code chunk the max supported alignment is 32.
+    // - For the cold code chunk the value must always be 1.
+    // - For read-only data chunks the max supported alignment is 64.
     uint32_t alignment;
     uint32_t size;
     CorJitAllocMemFlag flags;

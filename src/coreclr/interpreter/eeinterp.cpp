@@ -129,7 +129,7 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
             uint8_t unwindInfo[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
             AllocMemChunk codeChunk {};
-            codeChunk.alignment = 0;
+            codeChunk.alignment = 1;
             codeChunk.size = sizeOfCode;
             codeChunk.flags = CORJIT_ALLOCMEM_HOT_CODE;
 

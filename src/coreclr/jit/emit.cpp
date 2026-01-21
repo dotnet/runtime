@@ -6827,7 +6827,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
     // buffer.
 
     AllocMemChunk codeChunk = {};
-    codeChunk.alignment     = TARGET_POINTER_SIZE;
+    codeChunk.alignment     = 1;
     codeChunk.size          = emitTotalHotCodeSize;
     codeChunk.flags         = CORJIT_ALLOCMEM_HOT_CODE;
 
@@ -6874,7 +6874,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
     AllocMemChunk coldCodeChunk = {};
     if (emitTotalColdCodeSize > 0)
     {
-        coldCodeChunk.alignment = 0;
+        coldCodeChunk.alignment = 1;
         coldCodeChunk.size      = emitTotalColdCodeSize;
         coldCodeChunk.flags     = CORJIT_ALLOCMEM_COLD_CODE;
     }

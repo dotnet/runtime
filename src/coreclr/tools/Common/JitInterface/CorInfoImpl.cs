@@ -3825,17 +3825,17 @@ namespace Internal.JitInterface
 
             foreach (ref AllocMemChunk chunk in chunks)
             {
-                ref int alignmentField = ref _codeAlignment;
                 if ((chunk.flags & CorJitAllocMemFlag.CORJIT_ALLOCMEM_HOT_CODE) != 0)
                 {
                     chunk.block = (byte*)GetPin(_code = new byte[chunk.size]);
                     chunk.blockRW = chunk.block;
+                    _codeAlignment = (int)chunk.alignment;
                 }
                 else if ((chunk.flags & CorJitAllocMemFlag.CORJIT_ALLOCMEM_COLD_CODE) != 0)
                 {
                     chunk.block = (byte*)GetPin(_coldCode = new byte[chunk.size]);
                     chunk.blockRW = chunk.block;
-
+                    Debug.Assert(chunk.alignment == 1);
 #if READYTORUN
                     _methodColdCodeNode = new MethodColdCodeNode(MethodBeingCompiled);
 #endif
@@ -3844,12 +3844,7 @@ namespace Internal.JitInterface
                 {
                     roDataSize = (uint)((int)roDataSize).AlignUp((int)chunk.alignment);
                     roDataSize += chunk.size;
-                    alignmentField = ref _roDataAlignment;
-                }
-
-                if (chunk.alignment != 0)
-                {
-                    alignmentField = Math.Max(alignmentField, (int)chunk.alignment);
+                    _roDataAlignment = Math.Max(_roDataAlignment, (int)chunk.alignment);
                 }
             }
 
