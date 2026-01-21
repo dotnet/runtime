@@ -836,9 +836,13 @@ void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackGC());
         size_t context = 0;
 
-        // When we're walking objects allocated by class, then we don't want to walk the large
-        // object heap because then it would count things that may have been around for a while.
-        GCHeapUtilities::GetGCHeap()->DiagWalkHeap(&AllocByClassHelper, (void *)&context, 0, false);
+        // ObjectsAllocatedByClass callback can lead to enormous overhead in the case of Server GC,
+        // so it was made skippable. See https://github.com/dotnet/runtime/issues/108230 for details.
+        if (!CORProfilerSkipAllocatedByClassStatistic()) {
+            // When we're walking objects allocated by class, then we don't want to walk the large
+            // object heap because then it would count things that may have been around for a while.
+            GCHeapUtilities::GetGCHeap()->DiagWalkHeap(&AllocByClassHelper, (void *)&context, 0, false);
+        }
 
         // Notify that we've reached the end of the Gen 0 scan
         (&g_profControlBlock)->EndAllocByClass(&context);

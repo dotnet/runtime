@@ -160,8 +160,15 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SslSessionReused(SafeSslHandle ssl);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionReused")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool SslSessionReused(IntPtr ssl);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetSession")]
         internal static partial IntPtr SslGetSession(SafeSslHandle ssl);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetSession")]
+        internal static partial IntPtr SslGetSession(IntPtr ssl);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetClientCAList")]
         private static partial SafeSharedX509NameStackHandle SslGetClientCAList_private(SafeSslHandle ssl);
