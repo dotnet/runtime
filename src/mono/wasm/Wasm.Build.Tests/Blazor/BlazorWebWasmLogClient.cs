@@ -27,7 +27,7 @@ internal class BlazorWebWasmLogClient : IDisposable
     {
         var response = await _httpClient.GetAsync("request-logs");
         response.EnsureSuccessStatusCode();
-        var logs = await response.Content.ReadFromJsonAsync<BlazorWebWasmRequestLog[]>() ?? Array.Empty<BlazorWebWasmRequestLog>();
+        var logs = await response.Content.ReadFromJsonAsync<BlazorWebWasmRequestLog[]>() ?? [];
         return logs;
     }
 
