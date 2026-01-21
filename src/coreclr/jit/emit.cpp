@@ -6734,6 +6734,8 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
 
     emitCodeBlock  = nullptr;
     emitDataChunks = nullptr;
+    emitDataChunkOffsets = nullptr;
+    emitNumDataChunks = 0;
 
     emitOffsAdj = 0;
 
@@ -6885,11 +6887,16 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
         numDataChunks++;
     }
 
-    AllocMemChunk* dataChunks =
+    emitDataChunks =
         numDataChunks == 0 ? nullptr : new (emitComp, CMK_Codegen) AllocMemChunk[numDataChunks]{};
-    AllocMemChunk* dataChunk = dataChunks;
+    emitDataChunkOffsets = numDataChunks == 0 ? nullptr : new (emitComp, CMK_Codegen) unsigned[numDataChunks]{};
+    emitNumDataChunks = numDataChunks;
 
-    for (dataSection* sec = emitConsDsc.dsdList; sec != nullptr; sec = sec->dsNext, dataChunk++)
+    AllocMemChunk* dataChunk = emitDataChunks;
+    unsigned* dataChunkOffset = emitDataChunkOffsets;
+
+    unsigned cumulativeOffset = 0;
+    for (dataSection* sec = emitConsDsc.dsdList; sec != nullptr; sec = sec->dsNext, dataChunk++, dataChunkOffset++)
     {
         comp->Metrics.ReadOnlyDataBytes += sec->dsSize;
 
@@ -6901,12 +6908,15 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
         {
             dataChunk->flags = CORJIT_ALLOCMEM_READONLY_DATA | CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE;
         }
+
+        *dataChunkOffset = cumulativeOffset;
+        cumulativeOffset += sec->dsSize;
     }
 
     comp->Metrics.AllocatedHotCodeBytes  = emitTotalHotCodeSize;
     comp->Metrics.AllocatedColdCodeBytes = emitTotalColdCodeSize;
 
-    emitComp->eeAllocMem(codeChunk, coldCodeChunk.size > 0 ? &coldCodeChunk : nullptr, dataChunks, numDataChunks,
+    emitComp->eeAllocMem(codeChunk, coldCodeChunk.size > 0 ? &coldCodeChunk : nullptr, emitDataChunks, numDataChunks,
                          xcptnsCount);
 
     // Give the block addresses to the caller and other functions here
@@ -6915,7 +6925,6 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
     *codeAddrRW               = codeChunk.blockRW;
     *coldCodeAddr = emitColdCodeBlock = coldCodeChunk.size > 0 ? coldCodeChunk.block : nullptr;
     *coldCodeAddrRW                   = coldCodeChunk.size > 0 ? coldCodeChunk.blockRW : nullptr;
-    emitDataChunks                    = dataChunks;
 
     /* Nothing has been pushed on the stack */
 
@@ -9210,22 +9219,39 @@ void emitter::emitGCregDeadSet(GCtype gcType, regMaskTP regMask, BYTE* addr)
     regPtrNext->rpdCompiler.rpdDel = (regMaskSmall)regMask;
 }
 
+//------------------------------------------------------------------------
+// Convert offset to a piece of data into a pointer to that piece of data.
+//
+// Arguments:
+//    offset - The offset
+//
+// Returns:
+//    Pointer to the data that EE allocated for it.
+//
 BYTE* emitter::emitDataOffsetToPtr(UNATIVE_OFFSET offset)
 {
     assert(offset < emitDataSize());
-    AllocMemChunk* chunk = emitDataChunks;
-    for (dataSection* dsc = emitConsDsc.dsdList; dsc; dsc = dsc->dsNext, chunk++)
+    unsigned min = 0;
+    unsigned max = emitNumDataChunks;
+    while (min < max)
     {
-        if (dsc->dsSize > offset)
+        unsigned mid = min + (max - min) / 2;
+        if (emitDataChunkOffsets[mid] == offset)
         {
-            return chunk->block + offset;
+            return emitDataChunks[mid].block;
         }
-
-        offset -= dsc->dsSize;
+        if (emitDataChunkOffsets[mid] < offset)
+        {
+            min = mid + 1;
+        }
+        else
+        {
+            max = mid;
+        }
     }
 
-    assert(!"Data offset not found in chunk");
-    return nullptr;
+    assert((min > 0) && (min <= emitNumDataChunks));
+    return emitDataChunks[min - 1].block + (offset - emitDataChunkOffsets[min - 1]);
 }
 
 /*****************************************************************************

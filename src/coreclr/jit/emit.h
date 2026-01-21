@@ -2624,6 +2624,8 @@ public:
     BYTE*          emitCodeBlock;     // Hot code block
     BYTE*          emitColdCodeBlock; // Cold code block
     AllocMemChunk* emitDataChunks;
+    unsigned*      emitDataChunkOffsets;
+    unsigned       emitNumDataChunks;
     size_t         writeableOffset; // Offset applied to a code address to get memory location that can be written
 
     UNATIVE_OFFSET emitTotalHotCodeSize;
