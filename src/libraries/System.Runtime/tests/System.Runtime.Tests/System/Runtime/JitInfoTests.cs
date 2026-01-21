@@ -67,7 +67,7 @@ namespace System.Runtime.Tests
 
             if (PlatformDetection.IsMonoInterpreter || PlatformDetection.IsBrowser)
             {
-                // Before and after will most likely be the same with the interpreter and in browser because of low precision timers
+                // Before and after can be same in browser because of low precision timers
                 Assert.True(afterCompilationTime >= beforeCompilationTime, $"CompilationTime: after not greater than before! (after: {afterCompilationTime}, before: {beforeCompilationTime})");
             }
             else
