@@ -9841,11 +9841,13 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                         // NOTE: This is also part of the logic which determines if we need to call SetMayHaveOpenInterfacesInInterfaceMap. What will happen is that if we have both an case where we want to insert a special marker type
                         // but it satisfies the condition of also being an EXACT instantiation we want to retry, and use the retryWithExactInterfaces logic.
                         MethodTable *pItfToInsert = NULL;
+                        bool intendedExactMatch = false;
 
                         if (!pItfPossiblyApprox->HasInstantiation())
                         {
                             // case 1
                             pItfToInsert = pItfPossiblyApprox;
+                            intendedExactMatch = true;
                         }
                         else if (pItfPossiblyApprox->IsSpecialMarkerTypeForGenericCasting() && !pNewIntfMT->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap())
                         {
@@ -9869,6 +9871,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                                 else
                                 {
                                     pItfToInsert = intIt.GetInterface(pNewIntfMT, CLASS_LOAD_EXACTPARENTS);
+                                    intendedExactMatch = true;
                                 }
                             }
                         }
@@ -9880,20 +9883,25 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                                 // Validated that all generic arguments are the same, and that the first generic argument in the instantiation is exactly the value of calling GetSpecialInstantiationType on pMT
                                 // Then use the special marker type here
                                 pItfToInsert = ClassLoader::LoadTypeDefThrowing(pItfPossiblyApprox->GetModule(), pItfPossiblyApprox->GetCl(), ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, CLASS_LOAD_EXACTPARENTS).AsMethodTable();
-                                _ASSERTE(pItfToInsert->IsSpecialMarkerTypeForGenericCasting());
                             }
                             else
                             {
                                 pItfToInsert = pItfPossiblyApprox;
+                                intendedExactMatch = true;
                             }
                         }
 
-                        if (pItfToInsert->IsSpecialMarkerTypeForGenericCasting() && pItfToInsert->GetInstantiation()[0] == pMT->GetSpecialInstantiationType())
+                        if (pItfToInsert->IsSpecialMarkerTypeForGenericCasting() && intendedExactMatch)
                         {
                             // We are trying to insert a special marker type into the interface list, but it is exactly the same as the exact instantiation we should actually want, we need to set the
                             // MayHaveOpenInterfacesInInterfaceMap flag, so trigger the retry logic.
                             retry = true;
                             break;
+                        }
+
+                        if (!intendedExactMatch)
+                        {
+                            _ASSERTE(pItfToInsert->IsSpecialMarkerTypeForGenericCasting());
                         }
 
                         duplicates |= InsertMethodTable(pItfToInsert, pExactMTs, nInterfacesCount, &nAssigned);;
