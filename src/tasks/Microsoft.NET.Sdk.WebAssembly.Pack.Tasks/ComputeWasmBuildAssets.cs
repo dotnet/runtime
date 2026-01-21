@@ -139,6 +139,7 @@ public class ComputeWasmBuildAssets : Task
                     candidate.SetMetadata("AssetRole", "Related");
                     candidate.SetMetadata("AssetTraitName", "Culture");
                     candidate.SetMetadata("AssetTraitValue", culture);
+
                     var fileName = candidate.GetMetadata("FileName");
                     var suffixIndex = fileName.Length - ".resources".Length;
                     var relatedAssetPath = Path.GetFullPath(Path.Combine(
@@ -148,6 +149,7 @@ public class ComputeWasmBuildAssets : Task
                         fileName.Substring(0, suffixIndex) + ProjectAssembly[0].GetMetadata("Extension")));
 
                     candidate.SetMetadata("RelatedAsset", relatedAssetPath);
+                    candidate.SetMetadata("RelativePath", $"_framework/{culture}/{fileName}{candidate.GetMetadata("Extension")}");
 
                     Log.LogMessage(MessageImportance.Low, "Found satellite assembly '{0}' asset for inferred candidate '{1}' with culture '{2}'", candidate.ItemSpec, relatedAssetPath, culture);
 
