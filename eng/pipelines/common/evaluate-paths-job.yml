@@ -28,7 +28,7 @@ jobs:
   - job: evaluate_paths
     displayName: Evaluate Paths
     pool:
-      vmImage: 'ubuntu-latest'
+      vmImage: 'macos-latest'
 
     steps:
     - checkout: self
