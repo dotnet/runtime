@@ -6279,7 +6279,7 @@ GenTree* Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
 }
 
 //----------------------------------------------------------------------------------------------
-// Lowering::TryInvertMaskCondition:
+// Lowering::TryInvertMask:
 //    Attempts to modify a TYP_MASK node to invert the mask bits
 //
 // Arguments:
@@ -6319,14 +6319,14 @@ bool Lowering::TryInvertMask(GenTree* node, unsigned simdSize, var_types simdBas
             GenTree* cmpOp1 = mskIntrin->Op(1);
             GenTree* cmpOp2 = mskIntrin->Op(2);
 
-            NamedIntrinsic newIntrisicID =
+            NamedIntrinsic newIntrinsicID =
                 GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(comp, mskOper, TYP_MASK, cmpOp1, cmpOp2, mskSimdBaseType,
                                                              mskSimdSize, mskIsScalar,
                                                              /* reverseCond */ true);
 
-            if (newIntrisicID != NI_Illegal)
+            if (newIntrinsicID != NI_Illegal)
             {
-                mskIntrin->ChangeHWIntrinsicId(newIntrisicID);
+                mskIntrin->ChangeHWIntrinsicId(newIntrinsicID);
                 return true;
             }
         }
