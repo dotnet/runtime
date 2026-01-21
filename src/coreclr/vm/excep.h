@@ -43,9 +43,9 @@ enum LFH {
 
 #ifndef TARGET_UNIX
 // Windows uses 64kB as the null-reference area
-#define NULL_AREA_SIZE   0
+#define NULL_AREA_SIZE   1
 #else // !TARGET_UNIX
-#define NULL_AREA_SIZE   0
+#define NULL_AREA_SIZE   1
 #endif // !TARGET_UNIX
 
 class IJitManager;
