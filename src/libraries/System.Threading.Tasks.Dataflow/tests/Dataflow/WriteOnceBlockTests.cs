@@ -189,6 +189,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [OuterLoop] // stress test with many iterations
         public async Task TestConcurrentPostAndReceiveAsync()
         {
             // Test for race condition where ReceiveAsync could return default value
