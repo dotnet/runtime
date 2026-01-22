@@ -519,7 +519,7 @@ void Compiler::lvaInitWasmStackPtr(unsigned* curVarNum)
 //   curVarNum - [in, out] the last used local var num
 //
 // Notes:
-//   The managed calling convention for Wasm passes the stack pointer as the last arg.
+//   The managed calling convention for Wasm passes a pointer to the portable entry point as the last arg.
 //   This arg is currently unused in the JIT, and we may not need to model it.
 //
 void Compiler::lvaInitWasmPortableEntryPtr(unsigned* curVarNum)
