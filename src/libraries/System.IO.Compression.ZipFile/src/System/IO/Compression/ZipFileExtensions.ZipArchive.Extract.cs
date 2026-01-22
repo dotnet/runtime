@@ -81,7 +81,7 @@ namespace System.IO.Compression
 
             foreach (ZipArchiveEntry entry in source.Entries)
             {
-                entry.ExtractRelativeToDirectory(destinationDirectoryName, overwriteFiles);
+                entry.ExtractRelativeToDirectory(destinationDirectoryName, overwriteFiles, password);
             }
         }
     }

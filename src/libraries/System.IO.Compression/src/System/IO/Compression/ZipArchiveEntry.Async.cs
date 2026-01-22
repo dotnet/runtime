@@ -94,6 +94,112 @@ public partial class ZipArchiveEntry
         }
     }
 
+    /// <summary>
+    /// Asynchronously opens the entry with the specified access mode and password for decrypting encrypted entries.
+    /// </summary>
+    /// <param name="access">The file access mode for the returned stream.</param>
+    /// <param name="password">The password used to decrypt the encrypted entry.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>A <see cref="Task{Stream}"/> that represents the asynchronous open operation.</returns>
+    /// <remarks>
+    /// <para>The allowed <paramref name="access"/> values depend on the <see cref="ZipArchiveMode"/>:</para>
+    /// <list type="bullet">
+    /// <item><description><see cref="ZipArchiveMode.Read"/>: Only <see cref="FileAccess.Read"/> is allowed.</description></item>
+    /// <item><description><see cref="ZipArchiveMode.Create"/>: Not supported - use the overload with encryption method.</description></item>
+    /// <item><description><see cref="ZipArchiveMode.Update"/>: All values are allowed for encrypted entries.</description></item>
+    /// </list>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="access"/> is not a valid <see cref="FileAccess"/> value.</exception>
+    /// <exception cref="InvalidOperationException">The requested access is not compatible with the archive's open mode.</exception>
+    /// <exception cref="InvalidDataException">The entry is not encrypted.</exception>
+    /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive.</exception>
+    /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
+    public async Task<Stream> OpenAsync(FileAccess access, string password, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ThrowIfInvalidArchive();
+
+        if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
+            throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
+
+        switch (_archive.Mode)
+        {
+            case ZipArchiveMode.Read:
+                if (access != FileAccess.Read)
+                    throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
+                if (!IsEncrypted)
+                    throw new InvalidDataException(SR.EntryNotEncrypted);
+                return await OpenInReadModeAsync(checkOpenable: true, cancellationToken, password.AsMemory()).ConfigureAwait(false);
+
+            case ZipArchiveMode.Create:
+                throw new InvalidOperationException(SR.EntriesInCreateMode);
+
+            case ZipArchiveMode.Update:
+            default:
+                Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
+                if (!IsEncrypted)
+                    throw new InvalidDataException(SR.EntryNotEncrypted);
+                switch (access)
+                {
+                    case FileAccess.Read:
+                        return await OpenInReadModeAsync(checkOpenable: true, cancellationToken, password.AsMemory()).ConfigureAwait(false);
+                    case FileAccess.Write:
+                        return await OpenInUpdateModeAsync(loadExistingContent: false, cancellationToken, password).ConfigureAwait(false);
+                    case FileAccess.ReadWrite:
+                    default:
+                        return await OpenInUpdateModeAsync(loadExistingContent: true, cancellationToken, password).ConfigureAwait(false);
+                }
+        }
+    }
+
+    /// <summary>
+    /// Asynchronously opens the entry with the specified access mode, password, and encryption method for creating encrypted entries.
+    /// </summary>
+    /// <param name="access">The file access mode for the returned stream.</param>
+    /// <param name="password">The password used to encrypt the entry.</param>
+    /// <param name="encryptionMethod">The encryption method to use when creating the entry.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>A <see cref="Task{Stream}"/> that represents the asynchronous open operation.</returns>
+    /// <remarks>
+    /// <para>The allowed <paramref name="access"/> values depend on the <see cref="ZipArchiveMode"/>:</para>
+    /// <list type="bullet">
+    /// <item><description><see cref="ZipArchiveMode.Read"/>: Not supported - encryption method is not needed for reading.</description></item>
+    /// <item><description><see cref="ZipArchiveMode.Create"/>: <see cref="FileAccess.Write"/> and <see cref="FileAccess.ReadWrite"/> are allowed.</description></item>
+    /// <item><description><see cref="ZipArchiveMode.Update"/>: Not supported - specifying encryption method in update mode is not allowed.</description></item>
+    /// </list>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="access"/> is not a valid <see cref="FileAccess"/> value.</exception>
+    /// <exception cref="InvalidOperationException">The requested access is not compatible with the archive's open mode.</exception>
+    /// <exception cref="InvalidDataException">The archive is in update mode.</exception>
+    /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive.</exception>
+    /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
+    public Task<Stream> OpenAsync(FileAccess access, string password, EncryptionMethod encryptionMethod, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ThrowIfInvalidArchive();
+
+        if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
+            throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
+
+        switch (_archive.Mode)
+        {
+            case ZipArchiveMode.Read:
+                if (access != FileAccess.Read)
+                    throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
+                throw new InvalidOperationException(SR.EncryptionReadMode);
+
+            case ZipArchiveMode.Create:
+                if (access == FileAccess.Read)
+                    throw new InvalidOperationException(SR.CannotBeReadInCreateMode);
+                return Task.FromResult<Stream>(OpenInWriteMode(password, encryptionMethod));
+
+            case ZipArchiveMode.Update:
+            default:
+                Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
+                throw new InvalidDataException(SR.EncryptionUpdateMode);
+        }
+    }
+
     public async Task<Stream> OpenAsync(string password, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -359,7 +465,7 @@ public partial class ZipArchiveEntry
         if (password.IsEmpty)
             throw new InvalidDataException(SR.PasswordRequired);
 
-        bool isAesEncrypted = (ushort)_headerCompressionMethod == AesEncryptionMarker;
+        bool isAesEncrypted = (ushort)_headerCompressionMethod == WinZipAesMethod;
 
         if (!isAesEncrypted && IsZipCryptoEncrypted())
         {
@@ -459,7 +565,7 @@ public partial class ZipArchiveEntry
             message = SR.LocalFileHeaderCorrupt;
             return (false, message);
         }
-        else if (IsEncrypted && (ushort)_headerCompressionMethod == AesEncryptionMarker)
+        else if (IsEncrypted && (ushort)_headerCompressionMethod == WinZipAesMethod)
         {
             _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
             // AES case - skip the local file header and validate it exists.
