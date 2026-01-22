@@ -56,7 +56,7 @@ namespace Mono.Linker.Steps
             {
                 string message = MessageFormat.FormatRequiresAttributeMismatch(
                     methodSatisfies,
-                    baseMethod.DeclaringType.IsInterface,
+                    baseMethod.DeclaringType?.IsInterface == true,
                     nameof(RequiresUnreferencedCodeAttribute),
                     method.GetDisplayName(),
                     baseMethod.GetDisplayName());
