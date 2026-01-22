@@ -769,11 +769,17 @@ void GenTree::CopyReg(GenTree* from)
 //
 void GenTree::SetUnsigned()
 {
-    if (!(OperIs(GT_ADD, GT_SUB, GT_CAST) || OperIsCompare() || OperIsMul()))
+#if DEBUG
+    if (!(OperIs(GT_ADD, GT_SUB, GT_CAST) || OperIsCompare() || OperIsMul()
+#if !defined(TARGET_64BIT)
+          || OperIs(GT_ADD_HI, GT_SUB_HI)
+#endif
+              ))
     {
         printf("SetUnsigned() called on unexpected node type: %s\n", OpName(gtOper));
-        assertAbort("SetUnsigned() called on unexpected node type", __FILE__, __LINE__);
+        assert(!"SetUnsigned() called on unexpected node type");
     }
+#endif
     gtFlags |= GTF_UNSIGNED;
 }
 
