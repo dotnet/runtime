@@ -484,11 +484,16 @@ namespace System.Security.Cryptography.X509Certificates
         // on a CRL entry in use.
         private sealed class MruCrlCache
         {
+            // Each CRL is only a SafeHandle to the GC, but represents a non-trivial amount of
+            // native memory, so keep the cache small.
+            private const int MaxItems = 30;
+
             private readonly Lock _lock = new();
 
             private int _count = -1;
             private Node? _head;
             private Node? _expire;
+            private DateTime _firstPurge;
 
             internal CachedCrlEntry AddOrUpdateAndUpRef(string key, CachedCrlEntry value)
             {
@@ -500,14 +505,16 @@ namespace System.Security.Cryptography.X509Certificates
 
                 int hashCode = key.GetHashCode();
                 CachedCrlEntry ret = value;
+                string? fullMemberKey = null;
 
                 lock (_lock)
                 {
-                    // The first time we add something, create the Jacquard to monitor for GC.
+                    // The first time we add something, create the object to monitor for GC events.
                     if (_count < 0)
                     {
-                        new Jacquard(this);
+                        new GCWatcher(this);
                         _count = 0;
+                        _firstPurge = DateTime.Now.AddMinutes(1);
                     }
 
                     bool ignore = false;
@@ -531,11 +538,44 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         Node node = new Node(key, value);
                         node.Next = _head;
+
+                        if (_count < MaxItems)
+                        {
+                            _count++;
+                        }
+                        else
+                        {
+                            // Because MaxItems is small, it's better to just iterate from head
+                            // instead of using a doubly-linked list.
+
+                            Node? previous = null;
+                            Node? cur = _head;
+                            Node? next = cur?.Next;
+
+                            while (next is not null)
+                            {
+                                previous = cur;
+                                cur = next;
+                                next = cur.Next;
+                            }
+
+                            Debug.Assert(previous is not null);
+                            Debug.Assert(cur is not null);
+
+                            previous.Next = null;
+                            cur.Value.CrlHandle.Dispose();
+                            fullMemberKey = cur.Key;
+                        }
+
                         _head = node;
-                        _count++;
                     }
 
                     ret.CrlHandle.DangerousAddRef(ref ignore);
+                }
+
+                if (fullMemberKey is not null && OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.CrlCacheInMemoryFull(fullMemberKey);
                 }
 
                 return ret;
@@ -569,13 +609,13 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     if (current.MatchesKey(hashCode, key))
                     {
-                        if (current.Value is null)
+                        // If we find the expire node, move expiration to after it, so that promoting it to
+                        // most recent doesn't prune the whole list.
+                        //
+                        // This might, of course, make _expire null.
+                        if (current == _expire)
                         {
-                            // If the value has been cleared, that means the GC cooperation pruned the list from here,
-                            // so we can now unlink this node.
-                            previous?.Next = null;
-                            value = null;
-                            return false;
+                            _expire = current.Next;
                         }
 
                         // Move the found node to the head of the list, maintaining MRU ordering.
@@ -600,6 +640,11 @@ namespace System.Security.Cryptography.X509Certificates
 
             private void PruneForGC()
             {
+                if (DateTime.Now < _firstPurge)
+                {
+                    return;
+                }
+
                 // The general flow:
                 // * The current head is where we expire next time.
                 // * Under the lock: If there is an expire node, determine the new count by walking to it,
@@ -688,17 +733,16 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            private sealed class Jacquard
+            private sealed class GCWatcher
             {
                 private readonly MruCrlCache _owner;
 
-                internal Jacquard(MruCrlCache owner)
+                internal GCWatcher(MruCrlCache owner)
                 {
                     _owner = owner;
-                    GC.ReRegisterForFinalize(this);
                 }
 
-                ~Jacquard()
+                ~GCWatcher()
                 {
                     GC.ReRegisterForFinalize(this);
                     _owner.PruneForGC();
