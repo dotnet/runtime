@@ -508,7 +508,7 @@ PALEXPORT int32_t SystemNative_FcntlGetIsNonBlocking(intptr_t fd, int32_t* isNon
  *
  * Returns 1 if valid and has the required access, 0 otherwise.
  */
-PALEXPORT int32_t SystemNative_FcntlCanGetSetAccess(intptr_t fd, int32_t mode);
+PALEXPORT int32_t SystemNative_FcntlCheckAccess(intptr_t fd, int32_t requestedAccess);
 
 /**
  * Create a directory. Implemented as a shim to mkdir(2).

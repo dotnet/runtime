@@ -697,7 +697,7 @@ int32_t SystemNative_FcntlGetIsNonBlocking(intptr_t fd, int32_t* isNonBlocking)
     return 0;
 }
 
-int32_t SystemNative_FcntlCanGetSetAccess(intptr_t fd, int32_t mode)
+int32_t SystemNative_FcntlCheckAccess(intptr_t fd, int32_t requestedAccess)
 {
     int fileDescriptor = ToFileDescriptor(fd);
     
@@ -710,23 +710,23 @@ int32_t SystemNative_FcntlCanGetSetAccess(intptr_t fd, int32_t mode)
     }
     
     // Extract the access mode from flags
-    int accessMode = flags & O_ACCMODE;
+    int actualAccess = flags & O_ACCMODE;
     
-    // mode: 1 = Read (FileAccess.Read), 2 = Write (FileAccess.Write), 3 = ReadWrite (FileAccess.ReadWrite)
-    if (mode == 1) // Read
+    // requestedAccess: 1 = Read (FileAccess.Read), 2 = Write (FileAccess.Write), 3 = ReadWrite (FileAccess.ReadWrite)
+    switch (requestedAccess)
     {
-        return (accessMode == O_RDONLY || accessMode == O_RDWR) ? 1 : 0;
+        case 1: // Read
+            return (actualAccess == O_RDONLY || actualAccess == O_RDWR) ? 1 : 0;
+        
+        case 2: // Write
+            return (actualAccess == O_WRONLY || actualAccess == O_RDWR) ? 1 : 0;
+        
+        case 3: // ReadWrite
+            return (actualAccess == O_RDWR) ? 1 : 0;
+        
+        default:
+            return 0;
     }
-    else if (mode == 2) // Write
-    {
-        return (accessMode == O_WRONLY || accessMode == O_RDWR) ? 1 : 0;
-    }
-    else if (mode == 3) // ReadWrite
-    {
-        return (accessMode == O_RDWR) ? 1 : 0;
-    }
-    
-    return 0;
 }
 
 int32_t SystemNative_MkDir(const char* path, int32_t mode)

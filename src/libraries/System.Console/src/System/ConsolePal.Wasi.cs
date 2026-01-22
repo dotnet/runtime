@@ -36,8 +36,8 @@ namespace System
 
         public static SafeFileHandle OpenStandardInputHandle()
         {
-            IntPtr fd = (IntPtr)0;
-            if (!Interop.Sys.Fcntl.CanGetSetAccess(fd, 1)) // 1 = FileAccess.Read
+            IntPtr fd = 0;
+            if (!Interop.Sys.Fcntl.CheckAccess(fd, (int)FileAccess.Read))
             {
                 throw new IOException(SR.IO_NoConsole);
             }
@@ -46,8 +46,8 @@ namespace System
 
         public static SafeFileHandle OpenStandardOutputHandle()
         {
-            IntPtr fd = (IntPtr)1;
-            if (!Interop.Sys.Fcntl.CanGetSetAccess(fd, 2)) // 2 = FileAccess.Write
+            IntPtr fd = 1;
+            if (!Interop.Sys.Fcntl.CheckAccess(fd, (int)FileAccess.Write))
             {
                 throw new IOException(SR.IO_NoConsole);
             }
@@ -56,8 +56,8 @@ namespace System
 
         public static SafeFileHandle OpenStandardErrorHandle()
         {
-            IntPtr fd = (IntPtr)2;
-            if (!Interop.Sys.Fcntl.CanGetSetAccess(fd, 2)) // 2 = FileAccess.Write
+            IntPtr fd = 2;
+            if (!Interop.Sys.Fcntl.CheckAccess(fd, (int)FileAccess.Write))
             {
                 throw new IOException(SR.IO_NoConsole);
             }
