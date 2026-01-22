@@ -1974,9 +1974,12 @@ void Lowering::InsertPutArgReg(GenTree** argNode, const ABIPassingSegment& regis
     assert(registerSegment.IsPassedInRegister());
 
     InsertBitCastIfNecessary(argNode, registerSegment);
+
+#ifdef HAS_FIXED_REGISTER_SET
     GenTree* putArg = comp->gtNewPutArgReg(genActualType(*argNode), *argNode, registerSegment.GetRegister());
     BlockRange().InsertAfter(*argNode, putArg);
     *argNode = putArg;
+#endif
 }
 
 //------------------------------------------------------------------------
