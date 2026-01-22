@@ -256,7 +256,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Configuration\Assemblies\AssemblyHashAlgorithm.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Configuration\Assemblies\AssemblyVersionCompatibility.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Context.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Convert.Base64.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Convert.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\CoreLib.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\CurrentSystemTimeZone.cs" />
@@ -2890,6 +2889,7 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)System\IParsable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ISpanParsable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\DivisionRounding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IAdditionOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IAdditiveIdentity.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IBinaryFloatingPointIeee754.cs" />
