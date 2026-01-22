@@ -194,7 +194,7 @@ public class ComputeWasmBuildAssets : Task
                     "_framework",
                     ProjectAssembly[0].GetMetadata("FileName") + ProjectAssembly[0].GetMetadata("Extension")));
 
-                var relativePath = Path.Combine("_framework", assetCandidate.GetMetadata("TargetPath").Replace('\\', '/'));
+                var relativePath = $"_framework/{assetCandidate.GetMetadata("TargetPath").Replace('\\', '/')}";
                 if (!uniqueRelativePaths.Add(relativePath))
                 {
                     Log.LogMessage(MessageImportance.Low, "Skipping duplicate relative path '{0}' for candidate '{1}'", relativePath, projectSatelliteAssembly.ItemSpec);
