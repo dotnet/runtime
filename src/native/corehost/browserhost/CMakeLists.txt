@@ -71,7 +71,6 @@ LIST(APPEND NATIVE_LIBS
     ${CMAKE_ICU_DIR}/lib/libicudata.a
     ${SHARED_LIB_DESTINATION}/libSystem.IO.Compression.Native.a
     ${SHARED_LIB_DESTINATION}/libz.a
-    ${SHARED_LIB_DESTINATION}/libzstd.a
     # WASM-TODO respect  $(InvariantTimezone)
     # libSystem.Native.TimeZoneData.Invariant.a
     ${SHARED_LIB_DESTINATION}/libSystem.Native.TimeZoneData.a

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Disabling baseline validation since this is a brand new package. Once this package has shipped a stable version, the following line should be removed in order to re-enable validation. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
@@ -37,7 +37,7 @@
   </ItemGroup>
 
   <!-- Unix specific files -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' ">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>
 

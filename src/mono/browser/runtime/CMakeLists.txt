@@ -31,9 +31,7 @@ target_link_libraries(dotnet.native
     ${NATIVE_BIN_DIR}/libicudata.a
     ${NATIVE_BIN_DIR}/libicuuc.a
     ${NATIVE_BIN_DIR}/libicui18n.a
-    ${NATIVE_BIN_DIR}/libz.a
-    ${NATIVE_BIN_DIR}/libzstd.a
-    )
+    ${NATIVE_BIN_DIR}/libz.a)
 
 set_target_properties(dotnet.native PROPERTIES
     LINK_DEPENDS "${NATIVE_BIN_DIR}/src/emcc-default.rsp;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.pre.js;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.lib.js;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.extpost.js;"

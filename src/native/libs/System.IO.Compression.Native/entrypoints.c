@@ -12,11 +12,10 @@
 #include <brotli/port.h>
 #include <brotli/types.h>
 
-#endif // !TARGET_WASM
-
 #define ZSTD_STATIC_LINKING_ONLY
 #include <zstd.h>
 #include <zdict.h>
+#endif // !TARGET_WASM
 
 static const Entry s_compressionNative[] =
 {
@@ -42,6 +41,7 @@ static const Entry s_compressionNative[] =
     DllImportEntry(CompressionNative_InflateEnd)
     DllImportEntry(CompressionNative_InflateInit2_)
     DllImportEntry(CompressionNative_InflateReset2_)
+#if !defined(TARGET_WASM)
     DllImportEntry(ZSTD_createCCtx)
     DllImportEntry(ZSTD_createDCtx)
     DllImportEntry(ZSTD_freeCCtx)
@@ -74,6 +74,7 @@ static const Entry s_compressionNative[] =
     DllImportEntry(ZSTD_CCtx_refPrefix)
     DllImportEntry(ZSTD_CCtx_setPledgedSrcSize)
     DllImportEntry(ZDICT_trainFromBuffer)
+#endif // !TARGET_WASM
 };
 
 EXTERN_C const void* CompressionResolveDllImport(const char* name);
