@@ -761,41 +761,6 @@ void GenTree::CopyReg(GenTree* from)
 }
 
 //------------------------------------------------------------------
-// SetUnsigned: Set the GTF_UNSIGNED flag on this node
-//
-// Notes:
-//    GTF_UNSIGNED is valid for casts, arithmetic operations, and comparisons.
-//    This method includes a debug assertion to catch incorrect usage.
-//
-void GenTree::SetUnsigned()
-{
-#if DEBUG
-    if (!(OperIs(GT_ADD, GT_SUB, GT_CAST) || OperIsCompare() || OperIsMul()
-#if !defined(TARGET_64BIT)
-          || OperIs(GT_ADD_HI, GT_SUB_HI)
-#endif
-              ))
-    {
-        printf("SetUnsigned() called on unexpected node type: %s\n", OpName(gtOper));
-        assert(!"SetUnsigned() called on unexpected node type");
-    }
-#endif
-    gtFlags |= GTF_UNSIGNED;
-}
-
-//------------------------------------------------------------------
-// ClearUnsigned: Clear the GTF_UNSIGNED flag on this node
-//
-// Notes:
-//    GTF_UNSIGNED is valid for casts, arithmetic operations, and comparisons.
-//    This method includes a debug assertion to catch incorrect usage.
-//
-void GenTree::ClearUnsigned()
-{
-    gtFlags &= ~GTF_UNSIGNED;
-}
-
-//------------------------------------------------------------------
 // gtHasReg: Whether node been assigned a register by LSRA
 //
 // Arguments:
