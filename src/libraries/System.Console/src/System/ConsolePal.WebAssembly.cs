@@ -93,9 +93,25 @@ namespace System
 
         public static SafeFileHandle OpenStandardInputHandle() => throw new PlatformNotSupportedException();
 
-        public static SafeFileHandle OpenStandardOutputHandle() => new SafeFileHandle((IntPtr)1, ownsHandle: false);
+        public static SafeFileHandle OpenStandardOutputHandle()
+        {
+            IntPtr fd = (IntPtr)1;
+            if (!Interop.Sys.Fcntl.CanGetSetAccess(fd, 2)) // 2 = FileAccess.Write
+            {
+                throw new IOException(SR.IO_NoConsole);
+            }
+            return new SafeFileHandle(fd, ownsHandle: false);
+        }
 
-        public static SafeFileHandle OpenStandardErrorHandle() => new SafeFileHandle((IntPtr)2, ownsHandle: false);
+        public static SafeFileHandle OpenStandardErrorHandle()
+        {
+            IntPtr fd = (IntPtr)2;
+            if (!Interop.Sys.Fcntl.CanGetSetAccess(fd, 2)) // 2 = FileAccess.Write
+            {
+                throw new IOException(SR.IO_NoConsole);
+            }
+            return new SafeFileHandle(fd, ownsHandle: false);
+        }
 
         public static Encoding InputEncoding => throw new PlatformNotSupportedException();
 

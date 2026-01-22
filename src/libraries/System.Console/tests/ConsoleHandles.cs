@@ -71,13 +71,19 @@ namespace System.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Windows)]
         public void OpenStandardHandles_CanBeUsedWithStream()
         {
-            RemoteExecutor.Invoke(() =>
+            using RemoteInvokeHandle child = RemoteExecutor.Invoke(() =>
             {
                 using SafeFileHandle outputHandle = Console.OpenStandardOutputHandle();
                 using FileStream fs = new FileStream(outputHandle, FileAccess.Write);
                 using StreamWriter writer = new StreamWriter(fs);
                 writer.WriteLine("Test output");
-            }).Dispose();
+            }, new RemoteInvokeOptions { StartInfo = new ProcessStartInfo() { RedirectStandardOutput = true } });
+
+            // Verify the output was written
+            string output = child.Process.StandardOutput.ReadLine();
+            Assert.Equal("Test output", output);
+            
+            child.Process.WaitForExit();
         }
 
         [Fact]

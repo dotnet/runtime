@@ -34,11 +34,35 @@ namespace System
             return new UnixConsoleStream(OpenStandardErrorHandle(), FileAccess.Write);
         }
 
-        public static SafeFileHandle OpenStandardInputHandle() => new SafeFileHandle((IntPtr)0, ownsHandle: false);
+        public static SafeFileHandle OpenStandardInputHandle()
+        {
+            IntPtr fd = (IntPtr)0;
+            if (!Interop.Sys.Fcntl.CanGetSetAccess(fd, 1)) // 1 = FileAccess.Read
+            {
+                throw new IOException(SR.IO_NoConsole);
+            }
+            return new SafeFileHandle(fd, ownsHandle: false);
+        }
 
-        public static SafeFileHandle OpenStandardOutputHandle() => new SafeFileHandle((IntPtr)1, ownsHandle: false);
+        public static SafeFileHandle OpenStandardOutputHandle()
+        {
+            IntPtr fd = (IntPtr)1;
+            if (!Interop.Sys.Fcntl.CanGetSetAccess(fd, 2)) // 2 = FileAccess.Write
+            {
+                throw new IOException(SR.IO_NoConsole);
+            }
+            return new SafeFileHandle(fd, ownsHandle: false);
+        }
 
-        public static SafeFileHandle OpenStandardErrorHandle() => new SafeFileHandle((IntPtr)2, ownsHandle: false);
+        public static SafeFileHandle OpenStandardErrorHandle()
+        {
+            IntPtr fd = (IntPtr)2;
+            if (!Interop.Sys.Fcntl.CanGetSetAccess(fd, 2)) // 2 = FileAccess.Write
+            {
+                throw new IOException(SR.IO_NoConsole);
+            }
+            return new SafeFileHandle(fd, ownsHandle: false);
+        }
 
         public static Encoding InputEncoding
         {

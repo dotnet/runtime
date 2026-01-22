@@ -697,6 +697,38 @@ int32_t SystemNative_FcntlGetIsNonBlocking(intptr_t fd, int32_t* isNonBlocking)
     return 0;
 }
 
+int32_t SystemNative_FcntlCanGetSetAccess(intptr_t fd, int32_t mode)
+{
+    int fileDescriptor = ToFileDescriptor(fd);
+    
+    // Try to get the file status flags
+    int flags = fcntl(fileDescriptor, F_GETFL);
+    if (flags == -1)
+    {
+        // Invalid file descriptor
+        return 0;
+    }
+    
+    // Extract the access mode from flags
+    int accessMode = flags & O_ACCMODE;
+    
+    // mode: 1 = Read (FileAccess.Read), 2 = Write (FileAccess.Write), 3 = ReadWrite (FileAccess.ReadWrite)
+    if (mode == 1) // Read
+    {
+        return (accessMode == O_RDONLY || accessMode == O_RDWR) ? 1 : 0;
+    }
+    else if (mode == 2) // Write
+    {
+        return (accessMode == O_WRONLY || accessMode == O_RDWR) ? 1 : 0;
+    }
+    else if (mode == 3) // ReadWrite
+    {
+        return (accessMode == O_RDWR) ? 1 : 0;
+    }
+    
+    return 0;
+}
+
 int32_t SystemNative_MkDir(const char* path, int32_t mode)
 {
     int32_t result;
