@@ -1028,13 +1028,16 @@ class SoftwareExceptionFrame : public Frame
 
 public:
 #ifndef DACCESS_COMPILE
-    SoftwareExceptionFrame() : Frame(FrameIdentifier::SoftwareExceptionFrame) {
+    SoftwareExceptionFrame() : Frame(FrameIdentifier::SoftwareExceptionFrame), m_ReturnAddress(0) {
         LIMITED_METHOD_CONTRACT;
     }
 
-#ifdef TARGET_X86
     void UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock);
-#endif
+
+    // Static helper to populate a CONTEXT from a TransitionBlock for OSR transitions.
+    // Returns the adjusted SP and FP values that the OSR method should use.
+    static void UpdateContextForOSRTransition(TransitionBlock* pTransitionBlock, CONTEXT* pContext, 
+                                              UINT_PTR* pCurrentSP, UINT_PTR* pCurrentFP);
 #endif
 
     TADDR GetReturnAddressPtr_Impl()
@@ -1044,7 +1047,6 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-    void Init();
     void InitAndLink(Thread *pThread);
 #endif
 
