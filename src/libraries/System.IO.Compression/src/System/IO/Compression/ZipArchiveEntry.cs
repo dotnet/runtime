@@ -1022,10 +1022,11 @@ namespace System.IO.Compression
         {
             return Encryption is EncryptionMethod.Aes128 or EncryptionMethod.Aes192 or EncryptionMethod.Aes256;
         }
+        private bool IsAesEncrypted => (ushort)_headerCompressionMethod == WinZipAesMethod;
 
-        private int GetAesKeySizeBits()
+        private static int GetAesKeySizeBits(EncryptionMethod encryption)
         {
-            return Encryption switch
+            return encryption switch
             {
                 EncryptionMethod.Aes128 => 128,
                 EncryptionMethod.Aes192 => 192,
@@ -1040,7 +1041,7 @@ namespace System.IO.Compression
             if (password.IsEmpty)
                 throw new InvalidDataException(SR.PasswordRequired);
 
-            bool isAesEncrypted = (ushort)_headerCompressionMethod == WinZipAesMethod;
+            bool isAesEncrypted = IsAesEncrypted;
 
             if (!isAesEncrypted && IsZipCryptoEncrypted())
             {
@@ -1050,7 +1051,7 @@ namespace System.IO.Compression
             }
             else if (isAesEncrypted)
             {
-                int keySizeBits = GetAesKeySizeBits();
+                int keySizeBits = GetAesKeySizeBits(Encryption);
 
                 // Read salt from stream to derive keys
                 int saltSize = WinZipAesStream.GetSaltSize(keySizeBits);
@@ -1173,13 +1174,7 @@ namespace System.IO.Compression
 
                 Encryption = encryptionMethod;
 
-                int keySizeBits = encryptionMethod switch
-                {
-                    EncryptionMethod.Aes128 => 128,
-                    EncryptionMethod.Aes192 => 192,
-                    EncryptionMethod.Aes256 => 256,
-                    _ => 256 // Default to AES-256
-                };
+                int keySizeBits = GetAesKeySizeBits(encryptionMethod);
 
                 // Derive key material from password with new random salt
                 byte[] keyMaterial = WinZipAesStream.CreateKey(password.AsMemory(), salt: null, keySizeBits);
@@ -1269,7 +1264,7 @@ namespace System.IO.Compression
             {
                 // Generate new salt and derive key material for AES
                 // This ensures each write uses a fresh random salt for security
-                int keySizeBits = GetAesKeySizeBits();
+                int keySizeBits = GetAesKeySizeBits(Encryption);
                 _derivedEncryptionKeyMaterial = WinZipAesStream.CreateKey(password.AsMemory(), salt: null, keySizeBits);
                 // Encryption is already set from constructor (parsed from central directory AES extra field)
             }
@@ -1314,7 +1309,7 @@ namespace System.IO.Compression
                     message = SR.LocalFileHeaderCorrupt;
                     return false;
                 }
-                else if (IsEncrypted && (ushort)_headerCompressionMethod == WinZipAesMethod)
+                else if (IsEncrypted && IsAesEncrypted)
                 {
                     _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
                     // AES case - skip the local file header and validate it exists.
@@ -1690,7 +1685,7 @@ namespace System.IO.Compression
                         // Record position before encryption data
                         long startPosition = _archive.ArchiveStream.Position;
 
-                        int keySizeBits = GetAesKeySizeBits();
+                        int keySizeBits = GetAesKeySizeBits(Encryption);
 
                         // Determine the actual compression method to use
                         // The AES extra field stores the real compression method

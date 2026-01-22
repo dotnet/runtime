@@ -121,49 +121,6 @@ namespace System.IO.Compression
         }
 
         /// <summary>
-        /// Private constructor for decryption - use Create/CreateAsync factory methods instead.
-        /// Header must already be validated before calling this constructor.
-        /// </summary>
-        private WinZipAesStream(Stream baseStream, byte[] keyMaterial, int keySizeBits, long totalStreamSize, bool leaveOpen)
-        {
-            _baseStream = baseStream;
-            _encrypting = false;
-            _keySizeBits = keySizeBits;
-            _totalStreamSize = totalStreamSize;
-            _leaveOpen = leaveOpen;
-
-#pragma warning disable CA1416 // HMACSHA1 is available on all platforms
-            _aes = Aes.Create();
-#pragma warning restore CA1416
-            _aes.Mode = CipherMode.ECB;
-            _aes.Padding = PaddingMode.None;
-
-            Array.Clear(_counterBlock, 0, 16);
-            _counterBlock[0] = 1;
-
-            // Parse the persisted key material
-            ParseKeyMaterial(keyMaterial, keySizeBits, out _salt!, out _key!, out _hmacKey!, out _passwordVerifier!);
-
-            int saltSize = _keySizeBits / 16;
-            int headerSize = saltSize + 2; // Salt + Password Verifier
-            const int hmacSize = 10; // 10-byte HMAC
-
-            _encryptedDataSize = _totalStreamSize - headerSize - hmacSize;
-            _encryptedDataRemaining = _encryptedDataSize;
-
-            if (_encryptedDataSize < 0)
-            {
-                throw new InvalidDataException(SR.InvalidWinZipSize);
-            }
-
-            // Header was already read and validated by factory method - initialize cipher
-#pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms - required by WinZip AES spec
-            _hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.SHA1, _hmacKey!);
-#pragma warning restore CA5350
-            InitCipher();
-        }
-
-        /// <summary>
         /// Creates a WinZipAesStream for decryption. Reads and validates the header synchronously.
         /// </summary>
         internal static WinZipAesStream Create(Stream baseStream, byte[] keyMaterial, int keySizeBits, long totalStreamSize, bool encrypting, bool leaveOpen = false)
@@ -171,14 +128,13 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(baseStream);
             ArgumentNullException.ThrowIfNull(keyMaterial);
 
-            if (encrypting)
+            if (!encrypting)
             {
-                return new WinZipAesStream(baseStream, keyMaterial, keySizeBits, leaveOpen, encrypting: true);
+                // Read and validate header before creating the stream
+                ReadAndValidateHeaderCore(isAsync: false, baseStream, keyMaterial, keySizeBits, CancellationToken.None).GetAwaiter().GetResult();
             }
 
-            // Read and validate header before creating the stream
-            ReadAndValidateHeaderCore(isAsync: false, baseStream, keyMaterial, keySizeBits, CancellationToken.None).GetAwaiter().GetResult();
-            return new WinZipAesStream(baseStream, keyMaterial, keySizeBits, totalStreamSize, leaveOpen);
+            return new WinZipAesStream(baseStream, keyMaterial, keySizeBits, totalStreamSize, encrypting, leaveOpen);
         }
 
         /// <summary>
@@ -189,14 +145,14 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(baseStream);
             ArgumentNullException.ThrowIfNull(keyMaterial);
 
-            if (encrypting)
+            if (!encrypting)
             {
-                return new WinZipAesStream(baseStream, keyMaterial, keySizeBits, leaveOpen, encrypting: true);
+                // Read and validate header before creating the stream
+                await ReadAndValidateHeaderCore(isAsync: true, baseStream, keyMaterial, keySizeBits, cancellationToken).ConfigureAwait(false);
+
             }
 
-            // Read and validate header before creating the stream
-            await ReadAndValidateHeaderCore(isAsync: true, baseStream, keyMaterial, keySizeBits, cancellationToken).ConfigureAwait(false);
-            return new WinZipAesStream(baseStream, keyMaterial, keySizeBits, totalStreamSize, leaveOpen);
+            return new WinZipAesStream(baseStream, keyMaterial, keySizeBits, totalStreamSize, encrypting, leaveOpen);
         }
 
         /// <summary>
@@ -248,16 +204,15 @@ namespace System.IO.Compression
         }
 
         /// <summary>
-        /// Private constructor for encryption.
+        /// Private constructor - used in Create/CreateAsync
+        /// For decryption, header must already be validated before calling this constructor.
         /// </summary>
-        private WinZipAesStream(Stream baseStream, byte[] keyMaterial, int keySizeBits, bool leaveOpen, bool encrypting)
+        private WinZipAesStream(Stream baseStream, byte[] keyMaterial, int keySizeBits, long totalStreamSize, bool encrypting, bool leaveOpen)
         {
-            Debug.Assert(encrypting, "This constructor is for encryption only.");
-
             _baseStream = baseStream;
-            _encrypting = true;
+            _encrypting = encrypting;
             _keySizeBits = keySizeBits;
-            _totalStreamSize = -1;
+            _totalStreamSize = totalStreamSize;
             _leaveOpen = leaveOpen;
 
 #pragma warning disable CA1416 // HMACSHA1 is available on all platforms
@@ -272,10 +227,26 @@ namespace System.IO.Compression
             // Parse the persisted key material
             ParseKeyMaterial(keyMaterial, keySizeBits, out _salt!, out _key!, out _hmacKey!, out _passwordVerifier!);
 
-            _encryptedDataSize = -1;
-            _encryptedDataRemaining = -1;
+            if (encrypting)
+            {
+                _encryptedDataSize = -1;
+                _encryptedDataRemaining = -1;
+            }
+            else
+            {
+                int saltSize = _keySizeBits / 16;
+                int headerSize = saltSize + 2; // Salt + Password Verifier
+                const int hmacSize = 10; // 10-byte HMAC
 
-            Debug.Assert(_hmacKey is not null, "HMAC key should be parsed");
+                _encryptedDataSize = _totalStreamSize - headerSize - hmacSize;
+                _encryptedDataRemaining = _encryptedDataSize;
+
+                if (_encryptedDataSize < 0)
+                {
+                    throw new InvalidDataException(SR.InvalidWinZipSize);
+                }
+            }
+
 #pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms - required by WinZip AES spec
             _hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.SHA1, _hmacKey!);
 #pragma warning restore CA5350

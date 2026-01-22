@@ -475,7 +475,7 @@ public partial class ZipArchiveEntry
         }
         else if (isAesEncrypted)
         {
-            int keySizeBits = GetAesKeySizeBits();
+            int keySizeBits = GetAesKeySizeBits(Encryption);
 
             // Read salt from stream to derive keys
             int saltSize = WinZipAesStream.GetSaltSize(keySizeBits);
@@ -690,7 +690,7 @@ public partial class ZipArchiveEntry
                     // Record position before encryption data
                     long startPosition = _archive.ArchiveStream.Position;
 
-                    int keySizeBits = GetAesKeySizeBits();
+                    int keySizeBits = GetAesKeySizeBits(Encryption);
 
                     // Determine the actual compression method to use
                     // The AES extra field stores the real compression method

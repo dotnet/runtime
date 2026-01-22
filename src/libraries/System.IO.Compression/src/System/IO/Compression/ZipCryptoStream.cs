@@ -23,7 +23,7 @@ namespace System.IO.Compression
         private uint _key0;
         private uint _key1;
         private uint _key2;
-        private static readonly uint[] crc2Table = CreateCrc32Table();
+        private static readonly uint[] s_crc2Table = CreateCrc32Table();
 
         private static uint[] CreateCrc32Table()
         {
@@ -38,7 +38,7 @@ namespace System.IO.Compression
             return table;
         }
 
-        private static uint Crc32Update(uint crc, byte b) => crc2Table[(crc ^ b) & 0xFF] ^ (crc >> 8);
+        private static uint Crc32Update(uint crc, byte b) => s_crc2Table[(crc ^ b) & 0xFF] ^ (crc >> 8);
 
         // Private decryption constructor - use Create/CreateAsync factory methods instead.
         // Keys must already be validated before calling this constructor.
