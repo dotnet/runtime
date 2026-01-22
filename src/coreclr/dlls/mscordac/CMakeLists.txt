@@ -19,10 +19,6 @@ if(CLR_CMAKE_HOST_WIN32)
 
     # Create target to add file dependency on mscordac.def
     add_custom_target(mscordaccore_def DEPENDS ${CURRENT_BINARY_DIR_FOR_CONFIG}/mscordac.def)
-
-    # No library groups for Win32
-    set(START_LIBRARY_GROUP)
-    set(END_LIBRARY_GROUP)
 else(CLR_CMAKE_HOST_WIN32)
     set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/mscordac_unixexports.src)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/mscordac.exports)
@@ -109,12 +105,8 @@ else(CLR_CMAKE_HOST_WIN32)
     if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
         # This option is necessary to ensure that the overloaded delete operator defined inside
         # of the utilcode will be used instead of the standard library delete operator.
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
+        add_link_options(LINKER:-Bsymbolic)
 
-        # The following linked options can be inserted into the linker libraries list to
-        # ensure proper resolving of circular references between a subset of the libraries.
-        set(START_LIBRARY_GROUP -Wl,--start-group)
-        set(END_LIBRARY_GROUP -Wl,--end-group)
     endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
 
     set_exports_linker_option(${EXPORTS_FILE})
@@ -142,25 +134,14 @@ endif(CLR_CMAKE_HOST_UNIX)
 # order dependent and changing the order can result in undefined symbols in the shared
 # library.
 set(COREDAC_LIBRARIES
-    ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
-    cee_dac
-    cordbee_dac
     corguids
-    daccess
-    dbgutil
-    mdcompiler_dac
-    mdruntime_dac
-    mdruntimerw_dac
-    utilcode_dac
+    # These libraries have circular dependencies and must be grouped together
+    $<LINK_GROUP:RESCAN,cee_dac,cordbee_dac,daccess>
     unwinder_dac
-    ${END_LIBRARY_GROUP} # End group of libraries that have circular references
+    dbgutil
+    $<LINK_GROUP:RESCAN,mdcompiler_dac,mdruntime_dac,mdruntimerw_dac>
+    utilcode_dac
 )
-
-if(CLR_CMAKE_HOST_UNIX)
-    list(APPEND COREDAC_LIBRARIES
-        coreclrpal_dac
-    )
-endif(CLR_CMAKE_HOST_UNIX)
 
 if(CLR_CMAKE_HOST_WIN32)
     # mscordac.def should be generated before mscordaccore.dll is built
@@ -209,6 +190,12 @@ if(CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_UNIX)
         libunwind_xdac
     )
 endif(CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_UNIX)
+
+if (CLR_CMAKE_HOST_UNIX)
+    list(APPEND COREDAC_LIBRARIES
+        coreclrpal_dac
+    )
+endif (CLR_CMAKE_HOST_UNIX)
 
 target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
 

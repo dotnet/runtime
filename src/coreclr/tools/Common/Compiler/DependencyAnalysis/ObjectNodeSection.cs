@@ -21,6 +21,7 @@ namespace ILCompiler.DependencyAnalysis
         public string Name { get; }
         public SectionType Type { get; }
         public string ComdatName { get; }
+        public bool NeedsAlignment { get; } = true;
 
         public ObjectNodeSection(string name, SectionType type, string comdatName)
         {
@@ -31,6 +32,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public ObjectNodeSection(string name, SectionType type) : this(name, type, null)
         { }
+
+        public ObjectNodeSection(string name, SectionType type, bool needsAlign) : this(name, type, null)
+        {
+            NeedsAlignment = needsAlign;
+        }
 
         public static readonly ObjectNodeSection DataSection = new ObjectNodeSection("data", SectionType.Writeable);
         public static readonly ObjectNodeSection ReadOnlyDataSection = new ObjectNodeSection("rdata", SectionType.ReadOnly);
@@ -50,5 +56,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public static readonly ObjectNodeSection ModulesWindowsContentSection = new ObjectNodeSection(".modules$I", SectionType.ReadOnly);
         public static readonly ObjectNodeSection ModulesUnixContentSection = new ObjectNodeSection("__modules", SectionType.Writeable);
+        public static readonly ObjectNodeSection WasmCodeSection = new ObjectNodeSection("wasm.code", SectionType.Executable, needsAlign: false);
     }
 }

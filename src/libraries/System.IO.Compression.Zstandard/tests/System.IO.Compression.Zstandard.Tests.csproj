@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CompressionStreamUnitTests.Zstandard.cs" />
+    <Compile Include="ZstandardCompressionOptionsTests.cs" />
+    <Compile Include="ZstandardDictionaryTests.cs" />
+    <Compile Include="ZstandardTestUtils.cs" />
+    <Compile Include="ZstandardEncoderDecoderTests.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\EncoderDecoderTestBase.cs" Link="Common\System\IO\Compression\EncoderDecoderTestBase.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\CompressionStreamTestBase.cs" Link="Common\System\IO\Compression\CompressionStreamTestBase.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\CompressionStreamUnitTestBase.cs" Link="Common\System\IO\Compression\CompressionStreamUnitTestBase.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\CRC.cs" Link="Common\System\IO\Compression\CRC.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\FileData.cs" Link="Common\System\IO\Compression\FileData.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\LocalMemoryStream.cs" Link="Common\System\IO\Compression\LocalMemoryStream.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\StreamHelpers.cs" Link="Common\System\IO\Compression\StreamHelpers.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs" Link="Common\System\IO\ConnectedStreams.cs" />
+    <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference
+      Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.IO.Compression.TestData"
+      Version="$(SystemIOCompressionTestDataVersion)" />
+  </ItemGroup>
+</Project>
