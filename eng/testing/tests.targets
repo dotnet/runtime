@@ -1,6 +1,8 @@
 <Project>
   <!-- Enable runtime async for all .NET 11+ test projects. -->
-  <PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+  <PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))
+    and '$(TestNativeAot)' != 'true'
+    and '$(RuntimeFlavor)' != 'Mono'">
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
