@@ -85,10 +85,10 @@ function printUsageAndQuit() {
 }
 
 export function isShellHosted(): boolean {
-    const argumentsAny = (globalThis as any).arguments as string[];
     if (!ENVIRONMENT_IS_SHELL || loaderConfig.resources) {
         return false;
     }
+    const argumentsAny = (globalThis as any).arguments as string[];
     if (typeof argumentsAny === "undefined" || argumentsAny.length < 3) {
         printUsageAndQuit();
         return false;
