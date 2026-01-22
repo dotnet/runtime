@@ -30,6 +30,12 @@ namespace System
 
         public static Stream OpenStandardError() => new LogcatStream(OutputEncoding);
 
+        public static SafeFileHandle OpenStandardInputHandle() => throw new PlatformNotSupportedException();
+
+        public static SafeFileHandle OpenStandardOutputHandle() => throw new PlatformNotSupportedException();
+
+        public static SafeFileHandle OpenStandardErrorHandle() => throw new PlatformNotSupportedException();
+
         public static Encoding InputEncoding => throw new PlatformNotSupportedException();
 
         public static void SetConsoleInputEncoding(Encoding enc) => throw new PlatformNotSupportedException();

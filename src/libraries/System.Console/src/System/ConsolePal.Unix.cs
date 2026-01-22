@@ -45,18 +45,33 @@ namespace System
 
         public static Stream OpenStandardInput()
         {
-            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDIN_FILENO)), FileAccess.Read,
+            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(OpenStandardInputHandle())), FileAccess.Read,
                                          useReadLine: !Console.IsInputRedirected);
         }
 
         public static Stream OpenStandardOutput()
         {
-            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDOUT_FILENO)), FileAccess.Write);
+            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(OpenStandardOutputHandle())), FileAccess.Write);
         }
 
         public static Stream OpenStandardError()
         {
-            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDERR_FILENO)), FileAccess.Write);
+            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(OpenStandardErrorHandle())), FileAccess.Write);
+        }
+
+        public static SafeFileHandle OpenStandardInputHandle()
+        {
+            return Interop.Sys.FileDescriptors.STDIN_FILENO;
+        }
+
+        public static SafeFileHandle OpenStandardOutputHandle()
+        {
+            return Interop.Sys.FileDescriptors.STDOUT_FILENO;
+        }
+
+        public static SafeFileHandle OpenStandardErrorHandle()
+        {
+            return Interop.Sys.FileDescriptors.STDERR_FILENO;
         }
 
         public static Encoding InputEncoding
