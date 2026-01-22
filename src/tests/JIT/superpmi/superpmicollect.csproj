@@ -42,6 +42,9 @@
     <_SpmiTestProjects Update="@(_SpmiTestProjects)" TestProject="%(FileName)" />
 
     <_SpmiTestSupportProjects Include="..\Methodical\cctor\xassem\testlib_xassem.csproj" TestProject="xprecise1_cs_do" />
+    <_SpmiTestSupportProjects Include="$(TestLibraryProjectPath)" TestProject="xprecise1_cs_do" />
+    <_SpmiTestSupportProjects Include="$(TestLibraryProjectPath)" TestProject="CscBench" />
+    <_SpmiTestSupportProjects Include="$(TestLibraryProjectPath)" TestProject="Bytemark" />
 
     <ProjectReference Include="@(_SpmiTestProjects);@(_SpmiTestSupportProjects)">
       <Targets>Build</Targets>
