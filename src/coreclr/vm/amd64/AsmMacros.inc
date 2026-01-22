@@ -503,13 +503,14 @@ PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS macro target
 
         PUSH_CALLEE_SAVED_REGISTERS
 
-        ; Allocate space for: shadow for call (32) + FP callee-saved (160) + float args (64) + arg regs (32) + padding (8) = 296 bytes
-        ; Shadow space at offset 0 is reserved for the call to IL_Throw_Impl etc.
-        ; This makes RSP 16-byte aligned (8 + 64 + 296 = 368, and original RSP - 368 is 16-byte aligned)
-        alloc_stack     296
+        ; Allocate space for: shadow (32) + FP callee-saved (160) + float args (64) + padding (8) = 264 bytes
+        ; This makes RSP 16-byte aligned (8 + 64 + 264 = 336, and original RSP - 336 is 16-byte aligned)
+        alloc_stack     264
 
-        ; Save argument registers at offset 256 (32 + 160 + 64)
-        SAVE_ARGUMENT_REGISTERS 256
+        ; Save argument registers into caller's shadow space
+        ; TransitionBlock is at rsp + 264, sizeof(TransitionBlock) = 72
+        ; So argument registers go at rsp + 264 + 72 = rsp + 336
+        SAVE_ARGUMENT_REGISTERS 336
 
         ; Save float argument registers at offset 192 (32 + 160)
         SAVE_FLOAT_ARGUMENT_REGISTERS 192
@@ -530,8 +531,31 @@ PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS macro target
 
         END_PROLOGUE
 
-        ; TransitionBlock pointer points to CalleeSavedRegisters at rsp + 296
-        lea     target, [rsp + 296]
+        ; TransitionBlock pointer points to CalleeSavedRegisters at rsp + 264
+        lea     target, [rsp + 264]
+
+        endm
+
+; Epilog for PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS - restores XMM callee-saved and returns
+POP_COOP_PINVOKE_FRAME_WITH_FLOATS_RETURN macro
+
+        ; Restore FP callee-saved registers (xmm6-xmm15) from offset 32 (after shadow space)
+        movdqa  xmm6,  [rsp + 20h]
+        movdqa  xmm7,  [rsp + 30h]
+        movdqa  xmm8,  [rsp + 40h]
+        movdqa  xmm9,  [rsp + 50h]
+        movdqa  xmm10, [rsp + 60h]
+        movdqa  xmm11, [rsp + 70h]
+        movdqa  xmm12, [rsp + 80h]
+        movdqa  xmm13, [rsp + 90h]
+        movdqa  xmm14, [rsp + 0A0h]
+        movdqa  xmm15, [rsp + 0B0h]
+
+        ; Deallocate stack space (264 bytes)
+        add     rsp, 264
+
+        POP_CALLEE_SAVED_REGISTERS
+        ret
 
         endm
 
