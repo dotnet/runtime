@@ -53,7 +53,7 @@ namespace System.IO.Tests
         public async Task OpenNullHandle_AsyncRead_ReturnsZero()
         {
             using SafeFileHandle handle = File.OpenNullHandle();
-            using FileStream stream = new FileStream(handle, FileAccess.Read, bufferSize: 4096, useAsync: true);
+            using FileStream stream = new FileStream(handle, FileAccess.Read, 4096, true);
             
             byte[] buffer = new byte[100];
             int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
@@ -64,7 +64,7 @@ namespace System.IO.Tests
         public async Task OpenNullHandle_AsyncReadMemory_ReturnsZero()
         {
             using SafeFileHandle handle = File.OpenNullHandle();
-            using FileStream stream = new FileStream(handle, FileAccess.Read, bufferSize: 4096, useAsync: true);
+            using FileStream stream = new FileStream(handle, FileAccess.Read, 4096, true);
             
             byte[] buffer = new byte[100];
             int bytesRead = await stream.ReadAsync(buffer.AsMemory());
@@ -97,7 +97,7 @@ namespace System.IO.Tests
         public async Task OpenNullHandle_AsyncWrite_Succeeds()
         {
             using SafeFileHandle handle = File.OpenNullHandle();
-            using FileStream stream = new FileStream(handle, FileAccess.Write, bufferSize: 4096, useAsync: true);
+            using FileStream stream = new FileStream(handle, FileAccess.Write, 4096, true);
             
             byte[] buffer = new byte[100];
             // Should not throw
@@ -108,7 +108,7 @@ namespace System.IO.Tests
         public async Task OpenNullHandle_AsyncWriteMemory_Succeeds()
         {
             using SafeFileHandle handle = File.OpenNullHandle();
-            using FileStream stream = new FileStream(handle, FileAccess.Write, bufferSize: 4096, useAsync: true);
+            using FileStream stream = new FileStream(handle, FileAccess.Write, 4096, true);
             
             byte[] buffer = new byte[100];
             // Should not throw
@@ -164,7 +164,7 @@ namespace System.IO.Tests
         public async Task OpenNullHandle_UseAsync_True_AsyncOperationsWork()
         {
             using SafeFileHandle handle = File.OpenNullHandle();
-            using FileStream stream = new FileStream(handle, FileAccess.ReadWrite, bufferSize: 4096, useAsync: true);
+            using FileStream stream = new FileStream(handle, FileAccess.ReadWrite, 4096, true);
             
             byte[] writeBuffer = new byte[100];
             byte[] readBuffer = new byte[100];
