@@ -2181,10 +2181,10 @@ namespace System.Text.Json.Serialization.Tests
             if (Serializer.IsSourceGeneratedSerializer) return;
             var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
             var converter = (JsonConverter<float>)options.GetConverter(typeof(float));
-            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123.45\"}"u8;
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123.5\"}"u8;
             var reader = new Utf8JsonReader(jsonReadOnlySpan);
             reader.Read(); reader.Read(); reader.Read();
-            Assert.Equal(123.45f, converter.Read(ref reader, typeof(float), options));
+            Assert.Equal(123.5f, converter.Read(ref reader, typeof(float), options));
         }
 
         [Fact]
@@ -2251,9 +2251,9 @@ namespace System.Text.Json.Serialization.Tests
             using var stream = new MemoryStream();
             using var writer = new Utf8JsonWriter(stream);
             writer.WriteStartObject(); writer.WritePropertyName("x");
-            converter.Write(writer, 123.45f, options);
+            converter.Write(writer, 123.5f, options);
             writer.WriteEndObject(); writer.Flush();
-            Assert.Equal("{\"x\":\"123.45\"}", Encoding.UTF8.GetString(stream.ToArray()));
+            Assert.Equal("{\"x\":\"123.5\"}", Encoding.UTF8.GetString(stream.ToArray()));
         }
 
         [Fact]
