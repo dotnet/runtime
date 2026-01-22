@@ -34,12 +34,8 @@ namespace PInvokeTests
             return true;
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnMono("PInvoke Varargs/ArgIterator marshalling not supported on Mono")]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+        [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsVarArgSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
-        [Xunit.SkipOnCoreClrAttribute("Depends on varargs", RuntimeTestModes.InterpreterActive)]
         public static int TestEntryPoint()
         {
             var passed = true;

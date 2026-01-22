@@ -48,6 +48,8 @@ namespace Microsoft.Interop
 
         private static NameSyntax? _System_Runtime_InteropServices_StructLayoutAttribute;
         public static NameSyntax System_Runtime_InteropServices_StructLayoutAttribute => _System_Runtime_InteropServices_StructLayoutAttribute ??= ParseName(TypeNames.GlobalAlias + TypeNames.System_Runtime_InteropServices_StructLayoutAttribute);
+        private static NameSyntax? _System_Diagnostics_StackTraceHiddenAttribute;
+        public static NameSyntax System_Diagnostics_StackTraceHiddenAttribute => _System_Diagnostics_StackTraceHiddenAttribute ??= ParseName(TypeNames.GlobalAlias + TypeNames.System_Diagnostics_StackTraceHiddenAttribute);
     }
 
     public static class TypeSyntaxes
@@ -225,6 +227,8 @@ namespace Microsoft.Interop
         public const string System_Runtime_InteropServices_Marshal = "System.Runtime.InteropServices.Marshal";
 
         private const string System_Runtime_InteropServices_MarshalEx = "System.Runtime.InteropServices.MarshalEx";
+
+        public const string System_Diagnostics_StackTraceHiddenAttribute = "System.Diagnostics.StackTraceHiddenAttribute";
 
         public static string MarshalEx(InteropGenerationOptions options)
         {

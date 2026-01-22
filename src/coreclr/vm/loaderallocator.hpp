@@ -19,6 +19,7 @@ class FuncPtrStubs;
 #include "qcall.h"
 #include "ilstubcache.h"
 
+#include "asynccontinuations.h"
 #include "callcounting.h"
 #include "methoddescbackpatchinfo.h"
 #include "crossloaderallocatorhash.h"
@@ -486,6 +487,8 @@ private:
     PTR_OnStackReplacementManager m_onStackReplacementManager;
 #endif
 
+    PTR_AsyncContinuationsManager m_asyncContinuationsManager;
+
 #ifndef DACCESS_COMPILE
 
 public:
@@ -895,6 +898,8 @@ public:
 public:
     PTR_OnStackReplacementManager GetOnStackReplacementManager();
 #endif // FEATURE_ON_STACK_REPLACEMENT
+
+    PTR_AsyncContinuationsManager GetAsyncContinuationsManager();
 
 #ifndef DACCESS_COMPILE
 public:

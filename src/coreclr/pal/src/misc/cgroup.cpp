@@ -49,7 +49,10 @@ public:
     static void Initialize()
     {
         s_cgroup_version = FindCGroupVersion();
-        FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1CpuSubsystem : nullptr, &s_cpu_cgroup_path);
+        if (s_cgroup_version != 0)
+        {
+            FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1CpuSubsystem : nullptr, &s_cpu_cgroup_path);
+        }
     }
 
     static void Cleanup()
@@ -84,7 +87,7 @@ private:
         // modes because both of those involve cgroup v1 controllers managing
         // resources.
 
-#if !HAVE_NON_LEGACY_STATFS
+#if !HAVE_NON_LEGACY_STATFS || TARGET_WASM
         return 0;
 #else
         struct statfs stats;

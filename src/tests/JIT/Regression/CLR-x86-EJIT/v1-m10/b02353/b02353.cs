@@ -4,7 +4,7 @@
 using System;
 using Xunit;
 
-namespace DefaultNamespace
+namespace b02353
 {
     public class Bug
     {
@@ -133,6 +133,7 @@ namespace DefaultNamespace
         internal static readonly String[,] strArr = {{"This", " ", "a", " ", "test", " ", "of", " ", "patience", "."},
                                                                              {"This", " ", "a", " ", "test", " ", "of", " ", "patience", "."}};
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

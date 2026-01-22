@@ -1446,7 +1446,7 @@ mono_method_get_param_names_internal (MonoMethod *method, const char **names)
 		return;
 
 	for (i = 0; i < signature->param_count; ++i)
-		names [i] = "";
+		names [i] = NULL;
 
 	klass = method->klass;
 	if (m_class_get_rank (klass))

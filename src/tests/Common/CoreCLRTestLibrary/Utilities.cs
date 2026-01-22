@@ -69,7 +69,6 @@ namespace TestLibrary
         public static bool IsLinux => OperatingSystem.IsLinux();
         public static bool IsFreeBSD => OperatingSystem.IsFreeBSD();
         public static bool IsMacOSX => OperatingSystem.IsMacOS();
-        public static bool IsWindows7 => IsWindows && Environment.OSVersion.Version.Major == 6 && Environment.OSVersion.Version.Minor == 1;
         public static bool IsWindowsNanoServer => (!IsWindowsIoTCore && GetInstallationType().Equals("Nano Server", StringComparison.OrdinalIgnoreCase));
 
         // Windows 10 October 2018 Update
@@ -103,11 +102,9 @@ namespace TestLibrary
         {
             get
             {
-                if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DOTNET_Interpreter")))
+                if (RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled)
                     return true;
-                if (int.TryParse(Environment.GetEnvironmentVariable("DOTNET_InterpMode") ?? "", out int mode) && (mode > 0))
-                    return true;
-                return false;
+                return CoreClrConfigurationDetection.IsCoreClrInterpreter;
             }
         }
 
@@ -120,7 +117,6 @@ namespace TestLibrary
 #else
         public static bool IsReflectionEmitSupported => true;
 #endif
-        public static bool SupportsExceptionInterop => IsWindows && IsNotMonoRuntime && !IsNativeAot; // matches definitions in clr.featuredefines.props
         public static bool IsGCStress => (Environment.GetEnvironmentVariable("DOTNET_GCStress") != null);
 
         public static string ByteArrayToString(byte[] bytes)

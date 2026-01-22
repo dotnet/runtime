@@ -16,11 +16,15 @@ set(INTERPRETER_LINK_LIBRARIES
 )
 
 if(CLR_CMAKE_HOST_WIN32)
-    list(APPEND INTERPRETER_LINK_LIBRARIES
-        ${STATIC_MT_CRT_LIB}
-        ${STATIC_MT_VCRT_LIB}
-    )
-endif(CLR_CMAKE_HOST_WIN32)
+  list(APPEND INTERPRETER_LINK_LIBRARIES
+    ${STATIC_MT_CRT_LIB}
+    ${STATIC_MT_VCRT_LIB}
+  )
+  list(APPEND INTERPRETER_SOURCES
+    Native.rc
+  )
+  add_definitions(-DFX_VER_INTERNALNAME_STR=clrinterpreter.dll)
+endif()
 
 if(CLR_CMAKE_HOST_WIN32)
     set(CLRINTERPRETER_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/clrinterpreter.exports)
@@ -67,4 +71,8 @@ target_link_libraries(clrinterpreter
         ${INTERPRETER_LINK_LIBRARIES}
     )
 
-install_clr(TARGETS clrinterpreter DESTINATIONS . sharedFramework COMPONENT runtime OPTIONAL)
+if (FEATURE_STATICALLY_LINKED)
+    install_clr(TARGETS clrinterpreter DESTINATIONS . COMPONENT runtime OPTIONAL)
+else()
+    install_clr(TARGETS clrinterpreter DESTINATIONS . sharedFramework COMPONENT runtime OPTIONAL)
+endif()

@@ -7,13 +7,13 @@
 .syntax unified
 .thumb
 
-// LPVOID __stdcall GetCurrentIP(void)//
+// void* GetCurrentIP(void)//
     LEAF_ENTRY GetCurrentIP, _TEXT
         mov     r0, lr
         bx      lr
     LEAF_END GetCurrentIP, _TEXT
 
-// LPVOID __stdcall GetCurrentSP(void)//
+// void* GetCurrentSP(void)//
     LEAF_ENTRY GetCurrentSP, _TEXT
         mov     r0, sp
         bx      lr
@@ -897,3 +897,48 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     eor  r0, r0, r1
     EPILOG_BRANCH_REG r12
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Throw_Impl
+// implementation written in C.
+//
+// Input state:
+//   r0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Throw, _TEXT, NoHandler
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS r1
+        // r0 already contains exception object
+        // r1 contains pointer to TransitionBlock
+        bl      C_FUNC(IL_Throw_Impl)
+        // Should never return
+        EMIT_BREAKPOINT
+NESTED_END IL_Throw, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_ThrowExact_Impl
+// implementation written in C.
+//
+// Input state:
+//   r0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_ThrowExact, _TEXT, NoHandler
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS r1
+        // r0 already contains exception object
+        // r1 contains pointer to TransitionBlock
+        bl      C_FUNC(IL_ThrowExact_Impl)
+        // Should never return
+        EMIT_BREAKPOINT
+NESTED_END IL_ThrowExact, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Rethrow_Impl
+// implementation written in C.
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS r0
+        // r0 contains pointer to TransitionBlock
+        bl      C_FUNC(IL_Rethrow_Impl)
+        // Should never return
+        EMIT_BREAKPOINT
+NESTED_END IL_Rethrow, _TEXT
+

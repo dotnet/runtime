@@ -19,6 +19,7 @@
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <!-- All configurations -->
+    <Compile Include="System\Net\Sockets\ConnectAlgorithm.cs" />
     <Compile Include="System\Net\Sockets\SocketReceiveFromResult.cs" />
     <Compile Include="System\Net\Sockets\SocketReceiveMessageFromResult.cs" />
     <Compile Include="System\Net\Sockets\SocketsTelemetry.cs" />
@@ -179,6 +180,8 @@
              Link="Common\Interop\Windows\Kernel32\Interop.SetFileCompletionNotificationModes.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleInformation.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.HandleInformation.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetFilePointerEx.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.SetFilePointerEx.cs" />
     <Compile Include="$(CommonPath)System\Net\CompletionPortHelper.Windows.cs"
              Link="Common\System\Net\CompletionPortHelper.Windows.cs" />
   </ItemGroup>

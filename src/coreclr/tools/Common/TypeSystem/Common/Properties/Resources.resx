@@ -156,6 +156,9 @@
   <data name="FileLoadErrorGeneric" xml:space="preserve">
     <value>Failed to load assembly '{0}'</value>
   </data>
+  <data name="InvalidProgramAsync" xml:space="preserve">
+    <value>UnmanagedCallersOnly attribute specified on async method '{0}'</value>
+  </data>
   <data name="InvalidProgramDefault" xml:space="preserve">
     <value>Invalid IL or CLR metadata</value>
   </data>

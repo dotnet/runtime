@@ -348,8 +348,6 @@ internal class RISCV64Unwinder(Target target)
 
     private bool ProcessUnwindCode(ref RISCV64Context context, byte curCode, ref TargetPointer unwindCodePtr, TargetPointer unwindCodesEndPtr, ref uint accumulatedSaveNexts)
     {
-        // Note: finalPcFromRa parameter is reserved for future use when different final PC handling is needed
-
         try
         {
             //
@@ -360,65 +358,21 @@ internal class RISCV64Unwinder(Target target)
             {
                 if (accumulatedSaveNexts != 0)
                 {
+                    // invalid sequence
                     return false;
                 }
                 context.Sp += 16u * (uint)(curCode & 0x1f);
             }
 
             //
-            // save_r19r20_x (001zzzzz): save register pair r19,r20 at [sp-#Z*8]!, pre-indexed offset >= -248
-            //
-
-            else if (curCode <= 0x3f)
-            {
-                if (accumulatedSaveNexts != 0)
-                {
-                    return false;
-                }
-                uint offset = (uint)(curCode & 0x1f) * 8;
-                context.S3 = _target.ReadPointer(context.Sp + offset).Value;
-                context.S4 = _target.ReadPointer(context.Sp + offset + 8).Value;
-            }
-
-            //
-            // save_fplr (01zzzzzz): save <r29,r30> pair at [sp+#Z*8], offset <= 504
-            //
-
-            else if (curCode <= 0x7f)
-            {
-                if (accumulatedSaveNexts != 0)
-                {
-                    return false;
-                }
-                uint offset = (uint)(curCode & 0x3f) * 8;
-                context.Fp = _target.ReadPointer(context.Sp + offset).Value;
-                context.Ra = _target.ReadPointer(context.Sp + offset + 8).Value;
-            }
-
-            //
-            // save_fplr_x (10zzzzzz): save <r29,r30> pair at [sp-(#Z+1)*8]!, pre-indexed offset >= -512
-            //
-
-            else if (curCode <= 0xbf)
-            {
-                if (accumulatedSaveNexts != 0)
-                {
-                    return false;
-                }
-                uint offset = (uint)((curCode & 0x3f) + 1) * 8;
-                context.Sp += offset;
-                context.Fp = _target.ReadPointer(context.Sp - offset).Value;
-                context.Ra = _target.ReadPointer(context.Sp - offset + 8).Value;
-            }
-
-            //
             // alloc_m (11000xxx|xxxxxxxx): allocate large stack with size < 32k (2^11 * 16)
             //
 
-            else if (curCode <= 0xc7)
+            else if ((curCode & 0xf8) == 0xc0)
             {
                 if (accumulatedSaveNexts != 0)
                 {
+                    // invalid sequence
                     return false;
                 }
                 if (unwindCodePtr >= unwindCodesEndPtr)
@@ -427,100 +381,54 @@ internal class RISCV64Unwinder(Target target)
                 }
                 byte nextCode = _target.Read<byte>(unwindCodePtr);
                 unwindCodePtr += 1;
-                uint offset = (uint)(((curCode & 0x07) << 8) | nextCode) * 16;
-                context.Sp += offset;
+                context.Sp += 16u * ((curCode & 7u) << 8);
+                context.Sp += 16u * nextCode;
             }
 
             //
-            // save_regp (110010xx|xxzzzzzz): save r(19+#X) pair at [sp+#Z*8], offset <= 504
+            // save_reg (11010000|000xxxxx|zzzzzzzz): save reg r(1+#X) at [sp+#Z*8], offset <= 2047
             //
 
-            else if (curCode <= 0xcb)
+            else if (curCode == 0xd0)
             {
                 if (accumulatedSaveNexts != 0)
                 {
+                    // invalid sequence
                     return false;
                 }
-                if (unwindCodePtr >= unwindCodesEndPtr)
+                if (unwindCodePtr + 1 >= unwindCodesEndPtr)
                 {
                     return false;
                 }
                 byte nextCode = _target.Read<byte>(unwindCodePtr);
                 unwindCodePtr += 1;
-                uint regPair = (uint)((curCode & 0x03) << 2) | (uint)((nextCode & 0xc0) >> 6);
-                uint offset = (uint)(nextCode & 0x3f) * 8;
+                byte nextCode1 = _target.Read<byte>(unwindCodePtr);
+                unwindCodePtr += 1;
 
-                SetRegisterFromOffset(ref context, 19 + regPair, context.Sp + offset);
-                SetRegisterFromOffset(ref context, 20 + regPair, context.Sp + offset + 8);
+                uint regNum = 1u + nextCode;
+                uint offset = 8u * nextCode1;
+                SetRegisterFromOffset(ref context, regNum, context.Sp + offset);
             }
 
             //
-            // save_regp_x (110011xx|xxzzzzzz): save pair r(19+#X) at [sp-(#Z+1)*8]!, pre-indexed offset >= -512
+            // save_freg (1101110x|xxxxzzzz|zzzzzzzz): save reg f(8+#X) at [sp+#Z*8], offset <= 32767
             //
 
-            else if (curCode <= 0xcf)
+            else if ((curCode & 0xfe) == 0xdc)
             {
                 if (accumulatedSaveNexts != 0)
                 {
+                    // invalid sequence
                     return false;
                 }
-                if (unwindCodePtr >= unwindCodesEndPtr)
+                if (unwindCodePtr + 1 >= unwindCodesEndPtr)
                 {
                     return false;
                 }
                 byte nextCode = _target.Read<byte>(unwindCodePtr);
                 unwindCodePtr += 1;
-                uint regPair = (uint)((curCode & 0x03) << 2) | (uint)((nextCode & 0xc0) >> 6);
-                uint offset = (uint)((nextCode & 0x3f) + 1) * 8;
-
-                context.Sp += offset;
-                SetRegisterFromOffset(ref context, 19 + regPair, context.Sp - offset);
-                SetRegisterFromOffset(ref context, 20 + regPair, context.Sp - offset + 8);
-            }
-
-            //
-            // save_reg (1101xxxx|xxzzzzzz): save reg r(19+#X) at [sp+#Z*8], offset <= 504
-            //
-
-            else if (curCode <= 0xd7)
-            {
-                if (accumulatedSaveNexts != 0)
-                {
-                    return false;
-                }
-                if (unwindCodePtr >= unwindCodesEndPtr)
-                {
-                    return false;
-                }
-                byte nextCode = _target.Read<byte>(unwindCodePtr);
+                byte nextCode1 = _target.Read<byte>(unwindCodePtr);
                 unwindCodePtr += 1;
-                uint reg = (uint)((curCode & 0x0f) << 2) | (uint)((nextCode & 0xc0) >> 6);
-                uint offset = (uint)(nextCode & 0x3f) * 8;
-
-                SetRegisterFromOffset(ref context, 19 + reg, context.Sp + offset);
-            }
-
-            //
-            // save_reg_x (1101xxxx|xxzzzzzz): save reg r(19+#X) at [sp-(#Z+1)*8]!, pre-indexed offset >= -512
-            //
-
-            else if (curCode <= 0xdf)
-            {
-                if (accumulatedSaveNexts != 0)
-                {
-                    return false;
-                }
-                if (unwindCodePtr >= unwindCodesEndPtr)
-                {
-                    return false;
-                }
-                byte nextCode = _target.Read<byte>(unwindCodePtr);
-                unwindCodePtr += 1;
-                uint reg = (uint)((curCode & 0x0f) << 2) | (uint)((nextCode & 0xc0) >> 6);
-                uint offset = (uint)((nextCode & 0x3f) + 1) * 8;
-
-                context.Sp += offset;
-                SetRegisterFromOffset(ref context, 19 + reg, context.Sp - offset);
             }
 
             //
@@ -531,51 +439,56 @@ internal class RISCV64Unwinder(Target target)
             {
                 if (accumulatedSaveNexts != 0)
                 {
+                    // invalid sequence
                     return false;
                 }
-                if (unwindCodePtr + 3 > unwindCodesEndPtr)
+                if (unwindCodePtr + 2 >= unwindCodesEndPtr)
                 {
                     return false;
                 }
                 byte nextCode1 = _target.Read<byte>(unwindCodePtr);
-                byte nextCode2 = _target.Read<byte>(unwindCodePtr + 1);
-                byte nextCode3 = _target.Read<byte>(unwindCodePtr + 2);
-                unwindCodePtr += 3;
-                uint size = (uint)((nextCode1 << 16) | (nextCode2 << 8) | nextCode3);
-                context.Sp += size * 16;
+                unwindCodePtr += 1;
+                byte nextCode2 = _target.Read<byte>(unwindCodePtr);
+                unwindCodePtr += 1;
+                byte nextCode3 = _target.Read<byte>(unwindCodePtr);
+                unwindCodePtr += 1;
+                context.Sp += 16u * (uint)((nextCode1 << 16) | (nextCode2 << 8) | nextCode3);
             }
 
             //
-            // set_fp (11100001): set up r29: with: mov r29, sp
+            // set_fp (11100001): set up fp: with: ori fp,sp,0
             //
 
             else if (curCode == 0xe1)
             {
                 if (accumulatedSaveNexts != 0)
                 {
+                    // invalid sequence
                     return false;
                 }
-                // No action needed for unwind
+                context.Sp = context.Fp;
             }
 
             //
-            // add_fp (11100010|xxxxxxxx): set up r29 with: add r29, sp, #x*8
+            // add_fp (11100010|000xxxxx|xxxxxxxx): set up fp with: addi.d fp,sp,#x*8
             //
 
             else if (curCode == 0xe2)
             {
                 if (accumulatedSaveNexts != 0)
                 {
+                    // invalid sequence
                     return false;
                 }
-                if (unwindCodePtr >= unwindCodesEndPtr)
+                if (unwindCodePtr + 1 >= unwindCodesEndPtr)
                 {
                     return false;
                 }
                 byte nextCode = _target.Read<byte>(unwindCodePtr);
                 unwindCodePtr += 1;
-                // For unwinding, we need to adjust SP relative to FP
-                // This is a nop in terms of register restoration
+                byte nextCode1 = _target.Read<byte>(unwindCodePtr);
+                unwindCodePtr += 1;
+                context.Sp = context.Fp - 8u * ((uint)((nextCode << 8) | nextCode1));
             }
 
             //
@@ -586,9 +499,9 @@ internal class RISCV64Unwinder(Target target)
             {
                 if (accumulatedSaveNexts != 0)
                 {
+                    // invalid sequence
                     return false;
                 }
-                // No operation
             }
 
             //
@@ -599,39 +512,29 @@ internal class RISCV64Unwinder(Target target)
             {
                 if (accumulatedSaveNexts != 0)
                 {
+                    // invalid sequence
                     return false;
                 }
-                return true; // End marker found
+
+                return true;
             }
 
             //
-            // end_c (11100101): end of unwind code in current chained scope
+            // end_c (11100101): end of unwind code in current chained scope.
+            //          Continue unwinding parent scope.
             //
 
             else if (curCode == 0xe5)
             {
-                if (accumulatedSaveNexts != 0)
-                {
-                    return false;
-                }
-                return true; // End marker found
             }
 
             //
-            // save_next (11100110): save next non-volatile Int or FP register pair
-            //
-
-            else if (curCode == 0xe6)
-            {
-                accumulatedSaveNexts++;
-            }
-
-            //
-            // For unsupported opcodes, just fail
+            // Anything else is invalid
             //
 
             else
             {
+                // invalid sequence
                 return false;
             }
 
