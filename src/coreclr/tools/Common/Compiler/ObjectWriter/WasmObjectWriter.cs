@@ -222,7 +222,7 @@ namespace ILCompiler.ObjectWriter
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.TableSection);
             writer.WriteByte(0x01); // number of tables
             writer.WriteByte(0x70); // element type: funcref
-            writer.WriteByte(0x01); // table limits: flags (0 = only minimum)
+            writer.WriteByte(0x01); // table limits: flags (1 = minimum, maximum)
             writer.WriteULEB128((ulong)0);
             writer.WriteULEB128((ulong)_methodCount); // table limits: initial size
         }
@@ -241,6 +241,9 @@ namespace ILCompiler.ObjectWriter
         private protected override void EmitObjectFile(Stream outputFileStream)
         {
             EmitWasmHeader(outputFileStream);
+
+            // TODO-WASM: Consider refactoring to loop over an in-order list of sections, skipping any that are missing,
+            // So that we can maintain section ordering invariants without assuming the existence of certain sections.
 
             // Type section (1)
             SectionByName(WasmObjectNodeSection.TypeSection.Name).Emit(outputFileStream);

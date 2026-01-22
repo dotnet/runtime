@@ -3362,6 +3362,17 @@ interface ICorDebugProcess11 : IUnknown
     HRESULT EnumerateLoaderHeapMemoryRegions([out] ICorDebugMemoryRangeEnum** ppRanges);
 }
 
+[
+    object,
+    local,
+    uuid(4DCD6FB9-3CF0-43F0-9EDF-E833070FE644),
+    pointer_default(unique)
+]
+interface ICorDebugProcess12 : IUnknown
+{
+    HRESULT GetAsyncStack([in] CORDB_ADDRESS continuationAddress, [out] ICorDebugStackWalk** ppStackWalk);
+}
+
 // Event types MODULE_LOADED and MODULE_UNLOADED implement this interface
 [
     object,

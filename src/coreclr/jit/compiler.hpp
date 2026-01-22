@@ -2996,6 +2996,14 @@ inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
 {
     assert(ILargNum < info.compILargsCount);
 
+#if defined(TARGET_WASM)
+    if (ILargNum >= lvaWasmSpArg)
+    {
+        ILargNum++;
+        assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
+    }
+#endif
+
     // Note that this works because if compRetBuffArg/compTypeCtxtArg/lvVarargsHandleArg are not present
     // they will be BAD_VAR_NUM (MAX_UINT), which is larger than any variable number.
     if (ILargNum >= info.compRetBuffArg)

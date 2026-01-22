@@ -2343,6 +2343,52 @@ NESTED_END CallJittedMethodRetBuff, _TEXT
 // X2 - interpreter stack return value location
 // X3 - stack arguments size (properly aligned)
 // X4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetI1, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    stp x2, x4, [fp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    sxtb x0, w0
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    str x0, [x9]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetI1, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetI2, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    stp x2, x4, [fp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    sxth x0, w0
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    str x0, [x9]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetI2, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
     stp x2, x4, [fp, #16]
@@ -2359,6 +2405,52 @@ NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
 NESTED_END CallJittedMethodRetI8, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetU1, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    stp x2, x4, [fp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    uxtb x0, w0
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    str x0, [x9]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetU1, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetU2, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    stp x2, x4, [fp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    uxth x0, w0
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    str x0, [x9]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetU2, _TEXT
 
 // X0 - routines array
 // X1 - interpreter stack args location
@@ -2752,3 +2844,56 @@ NESTED_END CallJittedMethodRet4Vector128, _TEXT
 
 
 #endif // FEATURE_INTERPRETER
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Throw_Impl
+// implementation written in C.
+//
+// Stack layout (from low to high address):
+//   sp+0:     FloatArgumentRegisters (q0-q7, 128 bytes)
+//   sp+128:   TransitionBlock start (176 bytes)
+//             - CalleeSavedRegisters (fp, lr, x19-x28 - 96 bytes)
+//             - padding (8 bytes)
+//             - x8 (8 bytes)
+//             - ArgumentRegisters (x0-x7, 64 bytes)
+//
+// Input state:
+//   x0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Throw, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS x1
+    // x0 already contains exception object
+    // x1 contains pointer to TransitionBlock
+    bl      C_FUNC(IL_Throw_Impl)
+    // Should never return
+    brk     #0
+NESTED_END IL_Throw, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_ThrowExact_Impl
+// implementation written in C.
+//
+// Input state:
+//   x0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_ThrowExact, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS x1
+    // x0 already contains exception object
+    // x1 contains pointer to TransitionBlock
+    bl      C_FUNC(IL_ThrowExact_Impl)
+    // Should never return
+    brk     #0
+NESTED_END IL_ThrowExact, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Rethrow_Impl
+// implementation written in C.
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS x0
+    // x0 contains pointer to TransitionBlock
+    bl      C_FUNC(IL_Rethrow_Impl)
+    // Should never return
+    brk     #0
+NESTED_END IL_Rethrow, _TEXT
+

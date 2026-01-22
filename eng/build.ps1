@@ -395,6 +395,9 @@ if ($bootstrap -eq $True) {
   $config = $((Get-Culture).TextInfo.ToTitleCase($configuration[0]))
   $bootstrapArguments += " -configuration $config"
 
+  # Set a different path for prebuilt usage tracking for the bootstrap build.
+  $bootstrapArguments += " /p:TrackPrebuiltUsageReportFile=$PSScriptRoot/../artifacts/log/bootstrap-prebuilt-usage.xml"
+
   $bootstrapArguments += " /p:Subset=bootstrap /bl:$PSScriptRoot/../artifacts/log/$config/bootstrap.binlog"
   Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $bootstrapArguments"
 

@@ -40,7 +40,7 @@ namespace System.Threading.Tests
             Assert.Throws<ArgumentNullException>(() => TestSynchronizationContext.WaitHelper(null, false, 0));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31977", TestRuntimes.Mono)]
         public static void WaitNotificationTest()
         {
