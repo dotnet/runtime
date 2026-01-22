@@ -36,8 +36,6 @@ System.Management.SelectQuery</PackageDescription>
              Link="Common\Interop\Windows\Kernel32\Interop.FreeLibrary.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcAddress.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetProcAddress.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GlobalLock.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.GlobalLock.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibrary.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.LoadLibrary.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoGetObjectContext.cs"

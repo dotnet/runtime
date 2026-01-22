@@ -45,7 +45,7 @@ namespace System.Formats.Asn1
     public partial class AsnContentException : System.Exception
     {
         public AsnContentException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -158,7 +158,7 @@ namespace System.Formats.Asn1
         public int Encode(System.Span<byte> destination) { throw null; }
         public bool EncodedValueEquals(System.Formats.Asn1.AsnWriter other) { throw null; }
         public bool EncodedValueEquals(System.ReadOnlySpan<byte> other) { throw null; }
-#if NET9_0_OR_GREATER
+#if NET
         public TReturn Encode<TReturn>(System.Func<System.ReadOnlySpan<byte>, TReturn> encodeCallback) { throw null; }
         public void Encode<TState>(TState state, System.Action<TState, System.ReadOnlySpan<byte>> encodeCallback) where TState : allows ref struct { }
         public TReturn Encode<TState, TReturn>(TState state, System.Func<TState, System.ReadOnlySpan<byte>, TReturn> encodeCallback) where TState : allows ref struct { throw null; }

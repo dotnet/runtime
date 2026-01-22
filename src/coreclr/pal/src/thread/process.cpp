@@ -60,7 +60,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <stdint.h>
 #include <dlfcn.h>
 #include <limits.h>
-#include <vector>
 
 #ifdef __linux__
 #include <linux/membarrier.h>
@@ -130,24 +129,8 @@ CObjectType CorUnix::otProcess(
                 NULL,   // No process local data cleanup routine
                 CObjectType::WaitableObject,
                 CObjectType::SingleTransitionObject,
-                CObjectType::ThreadReleaseHasNoSideEffects,
-                CObjectType::NoOwner
+                CObjectType::ThreadReleaseHasNoSideEffects
                 );
-
-//
-// Tracks if the OS supports FlushProcessWriteBuffers using membarrier
-//
-static int s_flushUsingMemBarrier = 0;
-
-//
-// Helper memory page used by the FlushProcessWriteBuffers
-//
-static int* s_helperPage = 0;
-
-//
-// Mutex to make the FlushProcessWriteBuffersMutex thread safe
-//
-pthread_mutex_t flushProcessWriteBuffersMutex;
 
 CAllowedObjectTypes aotProcess(otiProcess);
 
@@ -189,7 +172,6 @@ DWORD gSID = (DWORD) -1;
 LPCSTR gApplicationGroupId = nullptr;
 int gApplicationGroupIdLength = 0;
 #endif // __APPLE__
-PathCharString* gSharedFilesPath = nullptr;
 
 // The lowest common supported semaphore length, including null character
 // NetBSD-7.99.25: 15 characters
@@ -205,7 +187,7 @@ PathCharString* gSharedFilesPath = nullptr;
 #define CLR_SEM_MAX_NAMELEN MAX_PATH
 #endif
 
-static_assert_no_msg(CLR_SEM_MAX_NAMELEN <= MAX_PATH);
+static_assert(CLR_SEM_MAX_NAMELEN <= MAX_PATH);
 
 // Function to call during PAL/process shutdown/abort
 Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
@@ -214,7 +196,8 @@ Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
 Volatile<PCREATEDUMP_CALLBACK> g_createdumpCallback = nullptr;
 
 // Crash dump generating program arguments. Initialized in PROCAbortInitialize().
-std::vector<const char*> g_argvCreateDump;
+#define MAX_ARGV_ENTRIES 32
+const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 
 //
 // Key used for associating CPalThread's with the underlying pthread
@@ -1748,7 +1731,7 @@ const int SEMAPHORE_ENCODED_NAME_LENGTH =
     sizeof(UnambiguousProcessDescriptor) + /* For process ID + disambiguationKey */
     SEMAPHORE_ENCODED_NAME_EXTRA_LENGTH; /* For base 255 extra encoding space */
 
-static_assert_no_msg(MAX_APPLICATION_GROUP_ID_LENGTH
+static_assert(MAX_APPLICATION_GROUP_ID_LENGTH
     + 1 /* For / */
     + 2 /* For ST/CO name prefix */
     + SEMAPHORE_ENCODED_NAME_LENGTH /* For encoded name string */
@@ -2299,7 +2282,7 @@ Return
 --*/
 BOOL
 PROCBuildCreateDumpCommandLine(
-    std::vector<const char*>& argv,
+    const char* argv[],
     char** pprogram,
     char** ppidarg,
     const char* dumpName,
@@ -2340,27 +2323,29 @@ PROCBuildCreateDumpCommandLine(
     {
         return FALSE;
     }
-    argv.push_back(program);
+    
+    int argc = 0;
+    argv[argc++] = program;
 
     if (dumpName != nullptr)
     {
-        argv.push_back("--name");
-        argv.push_back(dumpName);
+        argv[argc++] = "--name";
+        argv[argc++] = dumpName;
     }
 
     switch (dumpType)
     {
         case DumpTypeNormal:
-            argv.push_back("--normal");
+            argv[argc++] = "--normal";
             break;
         case DumpTypeWithHeap:
-            argv.push_back("--withheap");
+            argv[argc++] = "--withheap";
             break;
         case DumpTypeTriage:
-            argv.push_back("--triage");
+            argv[argc++] = "--triage";
             break;
         case DumpTypeFull:
-            argv.push_back("--full");
+            argv[argc++] = "--full";
             break;
         default:
             break;
@@ -2368,37 +2353,39 @@ PROCBuildCreateDumpCommandLine(
 
     if (flags & GenerateDumpFlagsLoggingEnabled)
     {
-        argv.push_back("--diag");
+        argv[argc++] = "--diag";
     }
 
     if (flags & GenerateDumpFlagsVerboseLoggingEnabled)
     {
-        argv.push_back("--verbose");
+        argv[argc++] = "--verbose";
     }
 
     if (flags & GenerateDumpFlagsCrashReportEnabled)
     {
-        argv.push_back("--crashreport");
+        argv[argc++] = "--crashreport";
     }
 
     if (flags & GenerateDumpFlagsCrashReportOnlyEnabled)
     {
-        argv.push_back("--crashreportonly");
+        argv[argc++] = "--crashreportonly";
     }
 
     if (g_running_in_exe)
     {
-        argv.push_back("--singlefile");
+        argv[argc++] = "--singlefile";
     }
 
     if (logFileName != nullptr)
     {
-        argv.push_back("--logtofile");
-        argv.push_back(logFileName);
+        argv[argc++] = "--logtofile";
+        argv[argc++] = logFileName;
     }
 
-    argv.push_back(*ppidarg);
-    argv.push_back(nullptr);
+    argv[argc++] = *ppidarg;
+
+    argv[argc] = nullptr;
+    _ASSERTE(argc < MAX_ARGV_ENTRIES);
 
     return TRUE;
 }
@@ -2416,7 +2403,7 @@ Return:
 --*/
 BOOL
 PROCCreateCrashDump(
-    std::vector<const char*>& argv,
+    const char* argv[],
     LPSTR errorMessageBuffer,
     INT cbErrorMessageBuffer,
     bool serialize)
@@ -2424,7 +2411,7 @@ PROCCreateCrashDump(
 #if defined(TARGET_IOS) || defined(TARGET_TVOS)
     return FALSE;
 #else
-    _ASSERTE(argv.size() > 0);
+    _ASSERTE(argv[0] != nullptr);
     _ASSERTE(errorMessageBuffer == nullptr || cbErrorMessageBuffer > 0);
 
     if (serialize)
@@ -2447,8 +2434,8 @@ PROCCreateCrashDump(
         }
     }
 
-    int pipe_descs[2];
-    if (pipe(pipe_descs) == -1)
+    int pipe_descs[4];
+    if (pipe(pipe_descs) == -1 || pipe(pipe_descs + 2) == -1)
     {
         if (errorMessageBuffer != nullptr)
         {
@@ -2456,9 +2443,13 @@ PROCCreateCrashDump(
         }
         return false;
     }
-    // [0] is read end, [1] is write end
-    int parent_pipe = pipe_descs[0];
-    int child_pipe = pipe_descs[1];
+
+    // from parent (write) to child (read), used to signal prctl(PR_SET_PTRACER, childpid) is done
+    int child_read_pipe = pipe_descs[0];
+    int parent_write_pipe = pipe_descs[1];
+    // from child (write) to parent (read), used to capture createdump's stderr
+    int parent_read_pipe = pipe_descs[2];
+    int child_write_pipe = pipe_descs[3];
 
     // Fork the core dump child process.
     pid_t childpid = fork();
@@ -2470,20 +2461,36 @@ PROCCreateCrashDump(
         {
             sprintf_s(errorMessageBuffer, cbErrorMessageBuffer, "Problem launching createdump: fork() FAILED %s (%d)\n", strerror(errno), errno);
         }
-        close(pipe_descs[0]);
-        close(pipe_descs[1]);
+        for (int i = 0; i < 4; i++)
+        {
+            close(pipe_descs[i]);
+        }
         return false;
     }
     else if (childpid == 0)
     {
-        // Close the read end of the pipe, the child doesn't need it
         int callbackResult = 0;
-        close(parent_pipe);
+
+        close(parent_read_pipe);
+        close(parent_write_pipe);
+
+        // Wait for prctl(PR_SET_PTRACER, childpid) in parent
+        char buffer;
+        int bytesRead;
+        while((bytesRead = read(child_read_pipe, &buffer, 1)) < 0 && errno == EINTR);
+        close(child_read_pipe);
+
+        if (bytesRead != 1)
+        {
+            fprintf(stderr, "Problem reading from createdump child_read_pipe: %s (%d)\n", strerror(errno), errno);
+            close(child_write_pipe);
+            exit(-1);
+        }
 
         // Only dup the child's stderr if there is error buffer
         if (errorMessageBuffer != nullptr)
         {
-            dup2(child_pipe, STDERR_FILENO);
+            dup2(child_write_pipe, STDERR_FILENO);
         }
         if (g_createdumpCallback != nullptr)
         {
@@ -2491,7 +2498,12 @@ PROCCreateCrashDump(
             SEHCleanupSignals(true /* isChildProcess */);
 
             // Call the statically linked createdump code
-            callbackResult = g_createdumpCallback(argv.size(), argv.data());
+            int argc = 0;
+            while (argv[argc] != nullptr && argc < MAX_ARGV_ENTRIES)
+            {
+                argc++;
+            }
+            callbackResult = g_createdumpCallback(argc, argv);
             // Set the shutdown callback to nullptr and exit
             // If we don't exit, the child's execution will continue into the diagnostic server behavior
             // which causes all sorts of problems.
@@ -2501,7 +2513,7 @@ PROCCreateCrashDump(
         else
         {
             // Execute the createdump program
-            if (execve(argv[0], (char**)argv.data(), palEnvironment) == -1)
+            if (execve(argv[0], (char**)argv, palEnvironment) == -1)
             {
                 fprintf(stderr, "Problem launching createdump (may not have execute permissions): execve(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
                 exit(-1);
@@ -2510,6 +2522,8 @@ PROCCreateCrashDump(
     }
     else
     {
+        close(child_read_pipe);
+        close(child_write_pipe);
 #if HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
         // Gives the child process permission to use /proc/<pid>/mem and ptrace
         if (prctl(PR_SET_PTRACER, childpid, 0, 0, 0) == -1)
@@ -2519,7 +2533,21 @@ PROCCreateCrashDump(
             ERROR("PROCCreateCrashDump: prctl() FAILED %s (%d)\n", strerror(errno), errno);
         }
 #endif // HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
-        close(child_pipe);
+        // Signal child that prctl(PR_SET_PTRACER, childpid) is done
+        int bytesWritten;
+        while((bytesWritten = write(parent_write_pipe, "S", 1)) < 0 && errno == EINTR);
+        close(parent_write_pipe);
+
+        if (bytesWritten != 1)
+        {
+            fprintf(stderr, "Problem writing to createdump parent_write_pipe: %s (%d)\n", strerror(errno), errno);
+            close(parent_read_pipe);
+            if (errorMessageBuffer != nullptr)
+            {
+                errorMessageBuffer[0] = 0;
+            }
+            return false;
+        }
 
         // Read createdump's stderr messages (if any)
         if (errorMessageBuffer != nullptr)
@@ -2527,7 +2555,7 @@ PROCCreateCrashDump(
             // Read createdump's stderr
             int bytesRead = 0;
             int count = 0;
-            while ((count = read(parent_pipe, errorMessageBuffer + bytesRead, cbErrorMessageBuffer - bytesRead)) > 0)
+            while ((count = read(parent_read_pipe, errorMessageBuffer + bytesRead, cbErrorMessageBuffer - bytesRead)) > 0)
             {
                 bytesRead += count;
             }
@@ -2537,7 +2565,7 @@ PROCCreateCrashDump(
                 fputs(errorMessageBuffer, stderr);
             }
         }
-        close(parent_pipe);
+        close(parent_read_pipe);
 
         // Parent waits until the child process is done
         int wstatus = 0;
@@ -2663,7 +2691,7 @@ PAL_GenerateCoreDump(
     LPSTR errorMessageBuffer,
     INT cbErrorMessageBuffer)
 {
-    std::vector<const char*> argvCreateDump;
+    const char* argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 
     if (dumpType <= DumpTypeUnknown || dumpType > DumpTypeMax)
     {
@@ -2685,6 +2713,15 @@ PAL_GenerateCoreDump(
     return result;
 }
 
+// Helper function to prevent compiler from optimizing away a variable
+__attribute__((noinline,NOOPT_ATTRIBUTE))
+static void DoNotOptimize(const void* p)
+{
+    // This function takes the address of a variable to ensure
+    // it's preserved and available in crash dumps
+    (void)p;
+}
+
 /*++
 Function:
   PROCCreateCrashDumpIfEnabled
@@ -2695,6 +2732,7 @@ Function:
 Parameters:
   signal - POSIX signal number
   siginfo - POSIX signal info or nullptr
+  context - signal context or nullptr
   serialize - allow only one thread to generate core dump
 
 (no return value)
@@ -2702,45 +2740,55 @@ Parameters:
 #ifdef HOST_ANDROID
 #include <minipal/log.h>
 VOID
-PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
+PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
 {
+    // Preserve context pointer to prevent optimization
+    DoNotOptimize(&context);
+
     // TODO: Dump all managed threads callstacks into logcat and/or file?
     // TODO: Dump stress log into logcat and/or file when enabled?
     minipal_log_write_fatal("Aborting process.\n");
 }
 #else
 VOID
-PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
+PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
 {
+    // Preserve context pointer to prevent optimization
+    DoNotOptimize(&context);
+
     // If enabled, launch the create minidump utility and wait until it completes
-    if (!g_argvCreateDump.empty())
+    if (g_argvCreateDump[0] != nullptr)
     {
-        std::vector<const char*> argv(g_argvCreateDump);
+        const char* argv[MAX_ARGV_ENTRIES];
         char* signalArg = nullptr;
         char* crashThreadArg = nullptr;
         char* signalCodeArg = nullptr;
         char* signalErrnoArg = nullptr;
         char* signalAddressArg = nullptr;
 
+        // Copy the createdump argv
+        int argc = 0;
+        for (; argc < MAX_ARGV_ENTRIES && g_argvCreateDump[argc] != nullptr; argc++)
+        {
+            argv[argc] = g_argvCreateDump[argc];
+        }
+
         if (signal != 0)
         {
-            // Remove the terminating nullptr
-            argv.pop_back();
-
             // Add the signal number to the command line
             signalArg = PROCFormatInt(signal);
             if (signalArg != nullptr)
             {
-                argv.push_back("--signal");
-                argv.push_back(signalArg);
+                argv[argc++] = "--signal";
+                argv[argc++] = signalArg;
             }
 
             // Add the current thread id to the command line. This function is always called on the crashing thread.
             crashThreadArg = PROCFormatInt(THREADSilentGetCurrentThreadId());
             if (crashThreadArg != nullptr)
             {
-                argv.push_back("--crashthread");
-                argv.push_back(crashThreadArg);
+                argv[argc++] = "--crashthread";
+                argv[argc++] = crashThreadArg;
             }
 
             if (siginfo != nullptr)
@@ -2748,25 +2796,26 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
                 signalCodeArg = PROCFormatInt(siginfo->si_code);
                 if (signalCodeArg != nullptr)
                 {
-                    argv.push_back("--code");
-                    argv.push_back(signalCodeArg);
+                    argv[argc++] = "--code";
+                    argv[argc++] = signalCodeArg;
                 }
                 signalErrnoArg = PROCFormatInt(siginfo->si_errno);
                 if (signalErrnoArg != nullptr)
                 {
-                    argv.push_back("--errno");
-                    argv.push_back(signalErrnoArg);
+                    argv[argc++] = "--errno";
+                    argv[argc++] = signalErrnoArg;
                 }
                 signalAddressArg = PROCFormatInt64((ULONG64)siginfo->si_addr);
                 if (signalAddressArg != nullptr)
                 {
-                    argv.push_back("--address");
-                    argv.push_back(signalAddressArg);
+                    argv[argc++] = "--address";
+                    argv[argc++] = signalAddressArg;
                 }
             }
-
-            argv.push_back(nullptr);
         }
+
+        argv[argc] = nullptr;
+        _ASSERTE(argc < MAX_ARGV_ENTRIES);
 
         PROCCreateCrashDump(argv, nullptr, 0, serialize);
 
@@ -2788,6 +2837,7 @@ Function:
 
 Parameters:
   signal - POSIX signal number
+  context - signal context or nullptr
 
   Does not return
 --*/
@@ -2795,12 +2845,12 @@ Parameters:
 PAL_NORETURN
 #endif
 VOID
-PROCAbort(int signal, siginfo_t* siginfo)
+PROCAbort(int signal, siginfo_t* siginfo, void* context)
 {
     // Do any shutdown cleanup before aborting or creating a core dump
     PROCNotifyProcessShutdown();
 
-    PROCCreateCrashDumpIfEnabled(signal, siginfo, true);
+    PROCCreateCrashDumpIfEnabled(signal, siginfo, context, true);
 
     // Restore all signals; the SIGABORT handler to prevent recursion and
     // the others to prevent multiple core dumps from being generated.
@@ -2808,70 +2858,6 @@ PROCAbort(int signal, siginfo_t* siginfo)
 
     // Abort the process after waiting for the core dump to complete
     abort();
-}
-
-/*++
-Function:
-  InitializeFlushProcessWriteBuffers
-
-Abstract
-  This function initializes data structures needed for the FlushProcessWriteBuffers
-Return
-  TRUE if it succeeded, FALSE otherwise
---*/
-BOOL
-InitializeFlushProcessWriteBuffers()
-{
-    _ASSERTE(s_helperPage == 0);
-    _ASSERTE(s_flushUsingMemBarrier == 0);
-
-#if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
-    // Starting with Linux kernel 4.14, process memory barriers can be generated
-    // using MEMBARRIER_CMD_PRIVATE_EXPEDITED.
-    int mask = membarrier(MEMBARRIER_CMD_QUERY, 0, 0);
-    if (mask >= 0 &&
-        mask & MEMBARRIER_CMD_PRIVATE_EXPEDITED)
-    {
-        // Register intent to use the private expedited command.
-        if (membarrier(MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0, 0) == 0)
-        {
-            s_flushUsingMemBarrier = TRUE;
-            return TRUE;
-        }
-    }
-#endif
-
-#if defined(TARGET_APPLE) || defined(TARGET_WASM)
-    return TRUE;
-#else
-    s_helperPage = static_cast<int*>(mmap(0, GetVirtualPageSize(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
-
-    if(s_helperPage == MAP_FAILED)
-    {
-        return FALSE;
-    }
-
-    // Verify that the s_helperPage is really aligned to the GetVirtualPageSize()
-    _ASSERTE((((SIZE_T)s_helperPage) & (GetVirtualPageSize() - 1)) == 0);
-
-    // Locking the page ensures that it stays in memory during the two mprotect
-    // calls in the FlushProcessWriteBuffers below. If the page was unmapped between
-    // those calls, they would not have the expected effect of generating IPI.
-    int status = mlock(s_helperPage, GetVirtualPageSize());
-
-    if (status != 0)
-    {
-        return FALSE;
-    }
-
-    status = pthread_mutex_init(&flushProcessWriteBuffersMutex, NULL);
-    if (status != 0)
-    {
-        munlock(s_helperPage, GetVirtualPageSize());
-    }
-
-    return status == 0;
-#endif // TARGET_APPLE || TARGET_WASM
 }
 
 #define FATAL_ASSERT(e, msg) \
@@ -2884,79 +2870,6 @@ InitializeFlushProcessWriteBuffers()
         } \
     } \
     while(0)
-
-/*++
-Function:
-  FlushProcessWriteBuffers
-
-See MSDN doc.
---*/
-VOID
-PALAPI
-FlushProcessWriteBuffers()
-{
-#ifndef TARGET_WASM
-#if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
-    if (s_flushUsingMemBarrier)
-    {
-        int status = membarrier(MEMBARRIER_CMD_PRIVATE_EXPEDITED, 0, 0);
-        FATAL_ASSERT(status == 0, "Failed to flush using membarrier");
-    }
-    else
-#endif
-    if (s_helperPage != 0)
-    {
-        int status = pthread_mutex_lock(&flushProcessWriteBuffersMutex);
-        FATAL_ASSERT(status == 0, "Failed to lock the flushProcessWriteBuffersMutex lock");
-
-        // Changing a helper memory page protection from read / write to no access
-        // causes the OS to issue IPI to flush TLBs on all processors. This also
-        // results in flushing the processor buffers.
-        status = mprotect(s_helperPage, GetVirtualPageSize(), PROT_READ | PROT_WRITE);
-        FATAL_ASSERT(status == 0, "Failed to change helper page protection to read / write");
-
-        // Ensure that the page is dirty before we change the protection so that
-        // we prevent the OS from skipping the global TLB flush.
-        InterlockedIncrement(s_helperPage);
-
-        status = mprotect(s_helperPage, GetVirtualPageSize(), PROT_NONE);
-        FATAL_ASSERT(status == 0, "Failed to change helper page protection to no access");
-
-        status = pthread_mutex_unlock(&flushProcessWriteBuffersMutex);
-        FATAL_ASSERT(status == 0, "Failed to unlock the flushProcessWriteBuffersMutex lock");
-    }
-#ifdef TARGET_APPLE
-    else
-    {
-        mach_msg_type_number_t cThreads;
-        thread_act_t *pThreads;
-        kern_return_t machret = task_threads(mach_task_self(), &pThreads, &cThreads);
-        CHECK_MACH("task_threads()", machret);
-
-        uintptr_t sp;
-        uintptr_t registerValues[128];
-
-        // Iterate through each of the threads in the list.
-        for (mach_msg_type_number_t i = 0; i < cThreads; i++)
-        {
-            // Request the threads pointer values to force the thread to emit a memory barrier
-            size_t registers = 128;
-            machret = thread_get_register_pointer_values(pThreads[i], &sp, &registers, registerValues);
-            if (machret == KERN_INSUFFICIENT_BUFFER_SIZE)
-            {
-                CHECK_MACH("thread_get_register_pointer_values()", machret);
-            }
-
-            machret = mach_port_deallocate(mach_task_self(), pThreads[i]);
-            CHECK_MACH("mach_port_deallocate()", machret);
-        }
-        // Deallocate the thread list now we're done with it.
-        machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
-        CHECK_MACH("vm_deallocate()", machret);
-    }
-#endif // TARGET_APPLE
-#endif // !TARGET_WASM
-}
 
 /*++
 Function:

@@ -159,8 +159,8 @@ namespace System.SpanTests
         }
 
         [Theory]
-        [MemberData(nameof(TestHelpers.SequenceEqualsNullData), MemberType = typeof(TestHelpers))]
-        public static void SequenceEqualsNullData_String(string[] firstInput, string[] secondInput, bool expected)
+        [MemberData(nameof(TestHelpers.SequenceEqualNullData), MemberType = typeof(TestHelpers))]
+        public static void SequenceEqual_NullData_String(string[] firstInput, string[] secondInput, bool expected)
         {
             Span<string> theStrings = firstInput;
 
@@ -176,7 +176,7 @@ namespace System.SpanTests
 
         [Theory]
         [InlineData(100)]
-        public static void SequenceEquals_OverriddenEqualsReturnsFalse_EqualsFalse(int length)
+        public static void SequenceEqual_OverriddenEqualsReturnsFalse_EqualsFalse(int length)
         {
             Span<StructOverridingEqualsToAlwaysReturnFalse> span1 = Enumerable.Range(0, length).Select(i => new StructOverridingEqualsToAlwaysReturnFalse()).ToArray();
             Assert.False(span1.SequenceEqual(span1.ToArray()));
@@ -198,7 +198,7 @@ namespace System.SpanTests
 
         [Theory]
         [InlineData(100)]
-        public static void SequenceEquals_StructWithOddFieldSize_EqualsAsExpected(int length)
+        public static void SequenceEqual_StructWithOddFieldSize_EqualsAsExpected(int length)
         {
             Span<StructWithOddFieldSize> span1 = new StructWithOddFieldSize[length];
             Span<StructWithOddFieldSize> span2 = new StructWithOddFieldSize[length];
@@ -229,7 +229,7 @@ namespace System.SpanTests
 
         [Theory]
         [InlineData(100)]
-        public static void SequenceEquals_StructWithOddFieldSizeAndIEquatable_EqualsAsExpected(int length)
+        public static void SequenceEqual_StructWithOddFieldSizeAndIEquatable_EqualsAsExpected(int length)
         {
             Span<StructWithOddFieldSizeAndIEquatable> span1 = new StructWithOddFieldSizeAndIEquatable[length];
             Span<StructWithOddFieldSizeAndIEquatable> span2 = new StructWithOddFieldSizeAndIEquatable[length];
@@ -274,7 +274,7 @@ namespace System.SpanTests
 
         [Theory]
         [InlineData(100)]
-        public static void SequenceEquals_StructWithExplicitFieldSizeAndNoFields_EqualsAsExpected(int length)
+        public static void SequenceEqual_StructWithExplicitFieldSizeAndNoFields_EqualsAsExpected(int length)
         {
             Span<StructWithExplicitFieldSizeAndNoFields> span1 = new StructWithExplicitFieldSizeAndNoFields[length];
             Span<StructWithExplicitFieldSizeAndNoFields> span2 = new StructWithExplicitFieldSizeAndNoFields[length];
@@ -293,7 +293,7 @@ namespace System.SpanTests
 
         [Theory]
         [InlineData(100)]
-        public static void SequenceEquals_StructWithExplicitFieldSizeAndFields_EqualsAsExpected(int length)
+        public static void SequenceEqual_StructWithExplicitFieldSizeAndFields_EqualsAsExpected(int length)
         {
             Span<StructWithExplicitFieldSizeAndFields> span1 = new StructWithExplicitFieldSizeAndFields[length];
             Span<StructWithExplicitFieldSizeAndFields> span2 = new StructWithExplicitFieldSizeAndFields[length];
@@ -323,7 +323,7 @@ namespace System.SpanTests
 
         [Theory]
         [InlineData(100)]
-        public static void SequenceEquals_StructWithDoubleField_EqualsAsExpected(int length)
+        public static void SequenceEqual_StructWithDoubleField_EqualsAsExpected(int length)
         {
             Span<StructWithDoubleField> span1 = new StructWithDoubleField[length];
             Span<StructWithDoubleField> span2 = new StructWithDoubleField[length];

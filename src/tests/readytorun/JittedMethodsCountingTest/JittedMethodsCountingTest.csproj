@@ -6,6 +6,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
+    <InterpreterIncompatible>true</InterpreterIncompatible> <!-- This test is too sensitive to exactly the behavior of the jit that even thought it basically works in some interpreter modes its just not ready to be used in any interpreter scenarios -->
   </PropertyGroup>
 
   <ItemGroup>

@@ -573,6 +573,24 @@ namespace System.Numerics
         public static System.Numerics.Vector3 WithElement(this System.Numerics.Vector3 vector, int index, float value) { throw null; }
         public static System.Numerics.Vector4 WithElement(this System.Numerics.Vector4 vector, int index, float value) { throw null; }
         public static System.Numerics.Vector<T> Xor<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        extension<T>(Vector<T>) where T : System.Numerics.IFloatingPointConstants<T>
+        {
+            public static System.Numerics.Vector<T> E { get { throw null; } }
+            public static System.Numerics.Vector<T> Pi { get { throw null; } }
+            public static System.Numerics.Vector<T> Tau { get { throw null; } }
+        }
+        extension<T>(Vector<T>) where T : System.Numerics.IFloatingPointIeee754<T>
+        {
+            public static System.Numerics.Vector<T> Epsilon { get { throw null; } }
+            public static System.Numerics.Vector<T> NaN { get { throw null; } }
+            public static System.Numerics.Vector<T> NegativeInfinity { get { throw null; } }
+            public static System.Numerics.Vector<T> NegativeZero { get { throw null; } }
+            public static System.Numerics.Vector<T> PositiveInfinity { get { throw null; } }
+        }
+        extension<T>(Vector<T>) where T : System.Numerics.ISignedNumber<T>
+        {
+            public static System.Numerics.Vector<T> NegativeOne { get { throw null; } }
+        }
     }
     public partial struct Vector2 : System.IEquatable<System.Numerics.Vector2>, System.IFormattable
     {

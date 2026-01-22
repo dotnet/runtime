@@ -14,6 +14,7 @@
     <Compile Include="../../ServerContracts/Server.CoClasses.cs" />
     <Compile Include="../../ServerContracts/Server.Contracts.cs" />
     <Compile Include="../../ServerContracts/ServerGuids.cs" />
+    <Compile Include="$(InteropCommonDir)ComActivationHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../NETServer/NETServer.csproj" />

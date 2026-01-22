@@ -33,7 +33,7 @@ namespace System
             {
 #if !MONO
                 if (this is RuntimeType rt)
-                    return rt.IsInterface;
+                    return rt.IsActualInterface;
 #endif
                 return (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
             }
@@ -76,11 +76,11 @@ namespace System
 
         [Intrinsic]
         public virtual Type GetGenericTypeDefinition() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
-        public virtual Type[] GenericTypeArguments => (IsGenericType && !IsGenericTypeDefinition) ? GetGenericArguments() : EmptyTypes;
+        public virtual Type[] GenericTypeArguments => (IsGenericType && !IsGenericTypeDefinition) ? GetGenericArguments() : [];
         public virtual Type[] GetGenericArguments() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
-        public virtual Type[] GetOptionalCustomModifiers() => EmptyTypes;
-        public virtual Type[] GetRequiredCustomModifiers() => EmptyTypes;
+        public virtual Type[] GetOptionalCustomModifiers() => [];
+        public virtual Type[] GetRequiredCustomModifiers() => [];
 
         public virtual int GenericParameterPosition => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
         public virtual GenericParameterAttributes GenericParameterAttributes => throw new NotSupportedException();
@@ -153,7 +153,7 @@ namespace System
         public ConstructorInfo? TypeInitializer
         {
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-            get => GetConstructorImpl(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, EmptyTypes, null);
+            get => GetConstructorImpl(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, [], null);
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
@@ -723,13 +723,10 @@ namespace System
         [Obsolete(Obsoletions.ReflectionOnlyLoadingMessage, DiagnosticId = Obsoletions.ReflectionOnlyLoadingDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Type? ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly);
 
-        public static Binder DefaultBinder =>
-            field ??
-            Interlocked.CompareExchange(ref field, new DefaultBinder(), null) ??
-            field;
+        public static Binder DefaultBinder => System.DefaultBinder.Instance;
 
         public static readonly char Delimiter = '.';
-        public static readonly Type[] EmptyTypes = Array.Empty<Type>();
+        public static readonly Type[] EmptyTypes = [];
         public static readonly object Missing = Reflection.Missing.Value;
 
         public static readonly MemberFilter FilterAttribute = FilterAttributeImpl!;

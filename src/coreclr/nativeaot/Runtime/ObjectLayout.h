@@ -52,9 +52,8 @@ public:
 #endif
     ObjHeader * GetHeader() { return dac_cast<DPTR(ObjHeader)>(dac_cast<TADDR>(this) - SYNC_BLOCK_SKEW); }
 #ifndef DACCESS_COMPILE
-    void set_EEType(MethodTable * pEEType)
+    void SetMethodTable(MethodTable * pEEType)
         { m_pEEType = pEEType; }
-    void InitEEType(MethodTable * pEEType);
 
     size_t GetSize();
 #endif
@@ -85,16 +84,16 @@ static uintptr_t const REFERENCE_SIZE   = sizeof(Object *);
 //-------------------------------------------------------------------------------------------------
 class Array : public Object
 {
-    friend class ArrayBase;
     friend class AsmOffsets;
 
+protected:
     uint32_t       m_Length;
 #if defined(HOST_64BIT)
     uint32_t       m_uAlignpad;
 #endif // HOST_64BIT
 public:
     uint32_t GetArrayLength();
-    void InitArrayLength(uint32_t length);
+    void SetNumComponents(uint32_t length);
     void* GetArrayData();
 };
 typedef DPTR(Array) PTR_Array;

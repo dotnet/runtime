@@ -786,7 +786,7 @@ void InlineResult::Report()
     // Was the result NEVER? If so we might want to propagate this to
     // the runtime.
 
-    if (IsNever() && m_Policy->PropagateNeverToRuntime())
+    if (IsNever() && m_Policy->PropagateNeverToRuntime() && (m_Callee != nullptr))
     {
         // If we know the callee, and if the observation that got us
         // to this Never inline state is something *other* than
@@ -795,36 +795,16 @@ void InlineResult::Report()
         // so that future inline attempts for this callee fail faster.
         //
         InlineObservation obs = m_Policy->GetObservation();
-
-        bool report     = (m_Callee != nullptr);
-        bool suppress   = (obs == InlineObservation::CALLEE_IS_NOINLINE);
-        bool dynamicPgo = m_RootCompiler->fgPgoDynamic;
-
-        // If dynamic pgo is active, only propagate noinline back to metadata
-        // when there is a CALLEE FATAL observation. We want to make sure
-        // not to block future inlines based on performance or throughput considerations.
-        //
-        // Note fgPgoDynamic (and hence dynamicPgo) is true iff TieredPGO is enabled globally.
-        // In particular this value does not depend on the root method having PGO data.
-        //
-        if (dynamicPgo)
-        {
-            InlineTarget target = InlGetTarget(obs);
-            InlineImpact impact = InlGetImpact(obs);
-            suppress            = (target != InlineTarget::CALLEE) || (impact != InlineImpact::FATAL);
-        }
-
-        if (report && !suppress)
+        if (obs != InlineObservation::CALLEE_IS_NOINLINE)
         {
             JITDUMP("\nINLINER: Marking %s as NOINLINE (observation %s)\n", callee, InlGetObservationString(obs));
 
             COMP_HANDLE comp = m_RootCompiler->info.compCompHnd;
             comp->setMethodAttribs(m_Callee, CORINFO_FLG_BAD_INLINEE);
         }
-        else if (suppress)
+        else
         {
-            JITDUMP("\nINLINER: Not marking %s NOINLINE; %s (observation %s)\n", callee,
-                    dynamicPgo ? "pgo active" : "already known", InlGetObservationString(obs));
+            JITDUMP("\nINLINER: Not marking %s NOINLINE because it's already marked as such\n", callee);
         }
     }
 

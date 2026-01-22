@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // File: CLRtoCOMCall.cpp
 //
-
-//
 // CLR to COM call support.
 //
-
 
 #include "common.h"
 
@@ -35,9 +33,8 @@
 // dllimport.cpp
 void CreateCLRToDispatchCOMStub(
             MethodDesc * pMD,
-            DWORD        dwStubFlags             // NDirectStubFlags
+            DWORD        dwStubFlags             // PInvokeStubFlags
             );
-
 
 PCODE TheGenericCLRToCOMCallStub()
 {
@@ -45,8 +42,6 @@ PCODE TheGenericCLRToCOMCallStub()
 
     return GetEEFuncEntryPoint(GenericCLRToCOMCallStub);
 }
-
-
 
 CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, DWORD* pdwStubFlags)
 {
@@ -69,7 +64,9 @@ CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, 
             LoaderHeap *pHeap = pMD->GetLoaderAllocator()->GetHighFrequencyHeap();
             CLRToCOMCallInfo *pTemp = (CLRToCOMCallInfo *)(void *)pHeap->AllocMem(S_SIZE_T(sizeof(CLRToCOMCallInfo)));
 
+#ifdef TARGET_X86
             pTemp->InitStackArgumentSize();
+#endif // TARGET_X86
 
             InterlockedCompareExchangeT(&pCMD->m_pCLRToCOMCallInfo, pTemp, NULL);
         }
@@ -108,10 +105,10 @@ CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, 
         return pComInfo;
 
     //
-    // Compute NDirectStubFlags
+    // Compute PInvokeStubFlags
     //
 
-    DWORD dwStubFlags = NDIRECTSTUB_FL_COM;
+    DWORD dwStubFlags = PINVOKESTUB_FL_COM;
 
     // Determine if this is a special COM event call.
     BOOL fComEventCall = pItfMT->IsComEventItfType();
@@ -120,10 +117,10 @@ CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, 
     BOOL fLateBound = !fComEventCall && pItfMT->IsInterface() && pItfMT->GetComInterfaceType() == ifDispatch;
 
     if (fLateBound)
-        dwStubFlags |= NDIRECTSTUB_FL_COMLATEBOUND;
+        dwStubFlags |= PINVOKESTUB_FL_COMLATEBOUND;
 
     if (fComEventCall)
-        dwStubFlags |= NDIRECTSTUB_FL_COMEVENTCALL;
+        dwStubFlags |= PINVOKESTUB_FL_COMEVENTCALL;
 
     BOOL BestFit = TRUE;
     BOOL ThrowOnUnmappableChar = FALSE;
@@ -131,10 +128,10 @@ CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, 
     ReadBestFitCustomAttribute(pMD, &BestFit, &ThrowOnUnmappableChar);
 
     if (BestFit)
-        dwStubFlags |= NDIRECTSTUB_FL_BESTFIT;
+        dwStubFlags |= PINVOKESTUB_FL_BESTFIT;
 
     if (ThrowOnUnmappableChar)
-        dwStubFlags |= NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR;
+        dwStubFlags |= PINVOKESTUB_FL_THROWONUNMAPPABLECHAR;
 
     //
     // fill in out param
@@ -154,15 +151,13 @@ MethodDesc* CLRToCOMCall::GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags
     // Get the call signature information
     StubSigDesc sigDesc(pMD);
 
-    return NDirect::CreateCLRToNativeILStub(
+    return PInvoke::CreateCLRToNativeILStub(
                     &sigDesc,
                     (CorNativeLinkType)0,
                     (CorNativeLinkFlags)0,
                     CallConv::GetDefaultUnmanagedCallingConvention(),
                     dwStubFlags);
 }
-
-
 
 PCODE CLRToCOMCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
 {
@@ -202,7 +197,6 @@ PCODE CLRToCOMCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
     return pStub;
 }
 
-
 I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
 {
     CONTRACTL
@@ -212,6 +206,7 @@ I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
         MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pMD));
+        PRECONDITION(!pMD->IsAsyncMethod());
     }
     CONTRACTL_END;
 
@@ -229,13 +224,6 @@ I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
         WrapperTypeArr = (I4ARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_I4, numArgs);
 
         GCX_PREEMP();
-        
-        
-        // TODO: (async) revisit and examine if this needs to be supported somehow
-        if (pMD->IsAsyncMethod())
-        {
-            ThrowHR(COR_E_NOTSUPPORTED);
-        }
 
         // Collects ParamDef information in an indexed array where element 0 represents
         // the return type.
@@ -347,7 +335,7 @@ UINT32 CLRToCOMEventCallWorker(CLRToCOMMethodFrame* pFrame, CLRToCOMCallMethodDe
         MethodDescCallSite eventProvider(pEvProvMD, &gc.EventProviderObj);
 
         // Retrieve the event handler passed in.
-        OBJECTREF EventHandlerObj = *(OBJECTREF*)(pFrame->GetTransitionBlock() + ArgItr.GetNextOffset());
+        OBJECTREF EventHandlerObj = ObjectToOBJECTREF(*(Object**)(pFrame->GetTransitionBlock() + ArgItr.GetNextOffset()));
 
         ARG_SLOT EventMethArgs[] =
         {
@@ -511,11 +499,9 @@ UINT32 CLRToCOMLateBoundWorker(
     LPCUTF8 strMemberName;
     ULONG uSemantic;
 
-    // TODO: (async) revisit and examine if this needs to be supported somehow
-    if (pItfMD->IsAsyncMethod())
-    {
-        ThrowHR(COR_E_NOTSUPPORTED);
-    }
+    // We should never see an async method here, as the async variant should go down
+    // the async stub path and call the non-async variant (which ends up here).
+    _ASSERTE(!pItfMD->IsAsyncMethod());
 
     // See if there is property information for this member.
     hr = pItfMT->GetMDImport()->GetPropertyInfoForMethodDef(pItfMD->GetMemberDef(), &propToken, &strMemberName, &uSemantic);

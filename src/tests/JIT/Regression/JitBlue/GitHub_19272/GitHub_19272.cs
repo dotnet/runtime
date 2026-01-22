@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace GitHub_19272;
+
 using Xunit;
 // The test showed an incorrect optimization of (int)(long<<32+) when the const 32+ tree
 // had side effects.

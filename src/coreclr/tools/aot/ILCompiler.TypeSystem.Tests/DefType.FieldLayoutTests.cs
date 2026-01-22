@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text;
 using Internal.TypeSystem;
 
 using Xunit;
@@ -35,7 +36,7 @@ namespace TypeSystemTests
         [InlineData("SequentialInt64Base")]
         public void IsZeroSizedReferenceType_NonEmptyType_ReturnsFalse(string className)
         {
-            DefType nonEmptyClass = _testModule.GetType("Marshalling", className);
+            DefType nonEmptyClass = _testModule.GetType("Marshalling"u8, Encoding.UTF8.GetBytes(className));
             Assert.False(nonEmptyClass.IsZeroSizedReferenceType);
         }
 
@@ -46,7 +47,7 @@ namespace TypeSystemTests
         [InlineData("SequentialEmptyBase")]
         public void IsZeroSizedReferenceType_EmptyType_ReturnsTrue(string className)
         {
-            DefType emptyClass = _testModule.GetType("Marshalling", className);
+            DefType emptyClass = _testModule.GetType("Marshalling"u8, Encoding.UTF8.GetBytes(className));
             Assert.True(emptyClass.IsZeroSizedReferenceType);
         }
     }

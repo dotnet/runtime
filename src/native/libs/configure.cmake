@@ -82,6 +82,18 @@ check_c_source_compiles(
     "
     HAVE_IP_MREQN)
 
+check_c_source_compiles(
+    "
+    #include <sys/socket.h>
+    #include <${SOCKET_INCLUDES}>
+    int main(void)
+    {
+        int opt = IP_MULTICAST_IFINDEX;
+        return 0;
+    }
+    "
+    HAVE_IP_MULTICAST_IFINDEX)
+
 # /in_pktinfo
 
 check_c_source_compiles(
@@ -650,6 +662,7 @@ endif()
 
 if (NOT CLR_CMAKE_TARGET_WASI)
     check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
+    check_library_exists(${PTHREAD_LIBRARY} pthread_mutex_clocklock "" HAVE_PTHREAD_MUTEX_CLOCKLOCK)
 endif()
 
 check_symbol_exists(
@@ -874,6 +887,10 @@ check_include_files(
     HAVE_DLFCN_H)
 
 check_include_files(
+    "sys/statfs.h"
+    HAVE_SYS_STATFS_H)
+
+check_include_files(
     "sys/statvfs.h"
     HAVE_SYS_STATVFS_H)
 
@@ -945,6 +962,10 @@ check_include_files(
 check_include_files(
     "sys/mntent.h"
     HAVE_SYS_MNTENT_H)
+
+check_include_files(
+    "mntent.h"
+    HAVE_MNTENT_H)
 
 check_include_files(
     "stdint.h;net/if_media.h"

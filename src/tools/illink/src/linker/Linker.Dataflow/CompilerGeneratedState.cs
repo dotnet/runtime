@@ -180,8 +180,8 @@ namespace Mono.Linker.Dataflow
                                 // Find calls to state machine constructors that occur outside the type
                                 if (referencedMethod.IsConstructor &&
                                     referencedMethod.DeclaringType is var generatedType &&
-                                    // Don't consider calls in the same type, like inside a static constructor
-                                    method.DeclaringType != generatedType &&
+                                    // Don't consider calls in the same/nested type, like inside a static constructor
+                                    !IsSameOrNestedType(method.DeclaringType, generatedType) &&
                                     CompilerGeneratedNames.IsLambdaDisplayClass(generatedType.Name))
                                 {
                                     // fill in null for now, attribute providers will be filled in later
@@ -219,8 +219,8 @@ namespace Mono.Linker.Dataflow
                                     continue;
 
                                 if (field.DeclaringType is var generatedType &&
-                                    // Don't consider field accesses in the same type, like inside a static constructor
-                                    method.DeclaringType != generatedType &&
+                                    // Don't consider field accesses in the same/nested type, like inside a static constructor
+                                    !IsSameOrNestedType(method.DeclaringType, generatedType) &&
                                     CompilerGeneratedNames.IsLambdaDisplayClass(generatedType.Name))
                                 {
                                     if (!generatedTypeToTypeArgs.TryAdd(generatedType, new TypeArgumentInfo(method, null)))
@@ -252,6 +252,19 @@ namespace Mono.Linker.Dataflow
                     // Already warned above if multiple methods map to the same type
                     // Fill in null for argument providers now, the real providers will be filled in later
                     generatedTypeToTypeArgs[stateMachineType] = new TypeArgumentInfo(method, null);
+                }
+
+                static bool IsSameOrNestedType(TypeDefinition type, TypeDefinition potentialOuterType)
+                {
+                    do
+                    {
+                        if (type == potentialOuterType)
+                            return true;
+
+                        type = type.DeclaringType;
+                    } while (type != null);
+
+                    return false;
                 }
             }
 

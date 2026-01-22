@@ -13,6 +13,7 @@
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "event.h"
+#include "thread.inl"
 
 #include "interoplibinterface.h"
 

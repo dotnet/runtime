@@ -97,11 +97,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
 #if NET
-#if NET8_0_OR_GREATER
-            Span<byte> span = stackalloc byte[MaximumFormattedVersionLength];
-#else
-            Span<char> span = stackalloc char[MaximumFormattedVersionLength];
-#endif
+            Span<byte> span = stackalloc byte[MaximumVersionLength];
             bool formattedSuccessfully = value.TryFormat(span, out int charsWritten);
             writer.WriteStringValue(span.Slice(0, charsWritten));
 #else
@@ -119,11 +115,7 @@ namespace System.Text.Json.Serialization.Converters
             ArgumentNullException.ThrowIfNull(value);
 
 #if NET
-#if NET8_0_OR_GREATER
-            Span<byte> span = stackalloc byte[MaximumFormattedVersionLength];
-#else
-            Span<char> span = stackalloc char[MaximumFormattedVersionLength];
-#endif
+            Span<byte> span = stackalloc byte[MaximumVersionLength];
             bool formattedSuccessfully = value.TryFormat(span, out int charsWritten);
             writer.WritePropertyName(span.Slice(0, charsWritten));
 #else

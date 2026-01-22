@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.26)
 
 project(mono)
 
@@ -274,13 +274,13 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "windows")
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Oi>) # enable intrinsics
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GF>) # enable string pooling
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GL>) # whole program optimization
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zi>) # enable debugging information
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT ProgramDatabase) # enable debugging information
     add_link_options(/LTCG)    # link-time code generation
     add_link_options(/DEBUG)   # enable debugging information
     add_link_options(/DEBUGTYPE:CV,FIXUP)   # enable fixup debug information
     add_link_options(/OPT:REF) # optimize: remove unreferenced functions & data
     add_link_options(/OPT:ICF) # optimize: enable COMDAT folding
-    # the combination of /Zi compiler flag and /DEBUG /OPT:REF /OPT:ICF
+    # the combination of ProgramDatabase debug info format and /DEBUG /OPT:REF /OPT:ICF
     # linker flags is needed to create .pdb output on release builds
   endif()
 elseif(CLR_CMAKE_HOST_OS STREQUAL "sunos")
@@ -532,8 +532,12 @@ if(GCC)
 
   # The runtime code does not respect ANSI C strict aliasing rules
   append("-fno-strict-aliasing" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
-  # We rely on signed overflow to behave
-  append("-fwrapv" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+
+  # Make signed overflow well-defined. Implies the following flags in clang-20 and above.
+  # -fwrapv - Make signed arithmetic overflow of addition, subtraction, and multiplication wrap around
+  # using twos-complement representation (this is normally undefined according to the C++ spec).
+  # -fwrapv-pointer - The same as -fwrapv but for pointers.
+  append("-fno-strict-overflow" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
 
   set(WARNINGS "-Wall -Wunused -Wmissing-declarations -Wpointer-arith -Wno-cast-qual -Wwrite-strings -Wno-switch -Wno-switch-enum -Wno-unused-value -Wno-attributes -Wno-format-zero-length -Wno-unused-function")
   set(WARNINGS_C "-Wmissing-prototypes -Wstrict-prototypes -Wnested-externs")
@@ -543,6 +547,27 @@ if(GCC)
 
   if (CMAKE_C_COMPILER_ID MATCHES "Clang")
     set(WARNINGS "${WARNINGS} -Qunused-arguments -Wno-tautological-compare -Wno-parentheses-equality -Wno-self-assign -Wno-return-stack-address -Wno-constant-logical-operand -Wno-zero-length-array -Wno-asm-operand-widths")
+  endif()
+
+  if (HOST_MACCAT)
+    # Somewhere between CMake 3.17 and 3.19.4, it became impossible to not pass
+    # a value for mmacosx-version-min (blank CMAKE_OSX_DEPLOYMENT_TARGET gets
+    # replaced with a default value, and always gets expanded to an OS version.
+    # https://gitlab.kitware.com/cmake/cmake/-/issues/20132
+    # We need to disable the warning that -target replaces -mmacosx-version-min
+    #
+    # With https://github.com/llvm/llvm-project/commit/1c66d08b0137cef7761b8220d3b7cb7833f57cdb clang renamed the option so we need to check for both
+    check_c_compiler_flag("-Wno-overriding-option" COMPILER_SUPPORTS_W_NO_OVERRIDING_OPTION)
+    if (COMPILER_SUPPORTS_W_NO_OVERRIDING_OPTION)
+      set(WARNINGS "${WARNINGS} -Wno-overriding-option")
+    else()
+      check_c_compiler_flag("-Wno-overriding-t-option" COMPILER_SUPPORTS_W_NO_OVERRIDING_T_OPTION)
+      if (COMPILER_SUPPORTS_W_NO_OVERRIDING_T_OPTION)
+        set(WARNINGS "${WARNINGS} -Wno-overriding-t-option")
+      else()
+        message(FATAL_ERROR "Compiler does not support -Wno-overriding-option or -Wno-overriding-t-option, needed for Mac Catalyst builds.")
+      endif()
+    endif()
   endif()
 
   check_c_compiler_flag("-Werror=incompatible-pointer-types" WERROR_INCOMPATIBLE_POINTER_TYPES)
@@ -857,8 +882,6 @@ set(FULL_VERSION ${product_version_string})
 ######################################
 
 if(CLR_CMAKE_TARGET_LINUX_MUSL)
-  # Setting RLIMIT_NOFILE breaks debugging of coreclr on musl-libc for some reason
-  add_definitions(-DDONT_SET_RLIMIT_NOFILE)
   # On musl-libc, we need to ensure that the reported stack range for the primary thread is
   # larger than the initial committed stack size.
   add_definitions(-DENSURE_PRIMARY_STACK_SIZE)

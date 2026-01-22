@@ -42,5 +42,10 @@ namespace System.Security.Cryptography.X509Certificates
             return new SafeNCryptKeyHandle(handle, parentHandle);
 #endif
         }
+
+        private static partial SafeCertContextHandle DuplicateCertificateHandle(X509Certificate2 certificate)
+        {
+            return Interop.Crypt32.CertDuplicateCertificateContext(certificate.Handle);
+        }
     }
 }

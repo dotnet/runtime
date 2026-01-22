@@ -52,6 +52,9 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? ISetOfTType => GetOrResolveType(typeof(ISet<>), ref _ISetOfTType);
         private Option<INamedTypeSymbol?> _ISetOfTType;
 
+        public INamedTypeSymbol? IReadOnlySetOfTType => GetOrResolveType("System.Collections.Generic.IReadOnlySet`1", ref _IReadOnlySetOfTType);
+        private Option<INamedTypeSymbol?> _IReadOnlySetOfTType;
+
         public INamedTypeSymbol? StackOfTType => GetOrResolveType(typeof(Stack<>), ref _StackOfTType);
         private Option<INamedTypeSymbol?> _StackOfTType;
 
@@ -190,6 +193,18 @@ namespace System.Text.Json.SourceGeneration
 
         public INamedTypeSymbol? JsonElementType => GetOrResolveType("System.Text.Json.JsonElement", ref _JsonElementType);
         private Option<INamedTypeSymbol?> _JsonElementType;
+
+        public INamedTypeSymbol? StringObjectDictionaryType => _StringObjectDictionaryType.HasValue
+            ? _StringObjectDictionaryType.Value
+            : (_StringObjectDictionaryType = new(DictionaryOfTKeyTValueType?.Construct(StringType, ObjectType))).Value;
+        private Option<INamedTypeSymbol?> _StringObjectDictionaryType;
+
+        public INamedTypeSymbol? StringJsonElementDictionaryType => _StringJsonElementDictionaryType.HasValue
+            ? _StringJsonElementDictionaryType.Value
+            : (_StringJsonElementDictionaryType = new(DictionaryOfTKeyTValueType is { } dictType && JsonElementType is { } jsonElemType
+                ? dictType.Construct(StringType, jsonElemType)
+                : null)).Value;
+        private Option<INamedTypeSymbol?> _StringJsonElementDictionaryType;
 
         public INamedTypeSymbol? JsonNodeType => GetOrResolveType("System.Text.Json.Nodes.JsonNode", ref _JsonNodeType);
         private Option<INamedTypeSymbol?> _JsonNodeType;

@@ -69,77 +69,51 @@ namespace System
         public static bool IsInInclusiveRange(uint value, uint min, uint max)
             => (value - min) <= (max - min);
 
-        //
-        // Check reserved chars according to RFC 3987 in a specific component
-        //
-        internal static bool CheckIsReserved(char ch, UriComponents component)
-        {
-            if ((UriComponents.AbsoluteUri & component) == 0)
-            {
-                return component == 0 && UriHelper.IsGenDelim(ch);
-            }
-
-            return UriHelper.RFC3986ReservedMarks.Contains(ch);
-        }
-
-        //
         // IRI normalization for strings containing characters that are not allowed or
         // escaped characters that should be unescaped in the context of the specified Uri component.
-        //
-        internal static unsafe string EscapeUnescapeIri(char* pInput, int start, int end, UriComponents component)
+        public static void EscapeUnescapeIri(ref ValueStringBuilder dest, scoped ReadOnlySpan<char> span, bool isQuery)
         {
-            Debug.Assert(end >= 0 && start >= 0 && start <= end);
-
-            int size = end - start;
-            var dest = size <= Uri.StackallocThreshold
-                ? new ValueStringBuilder(stackalloc char[Uri.StackallocThreshold])
-                : new ValueStringBuilder(size);
-
             Span<byte> maxUtf8EncodedSpan = stackalloc byte[4];
 
-            for (int i = start; i < end; ++i)
+            for (int i = 0; (uint)i < (uint)span.Length; i++)
             {
-                char ch = pInput[i];
+                char ch = span[i];
+
                 if (ch == '%')
                 {
-                    if (end - i > 2)
+                    if ((uint)(i + 2) < (uint)span.Length)
                     {
-                        ch = UriHelper.DecodeHexChars(pInput[i + 1], pInput[i + 2]);
+                        ch = UriHelper.DecodeHexChars(span[i + 1], span[i + 2]);
 
                         // Do not unescape a reserved char
-                        if (ch == Uri.c_DummyChar || ch == '%' || CheckIsReserved(ch, component) || UriHelper.IsNotSafeForUnescape(ch))
+                        if (ch == Uri.c_DummyChar || UriHelper.IsNotSafeForUnescape(ch))
                         {
                             // keep as is
-                            dest.Append(pInput[i++]);
-                            dest.Append(pInput[i++]);
-                            dest.Append(pInput[i]);
-                            continue;
+                            dest.Append(span[i]);
+                            dest.Append(span[i + 1]);
+                            dest.Append(span[i + 2]);
+                            i += 2;
                         }
                         else if (ch <= '\x7F')
                         {
-                            Debug.Assert(ch < 0xFF, "Expecting ASCII character.");
-                            //ASCII
+                            // ASCII
                             dest.Append(ch);
                             i += 2;
-                            continue;
                         }
                         else
                         {
                             // possibly utf8 encoded sequence of unicode
                             int charactersRead = PercentEncodingHelper.UnescapePercentEncodedUTF8Sequence(
-                                pInput + i,
-                                end - i,
+                                span.Slice(i),
                                 ref dest,
-                                component == UriComponents.Query,
+                                isQuery,
                                 iriParsing: true);
 
                             Debug.Assert(charactersRead > 0);
                             i += charactersRead - 1; // -1 as i will be incremented in the loop
                         }
-                    }
-                    else
-                    {
-                        dest.Append(pInput[i]);
+
+                        continue;
                     }
                 }
                 else if (ch > '\x7f')
@@ -151,14 +125,14 @@ namespace System
 
                     char ch2 = '\0';
 
-                    if ((char.IsHighSurrogate(ch)) && (i + 1 < end))
+                    if (char.IsHighSurrogate(ch) && (uint)(i + 1) < (uint)span.Length)
                     {
-                        ch2 = pInput[i + 1];
-                        isInIriUnicodeRange = CheckIriUnicodeRange(ch, ch2, out surrogatePair, component == UriComponents.Query);
+                        ch2 = span[i + 1];
+                        isInIriUnicodeRange = CheckIriUnicodeRange(ch, ch2, out surrogatePair, isQuery);
                     }
                     else
                     {
-                        isInIriUnicodeRange = CheckIriUnicodeRange(ch, component == UriComponents.Query);
+                        isInIriUnicodeRange = CheckIriUnicodeRange(ch, isQuery);
                     }
 
                     if (isInIriUnicodeRange)
@@ -194,15 +168,13 @@ namespace System
                     {
                         i++;
                     }
-                }
-                else
-                {
-                    // just copy the character
-                    dest.Append(pInput[i]);
-                }
-            }
 
-            return dest.ToString();
+                    continue;
+                }
+
+                // ASCII, just copy the character
+                dest.Append(ch);
+            }
         }
     }
 }

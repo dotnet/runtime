@@ -750,6 +750,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
             // I'm not sure if ignoring rejit for mini-dumps is the right call long term, but we aren't doing
             // anything special to collect the memory at dump time so we better be prepared to not fetch it here.
             // We'll attempt to treat it as not being instrumented, though I suspect the abstraction is leaky.
+#ifdef FEATURE_CODE_VERSIONING
             RSSmartPtr<CordbReJitILCode> pReJitCode;
             EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
             {
@@ -766,6 +767,9 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
                 }
             }
             EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY
+#else
+            void* pReJitCode = NULL;
+#endif // FEATURE_CODE_VERSIONING
 
 
 

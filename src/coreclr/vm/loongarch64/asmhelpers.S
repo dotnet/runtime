@@ -9,7 +9,7 @@ LEAF_ENTRY GetCurrentIP, _TEXT
     jirl  $r0, $ra, 0
 LEAF_END GetCurrentIP, _TEXT
 
-// LPVOID __stdcall GetCurrentSP(void)//
+// void* GetCurrentSP(void)//
 LEAF_ENTRY GetCurrentSP, _TEXT
     ori  $a0, $sp, 0
     jirl  $r0, $ra, 0
@@ -359,30 +359,28 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
 NESTED_END ThePreStub, _TEXT
 
 // ------------------------------------------------------------------
-// The call in ndirect import precode points to this function.
-NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
+// The call in PInvokeImportPrecode points to this function.
+NESTED_ENTRY PInvokeImportThunk, _TEXT, NoHandler
 
     //                            $fp,$ra
     PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0xa0
-    //PROLOG_SAVE_REG gp, 16
     SAVE_ARGUMENT_REGISTERS  $sp, 0x20
     SAVE_FLOAT_ARGUMENT_REGISTERS  $sp, 0x60
 
     ori  $a0, $t2, 0
-    bl C_FUNC(NDirectImportWorker)
+    bl C_FUNC(PInvokeImportWorker)
     ori  $t4,$a0,0
 
     // pop the stack and restore original register state
     RESTORE_FLOAT_ARGUMENT_REGISTERS  $sp, 0x60
     RESTORE_ARGUMENT_REGISTERS  $sp, 0x20
-    //EPILOG_RESTORE_REG  gp, 16
     //                              $fp,$ra
     EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0xa0
 
-    // If we got back from NDirectImportWorker, the MD has been successfully
+    // If we got back from PInvokeImportWorker, the MD has been successfully
     // linked. Proceed to execute the original DLL call.
     EPILOG_BRANCH_REG  $t4
-NESTED_END NDirectImportThunk, _TEXT
+NESTED_END PInvokeImportThunk, _TEXT
 
 #ifdef FEATURE_PREJIT
 //------------------------------------------------
@@ -406,7 +404,6 @@ NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
     // Save arguments and return address
     //                            $fp,$ra
     PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0xa0
-    //PROLOG_SAVE_REG  gp, 16
     SAVE_ARGUMENT_REGISTERS  $sp, 32
     SAVE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
 
@@ -425,7 +422,6 @@ NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
     // pop the stack and restore original register state
     RESTORE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
     RESTORE_ARGUMENT_REGISTERS  $sp, 32
-    //EPILOG_RESTORE_REG  gp, 16
     //                              $fp,$ra
     EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0xa0
 
@@ -476,7 +472,6 @@ NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
     // Save arguments and return address
     //                            $fp,$ra
     PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0xa0
-    //PROLOG_SAVE_REG  gp, 16
     SAVE_ARGUMENT_REGISTERS  $sp, 32
     SAVE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
 
@@ -488,7 +483,6 @@ NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
     // pop the stack and restore original register state
     RESTORE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
     RESTORE_ARGUMENT_REGISTERS  $sp, 32
-    //EPILOG_RESTORE_REG  gp, 16
     //                              $fp,$ra
     EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0xa0
 
@@ -603,34 +597,6 @@ LOCAL_LABEL(Promote):
 LOCAL_LABEL(Fail):
     b       C_FUNC(ResolveWorkerAsmStub) // call the ResolveWorkerAsmStub method to transition into the VM
 NESTED_END ResolveWorkerChainLookupAsmStub, _TEXT
-
-
-//NOTE:  Frame_Size = SIZEOF__ArgumentRegisters + SIZEOF__FloatArgumentRegisters + extra.
-//
-//     |gp   |
-//     |s0   |
-//     |$t2   |
-//     |t9   |
-//     |$a7   |
-//     |$a6   |
-//     |$a5   |
-//     |$a4   |
-//     |$a3   |
-//     |$a2   |
-//     |$a1   |
-//     |$a0   |
-//     |$ra   | $sp+8
-//     |fp   | $sp
-//
-//     |f19  | if needed.
-//     |f18  |
-//     |f17  |
-//     |f16  |
-//     |f15  |
-//     |f14  |
-//     |f13  |
-//     |f12  |
-//
 
 // ------------------------------------------------------------------
 // void ResolveWorkerAsmStub(args in regs $a0-$a7 & stack, t8:IndirectionCellAndFlags, $t2:DispatchToken)
@@ -983,6 +949,10 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG $t4
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
+#endif // FEATURE_TIERED_COMPILATION
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+
 NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
@@ -999,7 +969,7 @@ LEAF_ENTRY JIT_PatchpointForced, _TEXT
     b C_FUNC(JIT_Patchpoint)
 LEAF_END JIT_PatchpointForced, _TEXT
 
-#endif // FEATURE_TIERED_COMPILATION
+#endif // FEATURE_ON_STACK_REPLACEMENT
 
 // ------------------------------------------------------------------
 // size_t GetThreadStaticsVariableOffset()
@@ -1050,3 +1020,48 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     move  $a1, $t0     // Move temp register to first arg register for static method with return buffer
     EPILOG_BRANCH_REG $METHODDESC_REGISTER
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Throw_Impl
+// implementation written in C.
+//
+// Input state:
+//   $a0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Throw, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS $a1
+    // $a0 already contains exception object
+    // $a1 contains pointer to TransitionBlock
+    bl   C_FUNC(IL_Throw_Impl)
+    // Should never return
+    break 0
+NESTED_END IL_Throw, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_ThrowExact_Impl
+// implementation written in C.
+//
+// Input state:
+//   $a0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_ThrowExact, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS $a1
+    // $a0 already contains exception object
+    // $a1 contains pointer to TransitionBlock
+    bl   C_FUNC(IL_ThrowExact_Impl)
+    // Should never return
+    break 0
+NESTED_END IL_ThrowExact, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Rethrow_Impl
+// implementation written in C.
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS $a0
+    // $a0 contains pointer to TransitionBlock
+    bl   C_FUNC(IL_Rethrow_Impl)
+    // Should never return
+    break 0
+NESTED_END IL_Rethrow, _TEXT
+

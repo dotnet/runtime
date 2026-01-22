@@ -61,6 +61,22 @@ For example, here is how you can run the fuzzer against a `header-inputs` corpus
 deployment/HttpHeadersFuzzer/local-run.bat header-inputs -timeout=30 -max_total_time=600 -jobs=5
 ```
 
+### Generating coverage reports
+
+After letting the fuzzer run for a while, you can use the generated inputs to test code coverage.
+
+```cmd
+mkdir header-inputs
+deployment/HttpHeadersFuzzer/local-run.bat header-inputs
+
+.\collect-coverage.ps1 HttpHeadersFuzzer header-inputs
+```
+
+The HTML report can be opened from
+```cmd
+.\coverage-report\html\index.html
+```
+
 ## Creating a new fuzzing target
 
 To create a new fuzzing target, you need to create a new class that implements the `IFuzzer` interface.
@@ -101,4 +117,4 @@ cd src/libraries/Fuzzing/DotnetFuzzing
 dotnet run HttpHeadersFuzzer inputs
 ```
 
-This can be useful when debugging a crash, or running the fuzzer over existing inputs to collect code coverage.
+This can be useful when debugging a crash.

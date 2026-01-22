@@ -11,10 +11,26 @@
 
 class dn_simdhash_ptr_ptr_holder
 {
-    dn_simdhash_ptr_ptr_t *Value;
 public:
-    dn_simdhash_ptr_ptr_holder() :
-        Value(nullptr)
+    dn_simdhash_ptr_ptr_foreach_func ValueDestroyCallback;
+
+private:
+    dn_simdhash_ptr_ptr_t *Value;
+
+    void free_hash_and_values()
+    {
+        if (Value == nullptr)
+            return;
+        if (ValueDestroyCallback)
+            dn_simdhash_ptr_ptr_foreach(Value, ValueDestroyCallback, nullptr);
+        dn_simdhash_free(Value);
+        Value = nullptr;
+    }
+
+public:
+    dn_simdhash_ptr_ptr_holder(dn_simdhash_ptr_ptr_foreach_func valueDestroyCallback = nullptr)
+        : ValueDestroyCallback(valueDestroyCallback)
+        , Value(nullptr)
     {
     }
 
@@ -22,7 +38,16 @@ public:
     {
         if (!Value)
             Value = dn_simdhash_ptr_ptr_new(0, nullptr);
+
+        if (Value == nullptr)
+            NOMEM();
+
         return Value;
+    }
+
+    bool HasValue()
+    {
+        return Value != nullptr;
     }
 
     dn_simdhash_ptr_ptr_holder(const dn_simdhash_ptr_ptr_holder&) = delete;
@@ -30,24 +55,95 @@ public:
     dn_simdhash_ptr_ptr_holder(dn_simdhash_ptr_ptr_holder&& other)
     {
         Value = other.Value;
+        ValueDestroyCallback = other.ValueDestroyCallback;
         other.Value = nullptr;
+        other.ValueDestroyCallback = nullptr;
     }
     dn_simdhash_ptr_ptr_holder& operator=(dn_simdhash_ptr_ptr_holder&& other)
     {
         if (this != &other)
         {
-            if (Value != nullptr)
-                dn_simdhash_free(Value);
+            free_hash_and_values();
             Value = other.Value;
+            ValueDestroyCallback = other.ValueDestroyCallback;
             other.Value = nullptr;
+            other.ValueDestroyCallback = nullptr;
         }
         return *this;
     }
 
     ~dn_simdhash_ptr_ptr_holder()
     {
-        if (Value != nullptr)
-            dn_simdhash_free(Value);
+        free_hash_and_values();
+    }
+};
+
+class dn_simdhash_u32_ptr_holder
+{
+public:
+    dn_simdhash_u32_ptr_foreach_func ValueDestroyCallback;
+
+private:
+    dn_simdhash_u32_ptr_t *Value;
+
+    void free_hash_and_values()
+    {
+        if (Value == nullptr)
+            return;
+        if (ValueDestroyCallback)
+            dn_simdhash_u32_ptr_foreach(Value, ValueDestroyCallback, nullptr);
+        dn_simdhash_free(Value);
+        Value = nullptr;
+    }
+
+public:
+    dn_simdhash_u32_ptr_holder(dn_simdhash_u32_ptr_foreach_func valueDestroyCallback = nullptr)
+        : ValueDestroyCallback(valueDestroyCallback)
+        , Value(nullptr)
+    {
+    }
+
+    dn_simdhash_u32_ptr_t* GetValue()
+    {
+        if (!Value)
+            Value = dn_simdhash_u32_ptr_new(0, nullptr);
+
+        if (Value == nullptr)
+            NOMEM();
+
+        return Value;
+    }
+
+    bool HasValue()
+    {
+        return Value != nullptr;
+    }
+
+    dn_simdhash_u32_ptr_holder(const dn_simdhash_u32_ptr_holder&) = delete;
+    dn_simdhash_u32_ptr_holder& operator=(const dn_simdhash_u32_ptr_holder&) = delete;
+    dn_simdhash_u32_ptr_holder(dn_simdhash_u32_ptr_holder&& other)
+    {
+        Value = other.Value;
+        ValueDestroyCallback = other.ValueDestroyCallback;
+        other.Value = nullptr;
+        other.ValueDestroyCallback = nullptr;
+    }
+    dn_simdhash_u32_ptr_holder& operator=(dn_simdhash_u32_ptr_holder&& other)
+    {
+        if (this != &other)
+        {
+            free_hash_and_values();
+            Value = other.Value;
+            ValueDestroyCallback = other.ValueDestroyCallback;
+            other.Value = nullptr;
+            other.ValueDestroyCallback = nullptr;
+        }
+        return *this;
+    }
+
+    ~dn_simdhash_u32_ptr_holder()
+    {
+        free_hash_and_values();
     }
 };
 

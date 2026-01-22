@@ -29,12 +29,17 @@ namespace System
         public static bool IsNetCore => Environment.Version.Major >= 5 || RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         public static bool IsNotMonoRuntime => !IsMonoRuntime;
+        public static bool IsInterpreter => IsMonoInterpreter || IsCoreClrInterpreter;
+        public static bool IsNotInterpreter => !IsInterpreter;
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsNotMonoInterpreter => !IsMonoInterpreter;
         public static bool IsMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") == "aot";
         public static bool IsNotMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") != "aot";
         public static bool IsNativeAot => IsNotMonoRuntime && !IsReflectionEmitSupported;
         public static bool IsNotNativeAot => !IsNativeAot;
+        public static bool IsCoreCLR => IsNotMonoRuntime && IsNotNativeAot;
+        public static bool IsCoreClrInterpreter => GetIsRunningOnCoreClrInterpreter();
+        public static bool IsNotCoreClrInterpreter => !IsCoreClrInterpreter;
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
@@ -47,8 +52,10 @@ namespace System
         public static bool IsNotMacCatalyst => !IsMacCatalyst;
         public static bool Isillumos => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ILLUMOS"));
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
+        public static bool IsSunOS => Isillumos || IsSolaris;
         public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
         public static bool IsWasi => RuntimeInformation.IsOSPlatform(OSPlatform.Create("WASI"));
+        public static bool IsWasm => IsBrowser || IsWasi;
         public static bool IsNotBrowser => !IsBrowser;
         public static bool IsNotWasi => !IsWasi;
         public static bool IsMobile => IsBrowser || IsWasi || IsAppleMobile || IsAndroid;
@@ -71,7 +78,7 @@ namespace System
         public static bool IsX64Process => RuntimeInformation.ProcessArchitecture == Architecture.X64;
         public static bool IsX86Process => RuntimeInformation.ProcessArchitecture == Architecture.X86;
         public static bool IsNotX86Process => !IsX86Process;
-        public static bool IsArgIteratorSupported => IsMonoRuntime || (IsWindows && IsNotArmProcess && !IsNativeAot);
+        public static bool IsArgIteratorSupported => IsMonoRuntime || (IsWindows && !IsNativeAot);
         public static bool IsArgIteratorNotSupported => !IsArgIteratorSupported;
         public static bool Is32BitProcess => IntPtr.Size == 4;
         public static bool Is64BitProcess => IntPtr.Size == 8;
@@ -183,7 +190,6 @@ namespace System
 
         public static bool IsAsyncFileIOSupported => !IsBrowser && !IsWasi;
 
-        public static bool IsLineNumbersSupported => !IsNativeAot;
         public static bool IsILOffsetsSupported => !IsNativeAot;
 
         public static bool IsInContainer => GetIsInContainer();
@@ -206,6 +212,8 @@ namespace System
 
         public static bool SupportsSsl3 => GetSsl3Support();
         public static bool SupportsSsl2 => IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater;
+
+        public static bool SupportsDirtyAccessViolations => !PlatformDetection.IsMonoRuntime && !PlatformDetection.IsCoreClrInterpreter && !PlatformDetection.IsWasm;
 
 #if NET
         public static bool IsReflectionEmitSupported => RuntimeFeature.IsDynamicCodeSupported;
@@ -287,7 +295,7 @@ namespace System
         public static bool IsDomainJoinedMachine => !Environment.MachineName.Equals(Environment.UserDomainName, StringComparison.OrdinalIgnoreCase);
         public static bool IsNotDomainJoinedMachine => !IsDomainJoinedMachine;
 
-        public static bool IsOpenSslSupported => IsLinux || IsFreeBSD || Isillumos || IsSolaris;
+        public static bool IsOpenSslSupported => (IsLinux && !IsAndroid) || IsFreeBSD || Isillumos || IsSolaris;
         public static bool OpenSslNotPresentOnSystem => !OpenSslPresentOnSystem;
 
         public static bool UsesAppleCrypto => IsOSX || IsMacCatalyst || IsiOS || IstvOS;
@@ -296,7 +304,6 @@ namespace System
         // Changed to `true` when trimming
         public static bool IsBuiltWithAggressiveTrimming => IsNativeAot || IsAppleMobile;
         public static bool IsNotBuiltWithAggressiveTrimming => !IsBuiltWithAggressiveTrimming;
-        public static bool IsBrowserAndIsBuiltWithAggressiveTrimming => IsBuiltWithAggressiveTrimming && IsBrowser;
         public static bool IsTrimmedWithILLink => IsBuiltWithAggressiveTrimming && !IsNativeAot;
 
 #if NET
@@ -311,7 +318,7 @@ namespace System
         private static readonly Lazy<bool> s_supportsAlpn = new Lazy<bool>(GetAlpnSupport);
         private static bool GetAlpnSupport()
         {
-            if (IsWindows && !IsWindows7 && !IsNetFramework)
+            if (IsWindows && !IsNetFramework)
             {
                 return true;
             }
@@ -355,7 +362,7 @@ namespace System
         public static bool SupportsTls12 => s_supportsTls12.Value;
         public static bool SupportsTls13 => s_supportsTls13.Value;
         public static bool SendsCAListByDefault => s_sendsCAListByDefault.Value;
-        public static bool SupportsSendingCustomCANamesInTls => UsesAppleCrypto || IsOpenSslSupported || (PlatformDetection.IsWindows8xOrLater && SendsCAListByDefault);
+        public static bool SupportsSendingCustomCANamesInTls => UsesAppleCrypto || IsOpenSslSupported || (PlatformDetection.IsWindows && SendsCAListByDefault);
         public static bool SupportsSha3 => s_supportsSha3.Value;
         public static bool DoesNotSupportSha3 => !s_supportsSha3.Value;
 
@@ -568,10 +575,16 @@ namespace System
 #pragma warning disable SYSLIB0039 // TLS versions 1.0 and 1.1 have known vulnerabilities
         private static bool GetTls10Support()
         {
-            // on macOS and Android TLS 1.0 is supported.
-            if ((IsApplePlatform && !IsNetworkFrameworkEnabled()) || IsAndroid)
+            // on macOS TLS 1.0 is supported.
+            if (IsApplePlatform && !IsNetworkFrameworkEnabled())
             {
                 return true;
+            }
+
+            // on Android TLS 1.0 support depends on API level
+            if (IsAndroid)
+            {
+                return AndroidGetSslProtocolSupport(SslProtocols.Tls);
             }
 
             // Windows depend on registry, enabled by default on all supported versions.
@@ -587,19 +600,18 @@ namespace System
         {
             if (IsWindows)
             {
-                // TLS 1.1 can work on Windows 7 but it is disabled by default.
-                if (IsWindows7)
-                {
-                    return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport: false, disabledByDefault: true);
-                }
-
                 // It is enabled on other versions unless explicitly disabled.
                 return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport: true) && !IsWindows10Version20348OrGreater;
             }
-            // on macOS and Android TLS 1.1 is supported.
-            else if ((IsApplePlatform && !IsNetworkFrameworkEnabled()) || IsAndroid)
+            // on macOS TLS 1.1 is supported.
+            else if (IsApplePlatform && !IsNetworkFrameworkEnabled())
             {
                 return true;
+            }
+            // on Android TLS 1.1 support depends on API level
+            else if (IsAndroid)
+            {
+                return AndroidGetSslProtocolSupport(SslProtocols.Tls11);
             }
 
             return IsOpenSslSupported && OpenSslGetTlsSupport(SslProtocols.Tls11);
@@ -610,12 +622,6 @@ namespace System
         {
             if (IsWindows)
             {
-                // TLS 1.2 can work on Windows 7 but it is disabled by default.
-                if (IsWindows7)
-                {
-                    return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport: false, disabledByDefault: true);
-                }
-
                 // It is enabled on other versions unless explicitly disabled.
                 return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport: true);
             }
@@ -694,9 +700,9 @@ namespace System
         {
             if (IsWindows)
             {
-                // Sending TrustedIssuers is conditioned on the registry. Win7 sends trusted issuer list by default,
-                // newer Windows versions don't.
-                object val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL", "SendTrustedIssuerList", IsWindows7 ? 1 : 0);
+                // Sending TrustedIssuers is conditioned on the registry.
+                // Newer Windows versions don't send trusted issuer list by default.
+                object val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL", "SendTrustedIssuerList", 0);
                 if (val is int i)
                 {
                     return i == 1;
@@ -713,6 +719,26 @@ namespace System
 #else
             return false;
 #endif
+        }
+
+        private static string GetEnvironmentVariableValue(string name, string defaultValue = "0") =>
+            Environment.GetEnvironmentVariable("DOTNET_" + name) ?? Environment.GetEnvironmentVariable("COMPlus_" + name) ?? defaultValue;
+
+        private static bool GetIsRunningOnCoreClrInterpreter()
+        {
+            if (IsCoreCLR)
+            {
+#if NET
+                if (RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled)
+                    return true;
+#endif
+                if (!string.IsNullOrWhiteSpace(GetEnvironmentVariableValue("Interpreter", "")))
+                    return true;
+                if (int.TryParse(GetEnvironmentVariableValue("InterpMode", "0"), out int mode) && (mode > 0))
+                    return true;
+            }
+
+            return false;
         }
 
         private static bool IsEnvironmentVariableTrue(string variableName)

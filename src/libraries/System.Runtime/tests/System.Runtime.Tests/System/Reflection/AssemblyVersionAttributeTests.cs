@@ -12,7 +12,7 @@ namespace System.Reflection.Tests
         [InlineData("")]
         [InlineData("version")]
         [InlineData("5.6.7.8.9")]
-        public void Ctor_String(string version)
+        public void Ctor_String(string? version)
         {
             var attribute = new AssemblyVersionAttribute(version);
             Assert.Equal(version, attribute.Version);

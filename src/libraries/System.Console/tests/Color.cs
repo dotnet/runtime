@@ -84,7 +84,7 @@ public class Color
     [InlineData("tRuE")]
     [InlineData("0")]
     [InlineData("false")]
-    public static void RedirectedOutput_EnvVarSet_EmitsAnsiCodes(string envVar)
+    public static void RedirectedOutput_EnvVarSet_EmitsAnsiCodes(string? envVar)
     {
         var psi = new ProcessStartInfo { RedirectStandardOutput = true };
         psi.Environment["DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION"] = envVar;

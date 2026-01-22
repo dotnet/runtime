@@ -56,12 +56,12 @@ namespace Microsoft.Extensions.Http.Logging
 
             var messages = sink.Writes.ToArray();
 
-            var message = Assert.Single(messages.Where(m =>
+            var message = Assert.Single(messages, m =>
             {
                 return
                     m.EventId == EventIds.RequestPipelineRequestHeader &&
                     m.LoggerName == OuterLoggerName;
-            }));
+            });
             Assert.StartsWith(LineEndingsHelper.Normalize(
                 """
                 Request Headers:
@@ -70,12 +70,12 @@ namespace Microsoft.Extensions.Http.Logging
                 """),
                 message.Message);
 
-            message = Assert.Single(messages.Where(m =>
+            message = Assert.Single(messages, m =>
             {
                 return
                     m.EventId == EventIds.RequestHeader &&
                     m.LoggerName == InnerLoggerName;
-            }));
+            });
             Assert.StartsWith(LineEndingsHelper.Normalize(
 	            """
 	            Request Headers:
@@ -84,12 +84,12 @@ namespace Microsoft.Extensions.Http.Logging
 	            """),
 	            message.Message);
 
-            message = Assert.Single(messages.Where(m =>
+            message = Assert.Single(messages, m =>
             {
                 return
                     m.EventId == EventIds.ResponseHeader &&
                     m.LoggerName == InnerLoggerName;
-            }));
+            });
             Assert.StartsWith(LineEndingsHelper.Normalize(
 	            """
 	            Response Headers:
@@ -98,12 +98,12 @@ namespace Microsoft.Extensions.Http.Logging
 	            """),
 	            message.Message);
 
-            message = Assert.Single(messages.Where(m =>
+            message = Assert.Single(messages, m =>
             {
                 return
                     m.EventId == EventIds.RequestPipelineResponseHeader &&
                     m.LoggerName == OuterLoggerName;
-            }));
+            });
             Assert.StartsWith(LineEndingsHelper.Normalize(
 	            """
 	            Response Headers:
@@ -142,48 +142,48 @@ namespace Microsoft.Extensions.Http.Logging
 
             var messages = sink.Writes.ToArray();
 
-            var message = Assert.Single(messages.Where(m =>
+            var message = Assert.Single(messages, m =>
             {
                 return
                     m.EventId == EventIds.RequestPipelineRequestHeader &&
                     m.LoggerName == OuterLoggerName;
-            }));
+            });
             Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Request Headers:
 Authorization: *
 Cache-Control: no-cache
 "), message.Message);
 
-            message = Assert.Single(messages.Where(m =>
+            message = Assert.Single(messages, m =>
             {
                 return
                     m.EventId == EventIds.RequestHeader &&
                     m.LoggerName == InnerLoggerName;
-            }));
+            });
             Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Request Headers:
 Authorization: *
 Cache-Control: no-cache
 "), message.Message);
 
-            message = Assert.Single(messages.Where(m =>
+            message = Assert.Single(messages, m =>
             {
                 return
                     m.EventId == EventIds.ResponseHeader &&
                     m.LoggerName == InnerLoggerName;
-            }));
+            });
             Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Response Headers:
 X-Sensitive: *
 Y-Non-Sensitive: innocuous value
 "), message.Message);
 
-            message = Assert.Single(messages.Where(m =>
+            message = Assert.Single(messages, m =>
             {
                 return
                     m.EventId == EventIds.RequestPipelineResponseHeader &&
                     m.LoggerName == OuterLoggerName;
-            }));
+            });
             Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Response Headers:
 X-Sensitive: *
@@ -223,48 +223,48 @@ Y-Non-Sensitive: innocuous value
 
             var messages = sink.Writes.ToArray();
 
-            var message = Assert.Single(messages.Where(m =>
+            var message = Assert.Single(messages, m =>
             {
                 return
                     m.EventId == EventIds.RequestPipelineRequestHeader &&
                     m.LoggerName == OuterLoggerName;
-            }));
+            });
             Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Request Headers:
 Authorization: *
 Cache-Control: no-cache
 "), message.Message);
 
-            message = Assert.Single(messages.Where(m =>
+            message = Assert.Single(messages, m =>
             {
                 return
                     m.EventId == EventIds.RequestHeader &&
                     m.LoggerName == InnerLoggerName;
-            }));
+            });
             Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Request Headers:
 Authorization: *
 Cache-Control: no-cache
 "), message.Message);
 
-            message = Assert.Single(messages.Where(m =>
+            message = Assert.Single(messages, m =>
             {
                 return
                     m.EventId == EventIds.ResponseHeader &&
                     m.LoggerName == InnerLoggerName;
-            }));
+            });
             Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Response Headers:
 X-Sensitive: *
 Y-Non-Sensitive: innocuous value
 "), message.Message);
 
-            message = Assert.Single(messages.Where(m =>
+            message = Assert.Single(messages, m =>
             {
                 return
                     m.EventId == EventIds.RequestPipelineResponseHeader &&
                     m.LoggerName == OuterLoggerName;
-            }));
+            });
             Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Response Headers:
 X-Sensitive: *

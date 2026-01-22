@@ -37,7 +37,7 @@ internal static class MethodDescOptionalSlots
         // See MethodDesc::GetBaseSize and s_ClassificationSizeTable
         // sizeof(MethodDesc),                 mcIL
         // sizeof(FCallMethodDesc),            mcFCall
-        // sizeof(NDirectMethodDesc),          mcPInvoke
+        // sizeof(PInvokeMethodDesc),          mcPInvoke
         // sizeof(EEImplMethodDesc),           mcEEImpl
         // sizeof(ArrayMethodDesc),            mcArray
         // sizeof(InstantiatedMethodDesc),     mcInstantiated

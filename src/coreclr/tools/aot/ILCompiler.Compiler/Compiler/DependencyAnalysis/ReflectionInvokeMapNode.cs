@@ -65,6 +65,10 @@ namespace ILCompiler.DependencyAnalysis
 
             if (!method.IsAbstract)
             {
+                if (method.IsSharedByGenericInstantiations)
+                {
+                    dependencies.Add(factory.ShadowNonConcreteMethod(method), "Shadow generic reflectable method");
+                }
                 dependencies.Add(factory.AddressTakenMethodEntrypoint(method), "Body of a reflectable method");
             }
 
@@ -99,28 +103,15 @@ namespace ILCompiler.DependencyAnalysis
             {
                 factory.TypeSystemContext.DetectGenericCycles(type, referent);
 
-                // If the user can legitimately get to a System.Type instance by inspecting the signature of the method,
-                // the user then might use these System.Type instances with APIs such as:
-                //
-                // * MethodInfo.CreateDelegate
-                // * RuntimeHelpers.Box
-                // * Array.CreateInstanceForArrayType
-                //
-                // All of these APIs are trim/AOT safe and allow creating new instances of the supplied Type.
-                // We need this to work.
-                // NOTE: We don't have to worry about RuntimeHelpers.GetUninitializedObject because that one is annotated
-                // as trim-unsafe.
-                bool isMaximallyConstructibleByPolicy = type.IsDelegate || type.IsValueType || type.IsSzArray;
-
                 // Reflection might need to create boxed instances of valuetypes as part of reflection invocation.
                 // Non-valuetypes are only needed for the purposes of casting/type checks.
                 // If this is a non-exact type, we need the type loader template to get the type handle.
                 if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                     GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, type.NormalizeInstantiation());
-                else if ((isOut && !type.IsGCPointer) || isMaximallyConstructibleByPolicy)
+                else if (isOut && !type.IsGCPointer)
                     dependencies.Add(factory.MaximallyConstructableType(type.NormalizeInstantiation()), reason);
                 else
-                    dependencies.Add(factory.NecessaryTypeSymbol(type.NormalizeInstantiation()), reason);
+                    dependencies.Add(factory.MetadataTypeSymbol(type.NormalizeInstantiation()), reason);
             }
             catch (TypeSystemException)
             {

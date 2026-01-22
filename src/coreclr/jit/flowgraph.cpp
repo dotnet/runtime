@@ -777,8 +777,9 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
              helper == CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR ||
              helper == CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR)
     {
-        result = gtNewHelperCallNode(helper, type,
-                                     gtNewIconNode(info.compCompHnd->getClassStaticDynamicInfo(cls), TYP_I_IMPL));
+        result =
+            gtNewHelperCallNode(helper, type,
+                                gtNewIconNode((size_t)info.compCompHnd->getClassStaticDynamicInfo(cls), TYP_I_IMPL));
     }
     else
     {
@@ -1409,8 +1410,6 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
 
 void Compiler::fgAddSyncMethodEnterExit()
 {
-    assert(UsesFunclets());
-
     assert((info.compFlags & CORINFO_FLG_SYNCH) != 0);
 
     // We need to do this transformation before funclets are created.
@@ -1418,15 +1417,6 @@ void Compiler::fgAddSyncMethodEnterExit()
 
     // We need to update the bbPreds lists.
     assert(fgPredsComputed);
-
-#if !FEATURE_EH
-    // If we don't support EH, we can't add the EH needed by synchronized methods.
-    // Of course, we could simply ignore adding the EH constructs, since we don't
-    // support exceptions being thrown in this mode, but we would still need to add
-    // the monitor enter/exit, and that doesn't seem worth it for this minor case.
-    // By the time EH is working, we can just enable the whole thing.
-    NYI("No support for synchronized methods");
-#endif // !FEATURE_EH
 
     // Create a block for the start of the try region, where the monitor enter call
     // will go.
@@ -1545,10 +1535,14 @@ void Compiler::fgAddSyncMethodEnterExit()
 
     lvaTable[lvaMonAcquired].lvType = typeMonAcquired;
 
-    // Create IR to initialize the 'acquired' boolean.
-    //
-    if (!opts.IsOSR())
+    if (opts.IsOSR())
     {
+        lvaTable[lvaMonAcquired].lvIsOSRLocal = true;
+    }
+    else
+    {
+        // Create IR to initialize the 'acquired' boolean.
+        //
         GenTree* zero     = gtNewZeroConNode(typeMonAcquired);
         GenTree* initNode = gtNewStoreLclVarNode(lvaMonAcquired, zero);
 
@@ -2399,7 +2393,7 @@ PhaseStatus Compiler::fgAddInternal()
     // BBJ_RETURN block gets placed at the top-level, not within an EH region. (Otherwise,
     // we'd have to be really careful when creating the synchronized method try/finally
     // not to include the BBJ_RETURN block.)
-    if (UsesFunclets() && (info.compFlags & CORINFO_FLG_SYNCH) != 0)
+    if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
     {
         fgAddSyncMethodEnterExit();
     }
@@ -2409,7 +2403,7 @@ PhaseStatus Compiler::fgAddInternal()
     //   when we are asked to generate enter/leave callbacks
     //   or for methods with PInvoke
     //   or for methods calling into unmanaged code
-    //   or for synchronized methods.
+    //   or for synchronized methods
     //
     BasicBlock* lastBlockBeforeGenReturns = fgLastBB;
     if (compIsProfilerHookNeeded() || compMethodRequiresPInvokeFrame() || opts.IsReversePInvoke() ||
@@ -2500,10 +2494,13 @@ PhaseStatus Compiler::fgAddInternal()
 
     CORINFO_JUST_MY_CODE_HANDLE* pDbgHandle = nullptr;
     CORINFO_JUST_MY_CODE_HANDLE  dbgHandle  = nullptr;
+
+#if !defined(TARGET_WASM)
     if (opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
     {
         dbgHandle = info.compCompHnd->getJustMyCodeHandle(info.compMethodHnd, &pDbgHandle);
     }
+#endif
 
     noway_assert(!dbgHandle || !pDbgHandle);
 
@@ -2525,77 +2522,6 @@ PhaseStatus Compiler::fgAddInternal()
 
         madeChanges = true;
     }
-
-#if defined(FEATURE_EH_WINDOWS_X86)
-
-    /* Is this a 'synchronized' method? */
-
-    if (!UsesFunclets() && (info.compFlags & CORINFO_FLG_SYNCH))
-    {
-        GenTree* tree = nullptr;
-
-        /* Insert the expression "enterCrit(this)" or "enterCrit(handle)" */
-
-        if (info.compIsStatic)
-        {
-            tree = fgGetCritSectOfStaticMethod();
-        }
-        else
-        {
-            noway_assert(lvaTable[info.compThisArg].lvType == TYP_REF);
-            tree = gtNewLclvNode(info.compThisArg, TYP_REF);
-        }
-
-        tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER, TYP_VOID, tree);
-
-        fgNewStmtAtBeg(fgFirstBB, tree);
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nSynchronized method - Add enterCrit statement in first basic block %s\n",
-                   fgFirstBB->dspToString());
-            gtDispTree(tree);
-            printf("\n");
-        }
-#endif
-
-        /* We must be generating a single exit point for this to work */
-
-        noway_assert(genReturnBB != nullptr);
-
-        /* Create the expression "exitCrit(this)" or "exitCrit(handle)" */
-
-        if (info.compIsStatic)
-        {
-            tree = fgGetCritSectOfStaticMethod();
-        }
-        else
-        {
-            tree = gtNewLclvNode(info.compThisArg, TYP_REF);
-        }
-
-        tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, tree);
-
-        fgNewStmtNearEnd(genReturnBB, tree);
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nSynchronized method - Add exitCrit statement in single return block %s\n",
-                   genReturnBB->dspToString());
-            gtDispTree(tree);
-            printf("\n");
-        }
-#endif
-
-        // Reset cookies used to track start and end of the protected region in synchronized methods
-        syncStartEmitCookie = nullptr;
-        syncEndEmitCookie   = nullptr;
-        madeChanges         = true;
-    }
-
-#endif // FEATURE_EH_WINDOWS_X86
 
     if (opts.IsReversePInvoke())
     {
@@ -2960,7 +2886,6 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     }
 #endif
 
-    assert(UsesFunclets());
     assert(block->hasHndIndex());
     assert(fgFirstBlockOfHandler(block) == block); // this block is the first block of a handler
 
@@ -3030,7 +2955,6 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 //
 void Compiler::fgCreateFuncletPrologBlocks()
 {
-    assert(UsesFunclets());
     noway_assert(fgPredsComputed);
     assert(!fgFuncletsCreated);
 
@@ -3095,7 +3019,6 @@ void Compiler::fgCreateFuncletPrologBlocks()
 //
 PhaseStatus Compiler::fgCreateFunclets()
 {
-    assert(UsesFunclets());
     assert(!fgFuncletsCreated);
 
     fgCreateFuncletPrologBlocks();
@@ -3171,8 +3094,6 @@ PhaseStatus Compiler::fgCreateFunclets()
 //
 bool Compiler::fgFuncletsAreCold()
 {
-    assert(UsesFunclets());
-
     for (BasicBlock* block = fgFirstFuncletBB; block != nullptr; block = block->Next())
     {
         if (!block->isRunRarely())
@@ -3510,7 +3431,7 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
     add->acdTryIndex = srcBlk->bbTryIndex;
 
     // For non-funclet EH we don't constrain ACD placement via handler regions
-    add->acdHndIndex = UsesFunclets() ? srcBlk->bbHndIndex : 0;
+    add->acdHndIndex = srcBlk->bbHndIndex;
 
     add->acdKeyDsg = dsg;
     add->acdKind   = kind;
@@ -3774,19 +3695,6 @@ Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, BasicBl
 //
 unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
 {
-    if (!UsesFunclets())
-    {
-        if (blk->hasTryIndex())
-        {
-            *dsg = AcdKeyDesignator::KD_TRY;
-        }
-        else
-        {
-            *dsg = AcdKeyDesignator::KD_NONE;
-        }
-        return blk->bbTryIndex;
-    }
-
     const unsigned tryIndex = blk->bbTryIndex;
     const unsigned hndIndex = blk->bbHndIndex;
     const bool     inTry    = tryIndex > 0;
@@ -3912,14 +3820,7 @@ bool Compiler::AddCodeDsc::UpdateKeyDesignator(Compiler* compiler)
 
     AcdKeyDesignator newDsg = AcdKeyDesignator::KD_NONE;
 
-    if (!compiler->UsesFunclets())
-    {
-        // Non-funclet case
-        //
-        assert(acdKeyDsg != AcdKeyDesignator::KD_FLT);
-        newDsg = inTry ? AcdKeyDesignator::KD_TRY : AcdKeyDesignator::KD_NONE;
-    }
-    else if (!inTry && !inHnd)
+    if (!inTry && !inHnd)
     {
         // Moved outside of all EH regions.
         //
@@ -4449,10 +4350,29 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
         }
     };
 
+    jitstd::vector<BasicBlock*> entryBlocks(getAllocator(CMK_DepthFirstSearch));
+
+    entryBlocks.push_back(fgFirstBB);
+
+    if (fgEntryBB != nullptr)
+    {
+        // OSR methods will early on create flow that looks like it goes to the
+        // patchpoint, but during morph we may transform to something that
+        // requires the original entry (fgEntryBB).
+        assert(opts.IsOSR());
+        entryBlocks.push_back(fgEntryBB);
+    }
+
+    if ((genReturnBB != nullptr) && !fgGlobalMorphDone)
+    {
+        // We introduce the merged return BB before morph and will redirect
+        // other returns to it as part of morph; keep it reachable.
+        entryBlocks.push_back(genReturnBB);
+    }
+
     unsigned numBlocks =
-        fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), useProfile>(visitPreorder,
-                                                                                                     visitPostorder,
-                                                                                                     visitEdge);
+        fgRunDfs<AllSuccessorEnumerator, decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge),
+                 useProfile>(visitPreorder, visitPostorder, visitEdge, entryBlocks);
     return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle, useProfile);
 }
 
@@ -4873,7 +4793,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         BitVecTraits loopTraits = loop->LoopBlockTraits();
         loop->m_blocks          = BitVecOps::MakeEmpty(&loopTraits);
 
-        if (!FindNaturalLoopBlocks(loop, worklist) || !IsLoopCanonicalizable(loop))
+        if (!loops->FindNaturalLoopBlocks(loop, worklist) || !IsLoopCanonicalizable(loop))
         {
             loops->m_improperLoopHeaders++;
 
@@ -5043,12 +4963,31 @@ bool FlowGraphNaturalLoops::FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, Ar
     {
         BasicBlock* const loopBlock = worklist.Pop();
 
+        // For wasm, a callfinallyret pred is the callfinally
+        //
+        if (IsForWasm() && loopBlock->isBBCallFinallyPairTail())
+        {
+            BasicBlock* const callfinally = loopBlock->Prev();
+            if (BitVecOps::TryAddElemD(&loopTraits, loop->m_blocks, loop->LoopBlockBitVecIndex(callfinally)))
+            {
+                worklist.Push(callfinally);
+            }
+            continue;
+        }
+
         for (FlowEdge* predEdge = comp->BlockPredsWithEH(loopBlock); predEdge != nullptr;
              predEdge           = predEdge->getNextPredEdge())
         {
             BasicBlock* const predBlock = predEdge->getSourceBlock();
 
             if (!dfsTree->Contains(predBlock))
+            {
+                continue;
+            }
+
+            // For wasm ignore any preds that are funclet returns... (loops will not flow through funclets)
+            //
+            if (IsForWasm() && predBlock->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET))
             {
                 continue;
             }
@@ -5504,9 +5443,7 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
 
     JITDUMP("  Preheader = " FMT_BB "\n", preheader->bbNum);
 
-    BasicBlock* initBlock = nullptr;
-    GenTree*    init      = nullptr;
-    GenTree*    test      = nullptr;
+    GenTree* test = nullptr;
 
     info->IterVar = BAD_VAR_NUM;
 
@@ -5521,8 +5458,7 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
         }
 
         GenTree* iterTree = nullptr;
-        initBlock         = preheader;
-        if (!comp->optExtractInitTestIncr(&initBlock, cond, m_header, &init, &test, &iterTree))
+        if (!comp->optExtractTestIncr(cond, &test, &iterTree))
         {
             JITDUMP("    Could not extract an IV\n");
             continue;
@@ -5580,18 +5516,16 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
         return false;
     }
 
-    if (init == nullptr)
+    if (FindConstInit(preheader, info))
+    {
+        JITDUMP("  Init = [%06u], test = [%06u], incr = [%06u]\n", Compiler::dspTreeID(info->InitTree),
+                Compiler::dspTreeID(test), Compiler::dspTreeID(info->IterTree));
+    }
+    else
     {
         JITDUMP("  Init = <none>, test = [%06u], incr = [%06u]\n", Compiler::dspTreeID(test),
                 Compiler::dspTreeID(info->IterTree));
     }
-    else
-    {
-        JITDUMP("  Init = [%06u], test = [%06u], incr = [%06u]\n", Compiler::dspTreeID(init), Compiler::dspTreeID(test),
-                Compiler::dspTreeID(info->IterTree));
-    }
-
-    MatchInit(info, initBlock, init);
 
     bool result = VisitDefs([=](GenTreeLclVarCommon* def) {
         if ((def->GetLclNum() != info->IterVar) || (def == info->IterTree))
@@ -5606,7 +5540,7 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
         return false;
     }
 
-    if (!CheckLoopConditionBaseCase(initBlock, info))
+    if (!CheckLoopConditionBaseCase(preheader, info))
     {
         JITDUMP("  Loop condition may not be true on the first iteration\n");
         return false;
@@ -5635,33 +5569,6 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
 #endif
 
     return true;
-}
-
-//------------------------------------------------------------------------
-// FlowGraphNaturalLoop::MatchInit: Try to pattern match the initialization of
-// an induction variable.
-//
-// Parameters:
-//   info      - [in, out] Info structure to query and fill out
-//   initBlock - Block containing the initialization tree
-//   init      - Initialization tree
-//
-// Remarks:
-//   We do not necessarily guarantee or require to be able to find any
-//   initialization.
-//
-void FlowGraphNaturalLoop::MatchInit(NaturalLoopIterInfo* info, BasicBlock* initBlock, GenTree* init)
-{
-    if ((init == nullptr) || !init->OperIs(GT_STORE_LCL_VAR) || (init->AsLclVarCommon()->GetLclNum() != info->IterVar))
-        return;
-
-    GenTree* initValue = init->AsLclVar()->Data();
-    if (!initValue->IsCnsIntOrI() || !initValue->TypeIs(TYP_INT))
-        return;
-
-    info->HasConstInit   = true;
-    info->ConstInitValue = (int)initValue->AsIntCon()->IconValue();
-    INDEBUG(info->InitTree = init);
 }
 
 //------------------------------------------------------------------------
@@ -5802,6 +5709,62 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
 }
 
 //------------------------------------------------------------------------
+// FlowGraphNaturalLoop::FindConstInit:
+//   Find an unconditional constant initialization of the iteration variable,
+//   recording and returning its information.
+//
+// Parameters:
+//   preheader - Preheader of the loop, to start the search from
+//   info      - [in, out] Loop information
+//
+// Returns:
+//   True if a constant init of the iteration variable was found; otherwise false.
+//
+bool FlowGraphNaturalLoop::FindConstInit(BasicBlock* preheader, NaturalLoopIterInfo* info)
+{
+    BasicBlock* curBlock = preheader;
+    do
+    {
+        Statement* stmt = curBlock->lastStmt();
+        if (stmt != nullptr)
+        {
+            while (true)
+            {
+                GenTree* tree = stmt->GetRootNode();
+                if (tree->OperIs(GT_STORE_LCL_VAR))
+                {
+                    GenTreeLclVarCommon* store = tree->AsLclVarCommon();
+                    GenTree*             data  = store->Data();
+                    if ((store->GetLclNum() == info->IterVar) && data->IsCnsIntOrI() && data->TypeIs(TYP_INT))
+                    {
+                        info->HasConstInit   = true;
+                        info->ConstInitValue = (int)data->AsIntCon()->IconValue();
+                        INDEBUG(info->InitTree = tree);
+                        return true;
+                    }
+                }
+
+                if (GetDfsTree()->GetCompiler()->gtTreeHasLocalStore(tree, info->IterVar))
+                {
+                    return false;
+                }
+
+                if (stmt == curBlock->firstStmt())
+                {
+                    break;
+                }
+
+                stmt = stmt->GetPrevStmt();
+            }
+        }
+
+        curBlock = curBlock->GetUniquePred(GetDfsTree()->GetCompiler());
+    } while (curBlock != nullptr);
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // EvaluateRelop: Evaluate a relational operator with constant arguments.
 //
 // Parameters:
@@ -5852,7 +5815,7 @@ bool FlowGraphNaturalLoop::EvaluateRelop(T op1, T op2, genTreeOps oper)
 //     * The condition being trivially true in the first iteration (e.g. for (int i = 0; i < 3; i++))
 //     * The condition is checked before entry (often due to loop inversion)
 //
-bool FlowGraphNaturalLoop::CheckLoopConditionBaseCase(BasicBlock* initBlock, NaturalLoopIterInfo* info)
+bool FlowGraphNaturalLoop::CheckLoopConditionBaseCase(BasicBlock* preheader, NaturalLoopIterInfo* info)
 {
     // TODO: A common loop idiom is to enter the loop at the test, with the
     // unique in-loop predecessor of the header block being the increment. We
@@ -5883,8 +5846,7 @@ bool FlowGraphNaturalLoop::CheckLoopConditionBaseCase(BasicBlock* initBlock, Nat
         }
     }
 
-    // Do we have a zero-trip test?
-    if (initBlock->KindIs(BBJ_COND) && IsZeroTripTest(initBlock, info))
+    if (HasZeroTripTest(preheader, info))
     {
         return true;
     }
@@ -5893,18 +5855,55 @@ bool FlowGraphNaturalLoop::CheckLoopConditionBaseCase(BasicBlock* initBlock, Nat
 }
 
 //------------------------------------------------------------------------
-// IsZeroTripTest: Check whether `initBlock`, a BBJ_COND block that enters the
-// loop in one case and not in the other, implies that the loop invariant is
-// true on entry.
+// HasZeroTripTest: Check whether the loop has a zero trip test guarding it
+// from being entered.
+//
+// Parameters:
+//   preheader - The preheader block
+//   info      - Iteration information
+//
+// Returns:
+//   True if we could prove that the loop invariant is true on entry.
+//
+bool FlowGraphNaturalLoop::HasZeroTripTest(BasicBlock* preheader, NaturalLoopIterInfo* info)
+{
+    assert(!preheader->KindIs(BBJ_COND));
+    BasicBlock* curBlock = preheader;
+    while (true)
+    {
+        BasicBlock* prevBlock = curBlock;
+        curBlock              = curBlock->GetUniquePred(GetDfsTree()->GetCompiler());
+
+        if (curBlock == nullptr)
+        {
+            return false;
+        }
+
+        if (curBlock->KindIs(BBJ_COND) && (curBlock->GetFalseTarget() != curBlock->GetTrueTarget()) &&
+            IsZeroTripTest(curBlock, curBlock->TrueTargetIs(prevBlock), info))
+        {
+            return true;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// IsZeroTripTest: Check whether the loop has a zero trip test guarding it
+// from being entered.
+//
+// Parameters:
+//   guardBlock     - The preheader block
+//   entersWhenTrue - Whether the loop is entered on true or false of the guard block.
+//   info           - Iteration information
 //
 // Returns:
 //   True if we could prove that the loop invariant is true on entry through
-//   "initBlock".
+//   "guardBlock".
 //
-bool FlowGraphNaturalLoop::IsZeroTripTest(BasicBlock* initBlock, NaturalLoopIterInfo* info)
+bool FlowGraphNaturalLoop::IsZeroTripTest(BasicBlock* guardBlock, bool entersWhenTrue, NaturalLoopIterInfo* info)
 {
-    assert(initBlock->KindIs(BBJ_COND));
-    GenTree* enteringJTrue = initBlock->lastStmt()->GetRootNode();
+    assert(guardBlock->KindIs(BBJ_COND));
+    GenTree* enteringJTrue = guardBlock->lastStmt()->GetRootNode();
     assert(enteringJTrue->OperIs(GT_JTRUE));
     GenTree* relop = enteringJTrue->gtGetOp1();
     if (!relop->OperIsCmpCompare())
@@ -5912,14 +5911,8 @@ bool FlowGraphNaturalLoop::IsZeroTripTest(BasicBlock* initBlock, NaturalLoopIter
         return false;
     }
 
-    // Technically optExtractInitTestIncr only handles the "false"
-    // entry case, and preheader creation should ensure that that's the
-    // only time we'll see a BBJ_COND init block. However, it does not
-    // hurt to let this logic be correct by construction.
-    bool enterOnTrue = InitBlockEntersLoopOnTrue(initBlock);
-
-    JITDUMP("  Init block " FMT_BB " enters the loop when condition [%06u] evaluates to %s\n", initBlock->bbNum,
-            Compiler::dspTreeID(relop), enterOnTrue ? "true" : "false");
+    JITDUMP("  Guard block " FMT_BB " enters the loop when condition [%06u] evaluates to %s\n", guardBlock->bbNum,
+            Compiler::dspTreeID(relop), entersWhenTrue ? "true" : "false");
 
     GenTree*   limitCandidate;
     genTreeOps oper;
@@ -5943,7 +5936,7 @@ bool FlowGraphNaturalLoop::IsZeroTripTest(BasicBlock* initBlock, NaturalLoopIter
         return false;
     }
 
-    if (!enterOnTrue)
+    if (!entersWhenTrue)
     {
         oper = GenTree::ReverseRelop(oper);
     }
@@ -5966,56 +5959,6 @@ bool FlowGraphNaturalLoop::IsZeroTripTest(BasicBlock* initBlock, NaturalLoopIter
 
     JITDUMP("  Condition is established before entry at [%06u]\n", Compiler::dspTreeID(enteringJTrue->gtGetOp1()));
     return true;
-}
-
-//------------------------------------------------------------------------
-// InitBlockEntersLoopOnTrue: Determine whether a BBJ_COND init block enters the
-// loop in the false or true case.
-//
-// Parameters:
-//   initBlock - A BBJ_COND block that is assumed to dominate the loop, and
-//   only enter the loop in one of the two cases.
-//
-// Returns:
-//   True if the loop is entered if the condition evaluates to true; otherwise false.
-//
-// Remarks:
-//   Handles only limited cases (optExtractInitTestIncr ensures that we see
-//   only limited cases).
-//
-bool FlowGraphNaturalLoop::InitBlockEntersLoopOnTrue(BasicBlock* initBlock)
-{
-    assert(initBlock->KindIs(BBJ_COND));
-
-    if (initBlock->FalseTargetIs(GetHeader()))
-    {
-        return false;
-    }
-
-    if (initBlock->TrueTargetIs(GetHeader()))
-    {
-        return true;
-    }
-
-    // `optExtractInitTestIncr` may look at preds of preds to find an init
-    // block, so try a little bit harder. Today this always happens since we
-    // always have preheaders created in the places we call
-    // FlowGraphNaturalLoop::AnalyzeIteration.
-    for (FlowEdge* enterEdge : EntryEdges())
-    {
-        BasicBlock* entering = enterEdge->getSourceBlock();
-        if (initBlock->FalseTargetIs(entering))
-        {
-            return false;
-        }
-        if (initBlock->TrueTargetIs(entering))
-        {
-            return true;
-        }
-    }
-
-    assert(!"Could not find init block enter side");
-    return false;
 }
 
 //------------------------------------------------------------------------

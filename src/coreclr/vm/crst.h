@@ -168,8 +168,6 @@ private:
     void Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag = CRST_LEVEL_CHECK));
     void Leave();
 
-    void SpinEnter();
-
 #ifndef DACCESS_COMPILE
     DEBUG_NOINLINE static void AcquireLock(CrstBase *c) {
         WRAPPER_NO_CONTRACT;

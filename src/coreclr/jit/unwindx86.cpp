@@ -70,16 +70,13 @@ void Compiler::unwindSaveReg(regNumber reg, unsigned offset)
 //
 void Compiler::unwindReserve()
 {
-    if (UsesFunclets())
-    {
-        assert(!compGeneratingProlog);
-        assert(!compGeneratingEpilog);
+    assert(!compGeneratingProlog);
+    assert(!compGeneratingEpilog);
 
-        assert(compFuncInfoCount > 0);
-        for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
-        {
-            unwindReserveFunc(funGetFunc(funcIdx));
-        }
+    assert(compFuncInfoCount > 0);
+    for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
+    {
+        unwindReserveFunc(funGetFunc(funcIdx));
     }
 }
 
@@ -92,16 +89,13 @@ void Compiler::unwindReserve()
 //
 void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
 {
-    if (UsesFunclets())
-    {
-        assert(!compGeneratingProlog);
-        assert(!compGeneratingEpilog);
+    assert(!compGeneratingProlog);
+    assert(!compGeneratingEpilog);
 
-        assert(compFuncInfoCount > 0);
-        for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
-        {
-            unwindEmitFunc(funGetFunc(funcIdx), pHotCode, pColdCode);
-        }
+    assert(compFuncInfoCount > 0);
+    for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
+    {
+        unwindEmitFunc(funGetFunc(funcIdx), pHotCode, pColdCode);
     }
 }
 
@@ -114,7 +108,6 @@ void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
 //
 void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 {
-    assert(UsesFunclets());
     unwindReserveFuncHelper(func, true);
 
     if (fgFirstColdBlock != nullptr)
@@ -156,9 +149,9 @@ void Compiler::unwindReserveFuncHelper(FuncInfoDsc* func, bool isHotCode)
 void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode)
 {
     // Verify that the JIT enum is in sync with the JIT-EE interface enum
-    static_assert_no_msg(FUNC_ROOT == (FuncKind)CORJIT_FUNC_ROOT);
-    static_assert_no_msg(FUNC_HANDLER == (FuncKind)CORJIT_FUNC_HANDLER);
-    static_assert_no_msg(FUNC_FILTER == (FuncKind)CORJIT_FUNC_FILTER);
+    static_assert(FUNC_ROOT == (FuncKind)CORJIT_FUNC_ROOT);
+    static_assert(FUNC_HANDLER == (FuncKind)CORJIT_FUNC_HANDLER);
+    static_assert(FUNC_FILTER == (FuncKind)CORJIT_FUNC_FILTER);
 
     unwindEmitFuncHelper(func, pHotCode, pColdCode, true);
 

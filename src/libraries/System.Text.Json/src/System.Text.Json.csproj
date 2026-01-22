@@ -12,6 +12,7 @@
     <PackageDescription>Provides high-performance and low-allocating types that serialize objects to JavaScript Object Notation (JSON) text and deserialize JSON text to objects, with UTF-8 support built-in. Also provides types to read and write JSON text encoded as UTF-8, and to create an in-memory document object model (DOM), that is read-only, for random access of the JSON elements within a structured view of the data.
 
 The System.Text.Json library is built-in as part of the shared framework in .NET Runtime. The package can be installed when you need to use it in other target frameworks.</PackageDescription>
+    <IncludeSpanPolyfills>true</IncludeSpanPolyfills>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -374,6 +375,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="$(CoreLibSharedDir)System\Collections\ObjectModel\CollectionHelpers.cs" Link="Common\System\Collections\ObjectModel\CollectionHelpers.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs" Link="Common\System\Collections\Generic\EnumerableHelpers.cs" />
     <Compile Include="$(LibrariesProjectRoot)System.Collections\src\System\Collections\Generic\OrderedDictionary.cs" Link="Common\System\Collections\Generic\OrderedDictionary.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Collections\src\System\Collections\Generic\OrderedDictionaryDebugView.cs" Link="Common\System\Collections\Generic\OrderedDictionaryDebugView.cs" />
     <Compile Include="$(LibrariesProjectRoot)System.Collections\src\System\Collections\ThrowHelper.cs" Link="Common\System\Collections\ThrowHelper.cs" />
 
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" />
@@ -388,10 +390,12 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Converters\Value\TimeOnlyConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt128Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptionsUpdateHandler.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\IReadOnlySetOfTConverter.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CommonPath)System\IO\StreamExtensions.netstandard.cs" Link="Common\System\IO\StreamExtensions.netstandard.cs" />
+    <Compile Include="$(CommonPath)System\Text\StringBuilderExtensions.cs" Link="Common\System\Text\StringBuilderExtensions.cs" />
     <Compile Include="System\Collections\Generic\StackExtensions.netstandard.cs" />
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="Common\System\Buffers\ArrayBufferWriter.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />

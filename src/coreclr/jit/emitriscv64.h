@@ -3,7 +3,7 @@
 
 #if defined(TARGET_RISCV64)
 
-// The RISCV64 instructions are all 32 bits in size.
+// The RISCV64 instructions are all 32 / 16 bits in size.
 // we use an unsigned int to hold the encoded instructions.
 // This typedef defines the type that we use to hold encoded instructions.
 //
@@ -30,8 +30,10 @@ const char* emitVectorRegName(regNumber reg);
 #endif // DEBUG
 
 void emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1 = REG_R0, regNumber reg2 = REG_R0);
+void emitIns_J(instruction ins, BasicBlock* dst);
 
-void emitLoadImmediate(emitAttr attr, regNumber reg, ssize_t imm);
+template <bool doEmit>
+int emitLoadImmediate(emitAttr attr, regNumber reg, ssize_t imm);
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */
@@ -62,6 +64,19 @@ bool emitInsIsLoad(instruction ins);
 bool emitInsIsStore(instruction ins);
 bool emitInsIsLoadOrStore(instruction ins);
 
+void emitIns_Jump(instruction ins, BasicBlock* dst, regNumber reg1 = REG_ZERO, regNumber reg2 = REG_ZERO);
+
+// RVC emitters
+bool tryEmitCompressedIns_R_R_R(
+    instruction ins, emitAttr attr, regNumber rd, regNumber rs1, regNumber rs2, insOpts opt);
+
+// RVC helpers
+instruction tryGetCompressedIns_R_R_R(
+    instruction ins, emitAttr attr, regNumber rd, regNumber rs1, regNumber rs2, insOpts opt);
+unsigned    tryGetRvcRegisterNumber(regNumber reg);
+instruction getCompressedArithmeticIns(instruction ins);
+regNumber   getRegNumberFromRvcReg(unsigned rvcReg);
+
 void emitDispInsName(
     code_t code, const BYTE* addr, bool doffs, unsigned insOffset, const instrDesc* id, const insGroup* ig);
 void emitDispInsInstrNum(const instrDesc* id) const;
@@ -77,7 +92,7 @@ static emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/);
 // Generate code for a load or store operation and handle the case of contained GT_LEA op1 with [base + offset]
 void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir);
 
-// Emit the 32-bit RISCV64 instruction 'code' into the 'dst'  buffer
+// Emit the 16/32-bit RISCV64 instruction 'code' into the 'dst'  buffer
 unsigned emitOutput_Instr(BYTE* dst, code_t code) const;
 
 ssize_t emitOutputInstrJumpDistance(const BYTE* src, const insGroup* ig, instrDescJmp* jmp);
@@ -99,6 +114,9 @@ static code_t insEncodeSTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1
 static code_t insEncodeUTypeInstr(unsigned opcode, unsigned rd, unsigned imm20);
 static code_t insEncodeBTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, unsigned imm13);
 static code_t insEncodeJTypeInstr(unsigned opcode, unsigned rd, unsigned imm21);
+
+static code_t insEncodeCRTypeInstr(instruction ins, unsigned rdRs1, unsigned rs2);
+static code_t insEncodeCATypeInstr(instruction ins, unsigned rdRs1Rvc, unsigned rs2Rvc);
 
 #ifdef DEBUG
 static void emitOutput_RTypeInstr_SanityCheck(instruction ins, regNumber rd, regNumber rs1, regNumber rs2);
@@ -124,9 +142,7 @@ unsigned emitOutput_JTypeInstr(BYTE* dst, instruction ins, regNumber rd, unsigne
 BYTE* emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruction* ins);
 BYTE* emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instruction* ins);
 BYTE* emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins);
-BYTE* emitOutputInstr_OptsJalr(BYTE* dst, instrDescJmp* jmp, const insGroup* ig, instruction* ins);
-BYTE* emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins);
-BYTE* emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins);
+BYTE* emitOutputInstr_OptsJump(BYTE* dst, instrDescJmp* jmp, const insGroup* ig, instruction* ins);
 BYTE* emitOutputInstr_OptsC(BYTE* dst, instrDesc* id, const insGroup* ig, size_t* size);
 BYTE* emitOutputInstr_OptsI(BYTE* dst, instrDesc* id, instruction* ins);
 
@@ -135,17 +151,26 @@ static unsigned TrimSignedToImm13(ssize_t imm13);
 static unsigned TrimSignedToImm20(ssize_t imm20);
 static unsigned TrimSignedToImm21(ssize_t imm21);
 
-// Major opcode of a 32-bit instruction as per "The RISC-V Instruction Set Manual", Chapter "RV32/64G Instruction Set
-// Listings", Table "RISC-V base opcode map"
+// Major opcode of 32-bit & 16-bit instructions as per "The RISC-V Instruction Set Manual", chapter "RV32/64G
+// Instruction Set Listings", table "RISC-V base opcode map" and chapter "RVC Instruction Set Listings", table "RVC
+// opcode map instructions"
 enum class MajorOpcode
 {
     // clang-format off
+    // inst[1:0] = 11
     // inst[4:2]    000,    001,     010,      011,     100,    101,   110,          111 (>32Bit)
     /* inst[6:5] */
     /*        00 */ Load,   LoadFp,  Custom0,  MiscMem, OpImm,  Auipc, OpImm32,      Encoding48Bit1,
     /*        01 */ Store,  StoreFp, Custom1,  Amo,     Op,     Lui,   Op32,         Encoding64Bit,
     /*        11 */ MAdd,   MSub,    NmSub,    NmAdd,   OpFp,   OpV,   Custom2Rv128, Encoding48Bit2,
     /*        11 */ Branch, Jalr,    Reserved, Jal,     System, OpVe,  Custom3Rv128, Encoding80Bit,
+
+    // Compressed (RVC) instructions
+    // inst[15:13]  000,      001,   010,  011,         100,         101,   110,  111
+    /* inst[1:0] */
+    /*        00 */ Addi4Spn, Fld,   Lw,   Ld,          Reserved2,   Fsd,   Sw,   Sd,
+    /*        01 */ Addi,     Addiw, Li,   LuiAddi16Sp, MiscAlu,     J,     Beqz, Bnez,
+    /*        10 */ Slli,     FldSp, LwSp, Ldsp,        JrJalrMvAdd, FsdSp, SwSp, SdSp,
     // clang-format on
 };
 
@@ -153,7 +178,7 @@ enum class MajorOpcode
 // GetMajorOpcode: extracts major opcode from an instruction
 //
 // Arguments:
-//    instr - instruction encoded in 32-bit format
+//    instr - instruction code
 //
 // Return Value:
 //    Major opcode
@@ -262,12 +287,6 @@ inline static bool isFloatReg(regNumber reg)
 }
 
 /************************************************************************/
-/*                   Output target-independent instructions             */
-/************************************************************************/
-
-void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
-
-/************************************************************************/
 /*           The public entry points to output instructions             */
 /************************************************************************/
 
@@ -322,17 +341,53 @@ void emitIns_R_C(instruction ins, emitAttr attr, regNumber destReg, regNumber ad
 
 void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg);
 
-void emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg);
+void emitIns_R_R_Addr(instruction ins, emitAttr attr, regNumber regDest, regNumber regAddr, void* addr);
 
 void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
 
 void emitIns_R_AI(instruction  ins,
                   emitAttr     attr,
-                  regNumber    reg,
+                  regNumber    dataReg,
+                  regNumber    addrReg,
                   ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
-unsigned emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, code_t code);
+unsigned emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id);
 
 unsigned get_curTotalCodeSize(); // bytes of code
+
+bool IsAddressInRange(void* addr);
+
+//------------------------------------------------------------------------
+// emitIsCmpJump: checks if it's a compare and jump (branch)
+//
+// Arguments:
+//    jmp - the instruction to check
+//
+inline static bool emitIsCmpJump(instrDesc* jmp)
+{
+    return emitIsCmpJump(jmp->idIns());
+}
+
+inline static bool emitIsCmpJump(instruction ins)
+{
+    return (ins == INS_beqz) || (ins == INS_bnez) || (ins == INS_bne) || (ins == INS_beq) || (ins == INS_blt) ||
+           (ins == INS_bltu) || (ins == INS_bge) || (ins == INS_bgeu);
+}
+
+//------------------------------------------------------------------------
+// emitIsUncondJump: checks if it's an unconditional jump
+//
+// Arguments:
+//    jmp - the instruction to check
+//
+inline static bool emitIsUncondJump(instrDesc* jmp)
+{
+    return emitIsUncondJump(jmp->idIns());
+}
+
+inline static bool emitIsUncondJump(instruction ins)
+{
+    return (ins == INS_j) || (ins == INS_jal);
+}
 
 #endif // TARGET_RISCV64

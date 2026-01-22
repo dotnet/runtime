@@ -21,6 +21,9 @@ extern "C"
 
 static bool AllowR2RForImage(PEImage* pOwner)
 {
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+    return false;
+#else
     // Allow R2R for files
     if (pOwner->IsFile())
         return true;
@@ -31,6 +34,7 @@ static bool AllowR2RForImage(PEImage* pOwner)
         return true;
 
     return false;
+#endif
 }
 
 #ifndef DACCESS_COMPILE
@@ -830,7 +834,7 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
 #endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
 
     DWORD allocationType = MEM_RESERVE | MEM_COMMIT;
-#ifdef HOST_UNIX
+#if defined(HOST_UNIX) && !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
     // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
     // This is required on MacOS and otherwise will allow us to place native R2R code close to the
     // coreclr library and thus improve performance by avoiding jump stubs in managed code.
@@ -882,7 +886,7 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     for (section = sectionStart; section < sectionEnd; section++)
     {
         DWORD executableProtection = PAGE_EXECUTE_READ;
-#if defined(__APPLE__) && defined(HOST_ARM64)
+#if defined(HOST_OSX) && defined(HOST_ARM64)
         executableProtection = PAGE_EXECUTE_READWRITE;
 #endif
         // Add appropriate page protection.

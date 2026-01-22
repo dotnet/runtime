@@ -53,7 +53,7 @@ namespace System.Tests
         [InlineData((long)-234, (long)234, -1)]
         [InlineData((long)-234, (long)-432, 1)]
         [InlineData((long)234, null, 1)]
-        public void CompareTo_Other_ReturnsExpected(long i, object value, int expected)
+        public void CompareTo_Other_ReturnsExpected(long i, object? value, int expected)
         {
             if (value is long longValue)
             {
@@ -82,7 +82,7 @@ namespace System.Tests
         [InlineData((long)789, null, false)]
         [InlineData((long)789, "789", false)]
         [InlineData((long)789, 789, false)]
-        public static void EqualsTest(long i1, object obj, bool expected)
+        public static void EqualsTest(long i1, object? obj, bool expected)
         {
             if (obj is long)
             {

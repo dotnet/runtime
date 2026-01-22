@@ -6,6 +6,7 @@ steps:
       ./dotnet.sh build -p:TargetOS=browser -p:TargetArchitecture=wasm /nr:false /p:TreatWarningsAsErrors=true
       /p:Configuration=${{ parameters.configForBuild }}
       /p:ContinuousIntegrationBuild=true
+      /p:RuntimeFlavor=Mono
       /t:InstallWorkloadUsingArtifacts
       /bl:$(Build.SourcesDirectory)/artifacts/log/${{ parameters.configForBuild }}/InstallWorkloadUsingArtifacts.binlog
       $(Build.SourcesDirectory)/src/mono/wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj

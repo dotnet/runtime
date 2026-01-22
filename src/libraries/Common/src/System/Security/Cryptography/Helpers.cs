@@ -30,7 +30,12 @@ namespace Internal.Cryptography
 #if NET
         [UnsupportedOSPlatformGuard("ios")]
         [UnsupportedOSPlatformGuard("tvos")]
-        public static bool IsDSASupported => !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS();
+        public static bool IsDSASupported =>
+            !OperatingSystem.IsIOS() &&
+            !OperatingSystem.IsTvOS() &&
+            !OperatingSystem.IsMacOS() &&
+            !OperatingSystem.IsMacCatalyst() &&
+            !OperatingSystem.IsBrowser();
 #else
         public static bool IsDSASupported => true;
 #endif
@@ -210,7 +215,7 @@ namespace Internal.Cryptography
 
         internal static CryptographicException CreateAlgorithmUnknownException(AsnWriter encodedId)
         {
-#if NET10_0_OR_GREATER
+#if NET
             return encodedId.Encode(static encoded => CreateAlgorithmUnknownException(Convert.ToHexString(encoded)));
 #else
             return CreateAlgorithmUnknownException(HexConverter.ToString(encodedId.Encode(), HexConverter.Casing.Upper));
@@ -226,7 +231,7 @@ namespace Internal.Cryptography
 #if !BUILDING_PKCS
         internal static string EncodeAsnWriterToPem(string label, AsnWriter writer, bool clear = true)
         {
-#if NET10_0_OR_GREATER
+#if NET
             return writer.Encode(label, static (label, span) => PemEncoding.WriteString(label, span));
 #else
             int length = writer.GetEncodedLength();

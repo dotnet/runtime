@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Tests
     {
         protected abstract MLDsa GenerateKey(MLDsaAlgorithm algorithm);
         protected abstract MLDsa ImportPrivateSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> seed);
-        protected abstract MLDsa ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
+        protected abstract MLDsa ImportPrivateKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
         protected abstract MLDsa ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
 
         [Theory]
@@ -89,8 +89,7 @@ namespace System.Security.Cryptography.Tests
             SignAndVerifyExternalMu(mldsa, data, context);
         }
 
-        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SigningEmptyDataIsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116461", TestPlatforms.Windows)]
+        [Theory]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void GenerateSignVerifyEmptyMessageNoContext(MLDsaAlgorithm algorithm)
         {
@@ -99,8 +98,7 @@ namespace System.Security.Cryptography.Tests
             ExerciseSuccessfulVerify(mldsa, [], signature, []);
         }
 
-        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SigningEmptyDataIsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116461", TestPlatforms.Windows)]
+        [Theory]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void GenerateSignVerifyEmptyMessageWithContext(MLDsaAlgorithm algorithm)
         {
@@ -110,9 +108,7 @@ namespace System.Security.Cryptography.Tests
             ExerciseSuccessfulVerify(mldsa, [], signature, context);
         }
 
-        [ConditionalTheory(
-            typeof(MLDsaTestHelpers),
-            [nameof(MLDsaTestHelpers.SigningEmptyDataIsSupported), nameof(MLDsaTestHelpers.ExternalMuIsSupported)])]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.ExternalMuIsSupported))]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void GenerateSignVerifyEmptyMessageExternalMuNoContext(MLDsaAlgorithm algorithm)
         {
@@ -120,9 +116,7 @@ namespace System.Security.Cryptography.Tests
             SignAndVerifyExternalMu(mldsa, [], []);
         }
 
-        [ConditionalTheory(
-            typeof(MLDsaTestHelpers),
-            [nameof(MLDsaTestHelpers.SigningEmptyDataIsSupported), nameof(MLDsaTestHelpers.ExternalMuIsSupported)])]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.ExternalMuIsSupported))]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void GenerateSignVerifyEmptyMessageExternalMuWithContext(MLDsaAlgorithm algorithm)
         {
@@ -176,19 +170,19 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
-        public void GenerateExportSecretKeySignAndVerify(MLDsaAlgorithm algorithm)
+        public void GenerateExportPrivateKeySignAndVerify(MLDsaAlgorithm algorithm)
         {
-            byte[] secretKey;
+            byte[] privateKey;
             byte[] data = [1, 2, 3, 4, 5];
             byte[] signature;
 
             using (MLDsa mldsaTmp = GenerateKey(algorithm))
             {
                 signature = mldsaTmp.SignData(data);
-                secretKey = mldsaTmp.ExportMLDsaSecretKey();
+                privateKey = mldsaTmp.ExportMLDsaPrivateKey();
             }
 
-            using (MLDsa mldsa = ImportSecretKey(algorithm, secretKey))
+            using (MLDsa mldsa = ImportPrivateKey(algorithm, privateKey))
             {
                 AssertExtensions.TrueExpression(mldsa.VerifyData(data, signature));
 
@@ -228,38 +222,38 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Fact]
-        public void ImportSecretKey_CannotReconstructSeed()
+        [ConditionalFact(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsExportingPrivateKeyPkcs8))]
+        public void ImportPrivateKey_CannotReconstructSeed()
         {
-            byte[] secretKey;
+            byte[] privateKey;
             using (MLDsa mldsaOriginal = GenerateKey(MLDsaAlgorithm.MLDsa44))
             {
-                secretKey = mldsaOriginal.ExportMLDsaSecretKey();
+                privateKey = mldsaOriginal.ExportMLDsaPrivateKey();
             }
 
-            using (MLDsa mldsa = ImportSecretKey(MLDsaAlgorithm.MLDsa44, secretKey))
+            using (MLDsa mldsa = ImportPrivateKey(MLDsaAlgorithm.MLDsa44, privateKey))
             {
                 Assert.Throws<CryptographicException>(() => mldsa.ExportMLDsaPrivateSeed(new byte[MLDsaAlgorithm.MLDsa44.PrivateSeedSizeInBytes]));
             }
         }
 
         [Fact]
-        public void ImportSeed_CanReconstructSecretKey()
+        public void ImportSeed_CanReconstructPrivateKey()
         {
-            byte[] secretKey;
+            byte[] privateKey;
             byte[] seed;
             using (MLDsa mldsaOriginal = GenerateKey(MLDsaAlgorithm.MLDsa44))
             {
-                secretKey = mldsaOriginal.ExportMLDsaSecretKey();
+                privateKey = mldsaOriginal.ExportMLDsaPrivateKey();
                 seed = mldsaOriginal.ExportMLDsaPrivateSeed();
             }
 
             using (MLDsa mldsa = ImportPrivateSeed(MLDsaAlgorithm.MLDsa44, seed))
             {
-                byte[] secretKey2 = mldsa.ExportMLDsaSecretKey();
+                byte[] privateKey2 = mldsa.ExportMLDsaPrivateKey();
                 byte[] seed2 = mldsa.ExportMLDsaPrivateSeed();
 
-                AssertExtensions.SequenceEqual(secretKey, secretKey2);
+                AssertExtensions.SequenceEqual(privateKey, privateKey2);
                 AssertExtensions.SequenceEqual(seed, seed2);
             }
         }
@@ -295,17 +289,17 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(testCase.ShouldPass, mldsa.VerifyMu(testCase.Mu, testCase.Signature));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsExportingPrivateKeyPkcs8))]
         [MemberData(nameof(MLDsaTestsData.AllPureMLDsaNistTestCases), MemberType = typeof(MLDsaTestsData))]
-        public void NistImportSecretKeyVerifyExportsAndSignature(MLDsaNistTestCase testCase)
+        public void NistImportPrivateKeyVerifyExportsAndSignature(MLDsaNistTestCase testCase)
         {
-            using MLDsa mldsa = ImportSecretKey(testCase.Algorithm, testCase.SecretKey);
+            using MLDsa mldsa = ImportPrivateKey(testCase.Algorithm, testCase.PrivateKey);
 
             byte[] pubKey = mldsa.ExportMLDsaPublicKey();
             AssertExtensions.SequenceEqual(testCase.PublicKey, pubKey);
 
-            byte[] secretKey = mldsa.ExportMLDsaSecretKey();
-            AssertExtensions.SequenceEqual(testCase.SecretKey, secretKey);
+            byte[] privateKey = mldsa.ExportMLDsaPrivateKey();
+            AssertExtensions.SequenceEqual(testCase.PrivateKey, privateKey);
             Assert.Throws<CryptographicException>(() => mldsa.ExportMLDsaPrivateSeed());
 
             Assert.Equal(testCase.ShouldPass, mldsa.VerifyData(testCase.Message, testCase.Signature, testCase.Context));
@@ -323,7 +317,7 @@ namespace System.Security.Cryptography.Tests
             MLDsaTestHelpers.AssertExportMLDsaPublicKey(
                 export => AssertExtensions.SequenceEqual(info.PublicKey, export(mldsa)));
 
-            MLDsaTestHelpers.AssertExportMLDsaSecretKey(
+            MLDsaTestHelpers.AssertExportMLDsaPrivateKey(
                 export => Assert.Throws<CryptographicException>(() => export(mldsa)),
                 export => AssertExportPkcs8FromPublicKey(() => export(mldsa)));
 
@@ -332,17 +326,17 @@ namespace System.Security.Cryptography.Tests
                 export => AssertExportPkcs8FromPublicKey(() => export(mldsa)));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsExportingPrivateKeyPkcs8))]
         [MemberData(nameof(MLDsaTestsData.IetfMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void ImportPrivateKey_Export(MLDsaKeyInfo info)
         {
-            using MLDsa mldsa = ImportSecretKey(info.Algorithm, info.SecretKey);
+            using MLDsa mldsa = ImportPrivateKey(info.Algorithm, info.PrivateKey);
 
             MLDsaTestHelpers.AssertExportMLDsaPublicKey(export =>
                 AssertExtensions.SequenceEqual(info.PublicKey, export(mldsa)));
 
-            MLDsaTestHelpers.AssertExportMLDsaSecretKey(export =>
-                AssertExtensions.SequenceEqual(info.SecretKey, export(mldsa)));
+            MLDsaTestHelpers.AssertExportMLDsaPrivateKey(export =>
+                AssertExtensions.SequenceEqual(info.PrivateKey, export(mldsa)));
 
             MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(
                 export => Assert.Throws<CryptographicException>(() => export(mldsa)),
@@ -359,9 +353,9 @@ namespace System.Security.Cryptography.Tests
             MLDsaTestHelpers.AssertExportMLDsaPublicKey(export =>
                 AssertExtensions.SequenceEqual(info.PublicKey, export(mldsa)));
 
-            MLDsaTestHelpers.AssertExportMLDsaSecretKey(
-                export => AssertExtensions.SequenceEqual(info.SecretKey, export(mldsa)),
-                // Seed is preferred in PKCS#8, so secret key won't be available
+            MLDsaTestHelpers.AssertExportMLDsaPrivateKey(
+                export => AssertExtensions.SequenceEqual(info.PrivateKey, export(mldsa)),
+                // Seed is preferred in PKCS#8, so private key won't be available
                 export => Assert.Null(export(mldsa)));
 
             MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(export =>
@@ -394,7 +388,7 @@ namespace System.Security.Cryptography.Tests
 
         protected static byte[]? CalculateMu(MLDsa mldsa, byte[] data, byte[]? context = null)
         {
-#if NET8_0_OR_GREATER
+#if NET
             if (MLDsaTestHelpers.ExternalMuIsSupported)
             {
                 byte[] mu = new byte[mldsa.Algorithm.MuSizeInBytes];

@@ -85,7 +85,7 @@ namespace NetCoreServer
                 if (qs.Contains("abortDuringBody"))
                 {
                     await context.Response.Body.FlushAsync();
-                    await Task.Delay(10);
+                    await Task.Delay(100);
                     context.Abort();
                     return;
                 }

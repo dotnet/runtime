@@ -496,7 +496,8 @@ public static class Program
             (address, buffer) => throw new NotImplementedException("StressLogAnalyzer does not provide WriteToTarget implementation"),
             (threadId, contextFlags, bufferToFill) => throw new NotImplementedException("StressLogAnalyzer does not provide GetTargetThreadContext implementation"),
             true,
-            nuint.Size);
+            nuint.Size,
+            []);
     }
 
     private static unsafe TimeTracker CreateTimeTracker(SafeMemoryMappedViewHandle handle, Options options)
@@ -520,7 +521,7 @@ public static class Program
         {
             Baseline = BaseContractDescriptor.Baseline,
             Version = BaseContractDescriptor.Version,
-            Contracts = new(){ { "StressLog", stressLogVersion } },
+            Contracts = new() { { "StressLog", stressLogVersion } },
             Types = BaseContractDescriptor.Types,
             Globals = BaseContractDescriptor.Globals,
         };
@@ -542,7 +543,8 @@ public static class Program
                         "Logs": 24,
                         "TickFrequency": 48,
                         "StartTimestamp": 56,
-                        "ModuleOffset": 72
+                        "ModuleOffset": 72,
+                        "Modules": 80
                     },
                     "StressLogModuleDesc": {
                         "!": 16,

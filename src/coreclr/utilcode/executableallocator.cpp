@@ -254,7 +254,7 @@ HRESULT ExecutableAllocator::StaticInitialize(FatalErrorHandler fatalErrorHandle
                 minipal_log_print_error("Invalid value in 'EXECUTABLE_ALLOCATOR_CACHE_SIZE' environment variable'\n");
                 return E_FAIL;
             }
-            
+
             g_cachedMappingSize = customCacheSize;
         }
     }
@@ -498,7 +498,11 @@ void* ExecutableAllocator::Commit(void* pStart, size_t size, bool isExecutable)
     }
     else
     {
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+        return ClrVirtualAlloc(pStart, size, MEM_COMMIT, PAGE_READWRITE);
+#else
         return ClrVirtualAlloc(pStart, size, MEM_COMMIT, isExecutable ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
+#endif
     }
 }
 
@@ -710,7 +714,7 @@ void* ExecutableAllocator::ReserveWithinRange(size_t size, const void* loAddress
     else
     {
         DWORD allocationType = MEM_RESERVE;
-#ifdef HOST_UNIX
+#if defined(HOST_UNIX) && !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
         // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
         // This will allow us to place JIT'ed code close to the coreclr library
         // and thus improve performance by avoiding jump stubs in managed code.
@@ -800,7 +804,7 @@ void* ExecutableAllocator::Reserve(size_t size)
         else
         {
             DWORD allocationType = MEM_RESERVE;
-#ifdef HOST_UNIX
+#if defined(HOST_UNIX) && !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
             // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
             // This will allow us to place JIT'ed code close to the coreclr library
             // and thus improve performance by avoiding jump stubs in managed code.
@@ -983,14 +987,14 @@ void* ExecutableAllocator::AllocateThunksFromTemplate(void *pTemplate, size_t te
     if (IsDoubleMappingEnabled() && VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress())
     {
         CRITSEC_Holder csh(m_CriticalSection);
-        
+
         bool isFreeBlock;
         BlockRX* block = AllocateBlock(templateSize * 2, &isFreeBlock);
         if (block == NULL)
         {
             return NULL;
         }
-        
+
         void* result = VMToOSInterface::ReserveDoubleMappedMemory(m_doubleMemoryMapperHandle, block->offset, templateSize * 2, 0, 0);
 
         if (result != NULL)

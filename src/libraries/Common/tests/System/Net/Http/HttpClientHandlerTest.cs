@@ -76,9 +76,9 @@ namespace System.Net.Http.Functional.Tests
                 Assert.False(handler.PreAuthenticate);
                 Assert.True(handler.SupportsProxy);
                 Assert.True(handler.SupportsRedirectConfiguration);
+                Assert.False(handler.CheckCertificateRevocationList);
 
                 // Changes from .NET Framework.
-                Assert.True(handler.CheckCertificateRevocationList);
                 Assert.Equal(0, handler.MaxRequestContentBufferSize);
                 Assert.Equal(SslProtocols.None, handler.SslProtocols);
             }

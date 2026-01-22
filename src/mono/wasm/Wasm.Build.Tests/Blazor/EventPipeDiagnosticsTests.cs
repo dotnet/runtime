@@ -18,6 +18,8 @@ namespace Wasm.Build.Tests.Blazor;
 
 public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 {
+    private static readonly string uploadPattern = "^[a-zA-Z0-9_]+\\.nettrace$";
+
     public EventPipeDiagnosticsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
@@ -63,7 +65,8 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             CheckCounter: false,
             ServerEnvironment: new Dictionary<string, string>
             {
-                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath
+                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath,
+                ["DEVSERVER_UPLOAD_PATTERN"] = uploadPattern
             }
         ));
 
@@ -118,7 +121,8 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             CheckCounter: false,
             ServerEnvironment: new Dictionary<string, string>
             {
-                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath
+                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath,
+                ["DEVSERVER_UPLOAD_PATTERN"] = uploadPattern
             }
         ));
 
@@ -191,7 +195,8 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             CheckCounter: false,
             ServerEnvironment: new Dictionary<string, string>
             {
-                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath
+                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath,
+                ["DEVSERVER_UPLOAD_PATTERN"] = uploadPattern
             }
         ));
 

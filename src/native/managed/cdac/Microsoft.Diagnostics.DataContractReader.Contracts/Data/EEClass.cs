@@ -11,6 +11,7 @@ internal sealed class EEClass : IData<EEClass>
         Target.TypeInfo type = target.GetTypeInfo(DataType.EEClass);
 
         MethodTable = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodTable)].Offset);
+        MethodDescChunk = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDescChunk)].Offset);
         NumMethods = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumMethods)].Offset);
         CorTypeAttr = target.Read<uint>(address + (ulong)type.Fields[nameof(CorTypeAttr)].Offset);
         InternalCorElementType = target.Read<byte>(address + (ulong)type.Fields[nameof(InternalCorElementType)].Offset);
@@ -22,6 +23,7 @@ internal sealed class EEClass : IData<EEClass>
     }
 
     public TargetPointer MethodTable { get; init; }
+    public TargetPointer MethodDescChunk { get; init; }
     public ushort NumMethods { get; init; }
     public uint CorTypeAttr { get; init; }
 

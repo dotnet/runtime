@@ -1,11 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace b59899;
+
 using System;
 using Xunit;
 public class SamplesArray
 {
+    [OuterLoop]
     [Fact]
+    [ActiveIssue("(No issue specified)", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void TestEntryPoint()
     {
         int[] myLens = new int[1] { 5 };

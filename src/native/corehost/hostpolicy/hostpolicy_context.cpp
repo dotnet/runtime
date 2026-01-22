@@ -192,29 +192,11 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         return StatusCode::ResolverInitFailure;
     }
 
+    // Resolve probe paths and setup breadcrumbs if enabled
     probe_paths_t probe_paths;
-
-    // Setup breadcrumbs.
-    if (breadcrumbs_enabled)
+    if (!resolver.resolve_probe_paths(&probe_paths, breadcrumbs_enabled ? &breadcrumbs : nullptr))
     {
-        pal::string_t policy_name = _STRINGIFY(HOST_POLICY_PKG_NAME);
-        pal::string_t policy_version = _STRINGIFY(HOST_VERSION);
-
-        // Always insert the hostpolicy that the code is running on.
-        breadcrumbs.insert(policy_name);
-        breadcrumbs.insert(policy_name + _X(",") + policy_version);
-
-        if (!resolver.resolve_probe_paths(&probe_paths, &breadcrumbs))
-        {
-            return StatusCode::ResolverResolveFailure;
-        }
-    }
-    else
-    {
-        if (!resolver.resolve_probe_paths(&probe_paths, nullptr))
-        {
-            return StatusCode::ResolverResolveFailure;
-        }
+        return StatusCode::ResolverResolveFailure;
     }
 
     clr_path = probe_paths.coreclr;
@@ -354,9 +336,9 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         }
 
         host_contract.get_runtime_property = &get_runtime_property;
-        pal::char_t buffer[STRING_LENGTH("0xffffffffffffffff")];
-        pal::snwprintf(buffer, ARRAY_SIZE(buffer), _X("0x%zx"), (size_t)(&host_contract));
-        if (!coreclr_properties.add(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT), buffer))
+        pal::char_t ptr_to_string_buffer[STRING_LENGTH("0xffffffffffffffff") + 1];
+        pal::snwprintf(ptr_to_string_buffer, ARRAY_SIZE(ptr_to_string_buffer), _X("0x%zx"), (size_t)(&host_contract));
+        if (!coreclr_properties.add(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT), ptr_to_string_buffer))
         {
             log_duplicate_property_error(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT));
             return StatusCode::LibHostDuplicateProperty;

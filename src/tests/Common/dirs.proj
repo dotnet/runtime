@@ -108,7 +108,7 @@
         <GroupNumber>8</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="$(TestRoot)Loader\classloader\TypeGeneratorTests\TypeGeneratorTest200">
+      <_GroupStartsWith Include="$(TestRoot)Loader\classloader\TSAmbiguities\CollapsedInterfaces\HelloWorld.ilproj">
         <GroupNumber>9</GroupNumber>
       </_GroupStartsWith>
     </ItemGroup>

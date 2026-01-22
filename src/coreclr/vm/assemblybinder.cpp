@@ -27,16 +27,15 @@ Exit:
 }
 
 
-NativeImage* AssemblyBinder::LoadNativeImage(Module* componentModule, LPCUTF8 nativeImageName)
+NativeImage* AssemblyBinder::LoadNativeImage(Module* componentModule, LPCUTF8 nativeImageName, bool isPlatformNative)
 {
     STANDARD_VM_CONTRACT;
 
     AppDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
-    AssemblyBinder* binder = componentModule->GetPEAssembly()->GetAssemblyBinder();
     PTR_LoaderAllocator moduleLoaderAllocator = componentModule->GetLoaderAllocator();
 
     bool isNewNativeImage;
-    NativeImage* nativeImage = NativeImage::Open(componentModule, nativeImageName, binder, moduleLoaderAllocator, &isNewNativeImage);
+    NativeImage* nativeImage = NativeImage::Open(componentModule->GetPath(), nativeImageName, this, moduleLoaderAllocator, isPlatformNative, &isNewNativeImage);
 
     return nativeImage;
 }
@@ -168,7 +167,7 @@ void AssemblyBinder::AddLoadedAssembly(Assembly* loadedAssembly)
 
 void AssemblyBinder::GetNameForDiagnosticsFromManagedALC(INT_PTR managedALC, /* out */ SString& alcName)
 {
-    if (managedALC == GetAppDomain()->GetDefaultBinder()->GetManagedAssemblyLoadContext())
+    if (managedALC == GetAppDomain()->GetDefaultBinder()->GetAssemblyLoadContext())
     {
         alcName.Set(W("Default"));
         return;
@@ -205,7 +204,7 @@ void AssemblyBinder::GetNameForDiagnostics(/*out*/ SString& alcName)
     }
     else
     {
-        GetNameForDiagnosticsFromManagedALC(GetManagedAssemblyLoadContext(), alcName);
+        GetNameForDiagnosticsFromManagedALC(GetAssemblyLoadContext(), alcName);
     }
 }
 

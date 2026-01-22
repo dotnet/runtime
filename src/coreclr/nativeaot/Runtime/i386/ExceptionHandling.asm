@@ -282,24 +282,20 @@ endm
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 FASTCALL_FUNC  RhpCallCatchFunclet, 16
 
-        FUNCLET_CALL_PROLOGUE 2
+        FUNCLET_CALL_PROLOGUE 1
 
         esp_offsetof_ResumeIP                   textequ %00h        ;; [esp + 00h]: continuation address
-        esp_offsetof_is_handling_thread_abort   textequ %04h        ;; [esp + 04h]: set if we are handling ThreadAbortException
-                                                                    ;; [esp + 08h]: edi save
-                                                                    ;; [esp + 0ch]: esi save
-                                                                    ;; [esp + 10h]: ebx save
-        esp_offsetof_PrevEBP                    textequ %14h        ;; [esp + 14h]: prev ebp
-        esp_offsetof_RetAddr                    textequ %18h        ;; [esp + 18h]: return address
-        esp_offsetof_RegDisplay                 textequ %20h        ;; [esp + 20h]: REGDISPLAY*
-        esp_offsetof_ExInfo                     textequ %1ch        ;; [esp + 1ch]: ExInfo*
+                                                                    ;; [esp + 04h]: edi save
+                                                                    ;; [esp + 08h]: esi save
+                                                                    ;; [esp + 0Ch]: ebx save
+        esp_offsetof_PrevEBP                    textequ %10h        ;; [esp + 10h]: prev ebp
+        esp_offsetof_RetAddr                    textequ %14h        ;; [esp + 14h]: return address
+        esp_offsetof_RegDisplay                 textequ %1ch        ;; [esp + 1Ch]: REGDISPLAY*
+        esp_offsetof_ExInfo                     textequ %18h        ;; [esp + 18h]: ExInfo*
 
         ;; Clear the DoNotTriggerGc state before calling out to our managed catch funclet.
         INLINE_GETTHREAD    eax, ebx        ;; eax <- Thread*, ebx is trashed
         lock and            dword ptr [eax + OFFSETOF__Thread__m_ThreadStateFlags], NOT TSF_DoNotTriggerGc
-
-        cmp         ecx, [eax + OFFSETOF__Thread__m_threadAbortException]
-        setz        byte ptr [esp + esp_offsetof_is_handling_thread_abort]
 
         mov         edi, [esp + esp_offsetof_RegDisplay]            ;; edi <- REGDISPLAY *
 
@@ -344,25 +340,6 @@ FASTCALL_FUNC  RhpCallCatchFunclet, 16
 
     @@: mov         [edx + OFFSETOF__Thread__m_pExInfoStackHead], ecx   ;; store the new head on the Thread
 
-        test        [RhpTrapThreads], TrapThreadsFlags_AbortInProgress
-        jz          @f
-
-        ;; test if the exception handled by the catch was the ThreadAbortException
-        cmp         byte ptr [esp + esp_offsetof_is_handling_thread_abort], 0
-        je          @f
-
-        ;; RhpCallFunclet preserved our local EBP value, so let's fetch the correct one for the resume address
-        mov         ecx, [esp + esp_offsetof_RegDisplay]            ;; ecx <- REGDISPLAY *
-        mov         ecx, [ecx + OFFSETOF__REGDISPLAY__pRbp]
-        mov         ebp, [ecx]
-
-        ;; It was the ThreadAbortException, so rethrow it
-        mov         ecx, STATUS_NATIVEAOT_THREAD_ABORT
-        mov         edx, [esp + esp_offsetof_ResumeIP]
-        mov         esp, eax                                        ;; reset the SP to resume SP value
-        jmp         RhpThrowHwEx                                    ;; Throw the ThreadAbortException as a special kind of hardware exception
-
-    @@:
         ;; RhpCallFunclet preserved our local EBP value, so let's fetch the correct one for the resume address
         mov         ecx, [esp + esp_offsetof_RegDisplay]            ;; ecx <- REGDISPLAY *
         mov         ecx, [ecx + OFFSETOF__REGDISPLAY__pRbp]

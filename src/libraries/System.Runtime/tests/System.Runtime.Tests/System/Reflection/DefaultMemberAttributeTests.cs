@@ -11,7 +11,7 @@ namespace System.Reflection.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("configuration")]
-        public void Ctor_String(string memberName)
+        public void Ctor_String(string? memberName)
         {
             var attribute = new DefaultMemberAttribute(memberName);
             Assert.Equal(memberName, attribute.MemberName);

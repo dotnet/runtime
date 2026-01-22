@@ -158,110 +158,21 @@ namespace System.Net.Test.Uri.IriTest
 
         private void EscapeUnescapeAllUriComponentsInDifferentCultures(string uriInput)
         {
-            UriComponents[] components = new UriComponents[]
-            {
-                UriComponents.AbsoluteUri,
-                UriComponents.Fragment,
-                UriComponents.Host,
-                UriComponents.HostAndPort,
-                UriComponents.HttpRequestUrl,
-                UriComponents.KeepDelimiter,
-                UriComponents.NormalizedHost,
-                UriComponents.Path,
-                UriComponents.PathAndQuery,
-                UriComponents.Port,
-                UriComponents.Query,
-                UriComponents.Scheme,
-                UriComponents.SchemeAndServer,
-                UriComponents.SerializationInfoString,
-                UriComponents.StrongAuthority,
-                UriComponents.StrongPort,
-                UriComponents.UserInfo,
-            };
-
-            string[] results_en = new string[components.Length];
-            string[] results_zh = new string[components.Length];
-
-            for (int i = 0; i < components.Length; i++)
-            {
-                results_en[i] = EscapeUnescapeTestComponent(uriInput, components[i]);
-            }
+            string result_en_query = EscapeUnescapeIri(uriInput, true);
+            string result_en_nonQuery = EscapeUnescapeIri(uriInput, false);
 
             using (new ThreadCultureChange("zh-cn"))
             {
-                for (int i = 0; i < components.Length; i++)
-                {
-                    results_zh[i] = EscapeUnescapeTestComponent(uriInput, components[i]);
-                }
-
-                for (int i = 0; i < components.Length; i++)
-                {
-                    Assert.True(
-                        0 == string.CompareOrdinal(results_en[i], results_zh[i]),
-                        "Detected locale differences when processing UriComponents." + components[i]);
-                }
+                Assert.Equal(result_en_query, EscapeUnescapeIri(uriInput, true));
+                Assert.Equal(result_en_nonQuery, EscapeUnescapeIri(uriInput, false));
             }
         }
 
-        private string EscapeUnescapeTestComponent(string uriInput, UriComponents component)
+        private static string EscapeUnescapeIri(string input, bool isQuery)
         {
-            string? ret = null;
-            HeapCheck hc = new HeapCheck(uriInput);
-
-            unsafe
-            {
-                fixed (char* pInput = hc.Buffer)
-                {
-                    ret = IriHelper.EscapeUnescapeIri(pInput + HeapCheck.PaddingLength, 0, uriInput.Length, component);
-                }
-            }
-
-            // check for buffer under and overruns
-            hc.ValidatePadding();
-
-            return ret;
-        }
-
-        private class HeapCheck
-        {
-            public const int PaddingLength = 32;
-            private const char PaddingValue = (char)0xDEAD;
-
-            private readonly int _length;
-            public char[] Buffer { get; }
-
-            private HeapCheck(int length)
-            {
-                _length = length;
-                Buffer = new char[_length + PaddingLength * 2];
-                Array.Fill(Buffer, PaddingValue);
-            }
-
-            public HeapCheck(string input) : this(input.Length)
-            {
-                input.CopyTo(0, Buffer, PaddingLength, _length);
-            }
-
-            public void ValidatePadding()
-            {
-                ReadOnlySpan<char> front = Buffer.AsSpan(0, PaddingLength);
-                for (int i = 0; i < front.Length; i++)
-                {
-                    if (front[i] != PaddingValue)
-                    {
-                        Assert.Fail("Heap corruption detected: unexpected padding value at index: " + i);
-                    }
-                }
-
-                ReadOnlySpan<char> back = Buffer.AsSpan(PaddingLength + _length);
-                for (int i = 0; i < back.Length; i++)
-                {
-                    if (back[i] != PaddingValue)
-                    {
-                        Assert.Fail("Heap corruption detected: unexpected padding value at index: " + (PaddingLength + _length + i));
-                    }
-                }
-            }
+            var vsb = new ValueStringBuilder();
+            IriHelper.EscapeUnescapeIri(ref vsb, input, isQuery);
+            return vsb.ToString();
         }
     }
 }

@@ -270,42 +270,6 @@ function(set_exports_linker_option exports_filename)
     endif()
 endfunction()
 
-# compile_asm(TARGET target ASM_FILES file1 [file2 ...] OUTPUT_OBJECTS [variableName])
-# CMake does not support the ARM or ARM64 assemblers on Windows when using the
-# MSBuild generator. When the MSBuild generator is in use, we manually compile the assembly files
-# using this function.
-function(compile_asm)
-  set(options "")
-  set(oneValueArgs TARGET OUTPUT_OBJECTS)
-  set(multiValueArgs ASM_FILES)
-  cmake_parse_arguments(COMPILE_ASM "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGV})
-
-  get_include_directories_asm(ASM_INCLUDE_DIRECTORIES)
-
-  set (ASSEMBLED_OBJECTS "")
-
-  foreach(ASM_FILE ${COMPILE_ASM_ASM_FILES})
-    get_filename_component(name ${ASM_FILE} NAME_WE)
-    # Produce object file where CMake would store .obj files for an OBJECT library.
-    # ex: artifacts\obj\coreclr\windows.arm64.Debug\src\vm\wks\cee_wks.dir\Debug\AsmHelpers.obj
-    set (OBJ_FILE "${CMAKE_CURRENT_BINARY_DIR}/${COMPILE_ASM_TARGET}.dir/${CMAKE_CFG_INTDIR}/${name}.obj")
-
-    # Need to compile asm file using custom command as include directories are not provided to asm compiler
-    add_custom_command(OUTPUT ${OBJ_FILE}
-                        COMMAND "${CMAKE_ASM_COMPILER}" -g ${ASM_INCLUDE_DIRECTORIES} -o ${OBJ_FILE} ${ASM_FILE}
-                        DEPENDS ${ASM_FILE}
-                        COMMENT "Assembling ${ASM_FILE} ---> \"${CMAKE_ASM_COMPILER}\" -g ${ASM_INCLUDE_DIRECTORIES} -o ${OBJ_FILE} ${ASM_FILE}")
-
-    # mark obj as source that does not require compile
-    set_source_files_properties(${OBJ_FILE} PROPERTIES EXTERNAL_OBJECT TRUE)
-
-    # Add the generated OBJ in the dependency list so that it gets consumed during linkage
-    list(APPEND ASSEMBLED_OBJECTS ${OBJ_FILE})
-  endforeach()
-
-  set(${COMPILE_ASM_OUTPUT_OBJECTS} ${ASSEMBLED_OBJECTS} PARENT_SCOPE)
-endfunction()
-
 # add_component(componentName [targetName] [EXCLUDE_FROM_ALL])
 function(add_component componentName)
   if (${ARGC} GREATER 2 OR ${ARGC} EQUAL 2)
@@ -594,11 +558,29 @@ function(install_clr)
     endif()
 
     foreach(destination ${destinations})
-      # We don't need to install the export libraries for our DLLs
-      # since they won't be directly linked against.
-      install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
-      if (NOT "${symbolFile}" STREQUAL "")
-        install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+      # CMake bug with executable WASM outputs - https://gitlab.kitware.com/cmake/cmake/-/issues/20745
+      if (CLR_CMAKE_TARGET_ARCH_WASM AND "${targetType}" STREQUAL "EXECUTABLE")
+        # Use install FILES since these are WASM assets that aren't executable.
+        install(FILES
+          "$<TARGET_FILE_DIR:${targetName}>/${targetName}.js"
+          "$<TARGET_FILE_DIR:${targetName}>/${targetName}.wasm"
+          DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+
+        # Conditionally check for and copy any extra data file at install time.
+        install(CODE
+        "
+          if(EXISTS \"$<TARGET_FILE_DIR:${targetName}>/${targetName}.data\")
+              file(INSTALL \"$<TARGET_FILE_DIR:${targetName}>/${targetName}.data\" DESTINATION \"${CMAKE_INSTALL_PREFIX}/${destination}\")
+          endif()
+        "
+        COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+      else()
+        # We don't need to install the export libraries for our DLLs
+        # since they won't be directly linked against.
+        install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+        if (NOT "${symbolFile}" STREQUAL "")
+          install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+        endif()
       endif()
 
       if(CLR_CMAKE_PGO_INSTRUMENT)

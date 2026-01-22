@@ -82,7 +82,7 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
 
         /// <inheritdoc />
-        protected override void ExportSlhDsaSecretKeyCore(Span<byte> destination) =>
+        protected override void ExportSlhDsaPrivateKeyCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException();
 
         /// <inheritdoc />
