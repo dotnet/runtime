@@ -48,7 +48,21 @@ ABIPassingInformation WasmClassifier::Classify(Compiler*    comp,
 {
     if (type == TYP_STRUCT)
     {
-        NYI_WASM("WasmClassifier::Classify - structs");
+        CORINFO_CLASS_HANDLE clsHnd = structLayout->GetClassHandle();
+        assert(clsHnd != NO_CLASS_HANDLE);
+        CorInfoType abiType   = comp->info.compCompHnd->getWasmLowering(clsHnd);
+        bool        passByRef = false;
+
+        if (abiType == CORINFO_TYPE_UNDEF)
+        {
+            abiType   = CORINFO_TYPE_NATIVEINT;
+            passByRef = true;
+        }
+
+        var_types         type = JITtype2varType(abiType);
+        regNumber         reg  = MakeWasmReg(m_localIndex++, genActualType(type));
+        ABIPassingSegment seg  = ABIPassingSegment::InRegister(reg, 0, genTypeSize(type));
+        return ABIPassingInformation::FromSegment(comp, passByRef, seg);
     }
 
     regNumber         reg = MakeWasmReg(m_localIndex++, genActualType(type));

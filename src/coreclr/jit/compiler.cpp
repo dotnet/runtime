@@ -747,6 +747,36 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     }
     assert(structSize > 0);
 
+#if defined(TARGET_WASM)
+    CorInfoType abiType = info.compCompHnd->getWasmLowering(clsHnd);
+
+    if (abiType == CORINFO_TYPE_UNDEF)
+    {
+        howToReturnStruct = SPK_ByReference;
+        useType           = TYP_UNKNOWN;
+    }
+    else
+    {
+        howToReturnStruct = SPK_ByValue;
+        useType           = JITtype2varType(abiType);
+    }
+
+    if (wbReturnStruct != nullptr)
+    {
+        *wbReturnStruct = howToReturnStruct;
+    }
+
+    return useType;
+#else
+#ifdef DEBUG
+    // Extra query to facilitate wasm replay
+    if (JitConfig.EnableExtraSuperPmiQueries())
+    {
+        info.compCompHnd->getWasmLowering(clsHnd);
+    }
+#endif // DEBUG
+#endif // defined(TARGET_WASM)
+
 #ifdef SWIFT_SUPPORT
     if (callConv == CorInfoCallConvExtension::Swift)
     {
