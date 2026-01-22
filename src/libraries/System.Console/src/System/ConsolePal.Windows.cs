@@ -103,44 +103,22 @@ namespace System
             return r != 0; // In Win32 apps w/ no console, bResult should be 0 for failure.
         }
 
-        public static SafeFileHandle OpenStandardInputHandle()
+        public static SafeFileHandle OpenStandardInputHandle() => OpenStandardHandle(Interop.Kernel32.HandleTypes.STD_INPUT_HANDLE);
+
+        public static SafeFileHandle OpenStandardOutputHandle() => OpenStandardHandle(Interop.Kernel32.HandleTypes.STD_OUTPUT_HANDLE);
+
+        public static SafeFileHandle OpenStandardErrorHandle() => OpenStandardHandle(Interop.Kernel32.HandleTypes.STD_ERROR_HANDLE);
+
+        private static SafeFileHandle OpenStandardHandle(int handleType)
         {
-            IntPtr handle = Interop.Kernel32.GetStdHandle(Interop.Kernel32.HandleTypes.STD_INPUT_HANDLE);
+            IntPtr handle = Interop.Kernel32.GetStdHandle(handleType);
+            bool isReadable = handleType == Interop.Kernel32.HandleTypes.STD_INPUT_HANDLE;
 
-            // If someone launches a managed process via CreateProcess, stdin
+            // If someone launches a managed process via CreateProcess, stdin/stdout/stderr
             // could be set to INVALID_HANDLE_VALUE or they might use 0 as an invalid handle.
-            // We also need to ensure that the handle is readable.
-            if (handle == IntPtr.Zero || handle == InvalidHandleValue || !ConsoleHandleIsReadable(handle))
-            {
-                throw new IOException(SR.IO_NoConsole);
-            }
-
-            return new SafeFileHandle(handle, ownsHandle: false);
-        }
-
-        public static SafeFileHandle OpenStandardOutputHandle()
-        {
-            IntPtr handle = Interop.Kernel32.GetStdHandle(Interop.Kernel32.HandleTypes.STD_OUTPUT_HANDLE);
-
-            // If someone launches a managed process via CreateProcess, stdout
-            // could be set to INVALID_HANDLE_VALUE or they might use 0 as an invalid handle.
-            // We also need to ensure that the handle is writable.
-            if (handle == IntPtr.Zero || handle == InvalidHandleValue || !ConsoleHandleIsWritable(handle))
-            {
-                throw new IOException(SR.IO_NoConsole);
-            }
-
-            return new SafeFileHandle(handle, ownsHandle: false);
-        }
-
-        public static SafeFileHandle OpenStandardErrorHandle()
-        {
-            IntPtr handle = Interop.Kernel32.GetStdHandle(Interop.Kernel32.HandleTypes.STD_ERROR_HANDLE);
-
-            // If someone launches a managed process via CreateProcess, stderr
-            // could be set to INVALID_HANDLE_VALUE or they might use 0 as an invalid handle.
-            // We also need to ensure that the handle is writable.
-            if (handle == IntPtr.Zero || handle == InvalidHandleValue || !ConsoleHandleIsWritable(handle))
+            // We also need to ensure that the handle is readable (for stdin) or writable (for stdout/stderr).
+            if (handle == IntPtr.Zero || handle == InvalidHandleValue
+                || (isReadable ? !ConsoleHandleIsReadable(handle) : !ConsoleHandleIsWritable(handle)))
             {
                 throw new IOException(SR.IO_NoConsole);
             }

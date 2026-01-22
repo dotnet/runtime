@@ -34,20 +34,11 @@ namespace System
             return new UnixConsoleStream(OpenStandardErrorHandle(), FileAccess.Write);
         }
 
-        public static SafeFileHandle OpenStandardInputHandle()
-        {
-            return Interop.Sys.FileDescriptors.STDIN_FILENO;
-        }
+        public static SafeFileHandle OpenStandardInputHandle() => new SafeFileHandle((IntPtr)0, ownsHandle: false);
 
-        public static SafeFileHandle OpenStandardOutputHandle()
-        {
-            return Interop.Sys.FileDescriptors.STDOUT_FILENO;
-        }
+        public static SafeFileHandle OpenStandardOutputHandle() => new SafeFileHandle((IntPtr)1, ownsHandle: false);
 
-        public static SafeFileHandle OpenStandardErrorHandle()
-        {
-            return Interop.Sys.FileDescriptors.STDERR_FILENO;
-        }
+        public static SafeFileHandle OpenStandardErrorHandle() => new SafeFileHandle((IntPtr)2, ownsHandle: false);
 
         public static Encoding InputEncoding
         {
