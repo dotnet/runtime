@@ -3400,7 +3400,6 @@ bool LclVarDsc::CanBeReplacedWithItsField(Compiler* comp) const
 //     tree - some node in a tree
 //     block - block that the tree node belongs to
 //     stmt - stmt that the tree node belongs to
-//     isRecompute - true if we should just recompute counts
 //
 // Notes:
 //     Invoked via the MarkLocalVarsVisitor
@@ -3427,7 +3426,7 @@ bool LclVarDsc::CanBeReplacedWithItsField(Compiler* comp) const
 //     Verifies that local accesses are consistently typed.
 //     Verifies that casts remain in bounds.
 
-void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt, bool isRecompute)
+void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt)
 {
     const weight_t weight = block->getBBWeight(this);
 
@@ -3489,85 +3488,82 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
     }
 #endif
 
-    if (!isRecompute)
+    if (varDsc->IsAddressExposed())
     {
-        if (varDsc->IsAddressExposed())
+        varDsc->lvAllDefsAreNoGc = false;
+    }
+
+    if (!tree->OperIsScalarLocal())
+    {
+        return;
+    }
+
+    if ((m_domTree != nullptr) && IsDominatedByExceptionalEntry(block))
+    {
+        SetHasExceptionalUsesHint(varDsc);
+    }
+
+    if (tree->OperIs(GT_STORE_LCL_VAR))
+    {
+        GenTree* value = tree->AsLclVar()->Data();
+
+        if (varDsc->lvPinned && varDsc->lvAllDefsAreNoGc && !value->IsNotGcDef())
         {
             varDsc->lvAllDefsAreNoGc = false;
         }
 
-        if (!tree->OperIsScalarLocal())
+        if (!varDsc->lvDisqualifySingleDefRegCandidate) // If this var is already disqualified, we can skip this
         {
-            return;
-        }
+            bool bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
+            bool bbIsReturn = block->KindIs(BBJ_RETURN);
+            // TODO: Zero-inits in LSRA are created with below condition. But if filter out based on that condition
+            // we filter a lot of interesting variables that would benefit otherwise with EH var enregistration.
+            // bool needsExplicitZeroInit = !varDsc->lvIsParam && (info.compInitMem ||
+            // varTypeIsGC(varDsc->TypeGet()));
+            bool needsExplicitZeroInit = fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn);
 
-        if ((m_domTree != nullptr) && IsDominatedByExceptionalEntry(block))
-        {
-            SetHasExceptionalUsesHint(varDsc);
-        }
-
-        if (tree->OperIs(GT_STORE_LCL_VAR))
-        {
-            GenTree* value = tree->AsLclVar()->Data();
-
-            if (varDsc->lvPinned && varDsc->lvAllDefsAreNoGc && !value->IsNotGcDef())
+            if (varDsc->lvSingleDefRegCandidate || needsExplicitZeroInit)
             {
-                varDsc->lvAllDefsAreNoGc = false;
-            }
-
-            if (!varDsc->lvDisqualifySingleDefRegCandidate) // If this var is already disqualified, we can skip this
-            {
-                bool bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
-                bool bbIsReturn = block->KindIs(BBJ_RETURN);
-                // TODO: Zero-inits in LSRA are created with below condition. But if filter out based on that condition
-                // we filter a lot of interesting variables that would benefit otherwise with EH var enregistration.
-                // bool needsExplicitZeroInit = !varDsc->lvIsParam && (info.compInitMem ||
-                // varTypeIsGC(varDsc->TypeGet()));
-                bool needsExplicitZeroInit = fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn);
-
-                if (varDsc->lvSingleDefRegCandidate || needsExplicitZeroInit)
-                {
 #ifdef DEBUG
-                    if (needsExplicitZeroInit)
-                    {
-                        varDsc->lvSingleDefDisqualifyReason = 'Z';
-                        JITDUMP("V%02u needs explicit zero init. Disqualified as a single-def register candidate.\n",
-                                lclNum);
-                    }
-                    else
-                    {
-                        varDsc->lvSingleDefDisqualifyReason = 'M';
-                        JITDUMP("V%02u has multiple definitions. Disqualified as a single-def register candidate.\n",
-                                lclNum);
-                    }
+                if (needsExplicitZeroInit)
+                {
+                    varDsc->lvSingleDefDisqualifyReason = 'Z';
+                    JITDUMP("V%02u needs explicit zero init. Disqualified as a single-def register candidate.\n",
+                            lclNum);
+                }
+                else
+                {
+                    varDsc->lvSingleDefDisqualifyReason = 'M';
+                    JITDUMP("V%02u has multiple definitions. Disqualified as a single-def register candidate.\n",
+                            lclNum);
+                }
 
 #endif // DEBUG
-                    varDsc->lvSingleDefRegCandidate           = false;
-                    varDsc->lvDisqualifySingleDefRegCandidate = true;
-                }
-                else if (!varDsc->lvDoNotEnregister)
-                {
-                    // Variables can be marked as DoNotEngister in earlier stages like LocalAddressVisitor.
-                    // No need to track them for single-def.
+                varDsc->lvSingleDefRegCandidate           = false;
+                varDsc->lvDisqualifySingleDefRegCandidate = true;
+            }
+            else if (!varDsc->lvDoNotEnregister)
+            {
+                // Variables can be marked as DoNotEngister in earlier stages like LocalAddressVisitor.
+                // No need to track them for single-def.
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                    // TODO-CQ: If the varType needs partial callee save, conservatively do not enregister
-                    // such variable. In future, we should enable enregisteration for such variables.
-                    if (!varTypeNeedsPartialCalleeSave(varDsc->GetRegisterType()))
+                // TODO-CQ: If the varType needs partial callee save, conservatively do not enregister
+                // such variable. In future, we should enable enregisteration for such variables.
+                if (!varTypeNeedsPartialCalleeSave(varDsc->GetRegisterType()))
 #endif
-                    {
-                        varDsc->lvSingleDefRegCandidate = true;
-                        JITDUMP("Marking EH Var V%02u as a register candidate.\n", lclNum);
-                    }
+                {
+                    varDsc->lvSingleDefRegCandidate = true;
+                    JITDUMP("Marking EH Var V%02u as a register candidate.\n", lclNum);
                 }
             }
         }
-
-        // Check that the LCL_VAR node has the same type as the underlying variable, save a few mismatches we allow.
-        assert(tree->TypeIs(varDsc->TypeGet(), genActualType(varDsc)) ||
-               (tree->TypeIs(TYP_BYREF) && varDsc->TypeIs(TYP_I_IMPL)) || // Created by inliner substitution.
-               (tree->TypeIs(TYP_INT) && varDsc->TypeIs(TYP_LONG)));      // Created by "optNarrowTree".
     }
+
+    // Check that the LCL_VAR node has the same type as the underlying variable, save a few mismatches we allow.
+    assert(tree->TypeIs(varDsc->TypeGet(), genActualType(varDsc)) ||
+           (tree->TypeIs(TYP_BYREF) && varDsc->TypeIs(TYP_I_IMPL)) || // Created by inliner substitution.
+           (tree->TypeIs(TYP_INT) && varDsc->TypeIs(TYP_LONG)));      // Created by "optNarrowTree".
 }
 
 //------------------------------------------------------------------------
@@ -3598,20 +3594,18 @@ void Compiler::SetHasExceptionalUsesHint(LclVarDsc* varDsc)
 //
 // Arguments:
 //    block - the block in question
-//    isRecompute - true if counts are being recomputed
 //
 // Notes:
 //    Invokes lvaMarkLclRefs on each tree node for each
 //    statement in the block.
 
-void Compiler::lvaMarkLocalVars(BasicBlock* block, bool isRecompute)
+void Compiler::lvaMarkLocalVars(BasicBlock* block)
 {
     class MarkLocalVarsVisitor final : public GenTreeVisitor<MarkLocalVarsVisitor>
     {
     private:
         BasicBlock* m_block;
         Statement*  m_stmt;
-        bool        m_isRecompute;
 
     public:
         enum
@@ -3619,29 +3613,26 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block, bool isRecompute)
             DoPreOrder = true,
         };
 
-        MarkLocalVarsVisitor(Compiler* compiler, BasicBlock* block, Statement* stmt, bool isRecompute)
+        MarkLocalVarsVisitor(Compiler* compiler, BasicBlock* block, Statement* stmt)
             : GenTreeVisitor<MarkLocalVarsVisitor>(compiler)
             , m_block(block)
             , m_stmt(stmt)
-            , m_isRecompute(isRecompute)
         {
         }
 
         Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            // TODO: Stop passing isRecompute once we are sure that this assert is never hit.
-            assert(!m_isRecompute);
-            m_compiler->lvaMarkLclRefs(*use, m_block, m_stmt, m_isRecompute);
+            m_compiler->lvaMarkLclRefs(*use, m_block, m_stmt);
             return WALK_CONTINUE;
         }
     };
 
-    JITDUMP("\n*** %s local variables in block " FMT_BB " (weight=%s)\n", isRecompute ? "recomputing" : "marking",
-            block->bbNum, refCntWtd2str(block->getBBWeight(this)));
+    JITDUMP("\n*** marking local variables in block " FMT_BB " (weight=%s)\n", block->bbNum,
+            refCntWtd2str(block->getBBWeight(this)));
 
     for (Statement* const stmt : block->NonPhiStatements())
     {
-        MarkLocalVarsVisitor visitor(this, block, stmt, isRecompute);
+        MarkLocalVarsVisitor visitor(this, block, stmt);
         DISPSTMT(stmt);
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
     }
@@ -3908,7 +3899,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         }
         else
         {
-            lvaMarkLocalVars(block, isRecompute);
+            lvaMarkLocalVars(block);
         }
     }
 
@@ -4809,7 +4800,7 @@ void Compiler::lvaUpdateArgWithInitialReg(LclVarDsc* varDsc)
 //
 void Compiler::lvaUpdateArgsWithInitialReg()
 {
-    if (!compLSRADone)
+    if (!compRegAllocDone)
     {
         return;
     }

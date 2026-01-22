@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { CharPtr, VfsAsset, VoidPtr, VoidPtrPtr } from "./types";
+import type { CharPtr, CharPtrPtr, VfsAsset, VoidPtr, VoidPtrPtr } from "./types";
 import { _ems_ } from "../../../libs/Common/JavaScript/ems-ambient";
 
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
@@ -12,43 +12,43 @@ export function registerPdbBytes(bytes: Uint8Array, asset: { name: string, virtu
 }
 
 export function registerDllBytes(bytes: Uint8Array, asset: { name: string, virtualPath: string }) {
-    const sp = _ems_.Module.stackSave();
+    const sp = _ems_.stackSave();
     try {
         const sizeOfPtr = 4;
-        const ptrPtr = _ems_.Module.stackAlloc(sizeOfPtr);
-        if (_ems_.Module._posix_memalign(ptrPtr as any, 16, bytes.length)) {
+        const ptrPtr = _ems_.stackAlloc(sizeOfPtr);
+        if (_ems_._posix_memalign(ptrPtr as any, 16, bytes.length)) {
             throw new Error("posix_memalign failed");
         }
 
-        const ptr = _ems_.Module.HEAPU32[ptrPtr as any >>> 2];
-        _ems_.Module.HEAPU8.set(bytes, ptr >>> 0);
+        const ptr = _ems_.HEAPU32[ptrPtr as any >>> 2];
+        _ems_.HEAPU8.set(bytes, ptr >>> 0);
         loadedAssemblies.set(asset.virtualPath, { ptr, length: bytes.length });
         if (!asset.virtualPath.startsWith("/")) {
             loadedAssemblies.set("/" + asset.virtualPath, { ptr, length: bytes.length });
         }
     } finally {
-        _ems_.Module.stackRestore(sp);
+        _ems_.stackRestore(sp);
     }
 }
 
 export function loadIcuData(bytes: Uint8Array) {
-    const sp = _ems_.Module.stackSave();
+    const sp = _ems_.stackSave();
     try {
         const sizeOfPtr = 4;
-        const ptrPtr = _ems_.Module.stackAlloc(sizeOfPtr);
-        if (_ems_.Module._posix_memalign(ptrPtr as any, 16, bytes.length)) {
+        const ptrPtr = _ems_.stackAlloc(sizeOfPtr);
+        if (_ems_._posix_memalign(ptrPtr as any, 16, bytes.length)) {
             throw new Error("posix_memalign failed for ICU data");
         }
 
-        const ptr = _ems_.Module.HEAPU32[ptrPtr as any >>> 2];
-        _ems_.Module.HEAPU8.set(bytes, ptr >>> 0);
+        const ptr = _ems_.HEAPU32[ptrPtr as any >>> 2];
+        _ems_.HEAPU8.set(bytes, ptr >>> 0);
 
         const result = _ems_._wasm_load_icu_data(ptr as unknown as VoidPtr);
         if (!result) {
             throw new Error("Failed to initialize ICU data");
         }
     } finally {
-        _ems_.Module.stackRestore(sp);
+        _ems_.stackRestore(sp);
     }
 }
 
@@ -90,25 +90,74 @@ export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
     );
 }
 
+
+const HOST_PROPERTY_RUNTIME_CONTRACT = "HOST_RUNTIME_CONTRACT";
+const HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES = "TRUSTED_PLATFORM_ASSEMBLIES";
+const HOST_PROPERTY_ENTRY_ASSEMBLY_NAME = "ENTRY_ASSEMBLY_NAME";
+const HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES = "NATIVE_DLL_SEARCH_DIRECTORIES";
+const HOST_PROPERTY_APP_PATHS = "APP_PATHS";
+const APP_CONTEXT_BASE_DIRECTORY = "APP_CONTEXT_BASE_DIRECTORY";
+const RUNTIME_IDENTIFIER = "RUNTIME_IDENTIFIER";
+
 export function initializeCoreCLR(): number {
-    return _ems_._BrowserHost_InitializeCoreCLR();
+    const loaderConfig = _ems_.dotnetApi.getConfig();
+    const hostContractPtr = _ems_._BrowserHost_CreateHostContract();
+    const runtimeConfigProperties = new Map<string, string>();
+    if (loaderConfig.runtimeConfig?.runtimeOptions?.configProperties) {
+        for (const [key, value] of Object.entries(loaderConfig.runtimeConfig?.runtimeOptions?.configProperties)) {
+            runtimeConfigProperties.set(key, "" + value);
+        }
+    }
+    const assemblyPaths = loaderConfig.resources!.assembly.map(a => "/" + a.virtualPath);
+    const coreAssemblyPaths = loaderConfig.resources!.coreAssembly.map(a => "/" + a.virtualPath);
+    const tpa = [...coreAssemblyPaths, ...assemblyPaths].join(":");
+    runtimeConfigProperties.set(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES, tpa);
+    runtimeConfigProperties.set(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES, loaderConfig.virtualWorkingDirectory!);
+    runtimeConfigProperties.set(HOST_PROPERTY_APP_PATHS, loaderConfig.virtualWorkingDirectory!);
+    runtimeConfigProperties.set(HOST_PROPERTY_ENTRY_ASSEMBLY_NAME, loaderConfig.mainAssemblyName!);
+    runtimeConfigProperties.set(APP_CONTEXT_BASE_DIRECTORY, "/");
+    runtimeConfigProperties.set(RUNTIME_IDENTIFIER, "browser-wasm");
+    runtimeConfigProperties.set(HOST_PROPERTY_RUNTIME_CONTRACT, `0x${(hostContractPtr as unknown as number).toString(16)}`);
+
+    const buffers: VoidPtr[] = [];
+    const appctx_keys = _ems_._malloc(4 * runtimeConfigProperties.size) as any as CharPtrPtr;
+    const appctx_values = _ems_._malloc(4 * runtimeConfigProperties.size) as any as CharPtrPtr;
+    buffers.push(appctx_keys as any);
+    buffers.push(appctx_values as any);
+
+    let propertyCount = 0;
+    for (const [key, value] of runtimeConfigProperties.entries()) {
+        const keyPtr = _ems_.dotnetBrowserUtilsExports.stringToUTF8Ptr(key);
+        const valuePtr = _ems_.dotnetBrowserUtilsExports.stringToUTF8Ptr(value);
+        _ems_.dotnetApi.setHeapU32((appctx_keys as any) + (propertyCount * 4), keyPtr);
+        _ems_.dotnetApi.setHeapU32((appctx_values as any) + (propertyCount * 4), valuePtr);
+        propertyCount++;
+        buffers.push(keyPtr as any);
+        buffers.push(valuePtr as any);
+    }
+
+    const res = _ems_._BrowserHost_InitializeCoreCLR(propertyCount, appctx_keys, appctx_values);
+    for (const buf of buffers) {
+        _ems_._free(buf as any);
+    }
+    return res;
 }
 
 // bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);
 export function BrowserHost_ExternalAssemblyProbe(pathPtr: CharPtr, outDataStartPtr: VoidPtrPtr, outSize: VoidPtr) {
-    const path = _ems_.Module.UTF8ToString(pathPtr);
+    const path = _ems_.UTF8ToString(pathPtr);
     const assembly = loadedAssemblies.get(path);
     if (assembly) {
-        _ems_.Module.HEAPU32[outDataStartPtr as any >>> 2] = assembly.ptr;
+        _ems_.HEAPU32[outDataStartPtr as any >>> 2] = assembly.ptr;
         // int64_t target
-        _ems_.Module.HEAPU32[outSize as any >>> 2] = assembly.length;
-        _ems_.Module.HEAPU32[((outSize as any) + 4) >>> 2] = 0;
+        _ems_.HEAPU32[outSize as any >>> 2] = assembly.length;
+        _ems_.HEAPU32[((outSize as any) + 4) >>> 2] = 0;
         return true;
     }
     _ems_.dotnetLogger.debug(`Assembly not found: '${path}'`);
-    _ems_.Module.HEAPU32[outDataStartPtr as any >>> 2] = 0;
-    _ems_.Module.HEAPU32[outSize as any >>> 2] = 0;
-    _ems_.Module.HEAPU32[((outSize as any) + 4) >>> 2] = 0;
+    _ems_.HEAPU32[outDataStartPtr as any >>> 2] = 0;
+    _ems_.HEAPU32[outSize as any >>> 2] = 0;
+    _ems_.HEAPU32[((outSize as any) + 4) >>> 2] = 0;
     return false;
 }
 
@@ -125,19 +174,19 @@ export async function runMain(mainAssemblyName?: string, args?: string[]): Promi
 
         args ??= [];
 
-        const sp = _ems_.Module.stackSave();
-        const argsvPtr: number = _ems_.Module.stackAlloc((args.length + 1) * 4) as any;
+        const sp = _ems_.stackSave();
+        const argsvPtr: number = _ems_.stackAlloc((args.length + 1) * 4) as any;
         const ptrs: VoidPtr[] = [];
         try {
 
             for (let i = 0; i < args.length; i++) {
                 const ptr = _ems_.dotnetBrowserUtilsExports.stringToUTF8Ptr(args[i]) as any;
                 ptrs.push(ptr);
-                _ems_.Module.HEAPU32[(argsvPtr >>> 2) + i] = ptr;
+                _ems_.HEAPU32[(argsvPtr >>> 2) + i] = ptr;
             }
             const res = _ems_._BrowserHost_ExecuteAssembly(mainAssemblyNamePtr, args.length, argsvPtr);
             for (const ptr of ptrs) {
-                _ems_.Module._free(ptr);
+                _ems_._free(ptr);
             }
 
             if (res != 0) {
@@ -148,7 +197,7 @@ export async function runMain(mainAssemblyName?: string, args?: string[]): Promi
 
             return _ems_.dotnetLoaderExports.getRunMainPromise();
         } finally {
-            _ems_.Module.stackRestore(sp);
+            _ems_.stackRestore(sp);
         }
     } catch (error: any) {
         // if the error is an ExitStatus, use its status code

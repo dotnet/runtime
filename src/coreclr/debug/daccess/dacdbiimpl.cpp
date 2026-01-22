@@ -1137,7 +1137,7 @@ void DacDbiInterfaceImpl::GetMethodRegionInfo(MethodDesc *             pMethodDe
     CONTRACTL_END;
 
     IJitManager::MethodRegionInfo methodRegionInfo = {(TADDR)NULL, 0, (TADDR)NULL, 0};
-    PCODE functionAddress = pMethodDesc->GetNativeCode();
+    PCODE functionAddress = pMethodDesc->GetCodeForInterpreterOrJitted();
 
     // get the start address of the hot region and initialize the jit manager
     pCodeInfo->m_rgCodeRegions[kHot].pAddress = CORDB_ADDRESS(PCODEToPINSTR(functionAddress));
@@ -1228,6 +1228,12 @@ void DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(VMPTR_MethodDesc         vmMe
 
     IJitManager::MethodRegionInfo methodRegionInfo = {(TADDR)NULL, 0, (TADDR)NULL, 0};
     TADDR codeAddr = CORDB_ADDRESS_TO_TADDR(hotCodeStartAddr);
+
+    EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
+    {
+        codeAddr = GetInterpreterCodeFromInterpreterPrecodeIfPresent(codeAddr);
+    }
+    EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY;
 
 #ifdef TARGET_ARM
     // TADDR should not have the thumb code bit set.
