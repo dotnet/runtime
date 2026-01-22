@@ -56,7 +56,7 @@ public class Z
     }
 
     public void Ping() { }
-        
+
 }
 
 public class Coordinator
@@ -130,7 +130,7 @@ public class Coordinator
         Console.WriteLine ($"{Thread.CurrentThread.ManagedThreadId}: {msg}");
     }
 
-    [ActiveIssue("System.Threading.Thread.ThrowIfNoThreadStart: PlatformNotSupportedException", TestPlatforms.Browser)]
+    [ActiveIssue("System.Threading.Thread.ThrowIfSingleThreaded: PlatformNotSupportedException", TestPlatforms.Browser)]
     [Fact]
     public static void RunTestCase()
     {
@@ -180,5 +180,5 @@ public class Coordinator
         }
         return found;
     }
-    
+
 }

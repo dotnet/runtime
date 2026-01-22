@@ -29,6 +29,8 @@ namespace System
         public static bool IsNetCore => Environment.Version.Major >= 5 || RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         public static bool IsNotMonoRuntime => !IsMonoRuntime;
+        public static bool IsInterpreter => IsMonoInterpreter || IsCoreClrInterpreter;
+        public static bool IsNotInterpreter => !IsInterpreter;
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsNotMonoInterpreter => !IsMonoInterpreter;
         public static bool IsMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") == "aot";
@@ -230,7 +232,8 @@ namespace System
         // heavily on Reflection.Emit
         public static bool IsXmlDsigXsltTransformSupported => !PlatformDetection.IsInAppContainer && IsReflectionEmitSupported;
 
-        public static bool IsPreciseGcSupported => !IsMonoRuntime;
+        public static bool IsPreciseGcSupported => !IsMonoRuntime 
+                                                    && !IsBrowser; // TODO-WASM: https://github.com/dotnet/runtime/issues/114096
 
         public static bool IsRareEnumsSupported => !IsNativeAot;
 

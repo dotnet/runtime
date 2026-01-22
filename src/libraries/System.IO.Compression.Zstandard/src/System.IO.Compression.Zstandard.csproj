@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Disabling baseline validation since this is a brand new package. Once this package has shipped a stable version, the following line should be removed in order to re-enable validation. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+  </PropertyGroup>
+
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">
+      SR.IOCompressionZstandard_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+
+    <!-- missing xml comments on net11.0 (not supported stubs)-->
+    <NoWarn Condition="'$(TargetPlatformIdentifier)' == ''">$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
+    <Compile Include="$(CommonPath)Interop\Interop.Zstd.cs" />
+    <Compile Include="System\IO\Compression\ZstandardCompressionOptions.cs" />
+    <Compile Include="System\IO\Compression\ZstandardDecoder.cs" />
+    <Compile Include="System\IO\Compression\ZstandardDictionary.cs" />
+    <Compile Include="System\IO\Compression\ZstandardEncoder.cs" />
+    <Compile Include="System\IO\Compression\ZstandardStream.Compress.cs" />
+    <Compile Include="System\IO\Compression\ZstandardStream.Decompress.cs" />
+    <Compile Include="System\IO\Compression\ZstandardStream.cs" />
+    <Compile Include="System\IO\Compression\ZstandardUtils.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeZstdHandle.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeZstdHandle.cs" />
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="Common\System\Net\ArrayBuffer.cs" />
+  </ItemGroup>
+
+  <!-- Windows specific files -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
+  </ItemGroup>
+
+  <!-- Unix specific files -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' ">
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Console\src\System.Console.csproj" Condition="'$(Configuration)' == 'Debug'" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.Tracing\src\System.Diagnostics.Tracing.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Compression\src\System.IO.Compression.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+  </ItemGroup>
+
+</Project>
