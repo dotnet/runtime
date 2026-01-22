@@ -66,7 +66,7 @@ namespace System.Runtime.Tests
             }
 
             //
-            // Mono does not include compilation of IL into interpreter byte code in there counters
+            // Mono does not include compilation of IL into interpreter byte code in these counters
             //
             if (PlatformDetection.IsMonoInterpreter || PlatformDetection.IsBrowser)
             {
