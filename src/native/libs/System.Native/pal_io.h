@@ -506,7 +506,7 @@ PALEXPORT int32_t SystemNative_FcntlGetIsNonBlocking(intptr_t fd, int32_t* isNon
 /**
  * Checks if a file descriptor is valid and opened with the specified access mode.
  *
- * Returns 1 if valid and has the required access, 0 otherwise.
+ * Returns 0 if valid and has the required access, -1 otherwise.
  */
 PALEXPORT int32_t SystemNative_FcntlCheckAccess(intptr_t fd, int32_t requestedAccess);
 

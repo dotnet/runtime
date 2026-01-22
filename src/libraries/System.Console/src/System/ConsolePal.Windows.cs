@@ -120,7 +120,7 @@ namespace System
             if (handle == IntPtr.Zero || handle == InvalidHandleValue
                 || (isReadable ? !ConsoleHandleIsReadable(handle) : !ConsoleHandleIsWritable(handle)))
             {
-                throw new IOException(SR.IO_NoConsole);
+                throw new InvalidOperationException(SR.InvalidOperation_InvalidHandle);
             }
 
             return new SafeFileHandle(handle, ownsHandle: false);

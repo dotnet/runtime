@@ -83,12 +83,12 @@ namespace System
 
         public static Stream OpenStandardOutput()
         {
-            return new WasmConsoleStream(OpenStandardOutputHandle(verifyFd: false), FileAccess.Write);
+            return new WasmConsoleStream(OpenStandardOutputHandle(), FileAccess.Write);
         }
 
         public static Stream OpenStandardError()
         {
-            return new WasmConsoleStream(OpenStandardErrorHandle(verifyFd: false), FileAccess.Write);
+            return new WasmConsoleStream(OpenStandardErrorHandle(), FileAccess.Write);
         }
 
         public static SafeFileHandle OpenStandardInputHandle() => throw new PlatformNotSupportedException();
@@ -99,9 +99,9 @@ namespace System
 
         private static SafeFileHandle OpenStandardHandle(IntPtr fd, FileAccess access, bool verifyFd)
         {
-            if (verifyFd)
+            if (verifyFd && Interop.Sys.Fcntl.CheckAccess(fd, (int)access) == -1)
             {
-                Interop.CheckIo(Interop.Sys.Fcntl.CheckAccess(fd, (int)access));
+                throw new InvalidOperationException(SR.InvalidOperation_InvalidHandle);
             }
 
             return new SafeFileHandle(fd, ownsHandle: false);

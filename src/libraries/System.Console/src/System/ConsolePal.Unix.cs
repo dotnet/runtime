@@ -45,18 +45,18 @@ namespace System
 
         public static Stream OpenStandardInput()
         {
-            return new UnixConsoleStream(OpenStandardInputHandle(verifyFd: false), FileAccess.Read,
+            return new UnixConsoleStream(OpenStandardInputHandle(), FileAccess.Read,
                                          useReadLine: !Console.IsInputRedirected);
         }
 
         public static Stream OpenStandardOutput()
         {
-            return new UnixConsoleStream(OpenStandardOutputHandle(verifyFd: false), FileAccess.Write);
+            return new UnixConsoleStream(OpenStandardOutputHandle(), FileAccess.Write);
         }
 
         public static Stream OpenStandardError()
         {
-            return new UnixConsoleStream(OpenStandardErrorHandle(verifyFd: false), FileAccess.Write);
+            return new UnixConsoleStream(OpenStandardErrorHandle(), FileAccess.Write);
         }
 
         public static SafeFileHandle OpenStandardInputHandle(bool verifyFd = true) => OpenStandardHandle(0, FileAccess.Read, verifyFd);
@@ -67,9 +67,9 @@ namespace System
 
         private static SafeFileHandle OpenStandardHandle(IntPtr fd, FileAccess access, bool verifyFd)
         {
-            if (verifyFd)
+            if (verifyFd && Interop.Sys.Fcntl.CheckAccess(fd, (int)access) == -1)
             {
-                Interop.CheckIo(Interop.Sys.Fcntl.CheckAccess(fd, (int)access));
+                throw new InvalidOperationException(SR.InvalidOperation_InvalidHandle);
             }
 
             return new SafeFileHandle(fd, ownsHandle: false);
