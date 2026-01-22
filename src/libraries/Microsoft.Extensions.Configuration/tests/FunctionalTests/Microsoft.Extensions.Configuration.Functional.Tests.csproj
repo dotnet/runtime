@@ -10,7 +10,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="testFileToReload.json">
+    <!-- 
+    Naively adding Content would conflict with Static Web Assets on Browser target.
+    NETSDK1022: Duplicate 'Content' items were included. The .NET SDK includes 'Content' items from your project directory by default.
+    https://github.com/dotnet/runtime/issues/123237
+    -->
+    <Content Include="testFileToReload.json" Condition="'$(TargetsBrowser)' != 'true' ">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
