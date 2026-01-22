@@ -1601,8 +1601,6 @@ namespace ILCompiler.DependencyAnalysis
 
         internal ModuleInitializerListNode ModuleInitializerList = new ModuleInitializerListNode();
 
-        public InterfaceDispatchCellSectionNode InterfaceDispatchCellSection = new InterfaceDispatchCellSectionNode();
-
         public ReadyToRunHeaderNode ReadyToRunHeader;
 
         public Dictionary<ISymbolNode, (Utf8String Name, bool Hidden)> NodeAliases = new Dictionary<ISymbolNode, (Utf8String, bool)>();
@@ -1623,7 +1621,6 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(EagerCctorTable, "EagerCctorTable is always generated");
             graph.AddRoot(TypeManagerIndirection, "TypeManagerIndirection is always generated");
             graph.AddRoot(FrozenSegmentRegion, "FrozenSegmentRegion is always generated");
-            graph.AddRoot(InterfaceDispatchCellSection, "Interface dispatch cell section is always generated");
             graph.AddRoot(ModuleInitializerList, "Module initializer list is always generated");
 
             if (_inlinedThreadStatics.IsComputed())

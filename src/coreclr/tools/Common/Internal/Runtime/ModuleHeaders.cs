@@ -92,8 +92,8 @@ namespace Internal.Runtime
         FrozenObjectRegion = 206,
         DehydratedData = 207,
         ThreadStaticOffsetRegion = 208,
-        // 209 is unused - it was used by ThreadStaticGCDescRegion
-        // 210 is unused - it was used by ThreadStaticIndex
+        InterfaceDispatchCellInfoRegion = 209,
+        InterfaceDispatchCellRegion = 210,
         // 211 is unused - it was used by LoopHijackFlag
         ImportAddressTables = 212,
         ModuleInitializerList = 213,

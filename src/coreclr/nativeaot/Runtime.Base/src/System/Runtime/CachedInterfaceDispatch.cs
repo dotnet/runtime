@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 
 using Internal.Runtime;
+using Internal.Runtime.CompilerHelpers;
 
 namespace System.Runtime
 {
@@ -32,9 +33,12 @@ namespace System.Runtime
         {
             RuntimeImports.RhpRegisterDispatchCache(ref Unsafe.As<GenericCache<Key, nint>, byte>(ref s_cache));
 
+#if false
             Lookup1234(new object(), 0x123456, ref s_cache);
+#endif
         }
 
+#if false
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static nint Lookup1234(object thisobj, nint cell, ref GenericCache<Key, nint> cache)
         {
@@ -49,6 +53,7 @@ namespace System.Runtime
         {
             return 0;
         }
+#endif
 
         private struct Key : IEquatable<Key>
         {
@@ -84,15 +89,8 @@ namespace System.Runtime
         [StructLayout(LayoutKind.Sequential)]
         private struct DispatchCell
         {
-            public nint MT;
+            public nint MethodTable;
             public nint Code;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct DispatchCellPrefix
-        {
-            public MethodTable* InterfaceType;
-            public nint Slot;
         }
 
         [RuntimeExport("RhpCidResolve")]
@@ -106,14 +104,8 @@ namespace System.Runtime
 
         private static IntPtr RhpCidResolve_Worker(object pObject, IntPtr pCell)
         {
-            DispatchCellPrefix* prefix = ((DispatchCellPrefix*)pCell) - 1;
-
-            DispatchCellInfo cellInfo = new DispatchCellInfo()
-            {
-                CellType = DispatchCellType.InterfaceAndSlot,
-                InterfaceType = prefix->InterfaceType,
-                InterfaceSlot = (ushort)prefix->Slot,
-            };
+            DispatchCellInfo cellInfo;
+            GetDispatchCellInfo(pObject.GetMethodTable()->TypeManager, pCell, out cellInfo);
 
             IntPtr pTargetCode = RhResolveDispatchWorker(pObject, (void*)pCell, ref cellInfo);
             if (pTargetCode != IntPtr.Zero)
@@ -126,12 +118,58 @@ namespace System.Runtime
             return IntPtr.Zero;
         }
 
+        private static void GetDispatchCellInfo(TypeManagerHandle typeManager, IntPtr pCell, out DispatchCellInfo info)
+        {
+            IntPtr dispatchCellRegion = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.InterfaceDispatchCellRegion, out int length);
+            if (pCell >= dispatchCellRegion && pCell < dispatchCellRegion + length)
+            {
+                // Static dispatch cell: find the info in the associated info region
+                nint cellIndex = (pCell - dispatchCellRegion) / sizeof(DispatchCell);
+
+                IntPtr dispatchCellInfoRegion = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.InterfaceDispatchCellInfoRegion, out _);
+                if (MethodTable.SupportsRelativePointers)
+                {
+                    var dispatchCellInfo = (int*)dispatchCellInfoRegion;
+                    info = new DispatchCellInfo
+                    {
+                        CellType = DispatchCellType.InterfaceAndSlot,
+                        InterfaceType = (MethodTable*)ReadRelPtr32(dispatchCellInfo + (cellIndex * 2)),
+                        InterfaceSlot = (ushort)*(dispatchCellInfo + (cellIndex * 2 + 1))
+                    };
+
+                    static void* ReadRelPtr32(void* address)
+                        => (byte*)address + *(int*)address;
+                }
+                else
+                {
+                    var dispatchCellInfo = (nint*)dispatchCellInfoRegion;
+                    info = new DispatchCellInfo
+                    {
+                        CellType = DispatchCellType.InterfaceAndSlot,
+                        InterfaceType = (MethodTable*)(dispatchCellInfo + (cellIndex * 2)),
+                        InterfaceSlot = (ushort)*(dispatchCellInfo + (cellIndex * 2 + 1))
+                    };
+                }
+
+            }
+            else
+            {
+                // Dynamically allocated dispatch cell: info is next to the dispatch cell
+                info = new DispatchCellInfo
+                {
+                    CellType = DispatchCellType.InterfaceAndSlot,
+                    InterfaceType = *(MethodTable**)(pCell + sizeof(DispatchCell)),
+                    InterfaceSlot = (ushort)*(nint*)(pCell + sizeof(DispatchCell) + sizeof(MethodTable*))
+                };
+            }
+        }
+
         private static IntPtr UpdateDispatchCellCache(IntPtr pCell, IntPtr pTargetCode, MethodTable* pInstanceType)
         {
             DispatchCell* pDispatchCell = (DispatchCell*)pCell;
 
             // If the dispatch cell doesn't cache anything yet, cache in the dispatch cell
-            if (Interlocked.CompareExchange(ref pDispatchCell->MT, (nint)pInstanceType, 0) == 0)
+            if (Interlocked.CompareExchange(ref pDispatchCell->MethodTable, (nint)pInstanceType, 0) == 0)
             {
                 // TODO: Michal doing lockfree code danger
                 pDispatchCell->Code = pTargetCode;
@@ -161,7 +199,25 @@ namespace System.Runtime
 
             // This method is used for the implementation of LOAD_VIRT_FUNCTION and in that case the mapping we want
             // may already be in the cache.
-            IntPtr pTargetCode = InternalCalls.RhpSearchDispatchCellCache(pCell, pInstanceType);
+            IntPtr pTargetCode = 0;
+            var dispatchCell = (DispatchCell*)pCell;
+            if (dispatchCell->Code != 0)
+            {
+                if ((MethodTable*)dispatchCell->MethodTable == pInstanceType)
+                {
+                    pTargetCode = dispatchCell->Code;
+                }
+                else
+                {
+#if SYSTEM_PRIVATE_CORELIB
+                    if (!s_cache.TryGet(new Key(pCell, (nint)pInstanceType), out pTargetCode))
+                    {
+                        pTargetCode = 0;
+                    }
+#endif
+                }
+            }
+
             if (pTargetCode == IntPtr.Zero)
             {
                 // Otherwise call the version of this method that knows how to resolve the method manually.
