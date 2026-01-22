@@ -1587,15 +1587,8 @@ namespace System
 
             T[] result = new T[resultLength];
 
-            int index = 0;
-            foreach (T stackAllocatedMatch in stackAllocatedMatches)
-            {
-                result[index++] = stackAllocatedMatch;
-                if (index >= stackAllocatedMatchesFound)
-                {
-                    break;
-                }
-            }
+            ReadOnlySpan<T> stackSpanMatches = stackAllocatedMatches;
+            stackSpanMatches[..stackAllocatedMatchesFound].CopyTo(result);
 
             heapMatches?.CopyTo(result.AsSpan(start: InlineArrayLength));
 
