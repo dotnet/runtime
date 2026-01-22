@@ -224,8 +224,6 @@ void deps_resolver_t::setup_probe_config(
         pal::string_t ext_pkgs = m_core_servicing;
         append_path(&ext_pkgs, _X("pkgs"));
         m_probes.push_back(probe_config_t::svc(ext_pkgs));
-
-        m_needs_file_existence_checks = true;
     }
 
     // The published deps directory to be probed: either app or FX directory.
@@ -354,7 +352,12 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
         }
         else
         {
-            if (entry.to_library_package_path(config.probe_dir, candidate, search_options | (config.is_servicing() ? deps_entry_t::search_options::is_servicing : 0)))
+            if (config.is_servicing())
+            {
+                search_options |= deps_entry_t::search_options::is_servicing | deps_entry_t::search_options::file_existence;
+            }
+
+            if (entry.to_library_package_path(config.probe_dir, candidate, search_options))
             {
                 trace::verbose(_X("    Probed package dir and matched '%s'"), candidate->c_str());
                 return true;
