@@ -156,7 +156,7 @@ async function findResources(dotnet: DotnetHostBuilder, files: string[], mainAss
         .map(filepath => {
             // Get file name.
             const name = filename.substring(filename.lastIndexOf("/") + 1);
-            return { virtualPath: prefix + filename, name };
+            return { virtualPath: prefix + filepath, name };
         });
     const coreAssembly = files
         // TODO-WASM: webCIL
