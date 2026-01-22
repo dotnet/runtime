@@ -92,11 +92,7 @@ namespace System.Text.Json.Serialization.Converters
             // Check for ASCII whitespace characters: space (0x20), tab (0x09), newline (0x0A),
             // carriage return (0x0D), form feed (0x0C), and vertical tab (0x0B)
             // For non-ASCII bytes, convert to char and check with char.IsWhiteSpace
-            if (b <= 127)
-            {
-                return char.IsWhiteSpace((char)b);
-            }
-            return false;
+            return b <= 127 ? char.IsWhiteSpace((char)b) : false;
         }
 #endif
 
