@@ -133,19 +133,21 @@ namespace System.IO.Tests
             Assert.Equal(0, bytesRead);
         }
 
-        [Fact]
-        public async Task OpenNullHandle_ReadWriteAccess_BothAsyncOperationsWork()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task OpenNullHandle_WithExplicitIsAsync_WorksCorrectly(bool isAsync)
         {
             using SafeFileHandle handle = File.OpenNullHandle();
-            using FileStream stream = new FileStream(handle, FileAccess.ReadWrite);
+            using FileStream stream = new FileStream(handle, FileAccess.ReadWrite, bufferSize: 4096, isAsync: isAsync);
             
             byte[] writeBuffer = new byte[100];
             byte[] readBuffer = new byte[100];
             
-            // Async write should succeed
+            // Write should succeed
             await stream.WriteAsync(writeBuffer, 0, writeBuffer.Length);
             
-            // Async read should return 0
+            // Read should return 0
             int bytesRead = await stream.ReadAsync(readBuffer, 0, readBuffer.Length);
             Assert.Equal(0, bytesRead);
         }
