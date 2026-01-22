@@ -97,7 +97,7 @@ namespace System.IO
 
         private INotify.Watcher? _watcher;
 
-        private void RestartForInternalBufferSize()
+        private static void RestartForInternalBufferSize()
         {
             // The implementation is not using InternalBufferSize. There's no need to restart.
         }
