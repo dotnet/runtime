@@ -21,7 +21,6 @@ export function registerDllBytes(bytes: Uint8Array, asset: { name: string, virtu
             throw new Error("posix_memalign failed");
         }
 
-
         const ptr = _ems_.HEAPU32[ptrPtr as any >>> 2];
         _ems_.HEAPU8.set(bytes, ptr >>> 0);
         dotnetLogger.debug(`Registered assembly '${asset.virtualPath}' (name: '${asset.name}') at ${ptr.toString(16)} length ${bytes.length}`);
