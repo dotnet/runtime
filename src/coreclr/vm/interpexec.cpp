@@ -4220,8 +4220,8 @@ do                                                                      \
 
         pInterpreterFrame->SetIsFaulting(false);
 
-        Thread *pThread = GetThread();
-        if (pThread->IsAbortRequested())
+        void* abortAddress = COMPlusCheckForAbort(resumeIP);
+        if (abortAddress != NULL)
         {
             // Record the resume IP in the pFrame so that the exception handling unwinds from there
             pFrame->ip = ip;

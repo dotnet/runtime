@@ -8,7 +8,7 @@
 
     <_WebAssemblyPropsFile Condition="'$(_WebAssemblyPropsFile)' == ''">$(MonoProjectRoot)\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\Microsoft.NET.Sdk.WebAssembly.Browser.props</_WebAssemblyPropsFile>
     <_WebAssemblyTargetsFile Condition="'$(_WebAssemblyTargetsFile)' == ''">$(MonoProjectRoot)\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\Microsoft.NET.Sdk.WebAssembly.Browser.targets</_WebAssemblyTargetsFile>
-    <_WebAssemblySdkToolsDirectory Condition="'$(_WebAssemblySdkToolsDirectory)' == ''">$(ArtifactsBinDir)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\$(RuntimeConfiguration)\</_WebAssemblySdkToolsDirectory>
+    <_WebAssemblySdkToolsDirectory Condition="'$(_WebAssemblySdkToolsDirectory)' == ''">$(ArtifactsBinDir)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\$(RuntimeConfiguration)\$(NetCoreAppToolCurrent)\</_WebAssemblySdkToolsDirectory>
   </PropertyGroup>
 
   <Import Sdk="Microsoft.NET.Sdk.WebAssembly" Project="Sdk.props" Condition="'$(UsingNativeAOT)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' == 'true'" />
