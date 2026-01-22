@@ -2271,6 +2271,91 @@ namespace System.Numerics.Tests
             AssertEqual(+expectedResult, BFloat16.RadiansToDegrees(+value), allowedVariance);
         }
 
+        [Theory]
+        [InlineData(float.PositiveInfinity, int.MaxValue)]
+        [InlineData(float.NaN, int.MaxValue)]
+        [InlineData(0.0f, int.MinValue)]
+        [InlineData(1.0f, 0)]
+        [InlineData(2.0f, 1)]
+        [InlineData(4.0f, 2)]
+        [InlineData(0.5f, -1)]
+        public static void ILogB(float value, int expectedResult)
+        {
+            Assert.Equal(expectedResult, BFloat16.ILogB((BFloat16)value));
+        }
+
+        [Fact]
+        public static void ILogB_Subnormal()
+        {
+            // BFloat16.Epsilon is the smallest positive subnormal value
+            // Its ILogB should be -133
+            Assert.Equal(-133, BFloat16.ILogB(BFloat16.Epsilon));
+
+            // Test another subnormal value: 0x0040 (half of max subnormal)
+            BFloat16 subnormal = BitConverter.UInt16BitsToBFloat16(0x0040);
+            Assert.Equal(-127, BFloat16.ILogB(subnormal));
+        }
+
+        public static IEnumerable<object[]> TryWriteSignificandBigEndianTest_TestData() =>
+        [
+            [BFloat16.NegativeInfinity, 1, new byte[] { 0x80 }],
+            [BFloat16.MinValue, 1, new byte[] { 0xFF }],
+            [(BFloat16)(-1.0f), 1, new byte[] { 0x80 }],
+            [-BFloat16.Epsilon, 1, new byte[] { 0x01 }],
+            [BFloat16.NaN, 1, new byte[] { 0xC0 }],
+            [(BFloat16)0.0f, 1, new byte[] { 0x00 }],
+            [(BFloat16)1.0f, 1, new byte[] { 0x80 }],
+            [BFloat16.MaxValue, 1, new byte[] { 0xFF }],
+            [BFloat16.PositiveInfinity, 1, new byte[] { 0x80 }],
+        ];
+
+        [Theory]
+        [MemberData(nameof(TryWriteSignificandBigEndianTest_TestData))]
+        public static void TryWriteSignificandBigEndianTest(BFloat16 value, int expectedBytesWritten, byte[] expectedBytes)
+        {
+            Span<byte> destination = [0];
+            Assert.True(FloatingPointHelper<BFloat16>.TryWriteSignificandBigEndian(value, destination, out int bytesWritten));
+            Assert.Equal(expectedBytesWritten, bytesWritten);
+            Assert.Equal(expectedBytes, destination.ToArray());
+        }
+
+        [Fact]
+        public static void TryWriteSignificandBigEndianTest_EmptyDestination()
+        {
+            Assert.False(FloatingPointHelper<BFloat16>.TryWriteSignificandBigEndian(default, Span<byte>.Empty, out int bytesWritten));
+            Assert.Equal(0, bytesWritten);
+        }
+
+        public static IEnumerable<object[]> TryWriteSignificandLittleEndianTest_TestData() =>
+        [
+            [BFloat16.NegativeInfinity, 1, new byte[] { 0x80 }],
+            [BFloat16.MinValue, 1, new byte[] { 0xFF }],
+            [(BFloat16)(-1.0f), 1, new byte[] { 0x80 }],
+            [-BFloat16.Epsilon, 1, new byte[] { 0x01 }],
+            [BFloat16.NaN, 1, new byte[] { 0xC0 }],
+            [(BFloat16)0.0f, 1, new byte[] { 0x00 }],
+            [(BFloat16)1.0f, 1, new byte[] { 0x80 }],
+            [BFloat16.MaxValue, 1, new byte[] { 0xFF }],
+            [BFloat16.PositiveInfinity, 1, new byte[] { 0x80 }],
+        ];
+
+        [Theory]
+        [MemberData(nameof(TryWriteSignificandLittleEndianTest_TestData))]
+        public static void TryWriteSignificandLittleEndianTest(BFloat16 value, int expectedBytesWritten, byte[] expectedBytes)
+        {
+            Span<byte> destination = [0];
+            Assert.True(FloatingPointHelper<BFloat16>.TryWriteSignificandLittleEndian(value, destination, out int bytesWritten));
+            Assert.Equal(expectedBytesWritten, bytesWritten);
+            Assert.Equal(expectedBytes, destination.ToArray());
+        }
+
+        [Fact]
+        public static void TryWriteSignificandLittleEndianTest_EmptyDestination()
+        {
+            Assert.False(FloatingPointHelper<BFloat16>.TryWriteSignificandLittleEndian(default, Span<byte>.Empty, out int bytesWritten));
+            Assert.Equal(0, bytesWritten);
+        }
+
         #region AssertExtentions
         static bool IsNegativeZero(BFloat16 value)
         {

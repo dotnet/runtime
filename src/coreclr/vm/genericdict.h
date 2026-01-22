@@ -276,7 +276,6 @@ public:
     static DictionaryEntry PopulateEntry(MethodDesc * pMD,
                                          MethodTable * pMT,
                                          LPVOID signature,
-                                         BOOL nonExpansive,
                                          DictionaryEntry ** ppSlot,
                                          DWORD dictionaryIndexAndSlot = -1,
                                          Module * pModule = NULL);

@@ -7,8 +7,10 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
+using Microsoft.CodeAnalysis.Text;
 
 namespace System.Text.RegularExpressions.Generator
 {
@@ -107,10 +109,11 @@ namespace System.Text.RegularExpressions.Generator
                     return;
                 }
 
-                // Report the diagnostic.
+                // Report the diagnostic with a location that doesn't span the potentially multi-line pattern.
                 SyntaxNode? syntaxNodeForDiagnostic = invocationOperation.Syntax;
-                Debug.Assert(syntaxNodeForDiagnostic != null);
-                context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, syntaxNodeForDiagnostic.GetLocation()));
+                Debug.Assert(syntaxNodeForDiagnostic is not null);
+                Location location = GetLocationBeforeArguments(syntaxNodeForDiagnostic);
+                context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, location));
             }
         }
 
@@ -139,15 +142,16 @@ namespace System.Text.RegularExpressions.Generator
                 return;
             }
 
-            // Report the diagnostic.
+            // Report the diagnostic with a location that doesn't span the potentially multi-line pattern.
             SyntaxNode? syntaxNodeForDiagnostic = operation.Syntax;
             Debug.Assert(syntaxNodeForDiagnostic is not null);
-            context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, syntaxNodeForDiagnostic.GetLocation()));
+            Location location = GetLocationBeforeArguments(syntaxNodeForDiagnostic);
+            context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, location));
         }
 
         /// <summary>
-        /// Validates the operation arguments ensuring they all have constant values, and if so it stores the argument
-        /// indices for the pattern and options. If timeout argument was used, then this returns false.
+        /// Validates the operation arguments ensuring the pattern and options are constant values.
+        /// Returns false if a timeout argument is used.
         /// </summary>
         private static bool ValidateParameters(ImmutableArray<IArgumentOperation> arguments)
         {
@@ -177,7 +181,7 @@ namespace System.Text.RegularExpressions.Generator
                     return false;
                 }
 
-                // If the argument is the pattern, then we validate that it is constant and we store the index.
+                // If the argument is the pattern, then we validate that it is constant.
                 if (argumentName.Equals(PatternArgumentName, StringComparison.OrdinalIgnoreCase))
                 {
                     if (!argument.Value.ConstantValue.HasValue)
@@ -219,6 +223,42 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Gets a location for the diagnostic that excludes the argument list.
+        /// This prevents multi-line patterns from causing adornments on every line.
+        /// </summary>
+        private static Location GetLocationBeforeArguments(SyntaxNode syntaxNode)
+        {
+            // Get the span that ends just before the opening parenthesis of the argument list.
+            // For invocations like Regex.IsMatch(input, pattern), this gives us just "Regex.IsMatch".
+            // For object creations like new Regex(pattern), this gives us just "new Regex".
+            // For target-typed new like new("pattern"), this gives us just "new".
+            int? argumentListStart = syntaxNode switch
+            {
+                InvocationExpressionSyntax invocation => invocation.ArgumentList?.SpanStart,
+                ObjectCreationExpressionSyntax creation => creation.ArgumentList?.SpanStart,
+                ImplicitObjectCreationExpressionSyntax implicitCreation => implicitCreation.ArgumentList?.SpanStart,
+                _ => null
+            };
+
+            if (argumentListStart is int end)
+            {
+                SyntaxTree? tree = syntaxNode.SyntaxTree;
+                if (tree is not null)
+                {
+                    int start = syntaxNode.SpanStart;
+                    if (end > start)
+                    {
+                        TextSpan span = TextSpan.FromBounds(start, end);
+                        return Location.Create(tree, span);
+                    }
+                }
+            }
+
+            // Fall back to the full syntax location if we can't create a narrower span.
+            return syntaxNode.GetLocation();
         }
 
         /// <summary>

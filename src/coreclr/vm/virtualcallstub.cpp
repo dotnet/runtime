@@ -1697,6 +1697,92 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     return target;
 }
 
+#ifdef FEATURE_RESOLVE_HELPER_DISPATCH
+PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock, TADDR siteAddrForRegisterIndirect)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM(););
+        PRECONDITION(CheckPointer(pTransitionBlock));
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    MAKE_CURRENT_THREAD_AVAILABLE();
+
+#ifdef _DEBUG
+    Thread::ObjectRefFlush(CURRENT_THREAD);
+#endif
+
+    ResolveHelperFrame frame(pTransitionBlock);
+    ResolveHelperFrame * pSDFrame = &frame;
+
+    StubCallSite callSite(siteAddrForRegisterIndirect, pTransitionBlock->m_ReturnAddress);
+
+    OBJECTREF *protectedObj = pSDFrame->GetThisPtr();
+    _ASSERTE(protectedObj != NULL);
+    OBJECTREF pObj = *protectedObj;
+
+    PCODE target = (PCODE)NULL;
+
+    bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
+
+    if (pObj == NULL) {
+        pSDFrame->Push(CURRENT_THREAD);
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+        COMPlusThrow(kNullReferenceException);
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+        _ASSERTE(!"Throw returned");
+    }
+
+    pSDFrame->Push(CURRENT_THREAD);
+
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+
+    GCPROTECT_BEGIN(pObj);
+
+    // For Virtual Delegates the m_siteAddr is a field of a managed object
+    // Thus we have to report it as an interior pointer,
+    // so that it is updated during a gc
+    GCPROTECT_BEGININTERIOR( *(callSite.GetIndirectCellAddress()) );
+
+    GCStress<vsd_on_resolve>::MaybeTrigger();
+
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    if (UseCachedInterfaceDispatch())
+    {
+        DispatchToken representativeToken(((InterfaceDispatchCell*)siteAddrForRegisterIndirect)->GetDispatchCellInfo().Token);
+        target = CachedInterfaceDispatchResolveWorker(&callSite, protectedObj, representativeToken);
+    }
+    else
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
+    {
+        DispatchToken representativeToken = DispatchToken(VirtualCallStubManager::GetTokenFromStub(callSite.GetSiteTarget(), NULL));
+
+        PCODE callSiteTarget = callSite.GetSiteTarget();
+        CONSISTENCY_CHECK(callSiteTarget != (PCODE)NULL);
+
+        StubCodeBlockKind   stubKind = STUB_CODE_BLOCK_UNKNOWN;
+        VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(callSiteTarget, &stubKind);
+        _ASSERTE(pMgr != NULL);
+
+        target = pMgr->ResolveWorker(&callSite, &pObj, representativeToken, stubKind);
+    }
+
+    GCPROTECT_END();
+    GCPROTECT_END();
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+    pSDFrame->Pop(CURRENT_THREAD);
+
+    return target;
+}
+#endif // FEATURE_RESOLVE_HELPER_DISPATCH
+
 void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR siteAddrForRegisterIndirect)
 {
     CONTRACTL {

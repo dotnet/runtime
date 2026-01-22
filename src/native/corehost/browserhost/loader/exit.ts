@@ -6,9 +6,9 @@ import { dotnetLogger, dotnetLoaderExports, Module, dotnetBrowserUtilsExports } 
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB } from "./per-module";
 
 export const runtimeState = {
+    runtimeReady: false,
     exitCode: undefined as number | undefined,
     exitReason: undefined as any,
-    runtimeReady: false,
     originalOnAbort: undefined as ((reason: any, extraJson?: string) => void) | undefined,
     originalOnExit: undefined as ((code: number) => void) | undefined,
     onExitListeners: [] as OnExitListener[],
@@ -102,27 +102,25 @@ export function exit(exitCode: number, reason: any): void {
     reason.silent = true;
     let shouldQuitNow = true;
 
-    if (!alreadyExisted) {
-        runtimeState.exitCode = exitCode;
-        if (!runtimeState.exitReason) {
-            runtimeState.exitReason = reason;
-        }
-        unregisterExit();
-        if (!alreadySilent) {
-            if (runtimeState.onExitListeners.length === 0 && !runtimeState.runtimeReady) {
-                dotnetLogger.error(`Exiting during runtime startup: ${message} ${stack}`);
-            }
-            for (const listener of runtimeState.onExitListeners) {
-                try {
-                    if (!listener(exitCode, reason, alreadySilent)) {
-                        shouldQuitNow = false;
+    if (!alreadyExisted && !runtimeState.exitReason) {
+        runtimeState.exitReason = reason;
+
+        try {
+            unregisterExit();
+            if (!alreadySilent) {
+                if (runtimeState.onExitListeners.length === 0 && !runtimeState.runtimeReady) {
+                    dotnetLogger.error(`Exiting during runtime startup: ${message} ${stack}`);
+                }
+                for (const listener of runtimeState.onExitListeners) {
+                    try {
+                        if (!listener(exitCode, reason, alreadySilent)) {
+                            shouldQuitNow = false;
+                        }
+                    } catch {
+                        // ignore errors from listeners
                     }
-                } catch {
-                    // ignore errors from listeners
                 }
             }
-        }
-        try {
             if (!runtimeState.runtimeReady) {
                 dotnetLogger.debug(() => `Aborting startup, reason: ${reason}`);
                 dotnetLoaderExports.abortStartup(reason);
@@ -131,6 +129,9 @@ export function exit(exitCode: number, reason: any): void {
             dotnetLogger.warn("dotnet.js exit() failed", err);
             // don't propagate any failures
         }
+
+        runtimeState.exitCode = exitCode; // this also marks the runtime as not running
+
         if (shouldQuitNow) {
             quitNow(exitCode, reason);
         }

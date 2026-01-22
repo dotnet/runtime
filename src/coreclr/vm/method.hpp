@@ -60,6 +60,10 @@ EXTERN_C VOID STDCALL PInvokeImportThunk();
 #define METHOD_TOKEN_RANGE_BIT_COUNT (24 - METHOD_TOKEN_REMAINDER_BIT_COUNT)
 #define METHOD_TOKEN_RANGE_MASK ((1 << METHOD_TOKEN_RANGE_BIT_COUNT) - 1)
 
+#if defined(TARGET_X86) || defined(FEATURE_COMINTEROP)
+#define FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
+#endif
+
 enum class AsyncMethodFlags
 {
     // Method uses CORINFO_CALLCONV_ASYNCCALL call convention.
@@ -858,9 +862,11 @@ public:
     // arguments passed in registers.
     UINT SizeOfArgStack();
 
+#ifdef FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
     // Returns the # of bytes of stack used by arguments in a call from native to this function.
     // Does not include arguments passed in registers.
     UINT SizeOfNativeArgStack();
+#endif // FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
 
     // Returns the # of bytes to pop after a call. Not necessary the
     // same as SizeOfArgStack()!
@@ -1612,6 +1618,13 @@ public:
     //*******************************************************************************
     // Returns the address of the native code.
     PCODE GetNativeCode();
+
+    // Returns either the jitted code or the interpreter code (will not return the InterpreterStub which GetNativeCode might return)
+    PCODE GetCodeForInterpreterOrJitted()
+    {
+        WRAPPER_NO_CONTRACT;
+        return GetInterpreterCodeFromInterpreterPrecodeIfPresent(GetNativeCode());
+    }
 
     // Returns GetNativeCode() if it exists, but also checks to see if there
     // is a non-default code version that is populated with a code body and returns that.
@@ -2887,6 +2900,7 @@ public:
         return asMetadata;
     }
 
+#if defined(TARGET_X86) || defined(FEATURE_COMINTEROP)
     WORD GetNativeStackArgSize()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2903,7 +2917,8 @@ public:
 #endif
         m_dwExtendedFlags = (m_dwExtendedFlags & ~StackArgSizeMask) | ((DWORD)cbArgSize << 16);
     }
-
+#endif // TARGET_X86 || FEATURE_COMINTEROP
+    
     bool IsReversePInvokeStub() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -3333,11 +3348,11 @@ private:
 #endif
 public:
 
+#if defined(TARGET_X86)
     void SetStackArgumentSize(WORD cbDstBuffer, CorInfoCallConvExtension unmgdCallConv)
     {
         LIMITED_METHOD_CONTRACT;
 
-#if defined(TARGET_X86)
         // thiscall passes the this pointer in ECX
         if (unmgdCallConv == CorInfoCallConvExtension::Thiscall)
         {
@@ -3354,10 +3369,8 @@ public:
         {
             _ASSERTE(m_cbStackArgumentSize == cbDstBuffer);
         }
-#endif // defined(TARGET_X86)
     }
 
-#if defined(TARGET_X86)
     void EnsureStackArgumentSize();
 
     WORD GetStackArgumentSize() const
@@ -3475,16 +3488,6 @@ struct CLRToCOMCallInfo
         _ASSERTE(m_cbStackArgumentSize != 0xFFFF);
         return m_cbStackArgumentSize;
     }
-#else // TARGET_X86
-    void InitStackArgumentSize()
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    void SetStackArgumentSize(WORD cbDstBuffer)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
 #endif // TARGET_X86
 };
 
@@ -3553,11 +3556,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_pCLRToCOMCallInfo->m_cbStackPop = (WORD)CbStackPop();
-    }
-#else // TARGET_X86
-    void SetStackArgumentSize(WORD cbDstBuffer)
-    {
-        LIMITED_METHOD_CONTRACT;
     }
 #endif // TARGET_X86
 };
