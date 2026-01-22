@@ -4094,6 +4094,8 @@ void InterpCompiler::EmitCanAccessCallout(CORINFO_RESOLVED_TOKEN *pResolvedToken
 
 void InterpCompiler::EmitCallsiteCallout(CorInfoIsAccessAllowedResult accessAllowed, CORINFO_HELPER_DESC* calloutDesc)
 {
+// WASM-TODO: https://github.com/dotnet/runtime/issues/121955
+#ifndef TARGET_WASM
     if (accessAllowed == CORINFO_ACCESS_ILLEGAL)
     {
         int32_t svars[CORINFO_ACCESS_ALLOWED_MAX_ARGS];
@@ -4164,6 +4166,7 @@ void InterpCompiler::EmitCallsiteCallout(CorInfoIsAccessAllowedResult accessAllo
         }
         m_pLastNewIns->data[0] = GetDataForHelperFtn(calloutDesc->helperNum);
     }
+#endif // !TARGET_WASM
 }
 
 static OpcodePeepElement peepRuntimeAsyncCall[] = {
@@ -4946,8 +4949,18 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         m_pStackPointer--;
         int32_t continuationArg = m_pStackPointer[0].var;
 
-        AddIns(INTOP_LDNULL);
-        m_pLastNewIns->SetDVar(continuationArg);
+        if (m_nextCallAsyncContinuationVar == -1)
+        {
+            AddIns(INTOP_LDNULL);
+            m_pLastNewIns->SetDVar(continuationArg);
+        }
+        else
+        {
+            AddIns(INTOP_MOV_P);
+            m_pLastNewIns->SetSVar(m_nextCallAsyncContinuationVar);
+            m_pLastNewIns->SetDVar(continuationArg);
+            m_nextCallAsyncContinuationVar = -1;
+        }
         callArgs[continuationArgLocation] = continuationArg;
     }
 

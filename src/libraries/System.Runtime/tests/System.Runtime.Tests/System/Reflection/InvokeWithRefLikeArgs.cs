@@ -52,6 +52,7 @@ namespace System.Reflection.Tests
 
         [Fact]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/40738")]
+        [SkipOnPlatform(TestPlatforms.Browser, "https://github.com/dotnet/runtime/issues/40738")]
         public static void MethodTakesOutToRefStructAsArg_ThrowsNSE()
         {
             MethodInfo mi = GetMethod(nameof(TestClass.TakesOutToRefStructAsArg));

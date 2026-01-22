@@ -10,6 +10,7 @@
     IMPORT PInvokeImportWorker
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     IMPORT VSD_ResolveWorker
+    IMPORT VSD_ResolveWorkerForInterfaceLookupSlot
 #endif
     IMPORT ComPreStubWorker
     IMPORT COMToCLRWorker
@@ -23,6 +24,9 @@
 #endif
     IMPORT HijackHandler
     IMPORT ThrowControlForThread
+    IMPORT IL_Throw_Impl
+    IMPORT IL_ThrowExact_Impl
+    IMPORT IL_Rethrow_Impl
 #ifdef FEATURE_INTERPRETER
     IMPORT GetInterpThreadContextWithPossiblyMissingThreadOrCallStub
     IMPORT ExecuteInterpretedMethod
@@ -760,6 +764,35 @@ Fail
         EPILOG_BRANCH_REG  x9
 
         NESTED_END
+
+
+;; On Input:
+;;    x0                     contains object 'this' pointer
+;;    x11                    contains the address of the indirection cell (with the flags in the low bits)
+;;
+;; On Output:
+;;    x15                    contains the target address
+;;
+;; Preserves all argument registers
+        NESTED_ENTRY JIT_InterfaceLookupForSlot
+
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        add x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
+        mov x1, x11 ; indirection cell
+
+        bl VSD_ResolveWorkerForInterfaceLookupSlot
+
+        ;; Move the result (the target address) to x12 so it doesn't get overridden when we restore the
+        ;; argument registers.
+        mov x15, x0
+
+        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+
+        EPILOG_RETURN
+
+        NESTED_END
+
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #ifdef FEATURE_READYTORUN
@@ -2980,6 +3013,50 @@ CopyLoop
 
 
 #endif // FEATURE_INTERPRETER
+
+; ------------------------------------------------------------------
+; Capture a transition block with register values and call the IL_Throw_Impl
+; implementation written in C.
+;
+; Input state:
+;   x0 = Pointer to exception object
+; ------------------------------------------------------------------
+    NESTED_ENTRY IL_Throw
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS x1
+        ; x0 already contains exception object
+        ; x1 contains pointer to TransitionBlock
+        bl      IL_Throw_Impl
+        ; Should never return
+        brk     #0
+    NESTED_END IL_Throw
+
+; ------------------------------------------------------------------
+; Capture a transition block with register values and call the IL_ThrowExact_Impl
+; implementation written in C.
+;
+; Input state:
+;   x0 = Pointer to exception object
+; ------------------------------------------------------------------
+    NESTED_ENTRY IL_ThrowExact
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS x1
+        ; x0 already contains exception object
+        ; x1 contains pointer to TransitionBlock
+        bl      IL_ThrowExact_Impl
+        ; Should never return
+        brk     #0
+    NESTED_END IL_ThrowExact
+
+; ------------------------------------------------------------------
+; Capture a transition block with register values and call the IL_Rethrow_Impl
+; implementation written in C.
+; ------------------------------------------------------------------
+    NESTED_ENTRY IL_Rethrow
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS x0
+        ; x0 contains pointer to TransitionBlock
+        bl      IL_Rethrow_Impl
+        ; Should never return
+        brk     #0
+    NESTED_END IL_Rethrow
 
 ; Must be at very end of file
     END

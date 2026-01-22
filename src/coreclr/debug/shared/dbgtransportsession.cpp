@@ -2294,10 +2294,6 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
         cbAdditionalSize = sizeof(pEvent->JitDebugInfo);
         break;
 
-    case DB_IPCE_MDA_NOTIFICATION:
-        cbAdditionalSize = sizeof(pEvent->MDANotification);
-        break;
-
     case DB_IPCE_GET_GCHANDLE_INFO_RESULT:
         cbAdditionalSize = sizeof(pEvent->GetGCHandleInfoResult);
         break;
