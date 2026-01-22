@@ -190,7 +190,6 @@ namespace System.Net.WebSockets.Tests
             stream.Write(frame, 0, frame.Length);
             stream.Position = 0;
             using WebSocket websocket = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions { IsServer = true });
-            
             WebSocketException exception = await Assert.ThrowsAsync<WebSocketException>(() =>
                 websocket.ReceiveAsync(new byte[5], CancellationToken.None));
             Assert.Equal(SR.net_Websockets_ServerReceivedUnmaskedFrame, exception.Message);
