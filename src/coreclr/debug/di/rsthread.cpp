@@ -4828,113 +4828,42 @@ CordbFrame* CordbFrame::GetCordbFrameFromInterface(ICorDebugFrame *pFrame)
 
  * Value Enumerator class
  *
- * Used by CordbJITILFrame for EnumLocalVars & EnumArgs.
- * NOTE NOTE NOTE WE ASSUME that the 'frame' argument is actually the
- * CordbJITILFrame's native frame member variable.
  * ------------------------------------------------------------------------- */
 
-CordbValueEnum::CordbValueEnum(CordbNativeFrame *frame, ValueEnumMode mode) :
-    CordbBase(frame->GetProcess(), 0, enumCordbValueEnum)
+CordbValueEnum::CordbValueEnum(
+    CordbProcess* pProcess,
+    UINT maxCount,
+    ValueGetter valueGetter,
+    NeuterList* pNeuterList)
+    : CordbBase(pProcess, 0, enumCordbValueEnum)
+    , m_valueGetter(valueGetter)
+    , m_pNeuterList(pNeuterList)
+    , m_iCurrent(0)
+    , m_iMax(maxCount)
 {
-    _ASSERTE( frame != NULL );
-    _ASSERTE( mode == LOCAL_VARS_ORIGINAL_IL || mode == LOCAL_VARS_REJIT_IL || mode == ARGS);
+    _ASSERTE(pProcess != NULL);
 
-    m_frame = frame;
-    m_mode = mode;
-    m_iCurrent = 0;
-    m_iMax = 0;
-}
-
-/*
- * CordbValueEnum::Init
- *
- * Initialize a CordbValueEnum object. Must be called after allocating the object and before using it. If Init
- * fails, then destroy the object and release the memory.
- *
- * Parameters:
- *     none.
- *
- * Returns:
- *    HRESULT for success or failure.
- *
- */
-HRESULT CordbValueEnum::Init()
-{
-    HRESULT hr = S_OK;
-    CordbNativeFrame *nil = m_frame;
-    CordbJITILFrame *jil = nil->m_JITILFrame;
-
-    switch (m_mode)
+    // Add to the appropriate neuter list
+    if (m_pNeuterList != NULL)
     {
-        case ARGS:
+        HRESULT hr = S_OK;
+        EX_TRY
         {
-            // Get the function signature
-            CordbFunction *func = m_frame->GetFunction();
-            ULONG methodArgCount;
-
-            IfFailRet(func->GetSig(NULL, &methodArgCount, NULL));
-
-            // Grab the argument count for the size of the enumeration.
-            m_iMax = methodArgCount;
-            if (jil->m_fVarArgFnx && !jil->m_sigParserCached.IsNull())
-            {
-                m_iMax = jil->m_allArgsCount;
-            }
-            break;
+            m_pNeuterList->Add(pProcess, this);
         }
-        case LOCAL_VARS_ORIGINAL_IL:
-        {
-            // Get the locals signature.
-            ULONG localsCount;
-            IfFailRet(jil->GetOriginalILCode()->GetLocalVarSig(NULL, &localsCount));
-
-            // Grab the number of locals for the size of the enumeration.
-            m_iMax = localsCount;
-            break;
-        }
-        case LOCAL_VARS_REJIT_IL:
-        {
-#ifdef FEATURE_CODE_VERSIONING
-            // Get the locals signature.
-            ULONG localsCount;
-            CordbReJitILCode* pCode = jil->GetReJitILCode();
-            if (pCode == NULL)
-            {
-                m_iMax = 0;
-            }
-            else
-            {
-                IfFailRet(pCode->GetLocalVarSig(NULL, &localsCount));
-
-                // Grab the number of locals for the size of the enumeration.
-                m_iMax = localsCount;
-            }
-#else
-            m_iMax = 0;
-#endif // FEATURE_CODE_VERSIONING
-            break;
-        }
+        EX_CATCH_HRESULT(hr);
+        SetUnrecoverableIfFailed(pProcess, hr);
     }
-    // Everything worked okay, so add this object to the neuter list for objects that are tied to the stack trace.
-    EX_TRY
-    {
-        m_frame->m_pThread->GetRefreshStackNeuterList()->Add(GetProcess(), this);
-    }
-    EX_CATCH_HRESULT(hr);
-    SetUnrecoverableIfFailed(GetProcess(), hr);
-
-    return hr;
 }
 
 CordbValueEnum::~CordbValueEnum()
 {
     _ASSERTE(this->IsNeutered());
-    _ASSERTE(m_frame == NULL);
 }
 
 void CordbValueEnum::Neuter()
 {
-    m_frame = NULL;
+    m_valueGetter = nullptr;
     CordbBase::Neuter();
 }
 
@@ -4990,24 +4919,16 @@ HRESULT CordbValueEnum::Clone(ICorDebugEnum **ppEnum)
     PUBLIC_REENTRANT_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
-
     VALIDATE_POINTER_TO_OBJECT(ppEnum, ICorDebugEnum **);
 
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        *ppEnum = NULL;
-        RSInitHolder<CordbValueEnum> pCVE(new CordbValueEnum(m_frame, m_mode));
+    *ppEnum = NULL;
 
-        // Initialize the new enum
-        hr = pCVE->Init();
-        IfFailThrow(hr);
+    // Create a new enumerator with the same settings
+    RSInitHolder<CordbValueEnum> pCVE(
+        new CordbValueEnum(GetProcess(), m_iMax, m_valueGetter, m_pNeuterList));
 
-        pCVE.TransferOwnershipExternal(ppEnum);
-    }
-    EX_CATCH_HRESULT(hr);
-
-    return hr;
+    pCVE.TransferOwnershipExternal(ppEnum);
+    return S_OK;
 }
 
 HRESULT CordbValueEnum::GetCount(ULONG *pcelt)
@@ -5063,24 +4984,9 @@ HRESULT CordbValueEnum::Next(ULONG celt, ICorDebugValue *values[], ULONG *pceltF
     int i;
     for (i = m_iCurrent; i< iMax;i++)
     {
-        switch ( m_mode )
-        {
-        case ARGS:
-            {
-                hr = m_frame->m_JITILFrame->GetArgument( i, &(values[i-m_iCurrent]) );
-                break;
-            }
-        case LOCAL_VARS_ORIGINAL_IL:
-            {
-                hr = m_frame->m_JITILFrame->GetLocalVariableEx(ILCODE_ORIGINAL_IL, i, &(values[i-m_iCurrent]) );
-                break;
-            }
-        case LOCAL_VARS_REJIT_IL:
-            {
-                hr = m_frame->m_JITILFrame->GetLocalVariableEx(ILCODE_REJIT_IL, i, &(values[i - m_iCurrent]));
-                break;
-            }
-        }
+        // Use the lambda to get the value
+        hr = m_valueGetter(i, &(values[i - m_iCurrent]));
+
         if ( FAILED( hr ) )
         {
             break;
@@ -7728,21 +7634,22 @@ void CordbJITILFrame::LoadGenericArgs()
 
     UINT32 cTotalGenericTypeParams = rgGenericTypeParams.Count();
 
-    // @dbgtodo  reliability - This holder doesn't actually work in this case because it just deletes
-    // each element on error.  The RS classes are all expected to be neutered before the destructor is called.
-    NewArrayHolder<CordbType *> ppGenericArgs(new CordbType *[cTotalGenericTypeParams]);
+    NewInterfaceArrayHolder<CordbType> ppGenericArgs(
+        new CordbType *[cTotalGenericTypeParams](),
+        cTotalGenericTypeParams);
 
     for (UINT32 i = 0; i < cTotalGenericTypeParams;i++)
     {
         // creates a CordbType object for the generic argument
-        HRESULT hr = CordbType::TypeDataToType(GetCurrentAppDomain(),
-                                               &(rgGenericTypeParams[i]),
-                                               &ppGenericArgs[i]);
-        IfFailThrow(hr);
+        CordbType *newType;
+        IfFailThrow(CordbType::TypeDataToType(GetCurrentAppDomain(),
+                                              &(rgGenericTypeParams[i]),
+                                              &newType));
 
         // We add a ref as the instantiation will be stored away in the
         // ref-counted data structure associated with the JITILFrame
-        ppGenericArgs[i]->AddRef();
+        newType->AddRef();
+        ppGenericArgs[i] = newType;
     }
 
     // initialize the generics information
@@ -8613,11 +8520,28 @@ HRESULT CordbJITILFrame::EnumerateArguments(ICorDebugValueEnum **ppValueEnum)
 
     EX_TRY
     {
-        RSInitHolder<CordbValueEnum> cdVE(new CordbValueEnum(m_nativeFrame, CordbValueEnum::ARGS));
-
-        // Initialize the new enum
-        hr = cdVE->Init();
-        IfFailThrow(hr);
+        // Get arg count
+        ULONG argCount;
+        IfFailThrow(GetFunction()->GetSig(NULL, &argCount, NULL));
+        
+        // Handle varargs
+        if (m_fVarArgFnx && !m_sigParserCached.IsNull())
+        {
+            argCount = m_allArgsCount;
+        }
+        
+        // Create the lambda that captures 'this'
+        CordbJITILFrame* pThis = this;
+        ValueGetter getter = [pThis](DWORD index, ICorDebugValue** ppValue) -> HRESULT {
+            return pThis->GetArgument(index, ppValue);
+        };
+        
+        RSInitHolder<CordbValueEnum> cdVE(
+            new CordbValueEnum(
+                GetProcess(), 
+                argCount, 
+                getter,
+                m_nativeFrame->m_pThread->GetRefreshStackNeuterList()));
 
         cdVE.TransferOwnershipExternal(ppValueEnum);
 
@@ -8956,12 +8880,41 @@ HRESULT CordbJITILFrame::EnumerateLocalVariablesEx(ILCodeKind flags, ICorDebugVa
 
     EX_TRY
     {
-        RSInitHolder<CordbValueEnum> cdVE(new CordbValueEnum(m_nativeFrame,
-            flags == ILCODE_ORIGINAL_IL ? CordbValueEnum::LOCAL_VARS_ORIGINAL_IL : CordbValueEnum::LOCAL_VARS_REJIT_IL));
-
-        // Initialize the new enum
-        hr = cdVE->Init();
-        IfFailThrow(hr);
+        ULONG localsCount;
+#ifdef FEATURE_CODE_VERSIONING
+        CordbILCode* pCode = (flags == ILCODE_REJIT_IL) ? m_pReJitCode :  m_ilCode;
+        if (pCode == NULL)
+        {
+            localsCount = 0;
+        }
+        else
+        {
+            IfFailThrow(pCode->GetLocalVarSig(NULL, &localsCount));
+        }
+#else
+        if (flags == ILCODE_REJIT_IL)
+        {
+            localsCount = 0;
+        }
+        else
+        {
+            IfFailThrow(m_ilCode->GetLocalVarSig(NULL, &localsCount));
+        }
+#endif // FEATURE_CODE_VERSIONING
+        
+        // Capture both 'this' and the flags
+        CordbJITILFrame* pThis = this;
+        ILCodeKind codeKind = flags;
+        ValueGetter getter = [pThis, codeKind](DWORD index, ICorDebugValue** ppValue) -> HRESULT {
+            return pThis->GetLocalVariableEx(codeKind, index, ppValue);
+        };
+        
+        RSInitHolder<CordbValueEnum> cdVE(
+            new CordbValueEnum(
+                GetProcess(), 
+                localsCount, 
+                getter,
+                m_nativeFrame->m_pThread->GetRefreshStackNeuterList()));
 
         cdVE.TransferOwnershipExternal(ppValueEnum);
     }
@@ -9080,18 +9033,6 @@ HRESULT CordbJITILFrame::GetCodeEx(ILCodeKind flags, ICorDebugCode **ppCode)
     }
     return S_OK;
 }
-
-CordbILCode* CordbJITILFrame::GetOriginalILCode()
-{
-    return m_ilCode;
-}
-
-#ifdef FEATURE_CODE_VERSIONING
-CordbReJitILCode* CordbJITILFrame::GetReJitILCode()
-{
-    return m_pReJitCode;
-}
-#endif // FEATURE_CODE_VERSIONING
 
 void CordbJITILFrame::AdjustIPAfterException()
 {
@@ -10976,4 +10917,628 @@ HRESULT CordbCodeEnum::Next(ULONG celt, ICorDebugCode *values[], ULONG *pceltFet
     }
 
     return hr;
+}
+
+CordbAsyncFrame::CordbAsyncFrame(
+    CordbProcess*       pProcess,
+    VMPTR_Module        vmModule,
+    mdMethodDef         methodDef,
+    VMPTR_MethodDesc    vmMethodDesc,
+    CORDB_ADDRESS       codeStart,
+    CORDB_ADDRESS       diagnosticIP,
+    CORDB_ADDRESS       continuationAddress,
+    UINT32              state)
+: CordbBase(pProcess, 0, enumCordbAsyncFrame),
+  m_vmModule(vmModule),
+  m_methodDef(methodDef),
+  m_vmMethodDesc(vmMethodDesc),
+  m_pCodeStart(codeStart),
+  m_diagnosticIP(diagnosticIP),
+  m_continuationAddress(continuationAddress),
+  m_state(state),
+  m_genericArgs(),
+  m_genericArgsLoaded(false)
+{
+}
+
+HRESULT CordbAsyncFrame::Init()
+{
+    _ASSERTE(GetProcess()->GetStopGoLock()->HasLock());
+    _ASSERTE(GetProcess()->GetProcessLock()->HasLock());
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        GetProcess()->GetContinueNeuterList()->Add(GetProcess(), this);
+
+        // Initialize module and appdomain
+        VMPTR_DomainAssembly vmDomainAssembly;
+        IfFailThrow(GetProcess()->GetDAC()->GetDomainAssemblyFromModule(m_vmModule, &vmDomainAssembly));
+        CordbModule* pModule = GetProcess()->LookupOrCreateModule(vmDomainAssembly);
+        m_pAppDomain.Assign(pModule->GetAppDomain());
+
+        // LookupOrCreateNativeCode is marked INTERNAL_SYNC_API_ENTRY and requires the StopGoLock.
+        m_pCode.Assign(pModule->LookupOrCreateNativeCode(m_methodDef, m_vmMethodDesc, m_pCodeStart));
+        m_pCode->LoadNativeInfo();
+        GetProcess()->GetDAC()->GetAsyncLocals(m_vmMethodDesc, m_pCodeStart, m_state, &m_asyncVars);
+
+        // Initialize function and IL code
+        m_pFunction.Assign(m_pCode->GetFunction());
+        RSExtSmartPtr<CordbILCode> pILCode;
+        IfFailThrow(m_pFunction->GetILCode(&pILCode));
+        m_pILCode.Assign(pILCode);
+
+        // Initialize ReJit IL code if applicable
+#ifdef FEATURE_CODE_VERSIONING
+        EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
+        {
+            VMPTR_NativeCodeVersionNode vmNativeCodeVersionNode = VMPTR_NativeCodeVersionNode::NullPtr();
+            IfFailThrow(GetProcess()->GetDAC()->GetNativeCodeVersionNode(m_vmMethodDesc, m_pCodeStart, &vmNativeCodeVersionNode));
+            if (!vmNativeCodeVersionNode.IsNull())
+            {
+                VMPTR_ILCodeVersionNode vmILCodeVersionNode = VMPTR_ILCodeVersionNode::NullPtr();
+                IfFailThrow(GetProcess()->GetDAC()->GetILCodeVersionNode(vmNativeCodeVersionNode, &vmILCodeVersionNode));
+                if (!vmILCodeVersionNode.IsNull())
+                {
+                    IfFailThrow(m_pFunction->LookupOrCreateReJitILCode(vmILCodeVersionNode, &m_pReJitCode));
+                }
+            }
+        }
+        EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY
+#endif // FEATURE_CODE_VERSIONING
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+}
+
+CordbAsyncFrame::~CordbAsyncFrame()
+{
+    _ASSERTE(IsNeutered());
+}
+void CordbAsyncFrame::Neuter()
+{
+    if (IsNeutered())
+        return;
+
+    m_pCode.Clear();
+    m_asyncVars.Dealloc();
+    m_pAppDomain.Clear();
+
+    m_pFunction.Clear();
+
+    m_pILCode.Clear();
+#ifdef FEATURE_CODE_VERSIONING
+    m_pReJitCode.Clear();
+#endif // FEATURE_CODE_VERSIONING
+
+    for (unsigned int i = 0; i < m_genericArgs.m_cInst; i++)
+    {
+        m_genericArgs.m_ppInst[i]->Release();
+    }
+
+    if (m_genericArgs.m_ppInst != NULL)
+    {
+        delete [] m_genericArgs.m_ppInst;
+        m_genericArgs.m_ppInst = NULL;
+    }
+
+    CordbBase::Neuter();
+}
+
+//-----------------------------------------------------------
+// IUnknown
+//-----------------------------------------------------------
+
+HRESULT CordbAsyncFrame::QueryInterface(REFIID id, void **pInterface)
+{
+    if (id == IID_ICorDebugFrame)
+    {
+        *pInterface = static_cast<ICorDebugFrame*>(this);
+    }
+    else if (id == IID_ICorDebugILFrame)
+    {
+        *pInterface = static_cast<ICorDebugILFrame*>(this);
+    }
+    else if (id == IID_ICorDebugILFrame2)
+    {
+        *pInterface = static_cast<ICorDebugILFrame2*>(this);
+    }
+    else if (id == IID_ICorDebugILFrame3)
+    {
+        *pInterface = static_cast<ICorDebugILFrame3*>(this);
+    }
+    else if (id == IID_ICorDebugILFrame4)
+    {
+        *pInterface = static_cast<ICorDebugILFrame4*>(this);
+    }
+    else if (id == IID_IUnknown)
+    {
+        *pInterface = static_cast<IUnknown *>(static_cast<ICorDebugILFrame *>(this));
+    }
+    else
+    {
+        *pInterface = NULL;
+        return E_NOINTERFACE;
+    }
+
+    ExternalAddRef();
+    return S_OK;
+}
+
+//-----------------------------------------------------------
+// ICorDebugFrame
+//-----------------------------------------------------------
+
+HRESULT CordbAsyncFrame::GetChain(ICorDebugChain **ppChain)
+{
+    return E_NOTIMPL;
+}
+
+HRESULT CordbAsyncFrame::GetCode(ICorDebugCode **ppCode)
+{
+    PUBLIC_REENTRANT_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    VALIDATE_POINTER_TO_OBJECT(ppCode, ICorDebugCode **);
+
+    *ppCode = static_cast<ICorDebugCode*>(m_pCode);
+    m_pCode->ExternalAddRef();
+
+    return S_OK;
+}
+
+HRESULT CordbAsyncFrame::GetFunction(ICorDebugFunction **ppFunction)
+{
+    HRESULT hr = S_OK;
+    PUBLIC_API_BEGIN(this)
+    {
+        ValidateOrThrow(ppFunction);
+
+        CordbFunction* pFunc = m_pCode->GetFunction();
+        *ppFunction = static_cast<ICorDebugFunction *>(pFunc);
+        pFunc->ExternalAddRef();
+    }
+    PUBLIC_API_END(hr);
+    return hr;
+}
+
+HRESULT CordbAsyncFrame::GetFunctionToken(mdMethodDef *pToken)
+{
+    FAIL_IF_NEUTERED(this);
+    VALIDATE_POINTER_TO_OBJECT(pToken, mdMethodDef *);
+
+    *pToken = m_pCode->GetFunction()->GetMetadataToken();
+
+    return S_OK;
+}
+
+HRESULT CordbAsyncFrame::GetStackRange(CORDB_ADDRESS *pStart, CORDB_ADDRESS *pEnd)
+{
+    return E_NOTIMPL;
+}
+
+HRESULT CordbAsyncFrame::CreateStepper(ICorDebugStepper **ppStepper)
+{
+    return E_NOTIMPL;
+}
+HRESULT CordbAsyncFrame::GetCaller(ICorDebugFrame **ppFrame)
+{
+    return E_NOTIMPL;
+}
+HRESULT CordbAsyncFrame::GetCallee(ICorDebugFrame **ppFrame)
+{
+    return E_NOTIMPL;
+}
+
+//-----------------------------------------------------------
+// ICorDebugILFrame
+//-----------------------------------------------------------
+
+HRESULT CordbAsyncFrame::GetIP(ULONG32* pnOffset, CorDebugMappingResult *pMappingResult)
+{
+    PUBLIC_REENTRANT_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    VALIDATE_POINTER_TO_OBJECT(pnOffset, ULONG32 *);
+    VALIDATE_POINTER_TO_OBJECT_OR_NULL(pMappingResult, CorDebugMappingResult *);
+
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
+    CorDebugMappingResult mappingType;
+    ULONG uILOffset = m_pCode->GetSequencePoints()->MapNativeOffsetToIL(
+                    (DWORD)(m_diagnosticIP - m_pCodeStart),
+                    &mappingType);
+    *pnOffset = uILOffset;
+    if (pMappingResult != NULL)
+        *pMappingResult = mappingType;
+
+    return S_OK;
+}
+
+HRESULT CordbAsyncFrame::SetIP(ULONG32 nOffset)
+{
+    return E_NOTIMPL;
+}
+HRESULT CordbAsyncFrame::EnumerateLocalVariables(ICorDebugValueEnum **ppValueEnum)
+{
+    PUBLIC_REENTRANT_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    VALIDATE_POINTER_TO_OBJECT(ppValueEnum, ICorDebugValueEnum **);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
+    return EnumerateLocalVariablesEx(ILCODE_ORIGINAL_IL, ppValueEnum);
+}
+HRESULT CordbAsyncFrame::GetLocalVariable(DWORD dwIndex, ICorDebugValue **ppValue)
+{
+    PUBLIC_REENTRANT_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    VALIDATE_POINTER_TO_OBJECT(ppValue, ICorDebugValue **);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
+    return GetLocalVariableEx(ILCODE_ORIGINAL_IL, dwIndex, ppValue);
+}
+HRESULT CordbAsyncFrame::EnumerateArguments(ICorDebugValueEnum **ppValueEnum)
+{
+    PUBLIC_REENTRANT_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    VALIDATE_POINTER_TO_OBJECT(ppValueEnum, ICorDebugValueEnum **);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
+    HRESULT hr = S_OK;
+
+    EX_TRY
+    {
+        ULONG argCount;
+        IfFailThrow(m_pFunction->GetSig(NULL, &argCount, NULL));
+        
+        // Capture 'this' in the lambda
+        CordbAsyncFrame* pThis = this;
+        ValueGetter getter = [pThis](DWORD index, ICorDebugValue** ppValue) -> HRESULT {
+            return pThis->GetArgument(index, ppValue);
+        };
+    
+        RSInitHolder<CordbValueEnum> cdVE(
+            new CordbValueEnum(
+                GetProcess(), 
+                argCount, 
+                getter,
+                GetProcess()->GetContinueNeuterList()));
+
+        cdVE.TransferOwnershipExternal(ppValueEnum);
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+}
+HRESULT CordbAsyncFrame::GetArgument(DWORD dwIndex, ICorDebugValue ** ppValue)
+{
+    PUBLIC_REENTRANT_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    VALIDATE_POINTER_TO_OBJECT(ppValue, ICorDebugValue **);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        bool foundArg = false;
+        CordbType * pType;
+        LoadGenericArgs();
+        m_pCode->GetArgumentType(dwIndex, &m_genericArgs, &pType);
+        for (unsigned int i = 0; i < m_asyncVars.Count(); i++)
+        {
+            if (m_asyncVars[i].ilVarNum == dwIndex)
+            {
+                CordbValue::CreateValueByType(m_pAppDomain,
+                    pType,
+                    false,
+                    TargetBuffer(m_continuationAddress + m_asyncVars[i].offset, CordbValue::GetSizeForType(pType, kUnboxed)),
+                    MemoryRange(NULL, 0),
+                    NULL,
+                    ppValue);
+                foundArg = true;
+                break;
+            }
+        }
+
+        if (!foundArg)
+            ThrowHR(CORDBG_E_IL_VAR_NOT_AVAILABLE);
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+}
+HRESULT CordbAsyncFrame::GetStackDepth(ULONG32 *pDepth)
+{
+    return E_NOTIMPL;
+}
+HRESULT CordbAsyncFrame::GetStackValue(DWORD dwIndex, ICorDebugValue **ppValue)
+{
+    return E_NOTIMPL;
+}
+HRESULT CordbAsyncFrame::CanSetIP(ULONG32 nOffset)
+{
+    return E_NOTIMPL;
+}
+
+//-----------------------------------------------------------
+// ICorDebugILFrame2
+//-----------------------------------------------------------
+
+// Called at an EnC remap opportunity to remap to the latest version of a function
+HRESULT CordbAsyncFrame::RemapFunction(ULONG32 nOffset)
+{
+    return E_NOTIMPL;
+}
+
+HRESULT CordbAsyncFrame::EnumerateTypeParameters(ICorDebugTypeEnum **ppTypeParameterEnum)
+{
+    PUBLIC_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    VALIDATE_POINTER_TO_OBJECT(ppTypeParameterEnum, ICorDebugTypeEnum **);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
+    (*ppTypeParameterEnum) = NULL;
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        // load the generic arguments, which may be cached
+        LoadGenericArgs();
+
+        // create the enumerator
+        RSInitHolder<CordbTypeEnum> pEnum(
+            CordbTypeEnum::Build(m_pAppDomain, GetProcess()->GetContinueNeuterList(), m_genericArgs.m_cInst, m_genericArgs.m_ppInst));
+        if ( pEnum == NULL )
+        {
+            ThrowOutOfMemory();
+        }
+
+        pEnum.TransferOwnershipExternal(ppTypeParameterEnum);
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
+}
+
+//-----------------------------------------------------------
+// ICorDebugILFrame3
+//-----------------------------------------------------------
+
+HRESULT CordbAsyncFrame::GetReturnValueForILOffset(ULONG32 ILoffset, ICorDebugValue** ppReturnValue)
+{
+    return E_NOTIMPL;
+}
+
+//-----------------------------------------------------------
+// ICorDebugILFrame4
+//-----------------------------------------------------------
+
+HRESULT CordbAsyncFrame::EnumerateLocalVariablesEx(ILCodeKind flags, ICorDebugValueEnum **ppValueEnum)
+{
+    PUBLIC_REENTRANT_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    VALIDATE_POINTER_TO_OBJECT(ppValueEnum, ICorDebugValueEnum **);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
+    HRESULT hr = S_OK;
+
+    if (flags != ILCODE_ORIGINAL_IL && flags != ILCODE_REJIT_IL)
+        return E_INVALIDARG;
+
+    EX_TRY
+    {
+        ULONG localsCount;
+#ifdef FEATURE_CODE_VERSIONING
+        CordbILCode* pCode = (flags == ILCODE_REJIT_IL) ? static_cast<CordbILCode*>(m_pReJitCode) : m_pILCode;
+        if (pCode == NULL)
+        {
+            localsCount = 0;
+        }
+        else
+        {
+            IfFailThrow(pCode->GetLocalVarSig(NULL, &localsCount));
+        }
+#else
+        if (flags == ILCODE_REJIT_IL)
+        {
+            localsCount = 0;
+        }
+        else
+        {
+            IfFailThrow(m_pILCode->GetLocalVarSig(NULL, &localsCount));
+        }
+#endif // FEATURE_CODE_VERSIONING
+        
+        CordbAsyncFrame* pThis = this;
+        ILCodeKind codeKind = flags;
+        ValueGetter getter = [pThis, codeKind](DWORD index, ICorDebugValue** ppValue) -> HRESULT {
+            return pThis->GetLocalVariableEx(codeKind, index, ppValue);
+        };
+        
+        RSInitHolder<CordbValueEnum> cdVE(
+            new CordbValueEnum(
+                GetProcess(), 
+                localsCount, 
+                getter,
+                GetProcess()->GetContinueNeuterList()));
+        cdVE.TransferOwnershipExternal(ppValueEnum);
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+}
+
+HRESULT CordbAsyncFrame::GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICorDebugValue **ppValue)
+{
+    PUBLIC_REENTRANT_API_ENTRY(this);
+    VALIDATE_POINTER_TO_OBJECT(ppValue, ICorDebugValue **);
+    FAIL_IF_NEUTERED(this);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
+    if (flags != ILCODE_ORIGINAL_IL && flags != ILCODE_REJIT_IL)
+        return E_INVALIDARG;
+#ifdef FEATURE_CODE_VERSIONING
+    if (flags == ILCODE_REJIT_IL && m_pReJitCode == NULL)
+        return E_INVALIDARG;
+#else
+    if (flags == ILCODE_REJIT_IL)
+        return E_INVALIDARG;
+#endif // FEATURE_CODE_VERSIONING
+
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        bool foundLocal = false;
+        CordbType * pType;
+        ULONG argCount = 0;
+        _ASSERTE(m_pFunction != NULL);
+        IfFailThrow(m_pFunction->GetSig(NULL, &argCount, NULL));
+
+        LoadGenericArgs();
+
+#ifdef FEATURE_CODE_VERSIONING
+        CordbILCode* pActiveCode = m_pReJitCode != NULL ? static_cast<CordbILCode*>(m_pReJitCode) : m_pILCode;
+#else
+        CordbILCode* pActiveCode = m_pILCode;
+#endif // FEATURE_CODE_VERSIONING
+
+        IfFailThrow(pActiveCode->GetLocalVariableType(dwIndex, &m_genericArgs, &pType));
+        for (unsigned int i = 0 ; i < m_asyncVars.Count(); i++)
+        {
+            if (m_asyncVars[i].ilVarNum == dwIndex+argCount)
+            {
+                CordbValue::CreateValueByType(m_pAppDomain,
+                    pType,
+                    false,
+                    TargetBuffer(m_continuationAddress + m_asyncVars[i].offset, CordbValue::GetSizeForType(pType, kUnboxed)),
+                    MemoryRange(NULL, 0),
+                    NULL,
+                    ppValue);
+                foundLocal = true;
+                break;
+            }
+        }
+
+        if (!foundLocal)
+            hr = CORDBG_E_IL_VAR_NOT_AVAILABLE;
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+}
+
+HRESULT CordbAsyncFrame::GetCodeEx(ILCodeKind flags, ICorDebugCode **ppCode)
+{
+    HRESULT hr = S_OK;
+    PUBLIC_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
+    if (flags != ILCODE_ORIGINAL_IL && flags != ILCODE_REJIT_IL)
+        return E_INVALIDARG;
+
+    if (flags == ILCODE_ORIGINAL_IL)
+    {
+        return GetCode(ppCode);
+    }
+    else
+    {
+#ifdef FEATURE_CODE_VERSIONING
+        *ppCode = m_pReJitCode;
+        if (m_pReJitCode != NULL)
+        {
+            m_pReJitCode->ExternalAddRef();
+        }
+#else
+        *ppCode = NULL;
+#endif // FEATURE_CODE_VERSIONING
+    }
+    return S_OK;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// Load the generic type and method arguments and store them into the frame if possible.
+//
+
+void CordbAsyncFrame::LoadGenericArgs()
+{
+    THROW_IF_NEUTERED(this);
+    INTERNAL_SYNC_API_ENTRY(GetProcess());
+
+    // The case where there are no type parameters, or the case where we've
+    // already feched the realInst, is easy.
+    if (m_genericArgsLoaded)
+    {
+        return;
+    }
+
+    if (!m_pCode->IsInstantiatedGeneric())
+    {
+        m_genericArgs = Instantiation(0, NULL,0);
+        m_genericArgsLoaded = true;
+        return;
+    }
+
+    // Find the exact generic arguments for a frame that is executing
+    // a generic method.  The left-side will fetch these from arguments
+    // given on the stack and/or from the IP.
+
+    IDacDbiInterface * pDAC = GetProcess()->GetDAC();
+
+    UINT32 cGenericClassTypeParams = 0;
+    DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> rgGenericTypeParams;
+
+    UINT32 genericArgIndex;
+    HRESULT result = pDAC->GetGenericArgTokenIndex(
+        m_vmMethodDesc,
+        &genericArgIndex);
+    IfFailThrow(result);
+
+    CORDB_ADDRESS genericTypeParam = 0;
+    if (result == S_OK)
+    {
+        for (unsigned int i = 0 ; i < m_asyncVars.Count(); i++)
+        {
+            if (m_asyncVars[i].ilVarNum == genericArgIndex)
+            {
+
+                HRESULT hr = GetProcess()->SafeReadStruct(m_continuationAddress + m_asyncVars[i].offset, &genericTypeParam);
+                IfFailThrow(hr);
+                break;
+            }
+        }
+        genericTypeParam = pDAC->ResolveExactGenericArgsToken(genericArgIndex, genericTypeParam);
+    }
+
+    pDAC->GetMethodDescParams(m_pAppDomain->GetADToken(),
+                              m_vmMethodDesc,
+                              genericTypeParam,
+                              &cGenericClassTypeParams,
+                              &rgGenericTypeParams);
+
+    UINT32 cTotalGenericTypeParams = rgGenericTypeParams.Count();
+
+    NewInterfaceArrayHolder<CordbType> ppGenericArgs(
+        new CordbType *[cTotalGenericTypeParams](),
+        cTotalGenericTypeParams);
+
+    for (UINT32 i = 0; i < cTotalGenericTypeParams;i++)
+    {
+        // creates a CordbType object for the generic argument
+        CordbType *newType;
+        IfFailThrow(CordbType::TypeDataToType(m_pAppDomain,
+                                              &(rgGenericTypeParams[i]),
+                                              &newType));
+
+        // We add a ref as the instantiation will be stored away in the
+        // ref-counted data structure associated with the CordbAsyncFrame
+        newType->AddRef();
+        ppGenericArgs[i] = newType;
+    }
+
+    // initialize the generics information
+    m_genericArgs = Instantiation(cTotalGenericTypeParams, ppGenericArgs, cGenericClassTypeParams);
+    m_genericArgsLoaded = true;
+
+    ppGenericArgs.SuppressRelease();
 }
