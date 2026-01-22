@@ -258,14 +258,10 @@ OFFSETOF__ee_alloc_context  EQU OFFSETOF__RuntimeThreadLocals__ee_alloc_context
     POP_COOP_PINVOKE_FRAME_WITH_FLOATS_RETURN
 
         ; Restore FP callee-saved registers (d8-d15) from sp+0
-        ldr     d8,  [sp, #0]
-        ldr     d9,  [sp, #8]
-        ldr     d10, [sp, #16]
-        ldr     d11, [sp, #24]
-        ldr     d12, [sp, #32]
-        ldr     d13, [sp, #40]
-        ldr     d14, [sp, #48]
-        ldr     d15, [sp, #56]
+        ldp     d8,  d9,  [sp, #0]
+        ldp     d10, d11, [sp, #16]
+        ldp     d12, d13, [sp, #32]
+        ldp     d14, d15, [sp, #48]
 
         ; Deallocate space for FloatArgumentRegisters + FP callee-saved
         EPILOG_STACK_FREE 192

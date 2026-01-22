@@ -2840,18 +2840,13 @@ LOCAL_LABEL(SkipFloatingPointRestore):
     // Check ContextFlags to see if we should restore integer registers
     tbz     w17, #CONTEXT_INTEGER_BIT, LOCAL_LABEL(SkipIntegerRestore)
 
-    // Restore ALL integer registers x0-x28
-    // Exception handling needs x0 (exception object)
+    // Restore argument registers x0-x7 (exception handling needs x0 for exception object)
+    // and non-volatile registers x19-x28
     ldp     x0, x1,   [x16, #OFFSETOF__CONTEXT__X0]
     ldp     x2, x3,   [x16, #(OFFSETOF__CONTEXT__X0 + 16)]
     ldp     x4, x5,   [x16, #(OFFSETOF__CONTEXT__X0 + 32)]
     ldp     x6, x7,   [x16, #(OFFSETOF__CONTEXT__X0 + 48)]
-    ldp     x8, x9,   [x16, #(OFFSETOF__CONTEXT__X0 + 64)]
-    ldp     x10, x11, [x16, #(OFFSETOF__CONTEXT__X0 + 80)]
-    ldp     x12, x13, [x16, #(OFFSETOF__CONTEXT__X0 + 96)]
-    ldp     x14, x15, [x16, #(OFFSETOF__CONTEXT__X0 + 112)]
-    // Skip x16, x17 - they're scratch registers we're using
-    // x18 is platform reserved
+    // Skip x8-x18: x8-x15 are scratch, x16-x17 we're using, x18 is platform reserved
     ldp     x19, x20, [x16, #OFFSETOF__CONTEXT__X19]
     ldp     x21, x22, [x16, #(OFFSETOF__CONTEXT__X19 + 16)]
     ldp     x23, x24, [x16, #(OFFSETOF__CONTEXT__X19 + 32)]
