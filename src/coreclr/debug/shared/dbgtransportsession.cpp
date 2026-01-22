@@ -1273,7 +1273,7 @@ void DbgTransportSession::TransportWorker()
         }
         else
         {
-            HRESULT hr = ConnectToChannel(m_pd, &m_channel);
+            hr = ConnectToChannel(m_pd, &m_channel);
             if (SUCCEEDED(hr))
             {
                 eStatus = SCS_Success;
