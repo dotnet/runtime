@@ -152,8 +152,7 @@ public class ComputeWasmBuildAssets : Task
                             candidate.SetMetadata("OriginalItemSpec", candidate.ItemSpec);
                         }
 
-                        string relativePath = AssetsComputingHelper.GetCandidateRelativePath(candidate, FingerprintAssets, FingerprintDotNetJs);
-                        candidate.SetMetadata("RelativePath", relativePath);
+                        candidate.SetMetadata("RelativePath", AssetsComputingHelper.GetCandidateRelativePath(candidate, FingerprintAssets, FingerprintDotNetJs));
                     }
                 }
 
