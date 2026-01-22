@@ -38,8 +38,6 @@
     <UseDefaultTestHost>false</UseDefaultTestHost>
   </PropertyGroup>
 
-
-
   <!-- Language configuration -->
   <PropertyGroup>
     <GenFacadesIgnoreBuildAndRevisionMismatch>true</GenFacadesIgnoreBuildAndRevisionMismatch>
