@@ -67,6 +67,11 @@ using DupType_MapString = Lib.AliasedName;
 [assembly: TypeMapAssociation<DuplicateTypeNameKey>(typeof(DupType_MapObject), typeof(object))]
 [assembly: TypeMapAssociation<DuplicateTypeNameKey>(typeof(DupType_MapString), typeof(string))]
 
+// Test hash collision: These two strings have the same GetHashCode()
+// "Windows.Media.Devices.Core.FrameFlashControl" and "Windows.Security.Credentials.PasswordCredential"
+[assembly: TypeMap<HashCollisionTest>("Windows.Media.Devices.Core.FrameFlashControl", typeof(C1))]
+[assembly: TypeMap<HashCollisionTest>("Windows.Security.Credentials.PasswordCredential", typeof(S1))]
+
 // Redefine the same type as in the TypeMapLib2 assembly
 // This is testing the duplicate type name key for the
 // TypeMapAssociation scenario.
@@ -264,5 +269,24 @@ public class TypeMap
 
         AssertExtensions.ThrowsAny<COMException, BadImageFormatException>(() => TypeMapping.GetOrCreateExternalTypeMapping<InvalidTypeNameKey>());
         AssertExtensions.ThrowsAny<COMException, BadImageFormatException>(() => TypeMapping.GetOrCreateProxyTypeMapping<InvalidTypeNameKey>());
+    }
+
+    [Fact]
+    public static void Validate_ExternalTypeMapping_HashCollision()
+    {
+        Console.WriteLine(nameof(Validate_ExternalTypeMapping_HashCollision));
+
+        // These two strings have the same GetHashCode() value, which would cause
+        // hash collision if using Dictionary<int, DelayedType> instead of Dictionary<string, DelayedType>
+        IReadOnlyDictionary<string, Type> map = TypeMapping.GetOrCreateExternalTypeMapping<HashCollisionTest>();
+
+        Assert.Equal(typeof(C1), map["Windows.Media.Devices.Core.FrameFlashControl"]);
+        Assert.Equal(typeof(S1), map["Windows.Security.Credentials.PasswordCredential"]);
+
+        Assert.True(map.TryGetValue("Windows.Media.Devices.Core.FrameFlashControl", out Type? type1));
+        Assert.Equal(typeof(C1), type1);
+
+        Assert.True(map.TryGetValue("Windows.Security.Credentials.PasswordCredential", out Type? type2));
+        Assert.Equal(typeof(S1), type2);
     }
 }

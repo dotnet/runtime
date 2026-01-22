@@ -24,3 +24,5 @@ public class InvalidTypeNameKey { }
 public class MultipleTypeMapAssemblies { }
 
 public class UnknownAssemblyReference { }
+
+public class HashCollisionTest { }
