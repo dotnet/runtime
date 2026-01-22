@@ -223,6 +223,10 @@ namespace System.Xml
                 BinaryPrimitives.WriteInt64LittleEndian(bytes, _idLow);
                 BinaryPrimitives.WriteInt64LittleEndian(bytes.Slice(8, 8), _idHigh);
                 "urn:uuid:".CopyTo(chars);
+                pch[17] = '-';
+                pch[22] = '-';
+                pch[27] = '-';
+                pch[32] = '-';
 
                 fixed (char* _pch = &chars[0])
                 {
