@@ -786,11 +786,6 @@ void GenTree::SetUnsigned()
 //
 void GenTree::ClearUnsigned()
 {
-    if (!(OperIs(GT_ADD, GT_SUB, GT_CAST) || OperIsCompare() || OperIsMul()))
-    {
-        printf("ClearUnsigned() called on unexpected node type: %s\n", OpName(gtOper));
-        assertAbort("ClearUnsigned() called on unexpected node type", __FILE__, __LINE__);
-    }
     gtFlags &= ~GTF_UNSIGNED;
 }
 
