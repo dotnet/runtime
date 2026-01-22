@@ -223,14 +223,15 @@ namespace System.Xml
                 BinaryPrimitives.WriteInt64LittleEndian(bytes, _idLow);
                 BinaryPrimitives.WriteInt64LittleEndian(bytes.Slice(8, 8), _idHigh);
                 "urn:uuid:".CopyTo(chars);
-                pch[17] = '-';
-                pch[22] = '-';
-                pch[27] = '-';
-                pch[32] = '-';
 
                 fixed (char* _pch = &chars[0])
                 {
                     char* pch = _pch;
+
+                    pch[17] = '-';
+                    pch[22] = '-';
+                    pch[27] = '-';
+                    pch[32] = '-';
 
                     UnsafeEncode(bytes[0], &pch[15]);
                     UnsafeEncode(bytes[1], &pch[13]);
