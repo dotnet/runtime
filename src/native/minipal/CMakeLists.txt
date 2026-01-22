@@ -5,6 +5,7 @@ set(SOURCES
     descriptorlimit.c
     memorybarrierprocesswide.c
     mutex.c
+    tls.c
     guid.c
     random.c
     debugger.c
