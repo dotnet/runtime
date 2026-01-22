@@ -154,7 +154,7 @@ async function findResources(dotnet: DotnetHostBuilder, files: string[], mainAss
         // TODO-WASM: webCIL
         .filter(file => file.endsWith(".dll"))
         .map(filename => {
-            // filename without path
+            // Get file name.
             const name = filename.substring(filename.lastIndexOf("/") + 1);
             return { virtualPath: prefix + filename, name };
         });
