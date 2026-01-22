@@ -8,7 +8,7 @@ namespace System.Globalization.Tests
 {
     /// <summary>
     /// Class to read data obtained from http://www.unicode.org/Public/idna.  For more information read the information
-    /// contained in Data\Unicode_16_0\IdnaTest_16.txt
+    /// contained in Data\Unicode_17_0\IdnaTest_17.txt
     ///
     /// The structure of the data set is a semicolon delimited list with the following columns:
     ///
