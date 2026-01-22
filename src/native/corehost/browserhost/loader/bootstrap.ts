@@ -163,7 +163,7 @@ async function findResources(dotnet: DotnetHostBuilder, files: string[], mainAss
         .filter(file => file.endsWith("System.Private.CoreLib.dll"))
         .map(filepath => {
             // Get file name.
-            const name = filename.substring(filename.lastIndexOf("/") + 1);
+            const name = filepath.substring(filepath.lastIndexOf("/") + 1);
             return { virtualPath: prefix + filename, name };
         });
 
