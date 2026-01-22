@@ -155,7 +155,7 @@ async function findResources(dotnet: DotnetHostBuilder, files: string[], mainAss
         .filter(file => file.endsWith(".dll"))
         .map(filepath => {
             // Get file name.
-            const name = filename.substring(filename.lastIndexOf("/") + 1);
+            const name = filepath.substring(filepath.lastIndexOf("/") + 1);
             return { virtualPath: prefix + filepath, name };
         });
     const coreAssembly = files
@@ -164,7 +164,7 @@ async function findResources(dotnet: DotnetHostBuilder, files: string[], mainAss
         .map(filepath => {
             // Get file name.
             const name = filepath.substring(filepath.lastIndexOf("/") + 1);
-            return { virtualPath: prefix + filename, name };
+            return { virtualPath: prefix + filepath, name };
         });
 
     const runtimeConfigName = mainAssemblyName.replace(/\.dll$/, ".runtimeconfig.json");
