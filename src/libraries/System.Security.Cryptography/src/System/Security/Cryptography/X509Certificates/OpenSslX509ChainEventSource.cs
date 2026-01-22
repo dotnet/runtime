@@ -64,6 +64,7 @@ namespace System.Security.Cryptography.X509Certificates
         private const int EventId_CrlCacheInMemoryExpired = 50;
         private const int EventId_CrlCacheInMemoryMiss = 51;
         private const int EventId_CrlCacheInMemoryPruned = 52;
+        private const int EventId_CrlCacheInMemoryFull = 53;
 
         private static string GetCertificateSubject(SafeX509Handle certHandle)
         {
@@ -802,6 +803,18 @@ namespace System.Security.Cryptography.X509Certificates
             if (IsEnabled())
             {
                 WriteEvent(EventId_CrlCacheInMemoryMiss);
+            }
+        }
+
+        [Event(
+            EventId_CrlCacheInMemoryFull,
+            Level = EventLevel.Verbose,
+            Message = "The in-memory CRL cache is full, dismissing {0}.")]
+        internal void CrlCacheInMemoryFull(string cacheFileName)
+        {
+            if (IsEnabled())
+            {
+                WriteEvent(EventId_CrlCacheInMemoryFull, cacheFileName);
             }
         }
     }
