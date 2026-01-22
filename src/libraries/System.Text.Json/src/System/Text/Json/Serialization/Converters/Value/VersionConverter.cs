@@ -35,26 +35,32 @@ namespace System.Text.Json.Serialization.Converters
 
 #if NET
             int bufferLength = reader.ValueLength;
-            char[]? rentedBuffer = null;
+            byte[]? rentedBuffer = null;
             try
             {
-                Span<char> charBuffer = bufferLength <= JsonConstants.StackallocCharThreshold
-                    ? stackalloc char[JsonConstants.StackallocCharThreshold]
-                    : (rentedBuffer = ArrayPool<char>.Shared.Rent(bufferLength));
+                Span<byte> utf8Buffer = bufferLength <= JsonConstants.StackallocByteThreshold
+                    ? stackalloc byte[JsonConstants.StackallocByteThreshold]
+                    : (rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferLength));
 
-                int bytesWritten = reader.CopyString(charBuffer);
-                ReadOnlySpan<char> source = charBuffer.Slice(0, bytesWritten);
+                int bytesWritten = reader.CopyString(utf8Buffer);
+                ReadOnlySpan<byte> utf8Source = utf8Buffer.Slice(0, bytesWritten);
 
-                if (source.IsEmpty || char.IsWhiteSpace(source[0]) || char.IsWhiteSpace(source[^1]))
+                if (utf8Source.IsEmpty)
                 {
-                    // Since leading and trailing whitespaces are forbidden throughout System.Text.Json converters
-                    // we need to make sure that our input doesn't have them,
-                    // and if it has - we need to throw, to match behaviour of other converters
-                    // since Version.TryParse allows them and silently parses input to Version
                     ThrowHelper.ThrowFormatException(DataType.Version);
                 }
 
-                bool success = Version.TryParse(source, out Version? result);
+                // Check for leading and trailing whitespace
+                // Since leading and trailing whitespaces are forbidden throughout System.Text.Json converters
+                // we need to make sure that our input doesn't have them,
+                // and if it has - we need to throw, to match behaviour of other converters
+                // since Version.TryParse allows them and silently parses input to Version
+                if (IsWhiteSpaceByte(utf8Source[0]) || IsWhiteSpaceByte(utf8Source[^1]))
+                {
+                    ThrowHelper.ThrowFormatException(DataType.Version);
+                }
+
+                bool success = Version.TryParse(utf8Source, out Version? result);
 
                 if (success)
                 {
@@ -65,7 +71,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (rentedBuffer is not null)
                 {
-                    ArrayPool<char>.Shared.Return(rentedBuffer);
+                    ArrayPool<byte>.Shared.Return(rentedBuffer);
                 }
             }
 #else
@@ -87,6 +93,20 @@ namespace System.Text.Json.Serialization.Converters
             ThrowHelper.ThrowJsonException();
             return null;
         }
+
+#if NET
+        private static bool IsWhiteSpaceByte(byte b)
+        {
+            // Check for ASCII whitespace characters: space (0x20), tab (0x09), newline (0x0A),
+            // carriage return (0x0D), form feed (0x0C), and vertical tab (0x0B)
+            // For non-ASCII bytes, convert to char and check with char.IsWhiteSpace
+            if (b <= 127)
+            {
+                return char.IsWhiteSpace((char)b);
+            }
+            return false;
+        }
+#endif
 
         public override void Write(Utf8JsonWriter writer, Version? value, JsonSerializerOptions options)
         {
