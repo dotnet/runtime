@@ -2180,7 +2180,6 @@ public:
     static UINT_PTR VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL);
 #ifndef DACCESS_COMPILE
     static PCODE VirtualUnwindLeafCallFrame(T_CONTEXT* pContext);
-    static UINT_PTR VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext);
 #endif // DACCESS_COMPILE
 
     // During a <clinit>, this thread must not be asynchronously
@@ -2635,8 +2634,6 @@ private:
     // unhandled. This occurs during fatal error and a few other early error conditions
     // before EH is fully set up.
     BOOL m_ltoIsUnhandled;
-
-    friend void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pExceptionInfo, BOOL fSkipDebugger);
 
 public:
 

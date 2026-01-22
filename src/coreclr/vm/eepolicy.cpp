@@ -679,18 +679,77 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         Thread *pThread = GetThreadNULLOk();
         if (pThread)
         {
-            // Use the context in the FaultingExceptionFrame as a temporary store for unwinding to the first managed frame
-            CopyOSContext((&fef)->GetExceptionContext(), pExceptionInfo->ContextRecord);
-            Thread::VirtualUnwindToFirstManagedCallFrame((&fef)->GetExceptionContext());
-            if (GetSP((&fef)->GetExceptionContext()) > (TADDR)pThread->GetFrame())
+            PCODE controlPc = GetIP(pExceptionInfo->ContextRecord);
+
+            if (ExecutionManager::IsManagedCode(controlPc))
             {
-                // If the unwind has crossed any explicit frame, use the original exception context.
+                // Case 1: Already in managed code - use the exception context as-is
                 pExceptionContext = pExceptionInfo->ContextRecord;
             }
             else
             {
-                // Otherwise use the first managed frame context.
-                pExceptionContext = (&fef)->GetExceptionContext();
+                // We're in native code - need to determine which case we're in
+                TADDR currentSP = GetSP(pExceptionInfo->ContextRecord);
+                Frame* pFrame = pThread->GetFrame();
+
+                if (pFrame != FRAME_TOP && (TADDR)pFrame >= currentSP)
+                {
+                    // Case 3: Explicit frames at or above current SP - use original context
+                    // to avoid skipping those frames during stack walk
+                    pExceptionContext = pExceptionInfo->ContextRecord;
+                }
+                else
+                {
+                    // Case 2: Native code with no explicit frames above SP
+                    // Deterministically unwind to the managed caller using known patterns
+                    CopyOSContext((&fef)->GetExceptionContext(), pExceptionInfo->ContextRecord);
+                    CONTEXT* pUnwindContext = (&fef)->GetExceptionContext();
+                    bool unwound = false;
+
+                    // Check for known helpers with deterministic unwinding
+                    if (IsIPInWriteBarrierHelper(controlPc))
+                    {
+                        // Write barrier - deterministic unwind
+                        UnwindWriteBarrierToCaller(pUnwindContext);
+                        unwound = true;
+                    }
+                    else if (IsIPInJITStackProbe(controlPc))
+                    {
+                        // JIT stack probe - deterministic unwind
+                        UnwindJITStackProbeToCaller(pUnwindContext);
+                        unwound = true;
+                    }
+                    else if (pFrame != FRAME_TOP &&
+                             InlinedCallFrame::FrameHasActiveCall(pFrame))
+                    {
+                        // PInvoke - InlinedCallFrame has the managed caller's context
+                        PTR_InlinedCallFrame pICF = dac_cast<PTR_InlinedCallFrame>(pFrame);
+                        SetIP(pUnwindContext, pICF->m_pCallerReturnAddress);
+                        SetSP(pUnwindContext, (TADDR)pICF->m_pCallSiteSP);
+                        unwound = true;
+                    }
+
+                    if (unwound)
+                    {
+                        // Verify we actually reached managed code
+                        if (ExecutionManager::IsManagedCode(GetIP(pUnwindContext)))
+                        {
+                            pExceptionContext = pUnwindContext;
+                        }
+                        else
+                        {
+                            // Unwound but not to managed code - use original context
+                            // The stack walker will handle the transition
+                            pExceptionContext = pExceptionInfo->ContextRecord;
+                        }
+                    }
+                    else
+                    {
+                        // Unknown native code location - use original context
+                        // The stack walker will find managed frames through the frame chain
+                        pExceptionContext = pExceptionInfo->ContextRecord;
+                    }
+                }
             }
         }
 #endif

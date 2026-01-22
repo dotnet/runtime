@@ -403,7 +403,7 @@ extern JIT_PatchpointWorkerWorkerWithPolicy:proc
 
 NESTED_ENTRY JIT_Patchpoint, _TEXT
         ; Use PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS to save all registers including FP callee-saved
-        ; This allows us to build a complete CONTEXT from TransitionBlock without RtlCaptureContext
+        ; This allows us to build a complete CONTEXT from TransitionBlock
         PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rcx
 
         ; RCX contains pointer to TransitionBlock

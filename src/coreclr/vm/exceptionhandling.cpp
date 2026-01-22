@@ -26,8 +26,7 @@
 #define STACK_RANGE_BOUNDS_ARE_CALLER_SP
 // For ARM/ARM64, EstablisherFrame is Caller-SP (SP just before executing call instruction).
 // This has been confirmed by AaronGi from the kernel team for Windows.
-//
-// For x86/Linux, RtlVirtualUnwind sets EstablisherFrame as Caller-SP.
+// For x86/Linux, the OS unwinder also sets EstablisherFrame as Caller-SP.
 #define ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_X86 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
@@ -1367,7 +1366,9 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
     if (ex->GetExceptionRecord()->ExceptionCode == EXCEPTION_STACK_OVERFLOW)
     {
         GetThread()->SetExecutingOnAltStack();
-        Thread::VirtualUnwindToFirstManagedCallFrame(ex->GetContextRecord());
+        // Pass the exception context directly to HandleFatalStackOverflow.
+        // It will determine whether to use the context as-is (if in managed code)
+        // or handle the native-to-managed transition appropriately.
         EEPolicy::HandleFatalStackOverflow(&ex->ExceptionPointers, FALSE);
         UNREACHABLE();
     }
@@ -1411,13 +1412,16 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
                 SetIP(ex->GetContextRecord(), controlPc);
             }
 
-            if (IsIPInMarkedJitHelper(controlPc))
+            if (IsIPInWriteBarrierHelper(controlPc))
             {
-                // For JIT helpers, we need to set the frame to point to the
-                // managed code that called the helper, otherwise the stack
-                // walker would skip all the managed frames upto the next
-                // explicit frame.
-                PAL_VirtualUnwind(ex->GetContextRecord(), NULL);
+                // Write barriers are leaf functions - unwind deterministically
+                UnwindWriteBarrierToCaller(ex->GetContextRecord());
+                ex->GetExceptionRecord()->ExceptionAddress = (PVOID)GetIP(ex->GetContextRecord());
+            }
+            else if (IsIPInJITStackProbe(controlPc))
+            {
+                // JIT_StackProbe has a known frame layout - unwind deterministically
+                UnwindJITStackProbeToCaller(ex->GetContextRecord());
                 ex->GetExceptionRecord()->ExceptionAddress = (PVOID)GetIP(ex->GetContextRecord());
             }
             else
@@ -1723,6 +1727,47 @@ void ClrUnwindEx(EXCEPTION_RECORD* pExceptionRecord, UINT_PTR ReturnValue, UINT_
 #endif // !TARGET_UNIX
 
 #if defined(TARGET_WINDOWS) && !defined(TARGET_X86)
+
+// Deterministically unwind one managed frame to get EstablisherFrame.
+// Returns the personality routine (always ProcessCLRException for managed code).
+static PEXCEPTION_ROUTINE UnwindFrameForDispatcherContext(
+    DWORD_PTR imageBase,
+    DWORD_PTR controlPc,
+    PT_RUNTIME_FUNCTION functionEntry,
+    CONTEXT* pContextRecord,
+    DWORD_PTR* pEstablisherFrame)
+{
+    // For managed code, we can compute EstablisherFrame deterministically from our unwind info
+    EECodeInfo codeInfo((PCODE)controlPc);
+
+    if (codeInfo.IsValid())
+    {
+#if defined(TARGET_AMD64)
+        ULONG RSPOffset, RBPOffset;
+        codeInfo.GetOffsetsFromUnwindInfo(&RSPOffset, &RBPOffset);
+
+        // EstablisherFrame is the caller's SP = current SP + stack frame size
+        *pEstablisherFrame = GetSP(pContextRecord) + RSPOffset;
+#elif defined(TARGET_ARM64)
+        // On ARM64, EstablisherFrame is the caller's SP (SP before the call instruction).
+        // For FP-based frames (which all non-leaf managed methods have), the caller's SP
+        // is FP + 16 because FP points to the saved {FP, LR} pair at the bottom of the frame.
+        // This matches the Windows ARM64 calling convention.
+        *pEstablisherFrame = pContextRecord->Fp + 16;
+#else
+        #error "UnwindFrameForDispatcherContext not implemented for this architecture"
+#endif
+
+        // For managed code, the personality routine is always ProcessCLRException
+        return (PEXCEPTION_ROUTINE)GetEEFuncEntryPoint(ProcessCLRException);
+    }
+
+    // Fallback: not managed code, this shouldn't happen in practice
+    // as FixupDispatcherContext is only used for managed contexts
+    *pEstablisherFrame = GetSP(pContextRecord);
+    return NULL;
+}
+
 // This is Windows specific implementation as it is based upon the notion of collided unwind that is specific
 // to Windows 64bit.
 //
@@ -1731,7 +1776,7 @@ void ClrUnwindEx(EXCEPTION_RECORD* pExceptionRecord, UINT_PTR ReturnValue, UINT_
 // case, this function then starts to update the various fields in pDispatcherContext.
 //
 // In order to redirect the unwind, the OS requires us to provide a personality routine for the code at the
-// new context we are providing. If RtlVirtualUnwind can't determine the personality routine and using
+// new context we are providing. If the OS unwinder can't determine the personality routine and using
 // the default managed code personality routine isn't appropriate (maybe you aren't returning to managed code)
 // specify pUnwindPersonalityRoutine. For instance the debugger uses this to unwind from ExceptionHijack back
 // to RaiseException in win32 and specifies an empty personality routine. For more details about this
@@ -1782,25 +1827,15 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
     _ASSERTE(((PT_RUNTIME_FUNCTION)INVALID_POINTER_CD) != pDispatcherContext->FunctionEntry);
     _ASSERTE(INVALID_POINTER_CD != pDispatcherContext->ImageBase);
 
-    //
-    // need to find the establisher frame by virtually unwinding
-    //
-    CONTEXT tempContext;
-    PVOID   HandlerData;
-
-    CopyOSContext(&tempContext, pDispatcherContext->ContextRecord);
-
-    // RtlVirtualUnwind returns the language specific handler for the ControlPC in question
-    // on ARM and AMD64.
-    pDispatcherContext->LanguageHandler = RtlVirtualUnwind(
-                     NULL,     // HandlerType
+    // Unwind one frame to find the establisher frame and personality routine.
+    // We use the OS unwinder here because this is Windows-specific code that integrates
+    // with the OS exception dispatch mechanism, and EstablisherFrame must match OS expectations.
+    pDispatcherContext->LanguageHandler = UnwindFrameForDispatcherContext(
                      pDispatcherContext->ImageBase,
                      pDispatcherContext->ControlPc,
                      pDispatcherContext->FunctionEntry,
-                     &tempContext,
-                     &HandlerData,
-                     &(pDispatcherContext->EstablisherFrame),
-                     NULL);
+                     pDispatcherContext->ContextRecord,
+                     &(pDispatcherContext->EstablisherFrame));
 
     pDispatcherContext->HandlerData     = NULL;
     pDispatcherContext->HistoryTable    = NULL;
@@ -1832,13 +1867,12 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
         else
         {
             // We would be here only for fixing up context for an async exception in managed code.
-            // This implies that we should have got a personality routine returned from the call to
-            // RtlVirtualUnwind above.
+            // This implies that we should have got a personality routine returned from the unwind above.
             //
             // However, if the ControlPC happened to be in the prolog or epilog of a managed method,
-            // then RtlVirtualUnwind will always return NULL. We cannot return this NULL back to the
-            // OS as it is an invalid value which the OS does not expect (and attempting to do so will
-            // result in the kernel exception dispatch going haywire).
+            // the OS unwinder will return NULL. We cannot return this NULL back to the OS as it is
+            // an invalid value which the OS does not expect (and attempting to do so will result in
+            // the kernel exception dispatch going haywire).
 #if defined(_DEBUG)
             // We should be in jitted code
             TADDR adrRedirectedIP = PCODEToPINSTR(pDispatcherContext->ControlPc);
