@@ -161,7 +161,7 @@ async function findResources(dotnet: DotnetHostBuilder, files: string[], mainAss
     const coreAssembly = files
         // TODO-WASM: webCIL
         .filter(file => file.endsWith("System.Private.CoreLib.dll"))
-        .map(filename => {
+        .map(filepath => {
             // filename without path
             const name = filename.substring(filename.lastIndexOf("/") + 1);
             return { virtualPath: prefix + filename, name };
