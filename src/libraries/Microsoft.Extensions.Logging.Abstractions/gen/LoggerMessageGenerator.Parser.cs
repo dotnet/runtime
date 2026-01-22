@@ -598,7 +598,7 @@ namespace Microsoft.Extensions.Logging.Generators
                     return Array.Empty<LoggerClass>();
                 }
 
-                return results;
+                return results.OrderBy(x => x.Namespace, StringComparer.Ordinal).ThenBy(x => x.Name, StringComparer.Ordinal).ToList();
             }
 
             private static string GenerateClassName(TypeDeclarationSyntax typeDeclaration)
