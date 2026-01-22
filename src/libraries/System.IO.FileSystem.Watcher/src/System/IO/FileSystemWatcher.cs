@@ -218,7 +218,7 @@ namespace System.IO
                         _internalBufferSize = (uint)value;
                     }
 
-                    Restart();
+                    RestartForInternalBufferSize();
                 }
             }
         }

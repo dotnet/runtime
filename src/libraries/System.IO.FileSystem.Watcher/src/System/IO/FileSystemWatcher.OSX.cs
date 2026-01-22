@@ -77,6 +77,9 @@ namespace System.IO
 
         private CancellationTokenSource? _cancellation;
 
+        private void RestartForInternalBufferSize()
+            => Restart();
+
         private static FSEventStreamEventFlags TranslateFlags(NotifyFilters flagsToTranslate)
         {
             FSEventStreamEventFlags flags = 0;

@@ -97,6 +97,11 @@ namespace System.IO
 
         private INotify.Watcher? _watcher;
 
+        private void RestartForInternalBufferSize()
+        {
+            // The implementation is not using InternalBufferSize. There's no need to restart.
+        }
+
         /// <summary>Reads the value of a max user limit path from procfs.</summary>
         /// <param name="path">The path to read.</param>
         /// <returns>The value read, or "0" if a failure occurred.</returns>
@@ -1019,6 +1024,7 @@ namespace System.IO
 
                     // This channel is unbounded which means that if the FileSystemWatcher event handlers can't keep up, the queue size will increase and consume memory.
                     // We could implement a bound that is based on the FileSystemWatcher.InternalBufferSize property.
+                    // If InternalBufferSize were used, RestartForInternalBufferSize can be removed/should be updated.
                     _eventQueue = Channel.CreateUnbounded<WatcherEvent>(new UnboundedChannelOptions() { AllowSynchronousContinuations = false, SingleReader = true });
                 }
 
