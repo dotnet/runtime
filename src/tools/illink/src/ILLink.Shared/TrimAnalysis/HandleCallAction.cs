@@ -1276,6 +1276,48 @@ namespace ILLink.Shared.TrimAnalysis
                 break;
 
                 //
+                // Type.GetGenericTypeDefinition()
+                //
+                case IntrinsicId.Type_GetGenericTypeDefinition:
+                {
+                    if (instanceValue.IsEmpty())
+                    {
+                        returnValue = MultiValueLattice.Top;
+                        break;
+                    }
+
+                    foreach (var value in instanceValue.AsEnumerable())
+                    {
+                        if (value is ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers)
+                        {
+                            // GetGenericTypeDefinition should propagate all annotations since the generic type definition
+                            // has the same members as the constructed generic type
+                            DynamicallyAccessedMemberTypes propagatedMemberTypes = valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes;
+                            AddReturnValue(_annotations.GetMethodReturnValue(calledMethod, _isNewObj, propagatedMemberTypes));
+                        }
+                        else if (value is SystemTypeValue systemTypeValue)
+                        {
+                            if (TryGetGenericTypeDefinition(systemTypeValue.RepresentedType, out var genericTypeDefinition))
+                                AddReturnValue(new SystemTypeValue(genericTypeDefinition.Value));
+                            else
+                                AddReturnValue(annotatedMethodReturnValue);
+                        }
+                        else if (value == NullValue.Instance)
+                        {
+                            // Ignore nulls - null.GetGenericTypeDefinition() will fail at runtime, but it has no effect on static analysis
+                            AddReturnValue(MultiValueLattice.Top);
+                            continue;
+                        }
+                        else
+                        {
+                            // Unknown input - propagate a return value without any annotation - we know it's a Type but we know nothing about it
+                            AddReturnValue(annotatedMethodReturnValue);
+                        }
+                    }
+                }
+                break;
+
+                //
                 // GetConstructor(Type[])
                 // GetConstructor(BindingFlags, Type[])
                 // GetConstructor(BindingFlags, Binder, Type[], ParameterModifier [])
@@ -1809,6 +1851,8 @@ namespace ILLink.Shared.TrimAnalysis
         private partial IEnumerable<SystemTypeValue> GetNestedTypesOnType(TypeProxy type, string name, BindingFlags? bindingFlags);
 
         private partial bool TryGetBaseType(TypeProxy type, [NotNullWhen(true)] out TypeProxy? baseType);
+
+        private partial bool TryGetGenericTypeDefinition(TypeProxy type, [NotNullWhen(true)] out TypeProxy? genericTypeDefinition);
 
         private partial bool TryResolveTypeNameForCreateInstanceAndMark(in MethodProxy calledMethod, string assemblyName, string typeName, out TypeProxy resolvedType);
 
