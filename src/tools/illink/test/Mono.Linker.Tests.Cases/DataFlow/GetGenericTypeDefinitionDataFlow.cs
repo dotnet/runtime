@@ -31,60 +31,55 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             TestCombinations();
         }
 
+        [ExpectedWarning("IL2072", nameof(DataFlowTypeExtensions.RequiresAll))]
         static void TestAllPropagated()
         {
             Type type = typeof(List<int>);
             type.RequiresAll();
+            // SystemTypeValue doesn't have annotations, so calling GetGenericTypeDefinition won't add them
             type.GetGenericTypeDefinition().RequiresAll();
         }
 
-        [ExpectedWarning("IL2072", nameof(DataFlowTypeExtensions.RequiresPublicConstructors))]
         static void TestPublicConstructors()
         {
-            Type type = typeof(List<int>);
+            Type type = GetTypeWithPublicConstructors();
             // GetGenericTypeDefinition propagates all annotations
             type.GetGenericTypeDefinition().RequiresPublicConstructors();
         }
 
-        [ExpectedWarning("IL2072", nameof(DataFlowTypeExtensions.RequiresPublicMethods))]
         static void TestPublicMethods()
         {
-            Type type = typeof(List<int>);
+            Type type = GetTypeWithPublicMethods();
             type.GetGenericTypeDefinition().RequiresPublicMethods();
         }
 
-        [ExpectedWarning("IL2072", nameof(DataFlowTypeExtensions.RequiresPublicFields))]
         static void TestPublicFields()
         {
-            Type type = typeof(List<int>);
+            Type type = GetTypeWithPublicFields();
             type.GetGenericTypeDefinition().RequiresPublicFields();
         }
 
-        [ExpectedWarning("IL2072", nameof(DataFlowTypeExtensions.RequiresPublicNestedTypes))]
         static void TestPublicNestedTypes()
         {
-            Type type = typeof(List<int>);
+            Type type = GetTypeWithPublicNestedTypes();
             type.GetGenericTypeDefinition().RequiresPublicNestedTypes();
         }
 
-        [ExpectedWarning("IL2072", nameof(DataFlowTypeExtensions.RequiresPublicProperties))]
         static void TestPublicProperties()
         {
-            Type type = typeof(List<int>);
+            Type type = GetTypeWithPublicProperties();
             type.GetGenericTypeDefinition().RequiresPublicProperties();
         }
 
-        [ExpectedWarning("IL2072", nameof(DataFlowTypeExtensions.RequiresPublicEvents))]
         static void TestPublicEvents()
         {
-            Type type = typeof(List<int>);
+            Type type = GetTypeWithPublicEvents();
             type.GetGenericTypeDefinition().RequiresPublicEvents();
         }
 
-        [ExpectedWarning("IL2072", nameof(DataFlowTypeExtensions.RequiresInterfaces))]
         static void TestInterfaces()
         {
-            Type type = typeof(List<int>);
+            Type type = GetTypeWithInterfaces();
             type.GetGenericTypeDefinition().RequiresInterfaces();
         }
 
@@ -147,6 +142,27 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         static Type GetTypeWithAll() => typeof(List<int>);
+
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        static Type GetTypeWithPublicConstructors() => typeof(List<int>);
+
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+        static Type GetTypeWithPublicMethods() => typeof(List<int>);
+
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+        static Type GetTypeWithPublicFields() => typeof(List<int>);
+
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes)]
+        static Type GetTypeWithPublicNestedTypes() => typeof(List<int>);
+
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
+        static Type GetTypeWithPublicProperties() => typeof(List<int>);
+
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
+        static Type GetTypeWithPublicEvents() => typeof(List<int>);
+
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        static Type GetTypeWithInterfaces() => typeof(List<int>);
 
         static Type GetUnknownType() => null;
 
