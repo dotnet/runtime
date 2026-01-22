@@ -2646,19 +2646,19 @@ bool DbgTransportSession::DbgTransportShouldInjectFault(DbgTransportFaultOp eOp,
 
 #include <twowaypipe.h>
 
-class DbgTransportChannel final : public IDebugChannel
+class DbgTransportPipeChannel final : public IDebugChannel
 {
 private:
     LONG m_refCount;
     TwoWayPipe m_pipe;
 
 public:
-    DbgTransportChannel()
+    DbgTransportPipeChannel()
         : m_refCount{ 1 }
         , m_pipe{}
     { }
 
-    ~DbgTransportChannel()
+    ~DbgTransportPipeChannel()
     {
         m_pipe.CleanupTargetProcess();
     }
@@ -2741,7 +2741,7 @@ HRESULT CreateChannel(
     /* [in] */ const ProcessDescriptor& procDesc,
     /* [out] */ IDebugChannel** ppChannel)
 {
-    DbgTransportChannel* channel = new (nothrow) DbgTransportChannel();
+    DbgTransportPipeChannel* channel = new (nothrow) DbgTransportPipeChannel();
     if (channel == NULL)
         return E_OUTOFMEMORY;
 
@@ -2760,7 +2760,7 @@ HRESULT ConnectToChannel(
     /* [in] */ const ProcessDescriptor& procDesc,
     /* [out] */ IDebugChannel** ppChannel)
 {
-    DbgTransportChannel* channel = new (nothrow) DbgTransportChannel();
+    DbgTransportPipeChannel* channel = new (nothrow) DbgTransportPipeChannel();
     if (channel == NULL)
         return E_OUTOFMEMORY;
 

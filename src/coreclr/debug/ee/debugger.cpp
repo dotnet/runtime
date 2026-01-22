@@ -1730,6 +1730,19 @@ static HANDLE OpenStartupNotificationEvent()
 }
 #endif // TARGET_WINDOWS
 
+// Improvement for DebuggerStartUp abstraction.
+//
+// The windows logic in NotifyDebuggerOfStartup() serves the same purpose as the non-windows logic
+// in WaitForContinueNotification(). We should have a stronger abstraction where both of those
+// implementations are treated as platform-specific alternatives of a single startup method and get called
+// at the same point in the startup sequence. The sequence we'd want would look something like:
+//
+// 1) All the init up to initing the transport, not including this NotifyDebuggerOfStartup() call
+// 2) Do the startup handshake and block if needed (named events for windows, pipe/semaphore for non-windows)
+// 3) RaiseStartupNotification() and the rest of init that follows it, not including the WaitForContinueNotification() call.
+//
+// Note: The above would likely have impact on the debugger side as well.
+//
 class DebuggerStartUp final
 {
     Debugger* _debugger;
