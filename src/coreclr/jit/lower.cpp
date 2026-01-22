@@ -3210,15 +3210,8 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     // other in mutual recursion.  Therefore, this block is reachable through
     // a GC-safe point or the whole method is marked as fully interruptible.
     //
-    // TODO-Cleanup:
-    // optReachWithoutCall() depends on the fact that loop headers blocks
-    // will have a block number > fgLastBB.  These loop headers gets added
-    // after dominator computation and get skipped by OptReachWithoutCall().
-    // The below condition cannot be asserted in lower because fgSimpleLowering()
-    // can add a new basic block for range check failure which becomes
-    // fgLastBB with block number > loop header block number.
-    // assert(comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT) ||
-    //         !comp->optReachWithoutCall(comp->fgFirstBB, comp->compCurBB) || comp->GetInterruptible());
+    assert(comp->GetInterruptible() || comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT) ||
+           !IsBlockReachableWithoutGCSafePoint(comp->compCurBB));
 
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.  This is a case of caller method has both PInvokes and tail calls.
@@ -3526,7 +3519,8 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     // Therefore the block containing the tail call should be a GC safe point to avoid
     // GC starvation. It is legal for the block to be unmarked iff the entry block is a
     // GC safe point, as the entry block trivially dominates every reachable block.
-    assert(comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT) || comp->fgFirstBB->HasFlag(BBF_GC_SAFE_POINT));
+    assert(comp->GetInterruptible() || comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT) ||
+           !IsBlockReachableWithoutGCSafePoint(comp->compCurBB));
 
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.  This is a case of caller method has both PInvokes and tail calls.
@@ -3611,6 +3605,52 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
 
     return result;
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// IsBlockReachableWithoutGCSafePoint:
+//   Check if a block can be reached without going through a GC safe point.
+//
+// Arguments:
+//    block - The block
+//
+// Returns:
+//   True if so.
+//
+bool Lowering::IsBlockReachableWithoutGCSafePoint(BasicBlock* block)
+{
+    ArrayStack<BasicBlock*> stack(comp->getAllocator(CMK_Lower));
+    BitVecTraits            traits(comp->fgBBNumMax + 1, comp);
+    BitVec                  visited(BitVecOps::MakeEmpty(&traits));
+
+    BitVecOps::AddElemD(&traits, visited, comp->fgFirstBB->bbNum);
+    stack.Push(comp->fgFirstBB);
+
+    while (!stack.Empty())
+    {
+        BasicBlock* visitBlock = stack.Pop();
+        if (visitBlock == block)
+        {
+            return true;
+        }
+
+        if (visitBlock->HasFlag(BBF_GC_SAFE_POINT))
+        {
+            continue;
+        }
+
+        block->VisitAllSuccs(comp, [&](BasicBlock* succ) {
+            if (BitVecOps::TryAddElemD(&traits, visited, succ->bbNum))
+            {
+                stack.Push(succ);
+            }
+            return BasicBlockVisit::Continue;
+        });
+    }
+
+    return false;
+}
+#endif
 
 //------------------------------------------------------------------------
 // LowerCFGCall: Potentially lower a call to use control-flow guard. This

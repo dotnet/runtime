@@ -198,6 +198,7 @@ private:
     GenTree* LowerDirectCall(GenTreeCall* call);
     GenTree* LowerNonvirtPinvokeCall(GenTreeCall* call);
     GenTree* LowerTailCallViaJitHelper(GenTreeCall* callNode, GenTree* callTarget);
+    bool     IsBlockReachableWithoutGCSafePoint(BasicBlock* block);
     void     LowerFastTailCall(GenTreeCall* callNode);
     GenTree* FirstOperand(GenTree* node);
     void     RehomeArgForFastTailCall(unsigned int lclNum,
