@@ -7,9 +7,11 @@
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
     <IlcGenerateMstatFile>true</IlcGenerateMstatFile>
     <IlcGenerateDgmlFile>true</IlcGenerateDgmlFile>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TypeMapApp.cs" />
+    <Compile Include="XunitStub.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="TypeMapLib1.csproj" />
