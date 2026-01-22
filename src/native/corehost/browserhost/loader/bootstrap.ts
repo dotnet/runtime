@@ -10,6 +10,7 @@ import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL } from "./per-module";
 import { fetchLike, nodeFs } from "./polyfills";
 import { dotnetAssert } from "./cross-module";
 import { quitNow } from "./exit";
+import { loaderConfig } from "./config";
 
 const scriptUrlQuery = /*! webpackIgnore: true */import.meta.url;
 const queryIndex = scriptUrlQuery.indexOf("?");
@@ -85,7 +86,7 @@ function printUsageAndQuit() {
 
 export function isShellHosted(): boolean {
     const argumentsAny = (globalThis as any).arguments as string[];
-    if (!ENVIRONMENT_IS_SHELL) {
+    if (!ENVIRONMENT_IS_SHELL || loaderConfig.resources) {
         return false;
     }
     if (typeof argumentsAny === "undefined" || argumentsAny.length < 3) {
@@ -96,7 +97,7 @@ export function isShellHosted(): boolean {
 }
 
 export function isNodeHosted(): boolean {
-    if (!ENVIRONMENT_IS_NODE) {
+    if (!ENVIRONMENT_IS_NODE || loaderConfig.resources) {
         return false;
     }
     if (globalThis.process.argv.length < 3) {
