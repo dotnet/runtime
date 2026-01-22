@@ -2158,16 +2158,9 @@ public:
         return ((gtFlags & GTF_UNSIGNED) != 0);
     }
 
-    void SetUnsigned()
-    {
-        assert(OperIs(GT_ADD, GT_SUB, GT_CAST, GT_LE, GT_LT, GT_GT, GT_GE) || OperIsMul());
-        gtFlags |= GTF_UNSIGNED;
-    }
+    void SetUnsigned();
 
-    void ClearUnsigned()
-    {
-        gtFlags &= ~GTF_UNSIGNED;
-    }
+    void ClearUnsigned();
 
     void SetOverflow()
     {
