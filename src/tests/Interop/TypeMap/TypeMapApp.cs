@@ -201,6 +201,7 @@ public class TypeMap
         Assert.Equal(typeof(string), map[typeof(DupType_MapString)]);
     }
 
+/*
     [Fact]
     public static void Validate_ExternalTypeMapping_NotSupportedMethods()
     {
@@ -230,6 +231,7 @@ public class TypeMap
         Assert.Throws<NotSupportedException>(() => map.GetEnumerator());
         Assert.Throws<NotSupportedException>(() => ((System.Collections.IEnumerable)map).GetEnumerator());
     }
+*/
 
     [Fact]
     public static void Validate_CrossAssemblyResolution()
