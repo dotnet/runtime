@@ -53,13 +53,13 @@
                             ENV[key] = loaderConfig.environmentVariables[key];
                         }
 
-                        if (ENVIRONMENT_IS_NODE) {
-                            Module.preInit = [() => {
-                                FS.mkdir("/managed");
+                        Module.preInit = [() => {
+                            FS.mkdir("/managed");
+                            if (ENVIRONMENT_IS_NODE) {
                                 FS.mount(NODEFS, { root: "." }, "/managed");
-                                FS.chdir("/managed");
-                            }];
-                        }
+                            }
+                            FS.chdir("/managed");
+                        }];
                     }
                 },
             },

@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { CharPtr, CharPtrPtr, VfsAsset, VoidPtr, VoidPtrPtr } from "./types";
+import type { AssemblyAsset, CharPtr, CharPtrPtr, VfsAsset, VoidPtr, VoidPtrPtr } from "./types";
 import { _ems_ } from "../../../libs/Common/JavaScript/ems-ambient";
+import { dotnetLogger } from "../loader/cross-module";
 
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
 
@@ -20,12 +21,12 @@ export function registerDllBytes(bytes: Uint8Array, asset: { name: string, virtu
             throw new Error("posix_memalign failed");
         }
 
+
         const ptr = _ems_.HEAPU32[ptrPtr as any >>> 2];
         _ems_.HEAPU8.set(bytes, ptr >>> 0);
+        dotnetLogger.debug(`Registered assembly '${asset.virtualPath}' (name: '${asset.name}') at ${ptr.toString(16)} length ${bytes.length}`);
         loadedAssemblies.set(asset.virtualPath, { ptr, length: bytes.length });
-        if (!asset.virtualPath.startsWith("/")) {
-            loadedAssemblies.set("/" + asset.virtualPath, { ptr, length: bytes.length });
-        }
+        loadedAssemblies.set(asset.name, { ptr, length: bytes.length });
     } finally {
         _ems_.stackRestore(sp);
     }
@@ -108,8 +109,8 @@ export function initializeCoreCLR(): number {
             runtimeConfigProperties.set(key, "" + value);
         }
     }
-    const assemblyPaths = loaderConfig.resources!.assembly.map(a => "/" + a.virtualPath);
-    const coreAssemblyPaths = loaderConfig.resources!.coreAssembly.map(a => "/" + a.virtualPath);
+    const assemblyPaths = loaderConfig.resources!.assembly.map(a => absoluteDllPath(a));
+    const coreAssemblyPaths = loaderConfig.resources!.coreAssembly.map(a => absoluteDllPath(a));
     const tpa = [...coreAssemblyPaths, ...assemblyPaths].join(":");
     runtimeConfigProperties.set(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES, tpa);
     runtimeConfigProperties.set(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES, loaderConfig.virtualWorkingDirectory!);
@@ -141,6 +142,12 @@ export function initializeCoreCLR(): number {
         _ems_._free(buf as any);
     }
     return res;
+
+    function absoluteDllPath(asset: AssemblyAsset): string {
+        return asset.virtualPath.startsWith("/")
+            ? asset.virtualPath
+            : "/managed" + asset.virtualPath;
+    }
 }
 
 // bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);

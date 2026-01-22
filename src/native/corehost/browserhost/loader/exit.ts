@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { OnExitListener } from "../types";
-import { dotnetLogger, dotnetLoaderExports, Module, dotnetBrowserUtilsExports } from "./cross-module";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB } from "./per-module";
+import { dotnetLogger, Module, dotnetBrowserUtilsExports } from "./cross-module";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB } from "./per-module";
+import { abortStartup } from "./run";
 
 export const runtimeState = {
+    creatingRuntime: false,
     runtimeReady: false,
     exitCode: undefined as number | undefined,
     exitReason: undefined as any,
@@ -109,7 +111,8 @@ export function exit(exitCode: number, reason: any): void {
             unregisterExit();
             if (!alreadySilent) {
                 if (runtimeState.onExitListeners.length === 0 && !runtimeState.runtimeReady) {
-                    dotnetLogger.error(`Exiting during runtime startup: ${message} ${stack}`);
+                    dotnetLogger.error(`Exiting during runtime startup: ${message}`);
+                    dotnetLogger.debug(() => stack);
                 }
                 for (const listener of runtimeState.onExitListeners) {
                     try {
@@ -123,7 +126,7 @@ export function exit(exitCode: number, reason: any): void {
             }
             if (!runtimeState.runtimeReady) {
                 dotnetLogger.debug(() => `Aborting startup, reason: ${reason}`);
-                dotnetLoaderExports.abortStartup(reason);
+                abortStartup(reason);
             }
         } catch (err) {
             dotnetLogger.warn("dotnet.js exit() failed", err);
@@ -152,6 +155,9 @@ export function quitNow(exitCode: number, reason?: any): void {
         }
     }
     if (exitCode !== 0 || !ENVIRONMENT_IS_WEB) {
+        if (ENVIRONMENT_IS_SHELL && typeof (globalThis as any).quit === "function") {
+            (globalThis as any).quit(exitCode);
+        }
         if (ENVIRONMENT_IS_NODE && globalThis.process && typeof globalThis.process.exit === "function") {
             globalThis.process.exitCode = exitCode;
             globalThis.process.exit(exitCode);

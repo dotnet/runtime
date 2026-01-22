@@ -7,8 +7,9 @@ import { exceptions, simd } from "wasm-feature-detect";
 
 import { GlobalizationMode } from "./types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL } from "./per-module";
-import { nodeFs } from "./polyfills";
+import { fetchLike, nodeFs } from "./polyfills";
 import { dotnetAssert } from "./cross-module";
+import { quitNow } from "./exit";
 
 const scriptUrlQuery = /*! webpackIgnore: true */import.meta.url;
 const queryIndex = scriptUrlQuery.indexOf("?");
@@ -74,12 +75,32 @@ export function makeURLAbsoluteWithApplicationBase(url: string) {
     return url;
 }
 
+function printUsageAndQuit() {
+    // eslint-disable-next-line no-console
+    console.log("usage: v8 --module dotnet.js -- hello.dll arg1 arg2");
+    // eslint-disable-next-line no-console
+    console.log("usage: node dotnet.js HelloWorld.dll arg1 arg2");
+    quitNow(1);
+}
+
 export function isShellHosted(): boolean {
-    return ENVIRONMENT_IS_SHELL && typeof (globalThis as any).arguments !== "undefined";
+    const argumentsAny = (globalThis as any).arguments as string[];
+    if (!ENVIRONMENT_IS_SHELL) {
+        return false;
+    }
+    if (typeof argumentsAny === "undefined" || argumentsAny.length < 3) {
+        printUsageAndQuit();
+        return false;
+    }
+    return true;
 }
 
 export function isNodeHosted(): boolean {
-    if (!ENVIRONMENT_IS_NODE || globalThis.process.argv.length < 3) {
+    if (!ENVIRONMENT_IS_NODE) {
+        return false;
+    }
+    if (globalThis.process.argv.length < 3) {
+        printUsageAndQuit();
         return false;
     }
     const argv1 = globalThis.process.argv[1].toLowerCase();
@@ -89,28 +110,67 @@ export function isNodeHosted(): boolean {
     return argScript === importScript;
 }
 
-// Finds resources when running in NodeJS environment without explicit configuration
-export async function findResources(dotnet: DotnetHostBuilder): Promise<void> {
+export async function shellFindResources(dotnet: DotnetHostBuilder): Promise<void> {
+    if (!ENVIRONMENT_IS_SHELL) {
+        return;
+    }
+    const argumentsAny = (globalThis as any).arguments as string[];
+
+    const filesRes = await fetchLike("dotnet.assets.txt", {}, "text/plain");
+    if (!filesRes.ok) {
+        // eslint-disable-next-line no-console
+        console.log("Shell/V8 can't list files in the current directory. \n"
+            + "Please generate an 'dotnet.assets.txt' file with the list of files to load. \n"
+            + "Depending on your shell, you can use one of the following commands: \n"
+            + "  Get-ChildItem -Name > dotnet.assets.txt \n"
+            + "  dir /b > dotnet.assets.txt \n"
+            + "  ls > dotnet.assets.txt \n"
+        );
+        quitNow(1);
+    }
+    const fileList = await filesRes.text();
+    const files: string[] = fileList.split(/\r?\n/).filter(line => line.length > 0);
+    const mainAssemblyName = argumentsAny[0];
+    dotnet.withApplicationArguments(...argumentsAny.slice(1));
+    return findResources(dotnet, files, mainAssemblyName);
+}
+
+export async function nodeFindResources(dotnet: DotnetHostBuilder): Promise<void> {
     if (!ENVIRONMENT_IS_NODE) {
         return;
     }
     const fs = await nodeFs();
-    const mountedDir = "/managed";
     const files: string[] = await fs.promises.readdir(".");
+    const mainAssemblyName = globalThis.process.argv[2];
+    dotnet.withApplicationArguments(...globalThis.process.argv.slice(3));
+    return findResources(dotnet, files, mainAssemblyName);
+}
+
+// Finds resources when running in NodeJS environment without explicit configuration
+async function findResources(dotnet: DotnetHostBuilder, files: string[], mainAssemblyName: string): Promise<void> {
+    const prefix = "/managed/";
     const assemblies = files
         // TODO-WASM: webCIL
         .filter(file => file.endsWith(".dll"))
         .map(filename => {
             // filename without path
             const name = filename.substring(filename.lastIndexOf("/") + 1);
-            return { virtualPath: mountedDir + "/" + filename, name };
+            return { virtualPath: prefix + filename, name };
         });
-    const mainAssemblyName = globalThis.process.argv[2];
+    const coreAssembly = files
+        // TODO-WASM: webCIL
+        .filter(file => file.endsWith("System.Private.CoreLib.dll"))
+        .map(filename => {
+            // filename without path
+            const name = filename.substring(filename.lastIndexOf("/") + 1);
+            return { virtualPath: prefix + filename, name };
+        });
+
     const runtimeConfigName = mainAssemblyName.replace(/\.dll$/, ".runtimeconfig.json");
     let runtimeConfig = {};
-    if (fs.existsSync(runtimeConfigName)) {
-        const json = await fs.promises.readFile(runtimeConfigName, { encoding: "utf8" });
-        runtimeConfig = JSON.parse(json);
+    if (files.indexOf(runtimeConfigName) >= 0) {
+        const res = await fetchLike(runtimeConfigName, {}, "application/json");
+        runtimeConfig = await res.json();
     }
     const icus = files
         .filter(file => file.startsWith("icudt") && file.endsWith(".dat"))
@@ -127,21 +187,20 @@ export async function findResources(dotnet: DotnetHostBuilder): Promise<void> {
         environmentVariables["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "1";
     }
 
-    const config: LoaderConfig = {
+    const loaderConfig: LoaderConfig = {
         mainAssemblyName,
         runtimeConfig,
         globalizationMode,
-        virtualWorkingDirectory: mountedDir,
+        virtualWorkingDirectory: "/managed",
         environmentVariables,
         resources: {
             jsModuleNative: [{ name: "dotnet.native.js" }],
             jsModuleRuntime: [{ name: "dotnet.runtime.js" }],
             wasmNative: [{ name: "dotnet.native.wasm", }],
-            coreAssembly: [{ virtualPath: mountedDir + "/System.Private.CoreLib.dll", name: "System.Private.CoreLib.dll" },],
+            coreAssembly,
             assembly: assemblies,
             icu: icus,
         }
     };
-    dotnet.withConfig(config);
-    dotnet.withApplicationArguments(...globalThis.process.argv.slice(3));
+    dotnet.withConfig(loaderConfig);
 }
