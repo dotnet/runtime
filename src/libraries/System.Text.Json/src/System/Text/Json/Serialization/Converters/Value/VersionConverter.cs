@@ -45,24 +45,16 @@ namespace System.Text.Json.Serialization.Converters
                 int bytesWritten = reader.CopyString(utf8Buffer);
                 ReadOnlySpan<byte> utf8Source = utf8Buffer.Slice(0, bytesWritten);
 
-                if (utf8Source.IsEmpty)
-                {
-                    ThrowHelper.ThrowFormatException(DataType.Version);
-                }
-
-                // Check for leading and trailing whitespace
                 // Since leading and trailing whitespaces are forbidden throughout System.Text.Json converters
                 // we need to make sure that our input doesn't have them,
                 // and if it has - we need to throw, to match behaviour of other converters
                 // since Version.TryParse allows them and silently parses input to Version
-                if (IsWhiteSpaceByte(utf8Source[0]) || IsWhiteSpaceByte(utf8Source[^1]))
+                if (utf8Source.IsEmpty || IsWhiteSpaceByte(utf8Source[0]) || IsWhiteSpaceByte(utf8Source[^1]))
                 {
                     ThrowHelper.ThrowFormatException(DataType.Version);
                 }
 
-                bool success = Version.TryParse(utf8Source, out Version? result);
-
-                if (success)
+                if (Version.TryParse(utf8Source, out Version? result))
                 {
                     return result!;
                 }
