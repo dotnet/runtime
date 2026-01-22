@@ -1454,6 +1454,14 @@ void interceptor_ICJI::getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORIN
     mc->recGetFpStructLowering(structHnd, pLowering);
 }
 
+CorInfoType interceptor_ICJI::getWasmLowering(CORINFO_CLASS_HANDLE structHnd)
+{
+    mc->cr->AddCall("getWasmLowering");
+    CorInfoType result = original_ICorJitInfo->getWasmLowering(structHnd);
+    mc->recGetWasmLowering(structHnd, result);
+    return result;
+}
+
 // Stuff on ICorDynamicInfo
 uint32_t interceptor_ICJI::getThreadTLSIndex(void** ppIndirection)
 {

@@ -3616,6 +3616,12 @@ namespace Internal.JitInterface
             }
         }
 
+        private CorInfoType getWasmLowering(CORINFO_CLASS_STRUCT_* structHnd)
+        {
+            uint size = getClassSize(structHnd);
+            return WasmLowering.LowerTypeForWasm(HandleToObject(structHnd), size);
+        }
+
         private uint getThreadTLSIndex(ref void* ppIndirection)
         { throw new NotImplementedException("getThreadTLSIndex"); }
 
