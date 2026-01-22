@@ -130,45 +130,41 @@ namespace Mono.Linker
             // For virtual/override methods, check if any overridden method is declared on the specified type
             // This handles cases where intrinsics are defined on base virtual methods (e.g., Type.BaseType)
             // and we want the intrinsic to work for overrides (e.g., RuntimeTypeInfo.BaseType)
-#pragma warning disable RS0030 // Cecil's Resolve is banned
-            if (method.Resolve() is MethodDefinition methodDef && methodDef.IsVirtual)
+#pragma warning disable RS0030 // Cecil's Resolve is banned - needed to check virtual method overrides
+            if (method.Resolve() is not MethodDefinition methodDef || !methodDef.IsVirtual)
+                return false;
+
+            // Walk up the inheritance hierarchy to check if this method overrides
+            // a virtual method declared on the target type
+            TypeDefinition? currentType = methodDef.DeclaringType.BaseType?.Resolve();
+            while (currentType != null)
             {
-                // Walk up the inheritance hierarchy to find the base definition
-                TypeDefinition? currentType = methodDef.DeclaringType.BaseType?.Resolve();
-                while (currentType != null)
+                if (currentType.IsTypeOf(fullTypeName))
                 {
-                    if (currentType.IsTypeOf(fullTypeName))
+                    // Check if this type has a matching virtual method
+                    foreach (var baseMethod in currentType.Methods)
                     {
-                        // Check if this type has a method with the same signature that would be overridden
-                        foreach (var baseMethod in currentType.Methods)
+                        if (baseMethod.IsVirtual &&
+                            baseMethod.Name == methodDef.Name &&
+                            baseMethod.HasParameters == methodDef.HasParameters &&
+                            (!baseMethod.HasParameters || CompareParameterCounts(baseMethod, methodDef)))
                         {
-                            if (baseMethod.IsVirtual && baseMethod.Name == methodDef.Name &&
-                                MethodSignaturesMatch(methodDef, baseMethod))
-                            {
-                                return true;
-                            }
+                            return true;
                         }
                     }
-                    currentType = currentType.BaseType?.Resolve();
                 }
+                currentType = currentType.BaseType?.Resolve();
             }
 #pragma warning restore RS0030
 
             return false;
         }
 
-        private static bool MethodSignaturesMatch(MethodDefinition method1, MethodDefinition method2)
+        private static bool CompareParameterCounts(MethodDefinition method1, MethodDefinition method2)
         {
-            if (method1.Parameters.Count != method2.Parameters.Count)
-                return false;
-
-            for (int i = 0; i < method1.Parameters.Count; i++)
-            {
-                if (method1.Parameters[i].ParameterType.FullName != method2.Parameters[i].ParameterType.FullName)
-                    return false;
-            }
-
-            return method1.ReturnType.FullName == method2.ReturnType.FullName;
+#pragma warning disable RS0030 // MethodDefinition.Parameters is accessed in this helper method
+            return method1.Parameters.Count == method2.Parameters.Count;
+#pragma warning restore RS0030
         }
 
         public static bool HasImplicitThis(this MethodReference method)
