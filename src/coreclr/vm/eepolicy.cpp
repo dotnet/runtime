@@ -688,39 +688,29 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
             }
             else
             {
-                // We're in native code - need to determine which case we're in
-                TADDR currentSP = GetSP(pExceptionInfo->ContextRecord);
-                Frame* pFrame = pThread->GetFrame();
+                // We're in native code - try to unwind to the first managed frame
+                // using deterministic unwinding for known helpers.
+                CopyOSContext((&fef)->GetExceptionContext(), pExceptionInfo->ContextRecord);
+                CONTEXT* pUnwindContext = (&fef)->GetExceptionContext();
+                bool unwound = false;
 
-                if (pFrame != FRAME_TOP && (TADDR)pFrame >= currentSP)
+                // Check for known helpers with deterministic unwinding
+                if (IsIPInWriteBarrierHelper(controlPc))
                 {
-                    // Case 3: Explicit frames at or above current SP - use original context
-                    // to avoid skipping those frames during stack walk
-                    pExceptionContext = pExceptionInfo->ContextRecord;
+                    // Write barrier - deterministic unwind
+                    UnwindWriteBarrierToCaller(pUnwindContext);
+                    unwound = true;
+                }
+                else if (IsIPInJITStackProbe(controlPc))
+                {
+                    // JIT stack probe - deterministic unwind
+                    UnwindJITStackProbeToCaller(pUnwindContext);
+                    unwound = true;
                 }
                 else
                 {
-                    // Case 2: Native code with no explicit frames above SP
-                    // Deterministically unwind to the managed caller using known patterns
-                    CopyOSContext((&fef)->GetExceptionContext(), pExceptionInfo->ContextRecord);
-                    CONTEXT* pUnwindContext = (&fef)->GetExceptionContext();
-                    bool unwound = false;
-
-                    // Check for known helpers with deterministic unwinding
-                    if (IsIPInWriteBarrierHelper(controlPc))
-                    {
-                        // Write barrier - deterministic unwind
-                        UnwindWriteBarrierToCaller(pUnwindContext);
-                        unwound = true;
-                    }
-                    else if (IsIPInJITStackProbe(controlPc))
-                    {
-                        // JIT stack probe - deterministic unwind
-                        UnwindJITStackProbeToCaller(pUnwindContext);
-                        unwound = true;
-                    }
-                    else if (pFrame != FRAME_TOP &&
-                             InlinedCallFrame::FrameHasActiveCall(pFrame))
+                    Frame* pFrame = pThread->GetFrame();
+                    if (pFrame != FRAME_TOP && InlinedCallFrame::FrameHasActiveCall(pFrame))
                     {
                         // PInvoke - InlinedCallFrame has the managed caller's context
                         PTR_InlinedCallFrame pICF = dac_cast<PTR_InlinedCallFrame>(pFrame);
@@ -728,27 +718,30 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
                         SetSP(pUnwindContext, (TADDR)pICF->m_pCallSiteSP);
                         unwound = true;
                     }
+                }
 
-                    if (unwound)
+                if (unwound && ExecutionManager::IsManagedCode(GetIP(pUnwindContext)))
+                {
+                    // Successfully unwound to managed code.
+                    // Now check if the unwind crossed any explicit frames - if so, use the original
+                    // context to avoid skipping those frames during stack walk.
+                    Frame* pFrame = pThread->GetFrame();
+                    if (GetSP(pUnwindContext) > (TADDR)pFrame)
                     {
-                        // Verify we actually reached managed code
-                        if (ExecutionManager::IsManagedCode(GetIP(pUnwindContext)))
-                        {
-                            pExceptionContext = pUnwindContext;
-                        }
-                        else
-                        {
-                            // Unwound but not to managed code - use original context
-                            // The stack walker will handle the transition
-                            pExceptionContext = pExceptionInfo->ContextRecord;
-                        }
+                        // The unwind crossed explicit frames - use the original context
+                        pExceptionContext = pExceptionInfo->ContextRecord;
                     }
                     else
                     {
-                        // Unknown native code location - use original context
-                        // The stack walker will find managed frames through the frame chain
-                        pExceptionContext = pExceptionInfo->ContextRecord;
+                        // No explicit frames were crossed - use the unwound context
+                        pExceptionContext = pUnwindContext;
                     }
+                }
+                else
+                {
+                    // Could not unwind to managed code - use original context
+                    // The stack walker will find managed frames through the frame chain
+                    pExceptionContext = pExceptionInfo->ContextRecord;
                 }
             }
         }
