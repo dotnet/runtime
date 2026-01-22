@@ -705,28 +705,42 @@ int32_t SystemNative_FcntlCheckAccess(intptr_t fd, int32_t requestedAccess)
     int flags = fcntl(fileDescriptor, F_GETFL);
     if (flags == -1)
     {
-        // Invalid file descriptor
-        return 0;
+        // Invalid file descriptor - errno is already set by fcntl
+        return -1;
     }
     
     // Extract the access mode from flags
     int actualAccess = flags & O_ACCMODE;
     
     // requestedAccess: 1 = Read (FileAccess.Read), 2 = Write (FileAccess.Write), 3 = ReadWrite (FileAccess.ReadWrite)
+    int hasAccess = 0;
     switch (requestedAccess)
     {
         case 1: // Read
-            return (actualAccess == O_RDONLY || actualAccess == O_RDWR) ? 1 : 0;
+            hasAccess = (actualAccess == O_RDONLY || actualAccess == O_RDWR) ? 1 : 0;
+            break;
         
         case 2: // Write
-            return (actualAccess == O_WRONLY || actualAccess == O_RDWR) ? 1 : 0;
+            hasAccess = (actualAccess == O_WRONLY || actualAccess == O_RDWR) ? 1 : 0;
+            break;
         
         case 3: // ReadWrite
-            return (actualAccess == O_RDWR) ? 1 : 0;
+            hasAccess = (actualAccess == O_RDWR) ? 1 : 0;
+            break;
         
         default:
-            return 0;
+            hasAccess = 0;
+            break;
     }
+    
+    if (!hasAccess)
+    {
+        // File descriptor doesn't have the requested access mode
+        errno = EBADF;
+        return -1;
+    }
+    
+    return 0;
 }
 
 int32_t SystemNative_MkDir(const char* path, int32_t mode)

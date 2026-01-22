@@ -83,33 +83,27 @@ namespace System
 
         public static Stream OpenStandardOutput()
         {
-            return new WasmConsoleStream(OpenStandardOutputHandle(), FileAccess.Write);
+            return new WasmConsoleStream(OpenStandardOutputHandle(verifyFd: false), FileAccess.Write);
         }
 
         public static Stream OpenStandardError()
         {
-            return new WasmConsoleStream(OpenStandardErrorHandle(), FileAccess.Write);
+            return new WasmConsoleStream(OpenStandardErrorHandle(verifyFd: false), FileAccess.Write);
         }
 
         public static SafeFileHandle OpenStandardInputHandle() => throw new PlatformNotSupportedException();
 
-        public static SafeFileHandle OpenStandardOutputHandle()
-        {
-            IntPtr fd = 1;
-            if (!Interop.Sys.Fcntl.CheckAccess(fd, (int)FileAccess.Write))
-            {
-                throw new IOException(SR.IO_NoConsole);
-            }
-            return new SafeFileHandle(fd, ownsHandle: false);
-        }
+        public static SafeFileHandle OpenStandardOutputHandle(bool verifyFd = true) => OpenStandardHandle(1, FileAccess.Write, verifyFd);
 
-        public static SafeFileHandle OpenStandardErrorHandle()
+        public static SafeFileHandle OpenStandardErrorHandle(bool verifyFd = true) => OpenStandardHandle(2, FileAccess.Write, verifyFd);
+
+        private static SafeFileHandle OpenStandardHandle(IntPtr fd, FileAccess access, bool verifyFd)
         {
-            IntPtr fd = 2;
-            if (!Interop.Sys.Fcntl.CheckAccess(fd, (int)FileAccess.Write))
+            if (verifyFd)
             {
-                throw new IOException(SR.IO_NoConsole);
+                Interop.CheckIo(Interop.Sys.Fcntl.CheckAccess(fd, (int)access));
             }
+
             return new SafeFileHandle(fd, ownsHandle: false);
         }
 

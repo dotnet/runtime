@@ -45,47 +45,33 @@ namespace System
 
         public static Stream OpenStandardInput()
         {
-            return new UnixConsoleStream(OpenStandardInputHandle(), FileAccess.Read,
+            return new UnixConsoleStream(OpenStandardInputHandle(verifyFd: false), FileAccess.Read,
                                          useReadLine: !Console.IsInputRedirected);
         }
 
         public static Stream OpenStandardOutput()
         {
-            return new UnixConsoleStream(OpenStandardOutputHandle(), FileAccess.Write);
+            return new UnixConsoleStream(OpenStandardOutputHandle(verifyFd: false), FileAccess.Write);
         }
 
         public static Stream OpenStandardError()
         {
-            return new UnixConsoleStream(OpenStandardErrorHandle(), FileAccess.Write);
+            return new UnixConsoleStream(OpenStandardErrorHandle(verifyFd: false), FileAccess.Write);
         }
 
-        public static SafeFileHandle OpenStandardInputHandle()
-        {
-            IntPtr fd = 0;
-            if (!Interop.Sys.Fcntl.CheckAccess(fd, (int)FileAccess.Read))
-            {
-                throw new IOException(SR.IO_NoConsole);
-            }
-            return new SafeFileHandle(fd, ownsHandle: false);
-        }
+        public static SafeFileHandle OpenStandardInputHandle(bool verifyFd = true) => OpenStandardHandle(0, FileAccess.Read, verifyFd);
 
-        public static SafeFileHandle OpenStandardOutputHandle()
-        {
-            IntPtr fd = 1;
-            if (!Interop.Sys.Fcntl.CheckAccess(fd, (int)FileAccess.Write))
-            {
-                throw new IOException(SR.IO_NoConsole);
-            }
-            return new SafeFileHandle(fd, ownsHandle: false);
-        }
+        public static SafeFileHandle OpenStandardOutputHandle(bool verifyFd = true) => OpenStandardHandle(1, FileAccess.Write, verifyFd);
 
-        public static SafeFileHandle OpenStandardErrorHandle()
+        public static SafeFileHandle OpenStandardErrorHandle(bool verifyFd = true) => OpenStandardHandle(2, FileAccess.Write, verifyFd);
+
+        private static SafeFileHandle OpenStandardHandle(IntPtr fd, FileAccess access, bool verifyFd)
         {
-            IntPtr fd = 2;
-            if (!Interop.Sys.Fcntl.CheckAccess(fd, (int)FileAccess.Write))
+            if (verifyFd)
             {
-                throw new IOException(SR.IO_NoConsole);
+                Interop.CheckIo(Interop.Sys.Fcntl.CheckAccess(fd, (int)access));
             }
+
             return new SafeFileHandle(fd, ownsHandle: false);
         }
 
@@ -701,7 +687,7 @@ namespace System
         /// </summary>
         public static bool IsInputRedirectedCore()
         {
-            return IsHandleRedirected(OpenStandardInputHandle());
+            return IsHandleRedirected(OpenStandardInputHandle(verifyFd: false));
         }
 
         /// <summary>Gets whether Console.Out is redirected.
@@ -709,7 +695,7 @@ namespace System
         /// </summary>
         public static bool IsOutputRedirectedCore()
         {
-            return IsHandleRedirected(OpenStandardOutputHandle());
+            return IsHandleRedirected(OpenStandardOutputHandle(verifyFd: false));
         }
 
         /// <summary>Gets whether Console.Error is redirected.
@@ -717,7 +703,7 @@ namespace System
         /// </summary>
         public static bool IsErrorRedirectedCore()
         {
-            return IsHandleRedirected(OpenStandardErrorHandle());
+            return IsHandleRedirected(OpenStandardErrorHandle(verifyFd: false));
         }
 
         /// <summary>Creates an encoding from the current environment.</summary>
@@ -919,8 +905,8 @@ namespace System
                     // This also resets it for termination due to an unhandled exception.
                     AppDomain.CurrentDomain.UnhandledException += (_, _) => { Interop.Sys.UninitializeTerminal(); };
 
-                    s_terminalHandle = !Console.IsOutputRedirected ? OpenStandardOutputHandle() :
-                                       !Console.IsInputRedirected  ? OpenStandardInputHandle() :
+                    s_terminalHandle = !Console.IsOutputRedirected ? OpenStandardOutputHandle(verifyFd: false) :
+                                       !Console.IsInputRedirected  ? OpenStandardInputHandle(verifyFd: false) :
                                        null;
 
                     // Provide the native lib with the correct code from the terminfo to transition us into
@@ -1138,7 +1124,7 @@ namespace System
         // DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION is set.
         // In both cases, they are written to stdout.
         internal static void WriteTerminalAnsiColorString(string? value)
-            => WriteTerminalAnsiString(value, OpenStandardOutputHandle(), mayChangeCursorPosition: false);
+            => WriteTerminalAnsiString(value, OpenStandardOutputHandle(verifyFd: false), mayChangeCursorPosition: false);
 
         /// <summary>Writes a terminfo-based ANSI escape string to stdout.</summary>
         /// <param name="value">The string to write.</param>
