@@ -1,9 +1,6 @@
 if (CLR_CMAKE_TARGET_WIN32)
   if(CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64)
     preprocess_files(VM_SOURCES_WKS_ARCH_ASM ${VM_SOURCES_WKS_ARCH_ASM})
-    if (CMAKE_GENERATOR MATCHES "Visual Studio")
-      compile_asm(TARGET cee_wks_core ASM_FILES ${VM_SOURCES_WKS_ARCH_ASM} OUTPUT_OBJECTS VM_WKS_ARCH_ASM_OBJECTS)
-    endif()
   endif()
 endif (CLR_CMAKE_TARGET_WIN32)
 
@@ -52,9 +49,7 @@ add_dependencies(cee_wks_mergeable precompiled_asm)
 target_compile_definitions(cee_wks_mergeable PUBLIC FEATURE_STATICALLY_LINKED)
 target_compile_definitions(cee_wks_mergeable PUBLIC CORECLR_EMBEDDED)
 
-if (NOT CLR_CMAKE_HOST_ARCH_WASM)
-  target_compile_definitions(cee_wks_core PRIVATE -DGC_DESCRIPTOR)
-endif (NOT CLR_CMAKE_HOST_ARCH_WASM)
+target_compile_definitions(cee_wks_core PRIVATE GC_DESCRIPTOR)
 
 if (CLR_CMAKE_HOST_WIN32)
     link_natvis_sources_for_target(cee_wks INTERFACE ../vm.natvis)

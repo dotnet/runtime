@@ -2,12 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b140711;
+
 using System;
 using Xunit;
 
 public class BadMath
 {
     public static double[,] Res = new double[2, 40];
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

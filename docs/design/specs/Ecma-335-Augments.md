@@ -25,6 +25,7 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [API documentation](#api-documentation)
 - [Debug Interchange Format](#debug-interchange-format)
 - [Extended layout](#extended-layout)
+- [Implicit argument coercion rules](#implicit-argument-coercion-rules)
 
 ## Signatures
 
@@ -1191,3 +1192,6 @@ In section II.23.1.15, the following row is added to the table:
 |-----|------|------|
 | `ExtendedLayout` | 0x00000018 | Layout is supplied by a `System.Runtime.InteropServices.ExtendedLayoutAttribute` custom attribute |
 
+## Implict argument coercion rules
+
+Implicit argument coercion as defined in section III.1.6 does not match with existing practice in CLR runtimes. Notably, implicit argument coercion of an `int32` on the IL evaluation stack to a `native unsigned int` is a sign extending operation, not a zero-extending operation.

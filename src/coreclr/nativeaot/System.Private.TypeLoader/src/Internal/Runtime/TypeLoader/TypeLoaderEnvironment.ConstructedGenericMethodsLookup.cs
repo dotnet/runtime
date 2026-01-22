@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Reflection.Runtime.General;
 using System.Threading;
 
+using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
 using Internal.Runtime.CompilerServices;
 using Internal.TypeSystem;
@@ -19,6 +20,7 @@ namespace Internal.Runtime.TypeLoader
         {
             private int? _hashCode;
             public bool _isRegisteredSuccessfully;
+            public bool _isAsyncVariant;
             public IntPtr _methodDictionary;
             public RuntimeTypeHandle _declaringTypeHandle;
             public MethodNameAndSignature _methodNameAndSignature;
@@ -43,6 +45,9 @@ namespace Internal.Runtime.TypeLoader
             public virtual bool IsEqualToEntryByComponentsComparison(GenericMethodEntry other)
             {
                 if (!other._declaringTypeHandle.Equals(_declaringTypeHandle))
+                    return false;
+
+                if (_isAsyncVariant != other._isAsyncVariant)
                     return false;
 
                 if (!other._methodNameAndSignature.Equals(_methodNameAndSignature))
@@ -150,8 +155,14 @@ namespace Internal.Runtime.TypeLoader
                 if (_methodToLookup.OwningType != parsedDeclaringType)
                     return false;
 
-                // Hash table names / sigs are indirected through to the native layout info
-                MethodNameAndSignature nameAndSignature = TypeLoaderEnvironment.GetMethodNameAndSignatureFromToken(moduleHandle, entryParser.GetUnsigned());
+                int flagsAndToken = (int)entryParser.GetUnsigned();
+                bool isAsyncVariant = (flagsAndToken & GenericMethodsHashtableConstants.IsAsyncVariant) != 0;
+                if (_methodToLookup.AsyncVariant != isAsyncVariant)
+                    return false;
+
+                int token = ((int)HandleType.Method << 25) | (flagsAndToken & ~GenericMethodsHashtableConstants.IsAsyncVariant);
+
+                MethodNameAndSignature nameAndSignature = TypeLoaderEnvironment.GetMethodNameAndSignatureFromToken(moduleHandle, (uint)token);
                 if (!_methodToLookup.NameAndSignature.Equals(nameAndSignature))
                     return false;
 
@@ -176,6 +187,9 @@ namespace Internal.Runtime.TypeLoader
 
                 TypeDesc parsedDeclaringType = context.ResolveRuntimeTypeHandle(entry._declaringTypeHandle);
                 if (_methodToLookup.OwningType != parsedDeclaringType)
+                    return false;
+
+                if (_methodToLookup.AsyncVariant != entry._isAsyncVariant)
                     return false;
 
                 if (!_methodToLookup.NameAndSignature.Equals(entry._methodNameAndSignature))
@@ -208,11 +222,11 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        public bool TryGetGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodArgumentHandles)
+        public bool TryGetGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodArgumentHandles, out bool isAsyncVariant)
         {
-            if (!TryGetDynamicGenericMethodComponents(methodDictionary, out declaringType, out nameAndSignature, out genericMethodArgumentHandles))
+            if (!TryGetDynamicGenericMethodComponents(methodDictionary, out declaringType, out nameAndSignature, out genericMethodArgumentHandles, out isAsyncVariant))
             {
-                if (!TryGetStaticGenericMethodComponents(methodDictionary, out declaringType, out nameAndSignature, out genericMethodArgumentHandles))
+                if (!TryGetStaticGenericMethodComponents(methodDictionary, out declaringType, out nameAndSignature, out genericMethodArgumentHandles, out isAsyncVariant))
                     return false;
             }
 
@@ -222,8 +236,8 @@ namespace Internal.Runtime.TypeLoader
         public static bool TryGetGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out RuntimeTypeHandle[] genericMethodArgumentHandles)
         {
             TypeLoaderEnvironment instance = TypeLoaderEnvironment.InstanceOrNull;
-            if (instance == null || !instance.TryGetDynamicGenericMethodComponents(methodDictionary, out declaringType, out _, out genericMethodArgumentHandles))
-                if (!TryGetStaticGenericMethodComponents(methodDictionary, out declaringType, out _, out genericMethodArgumentHandles))
+            if (instance == null || !instance.TryGetDynamicGenericMethodComponents(methodDictionary, out declaringType, out _, out genericMethodArgumentHandles, out _))
+                if (!TryGetStaticGenericMethodComponents(methodDictionary, out declaringType, out _, out genericMethodArgumentHandles, out _))
                     return false;
 
             return true;
@@ -286,7 +300,7 @@ namespace Internal.Runtime.TypeLoader
             if (!method.UnboxingStub && method.OwningType.IsValueType && !IsStaticMethodSignature(method.NameAndSignature))
             {
                 // Make it an unboxing stub, note the first parameter which is true
-                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(true, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation);
+                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(true, method.AsyncVariant, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation);
             }
 
             // If we cannot find an exact method entry point, look for an equivalent template and compute the generic dictionary
@@ -371,11 +385,12 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        private bool TryGetDynamicGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out MethodNameAndSignature methodNameAndSignature, out RuntimeTypeHandle[] genericMethodArgumentHandles)
+        private bool TryGetDynamicGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out MethodNameAndSignature methodNameAndSignature, out RuntimeTypeHandle[] genericMethodArgumentHandles, out bool isAsyncVariant)
         {
             declaringType = default(RuntimeTypeHandle);
             methodNameAndSignature = null;
             genericMethodArgumentHandles = null;
+            isAsyncVariant = false;
 
             using (_dynamicGenericsLock.EnterScope())
             {
@@ -389,10 +404,12 @@ namespace Internal.Runtime.TypeLoader
                 declaringType = entry._declaringTypeHandle;
                 methodNameAndSignature = entry._methodNameAndSignature;
                 genericMethodArgumentHandles = entry._genericMethodArgumentHandles;
+                isAsyncVariant = entry._isAsyncVariant;
                 return true;
             }
         }
-        private static unsafe bool TryGetStaticGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodArgumentHandles)
+
+        private static unsafe bool TryGetStaticGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodArgumentHandles, out bool isAsyncVariant)
         {
             // Generic method dictionaries have a header that has the hash code in it. Locate the header
             IntPtr dictionaryHeader = IntPtr.Subtract(methodDictionary, IntPtr.Size);
@@ -420,7 +437,12 @@ namespace Internal.Runtime.TypeLoader
                     // We have a match - fill in the results
                     declaringType = externalReferencesLookup.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
 
-                    int token = (int)entryParser.GetUnsigned();
+
+                    int flagsAndToken = (int)entryParser.GetUnsigned();
+                    isAsyncVariant = (flagsAndToken & GenericMethodsHashtableConstants.IsAsyncVariant) != 0;
+
+                    int token = ((int)HandleType.Method << 25) | (flagsAndToken & ~GenericMethodsHashtableConstants.IsAsyncVariant);
+
                     nameAndSignature = new MethodNameAndSignature(module.MetadataReader, token.AsHandle().ToMethodHandle(module.MetadataReader));
 
                     uint arity = entryParser.GetSequenceCount();
@@ -438,6 +460,7 @@ namespace Internal.Runtime.TypeLoader
             declaringType = default(RuntimeTypeHandle);
             nameAndSignature = null;
             genericMethodArgumentHandles = null;
+            isAsyncVariant = false;
             return false;
         }
 

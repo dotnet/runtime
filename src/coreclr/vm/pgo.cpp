@@ -7,6 +7,7 @@
 #include "versionresilienthashcode.h"
 #include "typestring.h"
 #include "pgo_formatprocessing.h"
+#include "dn-stdio.h"
 
 #ifdef FEATURE_PGO
 
@@ -205,9 +206,9 @@ void PgoManager::WritePgoData()
         return;
     }
 
-    FILE* const pgoDataFile = _wfopen(fileName, W("wb"));
+    FILE* pgoDataFile = NULL;
 
-    if (pgoDataFile == NULL)
+    if (fopen_lp(&pgoDataFile, fileName,  W("wb")) != 0)
     {
         return;
     }
@@ -366,10 +367,10 @@ void PgoManager::ReadPgoData()
     {
         return;
     }
+    
+    FILE* pgoDataFile = NULL;
 
-    FILE* const pgoDataFile = _wfopen(fileName, W("rb"));
-
-    if (pgoDataFile == NULL)
+    if (fopen_lp(&pgoDataFile, fileName,  W("wb")) != 0)
     {
         return;
     }
@@ -1002,13 +1003,13 @@ class R2RInstrumentationDataReader
 {
     ReadyToRunInfo *m_pReadyToRunInfo;
     Module* m_pModule;
-    PEDecoder* m_pNativeImage;
+    ReadyToRunLoadedImage* m_pNativeImage;
 
 public:
     StackSArray<ICorJitInfo::PgoInstrumentationSchema> schemaArray;
     StackSArray<BYTE> instrumentationData;
 
-    R2RInstrumentationDataReader(ReadyToRunInfo *pReadyToRunInfo, Module* pModule, PEDecoder* pNativeImage) :
+    R2RInstrumentationDataReader(ReadyToRunInfo *pReadyToRunInfo, Module* pModule, ReadyToRunLoadedImage* pNativeImage) :
         m_pReadyToRunInfo(pReadyToRunInfo),
         m_pModule(pModule),
         m_pNativeImage(pNativeImage)
@@ -1103,7 +1104,7 @@ public:
 
 HRESULT PgoManager::getPgoInstrumentationResultsFromR2RFormat(ReadyToRunInfo *pReadyToRunInfo,
                                                               Module* pModule,
-                                                              PEDecoder* pNativeImage,
+                                                              ReadyToRunLoadedImage* pNativeImage,
                                                               BYTE* pR2RFormatData,
                                                               size_t pR2RFormatDataMaxSize,
                                                               BYTE** pAllocatedData,

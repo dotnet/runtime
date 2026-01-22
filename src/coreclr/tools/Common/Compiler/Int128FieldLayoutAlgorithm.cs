@@ -33,7 +33,7 @@ namespace ILCompiler
             // 32bit platforms use standard metadata layout engine
             if (defType.Context.Target.Architecture == TargetArchitecture.ARM)
             {
-                layoutFromMetadata.LayoutAbiStable = false; // Int128 parameter passing ABI is unstable at this time
+                layoutFromMetadata.LayoutAbiStable = true;
                 layoutFromMetadata.IsInt128OrHasInt128Fields = true;
                 return layoutFromMetadata;
             }
@@ -47,7 +47,7 @@ namespace ILCompiler
                 FieldAlignment = new LayoutInt(16),
                 FieldSize = layoutFromMetadata.FieldSize,
                 Offsets = layoutFromMetadata.Offsets,
-                LayoutAbiStable = false, // Int128 parameter passing ABI is unstable at this time
+                LayoutAbiStable = true,
                 IsInt128OrHasInt128Fields = true
             };
         }

@@ -59,6 +59,7 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>Sets the object this handle represents.</summary>
+        /// <param name="target">The object to assign to this handle.</param>
         /// <exception cref="NullReferenceException">If the handle is not initialized or already disposed.</exception>
         public readonly void SetTarget(T target)
         {

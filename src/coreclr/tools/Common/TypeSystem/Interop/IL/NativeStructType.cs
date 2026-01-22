@@ -101,15 +101,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override DefType BaseType
-        {
-            get
-            {
-                return (DefType)Context.GetWellKnownType(WellKnownType.ValueType);
-            }
-        }
-
-        public override MetadataType MetadataBaseType
+        public override MetadataType BaseType
         {
             get
             {
@@ -133,7 +125,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override DefType ContainingType
+        public override MetadataType ContainingType
         {
             get
             {
@@ -263,7 +255,7 @@ namespace Internal.TypeSystem.Interop
             return Array.Empty<MetadataType>();
         }
 
-        public override MetadataType GetNestedType(string name)
+        public override MetadataType GetNestedType(ReadOnlySpan<byte> name)
         {
             return null;
         }
@@ -389,7 +381,7 @@ namespace Internal.TypeSystem.Interop
                 }
             }
 
-            public override DefType OwningType
+            public override MetadataType OwningType
             {
                 get
                 {

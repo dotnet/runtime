@@ -4,7 +4,4 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
-#cmakedefine01 HAVE_GETAUXVAL
-#cmakedefine01 HAVE_DIRENT_D_TYPE
-
 #endif // __CONFIG_H__

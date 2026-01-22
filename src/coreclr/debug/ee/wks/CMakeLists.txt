@@ -9,14 +9,10 @@ if (CLR_CMAKE_TARGET_WIN32)
   if(CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64 OR CLR_CMAKE_HOST_ARCH_LOONGARCH64)
     preprocess_files(ASM_FILE ${ASM_FILE})
 
-    if (CMAKE_GENERATOR MATCHES "Visual Studio")
-      compile_asm(TARGET cordbee_wks ASM_FILES ${ASM_FILE} OUTPUT_OBJECTS ASM_OBJECTS)
-    endif()
-
     add_library_clr(cordbee_wks OBJECT ${CORDBEE_SOURCES_WKS} ${ASM_FILE} ${ASM_OBJECTS})
 
   else ()
-    set(ASM_OPTIONS /c /Zi /W3 /errorReport:prompt)
+    set(ASM_OPTIONS /c /W3 /errorReport:prompt)
 
     if (CLR_CMAKE_HOST_ARCH_I386)
       list (APPEND ASM_OPTIONS /safeseh)

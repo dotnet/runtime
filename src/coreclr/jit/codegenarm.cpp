@@ -654,6 +654,21 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genAsyncResumeInfo: emits address of async resume info for a specific state
+//
+// Parameters:
+//   treeNode - the GT_ASYNC_RESUME_INFO node
+//
+void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
+{
+    CORINFO_FIELD_HANDLE fieldOffs = genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1);
+    assert(compiler->eeIsJitDataOffs(fieldOffs));
+    genMov32RelocatableDataLabel(compiler->eeGetJitDataOffs(fieldOffs), treeNode->GetRegNum());
+
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
 // genGetInsForOper: Return instruction encoding of the operation tree.
 //
 instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
@@ -740,7 +755,7 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
 // Arguments:
 //    tree - the node
 //
-void CodeGen::genCodeForNegNot(GenTree* tree)
+void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_NEG, GT_NOT));
 
@@ -2445,6 +2460,14 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         {
             saveSizeWithPSP += TARGET_POINTER_SIZE;
         }
+        if (compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
+        {
+            saveSizeWithPSP += TARGET_POINTER_SIZE;
+        }
+        if (compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
+        {
+            saveSizeWithPSP += TARGET_POINTER_SIZE;
+        }
         assert(compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
         unsigned funcletFrameSize = preSpillRegArgSize + saveSizeWithPSP + compiler->lvaOutgoingArgSpaceSize;
 
@@ -2522,10 +2545,10 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     regMaskTP regMask;
 
     regMaskTP availMask = regSet.rsGetModifiedRegsMask() | RBM_INT_CALLEE_TRASH; // Set of available registers
-    availMask &= ~intRegState.rsCalleeRegArgMaskLiveIn; // Remove all of the incoming argument registers as they are
-                                                        // currently live
-    availMask &= ~genRegMask(initReg); // Remove the pre-calculated initReg as we will zero it and maybe use it for
-                                       // a large constant.
+    availMask &= ~calleeRegArgMaskLiveIn; // Remove all of the incoming argument registers as they are
+                                          // currently live
+    availMask &= ~genRegMask(initReg);    // Remove the pre-calculated initReg as we will zero it and maybe use it for
+                                          // a large constant.
 
     if (compiler->compLocallocUsed)
     {
@@ -2540,8 +2563,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     regMask = genFindLowestBit(availMask);
     rZero2  = genRegNumFromMask(regMask);
     availMask &= ~regMask;
-    assert((genRegMask(rZero2) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // rZero2 is not a live incoming
-                                                                              // argument reg
+    assert((genRegMask(rZero2) & calleeRegArgMaskLiveIn) == 0); // rZero2 is not a live incoming argument reg
 
     // We pick the next lowest register number for rAddr
     noway_assert(availMask != RBM_NONE);
@@ -2571,7 +2593,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     }
 
     // rAddr is not a live incoming argument reg
-    assert((genRegMask(rAddr) & intRegState.rsCalleeRegArgMaskLiveIn) == 0);
+    assert((genRegMask(rAddr) & calleeRegArgMaskLiveIn) == 0);
 
     if (arm_Valid_Imm_For_Add(untrLclLo, INS_FLAGS_DONT_CARE))
     {
@@ -2588,8 +2610,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     if (useLoop)
     {
         noway_assert(uCntSlots >= 2);
-        assert((genRegMask(rCnt) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // rCnt is not a live incoming
-                                                                                // argument reg
+        assert((genRegMask(rCnt) & calleeRegArgMaskLiveIn) == 0); // rCnt is not a live incoming argument reg
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, rCnt, (ssize_t)uCntSlots / 2);
     }
 

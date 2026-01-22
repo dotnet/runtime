@@ -140,11 +140,9 @@ namespace System
                 case ErrorWrapper wrapper:
                     pOle = ComVariant.Create(wrapper);
                     break;
-#pragma warning disable 0618 // CurrencyWrapper is obsolete
                 case CurrencyWrapper wrapper:
                     pOle = ComVariant.Create(wrapper);
                     break;
-#pragma warning restore 0618
                 case BStrWrapper wrapper:
                     pOle = ComVariant.Create(wrapper);
                     break;
