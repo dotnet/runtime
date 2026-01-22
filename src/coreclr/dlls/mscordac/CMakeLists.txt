@@ -136,8 +136,7 @@ endif(CLR_CMAKE_HOST_UNIX)
 set(COREDAC_LIBRARIES
     corguids
     # These libraries have circular dependencies and must be grouped together
-    # The libraries in the WHOLE_ARCHIVE group must have all of their symbols included in the final shared object
-    $<LINK_GROUP:RESCAN,cee_dac,cordbee_dac,$<LINK_LIBRARY:WHOLE_ARCHIVE,daccess>>
+    $<LINK_GROUP:RESCAN,cee_dac,cordbee_dac,daccess>
     unwinder_dac
     dbgutil
     $<LINK_GROUP:RESCAN,mdcompiler_dac,mdruntime_dac,mdruntimerw_dac>
@@ -181,8 +180,8 @@ if(CLR_CMAKE_HOST_WIN32)
 else(CLR_CMAKE_HOST_WIN32)
     list(APPEND COREDAC_LIBRARIES
         mscorrc
-        # force all PAL objects to be included so all exports are available
-        $<LINK_LIBRARY:WHOLE_ARCHIVE,coreclrpal,coreclrminipal>
+        coreclrpal
+        coreclrminipal
     )
 endif(CLR_CMAKE_HOST_WIN32)
 

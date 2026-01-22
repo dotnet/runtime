@@ -202,7 +202,7 @@ elseif (TARGET coreclrpal)
     # that link to coreclr_static
     target_link_libraries(coreclr_static
         PUBLIC
-        $<LINK_LIBRARY:WHOLE_ARCHIVE,coreclrpal>
+        coreclrpal
     )
 endif()
 
