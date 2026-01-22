@@ -4,4 +4,4 @@
 using System;
 using Xunit;
 
-[assembly: ActiveIssue("Interpreter with debug runtime can be very slow", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter), nameof(PlatformDetection.IsDebugRuntime))]
+[assembly: ActiveIssue("Interpreter with debug runtime can be very slow", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter), nameof(PlatformDetection.IsDebugRuntime))]
