@@ -1972,6 +1972,11 @@ PCODE CallStubGenerator::GetFPReg32RangeRoutine(int x1, int x2)
 
 extern "C" void CallJittedMethodRetVoid(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRetDouble(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetI1(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetU1(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetI2(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetU2(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRetI8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void InterpreterStubRetVoid();
 extern "C" void InterpreterStubRetDouble();
@@ -2010,7 +2015,6 @@ extern "C" void CallJittedMethodRet2I8(PCODE *routines, int8_t*pArgs, int8_t*pRe
 extern "C" void CallJittedMethodRet2Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet3Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet4Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
-extern "C" void CallJittedMethodRetFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet2Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet3Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet4Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
@@ -2069,6 +2073,14 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
             INVOKE_FUNCTION_PTR(CallJittedMethodRetDouble);
         case ReturnTypeI8:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetI8);
+        case ReturnTypeI1:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetI1);
+        case ReturnTypeU1:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetU1);
+        case ReturnTypeI2:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetI2);
+        case ReturnTypeU2:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetU2);
 #ifdef TARGET_AMD64
 #ifdef TARGET_WINDOWS
         case ReturnTypeBuffArg1:
@@ -2161,7 +2173,11 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
             RETURN_TYPE_HANDLER(InterpreterStubRetVoid);
         case ReturnTypeDouble:
             RETURN_TYPE_HANDLER(InterpreterStubRetDouble);
+        case ReturnTypeI1:
+        case ReturnTypeU1:
         case ReturnTypeI8:
+        case ReturnTypeI2:
+        case ReturnTypeU2:
             RETURN_TYPE_HANDLER(InterpreterStubRetI8);
 #ifdef TARGET_AMD64
         case ReturnTypeBuffArg1:
@@ -3054,12 +3070,16 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
 
         switch (thReturnType)
         {
-            case ELEMENT_TYPE_BOOLEAN:
-            case ELEMENT_TYPE_CHAR:
             case ELEMENT_TYPE_I1:
+                return ReturnTypeI1;
+            case ELEMENT_TYPE_BOOLEAN:
             case ELEMENT_TYPE_U1:
+                return ReturnTypeU1;
             case ELEMENT_TYPE_I2:
+                return ReturnTypeI2;
+            case ELEMENT_TYPE_CHAR:
             case ELEMENT_TYPE_U2:
+                return ReturnTypeU2;
             case ELEMENT_TYPE_I4:
             case ELEMENT_TYPE_U4:
             case ELEMENT_TYPE_I8:
@@ -3078,6 +3098,9 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
                 return ReturnTypeI8;
                 break;
             case ELEMENT_TYPE_R4:
+#ifdef TARGET_ARM64
+                return ReturnTypeFloat;
+#endif // TARGET_ARM64
             case ELEMENT_TYPE_R8:
                 return ReturnTypeDouble;
                 break;
