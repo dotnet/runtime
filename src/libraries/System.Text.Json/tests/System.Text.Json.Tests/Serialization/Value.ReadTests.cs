@@ -354,7 +354,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("     ")]
         [InlineData(" ")]
         [InlineData("   1.2.3.4")] // Leading whitespace should be rejected
-        [InlineData("1.2.3.4    ")] // Trailing whitespace should be rejected  
+        [InlineData("1.2.3.4    ")] // Trailing whitespace should be rejected
         [InlineData("  1.2.3.4  ")] // Leading and trailing whitespace should be rejected
         [InlineData("2147483648.2147483648.2147483648.2147483648")] //int.MaxValue + 1
         [InlineData("2147483647.2147483647.2147483647.21474836477")] // Slightly bigger in size than max length of Version
