@@ -3515,10 +3515,10 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     assert(call->IsTailCallViaJitHelper());
     assert(callTarget != nullptr);
 
-    // The TailCall helper call never returns to the caller and is not GC interruptible.
-    // Therefore the block containing the tail call should be a GC safe point to avoid
-    // GC starvation. It is legal for the block to be unmarked iff the entry block is a
-    // GC safe point, as the entry block trivially dominates every reachable block.
+    // VM cannot use return address hijacking when A() and B() tail call each
+    // other in mutual recursion. Therefore, this block is reachable through
+    // a GC-safe point or the whole method is marked as fully interruptible.
+    //
     assert(comp->GetInterruptible() || comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT) ||
            !IsBlockReachableWithoutGCSafePoint(comp->compCurBB));
 
