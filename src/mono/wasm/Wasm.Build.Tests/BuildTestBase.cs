@@ -30,7 +30,6 @@ namespace Wasm.Build.Tests
         public static readonly string DefaultTargetFramework = $"net{TargetMajorVersion}.0";
         public static readonly string PreviousTargetFramework = $"net{TargetMajorVersion - 1}.0";
         public static readonly string Previous2TargetFramework = $"net{TargetMajorVersion - 2}.0";
-        public static readonly string TargetFrameworkForTasks = $"net{Environment.Version.Major}.0";
         public static readonly string DefaultTargetFrameworkForBlazor = DefaultTargetFramework;
         public static readonly string DefaultTargetFrameworkForBlazorTemplate = $"net{Environment.Version.Major}.0";
         private const string DefaultEnvironmentLocale = "en-US";

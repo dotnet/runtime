@@ -127,7 +127,9 @@ namespace System.IO.Compression
         public string Name { get { throw null; } }
         public void Delete() { }
         public System.IO.Stream Open() { throw null; }
+        public System.IO.Stream Open(FileAccess access) { throw null; }
         public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.IO.FileAccess access, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override string ToString() { throw null; }
     }
     public enum ZipArchiveMode
