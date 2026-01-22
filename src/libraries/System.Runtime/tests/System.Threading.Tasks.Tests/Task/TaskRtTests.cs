@@ -580,7 +580,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(t.IsCanceled);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunDelayTests()
         {
             //
