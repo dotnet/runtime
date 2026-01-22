@@ -65,6 +65,8 @@
     <MicrosoftCodeAnalysisVersion_4_4>4.4.0</MicrosoftCodeAnalysisVersion_4_4>
     <!-- Compatibility with VS 17.8/.NET SDK 8.0.1xx -->
     <MicrosoftCodeAnalysisVersion_4_8>4.8.0</MicrosoftCodeAnalysisVersion_4_8>
+    <!-- Compatibility with VS 18.0/.NET SDK 10.0.1xx -->
+    <MicrosoftCodeAnalysisVersion_5_0>5.0.0-2.26070.104</MicrosoftCodeAnalysisVersion_5_0>
     <!-- Compatibility with the latest Visual Studio Preview release -->
     <!--
       The exact version is always a moving target. This version should never go ahead of the version of Roslyn that is included in the most recent
