@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 #pragma warning disable IDE0060
 
