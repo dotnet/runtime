@@ -1420,7 +1420,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             assert(addrOp != operand);
             assert(consecutiveOp != operand);
-            assert(delayFreeOp != operand);
 
             srcCount += BuildEmbeddedOperandUses(embeddedOp, delayFreeOp);
         }
@@ -2355,6 +2354,13 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool
                     delayFreeOp = intrinsicTree->Op(1);
                     assert(delayFreeOp != nullptr);
                 }
+            }
+            else if (intrinsicTree->GetOperandCount() == 1 && embedded)
+            {
+                // 1-operand embedded masked operations are non-RMW, but they could also use movprfx.
+                // Set delayFreeOp to the embedded node itself so that op1 can be delay-freed.
+                delayFreeOp = intrinsicTree;
+                assert(delayFreeOp != nullptr);
             }
             break;
     }
