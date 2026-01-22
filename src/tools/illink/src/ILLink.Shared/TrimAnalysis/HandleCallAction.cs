@@ -1306,7 +1306,6 @@ namespace ILLink.Shared.TrimAnalysis
                         {
                             // Ignore nulls - null.GetGenericTypeDefinition() will fail at runtime, but it has no effect on static analysis
                             AddReturnValue(MultiValueLattice.Top);
-                            continue;
                         }
                         else
                         {
