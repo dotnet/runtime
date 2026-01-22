@@ -121,7 +121,7 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest2_Release_Helper(int.MaxValue - 1, int.MaxValue, 10, typeof(SemaphoreFullException));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunSemaphoreSlimTest4_Dispose()
         {
             RunSemaphoreSlimTest4_Dispose_Helper(5, 10, null, null);
@@ -136,7 +136,7 @@ namespace System.Threading.Tests
               (5, 10, SemaphoreSlimActions.AvailableWaitHandle, typeof(ObjectDisposedException));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunSemaphoreSlimTest5_CurrentCount()
         {
             RunSemaphoreSlimTest5_CurrentCount_Helper(5, 10, null);
@@ -145,7 +145,7 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest5_CurrentCount_Helper(5, 10, SemaphoreSlimActions.Release);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunSemaphoreSlimTest7_AvailableWaitHandle()
         {
             RunSemaphoreSlimTest7_AvailableWaitHandle_Helper(5, 10, null, true);

@@ -448,6 +448,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
 
     #endregion
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class TaskWaitAllAny
     {
         [Fact]

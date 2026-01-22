@@ -174,8 +174,6 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public void Wait()
         {
-            Thread.ThrowIfSingleThreaded();
-
             // Call wait with infinite timeout
             WaitCore(Timeout.Infinite, CancellationToken.None);
         }
@@ -193,8 +191,6 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public void Wait(CancellationToken cancellationToken)
         {
-            Thread.ThrowIfSingleThreaded();
-
             // Call wait with infinite timeout
             WaitCore(Timeout.Infinite, cancellationToken);
         }
@@ -213,8 +209,6 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool Wait(TimeSpan timeout)
         {
-            Thread.ThrowIfSingleThreaded();
-
             // Validate the timeout
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1)
@@ -245,8 +239,6 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
-            Thread.ThrowIfSingleThreaded();
-
             // Validate the timeout
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1)
@@ -272,8 +264,6 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool Wait(int millisecondsTimeout)
         {
-            Thread.ThrowIfSingleThreaded();
-
             if (millisecondsTimeout < -1)
             {
                 throw new ArgumentOutOfRangeException(
@@ -297,8 +287,6 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
-            Thread.ThrowIfSingleThreaded();
-
             if (millisecondsTimeout < -1)
             {
                 throw new ArgumentOutOfRangeException(
