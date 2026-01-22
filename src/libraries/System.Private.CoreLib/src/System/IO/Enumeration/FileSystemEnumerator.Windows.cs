@@ -377,7 +377,6 @@ namespace System.IO.Enumeration
             expression is not "*" and not "*.*" &&
             expression.Length <= 255 && // Max filename length
             !expression.EndsWith('.') &&
-            !expression.Contains("..") &&
             !expression.ContainsAny(s_unsafeForFilter);
 
         private static readonly SearchValues<char> s_unsafeForFilter = SearchValues.Create(
