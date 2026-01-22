@@ -9,8 +9,8 @@ namespace System.IO
     {
         private static SafeFileHandle OpenNullHandleCore()
         {
-            // Open /dev/null on Unix with read/write access, async support, and CLOEXEC (no inheritance)
-            return SafeFileHandle.Open("/dev/null", FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, FileOptions.Asynchronous, preallocationSize: 0);
+            // Open /dev/null on Unix with read/write access and CLOEXEC (no inheritance)
+            return SafeFileHandle.Open("/dev/null", FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, FileOptions.None, preallocationSize: 0);
         }
 
         private static UnixFileMode GetUnixFileModeCore(string path)

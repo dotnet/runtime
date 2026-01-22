@@ -187,9 +187,6 @@ namespace System.IO
         /// write operations succeed without storing any data.
         /// </para>
         /// <para>
-        /// The returned handle is not inheritable by child processes.
-        /// </para>
-        /// <para>
         /// For scenarios that don't require raw file handles or descriptors, consider using <see cref="Stream.Null"/> instead.
         /// </para>
         /// </remarks>

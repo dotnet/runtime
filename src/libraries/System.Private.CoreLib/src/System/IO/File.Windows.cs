@@ -9,8 +9,8 @@ namespace System.IO
     {
         private static SafeFileHandle OpenNullHandleCore()
         {
-            // Open the NUL device on Windows with read/write access, async support, and no inheritance
-            return SafeFileHandle.Open("NUL", FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, FileOptions.Asynchronous, preallocationSize: 0);
+            // Open the NUL device on Windows with read/write access and no inheritance
+            return SafeFileHandle.Open("NUL", FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, FileOptions.None, preallocationSize: 0);
         }
 
         private static UnixFileMode GetUnixFileModeCore(string path)
