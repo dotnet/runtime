@@ -206,11 +206,8 @@ namespace System.Threading
                             _tpWait = IntPtr.Zero;
                         }
 
-                        if (_waitHandle != null)
-                        {
-                            _waitHandle.DangerousRelease();
-                            _waitHandle = null;
-                        }
+                        _waitHandle?.DangerousRelease();
+                        _waitHandle = null;
                     }
                 }
                 finally
