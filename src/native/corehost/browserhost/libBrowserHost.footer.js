@@ -53,12 +53,19 @@
                             ENV[key] = loaderConfig.environmentVariables[key];
                         }
 
+                        // load all DLLs into linear memory and tell CoreCLR that they are in /managed folder via TRUSTED_PLATFORM_ASSEMBLIES
                         Module.preInit = [() => {
                             FS.mkdir("/managed");
+
+                            // TODO-WASM: improve node mounting
                             if (ENVIRONMENT_IS_NODE) {
+                                // on NodeJS we mount the current working directory of the host OS as /managed
+                                // so that any other files can be loaded via file IO of the emscripten FS emulator
+                                // as in the dontnet application started in the host current folder
+                                // this doesn't make sense in browser  and it doesn't work for V8 shell
                                 FS.mount(NODEFS, { root: "." }, "/managed");
+                                FS.chdir("/managed");
                             }
-                            FS.chdir("/managed");
                         }];
                     }
                 },

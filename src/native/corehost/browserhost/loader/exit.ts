@@ -3,7 +3,7 @@
 
 import type { OnExitListener } from "../types";
 import { dotnetLogger, Module, dotnetBrowserUtilsExports, dotnetRuntimeExports } from "./cross-module";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB } from "./per-module";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, globalThisAny } from "./per-module";
 import { abortStartup } from "./run";
 
 export const runtimeState = {
@@ -158,8 +158,8 @@ export function quitNow(exitCode: number, reason?: any): void {
         }
     }
     if (exitCode !== 0 || !ENVIRONMENT_IS_WEB) {
-        if (ENVIRONMENT_IS_SHELL && typeof (globalThis as any).quit === "function") {
-            (globalThis as any).quit(exitCode);
+        if (ENVIRONMENT_IS_SHELL && typeof globalThisAny.quit === "function") {
+            globalThisAny.quit(exitCode);
         }
         if (ENVIRONMENT_IS_NODE && globalThis.process && typeof globalThis.process.exit === "function") {
             globalThis.process.exitCode = exitCode;

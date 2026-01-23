@@ -8,11 +8,11 @@ import { dotnetLogger } from "../loader/cross-module";
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function registerPdbBytes(bytes: Uint8Array, asset: { name: string, virtualPath: string }) {
+export function registerPdbBytes(bytes: Uint8Array, virtualPath: string) {
     // WASM-TODO: https://github.com/dotnet/runtime/issues/122921
 }
 
-export function registerDllBytes(bytes: Uint8Array, asset: { name: string, virtualPath: string }) {
+export function registerDllBytes(bytes: Uint8Array, virtualPath: string) {
     const sp = _ems_.stackSave();
     try {
         const sizeOfPtr = 4;
@@ -23,9 +23,11 @@ export function registerDllBytes(bytes: Uint8Array, asset: { name: string, virtu
 
         const ptr = _ems_.HEAPU32[ptrPtr as any >>> 2];
         _ems_.HEAPU8.set(bytes, ptr >>> 0);
-        dotnetLogger.debug(`Registered assembly '${asset.virtualPath}' (name: '${asset.name}') at ${ptr.toString(16)} length ${bytes.length}`);
-        loadedAssemblies.set(asset.virtualPath, { ptr, length: bytes.length });
-        loadedAssemblies.set(asset.name, { ptr, length: bytes.length });
+        const name = virtualPath.substring(virtualPath.lastIndexOf("/") + 1);
+
+        dotnetLogger.debug(`Registered assembly '${virtualPath}' (name: '${name}') at ${ptr.toString(16)} length ${bytes.length}`);
+        loadedAssemblies.set(virtualPath, { ptr, length: bytes.length });
+        loadedAssemblies.set(name, { ptr, length: bytes.length });
     } finally {
         _ems_.stackRestore(sp);
     }
@@ -69,6 +71,7 @@ export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
         if (!parentDirectory.startsWith("/"))
             parentDirectory = "/" + parentDirectory;
 
+        // TODO-WASM: improve node mounting
         if (parentDirectory.startsWith("/managed")) {
             throw new Error("Cannot create files under /managed virtual directory as it is reserved for NodeFS mounting");
         }
@@ -115,7 +118,7 @@ export function initializeCoreCLR(): number {
     runtimeConfigProperties.set(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES, loaderConfig.virtualWorkingDirectory!);
     runtimeConfigProperties.set(HOST_PROPERTY_APP_PATHS, loaderConfig.virtualWorkingDirectory!);
     runtimeConfigProperties.set(HOST_PROPERTY_ENTRY_ASSEMBLY_NAME, loaderConfig.mainAssemblyName!);
-    runtimeConfigProperties.set(APP_CONTEXT_BASE_DIRECTORY, "/");
+    runtimeConfigProperties.set(APP_CONTEXT_BASE_DIRECTORY, "/mamaged/");
     runtimeConfigProperties.set(RUNTIME_IDENTIFIER, "browser-wasm");
     runtimeConfigProperties.set(HOST_PROPERTY_RUNTIME_CONTRACT, `0x${(hostContractPtr as unknown as number).toString(16)}`);
 

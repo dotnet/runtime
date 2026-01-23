@@ -6,7 +6,7 @@ import type { LoaderConfig, DotnetHostBuilder } from "./types";
 import { exceptions, simd } from "wasm-feature-detect";
 
 import { GlobalizationMode } from "./types";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL } from "./per-module";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, globalThisAny } from "./per-module";
 import { fetchLike, nodeFs } from "./polyfills";
 import { dotnetAssert } from "./cross-module";
 import { quitNow } from "./exit";
@@ -88,7 +88,7 @@ export function isShellHosted(): boolean {
     if (!ENVIRONMENT_IS_SHELL || loaderConfig.resources) {
         return false;
     }
-    const argumentsAny = (globalThis as any).arguments as string[];
+    const argumentsAny = globalThisAny.arguments as string[];
     if (typeof argumentsAny === "undefined" || argumentsAny.length < 3) {
         printUsageAndQuit();
         return false;
@@ -115,7 +115,7 @@ export async function shellFindResources(dotnet: DotnetHostBuilder): Promise<voi
     if (!ENVIRONMENT_IS_SHELL) {
         return;
     }
-    const argumentsAny = (globalThis as any).arguments as string[];
+    const argumentsAny = globalThisAny.arguments as string[];
 
     const filesRes = await fetchLike("dotnet.assets.txt", {}, "text/plain");
     if (!filesRes.ok) {
@@ -149,22 +149,21 @@ export async function nodeFindResources(dotnet: DotnetHostBuilder): Promise<void
 
 // Finds resources when running in NodeJS environment without explicit configuration
 async function findResources(dotnet: DotnetHostBuilder, files: string[], mainAssemblyName: string): Promise<void> {
-    const prefix = "/managed/";
     const assemblies = files
         // TODO-WASM: webCIL
         .filter(file => file.endsWith(".dll"))
         .map(filepath => {
-            // Get file name.
+            // ignore path and just use file name
             const name = filepath.substring(filepath.lastIndexOf("/") + 1);
-            return { virtualPath: prefix + filepath, name };
+            return { virtualPath: filepath, name };
         });
     const coreAssembly = files
         // TODO-WASM: webCIL
         .filter(file => file.endsWith("System.Private.CoreLib.dll"))
         .map(filepath => {
-            // Get file name.
+            // ignore path and just use file name
             const name = filepath.substring(filepath.lastIndexOf("/") + 1);
-            return { virtualPath: prefix + filepath, name };
+            return { virtualPath: filepath, name };
         });
 
     const runtimeConfigName = mainAssemblyName.replace(/\.dll$/, ".runtimeconfig.json");
@@ -176,7 +175,7 @@ async function findResources(dotnet: DotnetHostBuilder, files: string[], mainAss
     const icus = files
         .filter(file => file.startsWith("icudt") && file.endsWith(".dat"))
         .map(filename => {
-            // filename without path
+            // ignore path and just use file name
             const name = filename.substring(filename.lastIndexOf("/") + 1);
             return { virtualPath: name, name };
         });
@@ -192,7 +191,7 @@ async function findResources(dotnet: DotnetHostBuilder, files: string[], mainAss
         mainAssemblyName,
         runtimeConfig,
         globalizationMode,
-        virtualWorkingDirectory: "/managed",
+        virtualWorkingDirectory: "/",
         environmentVariables,
         resources: {
             jsModuleNative: [{ name: "dotnet.native.js" }],

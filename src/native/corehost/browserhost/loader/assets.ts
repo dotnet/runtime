@@ -119,13 +119,12 @@ export async function fetchDll(asset: AssemblyAsset): Promise<void> {
         asset.resolvedUrl = locateFile(assetInternal.name);
     }
     assetInternal.behavior = "assembly";
-    const name = asset.virtualPath.substring(asset.virtualPath.lastIndexOf("/") + 1);
     const bytes = await fetchBytes(assetInternal);
     await nativeModulePromiseController.promise;
 
     onDownloadedAsset();
     if (bytes) {
-        dotnetBrowserHostExports.registerDllBytes(bytes, { virtualPath: asset.virtualPath, name, });
+        dotnetBrowserHostExports.registerDllBytes(bytes, asset.virtualPath);
     }
 }
 
@@ -137,13 +136,12 @@ export async function fetchPdb(asset: AssemblyAsset): Promise<void> {
     }
     assetInternal.behavior = "pdb";
     assetInternal.isOptional = assetInternal.isOptional || loaderConfig.ignorePdbLoadErrors;
-    const name = asset.virtualPath.substring(asset.virtualPath.lastIndexOf("/") + 1);
     const bytes = await fetchBytes(assetInternal);
     await nativeModulePromiseController.promise;
 
     onDownloadedAsset();
     if (bytes) {
-        dotnetBrowserHostExports.registerPdbBytes(bytes, { virtualPath: asset.virtualPath, name });
+        dotnetBrowserHostExports.registerPdbBytes(bytes, asset.virtualPath);
     }
 }
 
