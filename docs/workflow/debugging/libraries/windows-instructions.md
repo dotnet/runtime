@@ -150,7 +150,7 @@ The following EventSources are built-in to the .NET platform. The ones that are 
 
 #### System.Net namespaces
 
-For information on collecting network telemetry, see https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/telemetry/overview.
+For information on collecting network telemetry, see https://learn.microsoft.com/dotnet/fundamentals/networking/telemetry/overview.
 
 #### System.Threading
 * `*System.Threading.SynchronizationEventSource {EC631D38-466B-4290-9306-834971BA0217}`: Provides an event source for tracing Coordination Data Structure synchronization information.
