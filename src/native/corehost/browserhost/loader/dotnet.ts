@@ -14,7 +14,7 @@ import { HostBuilder } from "./host-builder";
 import { initPolyfillsAsync } from "./polyfills";
 import { exit } from "./exit";
 import { dotnetInitializeModule } from ".";
-import { selfHostNodeJS } from "./run";
+import { selfHostNodeJS } from "./config-self";
 
 dotnetInitializeModule();
 await initPolyfillsAsync();

@@ -1,23 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { DotnetHostBuilder, JsModuleExports, EmscriptenModuleInternal } from "./types";
+import type { JsModuleExports, EmscriptenModuleInternal } from "./types";
 
 import { dotnetAssert, dotnetInternals, dotnetBrowserHostExports, Module } from "./cross-module";
-import { isNodeHosted, isShellHosted, nodeFindResources, shellFindResources, validateWasmFeatures } from "./bootstrap";
 import { exit, runtimeState } from "./exit";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { getIcuResourceName } from "./icu";
 import { loaderConfig } from "./config";
 import { fetchDll, fetchIcu, fetchPdb, fetchVfs, fetchWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded } from "./assets";
 import { initPolyfills } from "./polyfills";
+import { validateWasmFeatures } from "./bootstrap";
 
 const runMainPromiseController = createPromiseCompletionSource<number>();
 
 // WASM-TODO: webCIL
 // WASM-TODO: downloadOnly - blazor render mode auto pre-download. Really no start.
 // WASM-TODO: loadAllSatelliteResources
-// WASM-TODO: runtimeOptions
 // WASM-TODO: debugLevel
 // WASM-TODO: load symbolication json https://github.com/dotnet/runtime/issues/122647
 
@@ -126,17 +125,4 @@ export function getRunMainPromise(): Promise<number> {
     return runMainPromiseController.promise;
 }
 
-// Auto-start when in NodeJS environment as a entry script
-export async function selfHostNodeJS(dotnet: DotnetHostBuilder): Promise<void> {
-    try {
-        if (isNodeHosted()) {
-            await nodeFindResources(dotnet);
-            await dotnet.runMainAndExit();
-        } else if (isShellHosted()) {
-            await shellFindResources(dotnet);
-            await dotnet.runMainAndExit();
-        }
-    } catch (err: any) {
-        exit(1, err);
-    }
-}
+

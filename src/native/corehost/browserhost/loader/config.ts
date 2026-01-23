@@ -10,12 +10,19 @@ export function getLoaderConfig(): LoaderConfig {
 }
 
 export function validateLoaderConfig(): void {
+    if (!isValidLoaderConfig()) {
+        throw new Error("Loader configuration error: Invalid loader configuration.");
+    }
+}
+
+export function isValidLoaderConfig(): boolean {
     if (!loaderConfig.mainAssemblyName) {
-        throw new Error("Loader configuration error: 'mainAssemblyName' is required.");
+        return false;
     }
     if (!loaderConfig.resources || !loaderConfig.resources.coreAssembly || loaderConfig.resources.coreAssembly.length === 0) {
-        throw new Error("Loader configuration error: 'resources.coreAssembly' is required and must contain at least one assembly.");
+        return false;
     }
+    return true;
 }
 
 

@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { OnExitListener } from "../types";
-import { dotnetLogger, Module, dotnetBrowserUtilsExports, dotnetRuntimeExports } from "./cross-module";
+import { dotnetLogger, Module, dotnetBrowserUtilsExports, dotnetRuntimeExports, dotnetLoaderExports } from "./cross-module";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, globalThisAny } from "./per-module";
-import { abortStartup } from "./run";
 
 export const runtimeState = {
     creatingRuntime: false,
@@ -132,7 +131,7 @@ export function exit(exitCode: number, reason: any): void {
             }
             if (!runtimeState.runtimeReady) {
                 dotnetLogger.debug(() => `Aborting startup, reason: ${reason}`);
-                abortStartup(reason);
+                dotnetLoaderExports.abortStartup(reason);
             }
         } catch (err) {
             dotnetLogger.warn("dotnet.js exit() failed", err);
