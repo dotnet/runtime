@@ -6431,164 +6431,6 @@ bool IsIPInProlog(EECodeInfo *pCodeInfo)
     return fInsideProlog;
 }
 
-// Ported from NativeAOT's UnixNativeCodeManager::TrailingEpilogueInstructionsCount.
-// Returns: >0 if in epilog, 0 if not in epilog, -1 if unknown.
-static int TrailingEpilogueInstructionsCount(EECodeInfo *pCodeInfo, TADDR pvAddress)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#if defined(TARGET_AMD64)
-
-    int epilogInstructions = 1;
-    uint8_t* p = (uint8_t*)pvAddress;
-
-    // Skip pop instructions
-    while ((*p & 0xf8) == 0x58)
-        { p++; epilogInstructions++; }
-    while (((*p & 0xf0) == 0x40) && ((p[1] & 0xf8) == 0x58))
-        { p += 2; epilogInstructions++; }
-
-    // Skip REPNE prefix
-    if (*p == 0xf2)
-        p++;
-
-    // ret, ret imm16, or rep ret
-    if (*p == 0xc3 || *p == 0xc2 || (*p == 0xf3 && p[1] == 0xc3))
-        return epilogInstructions;
-
-    // jmp rel8 or jmp rel32 (tail call if target outside method)
-    if (*p == 0xeb || *p == 0xe9)
-    {
-        size_t target = (size_t)p + ((*p == 0xeb) ? (2 + (int8_t)p[1]) : (5 + *(int32_t*)(p + 1)));
-        TADDR methodStart = pCodeInfo->GetStartAddress();
-        size_t methodSize = pCodeInfo->GetCodeManager()->GetFunctionSize(pCodeInfo->GetGCInfoToken());
-        if (target < methodStart || target >= methodStart + methodSize)
-            return epilogInstructions;
-    }
-    // jmp [rip+disp32] (indirect jump, likely tail call)
-    else if (*p == 0xff && p[1] == 0x25)
-        return epilogInstructions;
-    // rex.w jmp reg (tail call)
-    else if ((*p & 0xf8) == 0x48 && p[1] == 0xff && (p[2] & 0x38) == 0x20)
-        return epilogInstructions;
-    // int3 (breakpoint - unknown)
-    else if (*p == 0xcc)
-        return -1;
-
-    return 0;
-
-#elif defined(TARGET_ARM64)
-
-    #define MATCH(instr, bits, mask) (((instr) & (mask)) == (bits))
-    const uint32_t LDR1_BITS = 0xB9400000, LDR1_MASK = 0xBF400000;
-    const uint32_t LDR2_BITS = 0xB8400000, LDR2_MASK = 0xBFE00000;
-    const uint32_t LDR3_BITS = 0xB8600800, LDR3_MASK = 0xBFE00C00;
-    const uint32_t LDP1_BITS = 0x29400000, LDP1_MASK = 0x7FC00000;
-    const uint32_t LDP2_BITS = 0x28400000, LDP2_MASK = 0x7E400000;
-    const uint32_t BRANCH_BITS = 0x14000000, BRANCH_MASK = 0x1C000000;
-
-    uint32_t* start = (uint32_t*)pCodeInfo->GetStartAddress();
-    for (uint32_t* p = (uint32_t*)pvAddress - 1; p > start; p--)
-    {
-        uint32_t instr = *p;
-        if (MATCH(instr, BRANCH_BITS, BRANCH_MASK))
-            break;
-
-        int rt = instr & 0x1f, rt2 = (instr >> 10) & 0x1f;
-        if ((rt == 29 || rt == 30) &&
-            (MATCH(instr, LDR1_BITS, LDR1_MASK) || MATCH(instr, LDR2_BITS, LDR2_MASK) ||
-             MATCH(instr, LDR3_BITS, LDR3_MASK) || MATCH(instr, LDP1_BITS, LDP1_MASK) ||
-             MATCH(instr, LDP2_BITS, LDP2_MASK)))
-            return -1;
-        if ((rt2 == 29 || rt2 == 30) && (MATCH(instr, LDP1_BITS, LDP1_MASK) || MATCH(instr, LDP2_BITS, LDP2_MASK)))
-            return -1;
-    }
-    #undef MATCH
-    return 0;
-
-#elif defined(TARGET_ARM)
-
-    #define MATCH(instr, bits, mask) (((instr) & (mask)) == (bits))
-    // POP instructions
-    const uint16_t POP_BITS = 0xBC00, POP_MASK = 0xFE00;
-    const uint32_t POP_W_BITS = 0xE8BD0000, POP_W_MASK = 0xFFFF2000;
-    const uint32_t VPOP_BITS1 = 0xECBD0A00, VPOP_MASK1 = 0xFFBF0F00;
-    const uint32_t VPOP_BITS2 = 0xECBD0B00, VPOP_MASK2 = 0xFFBF0F00;
-    // Branch instructions
-    const uint32_t BRANCH_BITS = 0xE0000000, BRANCH_MASK = 0xF0000000;
-
-    uint16_t* start = (uint16_t*)pCodeInfo->GetStartAddress();
-    for (uint16_t* p = (uint16_t*)pvAddress - 1; p > start; p--)
-    {
-        uint16_t instr16 = *p;
-        uint32_t instr32 = ((uint32_t)instr16 << 16) | *(p + 1);
-
-        if (MATCH(instr32, BRANCH_BITS, BRANCH_MASK))
-            break;
-        if (MATCH(instr16, POP_BITS, POP_MASK) || MATCH(instr32, POP_W_BITS, POP_W_MASK) ||
-            MATCH(instr32, VPOP_BITS1, VPOP_MASK1) || MATCH(instr32, VPOP_BITS2, VPOP_MASK2))
-            return -1;
-    }
-    #undef MATCH
-    return 0;
-
-#elif defined(TARGET_LOONGARCH64)
-
-    #define MATCH(instr, bits, mask) (((instr) & (mask)) == (bits))
-    const uint32_t LD_BITS = 0x28C00000, LD_MASK = 0xFFC00000;
-    const uint32_t ADDI_SP_BITS = 0x02C00063, ADDI_SP_MASK = 0xFFC003FF;
-    const uint32_t BRANCH_BITS = 0x40000000, BRANCH_MASK = 0xC0000000;
-
-    uint32_t* start = (uint32_t*)pCodeInfo->GetStartAddress();
-    for (uint32_t* p = (uint32_t*)pvAddress - 1; p > start; p--)
-    {
-        uint32_t instr = *p;
-        if (MATCH(instr, BRANCH_BITS, BRANCH_MASK))
-            break;
-        // Check for ld.d restoring FP(r22) or RA(r1)
-        if (MATCH(instr, LD_BITS, LD_MASK))
-        {
-            int rd = instr & 0x1f;
-            if (rd == 22 || rd == 1)
-                return -1;
-        }
-        if (MATCH(instr, ADDI_SP_BITS, ADDI_SP_MASK))
-            return -1;
-    }
-    #undef MATCH
-    return 0;
-
-#elif defined(TARGET_RISCV64)
-
-    #define MATCH(instr, bits, mask) (((instr) & (mask)) == (bits))
-    const uint32_t LD_BITS = 0x00003003, LD_MASK = 0x0000707F;
-    const uint32_t ADDI_SP_BITS = 0x00010113, ADDI_SP_MASK = 0x000FFFFF;
-    const uint32_t BRANCH_BITS = 0x00000063, BRANCH_MASK = 0x0000007F;
-
-    uint32_t* start = (uint32_t*)pCodeInfo->GetStartAddress();
-    for (uint32_t* p = (uint32_t*)pvAddress - 1; p > start; p--)
-    {
-        uint32_t instr = *p;
-        if (MATCH(instr, BRANCH_BITS, BRANCH_MASK))
-            break;
-        // Check for ld restoring FP(x8) or RA(x1)
-        if (MATCH(instr, LD_BITS, LD_MASK))
-        {
-            int rd = (instr >> 7) & 0x1f;
-            if (rd == 8 || rd == 1)
-                return -1;
-        }
-        if (MATCH(instr, ADDI_SP_BITS, ADDI_SP_MASK))
-            return -1;
-    }
-    #undef MATCH
-    return 0;
-
-#else
-    return 0;
-#endif
-}
-
 // This function is used to check if the specified IP is in the epilog or not.
 bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSafeToInjectThreadAbort)
 {
@@ -6620,22 +6462,68 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
         return false;
     }
 
-    // Use deterministic instruction scanning to detect epilog. This approach is ported
-    // from NativeAOT's UnixNativeCodeManager::TrailingEpilogueInstructionsCount.
-    int epilogInstructions = TrailingEpilogueInstructionsCount(pCodeInfo, ipToCheck);
+    // We are not inside the prolog. We could either be in the middle of the method body or
+    // inside the epilog. While unwindInfo contains the prolog length, it does not contain the
+    // epilog length.
+    //
+    // Thus, to determine if we are inside the epilog, we use a property of RtlVirtualUnwind.
+    // When invoked for an IP, it will return a NULL for personality routine in only two scenarios:
+    //
+    // 1) The unwindInfo does not contain any personality routine information, OR
+    // 2) The IP is in prolog or epilog.
+    //
+    // For jitted code, (1) is not applicable since we *always* emit details of the managed personality routine
+    // in the unwindInfo. Thus, since we have already determined that we are not inside the prolog, if performing
+    // RtlVirtualUnwind against "ipToCheck" results in a NULL personality routine, it implies that we are inside
+    // the epilog.
 
-    bool fIsInEpilog = (epilogInstructions != 0);
+    DWORD_PTR imageBase = 0;
+    CONTEXT tempContext;
+    PVOID HandlerData;
+    DWORD_PTR establisherFrame = 0;
+    PEXCEPTION_ROUTINE personalityRoutine = NULL;
 
-    if (fIsInEpilog)
+    // Lookup the function entry for the IP
+    PTR_RUNTIME_FUNCTION funcEntry = pCodeInfo->GetFunctionEntry();
+
+    // We should always get a function entry for a managed method
+    _ASSERTE(funcEntry != NULL);
+
+    imageBase = pCodeInfo->GetModuleBase();
+
+    ZeroMemory(&tempContext, sizeof(CONTEXT));
+    CopyOSContext(&tempContext, pContextToCheck);
+    KNONVOLATILE_CONTEXT_POINTERS ctxPtrs;
+    ZeroMemory(&ctxPtrs, sizeof(ctxPtrs));
+
+    personalityRoutine = RtlVirtualUnwind(UNW_FLAG_EHANDLER,     // HandlerType
+                     imageBase,
+                     ipToCheck,
+                     funcEntry,
+                     &tempContext,
+                     &HandlerData,
+                     &establisherFrame,
+                     &ctxPtrs);
+
+    bool fIsInEpilog = false;
+
+    if (personalityRoutine == NULL)
     {
-        // When in an epilog, it's generally not safe to inject a thread abort because:
-        // - The frame pointer (RBP/FP) may have already been restored/popped
-        // - Stack unwinding information may not accurately reflect the current state
-        // - Injecting an abort could corrupt the stack or cause bad exception dispatch
-        //
-        // Note: epilogInstructions == -1 means "unknown" (e.g., breakpoint), which we also
-        // treat as unsafe for injection.
-        *pSafeToInjectThreadAbort = FALSE;
+        // We are in epilog.
+        fIsInEpilog = true;
+
+#ifdef TARGET_AMD64
+        // Check if context pointers has returned the address of the stack location in the hijacked function
+        // from where RBP was restored. If the address is NULL, then it implies that RBP has been popped off.
+        // Since JIT64 ensures that pop of RBP is the last instruction before ret/jmp, it implies its not safe
+        // to inject an abort @ this point as EstablisherFrame (which will be based
+        // of RBP for managed code since that is the FramePointer register, as indicated in the UnwindInfo)
+        // will be off and can result in bad managed exception dispatch.
+        if (ctxPtrs.Rbp == NULL)
+#endif
+        {
+            *pSafeToInjectThreadAbort = FALSE;
+        }
     }
 
     return fIsInEpilog;
