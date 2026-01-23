@@ -26,6 +26,16 @@ void emitter::emitIns(instruction ins)
     appendToCurIG(id);
 }
 
+void emitter::emitIns_B(instruction ins)
+{
+    instrDesc* id = emitNewInstrSmall(EA_8BYTE);
+    id->idIns(ins);
+    id->idInsFmt(IF_BLOCK);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
 //------------------------------------------------------------------------
 // emitIns_I: Emit an instruction with an immediate operand.
 //
