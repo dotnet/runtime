@@ -22,7 +22,7 @@ The user provides:
 - A known bad build ID (test fails)
 - The exact name of the test to track
 
-The tool authenticates using a Personal Access Token (PAT) from the `AZDO_PAT` environment variable or `--pat` flag.
+The tool authenticates using a Personal Access Token (PAT) from the `AZDO_PAT` environment variable or `--pat` flag. **Note: This is only available to Microsoft employees.**
 
 #### 2. Bisection Process
 
