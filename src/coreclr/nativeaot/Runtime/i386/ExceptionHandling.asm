@@ -138,7 +138,7 @@ RhpThrowExImpl::
         mov         ebx, [ebp]
         push        ebx     ;; 'faulting' Rbp
         push        eax     ;; 'faulting' Rsp
-        mov         eax, [esp+4]    ;; get the throw site IP via the return address
+        mov         eax, [esp+28]    ;; get the throw site IP via the return address
         push        eax     ;; 'faulting' IP
 ;;  };
 
@@ -147,36 +147,35 @@ RhpThrowExImpl::
         ;; -------------------------
 
         lea                     ebx, [eax-4]    ;; ebx <- addr of return address
-        mov                     edi, edx        ;; save ExKind in edi
-        INLINE_GETTHREAD        eax, edx        ;; eax <- thread, edx <- trashed
+        INLINE_GETTHREAD        eax, edi        ;; eax <- thread, edi <- trashed
 
         ;; There is runtime C# code that can tail call to RhpThrowEx using a binder intrinsic.  So the return
         ;; address could have been hijacked when we were in that C# code and we must remove the hijack and
         ;; reflect the correct return address in our exception context record.  The other throw helpers don't
         ;; need this because they cannot be tail-called from C#.
 
-        INLINE_THREAD_UNHIJACK  eax, esi, edx       ;; trashes esi, edx
+        INLINE_THREAD_UNHIJACK  eax, esi, edi       ;; trashes esi, edi
 
-        mov                     edx, [ebx]          ;; edx <- return address
-        mov                     [esp + esp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__IP], edx   ;; set 'faulting' IP after unhijack
+        mov                     edi, [ebx]          ;; edi <- return address
+        mov                     [esp + esp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__IP], edi   ;; set 'faulting' IP after unhijack
 
-        lea     edx, [esp + esp_offsetof_ExInfo]    ;; edx <- ExInfo*
+        lea     edi, [esp + esp_offsetof_ExInfo]    ;; edi <- ExInfo*
 
         xor     esi, esi
-        mov     [edx + OFFSETOF__ExInfo__m_exception], esi          ;; init the exception object to null
-        mov     byte ptr [edx + OFFSETOF__ExInfo__m_passNumber], 1  ;; init to the first pass
-        mov     dword ptr [edx + OFFSETOF__ExInfo__m_idxCurClause], 0FFFFFFFFh
-        mov     ebx, edi                                            ;; ebx <- ExKind (edi has value 1 or 4)
-        mov     byte ptr [edx + OFFSETOF__ExInfo__m_kind], bl       ;; ExKind (from edi via bl)
+        mov     [edi + OFFSETOF__ExInfo__m_exception], esi          ;; init the exception object to null
+        mov     byte ptr [edi + OFFSETOF__ExInfo__m_passNumber], 1  ;; init to the first pass
+        mov     dword ptr [edi + OFFSETOF__ExInfo__m_idxCurClause], 0FFFFFFFFh
+        mov     byte ptr [edi + OFFSETOF__ExInfo__m_kind], dl       ;; ExKind
 
         ;; link the ExInfo into the thread's ExInfo chain
         mov     ebx, [eax + OFFSETOF__Thread__m_pExInfoStackHead]
-        mov     [edx + OFFSETOF__ExInfo__m_pPrevExInfo], ebx        ;; pExInfo->m_pPrevExInfo = m_pExInfoStackHead
-        mov     [eax + OFFSETOF__Thread__m_pExInfoStackHead], edx   ;; m_pExInfoStackHead = pExInfo
+        mov     [edi + OFFSETOF__ExInfo__m_pPrevExInfo], ebx        ;; pExInfo->m_pPrevExInfo = m_pExInfoStackHead
+        mov     [eax + OFFSETOF__Thread__m_pExInfoStackHead], edi   ;; m_pExInfoStackHead = pExInfo
 
         ;; set the exception context field on the ExInfo
         lea     ebx, [esp + esp_offsetof_Context]                   ;; ebx <- PAL_LIMITED_CONTEXT*
-        mov     [edx + OFFSETOF__ExInfo__m_pExContext], ebx         ;; init ExInfo.m_pExContext
+        mov     [edi + OFFSETOF__ExInfo__m_pExContext], ebx         ;; init ExInfo.m_pExContext
+        mov     edx, edi
 
         ;; ecx still contains the exception object
         ;; edx contains the address of the ExInfo

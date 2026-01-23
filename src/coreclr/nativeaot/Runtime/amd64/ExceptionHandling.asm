@@ -194,7 +194,7 @@ RhpThrowExImpl::
         ;; address could have been hijacked when we were in that C# code and we must remove the hijack and
         ;; reflect the correct return address in our exception context record.  The other throw helpers don't
         ;; need this because they cannot be tail-called from C#.
-        INLINE_THREAD_UNHIJACK  rax, r10, rdx       ;; trashes R10, RDX (use r10 instead of r9 to preserve ExKind)
+        INLINE_THREAD_UNHIJACK  rax, r10, rdx       ;; trashes R10, RDX
         mov                     rdx, [rbx]          ;; rdx <- return address
         mov                     [rsp + rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__IP], rdx   ;; set 'faulting' IP after unhijack
 
