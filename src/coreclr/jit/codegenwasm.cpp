@@ -654,6 +654,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 
     genConsumeOperands(cast);
 
+    // TODO-WASM: Handle load containment GenIntCastDesc::LOAD_* cases once we mark containment for loads
     switch (desc.ExtendKind())
     {
         case GenIntCastDesc::COPY:

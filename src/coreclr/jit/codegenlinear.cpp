@@ -2486,7 +2486,6 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
         m_extendSrcSize = srcSize;
     }
 
-#ifndef TARGET_WASM
     if (castIsLoad)
     {
         const var_types srcLoadType = src->TypeGet();
@@ -2528,7 +2527,6 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
                 unreached();
         }
     }
-#endif // !TARGET_WASM
 }
 
 #ifndef TARGET_WASM
