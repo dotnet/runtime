@@ -947,4 +947,22 @@ Copyright (c) .NET Foundation. All rights reserved.
           Condition="Exists('$(_DotnetTypesSourcePath)')"
           SkipUnchangedFiles="true" />
   </Target>
+
+  <!-- Publish-time telemetry for WebAssembly/Blazor configuration properties -->
+  <Target Name="_WasmPublishTelemetry"
+          AfterTargets="GeneratePublishWasmBootJson"
+          Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+    <ItemGroup>
+      <WasmPublishConfig Include="InvariantTimezone" Value="$(InvariantTimezone)" />
+      <WasmPublishConfig Include="InvariantGlobalization" Value="$(_WasmInvariantGlobalization)" />
+      <WasmPublishConfig Include="BlazorWebAssemblyLoadAllGlobalizationData" Value="$(_BlazorWebAssemblyLoadAllGlobalizationData)" />
+      <WasmPublishConfig Include="WasmEnableWebcil" Value="$(_WasmEnableWebcil)" />
+      <WasmPublishConfig Include="WasmInlineBootConfig" Value="$(_WasmInlineBootConfig)" />
+      <WasmPublishConfig Include="OverrideHtmlAssetPlaceholders" Value="$(OverrideHtmlAssetPlaceholders)" />
+      <WasmPublishConfig Include="WasmFingerprintBootConfig" Value="$(_WasmFingerprintBootConfig)" />
+      <WasmPublishConfig Include="WasmPreloadAssets" Value="$(_WasmPreloadAssets)" />
+      <WasmPublishConfig Include="WasmBundlerFriendlyBootConfig" Value="$(_WasmBundlerFriendlyBootConfig)" />
+    </ItemGroup>
+    <AllowEmptyTelemetry EventName="WasmPublishConfig" EventData="@(WasmPublishConfig)" />
+  </Target>
 </Project>
