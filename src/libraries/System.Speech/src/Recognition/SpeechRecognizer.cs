@@ -27,16 +27,10 @@ namespace System.Speech.Recognition
         {
             if (disposing && !_disposed)
             {
-                if (_recognizerBase != null)
-                {
-                    _recognizerBase.Dispose();
-                    _recognizerBase = null;
-                }
-                if (_sapiRecognizer != null)
-                {
-                    _sapiRecognizer.Dispose();
-                    _sapiRecognizer = null;
-                }
+                _recognizerBase?.Dispose();
+                _recognizerBase = null;
+                _sapiRecognizer?.Dispose();
+                _sapiRecognizer = null;
                 _disposed = true; // Don't set RecognizerBase to null as every method will then need to throw ObjectDisposedException.
             }
         }

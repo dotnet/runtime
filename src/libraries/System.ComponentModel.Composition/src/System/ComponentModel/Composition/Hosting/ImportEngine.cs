@@ -274,10 +274,7 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                     }
 
-                    if (sourceProviderToUnsubscribeFrom != null)
-                    {
-                        sourceProviderToUnsubscribeFrom.ExportsChanging -= OnExportsChanging;
-                    }
+                    sourceProviderToUnsubscribeFrom?.ExportsChanging -= OnExportsChanging;
 
                     if (disposeLock)
                     {

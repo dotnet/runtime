@@ -102,11 +102,8 @@ namespace System.Management
 
         public new void Dispose()
         {
-            if (wmiClass != null)
-            {
-                wmiClass.Dispose();
-                wmiClass = null;
-            }
+            wmiClass?.Dispose();
+            wmiClass = null;
             base.Dispose();
             GC.SuppressFinalize(this);
         }
@@ -513,8 +510,7 @@ namespace System.Management
             {
                 if (null != value)
                 {
-                    if (null != scope)
-                        scope.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
+                    scope?.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
                     scope = ManagementScope._Clone((ManagementScope)value, new IdentifierChangedEventHandler(HandleIdentifierChange));
 
@@ -576,8 +572,7 @@ namespace System.Management
                     (GetType() == typeof(ManagementClass) && newPath.IsClass) ||
                     newPath.IsEmpty)
                 {
-                    if (null != path)
-                        path.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
+                    path?.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
                     path = ManagementPath._Clone((ManagementPath)value, new IdentifierChangedEventHandler(HandleIdentifierChange));
 
@@ -629,8 +624,7 @@ namespace System.Management
             {
                 if (null != value)
                 {
-                    if (null != options)
-                        options.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
+                    options?.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
                     options = ObjectGetOptions._Clone((ObjectGetOptions)value, new IdentifierChangedEventHandler(HandleIdentifierChange));
 

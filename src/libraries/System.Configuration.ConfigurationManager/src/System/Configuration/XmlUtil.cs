@@ -142,11 +142,8 @@ namespace System.Configuration
 
             _stream = null;
 
-            if (_cachedStringWriter != null)
-            {
-                _cachedStringWriter.Close();
-                _cachedStringWriter = null;
-            }
+            _cachedStringWriter?.Close();
+            _cachedStringWriter = null;
         }
 
         // Read until the Next Element element, or we hit

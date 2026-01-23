@@ -147,11 +147,8 @@ namespace System.Diagnostics
         /// <summary>Additional logic invoked when the Process is closed.</summary>
         private void CloseCore()
         {
-            if (_waitStateHolder != null)
-            {
-                _waitStateHolder.Dispose();
-                _waitStateHolder = null;
-            }
+            _waitStateHolder?.Dispose();
+            _waitStateHolder = null;
         }
 
         /// <summary>Additional configuration when a process ID is set.</summary>

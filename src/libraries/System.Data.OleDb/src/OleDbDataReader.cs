@@ -654,11 +654,8 @@ namespace System.Data.OleDb
             {
                 DisposeNativeMultipleResults();
 
-                if (null != bindings)
-                {
-                    bindings.CloseFromConnection();
-                    bindings = null;
-                }
+                bindings?.CloseFromConnection();
+                bindings = null;
             }
             else
             {

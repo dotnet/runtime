@@ -177,11 +177,8 @@ namespace Internal.NativeCrypto
 
         protected sealed override bool ReleaseHandle()
         {
-            if (_parentHandle != null)
-            {
-                _parentHandle.DangerousRelease();
-                _parentHandle = null;
-            }
+            _parentHandle?.DangerousRelease();
+            _parentHandle = null;
 
             uint ntStatus = BCryptDestroyKey(handle);
             return ntStatus == 0;

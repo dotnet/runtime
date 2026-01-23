@@ -468,11 +468,8 @@ namespace System.ServiceProcess
         /// </remarks>
         public void Close()
         {
-            if (_serviceManagerHandle != null)
-            {
-                _serviceManagerHandle.Dispose();
-                _serviceManagerHandle = null;
-            }
+            _serviceManagerHandle?.Dispose();
+            _serviceManagerHandle = null;
 
             _statusGenerated = false;
             _startTypeInitialized = false;

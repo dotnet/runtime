@@ -236,10 +236,12 @@ namespace System.Security.Cryptography
                     keyBytes.Length != expectedKeySize ||
                     !parameterSet.SequenceEqual(expectedParameterSet))
                 {
+#pragma warning disable IDE0071
                     Debug.Fail(
                         $"{nameof(blobType)}: {blobType}, " +
                         $"{nameof(parameterSet)}: {parameterSet.ToString()}, " +
                         $"{nameof(keyBytes)}.Length: {keyBytes.Length} / {expectedKeySize}");
+#pragma warning restore IDE0071
 
                     throw new CryptographicException();
                 }

@@ -56,11 +56,8 @@ namespace System.Threading
                     // ideally do these things:
                     // *) Expose a settable SafeHandle property on WaitHandle.
                     // *) Expose a settable OwnsHandle property on SafeHandle.
-                    if (_waitHandle != null)
-                    {
-                        _waitHandle.SetHandleAsInvalid();
-                        _waitHandle = null;
-                    }
+                    _waitHandle?.SetHandleAsInvalid();
+                    _waitHandle = null;
                 }
                 else
                 {

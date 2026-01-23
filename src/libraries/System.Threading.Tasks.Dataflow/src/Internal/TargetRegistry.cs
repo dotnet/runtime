@@ -254,17 +254,11 @@ namespace System.Threading.Tasks.Dataflow.Internal
             LinkedTargetInfo? next = node.Next;
 
             // Remove the node by linking the adjacent nodes
-            if (node.Previous != null)
-            {
-                node.Previous.Next = next;
-                node.Previous = null;
-            }
+            previous?.Next = next;
+            node.Previous = null;
 
-            if (node.Next != null)
-            {
-                node.Next.Previous = previous;
-                node.Next = null;
-            }
+            next?.Previous = previous;
+            node.Next = null;
 
             // Adjust the list ends
             if (_firstTarget == node) _firstTarget = next;

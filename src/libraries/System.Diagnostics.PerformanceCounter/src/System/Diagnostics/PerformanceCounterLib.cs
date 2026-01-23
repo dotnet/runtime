@@ -346,11 +346,8 @@ namespace System.Diagnostics
 
         internal void Close()
         {
-            if (_performanceMonitor != null)
-            {
-                _performanceMonitor.Close();
-                _performanceMonitor = null;
-            }
+            _performanceMonitor?.Close();
+            _performanceMonitor = null;
 
             CloseTables();
         }

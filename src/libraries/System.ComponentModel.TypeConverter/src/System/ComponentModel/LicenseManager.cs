@@ -323,11 +323,8 @@ namespace System.ComponentModel
 #pragma warning restore IDE0059
                     }
                     isValid = ValidateInternalRecursive(context, baseType, null, allowExceptions, out license, out _);
-                    if (license != null)
-                    {
-                        license.Dispose();
-                        license = null;
-                    }
+                    license?.Dispose();
+                    license = null;
                 }
             }
 

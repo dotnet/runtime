@@ -160,11 +160,8 @@ namespace System.Security
         {
             lock (_methodLock)
             {
-                if (_buffer != null)
-                {
-                    _buffer.Dispose();
-                    _buffer = null;
-                }
+                _buffer?.Dispose();
+                _buffer = null;
             }
         }
 

@@ -960,24 +960,15 @@ namespace System.DirectoryServices.AccountManagement
                 _foreignGroups.Clear();
 
                 _queryMembersResultEnumerator = null;
-                if (_queryMembersResults != null)
-                {
-                    _queryMembersResults.Dispose();
-                    _queryMembersResults = null;
-                }
+                _queryMembersResults?.Dispose();
+                _queryMembersResults = null;
 
-                if (null != _currentMembersSearcher)
-                {
-                    _currentMembersSearcher.Dispose();
-                    _currentMembersSearcher = null;
-                }
+                _currentMembersSearcher?.Dispose();
+                _currentMembersSearcher = null;
 
                 _memberSearchResultsEnumerator = null;
-                if (_memberSearchResults != null)
-                {
-                    _memberSearchResults.Dispose();
-                    _memberSearchResults = null;
-                }
+                _memberSearchResults?.Dispose();
+                _memberSearchResults = null;
 
                 if (null != _memberSearchersQueue)
                 {
@@ -1058,11 +1049,8 @@ namespace System.DirectoryServices.AccountManagement
 
             _expansionMode = _originalExpansionMode;
 
-            if (null != _currentMembersSearcher)
-            {
-                _currentMembersSearcher.Dispose();
-                _currentMembersSearcher = null;
-            }
+            _currentMembersSearcher?.Dispose();
+            _currentMembersSearcher = null;
 
             _storeCtx = _originalStoreCtx;
 

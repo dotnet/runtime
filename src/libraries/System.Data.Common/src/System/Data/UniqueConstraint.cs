@@ -150,11 +150,8 @@ namespace System.Data
 
         internal void ConstraintIndexClear()
         {
-            if (null != _constraintIndex)
-            {
-                _constraintIndex.RemoveRef();
-                _constraintIndex = null;
-            }
+            _constraintIndex?.RemoveRef();
+            _constraintIndex = null;
         }
 
         internal void ConstraintIndexInitialize()

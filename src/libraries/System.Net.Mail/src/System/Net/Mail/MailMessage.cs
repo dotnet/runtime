@@ -315,11 +315,8 @@ namespace System.Net.Mail
         private void SetContent(bool allowUnicode)
         {
             //the attachments may have changed, so we need to reset the message
-            if (_bodyView != null)
-            {
-                _bodyView.Dispose();
-                _bodyView = null;
-            }
+            _bodyView?.Dispose();
+            _bodyView = null;
 
             if (AlternateViews.Count == 0 && Attachments.Count == 0)
             {

@@ -250,11 +250,8 @@ namespace System.Timers
             _delayedEnable = false;
             _enabled = false;
 
-            if (_timer != null)
-            {
-                _timer.Dispose();
-                _timer = null;
-            }
+            _timer?.Dispose();
+            _timer = null;
         }
 
         protected override void Dispose(bool disposing)

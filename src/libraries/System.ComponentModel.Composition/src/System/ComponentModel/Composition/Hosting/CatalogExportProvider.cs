@@ -248,17 +248,11 @@ namespace System.ComponentModel.Composition.Hosting
                     }
                     finally
                     {
-                        if (catalogToUnsubscribeFrom != null)
-                        {
-                            catalogToUnsubscribeFrom.Changing -= OnCatalogChanging;
-                        }
+                        catalogToUnsubscribeFrom?.Changing -= OnCatalogChanging;
 
                         aggregateExportProvider?.Dispose();
 
-                        if (sourceProvider != null)
-                        {
-                            sourceProvider.ExportsChanging -= OnExportsChangingInternal;
-                        }
+                        sourceProvider?.ExportsChanging -= OnExportsChangingInternal;
 
                         importEngine?.Dispose();
 

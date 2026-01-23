@@ -113,17 +113,11 @@ namespace System.Diagnostics.Eventing.Reader
                 _registeredWaitHandle = null;
             }
 
-            if (_unregisterDoneHandle != null)
-            {
-                _unregisterDoneHandle.Close();
-                _unregisterDoneHandle = null;
-            }
+            _unregisterDoneHandle?.Close();
+            _unregisterDoneHandle = null;
 
-            if (_subscriptionWaitHandle != null)
-            {
-                _subscriptionWaitHandle.Close();
-                _subscriptionWaitHandle = null;
-            }
+            _subscriptionWaitHandle?.Close();
+            _subscriptionWaitHandle = null;
 
             for (int i = 0; i < _numEventsInBuffer; i++)
             {

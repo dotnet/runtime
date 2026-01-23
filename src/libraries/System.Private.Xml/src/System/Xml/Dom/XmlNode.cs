@@ -765,9 +765,9 @@ namespace System.Xml
                         }
                     default:
                         {
-                            if (firstChildTextLikeNode != null)
+                            if (firstChildTextLikeNode is XmlNode node)
                             {
-                                firstChildTextLikeNode.Value = sb.ToString();
+                                node.Value = sb.ToString();
                                 firstChildTextLikeNode = null;
                             }
 

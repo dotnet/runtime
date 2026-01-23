@@ -831,11 +831,8 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void Dispose()
         {
-            if (_privateKey != null)
-            {
-                _privateKey.Dispose();
-                _privateKey = null;
-            }
+            _privateKey?.Dispose();
+            _privateKey = null;
 
             if (_cert != null)
             {

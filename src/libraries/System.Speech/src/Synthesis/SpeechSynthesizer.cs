@@ -486,12 +486,9 @@ namespace System.Speech.Synthesis
                 }
             }
 
-            if (_voiceSynthesis != null)
-            {
-                // Terminate the background synthesis object the thread.
-                _voiceSynthesis.Dispose();
-                _voiceSynthesis = null;
-            }
+            // Terminate the background synthesis object the thread.
+            _voiceSynthesis?.Dispose();
+            _voiceSynthesis = null;
 
             _isDisposed = true;
         }

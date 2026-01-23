@@ -134,11 +134,8 @@ namespace System.Threading
 
             public void Dispose()
             {
-                if (_lock != null)
-                {
-                    _lock.Release();
-                    _lock = null;
-                }
+                _lock?.Release();
+                _lock = null;
             }
         }
 

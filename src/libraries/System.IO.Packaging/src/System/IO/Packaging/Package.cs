@@ -770,11 +770,8 @@ namespace System.IO.Packaging
             {
                 _partList?.Clear();
 
-                if (_packageProperties != null)
-                {
-                    _packageProperties.Dispose();
-                    _packageProperties = null;
-                }
+                _packageProperties?.Dispose();
+                _packageProperties = null;
 
                 //release objects
                 _partList = null!;

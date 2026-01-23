@@ -87,11 +87,8 @@ namespace System.Diagnostics.PerformanceData
         {
             if (disposing)
             {
-                if (Counters != null)
-                {
-                    Counters.Dispose();
-                    Counters = null;
-                }
+                Counters?.Dispose();
+                Counters = null;
             }
             unsafe
             {

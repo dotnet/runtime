@@ -81,10 +81,7 @@ namespace System.IO.Ports
 
                 if (wasNull)
                 {
-                    if (_internalSerialStream != null)
-                    {
-                        _internalSerialStream.DataReceived += _dataReceivedHandler;
-                    }
+                    _internalSerialStream?.DataReceived += _dataReceivedHandler;
                 }
             }
             remove
@@ -93,10 +90,7 @@ namespace System.IO.Ports
 
                 if (_dataReceived == null)
                 {
-                    if (_internalSerialStream != null)
-                    {
-                        _internalSerialStream.DataReceived -= _dataReceivedHandler;
-                    }
+                    _internalSerialStream?.DataReceived -= _dataReceivedHandler;
                 }
             }
         }
@@ -110,10 +104,7 @@ namespace System.IO.Ports
 
                 if (wasNull)
                 {
-                    if (_internalSerialStream != null)
-                    {
-                        _internalSerialStream.PinChanged += _pinChangedHandler;
-                    }
+                    _internalSerialStream?.PinChanged += _pinChangedHandler;
                 }
             }
             remove
@@ -122,10 +113,7 @@ namespace System.IO.Ports
 
                 if (_pinChanged == null)
                 {
-                    if (_internalSerialStream != null)
-                    {
-                        _internalSerialStream.PinChanged -= _pinChangedHandler;
-                    }
+                    _internalSerialStream?.PinChanged -= _pinChangedHandler;
                 }
             }
         }

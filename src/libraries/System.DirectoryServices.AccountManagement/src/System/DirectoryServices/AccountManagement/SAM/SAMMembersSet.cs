@@ -461,11 +461,8 @@ namespace System.DirectoryServices.AccountManagement
                 _foreignMembers.Clear();
                 _foreignGroups.Clear();
 
-                if (_foreignResultSet != null)
-                {
-                    _foreignResultSet.Dispose();
-                    _foreignResultSet = null;
-                }
+                _foreignResultSet?.Dispose();
+                _foreignResultSet = null;
 
                 _atBeginning = true;
             }

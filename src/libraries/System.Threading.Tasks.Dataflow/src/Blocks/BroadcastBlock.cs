@@ -194,7 +194,7 @@ namespace System.Threading.Tasks.Dataflow
 
                     // Once consumed, pass it to the delegate
                     _source.AddMessage(messageValue!);
-                    if (_boundingState != null) _boundingState.CurrentCount += 1; // track this new item against our bound
+                    if (_boundingState != null) _boundingState.CurrentCount++; // track this new item against our bound
                     return DataflowMessageStatus.Accepted;
                 }
                 // Otherwise, we try to postpone if a source was provided
