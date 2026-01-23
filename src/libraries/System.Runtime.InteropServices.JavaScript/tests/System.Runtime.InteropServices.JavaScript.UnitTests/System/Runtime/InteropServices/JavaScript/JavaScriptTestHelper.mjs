@@ -250,8 +250,8 @@ export function returnResolvedPromise() {
     return Promise.resolve();
 }
 
-export function returnResolvedPromiseWithNumberMaxValue() {
-    return Promise.resolve(Number.MAX_VALUE);
+export function returnResolvedPromiseWithIntMaxValue() {
+    return Promise.resolve(2147483647);
 }
 
 export async function invokeReturnCompletedTask() {

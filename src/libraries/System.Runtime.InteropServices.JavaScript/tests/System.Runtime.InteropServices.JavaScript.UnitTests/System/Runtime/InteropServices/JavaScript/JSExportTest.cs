@@ -409,7 +409,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             // 1<<16 is out of range, passed to js and back, marshalling ts code asserts out of range and throws
             Task<short> res = JavaScriptTestHelper.invoke1_TaskOfOutOfRangeShort(Task.FromResult(1 << 16), nameof(JavaScriptTestHelper.AwaitTaskOfShort));
             JSException ex = await Assert.ThrowsAsync<JSException>(async () => await res);
-            Assert.Contains("Overflow: value 65536 is out of -32768 32767 range", ex.Message);
+            Assert.Equal("Error: Assert failed: Overflow: value 65536 is out of -32768 32767 range", ex.Message);
         }
 
         [Theory]
