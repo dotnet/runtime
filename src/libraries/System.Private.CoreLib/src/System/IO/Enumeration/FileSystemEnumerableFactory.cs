@@ -224,59 +224,6 @@ namespace System.IO.Enumeration
                             };
                         }
                     }
-                    else
-                    {
-                        // Check for prefix???suffix pattern (one or more ?s between prefix and suffix)
-                        // Only apply this optimization for Simple mode where '?' remains as '?'
-                        // For Win32 mode, '?' is translated to '>' which could also be a literal filename char on Unix
-                        if (!useExtendedWildcards)
-                        {
-                            int questionIndex = expression.IndexOf('?');
-                            if (questionIndex > 0)
-                            {
-                                ReadOnlySpan<char> prefix = expression.AsSpan(0, questionIndex);
-                                if (!prefix.ContainsAny(wildcards))
-                                {
-                                    // Count consecutive ?s
-                                    int questionCount = 0;
-                                    int i = questionIndex;
-                                    while (i < expression.Length && expression[i] == '?')
-                                    {
-                                        questionCount++;
-                                        i++;
-                                    }
-
-                                    if (i <= expression.Length)
-                                    {
-                                        ReadOnlySpan<char> suffix = expression.AsSpan(i);
-                                        if (!suffix.ContainsAny(wildcards))
-                                        {
-                                            int prefixLength = questionIndex;
-                                            int suffixStart = questionIndex + questionCount;
-                                            int exactLength = prefixLength + questionCount + suffix.Length;
-                                            return entryType switch
-                                            {
-                                                FileSystemEntryType.Files => (ref FileSystemEntry entry) =>
-                                                    !entry.IsDirectory &&
-                                                    entry.FileName.Length == exactLength &&
-                                                    entry.FileName.StartsWith(expression.AsSpan(0, prefixLength), comparison) &&
-                                                    entry.FileName.EndsWith(expression.AsSpan(suffixStart), comparison),
-                                                FileSystemEntryType.Directories => (ref FileSystemEntry entry) =>
-                                                    entry.IsDirectory &&
-                                                    entry.FileName.Length == exactLength &&
-                                                    entry.FileName.StartsWith(expression.AsSpan(0, prefixLength), comparison) &&
-                                                    entry.FileName.EndsWith(expression.AsSpan(suffixStart), comparison),
-                                                _ => (ref FileSystemEntry entry) =>
-                                                    entry.FileName.Length == exactLength &&
-                                                    entry.FileName.StartsWith(expression.AsSpan(0, prefixLength), comparison) &&
-                                                    entry.FileName.EndsWith(expression.AsSpan(suffixStart), comparison)
-                                            };
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
                 }
             }
 

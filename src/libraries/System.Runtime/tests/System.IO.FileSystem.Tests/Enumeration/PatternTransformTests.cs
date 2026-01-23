@@ -203,25 +203,6 @@ namespace System.IO.Tests.Enumeration
             results = GetFiles(testDirectory.FullName, "file*.txt", new EnumerationOptions { MatchType = MatchType.Simple });
             FSAssert.EqualWhenOrdered(new string[] { match1.FullName, match2.FullName, match3.FullName }, results);
         }
-
-        [Fact]
-        public void GetFiles_PrefixQuestionsSuffixPattern()
-        {
-            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
-            FileInfo match1 = new FileInfo(Path.Combine(testDirectory.FullName, "file12.txt"));
-            FileInfo noMatch1 = new FileInfo(Path.Combine(testDirectory.FullName, "file1.txt"));
-            FileInfo noMatch2 = new FileInfo(Path.Combine(testDirectory.FullName, "file123.txt"));
-            FileInfo noMatch3 = new FileInfo(Path.Combine(testDirectory.FullName, "file.txt"));
-            match1.Create().Dispose();
-            noMatch1.Create().Dispose();
-            noMatch2.Create().Dispose();
-            noMatch3.Create().Dispose();
-
-            // The prefix???suffix optimization is only for Simple mode
-            // Win32 mode has special DOS_QM semantics where '?' can match zero chars before periods
-            string[] results = GetFiles(testDirectory.FullName, "file??.txt", new EnumerationOptions { MatchType = MatchType.Simple });
-            Assert.Equal(new string[] { match1.FullName }, results);
-        }
     }
 
     public class PatternTransformTests_DirectoryInfo : PatternTransformTests_Directory
