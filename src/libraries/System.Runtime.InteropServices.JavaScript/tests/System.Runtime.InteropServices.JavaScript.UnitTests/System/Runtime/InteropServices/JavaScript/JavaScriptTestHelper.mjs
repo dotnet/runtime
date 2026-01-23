@@ -250,6 +250,10 @@ export function returnResolvedPromise() {
     return Promise.resolve();
 }
 
+export function returnResolvedPromiseWithNumberMaxValue() {
+    return Promise.resolve(Number.MAX_VALUE);
+}
+
 export async function invokeReturnCompletedTask() {
     await dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper.ReturnCompletedTask();
     return "resolved";

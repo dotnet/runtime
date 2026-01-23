@@ -447,6 +447,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("invoke1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Promise<JSType.Number>>]
         internal static partial Task<short> invoke1_TaskOfOutOfRangeShort([JSMarshalAs<JSType.Promise<JSType.Number>>] Task<int> value, [JSMarshalAs<JSType.String>] string name);
+        [JSImport("returnResolvedPromiseWithNumberMaxValue", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Promise<JSType.Number>>]
+        internal static partial Task<short> ReturnResolvedPromiseWithNumberMaxValue_AsShortToBeOutOfRange();
         [JSImport("returnResolvedPromise", "JavaScriptTestHelper")]
         internal static partial Task ReturnResolvedPromise();
 

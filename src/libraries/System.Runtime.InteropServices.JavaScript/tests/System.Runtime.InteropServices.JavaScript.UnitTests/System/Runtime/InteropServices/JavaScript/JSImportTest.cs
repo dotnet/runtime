@@ -170,6 +170,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(43 + 123 + 31, JavaScriptTestHelper.optimizedReached);
         }
 
+        [Fact]
+        public async Task TaskOfShortOutOfRange_ThrowsAssertionInTaskContinuation()
+        {
+            // 1<<16 is out of range, passed to js and back, marshalling ts code asserts out of range and throws
+            Task<short> res = JavaScriptTestHelper.ReturnResolvedPromiseWithNumberMaxValue_AsShortToBeOutOfRange();
+            JSException ex = await Assert.ThrowsAsync<JSException>(async () => await res);
+            Assert.Contains("Overflow: value 65536 is out of -32768 32767 range", ex.Message);
+        }
 
         #region Get/Set Property
 
