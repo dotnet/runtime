@@ -3570,9 +3570,6 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
             return;
         }
 
-        GenTree** replaceOperand = nullptr;
-        GenTree*  removeVal      = nullptr;
-
         // The increment needs to occur along the false path,
         // reverse condition if that's not the case
         if (code == GenCondition::EQ)
