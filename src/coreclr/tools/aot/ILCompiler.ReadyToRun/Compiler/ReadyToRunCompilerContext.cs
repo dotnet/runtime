@@ -16,6 +16,7 @@ namespace ILCompiler
         public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode)
             : base(details)
         {
+            _continuationTypeHashtable = new(this);
             _genericsMode = genericsMode;
         }
 
@@ -119,6 +120,8 @@ namespace ILCompiler
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
+            if (type is AsyncContinuationType)
+                return new AsyncContinuationLayoutAlgorithm();
             if (type.IsObject)
                 return _systemObjectFieldLayoutAlgorithm;
             else if (type == UniversalCanonType)

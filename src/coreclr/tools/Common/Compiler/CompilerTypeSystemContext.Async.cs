@@ -200,6 +200,7 @@ namespace ILCompiler
         }
         private AsyncVariantHashtable _asyncVariantHashtable = new AsyncVariantHashtable();
 
+#if !READYTORUN
         public MetadataType GetContinuationType(GCPointerMap pointerMap)
         {
             return _continuationTypeHashtable.GetOrCreateValue(pointerMap);
@@ -223,6 +224,7 @@ namespace ILCompiler
             }
         }
         private ContinuationTypeHashtable _continuationTypeHashtable;
+#endif
 
         private MetadataType _continuationType;
 

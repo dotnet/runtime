@@ -2482,7 +2482,7 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
 #if defined(UNIX_AMD64_ABI)
                 SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
                 bool result = methodTablePtr->ClassifyEightBytes(&helper, useNativeLayout);
-                
+
                 // The answer must be true at this point.
                 _ASSERTE(result);
 #endif // UNIX_AMD64_ABI
@@ -8818,13 +8818,13 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     {
         pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
     }
-    
+
     // This is generic virtual method devirtualization.
     if (!isArray && pBaseMD->HasMethodInstantiation())
     {
         pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(
             pDevirtMD, pExactMT, pExactMT->IsValueType() && !pDevirtMD->IsStatic(), pBaseMD->GetMethodInstantiation(), true);
-        
+
         // We still can't handle shared generic methods because we don't have
         // the right generic context for runtime lookup.
         // TODO: Remove this limitation.
@@ -10317,6 +10317,22 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     EE_TO_JIT_TRANSITION();
 }
 
+MethodTable* getContinuationType(MethodDesc* asyncMethod, size_t dataSize, bool* objRefs, size_t objRefsSize)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(objRefsSize == (dataSize + (TARGET_POINTER_SIZE - 1)) / TARGET_POINTER_SIZE);
+    LoaderAllocator* allocator = asyncMethod->GetLoaderAllocator();
+    AsyncContinuationsManager* asyncConts = allocator->GetAsyncContinuationsManager();
+    MethodTable* result = asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, asyncMethod);
+
+#ifdef DEBUG
+    MethodTable* result2 = asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, asyncMethod);
+    _ASSERTE(result2 == result);
+#endif
+    return result;
+}
+
 CORINFO_CLASS_HANDLE CEEInfo::getContinuationType(
     size_t dataSize,
     bool* objRefs,
@@ -10332,15 +10348,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getContinuationType(
 
     JIT_TO_EE_TRANSITION();
 
-    _ASSERTE(objRefsSize == (dataSize + (TARGET_POINTER_SIZE - 1)) / TARGET_POINTER_SIZE);
-    LoaderAllocator* allocator = m_pMethodBeingCompiled->GetLoaderAllocator();
-    AsyncContinuationsManager* asyncConts = allocator->GetAsyncContinuationsManager();
-    result = (CORINFO_CLASS_HANDLE)asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, m_pMethodBeingCompiled);
-
-#ifdef DEBUG
-    CORINFO_CLASS_HANDLE result2 = (CORINFO_CLASS_HANDLE)asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, m_pMethodBeingCompiled);
-    _ASSERTE(result2 == result);
-#endif
+    result = (CORINFO_CLASS_HANDLE)::getContinuationType(m_pMethodBeingCompiled, dataSize, objRefs, objRefsSize);
 
     EE_TO_JIT_TRANSITION();
 
@@ -13722,6 +13730,61 @@ void ComputeGCRefMap(MethodTable * pMT, BYTE * pGCRefMap, size_t cbGCRefMap)
     } while (cur >= last);
 }
 
+
+MethodTable* GetContinuationTypeFromLayout(MethodDesc* asyncMethod, PCCOR_SIGNATURE pBlob)
+{
+    STANDARD_VM_CONTRACT;
+
+    SigPointer p(pBlob);
+    // Skip Continuation type signature
+    IfFailThrow(p.SkipExactlyOne());
+
+    uint32_t dwFlags;
+    IfFailThrow(p.GetData(&dwFlags));
+
+    uint32_t dwExpectedSize;
+    IfFailThrow(p.GetData(&dwExpectedSize));
+
+    if (!(dwFlags & READYTORUN_LAYOUT_GCLayout))
+    {
+        return nullptr;
+    }
+
+    if (!(dwFlags & READYTORUN_LAYOUT_GCLayout_Empty))
+    {
+        uint8_t* pGCRefMapBlob = (uint8_t*)p.GetPtr();
+        size_t objRefsSize = (dwExpectedSize / TARGET_POINTER_SIZE);
+        bool* objRefs = (bool*)_alloca(objRefsSize * sizeof(bool));
+        size_t bytesInBlob = (objRefsSize + 7) / 8;
+        // Read bitmap from blob
+        for(size_t byteIndex = 0; byteIndex < bytesInBlob; byteIndex++)
+        {
+            uint8_t b = pGCRefMapBlob[byteIndex];
+            for (int bit = 0; bit < 8 && byteIndex * 8 + bit < objRefsSize; bit++)
+            {
+                objRefs[byteIndex * 8 + bit] = (b & (1 << bit)) != 0;
+            }
+        }
+        return ::getContinuationType(
+            asyncMethod,
+            dwExpectedSize, // size_t dataSize,
+            objRefs, // bool* objRefs,
+            objRefsSize // size_t objRefsSize
+            );
+    }
+    else{
+        size_t objRefsSize = 0;
+        bool* objRefs = nullptr;
+        return ::getContinuationType(
+            asyncMethod,
+            dwExpectedSize, // size_t dataSize,
+            objRefs, // bool* objRefs,
+            objRefsSize // size_t objRefsSize
+        );
+    }
+}
+
+
 //
 // Type layout check verifies that there was no incompatible change in the value type layout.
 // If there was one, we will fall back to JIT instead of using the pre-generated code from the ready to run image.
@@ -14190,6 +14253,18 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             }
 
             result = 1;
+        }
+        break;
+
+    case READYTORUN_FIXUP_Continuation_Layout:
+        {
+            PCCOR_SIGNATURE pBlobNext = NULL;
+            SigTypeContext typeContext;    // empty context is OK: encoding should not contain type variables.
+            ZapSig::Context zapSigContext(pInfoModule, (void *)currentModule, ZapSig::NormalTokens);
+            MethodDesc* pOwningMethod = ZapSig::DecodeMethod(pInfoModule, pBlob, &typeContext, &zapSigContext, NULL, NULL, NULL, &pBlobNext, TRUE);
+            MethodTable* continuationTypeMethodTable = GetContinuationTypeFromLayout(pOwningMethod, pBlobNext);
+            TypeHandle th = TypeHandle(continuationTypeMethodTable);
+            result = (size_t)th.AsPtr();
         }
         break;
 

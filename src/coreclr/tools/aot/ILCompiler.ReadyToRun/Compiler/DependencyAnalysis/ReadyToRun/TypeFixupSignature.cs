@@ -10,6 +10,7 @@ using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
 using Internal.ReadyToRunConstants;
 using Internal.CorConstants;
+using Internal.JitInterface;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -46,12 +47,26 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 IEcmaModule targetModule = factory.SignatureContext.GetTargetModule(_typeDesc);
                 SignatureContext innerContext = dataBuilder.EmitFixup(factory, fixupKind, targetModule, factory.SignatureContext);
-                dataBuilder.EmitTypeSignature(_typeDesc, innerContext);
-
                 if ((fixupKind == ReadyToRunFixupKind.Check_TypeLayout) ||
                     (fixupKind == ReadyToRunFixupKind.Verify_TypeLayout))
                 {
+                    dataBuilder.EmitTypeSignature(_typeDesc, innerContext);
+                    Debug.Assert(_typeDesc.IsValueType);
                     EncodeTypeLayout(dataBuilder, _typeDesc);
+                }
+                else if (fixupKind == ReadyToRunFixupKind.ContinuationLayout)
+                {
+                    var act = _typeDesc as AsyncContinuationType;
+                    ModuleToken asyncMethodToken = innerContext.Resolver.GetModuleTokenForMethod(act.OwningMethod.GetTargetOfAsyncVariant(), allowDynamicallyCreatedReference: true, throwIfNotFound: true);
+                    MethodWithToken asyncMethodWithToken = new MethodWithToken(act.OwningMethod, asyncMethodToken, null, false, null);
+                    dataBuilder.EmitMethodSignature(asyncMethodWithToken, false, false, innerContext, false);
+                    // Emit EcmaType Continuation type
+                    dataBuilder.EmitTypeSignature(act.BaseType, innerContext);
+                    EncodeTypeLayout(dataBuilder, act);
+                }
+                else
+                {
+                    dataBuilder.EmitTypeSignature(_typeDesc, innerContext);
                 }
             }
 
@@ -60,7 +75,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private static void EncodeTypeLayout(ObjectDataSignatureBuilder dataBuilder, TypeDesc type)
         {
-            Debug.Assert(type.IsValueType);
             MetadataType defType = (MetadataType)type;
 
             int pointerSize = type.Context.Target.PointerSize;
@@ -107,7 +121,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (defType.ContainsGCPointers)
             {
                 // Encode the GC pointer map
-                GCPointerMap gcMap = GCPointerMap.FromInstanceLayout(defType);
+                GCPointerMap gcMap;
+                if (defType is AsyncContinuationType)
+                {
+                    gcMap = ((AsyncContinuationType)defType).PointerMap;
+
+                }
+                else
+                {
+                    gcMap = GCPointerMap.FromInstanceLayout(defType);
+                }
 
                 byte[] encodedGCRefMap = new byte[(size / pointerSize + 7) / 8];
                 int bitIndex = 0;
