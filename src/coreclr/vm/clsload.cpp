@@ -4660,6 +4660,22 @@ BOOL ClassLoader::CanAccessFamily(
 
 #endif // #ifndef DACCESS_COMPILE
 
+bool ClassLoader::EligibleForSpecialMarkerTypeUsage(Instantiation inst, MethodTable* pOwnerMT)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (pOwnerMT == NULL)
+        return false;
+
+    if (inst.GetNumArgs() > MethodTable::MaxGenericParametersForSpecialMarkerType)
+        return false;
+
+    if (!inst.ContainsAllOneType(pOwnerMT->GetSpecialInstantiationType()))
+        return false;
+
+    return true;
+}
+
 #ifdef DACCESS_COMPILE
 
 void
