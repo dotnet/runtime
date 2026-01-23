@@ -55,11 +55,8 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public void Dispose()
         {
-            if (_group != null)
-            {
-                _group.Remove(this);
-                _group = null;
-            }
+            _group?.Remove(this);
+            _group = null;
         }
 
         /// <summary>

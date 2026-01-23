@@ -101,11 +101,8 @@ namespace System.Xml
             {
                 _streamBuffer = null;
             }
-            if (_stream != null)
-            {
-                _stream.Dispose();
-                _stream = null;
-            }
+            _stream?.Dispose();
+            _stream = null;
             _buffer = Array.Empty<byte>();
             _offset = 0;
             _offsetMax = 0;

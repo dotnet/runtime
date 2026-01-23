@@ -1701,21 +1701,12 @@ namespace System.Data
                     oldKey.ConstraintIndex.RemoveRef();
 
                     // if PrimaryKey is removed, reset LoadDataRow indexes
-                    if (null != _loadIndex)
-                    {
-                        _loadIndex.RemoveRef();
-                        _loadIndex = null;
-                    }
-                    if (null != _loadIndexwithOriginalAdded)
-                    {
-                        _loadIndexwithOriginalAdded.RemoveRef();
-                        _loadIndexwithOriginalAdded = null;
-                    }
-                    if (null != _loadIndexwithCurrentDeleted)
-                    {
-                        _loadIndexwithCurrentDeleted.RemoveRef();
-                        _loadIndexwithCurrentDeleted = null;
-                    }
+                    _loadIndex?.RemoveRef();
+                    _loadIndex = null;
+                    _loadIndexwithOriginalAdded?.RemoveRef();
+                    _loadIndexwithOriginalAdded = null;
+                    _loadIndexwithCurrentDeleted?.RemoveRef();
+                    _loadIndexwithCurrentDeleted = null;
                     Constraints.Remove(oldKey);
                 }
 

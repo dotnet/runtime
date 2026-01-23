@@ -97,11 +97,8 @@ namespace System.Security.Cryptography.Pkcs
             if (recipients.Count == 0)
                 throw new PlatformNotSupportedException(SR.Cryptography_Cms_NoRecipients);
 
-            if (_decryptorPal != null)
-            {
-                _decryptorPal.Dispose();
-                _decryptorPal = null;
-            }
+            _decryptorPal?.Dispose();
+            _decryptorPal = null;
             _encodedMessage = PkcsPal.Instance.Encrypt(recipients, ContentInfo, ContentEncryptionAlgorithm, Certificates, UnprotectedAttributes);
             _lastCall = LastCall.Encrypt;
         }
@@ -143,11 +140,8 @@ namespace System.Security.Cryptography.Pkcs
 #endif
         void Decode(ReadOnlySpan<byte> encodedMessage)
         {
-            if (_decryptorPal != null)
-            {
-                _decryptorPal.Dispose();
-                _decryptorPal = null;
-            }
+            _decryptorPal?.Dispose();
+            _decryptorPal = null;
 
             int version;
             ContentInfo contentInfo;

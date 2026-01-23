@@ -1257,29 +1257,17 @@ namespace System.Threading
                 if (IsReadLockHeld || IsUpgradeableReadLockHeld || IsWriteLockHeld)
                     throw new SynchronizationLockException(SR.SynchronizationLockException_IncorrectDispose);
 
-                if (_writeEvent != null)
-                {
-                    _writeEvent.Dispose();
-                    _writeEvent = null;
-                }
+                _writeEvent?.Dispose();
+                _writeEvent = null;
 
-                if (_readEvent != null)
-                {
-                    _readEvent.Dispose();
-                    _readEvent = null;
-                }
+                _readEvent?.Dispose();
+                _readEvent = null;
 
-                if (_upgradeEvent != null)
-                {
-                    _upgradeEvent.Dispose();
-                    _upgradeEvent = null;
-                }
+                _upgradeEvent?.Dispose();
+                _upgradeEvent = null;
 
-                if (_waitUpgradeEvent != null)
-                {
-                    _waitUpgradeEvent.Dispose();
-                    _waitUpgradeEvent = null;
-                }
+                _waitUpgradeEvent?.Dispose();
+                _waitUpgradeEvent = null;
 
                 _fDisposed = true;
             }

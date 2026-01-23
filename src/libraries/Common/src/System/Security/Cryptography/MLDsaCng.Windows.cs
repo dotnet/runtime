@@ -451,7 +451,7 @@ namespace System.Security.Cryptography
                 {
                     Debug.Fail(
                         $"{nameof(blobType)}: {blobType}, " +
-                        $"{nameof(parameterSet)}: {parameterSet}, " +
+                        $"{nameof(parameterSet)}: {parameterSet.ToString()}, " +
                         $"{nameof(keyBytes)}.Length: {keyBytes.Length} / {expectedKeySize}");
 
                     throw new CryptographicException();

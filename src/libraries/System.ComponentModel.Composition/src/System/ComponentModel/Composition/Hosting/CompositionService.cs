@@ -24,10 +24,7 @@ namespace System.ComponentModel.Composition.Hosting
             _notifyCatalog = composablePartCatalog as INotifyComposablePartCatalogChanged;
             try
             {
-                if (_notifyCatalog != null)
-                {
-                    _notifyCatalog.Changing += OnCatalogChanging;
-                }
+                _notifyCatalog?.Changing += OnCatalogChanging;
 
                 var compositionOptions = CompositionOptions.DisableSilentRejection | CompositionOptions.IsThreadSafe | CompositionOptions.ExportCompositionService;
                 var compositionContainer = new CompositionContainer(composablePartCatalog, compositionOptions);
@@ -36,10 +33,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
             catch
             {
-                if (_notifyCatalog != null)
-                {
-                    _notifyCatalog.Changing -= OnCatalogChanging;
-                }
+                _notifyCatalog?.Changing -= OnCatalogChanging;
                 throw;
             }
         }
@@ -62,10 +56,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
 
             // Delegates are cool there is no concern if you try to remove an item from them and they don't exist
-            if (_notifyCatalog != null)
-            {
-                _notifyCatalog.Changing -= OnCatalogChanging;
-            }
+            _notifyCatalog?.Changing -= OnCatalogChanging;
             _compositionContainer.Dispose();
         }
 

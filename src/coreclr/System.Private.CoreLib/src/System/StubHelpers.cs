@@ -1351,11 +1351,8 @@ namespace System.StubHelpers
 
         internal static void DestroyCleanupList(ref CleanupWorkListElement? pCleanupWorkList)
         {
-            if (pCleanupWorkList != null)
-            {
-                pCleanupWorkList.Destroy();
-                pCleanupWorkList = null;
-            }
+            pCleanupWorkList?.Destroy();
+            pCleanupWorkList = null;
         }
 
         internal static Exception GetHRExceptionObject(int hr)

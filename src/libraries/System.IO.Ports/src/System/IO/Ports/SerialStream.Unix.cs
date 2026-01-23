@@ -724,11 +724,8 @@ namespace System.IO.Ports
 
                 FinishPendingIORequests();
 
-                if (_handle != null)
-                {
-                    _handle.Dispose();
-                    _handle = null;
-                }
+                _handle?.Dispose();
+                _handle = null;
             }
 
             base.Dispose(disposing);

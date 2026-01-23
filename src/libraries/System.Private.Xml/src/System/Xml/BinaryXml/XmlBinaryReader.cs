@@ -877,11 +877,8 @@ namespace System.Xml
             _nodetype = XmlNodeType.None;
             _token = BinXmlToken.Error;
             _stringValue = null;
-            if (null != _textXmlReader)
-            {
-                _textXmlReader.Close();
-                _textXmlReader = null;
-            }
+            _textXmlReader?.Close();
+            _textXmlReader = null;
 
             if (null != _inStrm && _closeInput)
                 _inStrm.Dispose();

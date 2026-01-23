@@ -44,11 +44,8 @@ namespace System.Buffers
                 _handle.Free();
             }
 
-            if (_pinnable != null)
-            {
-                _pinnable.Unpin();
-                _pinnable = null;
-            }
+            _pinnable?.Unpin();
+            _pinnable = null;
 
             _pointer = null;
         }

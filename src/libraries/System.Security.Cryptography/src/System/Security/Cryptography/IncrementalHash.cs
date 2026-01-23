@@ -356,17 +356,11 @@ namespace System.Security.Cryptography
         {
             _disposed = true;
 
-            if (_hash != null)
-            {
-                _hash.Dispose();
-                _hash = null;
-            }
+            _hash?.Dispose();
+            _hash = null;
 
-            if (_hmac != null)
-            {
-                _hmac.Dispose(true);
-                _hmac = null;
-            }
+            _hmac?.Dispose(true);
+            _hmac = null;
         }
 
         /// <summary>

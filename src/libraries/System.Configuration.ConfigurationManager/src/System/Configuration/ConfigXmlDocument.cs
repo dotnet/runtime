@@ -61,11 +61,8 @@ namespace System.Configuration
             }
             finally
             {
-                if (_reader != null)
-                {
-                    _reader.Close();
-                    _reader = null;
-                }
+                _reader?.Close();
+                _reader = null;
             }
         }
 
@@ -82,11 +79,8 @@ namespace System.Configuration
             }
             finally
             {
-                if (_reader != null)
-                {
-                    _reader.Close();
-                    _reader = null;
-                }
+                _reader?.Close();
+                _reader = null;
             }
         }
 

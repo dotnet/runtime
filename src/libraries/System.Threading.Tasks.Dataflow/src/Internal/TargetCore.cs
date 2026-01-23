@@ -216,7 +216,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     // Once consumed, enqueue the message with its ID and kick off asynchronous processing.
                     long messageId = _nextAvailableInputMessageId.Value++;
                     Debug.Assert(messageId != Common.INVALID_REORDERING_ID, "The assigned message ID is invalid.");
-                    if (_boundingState != null) _boundingState.CurrentCount += 1; // track this new item against our bound
+                    if (_boundingState != null) _boundingState.CurrentCount++; // track this new item against our bound
                     _messages.Enqueue(new KeyValuePair<TInput, long>(messageValue!, messageId));
                     ProcessAsyncIfNecessary();
                     return DataflowMessageStatus.Accepted;

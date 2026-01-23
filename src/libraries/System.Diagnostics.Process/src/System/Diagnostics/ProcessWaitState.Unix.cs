@@ -239,11 +239,8 @@ namespace System.Diagnostics
 
             lock (_gate)
             {
-                if (_exitedEvent != null)
-                {
-                    _exitedEvent.Dispose();
-                    _exitedEvent = null;
-                }
+                _exitedEvent?.Dispose();
+                _exitedEvent = null;
             }
         }
 

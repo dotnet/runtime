@@ -114,11 +114,8 @@ namespace System.Data.Odbc
 
             _transaction = null;
 
-            if (null != _connection)
-            {
-                _connection.RemoveWeakReference(this);
-                _connection = null;
-            }
+            _connection?.RemoveWeakReference(this);
+            _connection = null;
 
             // if the reader is dead we have to dismiss the statement
             if (liveReader == null)
@@ -1035,11 +1032,8 @@ namespace System.Data.Odbc
 
         internal void Dispose()
         {
-            if (null != _dataReaderBuf)
-            {
-                _dataReaderBuf.Dispose();
-                _dataReaderBuf = null;
-            }
+            _dataReaderBuf?.Dispose();
+            _dataReaderBuf = null;
             DisposeStatementHandle();
 
             CNativeBuffer? buffer = _nativeParameterBuffer;

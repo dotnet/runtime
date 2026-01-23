@@ -84,11 +84,8 @@ namespace System.Net.Http
         {
             if (disposing)
             {
-                if (_stream != null)
-                {
-                    _stream.Dispose();
-                    _stream = null;
-                }
+                _stream?.Dispose();
+                _stream = null;
             }
 
             base.Dispose(disposing);

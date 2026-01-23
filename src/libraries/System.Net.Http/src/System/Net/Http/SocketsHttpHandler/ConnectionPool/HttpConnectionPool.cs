@@ -916,11 +916,8 @@ namespace System.Net.Http
                     _availableHttp3Connections.Clear();
                 }
 
-                if (_authorityExpireTimer != null)
-                {
-                    _authorityExpireTimer.Dispose();
-                    _authorityExpireTimer = null;
-                }
+                _authorityExpireTimer?.Dispose();
+                _authorityExpireTimer = null;
 
                 if (_altSvcBlocklistTimerCancellation != null)
                 {

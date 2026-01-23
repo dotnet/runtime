@@ -22,11 +22,8 @@ namespace Microsoft.Win32.SafeHandles
             // release the addref we took in SetDictionary
             _dictionary?.DangerousRelease();
 
-            if (_prefixHandle != null)
-            {
-                _prefixHandle.Value.Dispose();
-                _prefixHandle = null;
-            }
+            _prefixHandle?.Dispose();
+            _prefixHandle = null;
             return true;
         }
 
@@ -74,11 +71,8 @@ namespace Microsoft.Win32.SafeHandles
             ZstandardUtils.ThrowIfError(Interop.Zstd.ZSTD_CCtx_reset(this, Interop.Zstd.ZstdResetDirective.ZSTD_reset_session_only));
 
             // prefix is not sticky and is cleared by reset
-            if (_prefixHandle != null)
-            {
-                _prefixHandle.Value.Dispose();
-                _prefixHandle = null;
-            }
+            _prefixHandle?.Dispose();
+            _prefixHandle = null;
         }
 
         public override bool IsInvalid => handle == IntPtr.Zero;
@@ -97,11 +91,8 @@ namespace Microsoft.Win32.SafeHandles
             // release the addref we took in SetDictionary
             _dictionary?.DangerousRelease();
 
-            if (_prefixHandle != null)
-            {
-                _prefixHandle.Value.Dispose();
-                _prefixHandle = null;
-            }
+            _prefixHandle?.Dispose();
+            _prefixHandle = null;
             return true;
         }
 
@@ -149,11 +140,8 @@ namespace Microsoft.Win32.SafeHandles
             ZstandardUtils.ThrowIfError(Interop.Zstd.ZSTD_DCtx_reset(this, Interop.Zstd.ZstdResetDirective.ZSTD_reset_session_only));
 
             // prefix is not sticky and is cleared by reset
-            if (_prefixHandle != null)
-            {
-                _prefixHandle.Value.Dispose();
-                _prefixHandle = null;
-            }
+            _prefixHandle?.Dispose();
+            _prefixHandle = null;
         }
 
         public override bool IsInvalid => handle == IntPtr.Zero;

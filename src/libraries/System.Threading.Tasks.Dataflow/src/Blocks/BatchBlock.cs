@@ -384,7 +384,7 @@ namespace System.Threading.Tasks.Dataflow
 
                         // Once consumed, enqueue it.
                         _messages.Enqueue(messageValue!);
-                        if (_boundingState != null) _boundingState.CurrentCount += 1; // track this new item against our bound
+                        if (_boundingState != null) _boundingState.CurrentCount++; // track this new item against our bound
 
                         // Now start declining if the number of batches we've already made plus
                         // the number we can make from data already enqueued meets our quota.
@@ -1010,7 +1010,7 @@ namespace System.Threading.Tasks.Dataflow
                 lock (IncomingLock)
                 {
                     // Increment the bounding count with the number of consumed messages
-                    if (_boundingState != null) _boundingState.CurrentCount += reserved.Count;
+                    if (_boundingState is BoundingState boundingState) boundingState.CurrentCount += reserved.Count;
 
                     // Enqueue the consumed messages
                     foreach (KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>> sourceAndMessage in reserved)
@@ -1059,7 +1059,7 @@ namespace System.Threading.Tasks.Dataflow
                 lock (IncomingLock)
                 {
                     // Increment the bounding count with the number of consumed messages
-                    if (_boundingState != null) _boundingState.CurrentCount += consumedCount;
+                    if (_boundingState is BoundingState boundingState) boundingState.CurrentCount += consumedCount;
 
                     // Enqueue the consumed messages
                     foreach (KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>> sourceAndMessage in reserved)
