@@ -152,12 +152,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 return;
             }
 
-            if (exceptions.Count == 1)
-            {
-                throw exceptions[0];
-            }
-
-            throw new AggregateException(exceptions);
+            throw exceptions.Count == 1 ? exceptions[0] : new AggregateException(exceptions);
         }
 
         public ValueTask DisposeAsync()
@@ -204,12 +199,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 return default;
             }
 
-            if (exceptions.Count == 1)
-            {
-                return new ValueTask(Task.FromException(exceptions[0]));
-            }
-
-            return new ValueTask(Task.FromException(new AggregateException(exceptions)));
+            var exception = exceptions.Count == 1 ? exceptions[0] : new AggregateException(exceptions);
+            return new ValueTask(Task.FromException(exception));
 
             static async ValueTask Await(int i, ValueTask vt, List<object> toDispose)
             {
