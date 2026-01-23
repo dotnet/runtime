@@ -109,11 +109,8 @@ jobs:
       fetchDepth: $(checkoutFetchDepth)
       fetchTags: false
 
-    - ${{ if and(eq(parameters.isOfficialBuild, true), notin(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator')) }}:
-      - template: /eng/pipelines/common/restore-internal-tools.yml
-
     - ${{ if ne(variables['System.TeamProject'], 'public') }}:
-      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.hostedOs, 'windows')) }}:
+      - ${{ if and(ne(parameters.osGroup, 'windows')) }}:
         - task: Bash@3
           displayName: Setup Private Feeds Credentials
           inputs:
