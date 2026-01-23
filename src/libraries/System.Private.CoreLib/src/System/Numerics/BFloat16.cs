@@ -48,8 +48,8 @@ namespace System.Numerics
         internal const sbyte MinExponent = -126;
         internal const sbyte MaxExponent = +127;
 
-        internal const ushort MinTrailingSignificand = 0x0000;
-        internal const ushort MaxTrailingSignificand = 0x007F;
+        internal const byte MinTrailingSignificand = 0x00;
+        internal const byte MaxTrailingSignificand = 0x7F;
 
         internal const int TrailingSignificandLength = 7;
         internal const int SignificandLength = TrailingSignificandLength + 1;
@@ -116,15 +116,15 @@ namespace System.Numerics
             }
         }
 
-        internal ushort Significand
+        internal byte Significand
         {
             get
             {
-                return (ushort)(TrailingSignificand | ((BiasedExponent != 0) ? (1U << BiasedExponentShift) : 0U));
+                return (byte)(TrailingSignificand | ((BiasedExponent != 0) ? (1U << BiasedExponentShift) : 0U));
             }
         }
 
-        internal ushort TrailingSignificand
+        internal byte TrailingSignificand
         {
             get
             {
@@ -138,9 +138,9 @@ namespace System.Numerics
             return (byte)((bits >> BiasedExponentShift) & ShiftedBiasedExponentMask);
         }
 
-        internal static ushort ExtractTrailingSignificandFromBits(ushort bits)
+        internal static byte ExtractTrailingSignificandFromBits(ushort bits)
         {
-            return (ushort)(bits & TrailingSignificandMask);
+            return (byte)(bits & TrailingSignificandMask);
         }
 
         // INumberBase
@@ -877,12 +877,12 @@ namespace System.Numerics
             }
 
             byte biasedExponent = ExtractBiasedExponentFromBits(bits);
-            ushort trailingSignificand = ExtractTrailingSignificandFromBits(bits);
+            byte trailingSignificand = ExtractTrailingSignificandFromBits(bits);
 
             if (biasedExponent == MinBiasedExponent)
             {
                 // Subnormal values have 1 bit set when they're powers of 2
-                return ushort.PopCount(trailingSignificand) == 1;
+                return byte.PopCount(trailingSignificand) == 1;
             }
             else if (biasedExponent == MaxBiasedExponent)
             {
@@ -1010,7 +1010,7 @@ namespace System.Numerics
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
-        int IFloatingPoint<BFloat16>.GetSignificandByteCount() => sizeof(ushort);
+        int IFloatingPoint<BFloat16>.GetSignificandByteCount() => sizeof(byte);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
         int IFloatingPoint<BFloat16>.GetSignificandBitLength() => SignificandLength;
@@ -1046,9 +1046,10 @@ namespace System.Numerics
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<BFloat16>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (BinaryPrimitives.TryWriteUInt16BigEndian(destination, Significand))
+            if (destination.Length >= sizeof(byte))
             {
-                bytesWritten = sizeof(uint);
+                destination[0] = Significand;
+                bytesWritten = sizeof(byte);
                 return true;
             }
 
@@ -1059,9 +1060,10 @@ namespace System.Numerics
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<BFloat16>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (BinaryPrimitives.TryWriteUInt16LittleEndian(destination, Significand))
+            if (destination.Length >= sizeof(byte))
             {
-                bytesWritten = sizeof(uint);
+                destination[0] = Significand;
+                bytesWritten = sizeof(byte);
                 return true;
             }
 
@@ -1189,7 +1191,7 @@ namespace System.Numerics
                 }
 
                 Debug.Assert(IsSubnormal(x));
-                return MinExponent - (BitOperations.LeadingZeroCount(x.TrailingSignificand) - BiasedExponentLength);
+                return MinExponent - byte.LeadingZeroCount(x.TrailingSignificand);
             }
 
             return x.Exponent;

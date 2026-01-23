@@ -19,7 +19,10 @@
         const exports = {};
         libNativeBrowser(exports);
 
-        let commonDeps = ["$BROWSER_UTILS", "SystemJS_ExecuteTimerCallback", "SystemJS_ExecuteBackgroundJobCallback"];
+        let commonDeps = [
+            "$BROWSER_UTILS",
+            "SystemJS_ExecuteTimerCallback", "SystemJS_ExecuteBackgroundJobCallback"
+        ];
         const lib = {
             $DOTNET: {
                 selfInitialize: () => {
