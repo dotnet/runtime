@@ -62,11 +62,9 @@ namespace System.Security.Cryptography
 
                     ThrowIfDisposed();
 
-                    if (_keys != null)
-                    {
-                        _keys.Dispose();
-                        _keys = null;
-                    }
+                    
+                    _keys?.Dispose();
+                    _keys = null;
                 }
             }
 
