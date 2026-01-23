@@ -120,7 +120,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public void Dispose()
         {
             List<object>? toDispose = BeginDispose();
-            var exceptions = default(List<Exception>);
+            List<Exception>? exceptions = null;
             var index = (toDispose?.Count ?? 0) - 1;
 
             while (index >= 0)
@@ -163,8 +163,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public ValueTask DisposeAsync()
         {
             List<object>? toDispose = BeginDispose();
-            var exceptions = default(List<Exception>);
-            var index = toDispose is null ? -1 : toDispose.Count - 1;
+            List<Exception>? exceptions = null;
+            var index = (toDispose?.Count ?? 0) - 1;
 
             while (index >= 0)
             {
