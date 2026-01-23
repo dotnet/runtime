@@ -297,6 +297,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmBuildAssetCandidates Include="@(WasmNativeAsset)" />
       <_WasmBuildAssetCandidates Include="@(WasmAssembliesFinal)" />
       <_WasmBuildAssetCandidates Remove="@(_WasmProjectAssemblyBuild)" />
+
+      <!-- Add WasmAssembliesFinal back to ReferenceCopyLocalPaths for debugging and postprocessing tools -->
+      <ReferenceCopyLocalPaths Include="@(WasmAssembliesFinal)" />
     </ItemGroup>
 
     <PropertyGroup>

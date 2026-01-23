@@ -16,11 +16,22 @@ namespace System.Text.Json.Serialization.Converters
 
         public override ulong Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            if (options?.NumberHandling is not null and not JsonNumberHandling.Strict)
+            {
+                return ReadNumberWithCustomHandling(ref reader, options.NumberHandling, options);
+            }
+
             return reader.GetUInt64();
         }
 
         public override void Write(Utf8JsonWriter writer, ulong value, JsonSerializerOptions options)
         {
+            if (options?.NumberHandling is not null and not JsonNumberHandling.Strict)
+            {
+                WriteNumberWithCustomHandling(writer, value, options.NumberHandling);
+                return;
+            }
+
             writer.WriteNumberValue(value);
         }
 

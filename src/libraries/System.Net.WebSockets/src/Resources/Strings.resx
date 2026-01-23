@@ -117,6 +117,9 @@
   <data name="net_Websockets_ClientReceivedMaskedFrame" xml:space="preserve">
     <value>The WebSocket server sent a masked frame.</value>
   </data>
+  <data name="net_Websockets_ServerReceivedUnmaskedFrame" xml:space="preserve">
+    <value>The WebSocket client sent an unmasked frame.</value>
+  </data>
   <data name="net_Websockets_ContinuationFromFinalFrame" xml:space="preserve">
     <value>The WebSocket received a continuation frame from a previous final message.</value>
   </data>

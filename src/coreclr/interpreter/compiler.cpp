@@ -6127,6 +6127,15 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             break;
         }
+        case CORINFO_FIELD_STATIC_ADDR_HELPER:
+        {
+            AddIns(INTOP_CALL_HELPER_P_P);
+            m_pLastNewIns->data[0] = GetDataForHelperFtn(pFieldInfo->helper);
+            m_pLastNewIns->data[1] = GetDataItemIndex(pResolvedToken->hField);
+            PushInterpType(InterpTypeByRef, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            break;
+        }
         default:
             BADCODE("Unsupported static field accessor");
             break;
@@ -9441,6 +9450,16 @@ retry_emit:
                     m_pStackPointer--;
                     EmitStaticFieldAddress(&fieldInfo, &resolvedToken);
                 }
+                else if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_ADDR_HELPER)
+                {
+                    m_pStackPointer--;
+                    AddIns(INTOP_CALL_HELPER_P_SP);
+                    m_pLastNewIns->data[0] = GetDataForHelperFtn(fieldInfo.helper);
+                    m_pLastNewIns->data[1] = GetDataItemIndex(resolvedToken.hField);
+                    m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                    PushInterpType(InterpTypeByRef, NULL);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                }
                 else
                 {
                     assert(fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE);
@@ -9476,6 +9495,17 @@ retry_emit:
                     // Pop unused object reference
                     m_pStackPointer--;
                     EmitStaticFieldAccess(interpFieldType, &fieldInfo, &resolvedToken, true);
+                }
+                else if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_ADDR_HELPER)
+                {
+                    m_pStackPointer--;
+                    AddIns(INTOP_CALL_HELPER_P_SP);
+                    m_pLastNewIns->data[0] = GetDataForHelperFtn(fieldInfo.helper);
+                    m_pLastNewIns->data[1] = GetDataItemIndex(resolvedToken.hField);
+                    m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                    PushInterpType(InterpTypeByRef, NULL);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                    EmitLdind(interpFieldType, fieldInfo.structType, 0);
                 }
                 else
                 {
@@ -9545,6 +9575,17 @@ retry_emit:
                 {
                     EmitStaticFieldAccess(interpFieldType, &fieldInfo, &resolvedToken, false);
                     // Pop the unused object reference
+                    m_pStackPointer--;
+                }
+                else if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_ADDR_HELPER)
+                {
+                    AddIns(INTOP_CALL_HELPER_P_SP);
+                    m_pLastNewIns->data[0] = GetDataForHelperFtn(fieldInfo.helper);
+                    m_pLastNewIns->data[1] = GetDataItemIndex(resolvedToken.hField);
+                    m_pLastNewIns->SetSVar(m_pStackPointer[-2].var);
+                    PushInterpType(InterpTypeByRef, NULL);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                    EmitStind(interpFieldType, fieldInfo.structType, 0, true, true /* enableImplicitArgConversionRules */);
                     m_pStackPointer--;
                 }
                 else
