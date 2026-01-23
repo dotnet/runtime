@@ -104,8 +104,8 @@ export function ws_wasm_create (uri: string, sub_protocols: string[] | null, rec
             forceThreadMemoryViewRefresh();
 
             ws[wasm_ws_close_received] = true;
-            ws["close_status"] = ev.code;
-            ws["close_status_description"] = ev.reason;
+            ws["closeStatus"] = ev.code;
+            ws["closeStatusDescription"] = ev.reason;
 
             if (ws[wasm_ws_pending_open_promise_used]) {
                 open_promise_control.reject(new Error(ev.reason));
@@ -492,8 +492,8 @@ type WebSocketExtension = WebSocket & {
     [wasm_ws_pending_send_buffer_offset]: number
     [wasm_ws_pending_send_buffer_type]: number
     [wasm_ws_pending_send_buffer]: Uint8Array | null
-    ["close_status"]: number | undefined
-    ["close_status_description"]: string | undefined
+    ["closeStatus"]: number | undefined
+    ["closeStatusDescription"]: string | undefined
     dispose(): void
 }
 
