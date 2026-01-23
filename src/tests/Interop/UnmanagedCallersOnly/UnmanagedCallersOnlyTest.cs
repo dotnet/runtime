@@ -52,22 +52,6 @@ public unsafe class Program
     }
 
     [Fact]
-    public static void NegativeTest_ViaDelegate()
-    {
-        Console.WriteLine($"Running {nameof(NegativeTest_ViaDelegate)}...");
-
-        // Try invoking method directly
-        Assert.Throws<NotSupportedException>(() => { CallAsDelegate(); });
-
-        // Local function to delay exception thrown during JIT
-        void CallAsDelegate()
-        {
-            Func<int, int> invoker = CallingUnmanagedCallersOnlyDirectly.GetDoubleDelegate();
-            invoker(0);
-        }
-    }
-
-    [Fact]
     public static void NegativeTest_NonStaticMethod()
     {
         Console.WriteLine($"Running {nameof(NegativeTest_NonStaticMethod)}...");

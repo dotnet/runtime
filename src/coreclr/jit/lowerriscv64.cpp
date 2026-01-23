@@ -1289,6 +1289,13 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     {
         MakeSrcContained(storeLoc, op1);
     }
+
+    // Support emitting PC-relative addresses for handles hoisted by constant CSE
+    if (storeLoc->OperIs(GT_STORE_LCL_VAR) && op1->IsIconHandle() && op1->AsIntCon()->FitsInAddrBase(comp) &&
+        op1->AsIntCon()->AddrNeedsReloc(comp))
+    {
+        MakeSrcContained(storeLoc, op1);
+    }
 }
 
 //------------------------------------------------------------------------

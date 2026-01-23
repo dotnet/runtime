@@ -3092,9 +3092,6 @@
   <data name="NotSupported_MustBeModuleBuilder" xml:space="preserve">
     <value>Module argument must be a ModuleBuilder.</value>
   </data>
-  <data name="NotSupported_UnmanagedCallersOnlyTarget" xml:space="preserve">
-    <value>Methods with UnmanagedCallersOnlyAttribute cannot be used as delegate target.</value>
-  </data>
   <data name="NotSupported_NoCodepageData" xml:space="preserve">
     <value>No data is available for encoding {0}. For information on defining a custom encoding, see the documentation for the Encoding.RegisterProvider method.</value>
   </data>

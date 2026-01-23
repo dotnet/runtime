@@ -538,11 +538,11 @@ void CodeGen::genCodeForBBlist()
             nonVarPtrRegs &= ~RBM_ASYNC_CONTINUATION_RET;
         }
 
-        // For a tailcall arbitrary argument registers may be live into the
+        // For a tailcall arbitrary argument/target registers may be live into the
         // epilog. Skip validating those.
         if (block->HasFlag(BBF_HAS_JMP))
         {
-            nonVarPtrRegs &= ~fullIntArgRegMask(CorInfoCallConvExtension::Managed);
+            nonVarPtrRegs = RBM_NONE;
         }
 
         if (nonVarPtrRegs)

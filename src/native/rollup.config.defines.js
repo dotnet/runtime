@@ -18,7 +18,7 @@ if (process.env.ProductVersion === undefined) {
 export const configuration = process.env.Configuration !== "Release" && process.env.Configuration !== "RELEASE" ? "Debug" : "Release";
 export const productVersion = process.env.ProductVersion;
 export const isContinuousIntegrationBuild = process.env.ContinuousIntegrationBuild === "true" ? true : false;
-export const staticLibDestination = process.env.StaticLibDestination || "../../artifacts/bin/browser-wasm.Debug/corehost";
+export const staticLibDestination = process.env.StaticLibDestination || `../../artifacts/obj/native/net${productVersion}-browser-${configuration}-wasm/lib`;
 
 console.log(`Rollup configuration: Configuration=${configuration}, ProductVersion=${productVersion}, ContinuousIntegrationBuild=${isContinuousIntegrationBuild}`);
 
@@ -36,7 +36,7 @@ export const reserved = [
 
 export const externalDependencies = ["module", "process", "perf_hooks", "node:crypto"];
 export const artifactsObjDir = "../../artifacts/obj";
-export const isDebug = process.env.Configuration !== "Release" && !isContinuousIntegrationBuild;
+export const isDebug = process.env.Configuration !== "Release";
 
 export let gitHash;
 try {
@@ -52,3 +52,15 @@ export const envConstants = {
     gitHash,
     isContinuousIntegrationBuild,
 };
+
+/* eslint-disable quotes */
+export const inlinefastCheck = [
+    {
+        pattern: 'dotnetAssert\\.fastCheck\\(([^,]*), \\(\\) => *`([^`]*)`\\);',
+        replacement: (match) => `if (!(${match[1]})) throw new Error(\`Assert failed: ${match[2]}\`); // inlined fastCheck`
+    },
+    {
+        pattern: 'dotnetAssert\\.fastCheck\\(([^,]*), \\(\\) => *"([^"]*)"\\);',
+        replacement: (match) => `if (!(${match[1]})) throw new Error(\`Assert failed: ${match[2]}\`); // inlined fastCheck`
+    },
+];

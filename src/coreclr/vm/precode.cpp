@@ -958,3 +958,33 @@ BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
 }
 
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
+
+TADDR GetInterpreterCodeFromInterpreterPrecodeIfPresent(TADDR codePointerMaybeInterpreterStub)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+    
+#if defined(FEATURE_INTERPRETER) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
+    if (codePointerMaybeInterpreterStub == (TADDR)NULL)
+    {
+        return (TADDR)NULL;
+    }
+
+    RangeSection * pRS = ExecutionManager::FindCodeRange(codePointerMaybeInterpreterStub, ExecutionManager::GetScanFlags());
+    if (pRS != NULL && pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
+    {
+        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
+        {
+            if (dac_cast<PTR_StubPrecode>(PCODEToPINSTR(codePointerMaybeInterpreterStub))->GetType() == PRECODE_INTERPRETER)
+            {
+                codePointerMaybeInterpreterStub = (dac_cast<PTR_InterpreterPrecode>(PCODEToPINSTR(codePointerMaybeInterpreterStub)))->GetData()->ByteCodeAddr;
+            }
+        }
+    }
+#endif
+
+    return codePointerMaybeInterpreterStub;
+}

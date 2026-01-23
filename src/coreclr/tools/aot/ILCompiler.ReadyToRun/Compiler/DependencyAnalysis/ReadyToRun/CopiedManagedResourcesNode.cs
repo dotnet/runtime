@@ -20,14 +20,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            // Put the CLR metadata into the correct section for the PE writer to
-            // hook up the CLR header entry in the PE header.
-            // Don't emit a separate section for other formats to reduce cost.
-            return factory.Format switch
-            {
-                ReadyToRunContainerFormat.PE => ObjectNodeSection.CorMetaSection,
-                _ => ObjectNodeSection.ReadOnlyDataSection
-            };
+            return ObjectNodeSection.ReadOnlyDataSection;
         }
 
         public override bool IsShareable => false;

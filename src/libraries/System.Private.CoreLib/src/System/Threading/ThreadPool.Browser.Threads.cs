@@ -10,5 +10,6 @@ namespace System.Threading
         // event queue can be drained
 #pragma warning disable IDE0060 // Remove unused parameter
         internal static bool YieldFromDispatchLoop(int currentTickCount) => true;
-#pragma warning restore IDE0060    }
+#pragma warning restore IDE0060
     }
+}

@@ -33,7 +33,63 @@ public partial class ZipArchiveEntry
             case ZipArchiveMode.Update:
             default:
                 Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
-                return await OpenInUpdateModeAsync(cancellationToken).ConfigureAwait(false);
+                return await OpenInUpdateModeAsync(loadExistingContent: true, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Asynchronously opens the entry with the specified access mode. This allows for more granular control over the returned stream's capabilities.
+    /// </summary>
+    /// <param name="access">The file access mode for the returned stream.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>A <see cref="Task{Stream}"/> that represents the asynchronous open operation.</returns>
+    /// <remarks>
+    /// <para>The allowed <paramref name="access"/> values depend on the <see cref="ZipArchiveMode"/>:</para>
+    /// <list type="bullet">
+    /// <item><description><see cref="ZipArchiveMode.Read"/>: Only <see cref="FileAccess.Read"/> is allowed.</description></item>
+    /// <item><description><see cref="ZipArchiveMode.Create"/>: <see cref="FileAccess.Write"/> and <see cref="FileAccess.ReadWrite"/> are allowed (both write-only).</description></item>
+    /// <item><description><see cref="ZipArchiveMode.Update"/>: All values are allowed. <see cref="FileAccess.Read"/> reads directly from the archive. <see cref="FileAccess.Write"/> discards existing content and provides an empty writable stream. <see cref="FileAccess.ReadWrite"/> loads existing content into memory (equivalent to <see cref="OpenAsync(CancellationToken)"/>).</description></item>
+    /// </list>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="access"/> is not a valid <see cref="FileAccess"/> value.</exception>
+    /// <exception cref="InvalidOperationException">The requested access is not compatible with the archive's open mode.</exception>
+    /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
+    /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
+    /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
+    public async Task<Stream> OpenAsync(FileAccess access, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ThrowIfInvalidArchive();
+
+        if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
+            throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
+
+        // Validate that the requested access is compatible with the archive's mode
+        switch (_archive.Mode)
+        {
+            case ZipArchiveMode.Read:
+                if (access != FileAccess.Read)
+                    throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
+                return await OpenInReadModeAsync(checkOpenable: true, cancellationToken).ConfigureAwait(false);
+
+            case ZipArchiveMode.Create:
+                if (access == FileAccess.Read)
+                    throw new InvalidOperationException(SR.CannotBeReadInCreateMode);
+                return OpenInWriteMode();
+
+            case ZipArchiveMode.Update:
+            default:
+                Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
+                switch (access)
+                {
+                    case FileAccess.Read:
+                        return await OpenInReadModeAsync(checkOpenable: true, cancellationToken).ConfigureAwait(false);
+                    case FileAccess.Write:
+                        return await OpenInUpdateModeAsync(loadExistingContent: false, cancellationToken).ConfigureAwait(false);
+                    case FileAccess.ReadWrite:
+                    default:
+                        return await OpenInUpdateModeAsync(loadExistingContent: true, cancellationToken).ConfigureAwait(false);
+                }
         }
     }
 
@@ -203,26 +259,35 @@ public partial class ZipArchiveEntry
             await GetOffsetOfCompressedDataAsync(cancellationToken).ConfigureAwait(false));
     }
 
-    private async Task<WrappedStream> OpenInUpdateModeAsync(CancellationToken cancellationToken)
+    private async Task<WrappedStream> OpenInUpdateModeAsync(bool loadExistingContent = true, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (_currentlyOpenForWrite)
             throw new IOException(SR.UpdateModeOneStream);
 
-        await ThrowIfNotOpenableAsync(needToUncompress: true, needToLoadIntoMemory: true, cancellationToken).ConfigureAwait(false);
+        if (loadExistingContent)
+        {
+            await ThrowIfNotOpenableAsync(needToUncompress: true, needToLoadIntoMemory: true, cancellationToken).ConfigureAwait(false);
+        }
 
         _everOpenedForWrite = true;
         Changes |= ZipArchive.ChangeState.StoredData;
         _currentlyOpenForWrite = true;
-        // always put it at the beginning for them
-        Stream uncompressedData = await GetUncompressedDataAsync(cancellationToken).ConfigureAwait(false);
-        uncompressedData.Seek(0, SeekOrigin.Begin);
-        return new WrappedStream(uncompressedData, this, thisRef =>
+
+        if (loadExistingContent)
         {
-            // once they close, we know uncompressed length, but still not compressed length
-            // so we don't fill in any size information
-            // those fields get figured out when we call GetCompressor as we write it to
-            // the actual archive
+            _storedUncompressedData = await GetUncompressedDataAsync(cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            _storedUncompressedData?.Dispose();
+            _storedUncompressedData = new MemoryStream();
+        }
+
+        _storedUncompressedData.Seek(0, SeekOrigin.Begin);
+
+        return new WrappedStream(_storedUncompressedData, this, thisRef =>
+        {
             thisRef!._currentlyOpenForWrite = false;
         });
     }
