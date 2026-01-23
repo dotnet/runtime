@@ -1563,7 +1563,7 @@ namespace System
                 {
                     if (foundCount >= span.Length)
                     {
-                        T[] values = new T[span.Length * 2];
+                        T[] values = new T[Math.Min((uint)span.Length * 2, (uint)array.Length)];
                         span.CopyTo(values);
                         span = values;
                     }
