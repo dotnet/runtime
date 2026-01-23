@@ -360,46 +360,6 @@ SigPointer MethodDesc::GetAsyncThunkResultTypeSig()
     return SigPointer(returnTypeSig, (DWORD)(returnTypeSigEnd - returnTypeSig));
 }
 
-bool MethodDesc::IsValueTaskAsyncThunk()
-{
-    _ASSERTE(IsAsyncThunkMethod());
-    PCCOR_SIGNATURE pSigRaw;
-    DWORD cSig;
-    if (FAILED(GetMDImport()->GetSigOfMethodDef(GetMemberDef(), &cSig, &pSigRaw)))
-    {
-        _ASSERTE(!"Loaded MethodDesc should not fail to get signature");
-        pSigRaw = NULL;
-        cSig = 0;
-    }
-
-    SigPointer pSig(pSigRaw, cSig);
-    uint32_t callConvInfo;
-    IfFailThrow(pSig.GetCallingConvInfo(&callConvInfo));
-
-    if ((callConvInfo & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
-    {
-        // GenParamCount
-        IfFailThrow(pSig.GetData(NULL));
-    }
-
-    // ParamCount
-    IfFailThrow(pSig.GetData(NULL));
-
-    // ReturnType comes now. Skip the modifiers.
-    IfFailThrow(pSig.SkipCustomModifiers());
-
-    // here we should have something Task, ValueTask, Task<retType> or ValueTask<retType>
-    BYTE bElementType;
-    IfFailThrow(pSig.GetByte(&bElementType));
-
-    // skip ELEMENT_TYPE_GENERICINST
-    if (bElementType == ELEMENT_TYPE_GENERICINST)
-        IfFailThrow(pSig.GetByte(&bElementType));
-
-    _ASSERTE(bElementType == ELEMENT_TYPE_VALUETYPE || bElementType == ELEMENT_TYPE_CLASS);
-    return bElementType == ELEMENT_TYPE_VALUETYPE;
-}
-
 // Given a method Foo<T>, return a MethodSpec token for Foo<T> instantiated
 // with the result type from the current async method's return type. For
 // example, if "this" represents Task<List<T>> Foo<T>(), and "md" is
@@ -580,7 +540,7 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
     }
 
     TypeHandle thLogicalRetType = msig.GetRetTypeHandleThrowing();
-    if (IsValueTaskAsyncThunk())
+    if (IsAsyncVariantForValueTaskReturningMethod())
     {
         MethodTable* pMTValueTask;
         int isCompletedToken;
