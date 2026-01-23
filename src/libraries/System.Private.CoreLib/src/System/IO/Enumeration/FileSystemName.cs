@@ -10,8 +10,8 @@ namespace System.IO.Enumeration
     public static class FileSystemName
     {
         // Wildcard characters used in pattern matching
-        internal static readonly SearchValues<char> SimpleWildcards = SearchValues.Create("*?");
-        internal static readonly SearchValues<char> ExtendedWildcards = SearchValues.Create("\"<>*?");
+        internal static readonly SearchValues<char> s_simpleWildcards = SearchValues.Create("*?");
+        internal static readonly SearchValues<char> s_extendedWildcards = SearchValues.Create("\"<>*?");
 
         /// <summary>Translates the given Win32 expression. Change '*' and '?' to '&lt;', '&gt;' and '"' to match Win32 behavior.</summary>
         /// <param name="expression">The expression to translate.</param>
@@ -162,7 +162,7 @@ namespace System.IO.Enumeration
 
                 // [MS - FSA] 2.1.4.4 Algorithm for Determining if a FileName Is in an Expression
                 // https://msdn.microsoft.com/en-us/library/ff469270.aspx
-                bool hasWildcards = expressionEnd.ContainsAny(useExtendedWildcards ? ExtendedWildcards : SimpleWildcards);
+                bool hasWildcards = expressionEnd.ContainsAny(useExtendedWildcards ? s_extendedWildcards : s_simpleWildcards);
                 if (!hasWildcards)
                 {
                     // Handle the special case of a single starting *, which essentially means "ends with"
