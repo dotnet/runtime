@@ -107,35 +107,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public unsafe void BadCast()
-        {
-            JSException ex;
-            JSHost.DotnetInstance.SetProperty("testBool", true);
-            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsInt32("testBool"));
-            Assert.Contains("Value is not an integer", ex.Message);
-            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsDouble("testBool"));
-            Assert.Contains("Value is not a Number", ex.Message);
-            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsString("testBool"));
-            Assert.Contains("Value is not a String", ex.Message);
-            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsJSObject("testBool"));
-            Assert.Contains("JSObject proxy of boolean is not supported", ex.Message);
-            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsByteArray("testBool"));
-            Assert.Contains("Value is not an Array or Uint8Array", ex.Message);
-            JSHost.DotnetInstance.SetProperty("testInt", 42);
-            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsBoolean("testInt"));
-            Assert.Contains("Value is not a Boolean", ex.Message);
-        }
-
-        [Fact]
-        public unsafe void OutOfRange()
-        {
-            JSException ex;
-            JSHost.DotnetInstance.SetProperty("testDouble", 9007199254740991L);
-            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsInt32("testDouble"));
-            Assert.Contains("Overflow: value 9007199254740991 is out of -2147483648 2147483647 range", ex.Message);
-        }
-
-        [Fact]
         public async Task RejectString()
         {
             var ex = await Assert.ThrowsAsync<JSException>(() => JavaScriptTestHelper.Reject("noodles"));
@@ -170,6 +141,36 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(43 + 123 + 31, JavaScriptTestHelper.optimizedReached);
         }
 
+        #region Assertion Errors
+        [Fact]
+        public unsafe void BadCast()
+        {
+            JSException ex;
+            JSHost.DotnetInstance.SetProperty("testBool", true);
+            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsInt32("testBool"));
+            Assert.Contains("Value is not an integer", ex.Message);
+            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsDouble("testBool"));
+            Assert.Contains("Value is not a Number", ex.Message);
+            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsString("testBool"));
+            Assert.Contains("Value is not a String", ex.Message);
+            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsJSObject("testBool"));
+            Assert.Contains("JSObject proxy of boolean is not supported", ex.Message);
+            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsByteArray("testBool"));
+            Assert.Contains("Value is not an Array or Uint8Array", ex.Message);
+            JSHost.DotnetInstance.SetProperty("testInt", 42);
+            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsBoolean("testInt"));
+            Assert.Contains("Value is not a Boolean", ex.Message);
+        }
+
+        [Fact]
+        public unsafe void OutOfRange()
+        {
+            JSException ex;
+            JSHost.DotnetInstance.SetProperty("testDouble", 9007199254740991L);
+            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsInt32("testDouble"));
+            Assert.Contains("Overflow: value 9007199254740991 is out of -2147483648 2147483647 range", ex.Message);
+        }
+
         [Fact]
         public async Task TaskOfShortOutOfRange_ThrowsAssertionInTaskContinuation()
         {
@@ -185,6 +186,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             JSException ex = await Assert.ThrowsAsync<JSException>(() => res);
             Assert.Equal("Error: Assert failed: Overflow: value 2147483647 is out of 0 255 range", ex.Message);
         }
+
+        [Fact]
+        public async Task TaskOfDateTimeOutOfRange_ThrowsAssertionInTaskContinuation()
+        {
+            Task<DateTime> res = JavaScriptTestHelper.ReturnResolvedPromiseWithDateMaxValue();
+            JSException ex = await Assert.ThrowsAsync<JSException>(() => res);
+            Assert.Equal("Error: Assert failed: Overflow: value 8640000000000000 is out of -62135596800000 253402300799999 range", ex.Message);
+        }
+        #endregion
 
         #region Get/Set Property
 

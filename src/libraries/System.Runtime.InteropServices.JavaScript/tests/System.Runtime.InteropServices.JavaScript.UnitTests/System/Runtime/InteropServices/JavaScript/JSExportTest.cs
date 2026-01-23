@@ -392,10 +392,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [Theory]
         [MemberData(nameof(MarshalBigInt64Cases))]
-        public async Task JsExportTaskOfLong(long value)
+        public async Task JsExportTaskOfBigLong(long value)
         {
             TaskCompletionSource<long> tcs = new TaskCompletionSource<long>();
-            var res = JavaScriptTestHelper.invoke1_TaskOfLong(tcs.Task, nameof(JavaScriptTestHelper.AwaitTaskOfInt64));
+            var res = JavaScriptTestHelper.invoke1_TaskOfBigLong(tcs.Task, nameof(JavaScriptTestHelper.AwaitTaskOfInt64));
             tcs.SetResult(value); // unresolved task marshalls promise and resolves on completion
             await Task.Yield();
             var rr = await res;
@@ -403,31 +403,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(value, rr);
         }
 
-        [Fact]
-        public async Task JsExportTaskOfShortOutOfRange_ThrowsAssertionInTaskContinuation()
-        {
-            // 1<<16 is out of range, passed to js and back, marshalling ts code asserts out of range and throws
-            Task<short> res = JavaScriptTestHelper.invoke1_TaskOfOutOfRangeShort(Task.FromResult(1 << 16), nameof(JavaScriptTestHelper.AwaitTaskOfShort));
-            JSException ex = await Assert.ThrowsAsync<JSException>(() => res);
-            Assert.Equal("Error: Assert failed: Overflow: value 65536 is out of -32768 32767 range", ex.Message);
-        }
-
-        [Fact]
-        public async Task JsExportTaskOfStringTypeAssertion_ThrowsAssertionInTaskContinuation()
-        {
-            // long value cannot be converted to string, error thrown through continuation in CS
-            Task<string> res = JavaScriptTestHelper.invoke1_TaskOfLong_ExceptionReturnTypeAssert(Task.FromResult(1L << 32), nameof(JavaScriptTestHelper.AwaitTaskOfString));
-            JSException ex = await Assert.ThrowsAsync<JSException>(() => res);
-            Assert.Equal("Error: Assert failed: Value is not a String", ex.Message);
-        }
-
         [Theory]
         [MemberData(nameof(MarshalBigInt64Cases))]
-        public async Task JsExportCompletedTaskOfLong(long value)
+        public async Task JsExportCompletedTaskOfBigLong(long value)
         {
             TaskCompletionSource<long> tcs = new TaskCompletionSource<long>();
             tcs.SetResult(value); // completed task marshalls value immediately
-            var res = JavaScriptTestHelper.invoke1_TaskOfLong(tcs.Task, nameof(JavaScriptTestHelper.AwaitTaskOfInt64));
+            var res = JavaScriptTestHelper.invoke1_TaskOfBigLong(tcs.Task, nameof(JavaScriptTestHelper.AwaitTaskOfInt64));
             await Task.Yield();
             var rr = await res;
             await Task.Yield();
@@ -487,5 +469,51 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             string result = await JavaScriptTestHelper.InvokeReturnCompletedTask();
             Assert.Equal("resolved", result);
         }
+
+        #region Assertion Errors
+        [Fact]
+        public async Task JsExportTaskOfShortOutOfRange_ThrowsAssertionInTaskContinuation()
+        {
+            // 1<<16 is out of range, passed to js and back, marshalling ts code asserts out of range and throws
+            Task<short> res = JavaScriptTestHelper.invoke1_TaskOfOutOfRangeShort(Task.FromResult(1 << 16), nameof(JavaScriptTestHelper.AwaitTaskOfShort));
+            JSException ex = await Assert.ThrowsAsync<JSException>(() => res);
+            Assert.Equal("Error: Assert failed: Overflow: value 65536 is out of -32768 32767 range", ex.Message);
+        }
+
+        [Fact]
+        public async Task JsExportTaskOfStringTypeAssertion_ThrowsAssertionInTaskContinuation()
+        {
+            // long value cannot be converted to string, error thrown through continuation in CS
+            Task<string> res = JavaScriptTestHelper.invoke1_TaskOfLong_ExceptionReturnTypeAssert(Task.FromResult(1L << 32), nameof(JavaScriptTestHelper.AwaitTaskOfString));
+            JSException ex = await Assert.ThrowsAsync<JSException>(() => res);
+            Assert.Equal("Error: Assert failed: Value is not a String", ex.Message);
+        }
+
+        [Fact]
+        public async Task JsExportTaskOfLong_OverflowInt52()
+        {
+            long value = 1L << 53;
+            TaskCompletionSource<long> tcs = new TaskCompletionSource<long>();
+            var res = JavaScriptTestHelper.invoke1_TaskOfLong(tcs.Task, nameof(JavaScriptTestHelper.AwaitTaskOfInt64));
+            tcs.SetResult(value);
+            JSException ex = await Assert.ThrowsAsync<JSException>(() => res);
+            Assert.Equal("Error: Assert failed: Value is not an integer: 9007199254740992 (bigint)", ex.Message);
+        }
+
+        [Fact]
+        public async Task JsExportTaskOfDateTime_OverflowNETDateTime()
+        {
+            var res = JavaScriptTestHelper.invokeExportWithTaskOfMaxJSDateTime(nameof(JavaScriptTestHelper.AwaitTaskOfDateTime));
+            JSException ex = await Assert.ThrowsAsync<JSException>(() => res);
+            Assert.Equal("Error: Assert failed: Overflow: value 8640000000000000 is out of -62135596800000 253402300799999 range", ex.Message);
+        }
+
+        [Fact]
+        public async Task JsExportDateTime_OverflowNETDateTime()
+        {
+            JSException ex = Assert.Throws<JSException>(() => JavaScriptTestHelper.invokeExportWithMaxJSDateTime(nameof(JavaScriptTestHelper.EchoDateTime)));
+            Assert.Equal("Error: Assert failed: Overflow: value 8640000000000000 is out of -62135596800000 253402300799999 range", ex.Message);
+        }
+        #endregion
     }
 }

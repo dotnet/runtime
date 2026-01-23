@@ -246,12 +246,32 @@ export function invoke2(arg1, name) {
     return res;
 }
 
+export function invokeExportWithPromiseWithDateMaxValue(exportName) {
+    const fn1 = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper[exportName];
+    const res = fn1(returnResolvedPromiseWithDateMaxValue());
+    return res;
+}
+
+export function invokeExportWithDateMaxValue(exportName) {
+    const fn1 = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper[exportName];
+    const res = fn1(returnDateMaxValue());
+    return res;
+}
+
 export function returnResolvedPromise() {
     return Promise.resolve();
 }
 
 export function returnResolvedPromiseWithIntMaxValue() {
     return Promise.resolve(2147483647);
+}
+
+export function returnResolvedPromiseWithDateMaxValue() {
+    return Promise.resolve(new Date(8640000000000000));
+}
+
+export function returnDateMaxValue() {
+    return new Date(8640000000000000);
 }
 
 export async function invokeReturnCompletedTask() {
