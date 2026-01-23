@@ -190,35 +190,31 @@ namespace ILCompiler
 
                 impl = implType.FindVirtualFunctionTargetMethodOnObjectType(declMethod);
 
-                if (impl != null)
+                // We need to bring the original instantiation back so that we can still try devirtualizing
+                // when the method is a generic virtual method
+                if (impl != null && originalDeclMethod.HasInstantiation)
                 {
-                    // We need to bring the original instantiation back so that we can still try devirtualizing
-                    // when the method is a generic virtual method
-                    if (originalDeclMethod.HasInstantiation)
+                    // We may end up with a method that has subsituted type parameters, so we need to instantiate
+                    // on the method definition
+                    impl = impl.GetMethodDefinition().MakeInstantiatedMethod(originalDeclMethod.Instantiation);
+                }
+
+                if (impl != null && (impl != declMethod))
+                {
+                    MethodDesc slotDefiningMethodImpl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(impl.GetMethodDefinition());
+                    MethodDesc slotDefiningMethodDecl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(declMethod);
+
+                    if (slotDefiningMethodImpl != slotDefiningMethodDecl)
                     {
-                        // We may end up with a method that has subsituted type parameters, so we need to instantiate
-                        // on the method definition
-                        impl = impl.GetMethodDefinition().MakeInstantiatedMethod(originalDeclMethod.Instantiation);
-                    }
-
-                    if (impl != declMethod)
-                    {
-                        MethodDesc slotDefiningMethodImpl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(impl.GetMethodDefinition());
-                        MethodDesc slotDefiningMethodDecl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(declMethod);
-
-                        if (slotDefiningMethodImpl != slotDefiningMethodDecl)
-                        {
-                            // If the derived method's slot does not match the vtable slot,
-                            // bail on devirtualization, as the method was installed into
-                            // the vtable slot via an explicit override and even if the
-                            // method is final, the slot may not be.
-                            //
-                            // Note the jit could still safely devirtualize if it had an exact
-                            // class, but such cases are likely rare.
-                            devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_SLOT;
-                            impl = null;
-                        }
-
+                        // If the derived method's slot does not match the vtable slot,
+                        // bail on devirtualization, as the method was installed into
+                        // the vtable slot via an explicit override and even if the
+                        // method is final, the slot may not be.
+                        //
+                        // Note the jit could still safely devirtualize if it had an exact
+                        // class, but such cases are likely rare.
+                        devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_SLOT;
+                        impl = null;
                     }
                 }
             }
