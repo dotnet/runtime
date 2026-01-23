@@ -598,7 +598,12 @@ namespace Microsoft.Extensions.Logging.Generators
                     return Array.Empty<LoggerClass>();
                 }
 
-                return results.OrderBy(x => x.Namespace, StringComparer.Ordinal).ThenBy(x => x.Name, StringComparer.Ordinal).ToList();
+                results.Sort((lhs, rhs) =>
+                {
+                    int c = StringComparer.Ordinal.Compare(lhs.Namespace, rhs.Namespace);
+                    return c != 0 ? c : StringComparer.Ordinal.Compare(lhs.Name, rhs.Name);
+                });
+                return results;
             }
 
             private static string GenerateClassName(TypeDeclarationSyntax typeDeclaration)
