@@ -1,10 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <!-- Needed for issues.target - need to prevent Mono Ahead of Time compiler
-         from running -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <!-- Test checks for an issue that cannot occur with the interpreter  -->
-    <InterpreterIncompatible>true</InterpreterIncompatible>
+    <MonoAotIncompatible>true</MonoAotIncompatible>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>

@@ -15,6 +15,7 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {string('https://github.com/dotnet/runtime/issues/54867') int32(2)}
     .entrypoint
     .maxstack  1
     // it's not currently possible to produce `ldtoken [type]&` in C#

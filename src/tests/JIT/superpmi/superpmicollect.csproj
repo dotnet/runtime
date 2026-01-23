@@ -22,6 +22,9 @@
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <!-- https://github.com/dotnet/runtime/issues/53321 -->
     <JitOptimizationSensitive Condition="'$(TargetArchitecture)' == 'arm64' And '$(TargetOS)' == 'osx'">true</JitOptimizationSensitive>
+
+    <!-- This test is very specific to RyuJIT tooling. -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' != 'coreclr'">true</DisableProjectBuild>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>

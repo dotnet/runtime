@@ -11,6 +11,9 @@
     <Optimize>true</Optimize>
     <!-- Generated shell script and corresponding assembly have different names -->
     <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'android'">true</CLRTestTargetUnsupported>
+
+    <!-- This test is very specific to MCJ tooling in CoreCLR. -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' != 'coreclr'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BasicTestWithMcj.cs" />

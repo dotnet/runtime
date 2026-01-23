@@ -28,6 +28,7 @@ public class Program
     }
 
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -2987,9 +2987,10 @@ call void Thread_EA::Dispatch(method explicit instance void *(int32), int32)
 .class public auto ansi MutualThdRecur_fptr {
 .method public static int32 main() il managed
 {
-  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-      01 00 00 00
-  )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
+        type([TestLibrary]TestLibrary.PlatformDetection)
+        string[1] ('IsThreadingSupported')
+    }
   .maxstack  4
   .entrypoint
   .locals (class [System.Threading.Thread]System.Threading.Thread[] thrd,

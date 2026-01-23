@@ -67,6 +67,7 @@ public class PInvokes
         Assert.Throws<EntryPointNotFoundException>(() => DisabledRuntimeMarshallingNative.CheckStructWithShortAndBool(new StructWithShortAndBool(s, b), s, b));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", TestRuntimes.Mono)]
     [Fact]
     [SkipOnMono("Mono supports non-blittable generic instantiations in P/Invokes")]
     public static void StructWithNonBlittableGenericInstantiation_Fails()
@@ -76,6 +77,7 @@ public class PInvokes
         Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithShortAndGeneric<char>(s, c), s, c));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", TestRuntimes.Mono)]
     [Fact]
     public static void StructWithBlittableGenericInstantiation()
     {
@@ -86,6 +88,7 @@ public class PInvokes
         Assert.True(DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithShortAndGeneric<short>(s, (short)c), s, (short)c));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", TestRuntimes.Mono)]
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
     public static void StructWithDefaultNonBlittableFields_MarshalAsInfo_WindowsOnly()

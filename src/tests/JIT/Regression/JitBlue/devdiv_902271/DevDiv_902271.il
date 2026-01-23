@@ -8,6 +8,8 @@
 }
 
 .assembly extern mscorlib {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly 'DevDiv_902271' {}
 .assembly extern xunit.core {}
 
@@ -15,7 +17,7 @@
 {
     .field private static class [mscorlib]System.Func`2<int32,int32> d1
     .field private static class [mscorlib]System.Func`6<int32,int32,int32,int32,int32,int32> d2
-  
+
     .method private hidebysig static int32 Work1(int32 x) cil managed
     {
         .maxstack  8
@@ -34,14 +36,14 @@
         ldc.i4.2
         ldc.i4.3
         ldc.i4.4
-        tail. 
+        tail.
         callvirt   instance !5 class [mscorlib]System.Func`6<int32,int32,int32,int32,int32,int32>::Invoke(!0,
                                                                                                           !1,
                                                                                                           !2,
                                                                                                           !3,
                                                                                                           !4)
         ret
-    } 
+    }
 
     .method private hidebysig static int32 Work2(int32 x, int32 a, int32 b, int32 c, int32 d) cil managed
     {
@@ -51,22 +53,35 @@
 
         ldc.i4.s   100
         ret
-    
+
     TAILCALL2:
         ldsfld     class [mscorlib]System.Func`2<int32,int32> Repro::d1
         ldarg.0
         ldc.i4.1
         sub
-        tail. 
+        tail.
         callvirt   instance !1 class [mscorlib]System.Func`2<int32,int32>::Invoke(!0)
         ret
-    } 
+    }
 
     .method public hidebysig static int32  Main() cil managed
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
             01 00 00 00
         )
+        .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+            string('needs traige')
+            int32(0x2) // Mono
+        }
+        .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+            string('needs triage')
+            type([TestLibrary]TestLibrary.Utilities)
+            string[1] ('IsNativeAot')
+        }
+        .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnCoreClrAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.RuntimeTestModes) = {
+            string('Unstable under JIT stress')
+            int32(0x1E) // AnyJitStress
+        }
         .entrypoint
         .maxstack  8
         ldnull
@@ -86,9 +101,9 @@
         ldsfld     class [mscorlib]System.Func`2<int32,int32> Repro::d1
         ldc.i4     0xf4240
         callvirt   instance !1 class [mscorlib]System.Func`2<int32,int32>::Invoke(!0)
-        
+
         ldstr      "PASS!"
         call       void [System.Console]System.Console::WriteLine(string)
         ret
-    } 
+    }
 }

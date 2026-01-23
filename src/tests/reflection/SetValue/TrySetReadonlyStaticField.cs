@@ -97,6 +97,7 @@ public class X
     }
 
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/200", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {

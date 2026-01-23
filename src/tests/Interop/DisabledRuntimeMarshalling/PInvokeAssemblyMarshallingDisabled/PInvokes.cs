@@ -13,6 +13,7 @@ namespace DisabledRuntimeMarshalling.PInvokeAssemblyMarshallingDisabled;
 public class PInvokes
 {
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", TestRuntimes.Mono)]
     [Fact]
     public static void StructWithDefaultNonBlittableFields_MarshalAsInfo()
     {
@@ -27,6 +28,7 @@ public class PInvokes
         Assert.True(DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithWCharAndShortWithMarshalAs(s, c), s, c));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", TestRuntimes.Mono)]
     [Fact]
     public static void Strings_NotSupported()
     {
@@ -36,18 +38,21 @@ public class PInvokes
         Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.GetStringWithUnicodeCharSet());
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", TestRuntimes.Mono)]
     [Fact]
     public static void LayoutClass_NotSupported()
     {
         Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CheckLayoutClass(new LayoutClass()));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", TestRuntimes.Mono)]
     [Fact]
     public static void SetLastError_NotSupported()
     {
         Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CallWithSetLastError());
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", TestRuntimes.Mono)]
     [Fact]
     [SkipOnMono("Mono does not support LCIDs at all and it is not worth the effort to add support just to make it throw an exception.")]
     public static void LCID_NotSupported()
@@ -55,6 +60,7 @@ public class PInvokes
         Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CallWithLCID());
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", TestRuntimes.Mono)]
     [Fact]
     [SkipOnMono("Mono does not support PreserveSig=False in P/Invokes and it is not worth the effort to add support just to make it throw an exception.")]
     public static void PreserveSig_False_NotSupported()
@@ -62,6 +68,7 @@ public class PInvokes
         Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CallWithHResultSwap());
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", TestRuntimes.Mono)]
     [Fact]
     public static void Varargs_NotSupported()
     {
@@ -91,6 +98,7 @@ public class PInvokes
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", TestRuntimes.Mono)]
     [Fact]
     public static void ByRef_Args_Not_Supported()
     {
@@ -101,6 +109,7 @@ public class PInvokes
         });
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", TestRuntimes.Mono)]
     [Fact]
     public static void NoBooleanNormalization()
     {
@@ -109,6 +118,7 @@ public class PInvokes
         Assert.Equal(byteVal, Unsafe.As<bool, byte>(ref Unsafe.AsRef(in boolVal)));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", TestRuntimes.Mono)]
     [Fact]
     public static void StructWithDefaultNonBlittableFields_DoesNotDoMarshalling()
     {
@@ -125,6 +135,7 @@ public class PInvokes
         Assert.False(DisabledRuntimeMarshallingNative.CheckStructWithShortAndBoolWithVariantBool(new StructWithShortAndBool(s, b), s, b));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", TestRuntimes.Mono)]
     [Fact]
     public static void StructWithNonBlittableGenericInstantiation()
     {
@@ -135,6 +146,7 @@ public class PInvokes
         Assert.True(DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithShortAndGeneric<char>(s, c), s, c));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", TestRuntimes.Mono)]
     [Fact]
     public static void StructWithBlittableGenericInstantiation()
     {
@@ -145,6 +157,7 @@ public class PInvokes
         Assert.True(DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithShortAndGeneric<short>(s, (short)c), s, (short)c));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", TestRuntimes.Mono)]
     [Fact]
     public static void CanUseEnumsWithDisabledMarshalling()
     {

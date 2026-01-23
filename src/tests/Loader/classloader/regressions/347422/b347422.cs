@@ -16,7 +16,8 @@ public interface IFoo{}
 
 public class Casting
 {
- [ActiveIssue("https://github.com/dotnet/runtimelab/issues/194", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/194", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+	[ActiveIssue("needs triage", TestRuntimes.Mono)]
 	[Fact]
 	public static int TestEntryPoint()
 	{
@@ -27,13 +28,13 @@ public class Casting
 
 			Console.WriteLine("FAIL: Did not catch expected InvalidCastException");
 			return 101;
-		
+
             }
             catch(InvalidCastException e)
             {
             		string msg ="Unable to cast object of type 'System.Object' to type 'IFoo'.";
-				
-                	
+
+
 			if (e.Message.Equals(msg) || e.Message.Contains("Debugging resource strings are unavailable"))
 			{
 				Console.WriteLine("PASS");

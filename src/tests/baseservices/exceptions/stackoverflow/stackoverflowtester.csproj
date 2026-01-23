@@ -7,6 +7,8 @@
     <GCStressIncompatible>true</GCStressIncompatible>
     <!-- Exception handling in this test is incompatible with SuperPMI collection. See https://github.com/dotnet/runtime/issues/108215. -->
     <SuperPMICollectIncompatible>true</SuperPMICollectIncompatible>
+    <!-- needs triage -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="stackoverflowtester.cs" />

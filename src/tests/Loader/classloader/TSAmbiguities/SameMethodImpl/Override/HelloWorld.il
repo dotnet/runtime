@@ -39,7 +39,6 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
-    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('https://github.com/dotnet/runtimelab/issues/155: Thorough checking of invalid inputs') type([TestLibrary]TestLibrary.Utilities) string[1] ('IsNativeAot') }
     .entrypoint
     // Code size       171 (0xab)
     .maxstack  3

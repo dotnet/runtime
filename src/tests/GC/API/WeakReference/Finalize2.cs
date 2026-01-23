@@ -184,6 +184,7 @@ public class NullHandle
     }
 
     [ActiveIssue("Expectations about finalization order", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {

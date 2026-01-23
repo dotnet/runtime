@@ -2097,13 +2097,27 @@
   .method public hidebysig static int32
           Main() cil managed
   {
-    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-        01 00 00 00
-    )
+    // This test depends on being able to read out stack frames. NativeAOT with the default trimming rules
+    // is not guaranteed to provide such information.
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
+        type([TestLibrary]TestLibrary.Utilities)
+        string[1] ('IsNotNativeAot')
+    }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.PlatformSpecificAttribute::.ctor(valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestPlatforms) = {
+        int32(1) // TestPlatforms.Windows
+    }
     .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
         string('Depends on implicit tailcalls to be performed')
         type([TestLibrary]TestLibrary.PlatformDetection)
         string[1] ('IsX86Process')
+    }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnCoreClrAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.RuntimeTestModes) = {
+        string('Depends on implicit tailcalls to be performed')
+        int32(0x1E) // AnyJitStress
+    }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnMonoAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestPlatforms) = {
+        string('Depends on RyuJIT-specific tail-call expectations')
+        int32(-1) // Any
     }
     .entrypoint
     .maxstack  1
