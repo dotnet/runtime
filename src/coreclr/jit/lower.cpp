@@ -3639,7 +3639,7 @@ bool Lowering::IsBlockReachableWithoutGCSafePoint(BasicBlock* block)
             continue;
         }
 
-        block->VisitAllSuccs(comp, [&](BasicBlock* succ) {
+        visitBlock->VisitAllSuccs(comp, [&](BasicBlock* succ) {
             if (BitVecOps::TryAddElemD(&traits, visited, succ->bbNum))
             {
                 stack.Push(succ);
