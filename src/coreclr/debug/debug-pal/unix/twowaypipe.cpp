@@ -103,8 +103,7 @@ bool TwoWayPipe::WaitForConnection()
 }
 
 // Reads data from pipe. Returns number of bytes read or a negative number in case of an error.
-// use GetLastError() for more details
-// UNIXTODO - mjm 9/6/15 - does not set last error on failure
+// On error, check errno for more details.
 int TwoWayPipe::Read(void *buffer, DWORD bufferSize)
 {
     _ASSERTE(m_state == ServerConnected || m_state == ClientConnected);
@@ -130,8 +129,7 @@ int TwoWayPipe::Read(void *buffer, DWORD bufferSize)
 }
 
 // Writes data to pipe. Returns number of bytes written or a negative number in case of an error.
-// use GetLastError() for more details
-// UNIXTODO - mjm 9/6/15 - does not set last error on failure
+// On error, check errno for more details.
 int TwoWayPipe::Write(const void *data, DWORD dataSize)
 {
     _ASSERTE(m_state == ServerConnected || m_state == ClientConnected);
