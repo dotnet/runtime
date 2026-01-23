@@ -444,6 +444,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("invoke1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Promise<JSType.BigInt>>]
         internal static partial Task<long> invoke1_TaskOfLong([JSMarshalAs<JSType.Promise<JSType.BigInt>>] Task<long> value, [JSMarshalAs<JSType.String>] string name);
+        [JSImport("invoke1", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Promise<JSType.Number>>]
+        internal static partial Task<short> invoke1_TaskOfOutOfRangeShort([JSMarshalAs<JSType.Promise<JSType.Number>>] Task<int> value, [JSMarshalAs<JSType.String>] string name);
         [JSImport("returnResolvedPromise", "JavaScriptTestHelper")]
         internal static partial Task ReturnResolvedPromise();
 
@@ -467,6 +470,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSExport]
         [return: JSMarshalAs<JSType.Promise<JSType.BigInt>>]
         public static async Task<long> AwaitTaskOfInt64([JSMarshalAs<JSType.Promise<JSType.BigInt>>] Task<long> arg1)
+        {
+            var res = await arg1;
+            return res;
+        }
+
+        [JSExport]
+        [return: JSMarshalAs<JSType.Promise<JSType.Number>>]
+        public static async Task<short> AwaitTaskOfShort([JSMarshalAs<JSType.Promise<JSType.Number>>] Task<short> arg1)
         {
             var res = await arg1;
             return res;
