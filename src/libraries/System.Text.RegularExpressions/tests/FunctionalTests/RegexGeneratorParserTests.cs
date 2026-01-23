@@ -1233,5 +1233,23 @@ namespace System.Text.RegularExpressions.Tests
                 return handle.Process.StandardOutput.ReadToEnd();
             }
         }
+
+        [Fact]
+        public async Task Diagnostic_MemberInsideExtensionBlock()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@"
+                using System.Text.RegularExpressions;
+                public static partial class C
+                {
+                    extension(string s)
+                    {
+                        [GeneratedRegex(""ab"")]
+                        public partial Regex ExtensionRegex { get; }
+                    }
+                }
+            ");
+
+            Assert.Equal("SYSLIB1046", Assert.Single(diagnostics).Id);
+        }
     }
 }
