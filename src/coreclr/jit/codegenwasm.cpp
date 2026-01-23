@@ -342,11 +342,11 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
         {
             if (interval->IsLoop())
             {
-                GetEmitter()->emitIns_B(INS_loop);
+                instGen(INS_loop);
             }
             else
             {
-                GetEmitter()->emitIns_B(INS_block);
+                instGen(INS_block);
             }
 
             wasmCursor++;

@@ -18,19 +18,10 @@
 
 void emitter::emitIns(instruction ins)
 {
-    instrDesc* id = emitNewInstrSmall(EA_8BYTE);
+    instrDesc* id  = emitNewInstrSmall(EA_8BYTE);
+    insFormat  fmt = emitInsFormat(ins);
     id->idIns(ins);
-    id->idInsFmt(IF_OPCODE);
-
-    dispIns(id);
-    appendToCurIG(id);
-}
-
-void emitter::emitIns_B(instruction ins)
-{
-    instrDesc* id = emitNewInstrSmall(EA_8BYTE);
-    id->idIns(ins);
-    id->idInsFmt(IF_BLOCK);
+    id->idInsFmt(fmt);
 
     dispIns(id);
     appendToCurIG(id);
