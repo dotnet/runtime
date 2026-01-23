@@ -1039,7 +1039,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [Fact]
         public void PartialContextClassWithAttributesOnMultipleDeclarations()
         {
-            // Test for https://github.com/dotnet/runtime/issues/97460
+            // Test for https://github.com/dotnet/runtime/issues/99669
             // When a JsonSerializerContext is defined across multiple partial class declarations
             // with [JsonSerializable] attributes on different declarations, the generator should
             // successfully generate code without duplicate hintName errors.
@@ -1078,13 +1078,15 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
                 """;
 
-            // Create compilation with multiple syntax trees to simulate partial class declarations in different files
+            // Create compilation with multiple syntax trees to simulate partial class declarations in different files.
+            // File paths are explicitly set to verify the canonical partial selection (first alphabetically).
+            // "File1.cs" comes before "File2.cs" alphabetically, so source1 declares the canonical partial.
             Compilation compilation = CSharpCompilation.Create(
                 "TestAssembly",
                 syntaxTrees:
                 [
-                    CSharpSyntaxTree.ParseText(source1, CompilationHelper.CreateParseOptions()),
-                    CSharpSyntaxTree.ParseText(source2, CompilationHelper.CreateParseOptions()),
+                    CSharpSyntaxTree.ParseText(source1, CompilationHelper.CreateParseOptions()).WithFilePath("File1.cs"),
+                    CSharpSyntaxTree.ParseText(source2, CompilationHelper.CreateParseOptions()).WithFilePath("File2.cs"),
                 ],
                 references:
                 [

@@ -157,14 +157,4 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(MyContainingGenericClass<int>.MyNestedGenericClass<int>.MyNestedGenericNestedGenericClass<int>))]
     [JsonSerializable(typeof(MyContainingGenericClass<MyContainingGenericClass<int>.MyNestedGenericClass<int>.MyNestedGenericNestedGenericClass<int>>.MyNestedGenericClass<int>.MyNestedGenericNestedGenericClass<int>))]
     internal partial class NestedGenericTypesContext : JsonSerializerContext { }
-
-    // Test classes for partial context with attributes on multiple declarations
-    public class PartialClassFromFirstFile
-    {
-        public int Value { get; set; }
-    }
-
-    // First partial declaration of the context - declares PartialClassFromFirstFile
-    [JsonSerializable(typeof(PartialClassFromFirstFile))]
-    internal partial class MultiplePartialDeclarationsContext : JsonSerializerContext { }
 }
