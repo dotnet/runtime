@@ -205,61 +205,42 @@ namespace System.IO.Tests.Enumeration
         }
 
         /// <summary>
-        /// Tests pattern matching end-to-end through actual file enumeration.
-        /// Creates a file with the given name and verifies the pattern matches or doesn't match.
+        /// Tests pattern matching end-to-end through actual file enumeration using the same theory data
+        /// as the FileSystemName tests. Creates a file with the given name and verifies the pattern
+        /// matches or doesn't match through actual directory enumeration.
         /// </summary>
         [Theory]
-        // Literal patterns (no wildcards)
-        [InlineData("log.txt", "log.txt", true)]
-        [InlineData("log.txt", "LOG.TXT", false)]
-        [InlineData("log.txt", "log.txt.bak", false)]
-        [InlineData("log.txt", "mylog.txt", false)]
-        // StartsWith patterns (literal*)
-        [InlineData("foo*", "foo", true)]
-        [InlineData("foo*", "foobar", true)]
-        [InlineData("foo*", "FOO", false)]
-        [InlineData("foo*", "barfoo", false)]
-        // EndsWith patterns (*literal)
-        [InlineData("*foo", "foo", true)]
-        [InlineData("*foo", "nofoo", true)]
-        [InlineData("*foo", "FOO", false)]
-        [InlineData("*foo", "foobar", false)]
-        // Contains patterns (*literal*)
-        [InlineData("*foo*", "foo", true)]
-        [InlineData("*foo*", "foobar", true)]
-        [InlineData("*foo*", "barfoo", true)]
-        [InlineData("*foo*", "barfoobar", true)]
-        [InlineData("*foo*", "FOO", false)]
-        [InlineData("*foo*", "bar", false)]
-        // prefix*suffix patterns
-        [InlineData("pre*fix", "prefix", true)]
-        [InlineData("pre*fix", "pre_extra_fix", true)]
-        [InlineData("pre*fix", "PREFIX", false)]
-        [InlineData("pre*fix", "prefi", false)]
-        [InlineData("pre*fix", "refix", false)]
-        [InlineData("file*.txt", "file.txt", true)]
-        [InlineData("file*.txt", "file123.txt", true)]
-        public void EnumerateFiles_PatternMatching_EndToEnd(string pattern, string fileName, bool shouldMatch)
+        [MemberData(nameof(FileSystemNameTests.SimpleMatchData), MemberType = typeof(FileSystemNameTests))]
+        public void EnumerateFiles_SimpleMatch_EndToEnd(string expression, string name, bool ignoreCase, bool expected)
         {
+            // Skip null expression and empty name cases as they can't be used for file creation
+            if (expression == null || string.IsNullOrEmpty(name))
+                return;
+
+            // Skip patterns with characters that are invalid for file names
+            if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+                return;
+
+            // Skip hidden file names (starting with .) on Unix as they have special enumeration behavior
+            if (name.StartsWith('.'))
+                return;
+
+            // Skip patterns like "*.*" that have special translation rules that differ from direct name matching
+            if (expression == "*.*" || expression == ".")
+                return;
+
             DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
-            FileInfo testFile = new FileInfo(Path.Combine(testDirectory.FullName, fileName));
+            FileInfo testFile = new FileInfo(Path.Combine(testDirectory.FullName, name));
             testFile.Create().Dispose();
 
-            // Test with default (Win32) mode
-            string[] results = GetFiles(testDirectory.FullName, pattern);
-            if (shouldMatch)
+            EnumerationOptions options = new EnumerationOptions
             {
-                Assert.Single(results);
-                Assert.Equal(testFile.FullName, results[0]);
-            }
-            else
-            {
-                Assert.Empty(results);
-            }
+                MatchType = MatchType.Simple,
+                MatchCasing = ignoreCase ? MatchCasing.CaseInsensitive : MatchCasing.CaseSensitive
+            };
 
-            // Test with Simple mode (same expected result for these patterns)
-            results = GetFiles(testDirectory.FullName, pattern, new EnumerationOptions { MatchType = MatchType.Simple });
-            if (shouldMatch)
+            string[] results = GetFiles(testDirectory.FullName, expression, options);
+            if (expected)
             {
                 Assert.Single(results);
                 Assert.Equal(testFile.FullName, results[0]);
@@ -271,28 +252,55 @@ namespace System.IO.Tests.Enumeration
         }
 
         /// <summary>
-        /// Tests case-insensitive pattern matching end-to-end through actual file enumeration.
+        /// Tests Win32 pattern matching end-to-end through actual file enumeration using the same theory data
+        /// as the FileSystemName tests.
         /// </summary>
         [Theory]
-        [InlineData("log.txt", "LOG.TXT")]
-        [InlineData("foo*", "FOO")]
-        [InlineData("foo*", "FOOBAR")]
-        [InlineData("*foo", "FOO")]
-        [InlineData("*foo", "NOFOO")]
-        [InlineData("*foo*", "FOO")]
-        [InlineData("*foo*", "BARFOOBAR")]
-        [InlineData("pre*fix", "PREFIX")]
-        [InlineData("pre*fix", "PRE_EXTRA_FIX")]
-        public void EnumerateFiles_CaseInsensitiveMatching_EndToEnd(string pattern, string fileName)
+        [MemberData(nameof(FileSystemNameTests.SimpleMatchData), MemberType = typeof(FileSystemNameTests))]
+        [MemberData(nameof(FileSystemNameTests.Win32MatchData), MemberType = typeof(FileSystemNameTests))]
+        public void EnumerateFiles_Win32Match_EndToEnd(string expression, string name, bool ignoreCase, bool expected)
         {
+            // Skip null expression and empty name cases as they can't be used for file creation
+            if (expression == null || string.IsNullOrEmpty(name))
+                return;
+
+            // Skip patterns with characters that are invalid for file names
+            if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+                return;
+
+            // Skip Win32-specific patterns that use internal DOS characters (", <, >) as they won't work through the public API
+            if (expression.IndexOfAny(new[] { '"', '<', '>' }) >= 0)
+                return;
+
+            // Skip hidden file names (starting with .) on Unix as they have special enumeration behavior
+            if (name.StartsWith('.'))
+                return;
+
+            // Skip patterns like "*.*" that have special translation rules in Win32 mode
+            // In Win32 mode, "*.*" and "." are translated to "*" which matches everything
+            if (expression == "*.*" || expression == ".")
+                return;
+
             DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
-            FileInfo testFile = new FileInfo(Path.Combine(testDirectory.FullName, fileName));
+            FileInfo testFile = new FileInfo(Path.Combine(testDirectory.FullName, name));
             testFile.Create().Dispose();
 
-            // Case-insensitive matching should find the file
-            string[] results = GetFiles(testDirectory.FullName, pattern, new EnumerationOptions { MatchCasing = MatchCasing.CaseInsensitive });
-            Assert.Single(results);
-            Assert.Equal(testFile.FullName, results[0]);
+            EnumerationOptions options = new EnumerationOptions
+            {
+                MatchType = MatchType.Win32,
+                MatchCasing = ignoreCase ? MatchCasing.CaseInsensitive : MatchCasing.CaseSensitive
+            };
+
+            string[] results = GetFiles(testDirectory.FullName, expression, options);
+            if (expected)
+            {
+                Assert.Single(results);
+                Assert.Equal(testFile.FullName, results[0]);
+            }
+            else
+            {
+                Assert.Empty(results);
+            }
         }
     }
 
