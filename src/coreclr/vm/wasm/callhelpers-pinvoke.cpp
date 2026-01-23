@@ -90,7 +90,7 @@ extern "C" {
     void * SystemNative_GetCwd (void *, int32_t);
     void * SystemNative_GetDefaultSearchOrderPseudoHandle ();
     int32_t SystemNative_GetErrNo ();
-    uint32_t SystemNative_GetFileSystemType (void *);
+    uint32_t SystemNative_FileSystemSupportsLocking (void *, int32_t, int32_t);
     int32_t SystemNative_GetIPv4Address (void *, int32_t, void *);
     int32_t SystemNative_GetIPv6Address (void *, int32_t, void *, int32_t, void *);
     void * SystemNative_GetLoadLibraryError ();
@@ -238,7 +238,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetFileSystemType) // System.Private.CoreLib
+    DllImportEntry(SystemNative_FileSystemSupportsLocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetIPv4Address) // System.Net.Primitives
     DllImportEntry(SystemNative_GetIPv6Address) // System.Net.Primitives
     DllImportEntry(SystemNative_GetLoadLibraryError) // System.Private.CoreLib

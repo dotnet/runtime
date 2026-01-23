@@ -2396,8 +2396,8 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ErrNo.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.ErrNo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FileSystemSupportsLocking.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.FileSystemSupportsLocking.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FLock.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.FLock.cs</Link>
@@ -2889,6 +2889,7 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)System\IParsable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ISpanParsable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\DivisionRounding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IAdditionOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IAdditiveIdentity.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IBinaryFloatingPointIeee754.cs" />
