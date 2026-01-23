@@ -455,32 +455,6 @@ static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types type)
     return ((uint32_t)oper << shift1) | ((uint32_t)type);
 }
 
-//------------------------------------------------------------------------
-// PackOperAndType: Pack a genTreeOps and two var_types into a uint32_t
-//
-// Arguments:
-//    oper - a genTreeOps to pack
-//    toType - a var_types to pack
-//    fromType - a var_types to pack
-//
-// Return Value:
-//    oper and the types packed into an integer that can be used as a switch value/case
-//
-static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types toType, var_types fromType)
-{
-    if (fromType == TYP_BYREF)
-    {
-        fromType = TYP_I_IMPL;
-    }
-    if (toType == TYP_BYREF)
-    {
-        toType = TYP_I_IMPL;
-    }
-    const int shift1 = ConstLog2<TYP_COUNT>::value + 1;
-    const int shift2 = shift1 + ConstLog2<GT_COUNT>::value + 1;
-    return ((uint32_t)oper << shift1) | ((uint32_t)fromType) | ((uint32_t)toType << shift2);
-}
-
 // ------------------------------------------------------------------------
 // PackTypes: Pack two var_types together into a uint32_t
 
@@ -495,11 +469,11 @@ static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types toType, var
 //
 static constexpr uint32_t PackTypes(var_types toType, var_types fromType)
 {
-    if (toType == TYP_BYREF)
+    if (toType == TYP_BYREF || toType == TYP_REF)
     {
         toType = TYP_I_IMPL;
     }
-    if (fromType == TYP_BYREF)
+    if (fromType == TYP_BYREF || fromType == TYP_REF)
     {
         fromType = TYP_I_IMPL;
     }
@@ -519,12 +493,18 @@ static constexpr uint32_t PackTypes(var_types toType, var_types fromType)
 //
 void CodeGen::genIntToIntCast(GenTreeCast* cast)
 {
+    if (cast->gtOverflow())
+    {
+        NYI_WASM("Overflow checks");
+    }
+
     GenIntCastDesc desc(cast);
     var_types      toType     = genActualType(cast->CastToType());
     var_types      fromType   = genActualType(cast->CastOp());
     int            extendSize = desc.ExtendSrcSize();
     instruction    ins        = INS_none;
     assert(fromType == TYP_INT || fromType == TYP_LONG);
+
 
     genConsumeOperands(cast);
 
@@ -565,12 +545,12 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 
             break;
         }
-        case GenIntCastDesc::ExtendKind::ZERO_EXTEND_INT:
+        case GenIntCastDesc::ZERO_EXTEND_INT:
         {
             ins = INS_i64_extend_u_i32;
             break;
         }
-        case GenIntCastDesc::ExtendKind::SIGN_EXTEND_INT:
+        case GenIntCastDesc::SIGN_EXTEND_INT:
         {
             ins = INS_i64_extend_s_i32;
             break;
@@ -599,11 +579,17 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 //
 void CodeGen::genFloatToIntCast(GenTree* tree)
 {
+    if (tree->gtOverflow())
+    {
+        NYI_WASM("Overflow checks");
+    }
+
     var_types   toType     = tree->TypeGet();
     var_types   fromType   = tree->AsCast()->CastOp()->TypeGet();
     bool        isUnsigned = varTypeIsUnsigned(tree->AsCast()->CastToType());
     instruction ins        = INS_none;
     assert(varTypeIsFloating(fromType) && (toType == TYP_INT || toType == TYP_LONG));
+
 
     genConsumeOperands(tree->AsCast());
 
