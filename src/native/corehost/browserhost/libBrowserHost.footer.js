@@ -100,4 +100,20 @@
         addToLibrary(lib);
     }
     libFactory();
+    function trim() {
+        return ERRNO_CODES.EOPNOTSUPP;
+    }
+
+    // TODO-WASM: fix PAL https://github.com/dotnet/runtime/issues/122506
+    LibraryManager.library.__syscall_pipe = trim;
+    delete LibraryManager.library.__syscall_pipe__deps;
+
+    LibraryManager.library.__syscall_connect = trim;
+    delete LibraryManager.library.__syscall_connect__deps;
+
+    LibraryManager.library.__syscall_sendto = trim;
+    delete LibraryManager.library.__syscall_sendto__deps;
+
+    LibraryManager.library.__syscall_socket = trim;
+    delete LibraryManager.library.__syscall_socket__deps;
 })();

@@ -71,11 +71,6 @@ export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
         if (!parentDirectory.startsWith("/"))
             parentDirectory = "/" + parentDirectory;
 
-        // TODO-WASM: improve node mounting
-        if (parentDirectory.startsWith("/managed")) {
-            throw new Error("Cannot create files under /managed virtual directory as it is reserved for NodeFS mounting");
-        }
-
         _ems_.dotnetLogger.debug(`Creating directory '${parentDirectory}'`);
 
         _ems_.FS.createPath(
@@ -148,7 +143,7 @@ export function initializeCoreCLR(): number {
     function absoluteDllPath(asset: AssemblyAsset): string {
         return asset.virtualPath.startsWith("/")
             ? asset.virtualPath
-            : "/managed" + asset.virtualPath;
+            : "/" + asset.virtualPath;
     }
 }
 
