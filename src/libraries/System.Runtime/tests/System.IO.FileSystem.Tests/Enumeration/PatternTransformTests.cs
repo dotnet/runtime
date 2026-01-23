@@ -203,6 +203,97 @@ namespace System.IO.Tests.Enumeration
             results = GetFiles(testDirectory.FullName, "file*.txt", new EnumerationOptions { MatchType = MatchType.Simple });
             FSAssert.EqualWhenOrdered(new string[] { match1.FullName, match2.FullName, match3.FullName }, results);
         }
+
+        /// <summary>
+        /// Tests pattern matching end-to-end through actual file enumeration.
+        /// Creates a file with the given name and verifies the pattern matches or doesn't match.
+        /// </summary>
+        [Theory]
+        // Literal patterns (no wildcards)
+        [InlineData("log.txt", "log.txt", true)]
+        [InlineData("log.txt", "LOG.TXT", false)]
+        [InlineData("log.txt", "log.txt.bak", false)]
+        [InlineData("log.txt", "mylog.txt", false)]
+        // StartsWith patterns (literal*)
+        [InlineData("foo*", "foo", true)]
+        [InlineData("foo*", "foobar", true)]
+        [InlineData("foo*", "FOO", false)]
+        [InlineData("foo*", "barfoo", false)]
+        // EndsWith patterns (*literal)
+        [InlineData("*foo", "foo", true)]
+        [InlineData("*foo", "nofoo", true)]
+        [InlineData("*foo", "FOO", false)]
+        [InlineData("*foo", "foobar", false)]
+        // Contains patterns (*literal*)
+        [InlineData("*foo*", "foo", true)]
+        [InlineData("*foo*", "foobar", true)]
+        [InlineData("*foo*", "barfoo", true)]
+        [InlineData("*foo*", "barfoobar", true)]
+        [InlineData("*foo*", "FOO", false)]
+        [InlineData("*foo*", "bar", false)]
+        // prefix*suffix patterns
+        [InlineData("pre*fix", "prefix", true)]
+        [InlineData("pre*fix", "pre_extra_fix", true)]
+        [InlineData("pre*fix", "PREFIX", false)]
+        [InlineData("pre*fix", "prefi", false)]
+        [InlineData("pre*fix", "refix", false)]
+        [InlineData("file*.txt", "file.txt", true)]
+        [InlineData("file*.txt", "file123.txt", true)]
+        public void EnumerateFiles_PatternMatching_EndToEnd(string pattern, string fileName, bool shouldMatch)
+        {
+            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
+            FileInfo testFile = new FileInfo(Path.Combine(testDirectory.FullName, fileName));
+            testFile.Create().Dispose();
+
+            // Test with default (Win32) mode
+            string[] results = GetFiles(testDirectory.FullName, pattern);
+            if (shouldMatch)
+            {
+                Assert.Single(results);
+                Assert.Equal(testFile.FullName, results[0]);
+            }
+            else
+            {
+                Assert.Empty(results);
+            }
+
+            // Test with Simple mode (same expected result for these patterns)
+            results = GetFiles(testDirectory.FullName, pattern, new EnumerationOptions { MatchType = MatchType.Simple });
+            if (shouldMatch)
+            {
+                Assert.Single(results);
+                Assert.Equal(testFile.FullName, results[0]);
+            }
+            else
+            {
+                Assert.Empty(results);
+            }
+        }
+
+        /// <summary>
+        /// Tests case-insensitive pattern matching end-to-end through actual file enumeration.
+        /// </summary>
+        [Theory]
+        [InlineData("log.txt", "LOG.TXT")]
+        [InlineData("foo*", "FOO")]
+        [InlineData("foo*", "FOOBAR")]
+        [InlineData("*foo", "FOO")]
+        [InlineData("*foo", "NOFOO")]
+        [InlineData("*foo*", "FOO")]
+        [InlineData("*foo*", "BARFOOBAR")]
+        [InlineData("pre*fix", "PREFIX")]
+        [InlineData("pre*fix", "PRE_EXTRA_FIX")]
+        public void EnumerateFiles_CaseInsensitiveMatching_EndToEnd(string pattern, string fileName)
+        {
+            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
+            FileInfo testFile = new FileInfo(Path.Combine(testDirectory.FullName, fileName));
+            testFile.Create().Dispose();
+
+            // Case-insensitive matching should find the file
+            string[] results = GetFiles(testDirectory.FullName, pattern, new EnumerationOptions { MatchCasing = MatchCasing.CaseInsensitive });
+            Assert.Single(results);
+            Assert.Equal(testFile.FullName, results[0]);
+        }
     }
 
     public class PatternTransformTests_DirectoryInfo : PatternTransformTests_Directory
