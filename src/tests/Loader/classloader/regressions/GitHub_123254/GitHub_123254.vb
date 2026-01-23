@@ -59,7 +59,6 @@ Public Class GitHub_123254
     Public Class TestClass2(Of T)
         Implements ILayer3_2(Of T)
         Public ReadOnly Property Count As Integer Implements ILayer2_2(Of String).Count
-
         Public Function GetEnumerator() As IEnumerator(Of String) Implements ILayer1_2(Of String).GetEnumerator
             Return DirectCast(Array.Empty(Of String)(), IEnumerable(Of String)).GetEnumerator()
         End Function
