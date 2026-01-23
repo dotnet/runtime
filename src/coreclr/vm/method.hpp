@@ -72,8 +72,10 @@ enum class AsyncMethodFlags
     ReturnsTaskOrValueTask     = 2,
     // An AsyncCall representation of a ReturnsTaskOrValueTask method.
     IsAsyncVariant             = 4,
+    // Whether the ReturnsTaskOrValueTask counterpart is returning Task or ValueTask
+    IsAsyncVariantForValueTask = 8,
     // Method has synthetic body, which forwards to the other variant.
-    Thunk                      = 8,
+    Thunk                      = 16,
     // The rest of the methods that are not in any of the above groups.
     // Such methods are not interesting to the Runtime Async feature.
     // Note: Generic T-returning methods are classified as "None", even if T could be a Task.
@@ -89,14 +91,9 @@ enum class AsyncMethodFlags
     // the IL body belongs to one of the variants and another variant is a synthetic thunk.
     //
     // The signature of the Async variant is derived from the Task-returning signature by replacing
-    // Task return type with modreq'd element type:
-    //   Example: "Task<int> Foo();"  ===> "modreq(Task`) int Foo();"
-    //   Example: "ValueTask Bar();"  ===> "modreq(ValueTask) void Bar();"
-    //
-    // The reason for this encoding is that:
-    //   - it uses parts of original signature, as-is, thus does not need to look for or construct anything
-    //   - it "unwraps" the element type.
-    //   - it is reversible. Thus nonconflicting signatures will map to nonconflicting ones.
+    // Task return type with "element" type:
+    //   Example: "Task<int> Foo();"  ===> "int Foo();"
+    //   Example: "ValueTask Bar();"  ===> "void Bar();"
     //
     // It is possible to get from one variant to another via GetAsyncOtherVariant.
     //
@@ -1978,6 +1975,18 @@ public:
         return hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariant);
     }
 
+    // Is this an Async variant method for a method that
+    // returns ValueTask or ValueTask<T> ?
+    inline bool IsAsyncVariantForValueTaskReturningMethod() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (!HasAsyncMethodData())
+            return false;
+
+        AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
+        return hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariantForValueTask);
+    }
+
     // Is this a small(ish) synthetic Task/async adapter to an async/Task implementation?
     // If yes, the method has another variant, which has the actual user-defined method body.
     inline bool IsAsyncThunkMethod() const
@@ -2175,7 +2184,6 @@ private:
     void EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& thunkMsig, ILStubLinker* pSL);
     void EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig& msig, ILStubLinker* pSL);
     SigPointer GetAsyncThunkResultTypeSig();
-    bool IsValueTaskAsyncThunk();
     int GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
     int GetTokenForGenericTypeMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
 public:
