@@ -36,8 +36,8 @@ export function locateFile(path: string, isModule = false): string {
 
 export function isCurrentScript(argv1: string): boolean {
     const argScript = normalizeFileUrl("file:///" + locateFile(argv1));
-    const importScript = normalizeFileUrl(locateFile(scriptUrl.toLowerCase()));
-    return argScript === importScript;
+    const importScript = normalizeFileUrl(locateFile(scriptUrl));
+    return argScript.toLowerCase() === importScript.toLowerCase();
 }
 
 function normalizeFileUrl(filename: string) {

@@ -14,7 +14,7 @@ import { HostBuilder } from "./host-builder";
 import { initPolyfillsAsync } from "./polyfills";
 import { exit } from "./exit";
 import { dotnetInitializeModule } from ".";
-import { selfHostNodeJS } from "./config-self";
+import { selfConfigureAndRun } from "./config-self";
 
 dotnetInitializeModule();
 await initPolyfillsAsync();
@@ -25,4 +25,4 @@ export { exit };
 dotnet.withConfig(/*! dotnetBootConfig */{});
 
 // Auto-start when in Node.js or Shell environment
-selfHostNodeJS(dotnet!).catch();
+selfConfigureAndRun(dotnet!).catch();

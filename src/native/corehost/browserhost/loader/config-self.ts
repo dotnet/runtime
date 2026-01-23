@@ -10,7 +10,7 @@ import { isValidLoaderConfig } from "./config";
 import { isCurrentScript } from "./bootstrap";
 
 // Auto-start when in NodeJS environment as a entry script
-export async function selfHostNodeJS(dotnet: DotnetHostBuilder): Promise<void> {
+export async function selfConfigureAndRun(dotnet: DotnetHostBuilder): Promise<void> {
     try {
         if (isNodeHosted()) {
             await nodeFindResources(dotnet);
