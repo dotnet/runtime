@@ -12,16 +12,16 @@ namespace System.Security.Cryptography
     public sealed class RSASignaturePadding : IEquatable<RSASignaturePadding>
     {
         /// <summary>
-        /// Represents a constant value indicating that the salt length should match the hash length.
+        /// A constant value indicating that the PSS salt length should match the hash length.
         /// </summary>
         /// <remarks>This value is typically used in cryptographic operations where the salt length is required to
         /// be the same as the hash length.</remarks>
         public const int PssSaltLengthIsHashLength = RsaPaddingProcessor.PssSaltLengthIsHashLength;
 
         /// <summary>
-        /// Represents the maximum allowable length, in bytes, for a PSS (Probabilistic Signature Scheme) salt.
+        /// A constant value indicating that the PSS salt length should be the maximum allowable
         /// </summary>
-        /// <remarks>This constant is used to define the upper limit for the salt length in PSS-based
+        /// <remarks>A constant is used to define the upper limit for the salt length in PSS-based
         /// cryptographic operations. The maximum length is determined by the hash algorithm's output size.</remarks>
         public const int PssSaltLengthMax = RsaPaddingProcessor.PssSaltLengthMax;
 
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="saltLength">The length of the salt in bytes, or one of the constants <see cref="PssSaltLengthIsHashLength"/> or <see cref="PssSaltLengthMax" />.</param>
         /// <returns>A new instance of <see cref="RSASignaturePadding"/> configured for PSS padding with the specified salt length.</returns>
-        /// <exception cref="ArgumentOutOfRangeException">The <paramref name="saltLength"/> is negative or not one of the special constants.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The <paramref name="saltLength"/> has a negative value other than one of the special constants.</exception>
         public static RSASignaturePadding CreatePss(int saltLength)
         {
             switch (saltLength)

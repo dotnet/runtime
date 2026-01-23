@@ -79,15 +79,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 AsnReader rootSequence = asnReader.ReadSequence();
                 Assert.Equal("1.2.840.113549.1.1.10", rootSequence.ReadObjectIdentifier()); // Make sure it's RSASSA-PSS
                 AsnReader pssStructure = rootSequence.ReadSequence();
-                pssStructure.ReadEncodedValue(); // Ignore the hash algorithm OID
-                pssStructure.ReadEncodedValue(); // Ignore the mask generation function OID
+                ReadOnlyMemory<byte> hashAlgorithm = pssStructure.ReadEncodedValue(); // Ignore the hash algorithm OID
+                ReadOnlyMemory<byte> mgf = pssStructure.ReadEncodedValue(); // Ignore the mask generation function OID
                 Asn1Tag saltTag = new Asn1Tag(TagClass.ContextSpecific, 2, true);
 
                 if (pssStructure.HasData && pssStructure.PeekTag().HasSameClassAndValue(saltTag))
                 {
-                    var saltEntry = pssStructure.ReadSequence(saltTag);
-                    var actualSaltLength = saltEntry.ReadInteger();
-                    var expectedSaltLength = saltLengthToTest switch
+                    AsnReader saltEntry = pssStructure.ReadSequence(saltTag);
+                    Numerics.BigInteger actualSaltLength = saltEntry.ReadInteger();
+                    int expectedSaltLength = saltLengthToTest switch
                     {
                         RSASignaturePadding.PssSaltLengthIsHashLength => 32,
                         RSASignaturePadding.PssSaltLengthMax => 222,

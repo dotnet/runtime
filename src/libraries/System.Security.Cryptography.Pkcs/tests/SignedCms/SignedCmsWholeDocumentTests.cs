@@ -90,7 +90,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(
                 "07849DC26FCBB2F3BD5F57BDF214BAE374575F1BD4E6816482324799417CB379",
                 messageDigestAttr.MessageDigest.ByteArrayToHex());
-            
+
             Assert.IsType<Pkcs9AttributeObject>(signedAttrs[3].Values[0]);
 #if !NET
             Assert.NotSame(signedAttrs[3].Oid, signedAttrs[3].Values[0].Oid);

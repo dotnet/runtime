@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Formats.Asn1;
 using System.Net;
 using Test.Cryptography;
@@ -374,19 +375,19 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
             }
         }
 
+        public static IEnumerable<object[]> AllRsaPssCustomSaltLength()
+        {
+            foreach (string hashAlgorithm in new[] { "SHA256", "SHA384", "SHA512", "SHA1" })
+            {
+                foreach (int saltLength in new[] { 0, 1, RSASignaturePadding.PssSaltLengthMax, RSASignaturePadding.PssSaltLengthIsHashLength })
+                {
+                    yield return new object[] { hashAlgorithm, saltLength };
+                }
+            }
+        }
+
         [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.AreCustomSaltLengthsSupportedWithPss))]
-        [InlineData("SHA256", 1)]
-        [InlineData("SHA384", 1)]
-        [InlineData("SHA512", 1)]
-        [InlineData("SHA1", 1)] 
-        [InlineData("SHA256", RSASignaturePadding.PssSaltLengthMax)]
-        [InlineData("SHA384", RSASignaturePadding.PssSaltLengthMax)]
-        [InlineData("SHA512", RSASignaturePadding.PssSaltLengthMax)]
-        [InlineData("SHA1", RSASignaturePadding.PssSaltLengthMax)]
-        [InlineData("SHA256", RSASignaturePadding.PssSaltLengthIsHashLength)]
-        [InlineData("SHA384", RSASignaturePadding.PssSaltLengthIsHashLength)]
-        [InlineData("SHA512", RSASignaturePadding.PssSaltLengthIsHashLength)]
-        [InlineData("SHA1", RSASignaturePadding.PssSaltLengthIsHashLength)]
+        [MemberData(nameof(AllRsaPssCustomSaltLength))]
         public static void VerifySignature_RSA_PSS_CustomSaltLength(string hashAlgorithm, int saltLength)
         {
             VerifySignature_RSA_PSSCore(hashAlgorithm, saltLength);

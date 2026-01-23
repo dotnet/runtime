@@ -1392,6 +1392,9 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Modulus = keyParameters.Modulus,
                 Exponent = keyParameters.Exponent,
             };
+
+            RSASignaturePadding padding = RSASignaturePadding.Pss;
+
             using (RSA rsaPublic = RSAFactory.Create())
             using (RSA rsaPrivate = RSAFactory.Create())
             {
@@ -1410,27 +1413,27 @@ namespace System.Security.Cryptography.Rsa.Tests
                 // Generator for new tests.
                 if (signature == null)
                 {
-                    signature = SignData(rsaPrivate, data, hashAlgorithm, RSASignaturePadding.Pss);
+                    signature = SignData(rsaPrivate, data, hashAlgorithm, padding);
                     Console.WriteLine($"{callerName}: {signature.ByteArrayToHex()}");
                 }
 
                 if (RSAFactory.SupportsPss)
                 {
                     Assert.True(
-                        VerifyData(rsaPublic, data, signature, hashAlgorithm, RSASignaturePadding.Pss),
+                        VerifyData(rsaPublic, data, signature, hashAlgorithm, padding),
                         "Public key verified the signature");
 
                     Assert.True(
-                        VerifyData(rsaPrivate, data, signature, hashAlgorithm, RSASignaturePadding.Pss),
+                        VerifyData(rsaPrivate, data, signature, hashAlgorithm, padding),
                         "Private key verified the signature");
                 }
                 else
                 {
                     Assert.ThrowsAny<CryptographicException>(
-                        () => VerifyData(rsaPublic, data, signature, hashAlgorithm, RSASignaturePadding.Pss));
+                        () => VerifyData(rsaPublic, data, signature, hashAlgorithm, padding));
 
                     Assert.ThrowsAny<CryptographicException>(
-                        () => VerifyData(rsaPrivate, data, signature, hashAlgorithm, RSASignaturePadding.Pss));
+                        () => VerifyData(rsaPrivate, data, signature, hashAlgorithm, padding));
                 }
             }
         }

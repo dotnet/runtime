@@ -732,7 +732,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             from oid in (string[])([Oids.Sha256, Oids.Sha384, Oids.Sha512, Oids.Sha1])
             from byCtor in new[] { true, false }
             from saltLength in AreCustomPssSaltLengthsSupported
-                ? new[] { 0, RSASignaturePadding.PssSaltLengthMax, RSASignaturePadding.PssSaltLengthIsHashLength }
+                ? new[] { 0, 63, RSASignaturePadding.PssSaltLengthMax, RSASignaturePadding.PssSaltLengthIsHashLength }
                 : new[] { RSASignaturePadding.PssSaltLengthIsHashLength }
             select new object[] { oid, byCtor, saltLength };
 

@@ -323,7 +323,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 AsnReader sequence = reader.ReadSequence();
                 ReadOnlyMemory<byte> tbsCertificate = sequence.ReadEncodedValue();
                 ReadOnlyMemory<byte> signatureAlgorithm = sequence.ReadEncodedValue();
-                byte[] signature = sequence.ReadBitString(out var _);
+                byte[] signature = sequence.ReadBitString(out _);
 
                 int testSaltLength = customSaltLength switch
                 {

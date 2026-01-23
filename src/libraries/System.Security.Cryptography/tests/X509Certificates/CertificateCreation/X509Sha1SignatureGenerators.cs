@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 using Test.Cryptography;
-#if NET11_0_OR_GREATER
-using System.Formats.Asn1;
-#endif
 
 namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreation
 {
@@ -76,6 +74,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 {
                     // sha1WithRSAEncryption with RSASSA-PSS parameters
                     return "300D06092A864886F70D01010A3000".HexToByteArray();
+                }
+                else if (_signaturePadding.PssSaltLength == 0)
+                {
+                    return "303506092a864886f70d01010a3028a009300706052b0e03021aa116301406092a864886f70d010108300706052b0e03021aa203020100".HexToByteArray();
                 }
                 else if (_signaturePadding.PssSaltLength == 1)
                 {

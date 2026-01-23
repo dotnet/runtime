@@ -281,6 +281,7 @@ namespace System.Security.Cryptography
         {
             const int MaxStackSaltLength = 128;
 
+            int sLen = saltLength;
             int hLen = HashLength(hashAlgorithmName);
 
             // https://tools.ietf.org/html/rfc3447#section-9.1.1
@@ -296,7 +297,7 @@ namespace System.Security.Cryptography
             //
             // sLen = hLen in this implementation.
 
-            if (emLen < 2 + hLen + saltLength)
+            if (emLen < 2 + hLen + sLen)
             {
                 throw new CryptographicException(SR.Cryptography_KeyTooSmall);
             }
@@ -323,9 +324,9 @@ namespace System.Security.Cryptography
                 // 4. Generate a random salt of length sLen
                 Debug.Assert(hLen is >= 0 and <= 64);
 
-                Span<byte> salt = saltLength > MaxStackSaltLength
-                    ? new byte[saltLength]
-                    : stackalloc byte[saltLength];
+                Span<byte> salt = sLen > MaxStackSaltLength
+                    ? new byte[sLen]
+                    : stackalloc byte[sLen];
                 RandomNumberGenerator.Fill(salt);
 
                 // 5. Let M' = an octet string of 8 zeros concat mHash concat salt
@@ -343,7 +344,7 @@ namespace System.Security.Cryptography
 
                 // 7. Generate PS as zero-valued bytes of length emLen - sLen - hLen - 2.
                 // 8. Let DB = PS || 0x01 || salt
-                int psLen = emLen - saltLength - hLen - 2;
+                int psLen = emLen - sLen - hLen - 2;
                 db.Slice(0, psLen).Clear();
                 db[psLen] = 0x01;
                 salt.CopyTo(db.Slice(psLen + 1));
