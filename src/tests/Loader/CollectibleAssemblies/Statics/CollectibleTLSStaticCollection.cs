@@ -113,7 +113,7 @@ namespace CollectibleThreadStaticShutdownRace
         }
 
         [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(Utilities), nameof(Utilities.IsNativeAot))]
-        [ActiveIsssue("https://github.com/dotnet/runtime/issues/40394", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40394", TestRuntimes.Mono)]
         [Fact]
         public static void TestEntryPoint()
         {

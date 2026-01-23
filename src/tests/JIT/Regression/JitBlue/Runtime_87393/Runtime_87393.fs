@@ -7,6 +7,8 @@ open System.Runtime.CompilerServices
 open Xunit
 open Microsoft.DotNet.XUnitExtensions
 
+namespace Runtime_87393
+
 [<AbstractClass>]
 type Foo() =
     abstract M<'a> : 'a -> int -> int -> int -> int -> int -> int -> int -> int -> int -> int -> int -> int -> int -> int -> int -> int
