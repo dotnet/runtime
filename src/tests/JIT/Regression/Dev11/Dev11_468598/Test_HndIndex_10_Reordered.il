@@ -48,7 +48,7 @@
         string('Test checks for an issue that cannot occur with the interpreter')
         int32(0x400) // InterpreterActive
     }
-    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XunitExtensions]Xunit.TestRuntimes) = {
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
         string('needs triage')
         int32(2) // Mono
     }
