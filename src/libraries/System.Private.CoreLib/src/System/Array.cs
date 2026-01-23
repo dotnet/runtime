@@ -1553,46 +1553,26 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
 
-            List<T>? heapMatches = null; // only allocate if needed
-            InlineArray16<T> stackAllocatedMatches = default;
-            const int InlineArrayLength = 16;
-            int stackAllocatedMatchesFound = 0;
-            for (int i = 0; i < array.Length; i++)
+            InlineArray4<T> stackAllocatedMatches = default;
+            Span<T> span = stackAllocatedMatches;
+            int foundCount = 0;
+
+            foreach (T value in array)
             {
-                if (match(array[i]))
+                if (match(value))
                 {
-                    if (stackAllocatedMatchesFound < InlineArrayLength)
+                    if (foundCount >= span.Length)
                     {
-                        stackAllocatedMatches[stackAllocatedMatchesFound++] = array[i];
+                        T[] values = new T[span.Length * 2];
+                        span.CopyTo(values);
+                        span = values;
                     }
-                    else
-                    {
-                        // Revert to the old logic, allocating and growing a List
-                        heapMatches ??= [];
-                        heapMatches.Add(array[i]);
-                    }
+
+                    span[foundCount++] = value;
                 }
             }
 
-            if (stackAllocatedMatchesFound == 0)
-            {
-                return EmptyArray<T>.Value;
-            }
-
-            int resultLength = stackAllocatedMatchesFound;
-            if (heapMatches != null)
-            {
-                resultLength += heapMatches.Count;
-            }
-
-            T[] result = new T[resultLength];
-
-            ReadOnlySpan<T> stackSpanMatches = stackAllocatedMatches;
-            stackSpanMatches[..stackAllocatedMatchesFound].CopyTo(result);
-
-            heapMatches?.CopyTo(result.AsSpan(start: InlineArrayLength));
-
-            return result;
+            return span[..foundCount].ToArray();
         }
 
         public static int FindIndex<T>(T[] array, Predicate<T> match)
