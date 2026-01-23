@@ -2344,6 +2344,13 @@ bool GenTreeCall::HasNonStandardAddedArgs(Compiler* compiler) const
 //
 int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
 {
+#if defined(TARGET_WASM)
+    // TODO-WASM: may need adjustments for other hidden args
+    // For now: managed calls get extra SP + PortableEntryPoint args, but
+    // we're not adding the PE arg yet. So just note one extra arg.
+    return IsUnmanaged() ? 0 : 1;
+#endif // defined(TARGET_WASM)
+
     if (IsUnmanaged() && !compiler->opts.ShouldUsePInvokeHelpers())
     {
         // R11 = PInvoke cookie param
@@ -11938,6 +11945,12 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             {
                 ilName = "AsyncCont";
             }
+#if defined(TARGET_WASM)
+            else if (lclNum == lvaWasmSpArg)
+            {
+                ilName = "SP";
+            }
+#endif // defined(TARGET_WASM)
             else
             {
                 ilKind = "tmp";
@@ -11954,7 +11967,7 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
     }
     else if (lclNum < (compIsForInlining() ? impInlineInfo->InlinerCompiler->info.compArgsCount : info.compArgsCount))
     {
-        if (ilNum == 0 && !info.compIsStatic)
+        if ((ilNum == 0) && !info.compIsStatic)
         {
             ilName = "this";
         }

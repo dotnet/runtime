@@ -145,13 +145,10 @@ public:
 
     virtual BOOL TerminateProcess(UINT32 exitCode) = 0;
 
-#ifdef TARGET_UNIX
-    // Used by debugger side (RS) to cleanup the target (LS) named pipes
-    // and semaphores when the debugger detects the debuggee process  exited.
-    virtual void CleanupTargetProcess()
-    {
-    }
-#endif
+    //
+    // Used by debugger side (RS) to cleanup the target (LS) resources
+    //
+    virtual void CleanupTargetProcess() = 0;
 };
 
 //

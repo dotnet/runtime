@@ -5283,6 +5283,110 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     }
 }
 
+void InterpCompiler::EmitRet(CORINFO_METHOD_INFO* methodInfo)
+{
+    CORINFO_SIG_INFO sig = methodInfo->args;
+    InterpType retType = GetInterpType(sig.retType);
+
+    if ((retType != InterpTypeVoid) && (retType != InterpTypeByRef))
+    {
+        CheckStackExact(1);
+        m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
+    }
+
+    if ((m_isSynchronized || m_isAsyncMethodWithContextSaveRestore) && m_currentILOffset < m_ILCodeSizeFromILHeader)
+    {
+        // We are in a synchronized/async method, but we need to go through the finally/fault first
+        int32_t ilOffset = (int32_t)(m_ip - m_pILCode);
+        int32_t target = m_synchronizedOrAsyncPostFinallyOffset;
+
+        if (retType != InterpTypeVoid)
+        {
+            CheckStackExact(1);
+            if (m_synchronizedOrAsyncRetValVarIndex == -1)
+            {
+                PushInterpType(retType, m_pVars[m_pStackPointer[-1].var].clsHnd);
+                m_synchronizedOrAsyncRetValVarIndex = m_pStackPointer[-1].var;
+                m_pStackPointer--;
+                INTERP_DUMP("Created ret val var V%d\n", m_synchronizedOrAsyncRetValVarIndex);
+            }
+            INTERP_DUMP("Store to ret val var V%d\n", m_synchronizedOrAsyncRetValVarIndex);
+            EmitStoreVar(m_synchronizedOrAsyncRetValVarIndex);
+        }
+        else
+        {
+            CheckStackExact(0);
+        }
+        EmitLeave(ilOffset, target);
+        return;
+    }
+
+    if (m_methodInfo->args.isAsyncCall())
+    {
+        // We're doing a standard return. Set the continuation return to NULL.
+        AddIns(INTOP_SET_CONTINUATION_NULL);
+    }
+
+    if (retType == InterpTypeVoid)
+    {
+        CheckStackExact(0);
+        AddIns(INTOP_RET_VOID);
+    }
+    else if (retType == InterpTypeVT)
+    {
+        CheckStackExact(1);
+        AddIns(INTOP_RET_VT);
+        m_pStackPointer--;
+        int32_t retVar = m_pStackPointer[0].var;
+        m_pLastNewIns->SetSVar(retVar);
+        m_pLastNewIns->data[0] = m_pVars[retVar].size;
+    }
+    else
+    {
+        CheckStackExact(1);
+
+#ifdef TARGET_64BIT
+        // nint and int32 can be used interchangeably. Add implicit conversions.
+        if (m_pStackPointer[-1].GetStackType() == StackTypeI4 && g_stackTypeFromInterpType[retType] == StackTypeI8)
+            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+#endif
+        if (m_pStackPointer[-1].GetStackType() == StackTypeR4 && g_stackTypeFromInterpType[retType] == StackTypeR8)
+            EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
+        else if (m_pStackPointer[-1].GetStackType() == StackTypeR8 && g_stackTypeFromInterpType[retType] == StackTypeR4)
+            EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
+
+        if (m_pStackPointer[-1].GetStackType() != g_stackTypeFromInterpType[retType])
+        {
+            StackType retStackType = g_stackTypeFromInterpType[retType];
+            StackType stackType = m_pStackPointer[-1].GetStackType();
+
+            if (stackType == StackTypeI && (retStackType == StackTypeO || retStackType == StackTypeByRef))
+            {
+                // Allow implicit conversion from nint to ref or byref
+            }
+            else if (retStackType == StackTypeI && (stackType == StackTypeO || stackType == StackTypeByRef))
+            {
+                // Allow implicit conversion from ref or byref to nint
+            }
+#ifdef TARGET_64BIT
+            else if (retStackType == StackTypeI4 && stackType == StackTypeI8)
+            {
+                // nint and int32 can be used interchangeably. Add implicit conversions.
+                // Allow implicit conversion from int64 to int32 which is just a truncation
+            }
+#endif
+            else
+            {
+                BADCODE("return type mismatch");
+            }
+        }
+
+        AddIns(GetRetForType(retType));
+        m_pStackPointer--;
+        m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+    }
+}
+
 void SetSlotToTrue(TArray<bool, MemPoolAllocator> &gcRefMap, int32_t slotOffset)
 {
     assert(slotOffset % sizeof(void*) == 0);
@@ -6123,6 +6227,15 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             AddIns(INTOP_ADD_P_IMM);
             m_pLastNewIns->data[0] = (int32_t)pFieldInfo->offset;
             m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+            PushInterpType(InterpTypeByRef, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            break;
+        }
+        case CORINFO_FIELD_STATIC_ADDR_HELPER:
+        {
+            AddIns(INTOP_CALL_HELPER_P_P);
+            m_pLastNewIns->data[0] = GetDataForHelperFtn(pFieldInfo->helper);
+            m_pLastNewIns->data[1] = GetDataItemIndex(pResolvedToken->hField);
             PushInterpType(InterpTypeByRef, NULL);
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             break;
@@ -8149,108 +8262,7 @@ retry_emit:
 
             case CEE_RET:
             {
-                CORINFO_SIG_INFO sig = methodInfo->args;
-                InterpType retType = GetInterpType(sig.retType);
-
-                if ((retType != InterpTypeVoid) && (retType != InterpTypeByRef))
-                {
-                    CheckStackExact(1);
-                    m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
-                }
-
-                if ((m_isSynchronized || m_isAsyncMethodWithContextSaveRestore) && m_currentILOffset < m_ILCodeSizeFromILHeader)
-                {
-                    // We are in a synchronized/async method, but we need to go through the finally/fault first
-                    int32_t ilOffset = (int32_t)(m_ip - m_pILCode);
-                    int32_t target = m_synchronizedOrAsyncPostFinallyOffset;
-
-                    if (retType != InterpTypeVoid)
-                    {
-                        CheckStackExact(1);
-                        if (m_synchronizedOrAsyncRetValVarIndex == -1)
-                        {
-                            PushInterpType(retType, m_pVars[m_pStackPointer[-1].var].clsHnd);
-                            m_synchronizedOrAsyncRetValVarIndex = m_pStackPointer[-1].var;
-                            m_pStackPointer--;
-                            INTERP_DUMP("Created ret val var V%d\n", m_synchronizedOrAsyncRetValVarIndex);
-                        }
-                        INTERP_DUMP("Store to ret val var V%d\n", m_synchronizedOrAsyncRetValVarIndex);
-                        EmitStoreVar(m_synchronizedOrAsyncRetValVarIndex);
-                    }
-                    else
-                    {
-                        CheckStackExact(0);
-                    }
-                    EmitLeave(ilOffset, target);
-                    linkBBlocks = false;
-                    m_ip++;
-                    break;
-                }
-
-                if (m_methodInfo->args.isAsyncCall())
-                {
-                    // We're doing a standard return. Set the continuation return to NULL.
-                    AddIns(INTOP_SET_CONTINUATION_NULL);
-                }
-
-                if (retType == InterpTypeVoid)
-                {
-                    CheckStackExact(0);
-                    AddIns(INTOP_RET_VOID);
-                }
-                else if (retType == InterpTypeVT)
-                {
-                    CheckStackExact(1);
-                    AddIns(INTOP_RET_VT);
-                    m_pStackPointer--;
-                    int32_t retVar = m_pStackPointer[0].var;
-                    m_pLastNewIns->SetSVar(retVar);
-                    m_pLastNewIns->data[0] = m_pVars[retVar].size;
-                }
-                else
-                {
-                    CheckStackExact(1);
-
-#ifdef TARGET_64BIT
-                    // nint and int32 can be used interchangeably. Add implicit conversions.
-                    if (m_pStackPointer[-1].GetStackType() == StackTypeI4 && g_stackTypeFromInterpType[retType] == StackTypeI8)
-                        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
-#endif
-                    if (m_pStackPointer[-1].GetStackType() == StackTypeR4 && g_stackTypeFromInterpType[retType] == StackTypeR8)
-                        EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
-                    else if (m_pStackPointer[-1].GetStackType() == StackTypeR8 && g_stackTypeFromInterpType[retType] == StackTypeR4)
-                        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
-
-                    if (m_pStackPointer[-1].GetStackType() != g_stackTypeFromInterpType[retType])
-                    {
-                        StackType retStackType = g_stackTypeFromInterpType[retType];
-                        StackType stackType = m_pStackPointer[-1].GetStackType();
-
-                        if (stackType == StackTypeI && (retStackType == StackTypeO || retStackType == StackTypeByRef))
-                        {
-                            // Allow implicit conversion from nint to ref or byref
-                        }
-                        else if (retStackType == StackTypeI && (stackType == StackTypeO || stackType == StackTypeByRef))
-                        {
-                            // Allow implicit conversion from ref or byref to nint
-                        }
-#ifdef TARGET_64BIT
-                        else if (retStackType == StackTypeI4 && stackType == StackTypeI8)
-                        {
-                            // nint and int32 can be used interchangeably. Add implicit conversions.
-                            // Allow implicit conversion from int64 to int32 which is just a truncation
-                        }
-#endif
-                        else
-                        {
-                            BADCODE("return type mismatch");
-                        }
-                    }
-
-                    AddIns(GetRetForType(retType));
-                    m_pStackPointer--;
-                    m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
-                }
+                EmitRet(methodInfo);
                 m_ip++;
                 linkBBlocks = false;
                 break;
@@ -9385,7 +9397,13 @@ retry_emit:
                     // CEE_JMP inside a funclet is not allowed
                     BADCODE("CEE_JMP inside funclet");
                 }
+                if (m_isSynchronized || m_isAsyncMethodWithContextSaveRestore)
+                {
+                    BADCODE("CEE_JMP in synchronized or async method");
+                }
                 EmitCall(m_pConstrainedToken, readonly, true /* tailcall */, false /*newObj*/, false /*isCalli*/);
+                EmitRet(methodInfo); // The tail-call infrastructure in the interpreter is not 100% guaranteed to do a 
+                           // tail-call, so inject the ret logic here to cover that case.
                 linkBBlocks = false;
                 break;
             }
@@ -9441,6 +9459,16 @@ retry_emit:
                     m_pStackPointer--;
                     EmitStaticFieldAddress(&fieldInfo, &resolvedToken);
                 }
+                else if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_ADDR_HELPER)
+                {
+                    m_pStackPointer--;
+                    AddIns(INTOP_CALL_HELPER_P_SP);
+                    m_pLastNewIns->data[0] = GetDataForHelperFtn(fieldInfo.helper);
+                    m_pLastNewIns->data[1] = GetDataItemIndex(resolvedToken.hField);
+                    m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                    PushInterpType(InterpTypeByRef, NULL);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                }
                 else
                 {
                     assert(fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE);
@@ -9476,6 +9504,17 @@ retry_emit:
                     // Pop unused object reference
                     m_pStackPointer--;
                     EmitStaticFieldAccess(interpFieldType, &fieldInfo, &resolvedToken, true);
+                }
+                else if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_ADDR_HELPER)
+                {
+                    m_pStackPointer--;
+                    AddIns(INTOP_CALL_HELPER_P_SP);
+                    m_pLastNewIns->data[0] = GetDataForHelperFtn(fieldInfo.helper);
+                    m_pLastNewIns->data[1] = GetDataItemIndex(resolvedToken.hField);
+                    m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                    PushInterpType(InterpTypeByRef, NULL);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                    EmitLdind(interpFieldType, fieldInfo.structType, 0);
                 }
                 else
                 {
@@ -9545,6 +9584,17 @@ retry_emit:
                 {
                     EmitStaticFieldAccess(interpFieldType, &fieldInfo, &resolvedToken, false);
                     // Pop the unused object reference
+                    m_pStackPointer--;
+                }
+                else if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_ADDR_HELPER)
+                {
+                    AddIns(INTOP_CALL_HELPER_P_SP);
+                    m_pLastNewIns->data[0] = GetDataForHelperFtn(fieldInfo.helper);
+                    m_pLastNewIns->data[1] = GetDataItemIndex(resolvedToken.hField);
+                    m_pLastNewIns->SetSVar(m_pStackPointer[-2].var);
+                    PushInterpType(InterpTypeByRef, NULL);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                    EmitStind(interpFieldType, fieldInfo.structType, 0, true, true /* enableImplicitArgConversionRules */);
                     m_pStackPointer--;
                 }
                 else

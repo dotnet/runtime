@@ -11,6 +11,8 @@ export const jsInteropState = {
     proxyGCHandle: undefined as GCHandle | undefined,
     cspPolicy: false,
     isInitialized: false,
+    isChromium: false,
+    isFirefox: false,
     enablePerfMeasure: false,
     managedThreadTID: 0 as any as PThreadPtr,
 };
