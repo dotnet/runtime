@@ -1556,6 +1556,7 @@ namespace System
             InlineArray4<T> stackAllocatedMatches = default;
             Span<T> span = stackAllocatedMatches;
             int foundCount = 0;
+            T[]? values = null;
 
             foreach (T value in array)
             {
@@ -1563,7 +1564,7 @@ namespace System
                 {
                     if (foundCount >= span.Length)
                     {
-                        T[] values = new T[Math.Min((uint)span.Length * 2, (uint)array.Length)];
+                        values = new T[Math.Min((uint)span.Length * 2, (uint)array.Length)];
                         span.CopyTo(values);
                         span = values;
                     }
@@ -1572,7 +1573,7 @@ namespace System
                 }
             }
 
-            return span[..foundCount].ToArray();
+            return values?.Length == foundCount ? values : span[..foundCount].ToArray();
         }
 
         public static int FindIndex<T>(T[] array, Predicate<T> match)
