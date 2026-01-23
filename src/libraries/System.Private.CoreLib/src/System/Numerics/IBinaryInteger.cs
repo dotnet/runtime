@@ -20,6 +20,246 @@ namespace System.Numerics
             return (quotient, (left - (quotient * right)));
         }
 
+        /// <summary>Computes the quotient and remainder of two values using the specified division rounding mode.</summary>
+        /// <param name="left">The value which <paramref name="right" /> divides.</param>
+        /// <param name="right">The value which divides <paramref name="left" />.</param>
+        /// <param name="mode">The <see cref="DivisionRounding"/> mode.</param>
+        /// <returns>The quotient and remainder of <paramref name="left" /> divided-by <paramref name="right" /> with the specified division rounding mode.</returns>
+        static virtual (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right, DivisionRounding mode)
+        {
+            (TSelf quotient, TSelf remainder) = TSelf.DivRem(left, right);
+
+            if (TSelf.IsZero(remainder))
+            {
+                return (quotient, remainder);
+            }
+
+            switch (mode)
+            {
+                case DivisionRounding.Truncate:
+                {
+                    break;
+                }
+
+                case DivisionRounding.Floor:
+                {
+                    if (TSelf.IsPositive(left) != TSelf.IsPositive(right))
+                    {
+                        quotient--;
+                        remainder += right;
+                    }
+                    break;
+                }
+
+                case DivisionRounding.Ceiling:
+                {
+                    if (TSelf.IsPositive(left) == TSelf.IsPositive(right))
+                    {
+                        quotient++;
+                        remainder -= right;
+                    }
+                    break;
+                }
+
+                case DivisionRounding.AwayFromZero:
+                {
+                    if (TSelf.IsPositive(left) != TSelf.IsPositive(right))
+                    {
+                        quotient--;
+                        remainder += right;
+                    }
+                    else
+                    {
+                        quotient++;
+                        remainder -= right;
+                    }
+                    break;
+                }
+
+                case DivisionRounding.Euclidean:
+                {
+                    if (TSelf.IsNegative(left))
+                    {
+                        if (TSelf.IsPositive(right))
+                        {
+                            quotient--;
+                            remainder += right;
+                        }
+                        else
+                        {
+                            quotient++;
+                            remainder -= right;
+                        }
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    ThrowHelper.ThrowArgumentException_InvalidEnumValue(mode);
+                    break;
+                }
+            }
+
+            return (quotient, remainder);
+        }
+
+        /// <summary>Computes the quotient of two values using the specified division rounding mode.</summary>
+        /// <param name="left">The value which <paramref name="right" /> divides.</param>
+        /// <param name="right">The value which divides <paramref name="left" />.</param>
+        /// <param name="mode">The <see cref="DivisionRounding"/> mode.</param>
+        /// <returns>The quotient of <paramref name="left" /> divided-by <paramref name="right" /> with the specified division rounding mode.</returns>
+        static virtual TSelf Divide(TSelf left, TSelf right, DivisionRounding mode)
+        {
+            (TSelf quotient, TSelf remainder) = TSelf.DivRem(left, right);
+
+            if (TSelf.IsZero(remainder))
+            {
+                return quotient;
+            }
+
+            switch (mode)
+            {
+                case DivisionRounding.Truncate:
+                {
+                    break;
+                }
+
+                case DivisionRounding.Floor:
+                {
+                    if (TSelf.IsPositive(left) != TSelf.IsPositive(right))
+                    {
+                        quotient--;
+                    }
+                    break;
+                }
+
+                case DivisionRounding.Ceiling:
+                {
+                    if (TSelf.IsPositive(left) == TSelf.IsPositive(right))
+                    {
+                        quotient++;
+                    }
+                    break;
+                }
+
+                case DivisionRounding.AwayFromZero:
+                {
+                    if (TSelf.IsPositive(left) != TSelf.IsPositive(right))
+                    {
+                        quotient--;
+                    }
+                    else
+                    {
+                        quotient++;
+                    }
+                    break;
+                }
+
+                case DivisionRounding.Euclidean:
+                {
+                    if (TSelf.IsNegative(left))
+                    {
+                        if (TSelf.IsPositive(right))
+                        {
+                            quotient--;
+                        }
+                        else
+                        {
+                            quotient++;
+                        }
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    ThrowHelper.ThrowArgumentException_InvalidEnumValue(mode);
+                    break;
+                }
+            }
+
+            return quotient;
+        }
+
+        /// <summary>Computes the remainder of two values using the specified division rounding mode.</summary>
+        /// <param name="left">The value which <paramref name="right" /> divides.</param>
+        /// <param name="right">The value which divides <paramref name="left" />.</param>
+        /// <param name="mode">The <see cref="DivisionRounding"/> mode.</param>
+        /// <returns>The remainder of <paramref name="left" /> divided-by <paramref name="right" /> with the specified division rounding mode.</returns>
+        static virtual TSelf Remainder(TSelf left, TSelf right, DivisionRounding mode)
+        {
+            TSelf remainder = left % right;
+
+            if (TSelf.IsZero(remainder))
+            {
+                return remainder;
+            }
+
+            switch (mode)
+            {
+                case DivisionRounding.Truncate:
+                {
+                    break;
+                }
+
+                case DivisionRounding.Floor:
+                {
+                    if (TSelf.IsPositive(left) != TSelf.IsPositive(right))
+                    {
+                        remainder += right;
+                    }
+                    break;
+                }
+
+                case DivisionRounding.Ceiling:
+                {
+                    if (TSelf.IsPositive(left) == TSelf.IsPositive(right))
+                    {
+                        remainder -= right;
+                    }
+                    break;
+                }
+
+                case DivisionRounding.AwayFromZero:
+                {
+                    if (TSelf.IsPositive(left) != TSelf.IsPositive(right))
+                    {
+                        remainder += right;
+                    }
+                    else
+                    {
+                        remainder -= right;
+                    }
+                    break;
+                }
+
+                case DivisionRounding.Euclidean:
+                {
+                    if (TSelf.IsNegative(left))
+                    {
+                        if (TSelf.IsPositive(right))
+                        {
+                            remainder += right;
+                        }
+                        else
+                        {
+                            remainder -= right;
+                        }
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    ThrowHelper.ThrowArgumentException_InvalidEnumValue(mode);
+                    break;
+                }
+            }
+
+            return remainder;
+        }
+
         /// <summary>Computes the number of leading zero bits in a value.</summary>
         /// <param name="value">The value whose leading zero bits are to be counted.</param>
         /// <returns>The number of leading zero bits in <paramref name="value" />.</returns>

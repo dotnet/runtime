@@ -7,7 +7,9 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json.Tests;
 using System.Threading.Tasks;
@@ -2004,6 +2006,330 @@ namespace System.Text.Json.Serialization.Tests
                 () => Serializer.DeserializeWrapper<T>(
                     $"\"{string.Concat(Enumerable.Repeat("a", size))}\"",
                     s_optionReadFromStr));
+        }
+
+        [Fact]
+        public void GetConverter_Int32_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                // GetConverter requires reflection and is not supported in source generation scenarios
+                return;
+            }
+
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<int>)options.GetConverter(typeof(int));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); // StartObject
+            reader.Read(); // PropertyName
+            reader.Read(); // String with number
+            var value = converter.Read(ref reader, typeof(int), options);
+            Assert.Equal(123, value);
+        }
+
+        [Fact]
+        public void GetConverter_Int32_RespectsNumberHandling_WriteAsString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                // GetConverter requires reflection and is not supported in source generation scenarios
+                return;
+            }
+
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.WriteAsString };
+            var converter = (JsonConverter<int>)options.GetConverter(typeof(int));
+            using var stream = new MemoryStream();
+            using var writer = new Utf8JsonWriter(stream);
+            writer.WriteStartObject();
+            writer.WritePropertyName("x");
+            converter.Write(writer, 123, options);
+            writer.WriteEndObject();
+            writer.Flush();
+            string json = Encoding.UTF8.GetString(stream.ToArray());
+            Assert.Equal("{\"x\":\"123\"}", json);
+        }
+
+        [Fact]
+        public void GetConverter_Double_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                // GetConverter requires reflection and is not supported in source generation scenarios
+                return;
+            }
+
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<double>)options.GetConverter(typeof(double));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123.45\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); // StartObject
+            reader.Read(); // PropertyName
+            reader.Read(); // String with number
+            var value = converter.Read(ref reader, typeof(double), options);
+            Assert.Equal(123.45, value);
+        }
+
+        [Fact]
+        public void GetConverter_Double_RespectsNumberHandling_AllowNamedFloatingPointLiterals()
+        {
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                // GetConverter requires reflection and is not supported in source generation scenarios
+                return;
+            }
+
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals };
+            var converter = (JsonConverter<double>)options.GetConverter(typeof(double));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"NaN\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); // StartObject
+            reader.Read(); // PropertyName
+            reader.Read(); // String with constant
+            var value = converter.Read(ref reader, typeof(double), options);
+            Assert.True(double.IsNaN(value));
+        }
+
+        // Tests for all integer types
+        [Fact]
+        public void GetConverter_Byte_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<byte>)options.GetConverter(typeof(byte));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal((byte)123, converter.Read(ref reader, typeof(byte), options));
+        }
+
+        [Fact]
+        public void GetConverter_SByte_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<sbyte>)options.GetConverter(typeof(sbyte));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal((sbyte)123, converter.Read(ref reader, typeof(sbyte), options));
+        }
+
+        [Fact]
+        public void GetConverter_Int16_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<short>)options.GetConverter(typeof(short));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal((short)123, converter.Read(ref reader, typeof(short), options));
+        }
+
+        [Fact]
+        public void GetConverter_Int64_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<long>)options.GetConverter(typeof(long));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal(123L, converter.Read(ref reader, typeof(long), options));
+        }
+
+        [Fact]
+        public void GetConverter_UInt16_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<ushort>)options.GetConverter(typeof(ushort));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal((ushort)123, converter.Read(ref reader, typeof(ushort), options));
+        }
+
+        [Fact]
+        public void GetConverter_UInt32_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<uint>)options.GetConverter(typeof(uint));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal(123U, converter.Read(ref reader, typeof(uint), options));
+        }
+
+        [Fact]
+        public void GetConverter_UInt64_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<ulong>)options.GetConverter(typeof(ulong));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal(123UL, converter.Read(ref reader, typeof(ulong), options));
+        }
+
+        [Fact]
+        public void GetConverter_Single_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<float>)options.GetConverter(typeof(float));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123.5\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal(123.5f, converter.Read(ref reader, typeof(float), options));
+        }
+
+        [Fact]
+        public void GetConverter_Decimal_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<decimal>)options.GetConverter(typeof(decimal));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123.45\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal(123.45m, converter.Read(ref reader, typeof(decimal), options));
+        }
+
+        // Write tests for key types
+        [Fact]
+        public void GetConverter_Byte_RespectsNumberHandling_WriteAsString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.WriteAsString };
+            var converter = (JsonConverter<byte>)options.GetConverter(typeof(byte));
+            using var stream = new MemoryStream();
+            using var writer = new Utf8JsonWriter(stream);
+            writer.WriteStartObject(); writer.WritePropertyName("x");
+            converter.Write(writer, (byte)123, options);
+            writer.WriteEndObject(); writer.Flush();
+            Assert.Equal("{\"x\":\"123\"}", Encoding.UTF8.GetString(stream.ToArray()));
+        }
+
+        [Fact]
+        public void GetConverter_Int64_RespectsNumberHandling_WriteAsString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.WriteAsString };
+            var converter = (JsonConverter<long>)options.GetConverter(typeof(long));
+            using var stream = new MemoryStream();
+            using var writer = new Utf8JsonWriter(stream);
+            writer.WriteStartObject(); writer.WritePropertyName("x");
+            converter.Write(writer, 123L, options);
+            writer.WriteEndObject(); writer.Flush();
+            Assert.Equal("{\"x\":\"123\"}", Encoding.UTF8.GetString(stream.ToArray()));
+        }
+
+        [Fact]
+        public void GetConverter_UInt64_RespectsNumberHandling_WriteAsString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.WriteAsString };
+            var converter = (JsonConverter<ulong>)options.GetConverter(typeof(ulong));
+            using var stream = new MemoryStream();
+            using var writer = new Utf8JsonWriter(stream);
+            writer.WriteStartObject(); writer.WritePropertyName("x");
+            converter.Write(writer, 123UL, options);
+            writer.WriteEndObject(); writer.Flush();
+            Assert.Equal("{\"x\":\"123\"}", Encoding.UTF8.GetString(stream.ToArray()));
+        }
+
+        [Fact]
+        public void GetConverter_Single_RespectsNumberHandling_WriteAsString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.WriteAsString };
+            var converter = (JsonConverter<float>)options.GetConverter(typeof(float));
+            using var stream = new MemoryStream();
+            using var writer = new Utf8JsonWriter(stream);
+            writer.WriteStartObject(); writer.WritePropertyName("x");
+            converter.Write(writer, 123.5f, options);
+            writer.WriteEndObject(); writer.Flush();
+            Assert.Equal("{\"x\":\"123.5\"}", Encoding.UTF8.GetString(stream.ToArray()));
+        }
+
+        [Fact]
+        public void GetConverter_Decimal_RespectsNumberHandling_WriteAsString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.WriteAsString };
+            var converter = (JsonConverter<decimal>)options.GetConverter(typeof(decimal));
+            using var stream = new MemoryStream();
+            using var writer = new Utf8JsonWriter(stream);
+            writer.WriteStartObject(); writer.WritePropertyName("x");
+            converter.Write(writer, 123.45m, options);
+            writer.WriteEndObject(); writer.Flush();
+            Assert.Equal("{\"x\":\"123.45\"}", Encoding.UTF8.GetString(stream.ToArray()));
+        }
+
+#if NET
+        [Fact]
+        public void GetConverter_Int128_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<Int128>)options.GetConverter(typeof(Int128));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal((Int128)123, converter.Read(ref reader, typeof(Int128), options));
+        }
+
+        [Fact]
+        public void GetConverter_UInt128_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<UInt128>)options.GetConverter(typeof(UInt128));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal((UInt128)123, converter.Read(ref reader, typeof(UInt128), options));
+        }
+
+        [Fact]
+        public void GetConverter_Half_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<Half>)options.GetConverter(typeof(Half));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"1.5\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal((Half)1.5, converter.Read(ref reader, typeof(Half), options));
+        }
+
+        [Fact]
+        public void GetConverter_Half_RespectsNumberHandling_AllowNamedFloatingPointLiterals()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals };
+            var converter = (JsonConverter<Half>)options.GetConverter(typeof(Half));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"NaN\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.True(Half.IsNaN(converter.Read(ref reader, typeof(Half), options)));
+        }
+#endif
+
+        [Fact]
+        public void GetConverter_Single_RespectsNumberHandling_AllowNamedFloatingPointLiterals()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals };
+            var converter = (JsonConverter<float>)options.GetConverter(typeof(float));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"NaN\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.True(float.IsNaN(converter.Read(ref reader, typeof(float), options)));
         }
     }
 }

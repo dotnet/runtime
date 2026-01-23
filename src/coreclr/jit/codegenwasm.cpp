@@ -32,17 +32,7 @@ void CodeGen::genMarkLabelsForCodegen()
 void CodeGen::genBeginFnProlog()
 {
     // TODO-WASM: proper local count, local declarations, and shadow stack maintenance
-    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, (unsigned)WasmValueType::Count - 1);
-    // Emit 1 local of each supported value type to ensure
-    // the declarations can be encoded.
-    // TODO-WASM: remove and declare locals based on RA assignments once this is supported.
-    int localOffset  = 0;
-    int countPerType = 1;
-    for (unsigned i = (uint8_t)WasmValueType::Invalid + 1; i < (unsigned)WasmValueType::Count; i++)
-    {
-        GetEmitter()->emitIns_I_Ty(INS_local_decl, countPerType, static_cast<WasmValueType>(i), localOffset);
-        localOffset += countPerType;
-    }
+    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, 0);
 }
 
 //------------------------------------------------------------------------
@@ -71,8 +61,16 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         return;
     }
 
-    unsigned initialSPLclIndex = 0; // TODO-WASM: remove this hardcoding once we have the SP arg local.
-    unsigned spLclIndex        = WasmRegToIndex(spReg);
+    // TODO-WASM: reverse pinvoke frame allocation
+    //
+    if (compiler->lvaWasmSpArg == BAD_VAR_NUM)
+    {
+        NYI_WASM("alloc local frame for reverse pinvoke");
+    }
+
+    unsigned initialSPLclIndex =
+        WasmRegToIndex(compiler->lvaGetParameterABIInfo(compiler->lvaWasmSpArg).Segment(0).GetRegister());
+    unsigned spLclIndex = WasmRegToIndex(spReg);
     assert(initialSPLclIndex == spLclIndex);
     if (frameSize != 0)
     {

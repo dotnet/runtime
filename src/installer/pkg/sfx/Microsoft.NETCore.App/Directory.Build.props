@@ -299,6 +299,9 @@
     <PlatformManifestFileEntry Include="brotlienc.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="brotlidec.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="brotlicommon.lib" IsNative="true" />
+    <!-- zstd-specific files -->
+    <PlatformManifestFileEntry Include="libzstd.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="zstd_static.lib" IsNative="true" />
   </ItemGroup>
 
  <ItemGroup>

@@ -829,7 +829,8 @@ NESTED_END OnCallCountThresholdReachedStub, _TEXT
 NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
-    addi  a0, sp, __PWTB_TransitionBlock // TransitionBlock *
+    // a0 = pointer to TransitionBlock
+    addi  a0, sp, __PWTB_TransitionBlock
     call  C_FUNC(JIT_PatchpointWorkerWorkerWithPolicy)
 
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
@@ -921,6 +922,89 @@ NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
     // Should never return
     ebreak
 NESTED_END IL_Rethrow, _TEXT
+
+// ------------------------------------------------------------------
+// ClrRestoreNonvolatileContextWorker
+//
+// Restores registers based on ContextFlags and jumps to target PC.
+// When CONTEXT_INTEGER is set, restores ALL integer registers
+// because exception handling needs a0 (exception object).
+// When CONTEXT_FLOATING_POINT is set, restores non-volatile FP regs (f8-f9, f18-f27).
+//
+// Arguments:
+//   a0 - pointer to CONTEXT structure
+//   a1 - unused (SSP, not supported on RISC-V64)
+// ------------------------------------------------------------------
+LEAF_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT
+
+    // Save CONTEXT pointer in t0 before we potentially clobber a0
+    mv      t0, a0
+
+    // Check if CONTEXT_FLOATING_POINT is set
+    lw      t1, OFFSETOF__CONTEXT__ContextFlags(t0)
+    andi    t2, t1, (1 << CONTEXT_FLOATING_POINT_BIT)
+    beqz    t2, LOCAL_LABEL(SkipFloatingPointRestore)
+
+    // Restore non-volatile FP registers f8-f9, f18-f27
+    // Each F entry is 8 bytes
+    fld     f8,  (OFFSETOF__CONTEXT__F + 8*8)(t0)
+    fld     f9,  (OFFSETOF__CONTEXT__F + 9*8)(t0)
+    fld     f18, (OFFSETOF__CONTEXT__F + 18*8)(t0)
+    fld     f19, (OFFSETOF__CONTEXT__F + 19*8)(t0)
+    fld     f20, (OFFSETOF__CONTEXT__F + 20*8)(t0)
+    fld     f21, (OFFSETOF__CONTEXT__F + 21*8)(t0)
+    fld     f22, (OFFSETOF__CONTEXT__F + 22*8)(t0)
+    fld     f23, (OFFSETOF__CONTEXT__F + 23*8)(t0)
+    fld     f24, (OFFSETOF__CONTEXT__F + 24*8)(t0)
+    fld     f25, (OFFSETOF__CONTEXT__F + 25*8)(t0)
+    fld     f26, (OFFSETOF__CONTEXT__F + 26*8)(t0)
+    fld     f27, (OFFSETOF__CONTEXT__F + 27*8)(t0)
+
+LOCAL_LABEL(SkipFloatingPointRestore):
+    // Check if CONTEXT_INTEGER is set
+    andi    t2, t1, (1 << CONTEXT_INTEGER_BIT)
+    beqz    t2, LOCAL_LABEL(SkipIntegerRestore)
+
+    // Restore ALL integer registers (needed by exception handling)
+    // Argument registers a1-a7 (a0 last since we use it)
+    ld      a1, (OFFSETOF__CONTEXT__A0 + 8)(t0)
+    ld      a2, (OFFSETOF__CONTEXT__A0 + 16)(t0)
+    ld      a3, (OFFSETOF__CONTEXT__A0 + 24)(t0)
+    ld      a4, (OFFSETOF__CONTEXT__A0 + 32)(t0)
+    ld      a5, (OFFSETOF__CONTEXT__A0 + 40)(t0)
+    ld      a6, (OFFSETOF__CONTEXT__A0 + 48)(t0)
+    ld      a7, (OFFSETOF__CONTEXT__A0 + 56)(t0)
+
+    // Callee-saved registers s1-s11
+    ld      s1, OFFSETOF__CONTEXT__S1(t0)
+    ld      s2, OFFSETOF__CONTEXT__S2(t0)
+    ld      s3, (OFFSETOF__CONTEXT__S2 + 8)(t0)
+    ld      s4, (OFFSETOF__CONTEXT__S2 + 16)(t0)
+    ld      s5, (OFFSETOF__CONTEXT__S2 + 24)(t0)
+    ld      s6, (OFFSETOF__CONTEXT__S2 + 32)(t0)
+    ld      s7, (OFFSETOF__CONTEXT__S2 + 40)(t0)
+    ld      s8, (OFFSETOF__CONTEXT__S2 + 48)(t0)
+    ld      s9, (OFFSETOF__CONTEXT__S2 + 56)(t0)
+    ld      s10, (OFFSETOF__CONTEXT__S2 + 64)(t0)
+    ld      s11, (OFFSETOF__CONTEXT__S2 + 72)(t0)
+
+    // Restore a0 last (exception object for exception handling)
+    ld      a0, OFFSETOF__CONTEXT__A0(t0)
+
+LOCAL_LABEL(SkipIntegerRestore):
+    // Restore fp, ra
+    ld      fp, OFFSETOF__CONTEXT__Fp(t0)
+    ld      ra, OFFSETOF__CONTEXT__Ra(t0)
+
+    // Load sp and pc (t0 will be overwritten)
+    ld      t1, OFFSETOF__CONTEXT__Pc(t0)
+    ld      t0, OFFSETOF__CONTEXT__Sp(t0)
+
+    // Set sp and jump
+    mv      sp, t0
+    jr      t1
+
+LEAF_END ClrRestoreNonvolatileContextWorker, _TEXT
 
 #ifdef FEATURE_INTERPRETER
 
@@ -1148,6 +1232,110 @@ NESTED_ENTRY CallJittedMethodRetBuff, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
     EPILOG_RETURN
 NESTED_END CallJittedMethodRetBuff, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetI1, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    sd a2, 16(fp)
+    sd a4, 24(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
+    ld a2, 16(fp)
+    // Sign extend 8-bit to 64-bit
+    sext.b a0, a0
+    sd a0, 0(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetI1, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetI2, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    sd a2, 16(fp)
+    sd a4, 24(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
+    ld a2, 16(fp)
+    // Sign extend 16-bit to 64-bit
+    sext.h a0, a0
+    sd a0, 0(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetI2, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetU1, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    sd a2, 16(fp)
+    sd a4, 24(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
+    ld a2, 16(fp)
+    // Zero extend 8-bit to 64-bit
+    zext.b a0, a0
+    sd a0, 0(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetU1, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetU2, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    sd a2, 16(fp)
+    sd a4, 24(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
+    ld a2, 16(fp)
+    // Zero extend 16-bit to 64-bit
+    zext.h a0, a0
+    sd a0, 0(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetU2, _TEXT
 
 // a0 - routines array
 // a1 - interpreter stack args location
