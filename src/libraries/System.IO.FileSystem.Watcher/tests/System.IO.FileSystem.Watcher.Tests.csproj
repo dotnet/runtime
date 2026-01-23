@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-freebsd</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'tvos'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
