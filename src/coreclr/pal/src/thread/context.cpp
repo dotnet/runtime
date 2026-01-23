@@ -270,6 +270,7 @@ typedef int __ptrace_request;
     ASSIGN_REG(Xer) \
     ASSIGN_REG(Ccr) \
     ASSIGN_REG(R31) \
+    ASSIGN_REG(R1)
 
 #define ASSIGN_INTEGER_REGS \
     ASSIGN_REG(R0)      \
@@ -1249,7 +1250,7 @@ LPVOID GetNativeContextSP(const native_context_t *context)
 #elif defined(HOST_S390X)
     return (LPVOID) MCREG_R15(context->uc_mcontext);
 #elif defined(HOST_POWERPC64)
-    return (LPVOID) MCREG_R31(context->uc_mcontext);
+    return (LPVOID) MCREG_R1(context->uc_mcontext);
 #else
     return (LPVOID) MCREG_Sp(context->uc_mcontext);
 #endif
