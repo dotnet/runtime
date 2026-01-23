@@ -16,11 +16,22 @@ namespace System.Text.Json.Serialization.Converters
 
         public override byte Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            if (options?.NumberHandling is not null and not JsonNumberHandling.Strict)
+            {
+                return ReadNumberWithCustomHandling(ref reader, options.NumberHandling, options);
+            }
+
             return reader.GetByte();
         }
 
         public override void Write(Utf8JsonWriter writer, byte value, JsonSerializerOptions options)
         {
+            if (options?.NumberHandling is not null and not JsonNumberHandling.Strict)
+            {
+                WriteNumberWithCustomHandling(writer, value, options.NumberHandling);
+                return;
+            }
+
             writer.WriteNumberValue(value);
         }
 

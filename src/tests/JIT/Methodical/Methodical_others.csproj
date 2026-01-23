@@ -16,6 +16,7 @@
     <ProjectReference Include="flowgraph/dev10_bug679008/helper.ilproj" />
     <MergedWrapperProjectReference Remove="flowgraph/dev10_bug679008/helper.ilproj" />
     <CMakeProjectReference Include="gc_poll/CMakeLists.txt" />
+    <CMakeProjectReference Include="structs/systemvbringup/CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Arrays\misc\IndexingSideEffects.cs" />

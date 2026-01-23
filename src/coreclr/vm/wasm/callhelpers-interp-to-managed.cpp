@@ -442,6 +442,13 @@ namespace
         *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1));
     }
 
+    static void CallFunc_I32_I32_I32_RetIND(PCODE pcode, int8_t* pArgs, int8_t* pRet)
+    {
+        int32_t (*fptr)(int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t))pcode;
+        PORTABILITY_ASSERT("Indirect struct return is not yet implemented.");
+        *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2));
+    }
+
     static void CallFunc_IND_RetIND(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
         int32_t (*fptr)(int32_t) = (int32_t (*)(int32_t))pcode;
@@ -714,6 +721,7 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "n", (void*)&CallFunc_Void_RetIND },
     { "ni", (void*)&CallFunc_I32_RetIND },
     { "nii", (void*)&CallFunc_I32_I32_RetIND },
+    { "niii", (void*)&CallFunc_I32_I32_I32_RetIND },
     { "nn", (void*)&CallFunc_IND_RetIND },
     { "nni", (void*)&CallFunc_IND_I32_RetIND },
     { "v", (void*)&CallFunc_Void_RetVoid },

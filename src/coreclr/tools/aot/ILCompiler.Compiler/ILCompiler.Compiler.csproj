@@ -305,6 +305,8 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Relocation.cs" Link="Compiler\DependencyAnalysis\Relocation.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\MethodReadOnlyDataNode.cs" Link="Compiler\DependencyAnalysis\MethodReadOnlyDataNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ShadowConcreteMethodNode.cs" Link="Compiler\DependencyAnalysis\ShadowConcreteMethodNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ShadowNonConcreteMethodNode.cs" Link="Compiler\DependencyAnalysis\ShadowNonConcreteMethodNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ShadowMethodNode.cs" Link="Compiler\DependencyAnalysis\ShadowMethodNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\SortableDependencyNode.cs" Link="Compiler\DependencyAnalysis\SortableDependencyNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\ARM64Emitter.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\ARM64Emitter.cs" />
@@ -348,6 +350,7 @@
     <Compile Include="..\..\Common\Compiler\ObjectWriter\SectionWriter.cs" Link="Compiler\ObjectWriter\SectionWriter.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\StringTableBuilder.cs" Link="Compiler\ObjectWriter\StringTableBuilder.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\TypeString.cs" Link="Compiler\ObjectWriter\TypeString.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\CodeDataLayoutMode.cs" Link="Compiler\ObjectWriter\CodeDataLayoutMode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyTrackingLevel.cs" Link="Compiler\DependencyTrackingLevel.cs" />
     <Compile Include="..\..\Common\Compiler\DevirtualizationManager.cs" Link="Compiler\DevirtualizationManager.cs" />
     <Compile Include="..\..\Common\Compiler\FeatureSettings.cs" Link="Compiler\FeatureSettings.cs" />
