@@ -8,6 +8,8 @@ using System.Runtime.InteropServices;
 
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsTarget", typeof(TargetAndTrimTarget), typeof(TargetAndTrimTarget))]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsUnrelated", typeof(TargetType), typeof(TrimTarget))]
+[assembly: TypeMap<UsedTypeMap>("DuplicateMappingWithDifferentTrimTargets", typeof(TargetType2), typeof(TrimTarget2))]
+[assembly: TypeMap<UsedTypeMap>("DuplicateMappingWithDifferentTrimTargets", typeof(TargetType2), typeof(TrimTarget3))]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsUnreferenced", typeof(UnreferencedTargetType), typeof(UnreferencedTrimTarget))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(SourceClass), typeof(ProxyType))]
 
@@ -26,6 +28,14 @@ if (args.Length > 1 && args[0] == "instantiate")
     else if (t is TrimTarget)
     {
         Console.WriteLine("Type deriving from TrimTarget instantiated.");
+    }
+    else if (t is TrimTarget2)
+    {
+        Console.WriteLine("Type deriving from TrimTarget2 instantiated.");
+    }
+    else if (t is TrimTarget3)
+    {
+        Console.WriteLine("Type deriving from TrimTarget3 instantiated.");
     }
 
     Console.WriteLine("Hash code of SourceClass instance: " + new SourceClass().GetHashCode());
@@ -95,6 +105,12 @@ if (GetTypeWithoutTrimAnalysis(nameof(UnusedProxyType)) is not null)
     return 10;
 }
 
+if (!usedTypeMap.TryGetValue("DuplicateMappingWithDifferentTrimTargets", out Type duplicatedTarget))
+{
+    Console.WriteLine("Could not find duplicated target type");
+    return 11;
+}
+
 return 100;
 
 [MethodImpl(MethodImplOptions.NoInlining)]
@@ -106,7 +122,10 @@ static Type GetTypeWithoutTrimAnalysis(string typeName)
 class UsedTypeMap;
 class TargetAndTrimTarget;
 class TargetType;
+class TargetType2;
 class TrimTarget;
+class TrimTarget2;
+class TrimTarget3;
 class UnreferencedTargetType;
 class UnreferencedTrimTarget;
 class SourceClass;

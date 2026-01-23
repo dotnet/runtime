@@ -17,7 +17,9 @@ public class C2<T>
 
 public class TypicalUseCase { }
 
-public class DuplicateTypeNameKey { }
+public class ValidDuplicateTypeNameKey { }
+
+public class InvalidDuplicateTypeNameKey { }
 
 public class InvalidTypeNameKey { }
 
