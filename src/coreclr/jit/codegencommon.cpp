@@ -1913,6 +1913,10 @@ void CodeGen::genGenerateMachineCode()
         printf("generic LOONGARCH64");
 #elif defined(TARGET_RISCV64)
         printf("generic RISCV64");
+#elif defined (TARGET_WASM32)
+        printf("wasm32");
+#elif defined (TARGET_WASM64)
+        printf("wasm64");
 #else
         printf("unknown architecture");
 #endif
