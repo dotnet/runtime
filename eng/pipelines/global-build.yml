@@ -133,7 +133,7 @@ extends:
           jobParameters:
             nameSuffix: Libraries_AllConfigurations
             buildArgs: -subset libs -restore -build -pack -c $(_BuildConfig) /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
-            timeoutInMinutes: 180
+            timeoutInMinutes: 120
             condition:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
