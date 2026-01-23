@@ -133,6 +133,7 @@ public class Reverse
         internal static extern IntPtr InvokeRetCallback(RetCallback callback);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/173", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()

@@ -136,6 +136,7 @@ public class CriticalHandleArrayTest
         Assert.Throws<MarshalDirectiveException>(() => Native.RefModify(handleValue2, ref myCriticalHandleArray));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/173", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
