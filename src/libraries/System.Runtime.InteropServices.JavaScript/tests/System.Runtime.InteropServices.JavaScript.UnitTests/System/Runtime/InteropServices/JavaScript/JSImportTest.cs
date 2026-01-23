@@ -175,7 +175,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             Task<short> res = JavaScriptTestHelper.ReturnResolvedPromiseWithIntMaxValue_AsShortToBeOutOfRange();
             JSException ex = await Assert.ThrowsAsync<JSException>(() => res);
-            Console.WriteLine(ex.Message);
             Assert.Equal("Error: Assert failed: Overflow: value 2147483647 is out of -32768 32767 range", ex.Message);
         }
 
@@ -184,7 +183,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             Task<byte> res = JavaScriptTestHelper.ReturnResolvedPromiseWithIntMaxValue_AsByteToBeOutOfRange();
             JSException ex = await Assert.ThrowsAsync<JSException>(() => res);
-            Console.WriteLine(ex.Message);
             Assert.Equal("Error: Assert failed: Overflow: value 2147483647 is out of 0 255 range", ex.Message);
         }
 
