@@ -32,19 +32,9 @@ namespace System.IO.Tests.Enumeration
             fileFour.Create().Dispose();
 
             // Search with lowercase pattern when files have uppercase first letter
+            // Case-sensitive matching means the managed filter ensures case match
             string[] paths = GetPaths(testDirectory.FullName, "file*", new EnumerationOptions { MatchCasing = MatchCasing.CaseSensitive, RecurseSubdirectories = true });
-
-            if (PathInternal.IsCaseSensitive)
-            {
-                // On case-sensitive filesystems, "file*" won't match "FileOne", etc.
-                Assert.Empty(paths);
-            }
-            else
-            {
-                // On case-insensitive filesystems, files are stored case-insensitively but
-                // can still be filtered case-sensitively in managed code, so no matches
-                Assert.Empty(paths);
-            }
+            Assert.Empty(paths);
 
             // Search with CaseInsensitive should always match
             paths = GetPaths(testDirectory.FullName, "file*", new EnumerationOptions { MatchCasing = MatchCasing.CaseInsensitive, RecurseSubdirectories = true });
@@ -97,24 +87,13 @@ namespace System.IO.Tests.Enumeration
             });
             FSAssert.EqualWhenOrdered(new string[] { testFile.FullName, testNoExt.FullName }, paths);
 
-            // Win32 + CaseSensitive: TEST* behavior depends on filesystem case sensitivity
+            // Win32 + CaseSensitive: TEST* doesn't match lowercase "test" files (managed filter enforces case)
             paths = GetPaths(testDirectory.FullName, "TEST*", new EnumerationOptions
             {
                 MatchType = MatchType.Win32,
                 MatchCasing = MatchCasing.CaseSensitive
             });
-            
-            if (PathInternal.IsCaseSensitive)
-            {
-                // On case-sensitive filesystems, TEST* won't match lowercase "test" files
-                Assert.Empty(paths);
-            }
-            else
-            {
-                // On case-insensitive filesystems, files stored as "test" but managed filter
-                // with CaseSensitive won't match "TEST" pattern
-                Assert.Empty(paths);
-            }
+            Assert.Empty(paths);
 
             // Win32 + CaseSensitive: test* matches lowercase "test" files
             paths = GetPaths(testDirectory.FullName, "test*", new EnumerationOptions
@@ -132,24 +111,13 @@ namespace System.IO.Tests.Enumeration
             });
             FSAssert.EqualWhenOrdered(new string[] { abcFile.FullName }, paths);
 
-            // Win32 + CaseSensitive: abc* behavior depends on filesystem case sensitivity
+            // Win32 + CaseSensitive: abc* doesn't match uppercase ABC file (managed filter enforces case)
             paths = GetPaths(testDirectory.FullName, "abc*", new EnumerationOptions
             {
                 MatchType = MatchType.Win32,
                 MatchCasing = MatchCasing.CaseSensitive
             });
-            
-            if (PathInternal.IsCaseSensitive)
-            {
-                // On case-sensitive filesystems, abc* won't match uppercase "ABC" file
-                Assert.Empty(paths);
-            }
-            else
-            {
-                // On case-insensitive filesystems, files stored as "ABC" but managed filter
-                // with CaseSensitive won't match "abc" pattern
-                Assert.Empty(paths);
-            }
+            Assert.Empty(paths);
         }
 
         [Fact]
@@ -191,24 +159,13 @@ namespace System.IO.Tests.Enumeration
             });
             FSAssert.EqualWhenOrdered(new string[] { testFile.FullName, testNoExt.FullName }, paths);
 
-            // Simple + CaseSensitive: TEST* behavior depends on filesystem case sensitivity
+            // Simple + CaseSensitive: TEST* doesn't match lowercase "test" files (managed filter enforces case)
             paths = GetPaths(testDirectory.FullName, "TEST*", new EnumerationOptions
             {
                 MatchType = MatchType.Simple,
                 MatchCasing = MatchCasing.CaseSensitive
             });
-            
-            if (PathInternal.IsCaseSensitive)
-            {
-                // On case-sensitive filesystems, TEST* won't match lowercase "test" files
-                Assert.Empty(paths);
-            }
-            else
-            {
-                // On case-insensitive filesystems, files stored as "test" but managed filter
-                // with CaseSensitive won't match "TEST" pattern
-                Assert.Empty(paths);
-            }
+            Assert.Empty(paths);
 
             // Simple + CaseSensitive: test* matches lowercase "test" files
             paths = GetPaths(testDirectory.FullName, "test*", new EnumerationOptions
@@ -226,24 +183,13 @@ namespace System.IO.Tests.Enumeration
             });
             FSAssert.EqualWhenOrdered(new string[] { abcFile.FullName }, paths);
 
-            // Simple + CaseSensitive: abc* behavior depends on filesystem case sensitivity
+            // Simple + CaseSensitive: abc* doesn't match uppercase ABC file (managed filter enforces case)
             paths = GetPaths(testDirectory.FullName, "abc*", new EnumerationOptions
             {
                 MatchType = MatchType.Simple,
                 MatchCasing = MatchCasing.CaseSensitive
             });
-            
-            if (PathInternal.IsCaseSensitive)
-            {
-                // On case-sensitive filesystems, abc* won't match uppercase "ABC" file
-                Assert.Empty(paths);
-            }
-            else
-            {
-                // On case-insensitive filesystems, files stored as "ABC" but managed filter
-                // with CaseSensitive won't match "abc" pattern
-                Assert.Empty(paths);
-            }
+            Assert.Empty(paths);
         }
 
         [Fact]
@@ -275,43 +221,21 @@ namespace System.IO.Tests.Enumeration
             // Should match a.txt and B.TXT (one char before dot, case-insensitive)
             FSAssert.EqualWhenOrdered(new string[] { aFile.FullName, bFile.FullName }, paths);
 
-            // Win32 + CaseSensitive: ?.txt - behavior depends on filesystem case sensitivity
+            // Win32 + CaseSensitive: ?.txt - only matches a.txt (one char before dot, lowercase extension)
             paths = GetPaths(testDirectory.FullName, "?.txt", new EnumerationOptions
             {
                 MatchType = MatchType.Win32,
                 MatchCasing = MatchCasing.CaseSensitive
             });
-            
-            if (PathInternal.IsCaseSensitive)
-            {
-                // On case-sensitive filesystems, ?.txt only matches a.txt (exact case match, one char before dot)
-                FSAssert.EqualWhenOrdered(new string[] { aFile.FullName }, paths);
-            }
-            else
-            {
-                // On case-insensitive filesystems, files stored but managed filter ensures case match
-                // Only a.txt matches (one char before dot, lowercase extension)
-                FSAssert.EqualWhenOrdered(new string[] { aFile.FullName }, paths);
-            }
+            FSAssert.EqualWhenOrdered(new string[] { aFile.FullName }, paths);
 
-            // Win32 + CaseSensitive: ?.TXT - behavior depends on filesystem case sensitivity
+            // Win32 + CaseSensitive: ?.TXT - only matches B.TXT (one char before dot, uppercase extension)
             paths = GetPaths(testDirectory.FullName, "?.TXT", new EnumerationOptions
             {
                 MatchType = MatchType.Win32,
                 MatchCasing = MatchCasing.CaseSensitive
             });
-            
-            if (PathInternal.IsCaseSensitive)
-            {
-                // On case-sensitive filesystems, ?.TXT only matches B.TXT (exact case match, one char before dot)
-                FSAssert.EqualWhenOrdered(new string[] { bFile.FullName }, paths);
-            }
-            else
-            {
-                // On case-insensitive filesystems, files stored but managed filter ensures case match
-                // Only B.TXT matches (one char before dot, uppercase extension)
-                FSAssert.EqualWhenOrdered(new string[] { bFile.FullName }, paths);
-            }
+            FSAssert.EqualWhenOrdered(new string[] { bFile.FullName }, paths);
 
             // Simple + CaseInsensitive: ?.txt - must have exactly one char before .txt
             paths = GetPaths(testDirectory.FullName, "?.txt", new EnumerationOptions
@@ -321,41 +245,21 @@ namespace System.IO.Tests.Enumeration
             });
             FSAssert.EqualWhenOrdered(new string[] { aFile.FullName, bFile.FullName }, paths);
 
-            // Simple + CaseSensitive: ?.txt - behavior depends on filesystem case sensitivity
+            // Simple + CaseSensitive: ?.txt - only matches a.txt (exact case match)
             paths = GetPaths(testDirectory.FullName, "?.txt", new EnumerationOptions
             {
                 MatchType = MatchType.Simple,
                 MatchCasing = MatchCasing.CaseSensitive
             });
-            
-            if (PathInternal.IsCaseSensitive)
-            {
-                // On case-sensitive filesystems, ?.txt only matches a.txt (exact case match)
-                FSAssert.EqualWhenOrdered(new string[] { aFile.FullName }, paths);
-            }
-            else
-            {
-                // On case-insensitive filesystems, files stored but managed filter ensures case match
-                FSAssert.EqualWhenOrdered(new string[] { aFile.FullName }, paths);
-            }
+            FSAssert.EqualWhenOrdered(new string[] { aFile.FullName }, paths);
 
-            // Simple + CaseSensitive: ?.TXT - behavior depends on filesystem case sensitivity
+            // Simple + CaseSensitive: ?.TXT - only matches B.TXT (exact case match)
             paths = GetPaths(testDirectory.FullName, "?.TXT", new EnumerationOptions
             {
                 MatchType = MatchType.Simple,
                 MatchCasing = MatchCasing.CaseSensitive
             });
-            
-            if (PathInternal.IsCaseSensitive)
-            {
-                // On case-sensitive filesystems, ?.TXT only matches B.TXT (exact case match)
-                FSAssert.EqualWhenOrdered(new string[] { bFile.FullName }, paths);
-            }
-            else
-            {
-                // On case-insensitive filesystems, files stored but managed filter ensures case match
-                FSAssert.EqualWhenOrdered(new string[] { bFile.FullName }, paths);
-            }
+            FSAssert.EqualWhenOrdered(new string[] { bFile.FullName }, paths);
         }
     }
 
