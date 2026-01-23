@@ -115,7 +115,7 @@ namespace Tracing.UserEvents.Tests.Common
             Console.WriteLine($"record-trace started with PID: {recordTraceProcess.Id}");
 
             ProcessStartInfo traceeStartInfo = new();
-            traceeStartInfo.FileName = Process.GetCurrentProcess().MainModule!.FileName;
+            traceeStartInfo.FileName = Environment.ProcessPath!;
             traceeStartInfo.Arguments = "tracee";
             traceeStartInfo.WorkingDirectory = userEventsScenarioDir;
             traceeStartInfo.RedirectStandardOutput = true;
