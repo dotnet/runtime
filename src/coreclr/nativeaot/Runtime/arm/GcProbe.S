@@ -123,7 +123,7 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
     bx          lr
 LOCAL_LABEL(WaitForGC):
     mov         r2, r3                  // Move thread pointer to r2 for RhpWaitForGC
-    mov         r12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0 + PTFF_SAVE_R2)
+    mov         r12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0 + PTFF_SAVE_R1 + PTFF_SAVE_R2)
     orr         r12, r12, #PTFF_THREAD_HIJACK
     b           RhpWaitForGC
 NESTED_END RhpGcProbeHijack
