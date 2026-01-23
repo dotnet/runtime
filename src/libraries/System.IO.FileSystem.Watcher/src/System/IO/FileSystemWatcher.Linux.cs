@@ -127,7 +127,7 @@ namespace System.IO
 
             // Guards the watchers of the inotify instance and starting the inotify thread.
             private static readonly object s_watchersLock = new();
-            private static INotify? s_currentInotify;
+            private static INotify? s_currentINotify;
             private readonly List<Watcher> _watchers = new();
             private readonly byte[] _buffer = new byte[BufferSize];
             private readonly SafeFileHandle _inotifyHandle;
@@ -233,7 +233,7 @@ namespace System.IO
                     lock (watcher)
                     {
                         if (_isThreadStopping // inotify thread stopping
-                            || watcher.IsStopped     // user stopped raising events
+                            || watcher.IsWatcherStopped // user stopped raising events
                             || (parent is not null && watcher.RootDirectory is null)) // process events removed the root
                         {
                             return null;
@@ -381,7 +381,7 @@ namespace System.IO
                     {
                         if (removedDir.Children is { } children)
                         {
-                            foreach (var child in children)
+                            foreach (WatchedDirectory child in children)
                             {
                                 RemoveINotifyWatchWhenNoMoreWatchers(child.Watch, ignoredFd);
                             }
@@ -489,8 +489,7 @@ namespace System.IO
                     uint movedFromCookie = 0;
                     bool movedFromIsDir = false;
 
-                    NotifyEvent nextEvent;
-                    while (TryReadEvent(out nextEvent))
+                    while (TryReadEvent(out NotifyEvent nextEvent))
                     {
                         if (!ProcessEvent(nextEvent, ref movedFromWatchCount, ref movedFromName, ref movedFromCookie, ref movedFromIsDir))
                             break;
@@ -636,8 +635,7 @@ namespace System.IO
                 foreach (WatchedDirectory dir in dirs)
                 {
                     Watcher watcher = dir.Watcher;
-
-                    WatchedDirectory? matchingFrom = (mask & Interop.Sys.NotifyEvents.IN_MOVED_TO) != 0 ? FindMatchingWatchedDirectory(movedFromDirs, watcher) : null;
+                    WatchedDirectory? matchingFromFound = null; // cache FindMatchingFrom result.
 
                     if (isDir && watcher.IncludeSubdirectories)
                     {
@@ -645,7 +643,7 @@ namespace System.IO
                         {
                             // If this is a rename, move over the watches from the source.
                             // We'll still call WatchChildDirectories in case the source was still being iterated for adding watches.
-                            if (matchingFrom is not null)
+                            if (FindMatchingFrom(movedFromDirs) is WatchedDirectory matchingFrom)
                             {
                                 RenameWatchedDirectories(dir, nextEvent.name, matchingFrom, movedFromName);
                             }
@@ -693,7 +691,7 @@ namespace System.IO
                             watcher.QueueEvent(WatcherEvent.Deleted(dir, nextEvent.name));
                             break;
                         case Interop.Sys.NotifyEvents.IN_MOVED_TO:
-                            if (matchingFrom is not null)
+                            if (FindMatchingFrom(movedFromDirs) is WatchedDirectory matchingFrom)
                             {
                                 watcher.QueueEvent(WatcherEvent.Renamed(dir, nextEvent.name, matchingFrom, movedFromName));
                             }
@@ -703,6 +701,9 @@ namespace System.IO
                             }
                             break;
                     }
+
+                    WatchedDirectory? FindMatchingFrom(ReadOnlySpan<WatchedDirectory> dirs)
+                        => matchingFromFound ??= (mask & Interop.Sys.NotifyEvents.IN_MOVED_TO) != 0 ? FindMatchingWatchedDirectory(dirs, watcher) : null;
                 }
 
                 // For each Watcher we'll receive an IN_IGNORED for its root watch.
@@ -998,7 +999,7 @@ namespace System.IO
                 public NotifyFilters NotifyFilters { get; }
                 public Interop.Sys.NotifyEvents WatchFilters { get; }
                 public bool IncludeSubdirectories { get; }
-                public bool IsStopped { get; set; }
+                public bool IsWatcherStopped { get; set; }
 
                 public WatchedDirectory? RootDirectory
                 {
@@ -1036,13 +1037,13 @@ namespace System.IO
                     WatchedDirectory? rootDirectory;
                     lock (s_watchersLock)
                     {
-                        inotify = s_currentInotify;
+                        inotify = s_currentINotify;
                         // If there is no running instance, start one.
                         if (inotify is null || inotify.IsStopped)
                         {
                             inotify = new();
                             inotify.StartThread();
-                            s_currentInotify = inotify;
+                            s_currentINotify = inotify;
                         }
 
                         _inotify = inotify;
@@ -1072,11 +1073,11 @@ namespace System.IO
                     WatchedDirectory? root;
                     lock (this)
                     {
-                        if (IsStopped)
+                        if (IsWatcherStopped)
                         {
                             return;
                         }
-                        IsStopped = true;
+                        IsWatcherStopped = true;
                         _emitEvents = false;
 
                         root = RootDirectory;
@@ -1096,18 +1097,18 @@ namespace System.IO
                     char[] pathBuffer = new char[PATH_MAX];
                     try
                     {
-                        await foreach (WatcherEvent evnt in _eventQueue.Reader.ReadAllAsync().ConfigureAwait(false))
+                        await foreach (WatcherEvent @event in _eventQueue.Reader.ReadAllAsync().ConfigureAwait(false))
                         {
-                            if (IsStopped)
+                            if (IsWatcherStopped)
                             {
                                 break;
                             }
-                            EmitEvent(evnt, pathBuffer);
+                            EmitEvent(@event, pathBuffer);
                         }
                     }
                     catch (Exception ex)
                     {
-                        if (!IsStopped)
+                        if (!IsWatcherStopped)
                         {
                             Stop();
 
@@ -1121,7 +1122,7 @@ namespace System.IO
                     }
                 }
 
-                private void EmitEvent(WatcherEvent evnt, char[] pathBuffer)
+                private void EmitEvent(WatcherEvent @event, char[] pathBuffer)
                 {
                     FileSystemWatcher? fsw = Fsw;
                     if (fsw is null)
@@ -1129,16 +1130,16 @@ namespace System.IO
                         return;
                     }
 
-                    switch (evnt.Type)
+                    switch (@event.Type)
                     {
                         case WatcherEvent.ErrorType:
-                            fsw.OnError(new ErrorEventArgs(evnt.Exception!));
+                            fsw.OnError(new ErrorEventArgs(@event.Exception!));
 
                             // On InternalBufferOverflowException, the inotify is stopped.
                             // If the Watcher wasn't stopped, Restart it against a new inotify instance.
-                            if (evnt.Exception is InternalBufferOverflowException)
+                            if (@event.Exception is InternalBufferOverflowException)
                             {
-                                if (!IsStopped)
+                                if (!IsWatcherStopped)
                                 {
                                     fsw.Restart();
                                 }
@@ -1149,14 +1150,14 @@ namespace System.IO
                         case WatcherChangeTypes.Deleted:
                         case WatcherChangeTypes.Changed:
                             {
-                                ReadOnlySpan<char> name = evnt.GetName(pathBuffer);
-                                fsw.NotifyFileSystemEventArgs(evnt.Type, name);
+                                ReadOnlySpan<char> name = @event.GetName(pathBuffer);
+                                fsw.NotifyFileSystemEventArgs(@event.Type, name);
                             }
                             break;
                         case WatcherChangeTypes.Renamed:
                             {
-                                string name = evnt.GetName(pathBuffer).ToString();
-                                ReadOnlySpan<char> oldName = evnt.GetOldName(pathBuffer);
+                                string name = @event.GetName(pathBuffer).ToString();
+                                ReadOnlySpan<char> oldName = @event.GetOldName(pathBuffer);
                                 fsw.NotifyRenameEventArgs(WatcherChangeTypes.Renamed, name, oldName);
                             }
                             break;
@@ -1166,7 +1167,7 @@ namespace System.IO
                 internal bool WatchChildDirectories(WatchedDirectory parent, string path, bool includeBasePath = true)
                 {
                     Debug.Assert(_inotify is not null);
-                    if (IsStopped)
+                    if (IsWatcherStopped)
                     {
                         return false;
                     }
@@ -1184,7 +1185,7 @@ namespace System.IO
 
                     try
                     {
-                        foreach (var childDir in Directory.GetDirectories(path, "*", ChildEnumerationOptions))
+                        foreach (string childDir in Directory.EnumerateDirectories(path, "*", ChildEnumerationOptions))
                         {
                             if (!WatchChildDirectories(parent, childDir))
                             {
@@ -1219,7 +1220,7 @@ namespace System.IO
 
                 internal void QueueError(Exception exception)
                 {
-                    if (IsStopped)
+                    if (IsWatcherStopped)
                     {
                         return;
                     }
