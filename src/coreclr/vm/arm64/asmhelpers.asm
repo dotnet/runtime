@@ -1180,9 +1180,9 @@ HaveInterpThreadContext
         PROLOG_SAVE_REG_PAIR   fp, lr, #-16!
         ; The +16 is for the fp, lr above
         add x0, sp, #__PWTB_TransitionBlock + 16
-        mov x1, x19 ; the IR bytecode pointer
-        ; Load the return buffer address
+        ; Load the return buffer address from incoming x1 before clobbering x1
         mov x2, x1
+        mov x1, x19 ; the IR bytecode pointer
         bl ExecuteInterpretedMethod
         EPILOG_RESTORE_REG_PAIR fp, lr, #16!
         EPILOG_RETURN
