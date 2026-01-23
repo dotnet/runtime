@@ -271,7 +271,34 @@ inline PTR_MethodDesc Module::LookupMethodDef(mdMethodDef token)
     CONTRACTL_END
 
     _ASSERTE(TypeFromToken(token) == mdtMethodDef);
-    return m_MethodDefToDescMap.GetElement(RidFromToken(token));
+    PTR_MethodDesc pResult = m_MethodDefToDescMap.GetElement(RidFromToken(token));
+    if (pResult == NULL)
+    {
+        MemoryBarrier(); // m_MethodDefToDescMap is initialized in a specific order with regard to the m_TypeDefToDescMap, and is used
+                        // by reading the TypeDefToDescMap, and then if a value is found in there, reading from this map.
+                        // Since those two reads are not dependent on each other it is possible for the compiler or CPU to reorder them.
+                        // The MemoryBarrier here prevents that reordering.
+
+        pResult = m_MethodDefToDescMap.GetElement(RidFromToken(token));
+    }
+    return pResult;
+}
+
+FieldDesc *Module::LookupFieldDef(mdFieldDef token)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(TypeFromToken(token) == mdtFieldDef);
+    FieldDesc* pResult = m_FieldDefToDescMap.GetElement(RidFromToken(token));
+
+    if (pResult == NULL)
+    {
+        MemoryBarrier(); // m_FieldDefToDescMap is initialized in a specific order with regard to the m_TypeDefToDescMap, and is used
+                     // by reading the TypeDefToDescMap, and then if a value is found in there, reading from this map.
+                     // Since those two reads are not dependent on each other it is possible for the compiler or CPU to reorder them.
+                     // The MemoryBarrier here prevents that reordering.
+        pResult = m_FieldDefToDescMap.GetElement(RidFromToken(token));
+    }
+    return pResult;
 }
 
 #ifdef FEATURE_CODE_VERSIONING

@@ -4644,13 +4644,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
 #endif // FEATURE_METADATA_UPDATER
 }
 
-FieldDesc *Module::LookupFieldDef(mdFieldDef token)
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(TypeFromToken(token) == mdtFieldDef);
-    return m_FieldDefToDescMap.GetElement(RidFromToken(token));
-}
-
 #endif // DACCESS_COMPILE
 
 
