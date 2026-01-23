@@ -651,7 +651,6 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
     instruction    ins        = INS_none;
     assert(fromType == TYP_INT || fromType == TYP_LONG);
 
-
     genConsumeOperands(cast);
 
     // TODO-WASM: Handle load containment GenIntCastDesc::LOAD_* cases once we mark containment for loads
@@ -735,7 +734,6 @@ void CodeGen::genFloatToIntCast(GenTree* tree)
     bool        isUnsigned = varTypeIsUnsigned(tree->AsCast()->CastToType());
     instruction ins        = INS_none;
     assert(varTypeIsFloating(fromType) && (toType == TYP_INT || toType == TYP_LONG));
-
 
     genConsumeOperands(tree->AsCast());
 
