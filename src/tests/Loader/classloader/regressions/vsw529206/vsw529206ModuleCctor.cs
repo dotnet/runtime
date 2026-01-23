@@ -30,7 +30,6 @@ public class Test_vsw529206ModuleCctor
 		TriggerModuleCctorClass.intStatic = 5;
 	}
 
-     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: compat for exceptions thrown from module cctor", typeof(Utilities), nameof(Utilities.IsNativeAot))]
      [ActiveIssue("needs triage", TestRuntimes.Mono)]
     	[Fact]
     	public static int TestEntryPoint()

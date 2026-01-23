@@ -8,6 +8,8 @@
 .assembly extern xunit.core {}
 .assembly extern System.Runtime { }
 .assembly extern mscorlib { }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly UnsupportedScenario2 { }
 
 .class public auto ansi beforefieldinit A { 
@@ -200,6 +202,7 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('Tests that expect TypeLoadException') type([TestLibrary]TestLibrary.Utilities) string[1] ('IsNativeAot') }
     .entrypoint
     .maxstack  2
     .locals init (bool V_0)    
