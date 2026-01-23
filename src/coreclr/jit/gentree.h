@@ -2160,11 +2160,11 @@ public:
 
     void SetUnsigned()
     {
-        assert(OperIsCompare() || OperIsMul() || OperIs(GT_ADD, GT_SUB, GT_CAST)
-#if !defined(TARGET_64BIT)
-               || OperIs(GT_ADD_HI, GT_SUB_HI)
+#if defined(TARGET_64BIT)
+        assert(OperIsCompare() || OperIsMul() || OperIs(GT_ADD, GT_SUB, GT_CAST));
+#else
+        assert(OperIsCompare() || OperIsMul() || OperIs(GT_ADD, GT_SUB, GT_CAST, GT_ADD_HI, GT_SUB_HI));
 #endif
-        );
         gtFlags |= GTF_UNSIGNED;
     }
 
