@@ -4184,7 +4184,6 @@ CORINFO_CLASS_HANDLE MethodContext::repEmbedClassHandle(CORINFO_CLASS_HANDLE han
             // Some other embedded handle required an indirection, so do the same for the pseudo handle
             // (avoids spurious improvements in R2R scenarios)
             *ppIndirection = (void*)CONTINUATION_TYPE_PSEUDO_CLASS_HANDLE;
-
             return nullptr;
         }
 
