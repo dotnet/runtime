@@ -1278,7 +1278,18 @@ public:
 #endif // !DACCESS_COMPILE
 #endif // FEATURE_CODE_VERSIONING
 
+#ifndef DACCESS_COMPILE
+    FieldDesc *LookupFieldDef(mdFieldDef token)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        _ASSERTE(TypeFromToken(token) == mdtFieldDef);
+        return m_FieldDefToDescMap.GetElement(RidFromToken(token));
+    }
+#else // DACCESS_COMPILE
+    // FieldDesc isn't defined at this point so PTR_FieldDesc can't work.
     FieldDesc *LookupFieldDef(mdFieldDef token);
+#endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
     void EnsureFieldDefCanBeStored(mdFieldDef token)
