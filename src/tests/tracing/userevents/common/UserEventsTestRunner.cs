@@ -206,7 +206,7 @@ namespace Tracing.UserEvents.Tests.Common
             // Fall back to the current process's main module path.
             if (string.IsNullOrEmpty(userEventsScenarioDir))
             {
-                string? mainModuleFileName = Process.GetCurrentProcess().MainModule?.FileName;
+                string? mainModuleFileName = Environment.ProcessPath;
                 if (string.IsNullOrEmpty(mainModuleFileName))
                 {
                     throw new InvalidOperationException("Unable to determine the test assembly path: Assembly.Location is empty and MainModule.FileName is unavailable.");
