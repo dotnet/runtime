@@ -4,6 +4,7 @@
 .assembly extern mscorlib { auto }
 .assembly extern xunit.core {}
 .assembly extern System.Runtime { auto }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .ver 0:0:0:0 }
 
 .assembly 'TypeIntrinsics_il' { }
 

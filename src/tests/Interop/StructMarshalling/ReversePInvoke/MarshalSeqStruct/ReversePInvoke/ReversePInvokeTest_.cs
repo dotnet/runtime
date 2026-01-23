@@ -6,6 +6,7 @@ using System.Text;
 using System.Security;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 public class MarshalStructTest
 {

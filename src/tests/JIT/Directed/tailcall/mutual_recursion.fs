@@ -554,7 +554,7 @@ type Driver() =
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-[<SkipOnCoreClr("Unstable under JIT stress", RuntimeTestModes.AnyJitStress | RuntimeTestModes.AnyGCStress)>]
+[<SkipOnCoreClr("Unstable under JIT stress", RuntimeTestModes.AnyJitStress ||| RuntimeTestModes.AnyGCStress)>]
 [<SkipOnMono("Not supported on Mono runtime")>]
 [<ConditionalFact(typeof<Utilities>, [| "IsNotNativeAot" |])>]
 let main () =
