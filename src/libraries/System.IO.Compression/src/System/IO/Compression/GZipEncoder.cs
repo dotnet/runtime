@@ -71,8 +71,8 @@ namespace System.IO.Compression
             // GZip has a larger header than raw deflate, so add extra overhead
             long baseLength = DeflateEncoder.GetMaxCompressedLength(inputSize);
 
-            // GZip adds ~18 bytes header/trailer overhead
-            return baseLength + 10;
+            // GZip adds 18 bytes: 10-byte header + 8-byte trailer (CRC32 + original size)
+            return baseLength + 18;
         }
 
         /// <summary>
