@@ -119,7 +119,7 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build Libraries with all configurations (restore, build, pack)
+      # Build Libraries with all configurations including analyzers and linker
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -127,93 +127,16 @@ extends:
           buildConfig: release
           platforms:
           - linux_x64_dev_innerloop
+          - linux_x64
+          - windows_x64
+          - osx_arm64
           jobParameters:
             nameSuffix: Libraries_AllConfigurations
-            buildArgs: -subset libs -restore -build -pack -c $(_BuildConfig)
-            timeoutInMinutes: 120
-            condition:
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      #
-      # CoreCLR libraries with analyzers and linker on Windows
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platforms:
-          - windows_x64
-          jobParameters:
-            testGroup: innerloop
+            buildArgs: -subset libs -restore -build -pack -c $(_BuildConfig) /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
             timeoutInMinutes: 180
-            nameSuffix: Analyzers_Linker
-            buildArgs: -s clr+libs -c $(_BuildConfig) /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
             condition:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      #
-      # CoreCLR libraries with analyzers and linker on Linux
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platforms:
-          - linux_x64
-          jobParameters:
-            testGroup: innerloop
-            timeoutInMinutes: 180
-            nameSuffix: Analyzers_Linker
-            buildArgs: -s clr+libs -c $(_BuildConfig) /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
-            condition:
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      #
-      # CoreCLR libraries with analyzers and linker on OSX
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platforms:
-          - osx_x64
-          jobParameters:
-            testGroup: innerloop
-            timeoutInMinutes: 180
-            nameSuffix: Analyzers_Linker
-            buildArgs: -s clr+libs -c $(_BuildConfig) /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
-            condition:
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      #
-      # Mono libraries with analyzers and linker on Linux
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platforms:
-          - linux_x64
-          jobParameters:
-            testGroup: innerloop
-            timeoutInMinutes: 180
-            nameSuffix: Analyzers_Linker_Mono
-            buildArgs: -s mono+libs -c $(_BuildConfig) /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
-            condition:
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
