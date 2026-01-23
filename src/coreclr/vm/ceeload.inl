@@ -293,9 +293,9 @@ FieldDesc *Module::LookupFieldDef(mdFieldDef token)
     if (pResult == NULL)
     {
         MemoryBarrier(); // m_FieldDefToDescMap is initialized in a specific order with regard to the m_TypeDefToDescMap, and is used
-                     // by reading the TypeDefToDescMap, and then if a value is found in there, reading from this map.
-                     // Since those two reads are not dependent on each other it is possible for the compiler or CPU to reorder them.
-                     // The MemoryBarrier here prevents that reordering.
+                        // by reading the TypeDefToDescMap, and then if a value is found in there, reading from this map.
+                        // Since those two reads are not dependent on each other it is possible for the compiler or CPU to reorder them.
+                        // The MemoryBarrier here prevents that reordering.
         pResult = m_FieldDefToDescMap.GetElement(RidFromToken(token));
     }
     return pResult;
