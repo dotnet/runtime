@@ -104,16 +104,16 @@ namespace ILCompiler
 
                 if (impl != null)
                 {
+                    impl = implType.FindVirtualFunctionTargetMethodOnObjectType(impl);
+
                     // We need to bring the original instantiation back so that we can still try devirtualizing
                     // when the method is a generic virtual method
-                    if (originalDeclMethod.HasInstantiation)
+                    if (impl != null && originalDeclMethod.HasInstantiation)
                     {
                         // We may end up with a method that has subsituted type parameters, so we need to instantiate
                         // on the method definition
                         impl = impl.GetMethodDefinition().MakeInstantiatedMethod(originalDeclMethod.Instantiation);
                     }
-
-                    impl = implType.FindVirtualFunctionTargetMethodOnObjectType(impl);
                 }
                 else
                 {
