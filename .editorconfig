@@ -163,8 +163,8 @@ file_header_template = Licensed to the .NET Foundation under one or more agreeme
 # disable CA2025, the analyzer throws a NullReferenceException when processing this file: https://github.com/dotnet/roslyn-analyzers/issues/7652
 dotnet_diagnostic.CA2025.severity = none
 
-# IDE0071: Simplify interpolation - keep as suggestion since ReadOnlySpan<char>.ToString() is required for netstandard targets
-dotnet_diagnostic.IDE0071.severity = suggestion
+# IDE0071: Simplify interpolation - keep as silent hint since ReadOnlySpan<char>.ToString() is required for netstandard targets
+dotnet_diagnostic.IDE0071.severity = silent
 
 # C++ Files
 [*.{cpp,h,in}]
