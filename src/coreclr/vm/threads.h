@@ -3314,7 +3314,7 @@ private:
     Exception* m_pExceptionDuringStartup;
 
 public:
-    void HandleThreadStartupFailure();
+    OBJECTREF GetExceptionDuringStartup();
 
 #ifdef HAVE_GCCOVER
 private:

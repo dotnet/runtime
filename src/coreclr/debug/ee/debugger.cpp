@@ -1570,37 +1570,6 @@ DebuggerHeap * Debugger::GetInteropSafeExecutableHeap_NoThrow()
     return &m_executableHeap;
 }
 
-//---------------------------------------------------------------------------------------
-//
-// Notify potential debugger that the runtime has started up
-//
-//
-// Assumptions:
-//    Called during startup path
-//
-// Notes:
-//    If no debugger is attached, this does nothing.
-//
-//---------------------------------------------------------------------------------------
-void Debugger::RaiseStartupNotification()
-{
-    // Right-side will read this field from OOP via DAC-primitive to determine attach or launch case.
-    // We do an interlocked increment to guarantee this is an atomic memory write, and to ensure
-    // that it's flushed from any CPU cache into memory.
-    InterlockedIncrement(&m_fLeftSideInitialized);
-
-#ifndef FEATURE_DBGIPC_TRANSPORT_VM
-    // If we are remote debugging, don't send the event now if a debugger is not attached.  No one will be
-    // listening, and we will fail.  However, we still want to initialize the variable above.
-    DebuggerIPCEvent startupEvent;
-    InitIPCEvent(&startupEvent, DB_IPCE_LEFTSIDE_STARTUP, NULL);
-
-    SendRawEvent(&startupEvent);
-
-    // RS will set flags from OOP while we're stopped at the event if it wants to attach.
-#endif // FEATURE_DBGIPC_TRANSPORT_VM
-}
-
 
 //---------------------------------------------------------------------------------------
 //
@@ -1726,8 +1695,17 @@ void Debugger::SendCreateProcess(DebuggerLockHolder * pDbgLockHolder)
     pDbgLockHolder->Acquire();
 }
 
-#if !defined(TARGET_UNIX)
+void Debugger::CleanupTransportSocket(void)
+{
+#if defined(TARGET_UNIX) && defined(FEATURE_DBGIPC_TRANSPORT_VM)
+    if (g_pDbgTransport != NULL)
+    {
+        g_pDbgTransport->AbortConnection();
+    }
+#endif // TARGET_UNIX && FEATURE_DBGIPC_TRANSPORT_VM
+}
 
+#if defined(TARGET_WINDOWS)
 HANDLE g_hContinueStartupEvent = INVALID_HANDLE_VALUE;
 
 CLR_ENGINE_METRICS g_CLREngineMetrics = {
@@ -1735,8 +1713,10 @@ CLR_ENGINE_METRICS g_CLREngineMetrics = {
     CorDebugVersion_4_0,
     &g_hContinueStartupEvent};
 
-HANDLE OpenStartupNotificationEvent()
+static HANDLE OpenStartupNotificationEvent()
 {
+    STANDARD_VM_CONTRACT;
+
     // "Telesto" is the legacy name for the start up event. Changing this name
     // would impact multiple repos and not worth the effort at present.
     // This event is used by https://github.com/dotnet/diagnostics/blob/main/src/dbgshim/dbgshim.cpp
@@ -1748,9 +1728,44 @@ HANDLE OpenStartupNotificationEvent()
     FormatInteger(eventName + ARRAY_SIZE(prefix) - 1, ARRAY_SIZE(eventName) - ARRAY_SIZE(prefix), "%08x", debuggeePID);
     return OpenEvent(MAXIMUM_ALLOWED | SYNCHRONIZE | EVENT_MODIFY_STATE, FALSE, eventName);
 }
+#endif // TARGET_WINDOWS
 
-void NotifyDebuggerOfStartup()
+// Improvement for DebuggerStartUp abstraction.
+//
+// The windows logic in NotifyDebuggerOfStartup() serves the same purpose as the non-windows logic
+// in WaitForContinueNotification(). We should have a stronger abstraction where both of those
+// implementations are treated as platform-specific alternatives of a single startup method and get called
+// at the same point in the startup sequence. The sequence we'd want would look something like:
+//
+// 1) All the init up to initing the transport, not including this NotifyDebuggerOfStartup() call
+// 2) Do the startup handshake and block if needed (named events for windows, pipe/semaphore for non-windows)
+// 3) RaiseStartupNotification() and the rest of init that follows it, not including the WaitForContinueNotification() call.
+//
+// Note: The above would likely have impact on the debugger side as well.
+//
+class DebuggerStartUp final
 {
+    Debugger* _debugger;
+
+public:
+    DebuggerStartUp(Debugger* pDebugger)
+        : _debugger{pDebugger}
+    {
+        _ASSERTE(_debugger != nullptr);
+    }
+
+    ~DebuggerStartUp() = default;
+
+    void NotifyDebuggerOfStartup();
+    void RaiseStartupNotification();
+    void WaitForContinueNotification();
+};
+
+void DebuggerStartUp::NotifyDebuggerOfStartup()
+{
+    STANDARD_VM_CONTRACT;
+
+#if defined(TARGET_WINDOWS)
     // Create the continue event first so that we guarantee that any
     // enumeration of this process will get back a valid continue event
     // the instant we signal the startup notification event.
@@ -1774,18 +1789,45 @@ void NotifyDebuggerOfStartup()
 
     CloseHandle(g_hContinueStartupEvent);
     g_hContinueStartupEvent = NULL;
+#endif // TARGET_WINDOWS
 }
 
-#endif // !TARGET_UNIX
-
-void Debugger::CleanupTransportSocket(void)
+void DebuggerStartUp::RaiseStartupNotification()
 {
-#if defined(TARGET_UNIX) && defined(FEATURE_DBGIPC_TRANSPORT_VM)
-    if (g_pDbgTransport != NULL)
+    // Right-side will read this field from OOP via DAC-primitive to determine attach or launch case.
+    // We do an interlocked increment to guarantee this is an atomic memory write, and to ensure
+    // that it's flushed from any CPU cache into memory.
+    InterlockedIncrement(&_debugger->m_fLeftSideInitialized);
+
+#ifndef FEATURE_DBGIPC_TRANSPORT_VM
+    // If we are remote debugging, don't send the event now if a debugger is not attached.  No one will be
+    // listening, and we will fail.  However, we still want to initialize the variable above.
+    DebuggerIPCEvent startupEvent;
+    _debugger->InitIPCEvent(&startupEvent, DB_IPCE_LEFTSIDE_STARTUP, NULL);
+
+    _debugger->SendRawEvent(&startupEvent);
+
+    // RS will set flags from OOP while we're stopped at the event if it wants to attach.
+#endif // !FEATURE_DBGIPC_TRANSPORT_VM
+}
+
+void DebuggerStartUp::WaitForContinueNotification()
+{
+    STANDARD_VM_CONTRACT;
+
+#ifdef TARGET_UNIX
+    // Signal the debugger (via dbgshim) and wait until it is ready for us to
+    // continue. This needs to be outside the lock and after the transport is
+    // initialized.
+    if (PAL_NotifyRuntimeStarted())
     {
-        g_pDbgTransport->AbortConnection();
+        // The runtime was successfully launched and attached so mark it now
+        // so no notifications are missed especially the initial module load
+        // which would cause debuggers problems with reliable setting breakpoints
+        // in startup code or Main.
+       _debugger->MarkDebuggerAttachedInternal();
     }
-#endif // TARGET_UNIX && FEATURE_DBGIPC_TRANSPORT_VM
+#endif // TARGET_UNIX
 }
 
 //---------------------------------------------------------------------------------------
@@ -1818,19 +1860,18 @@ HRESULT Debugger::Startup(void)
 
     _ASSERTE(g_pEEInterface != NULL);
 
-#if !defined(TARGET_UNIX)
+    DebuggerStartUp startup{this};
+
     // This may block while an attach occurs.
-    NotifyDebuggerOfStartup();
-#endif // !TARGET_UNIX
+    startup.NotifyDebuggerOfStartup();
     {
         DebuggerLockHolder dbgLockHolder(this);
 
         // We can get extra Interop-debugging test coverage by having some auxiliary unmanaged
         // threads running and throwing debug events. Keep these stress procs separate so that
         // we can focus on certain problem areas.
-    #ifdef _DEBUG
+#ifdef _DEBUG
         g_DbgShouldntUseDebugger = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgNoDebugger) != 0;
-
 
         // Creates random thread procs.
         DWORD dwRegVal = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgExtraThreads);
@@ -1877,7 +1918,7 @@ HRESULT Debugger::Startup(void)
                 LOG((LF_CORDB, LL_INFO1000, "Created extra thread OOB (%d) with tid=0x%x\n", i, dwId));
             }
         }
-    #endif
+#endif // _DEBUG
 
         // Lazily initialize the interop-safe heap
 
@@ -1916,7 +1957,7 @@ HRESULT Debugger::Startup(void)
         hr = m_pRCThread->Init();
         _ASSERTE(SUCCEEDED(hr)); // throws on error
 
-    #if defined(FEATURE_DBGIPC_TRANSPORT_VM)
+#if defined(FEATURE_DBGIPC_TRANSPORT_VM)
          // Create transport session and initialize it.
         g_pDbgTransport = new DbgTransportSession();
         hr = g_pDbgTransport->Init(m_pRCThread->GetDCB());
@@ -1926,9 +1967,9 @@ HRESULT Debugger::Startup(void)
             STRESS_LOG0(LF_CORDB, LL_ERROR, "D::S: The debugger pipe failed to initialize in /tmp or $TMPDIR.\n");
             return S_OK; // we do not want debugger IPC to block runtime initialization
         }
-    #endif // FEATURE_DBGIPC_TRANSPORT_VM
+#endif // FEATURE_DBGIPC_TRANSPORT_VM
 
-        RaiseStartupNotification();
+        startup.RaiseStartupNotification();
 
         // See if we need to spin up the helper thread now, rather than later.
         DebuggerIPCControlBlock* pIPCControlBlock = m_pRCThread->GetDCB();
@@ -1949,30 +1990,18 @@ HRESULT Debugger::Startup(void)
             LOG((LF_CORDB, LL_EVERYTHING, "Start was successful\n"));
         }
 
-    #ifdef TEST_DATA_CONSISTENCY
+#ifdef TEST_DATA_CONSISTENCY
         // if we have set the environment variable TestDataConsistency, run the data consistency test.
         // See code:DataTest::TestDataSafety for more information
-        if ((g_pConfig != NULL) && (g_pConfig->TestDataConsistency() == true))
+        if (g_pConfig != NULL && g_pConfig->TestDataConsistency())
         {
             DataTest dt;
             dt.TestDataSafety();
         }
-    #endif
+#endif // TEST_DATA_CONSISTENCY
     }
 
-#ifdef TARGET_UNIX
-    // Signal the debugger (via dbgshim) and wait until it is ready for us to
-    // continue. This needs to be outside the lock and after the transport is
-    // initialized.
-    if (PAL_NotifyRuntimeStarted())
-    {
-        // The runtime was successfully launched and attached so mark it now
-        // so no notifications are missed especially the initial module load
-        // which would cause debuggers problems with reliable setting breakpoints
-        // in startup code or Main.
-       MarkDebuggerAttachedInternal();
-    }
-#endif // TARGET_UNIX
+    startup.WaitForContinueNotification();
 
     // We don't bother changing this process's permission.
     // A managed debugger will have the SE_DEBUG permission which will allow it to open our process handle,
@@ -2028,47 +2057,6 @@ HRESULT Debugger::StartupPhase2(Thread * pThread)
     // Must release the lock (which would be done at the end of this method anyways) so that
     // the helper thread can do the jit-attach.
     dbgLockHolder.Release();
-
-
-#ifdef _DEBUG
-    // Give chance for stress harnesses to launch a managed debugger when a managed app starts up.
-    // This lets us run a set of managed apps under a debugger.
-    if (!CORDebuggerAttached())
-    {
-        #define DBG_ATTACH_ON_STARTUP_ENV_VAR W("DOTNET_DbgAttachOnStartup")
-        PathString temp;
-        // We explicitly just check the env because we don't want a switch this invasive to be global.
-        DWORD fAttach = WszGetEnvironmentVariable(DBG_ATTACH_ON_STARTUP_ENV_VAR, temp) > 0;
-
-        if (fAttach)
-        {
-            // Remove the env var from our process so that the debugger we spin up won't inherit it.
-            // Else, if the debugger is managed, we'll have an infinite recursion.
-            BOOL fOk = SetEnvironmentVariable(DBG_ATTACH_ON_STARTUP_ENV_VAR, NULL);
-
-            if (fOk)
-            {
-                // We've already created the helper thread (which can service the attach request)
-                // So just do a normal jit-attach now.
-
-                SString szName(W("DebuggerStressStartup"));
-                SString szDescription(W("MDA used for debugger-stress scenario. This is fired to trigger a jit-attach")
-                    W("to allow us to attach a debugger to any managed app that starts up.")
-                    W("This MDA is only fired when the 'DbgAttachOnStartup' CLR knob/reg-key is set on checked builds."));
-                SString szXML(W("<xml>See the description</xml>"));
-
-                SendMDANotification(
-                    NULL, // NULL b/c we don't have a thread yet
-                    &szName,
-                    &szDescription,
-                    &szXML,
-                    ((CorDebugMDAFlags) 0 ),
-                    TRUE // this will force the jit-attach
-                );
-            }
-        }
-    }
-#endif
 
 
     return hr;
@@ -14057,205 +14045,6 @@ void SetLSBufferFromSString(Ls_Rs_StringBuffer * pBuffer, SString & str)
         (BYTE*) str.GetUnicode(),
         (str.GetCount() +1)* sizeof(WCHAR)
     );
-}
-
-//*************************************************************
-// structure that we to marshal MDA Notification event data.
-//*************************************************************
-struct SendMDANotificationParams
-{
-    Thread * m_pThread; // may be NULL. Lets us send on behalf of other threads.
-
-    // Pass SStrings by ptr in case to guarantee that they're shared (in case we internally modify their storage).
-    SString * m_szName;
-    SString * m_szDescription;
-    SString * m_szXML;
-    CorDebugMDAFlags m_flags;
-
-    SendMDANotificationParams(
-        Thread * pThread, // may be NULL. Lets us send on behalf of other threads.
-        SString * szName,
-        SString * szDescription,
-        SString * szXML,
-        CorDebugMDAFlags flags
-    ) :
-        m_pThread(pThread),
-        m_szName(szName),
-        m_szDescription(szDescription),
-        m_szXML(szXML),
-        m_flags(flags)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-};
-
-//-----------------------------------------------------------------------------
-// Actually send the MDA event. (Could be on any thread)
-// Parameters:
-//    params - data to initialize the IPC event.
-//-----------------------------------------------------------------------------
-void Debugger::SendRawMDANotification(
-    SendMDANotificationParams * params
-)
-{
-    // Send the unload assembly event to the Right Side.
-    DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
-
-    Thread * pThread = params->m_pThread;
-    InitIPCEvent(ipce,
-                 DB_IPCE_MDA_NOTIFICATION,
-                 pThread);
-
-    SetLSBufferFromSString(&ipce->MDANotification.szName, *(params->m_szName));
-    SetLSBufferFromSString(&ipce->MDANotification.szDescription, *(params->m_szDescription));
-    SetLSBufferFromSString(&ipce->MDANotification.szXml, *(params->m_szXML));
-    ipce->MDANotification.dwOSThreadId = GetCurrentThreadId();
-    ipce->MDANotification.flags = params->m_flags;
-
-    m_pRCThread->SendIPCEvent();
-}
-
-//-----------------------------------------------------------------------------
-// Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
-// Called by EE to send a MDA debug event. This will block on the debug event
-// until the RS continues us.
-// Debugger may or may not be attached. If bAttached, then this
-// will trigger a jitattach as well.
-// See MDA documentation for what szName, szDescription + szXML should look like.
-// The debugger just passes them through.
-//
-// Parameters:
-//   pThread - thread for debug event.  May be null.
-//   szName - short name of MDA.
-//   szDescription - full description of MDA.
-//   szXML - xml string for MDA.
-//   bAttach - do a JIT-attach
-//-----------------------------------------------------------------------------
-void Debugger::SendMDANotification(
-    Thread * pThread, // may be NULL. Lets us send on behalf of other threads.
-    SString * szName,
-    SString * szDescription,
-    SString * szXML,
-    CorDebugMDAFlags flags,
-    BOOL bAttach
-)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(szName != NULL);
-    _ASSERTE(szDescription != NULL);
-    _ASSERTE(szXML != NULL);
-
-    // Note: we normally don't send events like this when there is an unrecoverable error. However,
-    // if a host attempts to setup fiber mode on a thread, then we'll set an unrecoverable error
-    // and use an MDA to 1) tell the user and 2) get the Right Side to notice the unrecoverable error.
-    // Therefore, we'll go ahead and send a MDA event if the unrecoverable error is
-    // CORDBG_E_CANNOT_DEBUG_FIBER_PROCESS.
-    DebuggerIPCControlBlock *pDCB = m_pRCThread->GetDCB();
-
-
-    // If the MDA is occurring very early in startup before the DCB is setup, then bail.
-    if (pDCB == NULL)
-    {
-        return;
-    }
-
-    if (CORDBUnrecoverableError(this) && (pDCB->m_errorHR != CORDBG_E_CANNOT_DEBUG_FIBER_PROCESS))
-    {
-        return;
-    }
-
-    // Validate flags. Make sure that folks don't start passing flags that we don't handle.
-    // If pThread != current thread, caller should either pass in MDA_FLAG_SLIP or guarantee
-    // that pThread is not slipping.
-    _ASSERTE((flags & ~(MDA_FLAG_SLIP)) == 0);
-
-    // Helper thread should not be triggering MDAs. The helper thread is executing code in a very constrained
-    // and controlled region and shouldn't be able to do anything dangerous.
-    // If we revise this in the future, we should probably just post the event to the RS w/ use the MDA_FLAG_SLIP flag,
-    // and then not bother suspending the runtime. The RS will get it on its next event.
-    // The jit-attach logic below assumes we're not on the helper. (If we are on the helper, then a debugger should already
-    // be attached)
-    if (ThisIsHelperThreadWorker())
-    {
-        CONSISTENCY_CHECK_MSGF(false, ("MDA '%s' fired on *helper* thread.\r\nDesc:%s",
-            szName->GetUnicode(), szDescription->GetUnicode()
-        ));
-
-        // If for some reason we're wrong about the assert above, we'll just ignore the MDA (rather than potentially deadlock)
-        return;
-    }
-
-    // Public entry point into the debugger. May cause a jit-attach, so we may need to be lazily-init.
-    if (!HasLazyData())
-    {
-        DebuggerLockHolder dbgLockHolder(this);
-        // This is an entry path into the debugger, so make sure we're inited.
-        LazyInit();
-    }
-
-
-    // Cases:
-    // 1) Debugger already attached, send event normally (ignore severity)
-    // 2) No debugger attached, Non-severe probe - ignore.
-    // 3) No debugger attached, Severe-probe - do a jit-attach.
-    bool fTryJitAttach = bAttach == TRUE;
-
-    // Check case #2 - no debugger, and no jit-attach. Early opt out.
-    if (!CORDebuggerAttached() && !fTryJitAttach)
-    {
-        return;
-    }
-
-    if (pThread == NULL)
-    {
-        // If there's no thread object, then we're not blocking after the event,
-        // and thus this probe may slip.
-        flags = (CorDebugMDAFlags) (flags | MDA_FLAG_SLIP);
-    }
-
-    {
-        GCX_PREEMP_EEINTERFACE_TOGGLE_IFTHREAD();
-
-        // For "Severe" probes, we'll do a jit attach dialog
-        if (fTryJitAttach)
-        {
-            // May return:
-            // - S_OK if we do a jit-attach,
-            // - S_FALSE if a debugger is already attached.
-            // - Error in other cases..
-
-            JitAttach(pThread, NULL, TRUE, FALSE);
-        }
-
-        // Debugger may be attached now...
-        if (CORDebuggerAttached())
-        {
-            SendMDANotificationParams params(pThread, szName, szDescription, szXML, flags);
-
-            // Non-attach case. Send like normal event.
-            // This includes if someone launch the debugger during the meantime.
-            // just send the event
-            SENDIPCEVENT_BEGIN(this, pThread);
-
-            // Send Log message event to the Right Side
-            SendRawMDANotification(&params);
-
-            // Stop all Runtime threads
-            // Even if we don't have a managed thead object, this will catch us at the next good spot.
-            TrapAllRuntimeThreads();
-
-            // Let other Runtime threads handle their events.
-            SENDIPCEVENT_END;
-        }
-    } // end of GCX_PREEMP_EEINTERFACE_TOGGLE()
 }
 
 //*************************************************************

@@ -148,6 +148,31 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             await VerifyAgainstBaselineUsingFile("TestWithNestedClass.generated.txt", testSourceCode);
         }
 
+        [Fact]
+        public async Task TestBaseline_TestWithMultipleClassesStableOrder_Success()
+        {
+            string testSourceCode = @"
+namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
+{
+    internal static partial class ClassC
+    {
+        [LoggerMessage(EventId = 3, Level = LogLevel.Warning, Message = ""Message from ClassC"")]
+        static partial void LogC(ILogger logger);
+    }
+    internal static partial class ClassA
+    {
+        [LoggerMessage(EventId = 1, Level = LogLevel.Debug, Message = ""Message from ClassA"")]
+        static partial void LogA(ILogger logger);
+    }
+    internal static partial class ClassB
+    {
+        [LoggerMessage(EventId = 2, Level = LogLevel.Information, Message = ""Message from ClassB"")]
+        static partial void LogB(ILogger logger);
+    }
+}";
+            await VerifyAgainstBaselineUsingFile("TestWithMultipleClassesStableOrder.generated.txt", testSourceCode);
+        }
+
 #if ROSLYN4_0_OR_GREATER
         [Fact]
         public async Task TestBaseline_TestWithFileScopedNamespace_Success()

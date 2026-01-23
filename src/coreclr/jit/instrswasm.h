@@ -58,11 +58,12 @@ INST(i64_load16_u, "i64.load16_u", 0, IF_MEMARG, 0x33)
 INST(i64_load32_s, "i64.load32_s", 0, IF_MEMARG, 0x34)
 INST(i64_load32_u, "i64.load32_u", 0, IF_MEMARG, 0x35)
 
-
 INST(i32_store,   "i32.store",   0, IF_MEMARG,  0x36)
 INST(i64_store,   "i64.store",   0, IF_MEMARG,  0x37)
 INST(f32_store,   "f32.store",   0, IF_MEMARG,  0x38)
 INST(f64_store,   "f64.store",   0, IF_MEMARG,  0x39)
+INST(i32_store8,  "i32.store8",  0, IF_MEMARG,  0x3A)
+INST(i32_store16, "i32.store16", 0, IF_MEMARG,  0x3B)
 
 // 5.4.7 Numeric Instructions
 // Constants
