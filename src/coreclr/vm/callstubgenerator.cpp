@@ -2148,6 +2148,10 @@ extern "C" void CallJittedMethodRetBuffR1(PCODE *routines, int8_t*pArgs, int8_t*
 extern "C" void InterpreterStubRetBuffR0();
 extern "C" void InterpreterStubRetBuffR1();
 #else // !TARGET_AMD64 && !TARGET_ARM
+#if defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+extern "C" void CallJittedMethodRetBuffX1(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void InterpreterStubRetBuffX1();
+#endif
 extern "C" void CallJittedMethodRetBuff(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void InterpreterStubRetBuff();
 #endif // TARGET_AMD64
@@ -2256,12 +2260,17 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
         case ReturnTypeBuffArg2:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffRSI);
 #endif // TARGET_WINDOWS
+#elif defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+        case ReturnTypeBuffArg2:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffX1);
+        case ReturnTypeBuff:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetBuff);
 #elif defined(TARGET_ARM)
         case ReturnTypeBuffArg1:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffR0);
         case ReturnTypeBuffArg2:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffR1);
-#else // !TARGET_AMD64 && !TARGET_ARM
+#else // !TARGET_AMD64 && !TARGET_ARM && !(TARGET_ARM64 && TARGET_WINDOWS)
         case ReturnTypeBuff:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuff);
 #endif // TARGET_AMD64
@@ -2370,12 +2379,17 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
 #else
             RETURN_TYPE_HANDLER(InterpreterStubRetBuffRSI);
 #endif
+#elif defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+        case ReturnTypeBuffArg2:
+            RETURN_TYPE_HANDLER(InterpreterStubRetBuffX1);
+        case ReturnTypeBuff:
+            RETURN_TYPE_HANDLER(InterpreterStubRetBuff);
 #elif defined(TARGET_ARM)
         case ReturnTypeBuffArg1:
             RETURN_TYPE_HANDLER(InterpreterStubRetBuffR0);
         case ReturnTypeBuffArg2:
             RETURN_TYPE_HANDLER(InterpreterStubRetBuffR1);
-#else // !TARGET_AMD64 && !TARGET_ARM
+#else // !TARGET_AMD64 && !TARGET_ARM && !(TARGET_ARM64 && TARGET_WINDOWS)
         case ReturnTypeBuff:
             RETURN_TYPE_HANDLER(InterpreterStubRetBuff);
 #endif // TARGET_AMD64
@@ -2747,7 +2761,16 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
 
     if (hasUnmanagedCallConv)
     {
-        ComputeCallStubWorker<PInvokeArgIterator>(hasUnmanagedCallConv, unmanagedCallConv, sig, pRoutines, pMD);
+#if defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+        if (callConvIsInstanceMethodCallConv(unmanagedCallConv))
+        {
+            ComputeCallStubWorker<WindowsArm64PInvokeThisCallArgIterator>(hasUnmanagedCallConv, unmanagedCallConv, sig, pRoutines, pMD);
+        }
+        else
+#endif // defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+        {
+            ComputeCallStubWorker<PInvokeArgIterator>(hasUnmanagedCallConv, unmanagedCallConv, sig, pRoutines, pMD);
+        }
     }
     else
     {
@@ -2763,17 +2786,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 
     if (hasUnmanagedCallConv)
     {
-        switch (unmanagedCallConv)
-        {
-            case CorInfoCallConvExtension::Thiscall:
-            case CorInfoCallConvExtension::CMemberFunction:
-            case CorInfoCallConvExtension::StdcallMemberFunction:
-            case CorInfoCallConvExtension::FastcallMemberFunction:
-                unmanagedThisCallConv = true;
-                break;
-            default:
-                break;
-        }
+        unmanagedThisCallConv = callConvIsInstanceMethodCallConv(unmanagedCallConv);
     }
 
 #if defined(TARGET_WINDOWS)
@@ -3301,6 +3314,13 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
             return ReturnTypeBuffArg1;
         }
 #else
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+        if (pArgIt->IsRetBuffPassedAsFirstArg())
+        {
+            _ASSERTE(pArgIt->HasThis());
+            return ReturnTypeBuffArg2;
+        }
+#endif
         return ReturnTypeBuff;
 #endif // TARGET_AMD64
     }

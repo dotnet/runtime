@@ -83,6 +83,9 @@ class CallStubGenerator
         ReturnTypeBuffArg1,
         ReturnTypeBuffArg2,
 #else
+#if defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+        ReturnTypeBuffArg2,
+#endif
         ReturnTypeBuff,
 #endif
 #ifdef UNIX_AMD64_ABI
