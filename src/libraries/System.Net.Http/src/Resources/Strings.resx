@@ -367,7 +367,7 @@
     <value>Cannot access a closed stream.</value>
   </data>
   <data name="net_http_invalid_proxy_scheme" xml:space="preserve">
-    <value>Only the 'http', 'https', 'socks4', 'socks4a' and 'socks5' schemes are allowed for proxies.</value>
+    <value>Only the 'http', 'https', 'socks4', 'socks4a', 'socks5', and 'socks5h' schemes are allowed for proxies.</value>
   </data>
   <data name="net_http_request_invalid_char_encoding" xml:space="preserve">
     <value>Request headers must contain only ASCII characters.</value>

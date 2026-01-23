@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { OnExitListener } from "../types";
-import { dotnetLogger, Module, dotnetBrowserUtilsExports } from "./cross-module";
+import { dotnetLogger, Module, dotnetBrowserUtilsExports, dotnetRuntimeExports } from "./cross-module";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB } from "./per-module";
 import { abortStartup } from "./run";
 
@@ -108,6 +108,12 @@ export function exit(exitCode: number, reason: any): void {
         runtimeState.exitReason = reason;
 
         try {
+            if (dotnetRuntimeExports && dotnetRuntimeExports.abortInteropTimers) {
+                dotnetRuntimeExports.abortInteropTimers();
+            }
+            if (dotnetBrowserUtilsExports && dotnetBrowserUtilsExports.abortBackgroundTimers) {
+                dotnetBrowserUtilsExports.abortBackgroundTimers();
+            }
             unregisterExit();
             if (!alreadySilent) {
                 if (runtimeState.onExitListeners.length === 0 && !runtimeState.runtimeReady) {
@@ -147,9 +153,6 @@ export function exit(exitCode: number, reason: any): void {
 export function quitNow(exitCode: number, reason?: any): void {
     if (runtimeState.runtimeReady) {
         Module.runtimeKeepalivePop();
-        if (dotnetBrowserUtilsExports && dotnetBrowserUtilsExports.abortTimers) {
-            dotnetBrowserUtilsExports.abortTimers();
-        }
         if (dotnetBrowserUtilsExports && dotnetBrowserUtilsExports.abortPosix) {
             dotnetBrowserUtilsExports.abortPosix(exitCode);
         }

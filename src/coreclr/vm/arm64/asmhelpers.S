@@ -586,9 +586,11 @@ NESTED_END OnCallCountThresholdReachedStub, _TEXT
 NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
-    add     x0, sp, #__PWTB_TransitionBlock // TransitionBlock *
+    // x0 = pointer to TransitionBlock
+    add     x0, sp, #__PWTB_TransitionBlock
     bl      C_FUNC(JIT_PatchpointWorkerWorkerWithPolicy)
 
+    // If we return, restore all registers and return to caller
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
 NESTED_END JIT_Patchpoint, _TEXT
 
@@ -2343,6 +2345,52 @@ NESTED_END CallJittedMethodRetBuff, _TEXT
 // X2 - interpreter stack return value location
 // X3 - stack arguments size (properly aligned)
 // X4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetI1, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    stp x2, x4, [fp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    sxtb x0, w0
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    str x0, [x9]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetI1, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetI2, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    stp x2, x4, [fp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    sxth x0, w0
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    str x0, [x9]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetI2, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
     stp x2, x4, [fp, #16]
@@ -2359,6 +2407,52 @@ NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
 NESTED_END CallJittedMethodRetI8, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetU1, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    stp x2, x4, [fp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    uxtb x0, w0
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    str x0, [x9]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetU1, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetU2, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    stp x2, x4, [fp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    uxth x0, w0
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    str x0, [x9]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetU2, _TEXT
 
 // X0 - routines array
 // X1 - interpreter stack args location
@@ -2805,3 +2899,62 @@ NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
     brk     #0
 NESTED_END IL_Rethrow, _TEXT
 
+// ------------------------------------------------------------------
+// ClrRestoreNonvolatileContextWorker
+//
+// Restores registers based on ContextFlags and jumps to the target IP.
+// When CONTEXT_INTEGER is set, restores ALL integer registers (x0-x28)
+// because exception handling needs x0 (exception object).
+// When CONTEXT_FLOATING_POINT is set, restores non-volatile FP regs (d8-d15).
+//
+// Arguments:
+//   x0 - pointer to CONTEXT structure
+//
+// Does not return - jumps directly to the Pc stored in the CONTEXT
+// ------------------------------------------------------------------
+LEAF_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT
+
+    // Save context pointer in x16 since we'll overwrite x0
+    mov     x16, x0
+
+    // Check ContextFlags to see if we should restore floating point registers
+    ldr     w17, [x16, #OFFSETOF__CONTEXT__ContextFlags]
+    tbz     w17, #CONTEXT_FLOATING_POINT_BIT, LOCAL_LABEL(SkipFloatingPointRestore)
+
+    // Restore non-volatile FP registers d8-d15 (lower 64 bits of v8-v15)
+    // V8 is at OFFSETOF__CONTEXT__V0 + 8*16 = 0x110 + 0x80 = 0x190
+    ldp     q8, q9,   [x16, #(OFFSETOF__CONTEXT__V0 + 8*16)]
+    ldp     q10, q11, [x16, #(OFFSETOF__CONTEXT__V0 + 10*16)]
+    ldp     q12, q13, [x16, #(OFFSETOF__CONTEXT__V0 + 12*16)]
+    ldp     q14, q15, [x16, #(OFFSETOF__CONTEXT__V0 + 14*16)]
+
+LOCAL_LABEL(SkipFloatingPointRestore):
+    // Check ContextFlags to see if we should restore integer registers
+    tbz     w17, #CONTEXT_INTEGER_BIT, LOCAL_LABEL(SkipIntegerRestore)
+
+    // Restore argument registers x0-x7 (exception handling needs x0 for exception object)
+    // and non-volatile registers x19-x28
+    ldp     x0, x1,   [x16, #OFFSETOF__CONTEXT__X0]
+    ldp     x2, x3,   [x16, #(OFFSETOF__CONTEXT__X0 + 16)]
+    ldp     x4, x5,   [x16, #(OFFSETOF__CONTEXT__X0 + 32)]
+    ldp     x6, x7,   [x16, #(OFFSETOF__CONTEXT__X0 + 48)]
+    // Skip x8-x18: x8-x15 are scratch, x16-x17 we're using, x18 is platform reserved
+    ldp     x19, x20, [x16, #OFFSETOF__CONTEXT__X19]
+    ldp     x21, x22, [x16, #(OFFSETOF__CONTEXT__X19 + 16)]
+    ldp     x23, x24, [x16, #(OFFSETOF__CONTEXT__X19 + 32)]
+    ldp     x25, x26, [x16, #(OFFSETOF__CONTEXT__X19 + 48)]
+    ldp     x27, x28, [x16, #(OFFSETOF__CONTEXT__X19 + 64)]
+
+LOCAL_LABEL(SkipIntegerRestore):
+    // Restore fp (x29) and lr (x30)
+    ldp     fp, lr, [x16, #OFFSETOF__CONTEXT__Fp]
+
+    // Load Sp and Pc into scratch registers (after all other loads)
+    ldr     x17, [x16, #OFFSETOF__CONTEXT__Sp]
+    ldr     x16, [x16, #OFFSETOF__CONTEXT__Pc]
+
+    // Set sp and jump to target
+    mov     sp, x17
+    br      x16
+
+LEAF_END ClrRestoreNonvolatileContextWorker, _TEXT
