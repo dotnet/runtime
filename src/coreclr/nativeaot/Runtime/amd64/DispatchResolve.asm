@@ -4,8 +4,6 @@
 include AsmMacros.inc
 
 
-ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-
 EXTERN RhpCidResolve : PROC
 EXTERN RhpUniversalTransitionTailCall : PROC
 
@@ -99,7 +97,5 @@ pop         rcx
         jmp     RhpUniversalTransitionTailCall
 
 LEAF_END RhpResolveInterfaceMethodFast, _TEXT
-
-endif ;; FEATURE_CACHED_INTERFACE_DISPATCH
 
 end
