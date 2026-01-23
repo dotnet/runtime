@@ -16,6 +16,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#if HAVE_GETRANDOM
+#include <sys/random.h>
+#endif
 #endif
 #if defined(__APPLE__) && __APPLE__
 #include <CommonCrypto/CommonRandom.h>
@@ -98,6 +101,28 @@ int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32
 #elif HAVE_BCRYPT_H
     NTSTATUS status = BCryptGenRandom(NULL, buffer, (ULONG)bufferLength, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
     return BCRYPT_SUCCESS(status) ? 0 : -1;
+#elif HAVE_GETRANDOM
+    // Use getrandom() syscall which is faster than reading from /dev/urandom
+    // as it avoids file descriptor management overhead.
+    // getrandom() was added in Linux 3.17 (2014) and glibc 2.25 (2017).
+    int32_t offset = 0;
+    do
+    {
+        ssize_t n = getrandom(buffer + offset, (size_t)(bufferLength - offset), 0);
+        if (n == -1)
+        {
+            if (errno == EINTR)
+            {
+                continue;
+            }
+            return -1;
+        }
+
+        offset += (int32_t)n;
+    }
+    while (offset != bufferLength);
+
+    return 0;
 #else
 
     static volatile int rand_des = -1;

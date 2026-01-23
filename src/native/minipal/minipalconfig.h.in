@@ -2,6 +2,7 @@
 #define HAVE_MINIPAL_MINIPALCONFIG_H
 
 #cmakedefine01 HAVE_ARC4RANDOM_BUF
+#cmakedefine01 HAVE_GETRANDOM
 #cmakedefine01 HAVE_AUXV_HWCAP_H
 #cmakedefine01 HAVE_HWPROBE_H
 #cmakedefine01 HAVE_RESOURCE_H
