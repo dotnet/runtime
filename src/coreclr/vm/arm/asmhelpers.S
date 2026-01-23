@@ -1189,6 +1189,69 @@ NESTED_ENTRY CallJittedMethodRetBuffR1, _TEXT, NoHandler
     EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetBuffR1, _TEXT
 
+NESTED_ENTRY CallJittedMethodRetI1, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r10, r2
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    sxtb r0, r0
+    str r0, [r10]
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetI1, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetI2, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r10, r2
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    sxth r0, r0
+    str r0, [r10]
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetI2, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetU1, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r10, r2
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    uxtb r0, r0
+    str r0, [r10]
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetU1, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetU2, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r10, r2
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    uxth r0, r0
+    str r0, [r10]
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetU2, _TEXT
 
 NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
