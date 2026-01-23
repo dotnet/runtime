@@ -4,7 +4,7 @@
 .assembly extern mscorlib { auto }
 .assembly extern xunit.core {}
 .assembly extern System.Runtime { auto }
-.assembly extern Microsoft.DotNet.XUnitExtensions { .ver 0:0:0:0 }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 
 .assembly 'TypeIntrinsics_il' { }
 
