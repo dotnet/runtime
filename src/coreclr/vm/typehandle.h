@@ -697,6 +697,7 @@ public:
 
     bool ContainsAllOneType(TypeHandle th)
     {
+        LIMITED_METHOD_DAC_CONTRACT;
         for (DWORD i = GetNumArgs(); i > 0;)
         {
             if ((*this)[--i] != th)
