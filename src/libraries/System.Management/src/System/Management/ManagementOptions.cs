@@ -177,8 +177,7 @@ namespace System.Management
                 else
                     context = new ManagementNamedValueCollection();
 
-                if (null != oldContext)
-                    oldContext.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
+                oldContext?.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
                 //register for change events in this object
                 context.IdentifierChanged += new IdentifierChangedEventHandler(HandleIdentifierChange);

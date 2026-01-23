@@ -189,23 +189,14 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (disposing)
                 {
                     // dispose schema entry
-                    if (_schemaEntry != null)
-                    {
-                        _schemaEntry.Dispose();
-                        _schemaEntry = null;
-                    }
+                    _schemaEntry?.Dispose();
+                    _schemaEntry = null;
                     // dispose class entry
-                    if (_classEntry != null)
-                    {
-                        _classEntry.Dispose();
-                        _classEntry = null;
-                    }
+                    _classEntry?.Dispose();
+                    _classEntry = null;
                     // dispose abstract class entry
-                    if (_abstractClassEntry != null)
-                    {
-                        _abstractClassEntry.Dispose();
-                        _abstractClassEntry = null;
-                    }
+                    _abstractClassEntry?.Dispose();
+                    _abstractClassEntry = null;
                     // dispose the schema object
                     _schema?.Dispose();
                 }

@@ -23,11 +23,8 @@ internal static partial class Interop
 
             public static void DisposeAndClearHandle(ref SafeWinHttpHandle? safeHandle)
             {
-                if (safeHandle != null)
-                {
-                    safeHandle.Dispose();
-                    safeHandle = null;
-                }
+                safeHandle?.Dispose();
+                safeHandle = null;
             }
 
             public void SetParentHandle(SafeWinHttpHandle parentHandle)
@@ -47,11 +44,8 @@ internal static partial class Interop
             // calls in progress.
             protected override bool ReleaseHandle()
             {
-                if (_parentHandle != null)
-                {
-                    _parentHandle.DangerousRelease();
-                    _parentHandle = null;
-                }
+                _parentHandle?.DangerousRelease();
+                _parentHandle = null;
 
                 return Interop.WinHttp.WinHttpCloseHandle(handle);
             }

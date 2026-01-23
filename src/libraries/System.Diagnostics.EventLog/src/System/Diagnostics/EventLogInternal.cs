@@ -612,17 +612,11 @@ namespace System.Diagnostics
                         Close();
                     }
                     // This is probably unnecessary
-                    if (readHandle != null)
-                    {
-                        readHandle.Close();
-                        readHandle = null;
-                    }
+                    readHandle?.Close();
+                    readHandle = null;
 
-                    if (writeHandle != null)
-                    {
-                        writeHandle.Close();
-                        writeHandle = null;
-                    }
+                    writeHandle?.Close();
+                    writeHandle = null;
                 }
             }
             finally

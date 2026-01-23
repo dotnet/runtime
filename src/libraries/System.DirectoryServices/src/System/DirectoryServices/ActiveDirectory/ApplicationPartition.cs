@@ -81,16 +81,10 @@ namespace System.DirectoryServices.ActiveDirectory
                     // resources to be freed, those should be done here
                     // if disposing = true, only unmanaged resources should
                     // be freed, else both managed and unmanaged.
-                    if (_crossRefEntry != null)
-                    {
-                        _crossRefEntry.Dispose();
-                        _crossRefEntry = null;
-                    }
-                    if (_domainDNSEntry != null)
-                    {
-                        _domainDNSEntry.Dispose();
-                        _domainDNSEntry = null;
-                    }
+                    _crossRefEntry?.Dispose();
+                    _crossRefEntry = null;
+                    _domainDNSEntry?.Dispose();
+                    _domainDNSEntry = null;
 
                     _disposed = true;
                 }

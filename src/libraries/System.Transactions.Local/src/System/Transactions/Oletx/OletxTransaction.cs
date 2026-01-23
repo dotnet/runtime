@@ -662,11 +662,8 @@ namespace System.Transactions.Oletx
             {
                 if (!successful)
                 {
-                    if (_outcomeEnlistment != null)
-                    {
-                        _outcomeEnlistment.UnregisterOutcomeCallback();
-                        _outcomeEnlistment = null;
-                    }
+                    _outcomeEnlistment?.UnregisterOutcomeCallback();
+                    _outcomeEnlistment = null;
                 }
             }
         }

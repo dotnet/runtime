@@ -246,14 +246,11 @@ namespace System.Management
             // Ensure any outstanding calls are cleared
             Stop();
 
-            if (null != scope)
-                scope.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
+            scope?.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
-            if (null != options)
-                options.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
+            options?.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
-            if (null != query)
-                query.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
+            query?.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
         }
 
         //
@@ -294,8 +291,7 @@ namespace System.Management
                     scope = (ManagementScope)value.Clone();
 
                     // Unregister ourselves from the previous scope object
-                    if (null != oldScope)
-                        oldScope.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
+                    oldScope?.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
                     //register for change events in this object
                     scope.IdentifierChanged += new IdentifierChangedEventHandler(HandleIdentifierChange);
@@ -327,8 +323,7 @@ namespace System.Management
                     query = (EventQuery)value.Clone();
 
                     // Unregister ourselves from the previous query object
-                    if (null != oldQuery)
-                        oldQuery.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
+                    oldQuery?.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
                     //register for change events in this object
                     query.IdentifierChanged += new IdentifierChangedEventHandler(HandleIdentifierChange);
@@ -360,8 +355,7 @@ namespace System.Management
                     options = (EventWatcherOptions)value.Clone();
 
                     // Unregister ourselves from the previous scope object
-                    if (null != oldOptions)
-                        oldOptions.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
+                    oldOptions?.IdentifierChanged -= new IdentifierChangedEventHandler(HandleIdentifierChange);
 
                     cachedObjects = new IWbemClassObjectFreeThreaded[options.BlockSize];
                     //register for change events in this object
@@ -504,11 +498,8 @@ namespace System.Management
 
                 if (status < 0)
                 {
-                    if (sink != null)
-                    {
-                        sink.ReleaseStub();
-                        sink = null;
-                    }
+                    sink?.ReleaseStub();
+                    sink = null;
 
                     if ((status & 0xfffff000) == 0x80041000)
 
@@ -541,11 +532,8 @@ namespace System.Management
 
             // In async mode cancel the call to the sink - this will
             // unwind the operation and cause a Stopped message
-            if (null != sink)
-            {
-                sink.Cancel();
-                sink = null;
-            }
+            sink?.Cancel();
+            sink = null;
         }
 
         private void Initialize()

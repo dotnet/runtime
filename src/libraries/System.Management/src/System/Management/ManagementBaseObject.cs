@@ -234,11 +234,8 @@ namespace System.Management
 
         public new void Dispose()
         {
-            if (_wbemObject != null)
-            {
-                _wbemObject.Dispose();
-                _wbemObject = null;
-            }
+            _wbemObject?.Dispose();
+            _wbemObject = null;
             base.Dispose();
             GC.SuppressFinalize(this);
         }

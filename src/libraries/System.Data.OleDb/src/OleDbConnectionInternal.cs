@@ -112,16 +112,10 @@ namespace System.Data.OleDb
             }
             catch
             {
-                if (null != _sessionwrp)
-                {
-                    _sessionwrp.Dispose();
-                    _sessionwrp = null;
-                }
-                if (null != _datasrcwrp)
-                {
-                    _datasrcwrp.Dispose();
-                    _datasrcwrp = null;
-                }
+                _sessionwrp?.Dispose();
+                _sessionwrp = null;
+                _datasrcwrp?.Dispose();
+                _datasrcwrp = null;
                 throw;
             }
         }

@@ -61,17 +61,12 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (disposing)
                     {
                         // dispose schema entry
-                        if (_schemaEntry != null)
-                        {
-                            _schemaEntry.Dispose();
-                            _schemaEntry = null!;
-                        }
+                        _schemaEntry?.Dispose();
+                        _schemaEntry = null!;
+
                         // dispose the abstract schema entry
-                        if (_abstractSchemaEntry != null)
-                        {
-                            _abstractSchemaEntry.Dispose();
-                            _abstractSchemaEntry = null;
-                        }
+                        _abstractSchemaEntry?.Dispose();
+                        _abstractSchemaEntry = null;
                     }
                     _disposed = true;
                 }

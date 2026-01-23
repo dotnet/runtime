@@ -86,11 +86,8 @@ namespace System.Net.Http
             ServerCredentials = null;
             DefaultProxyCredentials = null;
 
-            if (RequestHandle != null)
-            {
-                RequestHandle.Dispose();
-                RequestHandle = null;
-            }
+            RequestHandle?.Dispose();
+            RequestHandle = null;
         }
 
         public TaskCompletionSource<HttpResponseMessage>? Tcs { get; set; }

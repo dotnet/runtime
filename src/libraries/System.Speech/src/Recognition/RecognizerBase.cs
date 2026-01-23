@@ -1346,22 +1346,13 @@ ISpGrammarResourceLoader
 
                         // Release SAPI recognizer/recoContext interfaces.
                         // We do not need to release additional references copy onto the same RCW.
-                        if (_sapiContext != null)
-                        {
-                            _sapiContext.Dispose();
-                            _sapiContext = null;
-                        }
-                        if (_sapiRecognizer != null)
-                        {
-                            _sapiRecognizer.Dispose();
-                            _sapiRecognizer = null;
-                        }
+                        _sapiContext?.Dispose();
+                        _sapiContext = null;
+                        _sapiRecognizer?.Dispose();
+                        _sapiRecognizer = null;
 
-                        if (_recognizerInfo != null)
-                        {
-                            _recognizerInfo.Dispose();
-                            _recognizerInfo = null;
-                        }
+                        _recognizerInfo?.Dispose();
+                        _recognizerInfo = null;
 
                         _disposed = true;
                     }
@@ -2767,11 +2758,8 @@ ISpGrammarResourceLoader
 
         private void CloseCachedInputStream()
         {
-            if (_inputStream != null)
-            {
-                _inputStream.Close();
-                _inputStream = null;
-            }
+            _inputStream?.Close();
+            _inputStream = null;
         }
 
         /// <summary>

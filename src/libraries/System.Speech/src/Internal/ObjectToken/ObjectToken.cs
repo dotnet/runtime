@@ -68,11 +68,8 @@ namespace System.Speech.Internal.ObjectTokens
                         Marshal.ReleaseComObject(_sapiObjectToken);
                         _sapiObjectToken = null;
                     }
-                    if (_attributes != null)
-                    {
-                        _attributes.Dispose();
-                        _attributes = null;
-                    }
+                    _attributes?.Dispose();
+                    _attributes = null;
                 }
             }
             finally

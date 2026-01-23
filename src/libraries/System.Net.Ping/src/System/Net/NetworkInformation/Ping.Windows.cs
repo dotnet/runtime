@@ -117,13 +117,10 @@ namespace System.Net.NetworkInformation
         {
             lock (_lockObject)
             {
-                if (_registeredWait != null)
-                {
-                    // If Unregister returns false, it is sufficient to nullify registeredWait
-                    // and let its own finalizer clean up later.
-                    _registeredWait.Unregister(null);
-                    _registeredWait = null;
-                }
+                // If Unregister returns false, it is sufficient to nullify registeredWait
+                // and let its own finalizer clean up later.
+                _registeredWait?.Unregister(null);
+                _registeredWait = null;
             }
         }
 
@@ -230,31 +227,19 @@ namespace System.Net.NetworkInformation
 
         partial void InternalDisposeCore()
         {
-            if (_handlePingV4 != null)
-            {
-                _handlePingV4.Dispose();
-                _handlePingV4 = null;
-            }
+            _handlePingV4?.Dispose();
+            _handlePingV4 = null;
 
-            if (_handlePingV6 != null)
-            {
-                _handlePingV6.Dispose();
-                _handlePingV6 = null;
-            }
+            _handlePingV6?.Dispose();
+            _handlePingV6 = null;
 
             UnregisterWaitHandle();
 
-            if (_pingEvent != null)
-            {
-                _pingEvent.Dispose();
-                _pingEvent = null;
-            }
+            _pingEvent?.Dispose();
+            _pingEvent = null;
 
-            if (_replyBuffer != null)
-            {
-                _replyBuffer.Dispose();
-                _replyBuffer = null;
-            }
+            _replyBuffer?.Dispose();
+            _replyBuffer = null;
         }
 
         // Private callback invoked when icmpsendecho APIs succeed.
@@ -317,11 +302,8 @@ namespace System.Net.NetworkInformation
         // Releases the unmanaged memory after ping completion.
         private void FreeUnmanagedStructures()
         {
-            if (_requestBuffer != null)
-            {
-                _requestBuffer.Dispose();
-                _requestBuffer = null;
-            }
+            _requestBuffer?.Dispose();
+            _requestBuffer = null;
         }
 
         private static IPStatus GetStatusFromCode(int statusCode)

@@ -37,11 +37,8 @@ namespace System.Security.Cryptography
 
         public void DisposeKey()
         {
-            if (_lazyKey != null)
-            {
-                _lazyKey.Dispose();
-                _lazyKey = null;
-            }
+            _lazyKey?.Dispose();
+            _lazyKey = null;
         }
 
         public CngKey GetOrGenerateKey(int keySize, CngAlgorithm algorithm)

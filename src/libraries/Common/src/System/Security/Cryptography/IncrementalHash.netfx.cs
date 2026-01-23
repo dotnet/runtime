@@ -151,11 +151,8 @@ namespace System.Security.Cryptography
         {
             _disposed = true;
 
-            if (_hash != null)
-            {
-                _hash.Dispose();
-                _hash = null;
-            }
+            _hash?.Dispose();
+            _hash = null;
         }
 
         /// <summary>
