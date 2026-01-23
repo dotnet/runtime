@@ -23,6 +23,7 @@ set(ROLLUP_TS_SOURCES
     "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/assets.ts"
     "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/bootstrap.ts"
     "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/config.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/config-self.ts"
     "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/cross-module.ts"
     "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/dotnet.d.ts"
     "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/dotnet.ts"
