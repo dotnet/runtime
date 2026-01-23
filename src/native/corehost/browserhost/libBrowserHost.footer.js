@@ -21,10 +21,17 @@
 
         // libBrowserHostFn is too complex for acorn-optimizer.mjs to find the dependencies
         let explicitDeps = [
-            "wasm_load_icu_data", "BrowserHost_CreateHostContract", "BrowserHost_InitializeCoreCLR", "BrowserHost_ExecuteAssembly"
+            "wasm_load_icu_data",
+            "BrowserHost_CreateHostContract",
+            "BrowserHost_InitializeCoreCLR",
+            "BrowserHost_ExecuteAssembly"
         ];
         let commonDeps = [
-            "$DOTNET", "$DOTNET_INTEROP", "$ENV", "$FS", "$NODEFS",
+            "$DOTNET",
+            "$DOTNET_INTEROP",
+            "$ENV",
+            "$FS",
+            "$NODEFS",
             "$libBrowserHostFn",
             ...explicitDeps
         ];
