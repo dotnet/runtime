@@ -1,0 +1,54 @@
+# IMPORTANT: do not use add_compile_options(), add_definitions() or similar functions here since it will leak to the including projects
+
+include(FetchContent)
+
+FetchContent_Declare(
+    xz
+    SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/xz)
+
+# turn off multithreading support to lower the binary size
+set(XZ_THREADS no)
+
+set(XZ_LZIP_DECODER OFF)
+set(XZ_LZIP_ENCODER OFF)
+
+# turn off parts we don't need
+set(BUILD_TESTING OFF)
+set(XZ_DOXYGEN OFF)
+set(XZ_DOC OFF)
+set(XZ_NLS OFF)
+set(XZ_MICROLZMA_ENCODER OFF)
+set(XZ_MICROLZMA_DECODER OFF)
+set(XZ_TOOL_XZ OFF)
+set(XZ_TOOL_SCRIPTS OFF)
+set(XZ_TOOL_XZDEC OFF)
+set(XZ_TOOL_LZMADEC OFF)
+set(XZ_TOOL_LZMAINFO OFF)
+set(XZ_TOOL_SYMLINKS OFF)
+set(XZ_TOOL_SYMLINKS_LZMA OFF)
+
+set(__CURRENT_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
+set(BUILD_SHARED_LIBS OFF)
+FetchContent_MakeAvailable(xz)
+set(BUILD_SHARED_LIBS ${__CURRENT_BUILD_SHARED_LIBS})
+
+set(LZMA_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}/xz/src/liblzma/api)
+
+
+#
+# silence the warnings for now, we will need to fix these in code and upstream the fixes
+#
+if(MSVC)
+    target_compile_definitions(liblzma PRIVATE _CRT_SECURE_NO_WARNINGS)
+endif()
+
+target_compile_options(liblzma PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4267>)
+target_compile_options(liblzma PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4242>)
+target_compile_options(liblzma PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4244>)
+target_compile_options(liblzma PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4057>)
+target_compile_options(liblzma PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4996>)
+
+# I am not sure why but libgnu target is also created even if we don't build the
+# tools, we should investigate before merging
+target_compile_options(libgnu PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4701>)
+target_compile_options(libgnu PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4996>)

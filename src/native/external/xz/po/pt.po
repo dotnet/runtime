@@ -1,0 +1,1278 @@
+# SPDX-License-Identifier: 0BSD
+#
+# Portuguese (Portugal) Translation for the xz Package
+# This file is published under the BSD Zero Clause License.
+# Pedro Albuquerque <pmra@protonmail.com>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: xz 5.8.0-pre1\n"
+"Report-Msgid-Bugs-To: xz@tukaani.org\n"
+"POT-Creation-Date: 2025-01-29 20:59+0200\n"
+"PO-Revision-Date: 2025-03-16 17:37+0000\n"
+"Last-Translator: Pedro Albuquerque <pmra@protonmail.com>\n"
+"Language-Team: Portuguese <translation-team-pt@lists.sourceforge.net>\n"
+"Language: pt\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Bugs: Report translation errors to the Language-Team address.\n"
+"X-Generator: Poedit 3.5\n"
+
+#: src/xz/args.c
+#, c-format
+msgid "%s: Invalid argument to --block-list"
+msgstr "%s: argumento inválido para --block-list"
+
+#: src/xz/args.c
+#, c-format
+msgid "%s: Too many arguments to --block-list"
+msgstr "%s: demasiados argumentos para --block-list"
+
+#: src/xz/args.c
+#, c-format
+msgid "In --block-list, block size is missing after filter chain number '%c:'"
+msgstr "Em --block-list, falta o tamanho do bloco após filtrar o número da cadeia \"%c:\""
+
+#: src/xz/args.c
+msgid "0 can only be used as the last element in --block-list"
+msgstr "0 só pode ser usado como o último elemento em --block-list"
+
+#: src/xz/args.c
+#, c-format
+msgid "%s: Unknown file format type"
+msgstr "%s: tipo de formato de ficheiro desconhecido"
+
+#: src/xz/args.c
+#, c-format
+msgid "%s: Unsupported integrity check type"
+msgstr "%s: tipo de verificação de integridade não suportado"
+
+#: src/xz/args.c
+msgid "Only one file can be specified with '--files' or '--files0'."
+msgstr "Só pode especificar um ficheiro com \"--files\" ou \"--files0\"."
+
+#. TRANSLATORS: This is a translatable
+#. string because French needs a space
+#. before the colon ("%s : %s").
+#: src/xz/args.c src/xz/coder.c src/xz/file_io.c src/xz/list.c src/xz/options.c
+#: src/xz/util.c
+#, c-format
+msgid "%s: %s"
+msgstr "%s: %s"
+
+#: src/xz/args.c
+#, c-format
+msgid "The environment variable %s contains too many arguments"
+msgstr "A variável de ambiente %s contém demasiados argumentos"
+
+#: src/xz/args.c
+msgid "Compression support was disabled at build time"
+msgstr "O suporte a compressão foi desactivado ao compilar"
+
+#: src/xz/args.c
+msgid "Decompression support was disabled at build time"
+msgstr "O suporte a descompressão foi desactivado ao compilar"
+
+#: src/xz/args.c
+msgid "Compression of lzip files (.lz) is not supported"
+msgstr "A compressão de ficheiros lzip (.lz) não é suportada"
+
+#: src/xz/args.c
+msgid "--block-list is ignored unless compressing to the .xz format"
+msgstr "--block-list é ignorado a não ser que comprima para formato .xz"
+
+#: src/xz/args.c
+msgid "With --format=raw, --suffix=.SUF is required unless writing to stdout"
+msgstr "Com --format=raw, --suffix=.SUF é requerido, a menos que seja escrito em stdout"
+
+#: src/xz/coder.c
+msgid "Maximum number of filters is four"
+msgstr "O número máximo de filtros é quatro"
+
+#: src/xz/coder.c
+#, c-format
+msgid "Error in --filters%s=FILTERS option:"
+msgstr "Erro na opção --filters%s=FILTERS:"
+
+#: src/xz/coder.c
+msgid "Memory usage limit is too low for the given filter setup."
+msgstr "O limite de uso de memória é baixo demais para a configuração de filtro dada."
+
+#: src/xz/coder.c
+#, c-format
+msgid "filter chain %u used by --block-list but not specified with --filters%u="
+msgstr "cadeia de filtro %u usada por --block-list mas não especificada com --filters%u="
+
+#: src/xz/coder.c
+msgid "Using a preset in raw mode is discouraged."
+msgstr "O uso de uma predefinição em modo bruto é desencorajado."
+
+#: src/xz/coder.c
+msgid "The exact options of the presets may vary between software versions."
+msgstr "As opções exactas de predefinições podem variar entre versões do programa."
+
+#: src/xz/coder.c
+msgid "The .lzma format supports only the LZMA1 filter"
+msgstr "O formato .lzma tem só suporta o filtro LZMA1"
+
+#: src/xz/coder.c
+msgid "LZMA1 cannot be used with the .xz format"
+msgstr "Impossível utilizar LZMA1 com o formato .xz"
+
+#: src/xz/coder.c
+#, c-format
+msgid "Filter chain %u is incompatible with --flush-timeout"
+msgstr "A cadeia de filtragem %u é incompatível com --flush-timeout"
+
+#: src/xz/coder.c
+msgid "Switching to single-threaded mode due to --flush-timeout"
+msgstr "A mudar para o modo de linha única devido a --flush-timeout"
+
+#: src/xz/coder.c
+#, c-format
+msgid "Unsupported options in filter chain %u"
+msgstr "Opções não suportadas na cadeia de filtragem %u"
+
+#: src/xz/coder.c
+#, c-format
+msgid "Using up to %<PRIu32> threads."
+msgstr "A usar até %<PRIu32> linhas."
+
+#: src/xz/coder.c
+msgid "Unsupported filter chain or filter options"
+msgstr "Opções de filtro ou cadeia de filtros não suportadas"
+
+#: src/xz/coder.c
+#, c-format
+msgid "Decompression will need %s MiB of memory."
+msgstr "A descompressão precisará de %s MiB de memória."
+
+#: src/xz/coder.c
+#, c-format
+msgid "Reduced the number of threads from %s to %s to not exceed the memory usage limit of %s MiB"
+msgstr "Número de linhas reduzido de %s de %s para não exceder o limite de uso de memória de %s MiB"
+
+#: src/xz/coder.c
+#, c-format
+msgid "Reduced the number of threads from %s to one. The automatic memory usage limit of %s MiB is still being exceeded. %s MiB of memory is required. Continuing anyway."
+msgstr "Número de linhas reduzido de %s para uma. O limite automático de utilização de memória de %s MiB ainda continua excedido. Necessita de %s MiB. A continuar mesmo assim."
+
+#: src/xz/coder.c
+#, c-format
+msgid "Switching to single-threaded mode to not exceed the memory usage limit of %s MiB"
+msgstr "A mudar para o modo de linha única para não exceder o limite de uso de memória de %s MiB"
+
+#: src/xz/coder.c
+#, c-format
+msgid "Adjusted LZMA%c dictionary size from %s MiB to %s MiB to not exceed the memory usage limit of %s MiB"
+msgstr "Ajustado o tamanho de dicionário de LZMA%c de %s MiB para %s MiB para não exceder o limite de uso de memória de %s MiB"
+
+#: src/xz/coder.c
+#, c-format
+msgid "Adjusted LZMA%c dictionary size for --filters%u from %s MiB to %s MiB to not exceed the memory usage limit of %s MiB"
+msgstr "Ajustado o tamanho de dicionário de LZMA%c para --filters%u de %s MiB para %s MiB para não exceder o limite de uso de memória de %s MiB"
+
+#: src/xz/coder.c
+#, c-format
+msgid "Error changing to filter chain %u: %s"
+msgstr "Erro ao mudar para a cadeia de filtragem %u: %s"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "Error creating a pipe: %s"
+msgstr "Erro ao criar um túnel: %s"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: poll() failed: %s"
+msgstr "%s: poll() falhou: %s"
+
+#. TRANSLATORS: When compression or decompression finishes,
+#. and xz is going to remove the source file, xz first checks
+#. if the source file still exists, and if it does, does its
+#. device and inode numbers match what xz saw when it opened
+#. the source file. If these checks fail, this message is
+#. shown, %s being the filename, and the file is not deleted.
+#. The check for device and inode numbers is there, because
+#. it is possible that the user has put a new file in place
+#. of the original file, and in that case it obviously
+#. shouldn't be removed.
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: File seems to have been moved, not removing"
+msgstr "%s: o ficheiro parece ter sido movido, não será eliminado"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: Cannot remove: %s"
+msgstr "%s: impossível remover: %s"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: Cannot set the file owner: %s"
+msgstr "%s: impossível definir o proprietário do ficheiro: %s"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: Cannot set the file group: %s"
+msgstr "%s: impossível definir o grupo do ficheiro: %s"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: Cannot set the file permissions: %s"
+msgstr "%s: impossível definir as permissões do ficheiro: %s"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: Synchronizing the file failed: %s"
+msgstr "%s: falha ao sincronizar o ficheiro: %s"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: Synchronizing the directory of the file failed: %s"
+msgstr "%s: falha ao sincronizar a pasta do ficheiro: %s"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "Error getting the file status flags from standard input: %s"
+msgstr "Erro ao obter as bandeiras de estado da entrada padrão: %s"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: Is a symbolic link, skipping"
+msgstr "%s: é uma ligação simbólica, a ignorar"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: Is a directory, skipping"
+msgstr "%s: é uma pasta, a ignorar"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: Not a regular file, skipping"
+msgstr "%s: não é um ficheiro normal, a ignorar"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: File has setuid or setgid bit set, skipping"
+msgstr "%s: o ficheiro tem o bit setuid ou setgid definido, a ignorar"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: File has sticky bit set, skipping"
+msgstr "%s: o ficheiro tem o bit sticky definido, a ignorar"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: Input file has more than one hard link, skipping"
+msgstr "%s: o ficheiro de entrada tem mais de uma ligação absoluta, a ignorar"
+
+#: src/xz/file_io.c
+msgid "Empty filename, skipping"
+msgstr "Nome de ficheiro vazio, a ignorar"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "Error restoring the status flags to standard input: %s"
+msgstr "Erro ao restaurar as bandeiras de estado para a entrada padrão: %s"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "Error getting the file status flags from standard output: %s"
+msgstr "Erro ao obter as bandeiras de estado do ficheiro da saída padrão: %s"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: Opening the directory failed: %s"
+msgstr "%s: falha ao abrir a pasta: %s"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: Destination is not a regular file"
+msgstr "%s: o destino não é um ficheiro normal"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "Error restoring the O_APPEND flag to standard output: %s"
+msgstr "Erro ao restaurar a bandeira O_APPEND para a saída padrão: %s"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: Closing the file failed: %s"
+msgstr "%s: falha ao fechar o ficheiro: %s"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: Seeking failed when trying to create a sparse file: %s"
+msgstr "%s: falha na procura ao tentar criar um ficheiro escasso: %s"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: Read error: %s"
+msgstr "%s: erro de leitura: %s"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: Error seeking the file: %s"
+msgstr "%s: erro ao procurar o ficheiro: %s"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: Unexpected end of file"
+msgstr "%s: fim de ficheiro inesperado"
+
+#: src/xz/file_io.c
+#, c-format
+msgid "%s: Write error: %s"
+msgstr "%s: erro de escrita: %s"
+
+#: src/xz/hardware.c
+msgid "Disabled"
+msgstr "Desactivado"
+
+# Espaços adicionados para manter alinhamento com mensagens adjacentes -- Rafael
+#: src/xz/hardware.c
+msgid "Amount of physical memory (RAM):"
+msgstr "Total de memória física (RAM):"
+
+#: src/xz/hardware.c
+msgid "Number of processor threads:"
+msgstr "Número de linhas do processador:"
+
+#: src/xz/hardware.c
+msgid "Compression:"
+msgstr "Compressão:"
+
+#: src/xz/hardware.c
+msgid "Decompression:"
+msgstr "Descompressão:"
+
+# Espaços reduzidos para manter alinhamento com mensagens adjacentes -- Rafael
+#: src/xz/hardware.c
+msgid "Multi-threaded decompression:"
+msgstr "Descompressão multi-linha:"
+
+#: src/xz/hardware.c
+msgid "Default for -T0:"
+msgstr "Pré-definição para -T0:"
+
+#: src/xz/hardware.c
+msgid "Hardware information:"
+msgstr "Informação do equipamento:"
+
+#: src/xz/hardware.c
+msgid "Memory usage limits:"
+msgstr "Limites de uso de memória:"
+
+#: src/xz/list.c
+msgid "Streams:"
+msgstr "Fluxos:"
+
+#: src/xz/list.c
+msgid "Blocks:"
+msgstr "Blocos:"
+
+#: src/xz/list.c
+msgid "Compressed size:"
+msgstr "Tamanho comprimido:"
+
+#: src/xz/list.c
+msgid "Uncompressed size:"
+msgstr "Tamanho descomprimido:"
+
+#: src/xz/list.c
+msgid "Ratio:"
+msgstr "Proporção:"
+
+#: src/xz/list.c
+msgid "Check:"
+msgstr "Verificar:"
+
+#: src/xz/list.c
+msgid "Stream Padding:"
+msgstr "Espaço do fluxo:"
+
+#: src/xz/list.c
+msgid "Memory needed:"
+msgstr "Memória requerida:"
+
+# Espaço adicionado para promover alinhamento, vide "xz -lvv foo.xz"
+#: src/xz/list.c
+msgid "Sizes in headers:"
+msgstr "Tamanho em cabeçalhos:"
+
+#: src/xz/list.c
+msgid "Number of files:"
+msgstr "Número de ficheiros:"
+
+#: src/xz/list.c
+msgid "Stream"
+msgstr "Fluxo"
+
+#: src/xz/list.c
+msgid "Block"
+msgstr "Bloco"
+
+#: src/xz/list.c
+msgid "Blocks"
+msgstr "Blocos"
+
+#: src/xz/list.c
+msgid "CompOffset"
+msgstr "DesvComp"
+
+#: src/xz/list.c
+msgid "UncompOffset"
+msgstr "DesvDescomp"
+
+#: src/xz/list.c
+msgid "CompSize"
+msgstr "TamComp"
+
+#: src/xz/list.c
+msgid "UncompSize"
+msgstr "TamDescomp"
+
+#: src/xz/list.c
+msgid "TotalSize"
+msgstr "Total"
+
+#: src/xz/list.c
+msgid "Ratio"
+msgstr "Proporção"
+
+#: src/xz/list.c
+msgid "Check"
+msgstr "Verificar"
+
+#: src/xz/list.c
+msgid "CheckVal"
+msgstr "ValVerif"
+
+#: src/xz/list.c
+msgid "Padding"
+msgstr "Espaço"
+
+#: src/xz/list.c
+msgid "Header"
+msgstr "Cabeçalho"
+
+#: src/xz/list.c
+msgid "Flags"
+msgstr "Bandeiras"
+
+#: src/xz/list.c
+msgid "MemUsage"
+msgstr "UsoMem"
+
+#: src/xz/list.c
+msgid "Filters"
+msgstr "Filtros"
+
+#. TRANSLATORS: Indicates that there is no integrity check.
+#. This string is used in tables. In older xz version this
+#. string was limited to ten columns in a fixed-width font, but
+#. nowadays there is no strict length restriction anymore.
+#: src/xz/list.c
+msgid "None"
+msgstr "Nenhum"
+
+#. TRANSLATORS: Indicates that integrity check name is not known,
+#. but the Check ID is known (here 2). In older xz version these
+#. strings were limited to ten columns in a fixed-width font, but
+#. nowadays there is no strict length restriction anymore.
+#: src/xz/list.c
+msgid "Unknown-2"
+msgstr "SemNome-2"
+
+# Não exceder 10 caracteres e espaços não são permitidos -- Rafael
+#: src/xz/list.c
+msgid "Unknown-3"
+msgstr "SemNome-3"
+
+# Não exceder 10 caracteres e espaços não são permitidos -- Rafael
+#: src/xz/list.c
+msgid "Unknown-5"
+msgstr "SemNome-5"
+
+# Não exceder 10 caracteres e espaços não são permitidos -- Rafael
+#: src/xz/list.c
+msgid "Unknown-6"
+msgstr "SemNome-6"
+
+# Não exceder 10 caracteres e espaços não são permitidos -- Rafael
+#: src/xz/list.c
+msgid "Unknown-7"
+msgstr "SemNome-7"
+
+# Não exceder 10 caracteres e espaços não são permitidos -- Rafael
+#: src/xz/list.c
+msgid "Unknown-8"
+msgstr "SemNome-8"
+
+# Não exceder 10 caracteres e espaços não são permitidos -- Rafael
+#: src/xz/list.c
+msgid "Unknown-9"
+msgstr "SemNome-9"
+
+# Não exceder 10 caracteres e espaços não são permitidos -- Rafael
+#: src/xz/list.c
+msgid "Unknown-11"
+msgstr "SemNome-11"
+
+# Não exceder 10 caracteres e espaços não são permitidos -- Rafael
+#: src/xz/list.c
+msgid "Unknown-12"
+msgstr "SemNome-12"
+
+# Não exceder 10 caracteres e espaços não são permitidos -- Rafael
+#: src/xz/list.c
+msgid "Unknown-13"
+msgstr "SemNome-13"
+
+# Não exceder 10 caracteres e espaços não são permitidos -- Rafael
+#: src/xz/list.c
+msgid "Unknown-14"
+msgstr "SemNome-14"
+
+# Não exceder 10 caracteres e espaços não são permitidos -- Rafael
+#: src/xz/list.c
+msgid "Unknown-15"
+msgstr "SemNome-15"
+
+#: src/xz/list.c
+#, c-format
+msgid "%s: File is empty"
+msgstr "%s: o ficheiro está vazio"
+
+#: src/xz/list.c
+#, c-format
+msgid "%s: Too small to be a valid .xz file"
+msgstr "%s: muito pequeno para um ficheiro .xz válido"
+
+#. TRANSLATORS: These are column headings. From Strms (Streams)
+#. to Ratio, the columns are right aligned. Check and Filename
+#. are left aligned. If you need longer words, it's OK to
+#. use two lines here. Test with "xz -l foo.xz".
+#: src/xz/list.c
+msgid "Strms  Blocks   Compressed Uncompressed  Ratio  Check   Filename"
+msgstr "Fluxos Blocos   Comprimido Descomprimido Rácio  Verif.  Nome de ficheiro"
+
+#: src/xz/list.c
+msgid "Yes"
+msgstr "Sim"
+
+#: src/xz/list.c
+msgid "No"
+msgstr "Não"
+
+#: src/xz/list.c
+msgid "Minimum XZ Utils version:"
+msgstr "Versão mínima do XZ Utils:"
+
+#. TRANSLATORS: %s is an integer. Only the plural form of this
+#. message is used (e.g. "2 files"). Test with "xz -l foo.xz bar.xz".
+#: src/xz/list.c
+#, c-format
+msgid "%s file\n"
+msgid_plural "%s files\n"
+msgstr[0] "%s ficheiro\n"
+msgstr[1] "%s ficheiros\n"
+
+#: src/xz/list.c
+msgid "Totals:"
+msgstr "Totais:"
+
+#: src/xz/list.c
+msgid "--list works only on .xz files (--format=xz or --format=auto)"
+msgstr "--list só funciona em ficheiros .xz (--format=xz ou --format=auto)"
+
+#: src/xz/list.c
+msgid "Try 'lzmainfo' with .lzma files."
+msgstr "Tentar \"lzmainfo\" com ficheiros .lzma."
+
+#: src/xz/list.c
+msgid "--list does not support reading from standard input"
+msgstr "--list não suporta a leitura da entrada padrão"
+
+#: src/xz/main.c
+#, c-format
+msgid "%s: Error reading filenames: %s"
+msgstr "%s: erro ao ler nomes de ficheiro: %s"
+
+#: src/xz/main.c
+#, c-format
+msgid "%s: Unexpected end of input when reading filenames"
+msgstr "%s: fim de entrada inesperado ao ler nomes de ficheiros"
+
+#: src/xz/main.c
+#, c-format
+msgid "%s: Null character found when reading filenames; maybe you meant to use '--files0' instead of '--files'?"
+msgstr "%s: encontrado carácter nulo ao ler nomes de ficheiro; talvez queira usar \"--files0\" em vez de \"--files\"?"
+
+#: src/xz/main.c
+msgid "Compression and decompression with --robot are not supported yet."
+msgstr "Compressão e descompressão com --robot ainda não são suportadas."
+
+#: src/xz/main.c
+msgid "Cannot read data from standard input when reading filenames from standard input"
+msgstr "Impossível ler dados da entrada padrão ao ler nomes de ficheiro da entrada padrão"
+
+#. TRANSLATORS: This is the program name in the beginning
+#. of the line in messages. Usually it becomes "xz: ".
+#. This is a translatable string because French needs
+#. a space before a colon.
+#: src/xz/message.c src/lzmainfo/lzmainfo.c
+#, c-format
+msgid "%s: "
+msgstr "%s: "
+
+#: src/xz/message.c src/lzmainfo/lzmainfo.c
+msgid "Internal error (bug)"
+msgstr "Erro interno (erro)"
+
+#: src/xz/message.c
+msgid "Cannot establish signal handlers"
+msgstr "Impossível estabelecer gestores de sinais"
+
+#: src/xz/message.c
+msgid "No integrity check; not verifying file integrity"
+msgstr "Sem teste de integridade; a integridade do ficheiro não será verificada"
+
+#: src/xz/message.c
+msgid "Unsupported type of integrity check; not verifying file integrity"
+msgstr "Tipo de verificação de integridade não suportada; a integridade do ficheiro não será verificada"
+
+#: src/xz/message.c
+msgid "Memory usage limit reached"
+msgstr "Limite de uso de memória alcançado"
+
+#: src/xz/message.c
+msgid "File format not recognized"
+msgstr "Formato de ficheiro não reconhecido"
+
+#: src/xz/message.c
+msgid "Unsupported options"
+msgstr "Opções não suportadas"
+
+#: src/xz/message.c
+msgid "Compressed data is corrupt"
+msgstr "Os dados comprimidos estão corrompidos"
+
+#: src/xz/message.c
+msgid "Unexpected end of input"
+msgstr "Fim de entrada inesperado"
+
+#: src/xz/message.c
+#, c-format
+msgid "%s MiB of memory is required. The limiter is disabled."
+msgstr "São necessários %s MiB de memória. O limitador está desactivado."
+
+#: src/xz/message.c
+#, c-format
+msgid "%s MiB of memory is required. The limit is %s."
+msgstr "São necessários %s MiB de memória. O limite é %s."
+
+#: src/xz/message.c
+#, c-format
+msgid "%s: Filter chain: %s\n"
+msgstr "%s: cadeia de filtros: %s\n"
+
+#: src/xz/message.c
+#, c-format
+msgid "Try '%s --help' for more information."
+msgstr "Tente \"%s --help\" para mais informações."
+
+#: src/xz/message.c src/lzmainfo/lzmainfo.c
+#, c-format
+msgid "Error printing the help text (error code %d)"
+msgstr "Erro ao imprimir o texto de ajuda (erro: %d)"
+
+#: src/xz/message.c
+#, c-format
+msgid "Usage: %s [OPTION]... [FILE]...\n"
+msgstr "Uso: %s [OPÇÃO]... FICHEIRO...\n"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "Compress or decompress FILEs in the .xz format."
+msgstr "Comprimir ou descomprimir FICHEIROs no formato .xz."
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "Mandatory arguments to long options are mandatory for short options too."
+msgstr "Argumentos obrigatórios para opções longas são também obrigatórios para opções curtas."
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "Operation mode:"
+msgstr "Modo de operação:"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "force compression"
+msgstr "forçar compressão"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "force decompression"
+msgstr "forçar descompressão"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "test compressed file integrity"
+msgstr "testar integridade do ficheiro comprimido"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "list information about .xz files"
+msgstr "listar informação sobre ficheiros .xz"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "Operation modifiers:"
+msgstr "Modificadores de operação:"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "keep (don't delete) input files"
+msgstr "manter (não eliminar) ficheiros de entrada"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "force overwrite of output file and (de)compress links"
+msgstr "forçar substituição de ficheiros de saída e ligações de (des)compressão"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "write to standard output and don't delete input files"
+msgstr "escrever na saída padrão e não eliminar ficheiros de entrada"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "don't synchronize the output file to the storage device before removing the input file"
+msgstr "não sincronizar o ficheiro de saída com o dispositivo de armazenamento antes de remover o ficheiro de entrada"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "decompress only the first stream, and silently ignore possible remaining input data"
+msgstr "descomprimir só o primeiro fluxo e ignoras silenciosamente possíveis dados de entrada restantes"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "do not create sparse files when decompressing"
+msgstr "não criar ficheiros esparsos ao descomprimir"
+
+#: src/xz/message.c
+msgid ".SUF"
+msgstr ".SUF"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "use the suffix '.SUF' on compressed files"
+msgstr "usar o sufixo \".SUF\" em ficheiros comprimidos"
+
+#: src/xz/message.c
+msgid "FILE"
+msgstr "FICH"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "read filenames to process from FILE; if FILE is omitted, filenames are read from the standard input; filenames must be terminated with the newline character"
+msgstr "ler nomes de ficheiro a processar de FICH; se FICH for omitido, os nomes serão lidos da entrada padrão; os nomes de ficheiro devem terminar com o carácter de nova linha"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "like --files but use the null character as terminator"
+msgstr "como --files, mas usa o carácter nulo como terminador"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "Basic file format and compression options:"
+msgstr "Opções básicas de formato e compressão de ficheiro:"
+
+#: src/xz/message.c
+msgid "FORMAT"
+msgstr "FORMATO"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "file format to encode or decode; possible values are 'auto' (default), 'xz', 'lzma', 'lzip', and 'raw'"
+msgstr "formato de ficheiro a codificar/descodificar; os valores possíveis são \"auto\" (pré-definição), \"xz\", \"lzma\", \"lzip\", e \"raw\""
+
+#: src/xz/message.c
+msgid "NAME"
+msgstr "NOME"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "integrity check type: 'none' (use with caution), 'crc32', 'crc64' (default), or 'sha256'"
+msgstr "tipo de teste de integridade: 'none' (use com cautela), 'crc32', 'crc64' (pré-definição), ou 'sha256'"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "don't verify the integrity check when decompressing"
+msgstr "não verificar a integridade ao descomprimir"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "compression preset; default is 6; take compressor *and* decompressor memory usage into account before using 7-9!"
+msgstr "pré-definição de compressão; a pré-definição é 6; ter em conta o uso de memória do compressor *e* descompressor antes de usar 7-9!"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "try to improve compression ratio by using more CPU time; does not affect decompressor memory requirements"
+msgstr "tentar melhorar o rácio de compressão usando mais tempo de CPU; não afecta os requisitos de memória do descompressor"
+
+#. TRANSLATORS: Short for NUMBER. A longer string is fine but
+#. wider than 5 columns makes --long-help a few lines longer.
+#: src/xz/message.c
+msgid "NUM"
+msgstr "NÚM"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "use at most NUM threads; the default is 0 which uses as many threads as there are processor cores"
+msgstr "usa no máximo NÚM linhas; a pré-definição é 1; defina para 0 para usar tantas linhas como núcleos de processadores haja"
+
+#: src/xz/message.c
+msgid "SIZE"
+msgstr "TAMANHO"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "start a new .xz block after every SIZE bytes of input; use this to set the block size for threaded compression"
+msgstr "iniciar novo bloco .xz após cada TAM bytes de entrada; use para definir o tamanho de bloco para compressão com linhas"
+
+#: src/xz/message.c
+msgid "BLOCKS"
+msgstr "BLOCOS"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "start a new .xz block after the given comma-separated intervals of uncompressed data; optionally, specify a filter chain number (0-9) followed by a ':' before the uncompressed data size"
+msgstr "iniciar um bloco .xz após os intervalos de dados descomprimidos indicados, separados por vírgulas; optionalmente, especifique umnúmero de cadeia de filtro (0-9) seguido de ':' antes do tamanho descomprimido"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "when compressing, if more than NUM milliseconds has passed since the previous flush and reading more input would block, all pending data is flushed out"
+msgstr "ao comprimir, se mais de NÚM milissegundos tiverem passado desde o despejo anterior e ler mais dados daentrada bloquearia, todos os dados pendentes serão despejados"
+
+#: src/xz/message.c
+msgid "LIMIT"
+msgstr "LIMITE"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+#, no-c-format
+msgid "set memory usage limit for compression, decompression, threaded decompression, or all of these; LIMIT is in bytes, % of RAM, or 0 for defaults"
+msgstr "definir limite de uso da memória para compressão, decompressão, descompressão em linhas, ou todos; LIMITE em bytes, % de RAM, ou 0 para pré-definições"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "if compression settings exceed the memory usage limit, give an error instead of adjusting the settings downwards"
+msgstr "se as configurações de compressão excederem o limite de uso de memória, devolve um erro em vez de reduzir as configurações"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "Custom filter chain for compression (an alternative to using presets):"
+msgstr "Cadeia de filtragem personalizada para compressão (alternativa às pré-definições):"
+
+#: src/xz/message.c
+msgid "FILTERS"
+msgstr "FILTROS"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "set the filter chain using the liblzma filter string syntax; use --filters-help for more information"
+msgstr "definir a cadeia de filtros usando a sintaxe da cadeia de filtragem liblzma; use --filters-help para mais informação"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "set additional filter chains using the liblzma filter string syntax to use with --block-list"
+msgstr "definir cadeias de filtros adicionais usando a sintaxe da cadeia de filtragem liblzma com --block-list"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "display more information about the liblzma filter string syntax and exit"
+msgstr "mostrar mais informação sobre a sintaxe da cadeia de filtragem liblzma e sair"
+
+#. TRANSLATORS: Short for OPTIONS.
+#: src/xz/message.c
+msgid "OPTS"
+msgstr "OPÇS"
+
+#. TRANSLATORS: Use semicolon (or its fullwidth form)
+#. in "(valid values; default)" even if it is weird in
+#. your language. There are non-translatable strings
+#. that look like "(foo, bar, baz; foo)" which list
+#. the supported values and the default value.
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "LZMA1 or LZMA2; OPTS is a comma-separated list of zero or more of the following options (valid values; default):"
+msgstr "LZMA1 ou LZMA2; OPÇS é uma lista separada por vírgulas de zero ou mais das seguintes opções (valores válidos; pré-definição):"
+
+#. TRANSLATORS: Short for PRESET. A longer string is
+#. fine but wider than 4 columns makes --long-help
+#. one line longer.
+#: src/xz/message.c
+msgid "PRE"
+msgstr "PRE"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "reset options to a preset"
+msgstr "repor opções numa pré-definição"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "dictionary size"
+msgstr "tamanho do dicionário"
+
+#. TRANSLATORS: The word "literal" in "literal context
+#. bits" means how many "context bits" to use when
+#. encoding literals. A literal is a single 8-bit
+#. byte. It doesn't mean "literally" here.
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "number of literal context bits"
+msgstr "número de bits de contexto literais"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "number of literal position bits"
+msgstr "número de bits de posição literais"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "number of position bits"
+msgstr "número de bits de posição"
+
+#: src/xz/message.c
+msgid "MODE"
+msgstr "MODO"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "compression mode"
+msgstr "modo de compressão"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "nice length of a match"
+msgstr "tamanho simpático duma correspondência"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "match finder"
+msgstr "localizador de correspondências"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "maximum search depth; 0=automatic (default)"
+msgstr "profundidade máxima de procura; 0=automática (pré-definição)"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "x86 BCJ filter (32-bit and 64-bit)"
+msgstr "filtro x86 BCJ (32-bit e 64-bit)"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "ARM BCJ filter"
+msgstr "filtro ARM BCJ"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "ARM-Thumb BCJ filter"
+msgstr "filtro ARM-Thumb BCJ"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "ARM64 BCJ filter"
+msgstr "filtro ARM64 BCJ"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "PowerPC BCJ filter (big endian only)"
+msgstr "Filtro PowerPC BCJ (só big endian)"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "IA-64 (Itanium) BCJ filter"
+msgstr "filtro IA-64 (Itanium) BCJ"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "SPARC BCJ filter"
+msgstr "Filtro SPARC BCJ"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "RISC-V BCJ filter"
+msgstr "Filtro RISC-V BCJ"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "Valid OPTS for all BCJ filters:"
+msgstr "OPÇS válidas para todos os filtros BCJ:"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "start offset for conversions (default=0)"
+msgstr "desvio inicial para conversões (pré-definição=0)"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "Delta filter; valid OPTS (valid values; default):"
+msgstr "Filtro Delta; OPTS válidas (valores válidos; pré-definição):"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "distance between bytes being subtracted from each other"
+msgstr "distância entre bytes subtraídos uns dos outros"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "Other options:"
+msgstr "Outras opções:"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "suppress warnings; specify twice to suppress errors too"
+msgstr "suprimir avisos; especificar duas vezes para suprimir também os erros"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "be verbose; specify twice for even more verbose"
+msgstr "ser verboso; especificar duas vezes para ainda mais detalhes"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "make warnings not affect the exit status"
+msgstr "fazer avisos não afecta o estado da saída"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "use machine-parsable messages (useful for scripts)"
+msgstr "usar mensagens analisáveis por máquina (útil para scripts)"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "display the total amount of RAM and the currently active memory usage limits, and exit"
+msgstr "mostra a quantidade total de RAM e os limites de uso de memória actualmente activos e sai"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "display the short help (lists only the basic options)"
+msgstr "mostrar a ajuda curta (lista só as opções básicas)"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "display this long help and exit"
+msgstr "mostrar a ajuda longa e sair"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "display this short help and exit"
+msgstr "mostrar esta ajuda curta e sair"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "display the long help (lists also the advanced options)"
+msgstr "mostrar a ajuda longa (lista também as opções avançadas)"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "display the version number and exit"
+msgstr "mostrar o número da versão e sai"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c src/lzmainfo/lzmainfo.c
+msgid "With no FILE, or when FILE is -, read standard input."
+msgstr "Sem FICH, ou quando FICH é -, lê da entrada padrão."
+
+#. TRANSLATORS: This message indicates the bug reporting
+#. address for this package. Please add another line saying
+#. "\nReport translation bugs to <...>." with the email or WWW
+#. address for translation bugs. Thanks!
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c src/lzmainfo/lzmainfo.c
+#, c-format
+msgid "Report bugs to <%s> (in English or Finnish)."
+msgstr "Relatar erros em <%s> (em inglês ou finlandês)."
+
+#. TRANSLATORS: The first %s is the name of this software.
+#. The second <%s> is an URL.
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c src/lzmainfo/lzmainfo.c
+#, c-format
+msgid "%s home page: <%s>"
+msgstr "Página inicial %s: <%s>"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "THIS IS A DEVELOPMENT VERSION NOT INTENDED FOR PRODUCTION USE."
+msgstr "ESTA É UMA VERSÃO DE DESENVOLVIMENTO NÃO DESTINADA A USO EM PRODUÇÃO."
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+#, c-format
+msgid "Filter chains are set using the --filters=FILTERS or --filters1=FILTERS ... --filters9=FILTERS options. Each filter in the chain can be separated by spaces or '--'. Alternatively a preset %s can be specified instead of a filter chain."
+msgstr "As cadeias de filtragem são definidas com --filters=FILTERS ou --filters1=FILTERS ... --filters9=FILTERS. Cada filtro na cadeia pode ser separado por espaços ou '--'. Como alternativa, pode especificar uma pré-definição %s em vez da cadeia de filtragem."
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/xz/message.c
+msgid "The supported filters and their options are:"
+msgstr "Os filtros suportados e respectivas opções são:"
+
+#: src/xz/options.c src/liblzma/common/string_conversion.c
+msgid "Options must be 'name=value' pairs separated with commas"
+msgstr "As opções devem ser pares \"nome=valor\" separados por vírgulas"
+
+#: src/xz/options.c
+#, c-format
+msgid "%s: Invalid option name"
+msgstr "%s: nome de opção inválido"
+
+#: src/xz/options.c src/liblzma/common/string_conversion.c
+msgid "Invalid option value"
+msgstr "Valor de opção inválido"
+
+#: src/xz/options.c
+#, c-format
+msgid "Unsupported LZMA1/LZMA2 preset: %s"
+msgstr "Predefinição LZMA1/LZMA2 não suportada: %s"
+
+#: src/xz/options.c src/liblzma/common/string_conversion.c
+msgid "The sum of lc and lp must not exceed 4"
+msgstr "A soma de lc e lp não deve exceder 4"
+
+#: src/xz/suffix.c
+#, c-format
+msgid "%s: Filename has an unknown suffix, skipping"
+msgstr "%s: nome de ficheiro com sufixo desconhecido, a ignorar"
+
+#: src/xz/suffix.c
+#, c-format
+msgid "%s: File already has '%s' suffix, skipping"
+msgstr "%s: o ficheiro já tem o sufixo \"%s\", a ignorar"
+
+#: src/xz/suffix.c
+#, c-format
+msgid "%s: Invalid filename suffix"
+msgstr "%s: sufixo de nome de ficheiro inválido"
+
+#: src/xz/util.c src/liblzma/common/string_conversion.c
+msgid "Value is not a non-negative decimal integer"
+msgstr "O valor não é um inteiro decimal não-negativo"
+
+#: src/xz/util.c
+#, c-format
+msgid "%s: Invalid multiplier suffix"
+msgstr "%s: sufixo multiplicador inválido"
+
+#: src/xz/util.c
+msgid "Valid suffixes are 'KiB' (2^10), 'MiB' (2^20), and 'GiB' (2^30)."
+msgstr "Sufixos válidos são \"KiB\" (2^10), \"MiB\" (2^20) e \"GiB\" (2^30)."
+
+#: src/xz/util.c
+#, c-format
+msgid "Value of the option '%s' must be in the range [%<PRIu64>, %<PRIu64>]"
+msgstr "O valor da opção \"%s\" deve estar no intervalo [%<PRIu64>, %<PRIu64>]"
+
+#: src/xz/util.c
+msgid "Compressed data cannot be read from a terminal"
+msgstr "Dados comprimidos não podem ser lidos de um terminal"
+
+#: src/xz/util.c
+msgid "Compressed data cannot be written to a terminal"
+msgstr "Dados comprimidos não podem ser escritos num terminal"
+
+#: src/lzmainfo/lzmainfo.c
+#, c-format
+msgid "Usage: %s [--help] [--version] [FILE]...\n"
+msgstr "Uso: %s [--help] [--version] [FICH]...\n"
+
+#. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
+#: src/lzmainfo/lzmainfo.c
+msgid "Show information stored in the .lzma file header."
+msgstr "Mostrar informação no cabeçalho do ficheiro .lzma."
+
+#: src/lzmainfo/lzmainfo.c
+msgid "File is too small to be a .lzma file"
+msgstr "O ficheiro é muito pequeno para um ficheiro .lzma"
+
+#: src/lzmainfo/lzmainfo.c
+msgid "Not a .lzma file"
+msgstr "Não é um ficheiro .lzma"
+
+#: src/common/tuklib_exit.c
+msgid "Writing to standard output failed"
+msgstr "A escrita para a saída padrão falhou"
+
+#: src/common/tuklib_exit.c
+msgid "Unknown error"
+msgstr "Erro desconhecido"
+
+#: src/liblzma/common/string_conversion.c
+msgid "Unsupported preset"
+msgstr "Pré-definição não suportada"
+
+#: src/liblzma/common/string_conversion.c
+msgid "Unsupported flag in the preset"
+msgstr "Bandeira não suportada na pré-definição"
+
+#: src/liblzma/common/string_conversion.c
+msgid "Unknown option name"
+msgstr "Nome de opção desconhecido"
+
+#: src/liblzma/common/string_conversion.c
+msgid "Option value cannot be empty"
+msgstr "O valor da opção não pode estar vazio"
+
+#: src/liblzma/common/string_conversion.c
+msgid "Value out of range"
+msgstr "Valor fora do intervalo"
+
+#: src/liblzma/common/string_conversion.c
+msgid "This option does not support any multiplier suffixes"
+msgstr "Esta opção não suporta sufixos de multiplicação"
+
+#. TRANSLATORS: Don't translate the
+#. suffixes "KiB", "MiB", or "GiB"
+#. because a user can only specify
+#. untranslated suffixes.
+#: src/liblzma/common/string_conversion.c
+msgid "Invalid multiplier suffix (KiB, MiB, or GiB)"
+msgstr "Sufixo multiplicador inválido (KiB, MiB, ou GiB)"
+
+#: src/liblzma/common/string_conversion.c
+msgid "Unknown filter name"
+msgstr "Nome de filtro desconhecido"
+
+#: src/liblzma/common/string_conversion.c
+msgid "This filter cannot be used in the .xz format"
+msgstr "Impossível utilizar este filtro com o formato .xz"
+
+#: src/liblzma/common/string_conversion.c
+msgid "Memory allocation failed"
+msgstr "Falha ao alocar memória"
+
+#: src/liblzma/common/string_conversion.c
+msgid "Empty string is not allowed, try '6' if a default value is needed"
+msgstr "Não são permitidas cadeias vazias, tente \"6\" se precisa de uma pré-definição"
+
+#: src/liblzma/common/string_conversion.c
+msgid "The maximum number of filters is four"
+msgstr "O número máximo de filtros é quatro"
+
+#: src/liblzma/common/string_conversion.c
+msgid "Filter name is missing"
+msgstr "Nome de filtro em falta"
+
+#: src/liblzma/common/string_conversion.c
+msgid "Invalid filter chain ('lzma2' missing at the end?)"
+msgstr "Cadeia de filtragem inválida ('lzma2' em falta no fim?)"

@@ -1,0 +1,49 @@
+
+Creating XZ Utils Windows package with build.bash
+=================================================
+
+Introduction
+------------
+
+    The script build.bash can be used for building XZ Utils with
+    GCC + MinGW-w64 under MSYS2, under the ancient MSYS, or
+    cross-compiling from GNU/Linux. The script will create a package
+    with binaries and documentation in a hopefully-convenient bundle.
+
+        NOTE: build.bash requires files that are only included
+        in release tarballs. If building from xz.git, a distribution
+        tarball should be created first.
+
+    For native builds on Windows, the CMake-based build described
+    in the file INSTALL-MinGW-w64_with_CMake.txt is simpler to do as
+    it has no need for MSYS2 and it works from xz.git without extra
+    steps. For cross-compilation and package creation the script can
+    be convenient though.
+
+    These instructions are for making a package with build.bash and thus
+    don't apply to normal Autotool-based builds under Cygwin or MSYS2.
+
+
+Usage
+-----
+
+    First copy the file COPYING.MinGW-w64-runtime.txt from MinGW-w64
+    to this directory. It contains copyright and license notices that
+    apply to the MinGW-w64 runtime that gets statically linked into
+    the XZ Utils binaries being built. build.bash will include the file
+    in the final package.
+
+    Put i686 and/or x86_64 GCC-based toolchain in PATH depending on
+    which builds are wanted.
+
+    Optional: Put the 7z tool from 7-Zip or p7zip in PATH. Without
+    this, .zip and .7z files won't be created from the finished "pkg"
+    directory contents.
+
+    Run build.bash:
+
+        bash windows/build.bash
+
+    Note that it does an in-tree build so the build files will be mixed
+    with the source files in the same directory tree.
+

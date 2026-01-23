@@ -1,0 +1,93 @@
+#!/bin/sh
+# SPDX-License-Identifier: 0BSD
+
+#############################################################################
+#
+# Updates xz-man.pot and the *.po files, and generates translated man pages.
+# These are done using the program po4a. If po4a is missing, it is still
+# possible to build the package without translated man pages.
+#
+#############################################################################
+#
+# Author: Lasse Collin
+#
+#############################################################################
+
+if type po4a > /dev/null 2>&1; then
+	:
+else
+	echo "po4a/update-po: The program 'po4a' was not found." >&2
+	echo "po4a/update-po: Translated man pages were not generated." >&2
+	exit 1
+fi
+
+if test ! -f po4a.conf; then
+	cd `dirname "$0"` || exit 1
+	if test ! -f po4a.conf; then
+		echo "po4a/update-po: Error: Cannot find po4a.conf." >&2
+		exit 1
+	fi
+fi
+
+PACKAGE_VERSION=`cd .. && sh build-aux/version.sh` || exit 1
+
+# Put the author info from the .po files into the header comment of
+# the generated man pages.
+for FILE in *.po
+do
+	printf '%s\n.\\"\n' \
+'PO4A-HEADER: position=^\.\\" Author; mode=after; beginboundary=^\.\\"$' \
+		> "$FILE.authors"
+	sed '
+		/^[^#]/,$d
+		/: 0BSD$/d
+		/BSD Zero Clause License/d
+		/distributed under the same license/d
+		/in the public domain/d
+		/The XZ Utils authors and contributors$/d
+		/^#$/d
+		s/^#/.\\"/
+		' "$FILE" >> "$FILE.authors"
+done
+
+# Using --force to get up-to-date version numbers in the output files
+# when nothing else has changed. This makes it slower but it's fine
+# as long as this isn't run every time when "make" is run at the
+# top level directory. (po4a isn't super-fast even without --force).
+#
+# Make diffing the .pot and .po files easier:
+#
+#   --porefs file       Put only the input filenames, not line numbers,
+#                       into the .pot file. This way they won't get
+#                       copied to the .po files either.
+#
+#   --wrap-po newlines  Wrap msgids only at \n in the .pot file.
+#
+#   --msgmerge-opt "--no-wrap"
+#                       Wrap msgids and msgstrs only at \n in the .po files.
+#
+# The values from --package-name and --package-version are used to create
+# the Project-Id-Version field. It likely makes sense that its value isn't
+# identical to the value in the program message translations. In practice
+# it seems that the .po files from many (but not all) translators will use
+# "xz-man" no matter what is specified here and in xz-man.pot. Thus it's
+# best to use "xz-man" here to get the most consistent results.
+set -x
+po4a --force --verbose \
+	--porefs file --wrap-po newlines --msgmerge-opt "--no-wrap" \
+	--package-name="xz-man" \
+	--package-version="$PACKAGE_VERSION" \
+	--copyright-holder="The XZ Utils authors and contributors" \
+	po4a.conf
+
+# Remove the *.po.authors files that were generated above.
+# This way they won't get included in distribution tarballs.
+rm -f -- *.po.authors
+
+# Add the customized POT header which contains the SPDX license
+# identifier and spells out the license name instead of saying
+# "the same license as the XZ Utils package".
+mv xz-man.pot xz-man.pot.tmp
+cat ../po/xz.pot-header > xz-man.pot
+sed '1,/^#$/d' xz-man.pot.tmp >> xz-man.pot
+rm xz-man.pot.tmp

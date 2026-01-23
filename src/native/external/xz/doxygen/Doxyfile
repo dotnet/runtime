@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: 0BSD
+
+# Run "doxygen" in this directory to generate the liblzma API documentation
+# into ../doc/api.
+#
+# Use the "update-doxygen" script for more choices:
+#   - Include the liblzma version number in the generated documentation.
+#   - Instead of API docs, docs of XZ Utils internals may be built.
+#   - Change the output directory for out-of-tree builds.
+#
+# These options were tested with Doxygen 1.9.8 and 1.13.2.
+
+PROJECT_NAME           = "liblzma (XZ Utils)"
+OUTPUT_DIRECTORY       = ../doc
+STRIP_FROM_PATH        = ../src/liblzma/api
+INPUT                  = ../src/liblzma/api
+FILE_PATTERNS          = *.c *.h
+RECURSIVE              = YES
+OPTIMIZE_OUTPUT_FOR_C  = YES
+EXTRACT_STATIC         = YES
+SORT_MEMBER_DOCS       = NO
+WARN_IF_UNDOCUMENTED   = NO
+WARN_AS_ERROR          = FAIL_ON_WARNINGS
+SOURCE_TOOLTIPS        = NO
+VERBATIM_HEADERS       = NO
+ALPHABETICAL_INDEX     = NO
+HTML_OUTPUT            = api
+HTML_COLORSTYLE_HUE    = 210
+HTML_COLORSTYLE_SAT    = 180
+HTML_COLORSTYLE_GAMMA  = 110
+HTML_DYNAMIC_MENUS     = NO
+SEARCHENGINE           = NO
+GENERATE_LATEX         = NO
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+PREDEFINED             = LZMA_API(type)=type \
+                         LZMA_API_IMPORT= \
+                         LZMA_API_CALL= \
+                         tuklib_attr_noreturn= \
+                         lzma_attribute(attr)= \
+                         lzma_attr_alloc_size(size)=
+
+# Debian and Ubuntu patch Doxygen so that HAVE_DOT = YES is the default.
+# Set HAVE_DOT explicitly to get consistent behavior across distributions.
+HAVE_DOT               = NO

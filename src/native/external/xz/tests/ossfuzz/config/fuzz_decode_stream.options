@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: 0BSD
+
+[libfuzzer]
+dict = fuzz_xz.dict

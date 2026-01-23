@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: 0BSD
+
+# first 5 header bytes of .lzma archives based on the info from
+# /doc/lzma-file-format.txt
+
+# byte 0 is created by encoding LZMA property values (lc, lp, pb)
+# using the algorithm described in the documentation above.
+
+# lc=3, lp=0, pb=2 and dictionary size = 0x00100000
+"\x5d\x00\x00\x10\x00"
+
+# lc=3, lp=1, pb=3 and dictionary size = 0x00100000
+"\x93\x00\x00\x10\x00"
+
+# lc=2, lp=2, pb=4 and dictionary size = 0x00100000
+"\xc8\x00\x00\x10\x00"
+
+# lc=1, lp=3, pb=1 and dictionary size = 0x00200000
+"\x49\x00\x00\x20\x00"
+
+# lc=0, lp=4, pb=0 and dictionary size = 0x00200000
+"\x24\x00\x00\x20\x00"

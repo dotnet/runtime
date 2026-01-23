@@ -1,0 +1,211 @@
+
+Building XZ Utils on Windows using MinGW-w64 and CMake
+======================================================
+
+    1. Introduction
+       1.1. Licensing considerations
+    2. MSVCRT or UCRT
+    3. CMake
+    4. MinGW-w64 toolchains
+       4.1. MinGW-w64 with GCC
+       4.2. MinGW-w64 with Clang/LLVM
+    5. Building XZ Utils
+       5.1. Advanced build options
+    6. Creating an import library for MSVC / Visual Studio
+
+
+1. Introduction
+---------------
+
+    This document explains how to build XZ Utils using MinGW-w64,
+    GCC or Clang/LLVM, CMake, and GNU make (mingw32-make) natively
+    on Windows. The resulting XZ Utils library and executable files
+    will only depend on DLLs that are included in Windows.
+
+    The build tools can be extracted into separate directories and used
+    directly from there and deleted when no longer needed. There are no
+    installers to run for these and no configuration needed.
+
+    These instructions don't apply to Cygwin. XZ Utils can be built
+    under Cygwin in the same way as many other packages.
+
+
+1.1. Licensing considerations
+
+    Parts of MinGW-w64 runtime are statically linked into the binaries
+    being built. The file COPYING.MinGW-w64-runtime.txt in MinGW-w64
+    contains the license notices that apply to some parts of the
+    runtime. The notices must be distributed alongside the binaries
+    that have been built with MinGW-w64.
+
+    MinGW-w64 includes getopt_long(). The GNU getopt_long() (LGPLv2.1)
+    included in XZ Utils isn't used when building with MinGW-w64.
+
+    The code from XZ Utils that ends up liblzma.dll and the *.exe files
+    is under the BSD Zero Clause License (0BSD) which doesn't require
+    any copyright or license notices to be included when distributing
+    the binaries. See the file COPYING in the parent directory.
+
+
+2. MSVCRT or UCRT
+-----------------
+
+    Both GCC and Clang/LLVM based MinGW-w64 toolchains come in MSVCRT
+    and Universal C runtime (UCRT) variants. Use the UCRT variant
+    unless you have a good reason to why you still need to use MSVCRT.
+
+    MSVCRT is old. 32-bit builds of XZ Utils with MSVCRT should run on
+    Windows 2000 and later (even Windows 95 should still be possible
+    with trivial edits to the source code). However, MSVCRT doesn't
+    support the UTF-8 code page. Under Windows 10 version 1903 and
+    later, the command line tools of XZ Utils 5.6.3 and later use the
+    UTF-8 code page. If the command line tools are built against MSVCRT
+    and used on Win10 v1903 or later, non-ASCII characters may be
+    displayed incorrectly. Otherwise the tools should still function
+    correctly, so it's mostly a cosmetic issue.
+
+    UCRT is included in Windows 10, and it's possible to install UCRT
+    on Windows XP and later. UCRT supports the UTF-8 code page. UCRT is
+    the preferred choice if out-of-the-box compatibility with Windows
+    versions older than 10 is not required. Visual Studio 2015 and
+    later produce binaries that use UCRT.
+
+    If you want to build liblzma.dll for use with your application,
+    it's recommended to use the same CRT for all components (the UTF-8
+    code page issue only affects the command line tools, not liblzma).
+    If this isn't possible, see the file liblzma-crt-mixing.txt.
+
+
+3. CMake
+--------
+
+    CMake is used for selecting build options and generating makefiles.
+    It can also be used to extract archives, including .tar.xz and .7z.
+
+    Download a CMake binary package (.zip) from its homepage:
+
+        https://cmake.org/download/
+
+    Extract it to, for example, C:\devel\cmake so that the executables
+    end up in C:\devel\cmake\bin. Avoid spaces and other special
+    characters in the path.
+
+
+4. MinGW-w64 toolchains
+-----------------------
+
+    There are a few choices of prebuilt toolchains listed on
+    the MinGW-w64 homepage:
+
+        https://www.mingw-w64.org/downloads/
+
+    These instructions list one GCC-based version and one
+    Clang/LLVM-based version. Both include mingw32-make too.
+
+
+4.1. MinGW-w64 with GCC
+
+    For GCC, download appropriate packages from Mingw-builds depending
+    on if you want to build 32-bit or 64-bit x86 version of XZ Utils
+    and if the XZ Utils binaries should link against MSVCRT or UCRT
+    (use 64-bit UCRT if possible):
+
+        https://github.com/niXman/mingw-builds-binaries/releases
+
+        i686-*-release-win32-*-msvcrt-*.7z    32-bit, uses MSVCRT (old)
+        i686-*-release-win32-*-ucrt-*.7z      32-bit, uses UCRT (new)
+        x86_64-*-release-win32-*-msvcrt-*.7z  64-bit, uses MSVCRT (old)
+        x86_64-*-release-win32-*-ucrt-*.7z    64-bit, uses UCRT (new)
+
+    Extract it, for example, to C:\devel so that the executables are
+    in C:\devel\mingw32\bin or C:\devel\mingw64\bin. To extract,
+    you can install 7-Zip from <https://7-zip.org/> or use CMake
+    on the command line:
+
+        set PATH=C:\devel\cmake\bin;%PATH%
+        c:
+        cd \devel
+        cmake -E tar xf x86_64-13.1.0-release-win32-seh-ucrt-rt_v11-rev1.7z
+
+    Then skip to the section "Building XZ Utils".
+
+
+4.2. MinGW-w64 with Clang/LLVM
+
+    For Clang/LLVM, download an appropriate package from LLVM-MinGW
+    (use 64-bit UCRT if possible):
+
+        https://github.com/mstorsjo/llvm-mingw/releases
+
+        llvm-mingw-*-msvcrt-i686.zip          32-bit, uses MSVCRT (old)
+        llvm-mingw-*-ucrt-i686.zip            32-bit, uses UCRT (new)
+        llvm-mingw-*-msvcrt-x86_64.zip        64-bit, uses MSVCRT (old)
+        llvm-mingw-*-ucrt-x86_64.zip          64-bit, uses UCRT (new)
+
+    Extract it, for example, to C:\devel so that the executables end up
+    in a directory like C:\devel\llvm-mingw-20230919-ucrt-x86_64\bin.
+
+
+5. Building XZ Utils
+--------------------
+
+    For a simple builds, you can use the included build-with-cmake.bat
+    which takes these arguments:
+
+    %1 = Path to CMake's bin directory. Example:
+         c:\devel\cmake\bin
+
+    %2 = Path to MinGW-w64's bin directory. Example:
+         c:\devel\mingw64\bin
+
+    %3 = ON or OFF: Set to ON to build liblzma.dll or OFF for
+         static liblzma.a. With OFF, the *.exe files won't
+         depend on liblzma.dll.
+
+    Example:
+
+        build-with-cmake C:\devel\cmake\bin C:\devel\mingw64\bin ON
+
+    If successful, the "build" directory should then contain:
+
+        liblzma.dll     liblzma compression library
+        liblzma.def     DEF file for creating an import library
+        xz.exe          xz command line tool
+        xzdec.exe       Decompression-only tool (smaller than xz.exe)
+        lzmadec.exe     Decompression-only tool for legacy .lzma files
+        lzmainfo.exe    Shows header info of legacy .lzma files
+
+    Ignore the other files. :-)
+
+
+5.1. Advanced build options
+
+    For 32-bit x86 builds, adding -msse2 to CFLAGS improves
+    compression speed a little (but not decompression speed).
+    There is no runtime detection for SSE2 support. It is
+    recommended to use 64-bit version when possible.
+
+    It's possible to omit features from the build to reduce code size.
+    There are several CMake configuration options available. One may
+    change from CMAKE_BUILD_TYPE=Release to =MinSizeRel as well but
+    it makes the code slower.
+
+    If building for multiple targets, keep only one toolchain in PATH
+    at a time.
+
+
+6. Creating an import library for MSVC / Visual Studio
+------------------------------------------------------
+
+    To link against liblzma.dll, you need to create an import library
+    first. You need the "lib" command from MSVC and liblzma.def. Here
+    is the command that works on 32-bit x86:
+
+        lib /def:liblzma.def /out:liblzma.lib /machine:ix86
+
+    On x86-64, the /machine argument has to be changed:
+
+        lib /def:liblzma.def /out:liblzma.lib /machine:x64
+
+    IMPORTANT: See also the file liblzma-crt-mixing.txt.
+

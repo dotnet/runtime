@@ -1,0 +1,70 @@
+
+liblzma.dll and mixing C runtimes (CRTs)
+----------------------------------------
+
+    If possible, liblzma.dll should be linked against the same CRT
+    (MSVCRT or UCRT) as the application calling the liblzma functions.
+    When this isn't possible, liblzma.dll will still work but there
+    are a few API functions that need extra care.
+
+    Each CRT has its own memory allocator, stdio FILE implementation,
+    mapping of file descriptors from _open() to Windows' HANDLEs, and
+    so on. Mixing CRTs is a problem if, for example, one library calls
+    fopen() and then passes the resulting FILE* to a second library and
+    these two libraries use different CRTs. liblzma doesn't expose FILE
+    pointers or file descriptors in the API but the problem can occur
+    with memory allocation with a few specific functions.
+
+    The most commonly-used API functions in liblzma are such that both
+    memory allocation and deallocation is done internally by liblzma,
+    thus most applications won't have any problems with mixing CRTs
+    with liblzma.dll. The following API functions are the exception:
+
+        lzma/block.h:
+            lzma_block_header_decode
+
+        lzma/filter.h:
+            lzma_filters_copy
+            lzma_filters_free
+            lzma_properties_decode
+            lzma_filter_flags_decode
+            lzma_str_to_filters
+            lzma_str_from_filters
+            lzma_str_list_filters
+
+    Excluding lzma_filters_free(), the above functions allocate memory
+    and leave it to the caller to free it. lzma_filters_free() frees
+    memory given to it, and that memory may have been allocated outside
+    of liblzma.
+
+    For example, if application calls lzma_str_list_filters(&ptr, ...)
+    and then uses free(ptr), something bad (memory corruption, crash)
+    will happen if the application and liblzma.dll aren't using the
+    same CRT. This can be worked around with a few lines of extra code.
+
+    All these functions (and many others too) take a pointer to
+    lzma_allocator structure as an argument. Typically it is set to
+    NULL to let liblzma use malloc() and free() (and also calloc()
+    as it is faster than malloc() + memset()). A custom lzma_allocator
+    can be used to wrap malloc() and free() from application's CRT:
+
+        static void * LZMA_API_CALL
+        my_alloc(void *opaque, size_t nmemb, size_t size)
+        {
+            // liblzma guarantees that this won't overflow.
+            return malloc(nmemb * size);
+        }
+
+        static void LZMA_API_CALL
+        my_free(void *opaque, void *ptr)
+        {
+            free(ptr);
+        }
+
+        static const lzma_allocator allocator
+                = { &my_alloc, &my_free, NULL };
+
+    By passing &allocator to the problematic functions, CRT mixing
+    should not cause any problems. There is no need to use &allocator
+    with functions other than those listed above.
+

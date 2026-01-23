@@ -1,0 +1,18 @@
+/* SPDX-License-Identifier: 0BSD */
+
+/*
+ * Author: Lasse Collin
+ */
+
+/*
+ * It's silly to add version info to test programs but GNU windres fails
+ * if there are no resources to build, which happens with Autotools on
+ * Cygwin and MSYS2 because otherwise one more Automake conditional would
+ * be needed.
+ */
+
+#define MY_TYPE VFT_APP
+#define MY_NAME "test"
+#define MY_SUFFIX ".exe"
+#define MY_DESC "Test program"
+#include "common_w32res.rc"
