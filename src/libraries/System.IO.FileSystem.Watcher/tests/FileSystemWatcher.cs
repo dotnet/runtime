@@ -182,7 +182,15 @@ namespace System.IO.Tests
                     if (!setBeforeBeginInit)
                         watcher.EnableRaisingEvents = true;
                     watcher.EndInit();
-                    ExpectEvent(watcher, WatcherChangeTypes.Created | WatcherChangeTypes.Deleted, () => new TempFile(Path.Combine(TestDirectory, GetTestFileName())).Dispose(), null);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created | WatcherChangeTypes.Deleted, () =>
+                    {
+                        var tempFile = new TempFile(Path.Combine(TestDirectory, GetTestFileName()));
+                        // SunOS needs a short delay or the create/remove will not be seen.
+                        if (PlatformDetection.IsSunOS) {
+                            Thread.Sleep(100);
+                        }
+                        tempFile.Dispose();
+                    }, null);
                 }
             }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
