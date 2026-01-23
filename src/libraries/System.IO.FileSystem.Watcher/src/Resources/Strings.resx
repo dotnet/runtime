@@ -125,6 +125,12 @@
   <data name="FSW_BufferOverflow" xml:space="preserve">
     <value>Too many changes at once in directory:{0}.</value>
   </data>
+  <data name="FSW_MaxFilesWatchedExceeded" xml:space="preserve">
+    <value>Max file watch limit ({0}) exceeded for directory: {1}</value>
+  </data>
+  <data name="FSW_MaxSubdirectoriesExceeded" xml:space="preserve">
+    <value>Max subdirectory watch limit ({0}) exceeded for directory: {1}</value>
+  </data>
   <data name="InvalidDirName" xml:space="preserve">
     <value>The directory name {0} is invalid.</value>
   </data>
