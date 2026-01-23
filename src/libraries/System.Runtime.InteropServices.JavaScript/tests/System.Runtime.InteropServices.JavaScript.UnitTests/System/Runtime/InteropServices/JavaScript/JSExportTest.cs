@@ -408,8 +408,17 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             // 1<<16 is out of range, passed to js and back, marshalling ts code asserts out of range and throws
             Task<short> res = JavaScriptTestHelper.invoke1_TaskOfOutOfRangeShort(Task.FromResult(1 << 16), nameof(JavaScriptTestHelper.AwaitTaskOfShort));
-            JSException ex = await Assert.ThrowsAsync<JSException>(async () => await res);
+            JSException ex = await Assert.ThrowsAsync<JSException>(() => res);
             Assert.Equal("Error: Assert failed: Overflow: value 65536 is out of -32768 32767 range", ex.Message);
+        }
+
+        [Fact]
+        public async Task JsExportTaskOfStringTypeAssertion_ThrowsAssertionInTaskContinuation()
+        {
+            // long value cannot be converted to string, error thrown through continuation in CS
+            Task<string> res = JavaScriptTestHelper.invoke1_TaskOfLong_ExceptionReturnTypeAssert(Task.FromResult(1L << 32), nameof(JavaScriptTestHelper.AwaitTaskOfString));
+            JSException ex = await Assert.ThrowsAsync<JSException>(() => res);
+            Assert.Equal("Error: Assert failed: Value is not a String", ex.Message);
         }
 
         [Theory]
