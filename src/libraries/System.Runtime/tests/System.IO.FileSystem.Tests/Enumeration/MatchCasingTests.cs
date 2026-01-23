@@ -17,6 +17,7 @@ namespace System.IO.Tests.Enumeration
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Test assumes Windows' case-insensitive filesystem
         public void MatchCase()
         {
             DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
@@ -46,6 +47,7 @@ namespace System.IO.Tests.Enumeration
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Test assumes Windows' case-insensitive filesystem
         public void MatchCasing_CombinedWithMatchType_Win32()
         {
             // Use distinct file names - can't rely on case-sensitive file system
@@ -118,6 +120,7 @@ namespace System.IO.Tests.Enumeration
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Test assumes Windows' case-insensitive filesystem
         public void MatchCasing_CombinedWithMatchType_Simple()
         {
             // Use distinct file names - can't rely on case-sensitive file system
@@ -190,6 +193,7 @@ namespace System.IO.Tests.Enumeration
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Test assumes Windows' case-insensitive filesystem
         public void MatchCasing_QuestionMarkPattern_CombinedWithMatchType()
         {
             // Use distinct file names - can't rely on case-sensitive file system

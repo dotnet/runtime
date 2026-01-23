@@ -366,7 +366,7 @@ namespace System.IO.Enumeration
         /// Worst case is this returns false when it could have returned true and we miss an optimization opportunity.
         /// Safe patterns are those where the OS filter will return a superset of what .NET expects,
         /// allowing the managed MatchesPattern filter to ensure correctness.
-        /// Patterns with only * and literal characters are safe.
+        /// Patterns combining * with literal characters (e.g., *.txt) are safe.
         /// Patterns with ? are unsafe due to DOS_QM behavioral differences.
         /// Pattern *.* is unsafe because .NET treats it as *, but OS requires a . in the name.
         /// Patterns ending with . have special behaviors.
@@ -379,6 +379,7 @@ namespace System.IO.Enumeration
             !expression.EndsWith('.') &&
             !expression.ContainsAny(s_unsafeForFilter);
 
+        // Path.GetInvalidFileNameChars() minus '*' which is allowed in search patterns
         private static readonly SearchValues<char> s_unsafeForFilter = SearchValues.Create(
             "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008\u0009\u000a\u000b\u000c\u000d\u000e\u000f" +
             "\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f" +
