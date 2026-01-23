@@ -87,6 +87,16 @@
         <target state="translated">記錄方法包含格式錯誤的格式字串</target>
         <note />
       </trans-unit>
+      <trans-unit id="MethodInsideExtensionBlockNotSupportedMessage">
+        <source>Methods decorated with LoggerMessageAttribute cannot be declared inside an extension block because the C# language does not support partial members inside extension blocks.</source>
+        <target state="new">Methods decorated with LoggerMessageAttribute cannot be declared inside an extension block because the C# language does not support partial members inside extension blocks.</target>
+        <note>{Locked="LoggerMessageAttribute"}</note>
+      </trans-unit>
+      <trans-unit id="MethodInsideExtensionBlockNotSupportedTitle">
+        <source>Logging method inside extension block not supported</source>
+        <target state="new">Logging method inside extension block not supported</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
         <source>A LogLevel value must be supplied in the LoggerMessage attribute or as a parameter to the logging method</source>
         <target state="translated">必須在 LoggerMessage 屬性中提供 LogLevel 值，或將其做為記錄方法的參數。</target>

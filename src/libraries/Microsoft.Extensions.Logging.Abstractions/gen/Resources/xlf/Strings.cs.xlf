@@ -87,6 +87,16 @@
         <target state="translated">Metoda protokolování obsahuje řetězce s poškozeným formátem</target>
         <note />
       </trans-unit>
+      <trans-unit id="MethodInsideExtensionBlockNotSupportedMessage">
+        <source>Methods decorated with LoggerMessageAttribute cannot be declared inside an extension block because the C# language does not support partial members inside extension blocks.</source>
+        <target state="new">Methods decorated with LoggerMessageAttribute cannot be declared inside an extension block because the C# language does not support partial members inside extension blocks.</target>
+        <note>{Locked="LoggerMessageAttribute"}</note>
+      </trans-unit>
+      <trans-unit id="MethodInsideExtensionBlockNotSupportedTitle">
+        <source>Logging method inside extension block not supported</source>
+        <target state="new">Logging method inside extension block not supported</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
         <source>A LogLevel value must be supplied in the LoggerMessage attribute or as a parameter to the logging method</source>
         <target state="translated">Hodnota LogLevel musí být zadaná v atributu LoggerMessage, nebo jako parametr metody protokolování.</target>

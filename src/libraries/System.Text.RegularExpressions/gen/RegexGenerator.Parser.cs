@@ -53,6 +53,12 @@ namespace System.Text.RegularExpressions.Generator
                 return null;
             }
 
+            // Extension blocks don't support partial members in C# 14
+            if (typeDec is ExtensionDeclarationSyntax)
+            {
+                return new DiagnosticData(DiagnosticDescriptors.MemberInsideExtensionBlockNotSupported, GetComparableLocation(memberSyntax));
+            }
+
             ISymbol? regexMemberSymbol = context.TargetSymbol is IMethodSymbol or IPropertySymbol ? context.TargetSymbol : null;
             if (regexMemberSymbol is null)
             {

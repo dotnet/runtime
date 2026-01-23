@@ -147,6 +147,11 @@
         <target state="translated">\p{X} 문자 이스케이프 형식이 잘못되었습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="MemberInsideExtensionBlockNotSupportedMessage">
+        <source>Members decorated with GeneratedRegexAttribute cannot be declared inside an extension block because the C# language does not support partial members inside extension blocks.</source>
+        <target state="new">Members decorated with GeneratedRegexAttribute cannot be declared inside an extension block because the C# language does not support partial members inside extension blocks.</target>
+        <note>{Locked="GeneratedRegexAttribute"}</note>
+      </trans-unit>
       <trans-unit id="MissingControlCharacter">
         <source>Missing control character.</source>
         <target state="translated">제어 문자가 없습니다.</target>

@@ -87,6 +87,16 @@
         <target state="translated">La méthode de journalisation contient des chaînes de format incorrectes</target>
         <note />
       </trans-unit>
+      <trans-unit id="MethodInsideExtensionBlockNotSupportedMessage">
+        <source>Methods decorated with LoggerMessageAttribute cannot be declared inside an extension block because the C# language does not support partial members inside extension blocks.</source>
+        <target state="new">Methods decorated with LoggerMessageAttribute cannot be declared inside an extension block because the C# language does not support partial members inside extension blocks.</target>
+        <note>{Locked="LoggerMessageAttribute"}</note>
+      </trans-unit>
+      <trans-unit id="MethodInsideExtensionBlockNotSupportedTitle">
+        <source>Logging method inside extension block not supported</source>
+        <target state="new">Logging method inside extension block not supported</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
         <source>A LogLevel value must be supplied in the LoggerMessage attribute or as a parameter to the logging method</source>
         <target state="translated">Une valeur LogLevel doit être fournie dans l’attribut LoggerMessage ou en tant que paramètre de la méthode de journalisation</target>

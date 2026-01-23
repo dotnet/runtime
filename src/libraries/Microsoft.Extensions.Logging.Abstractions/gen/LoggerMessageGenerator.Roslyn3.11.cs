@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
@@ -16,6 +17,9 @@ namespace Microsoft.Extensions.Logging.Generators
     [Generator]
     public partial class LoggerMessageGenerator : ISourceGenerator
     {
+        // SyntaxKind.ExtensionDeclaration = 9079 (added in Roslyn for C# 14)
+        private const int ExtensionDeclarationKind = 9079;
+
         public void Initialize(GeneratorInitializationContext context)
         {
             context.RegisterForSyntaxNotifications(SyntaxContextReceiver.Create);
@@ -23,7 +27,18 @@ namespace Microsoft.Extensions.Logging.Generators
 
         public void Execute(GeneratorExecutionContext context)
         {
-            if (context.SyntaxContextReceiver is not SyntaxContextReceiver receiver || receiver.ClassDeclarations.Count == 0)
+            if (context.SyntaxContextReceiver is not SyntaxContextReceiver receiver)
+            {
+                return;
+            }
+
+            // Report diagnostics for methods inside extension blocks
+            foreach (Location location in receiver.ExtensionBlockMethodLocations)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.MethodInsideExtensionBlockNotSupported, location));
+            }
+
+            if (receiver.ClassDeclarations.Count == 0)
             {
                 // nothing to do yet
                 return;
@@ -49,14 +64,20 @@ namespace Microsoft.Extensions.Logging.Generators
 
             public HashSet<ClassDeclarationSyntax> ClassDeclarations { get; } = new();
 
+            public List<Location> ExtensionBlockMethodLocations { get; } = new();
+
             public void OnVisitSyntaxNode(GeneratorSyntaxContext context)
             {
                 if (IsSyntaxTargetForGeneration(context.Node))
                 {
-                    ClassDeclarationSyntax classSyntax = GetSemanticTargetForGeneration(context);
-                    if (classSyntax != null)
+                    (ClassDeclarationSyntax? classSyntax, Location? extensionBlockLocation) = GetSemanticTargetForGeneration(context);
+                    if (classSyntax is not null)
                     {
                         ClassDeclarations.Add(classSyntax);
+                    }
+                    else if (extensionBlockLocation is not null)
+                    {
+                        ExtensionBlockMethodLocations.Add(extensionBlockLocation);
                     }
                 }
             }
@@ -64,7 +85,7 @@ namespace Microsoft.Extensions.Logging.Generators
             private static bool IsSyntaxTargetForGeneration(SyntaxNode node) =>
                 node is MethodDeclarationSyntax m && m.AttributeLists.Count > 0;
 
-            private static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
+            private static (ClassDeclarationSyntax? ClassDecl, Location? ExtensionBlockLocation) GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
             {
                 var methodDeclarationSyntax = (MethodDeclarationSyntax)context.Node;
 
@@ -83,12 +104,19 @@ namespace Microsoft.Extensions.Logging.Generators
 
                         if (fullName == Parser.LoggerMessageAttribute)
                         {
-                            return methodDeclarationSyntax.Parent as ClassDeclarationSyntax;
+                            // Check if the parent is an extension block by kind
+                            if (methodDeclarationSyntax.Parent is TypeDeclarationSyntax parent &&
+                                (int)parent.Kind() == ExtensionDeclarationKind)
+                            {
+                                return (null, methodDeclarationSyntax.GetLocation());
+                            }
+
+                            return (methodDeclarationSyntax.Parent as ClassDeclarationSyntax, null);
                         }
                     }
                 }
 
-                return null;
+                return (null, null);
             }
         }
     }

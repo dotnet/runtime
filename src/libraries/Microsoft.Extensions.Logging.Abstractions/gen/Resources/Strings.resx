@@ -245,4 +245,11 @@
     <value>Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</value>
     <comment>{Locked="Microsoft.Extensions.Logging.ILogger"}</comment>
   </data>
+  <data name="MethodInsideExtensionBlockNotSupportedMessage" xml:space="preserve">
+    <value>Methods decorated with LoggerMessageAttribute cannot be declared inside an extension block because the C# language does not support partial members inside extension blocks.</value>
+    <comment>{Locked="LoggerMessageAttribute"}</comment>
+  </data>
+  <data name="MethodInsideExtensionBlockNotSupportedTitle" xml:space="preserve">
+    <value>Logging method inside extension block not supported</value>
+  </data>
 </root>

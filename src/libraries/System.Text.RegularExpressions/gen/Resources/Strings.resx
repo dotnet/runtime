@@ -276,4 +276,8 @@
   <data name="UseRegexSourceGeneratorTitle" xml:space="preserve">
     <value>Convert to 'GeneratedRegexAttribute'.</value>
   </data>
+  <data name="MemberInsideExtensionBlockNotSupportedMessage" xml:space="preserve">
+    <value>Members decorated with GeneratedRegexAttribute cannot be declared inside an extension block because the C# language does not support partial members inside extension blocks.</value>
+    <comment>{Locked="GeneratedRegexAttribute"}</comment>
+  </data>
 </root>

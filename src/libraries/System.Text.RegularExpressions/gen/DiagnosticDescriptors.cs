@@ -61,5 +61,14 @@ namespace System.Text.RegularExpressions.Generator
             category: Category,
             DiagnosticSeverity.Info,
             isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor MemberInsideExtensionBlockNotSupported { get; } = DiagnosticDescriptorHelper.Create(
+            id: "SYSLIB1046",
+            title: new LocalizableResourceString(nameof(SR.InvalidGeneratedRegexAttributeTitle), SR.ResourceManager, typeof(FxResources.System.Text.RegularExpressions.Generator.SR)),
+            messageFormat: new LocalizableResourceString(nameof(SR.MemberInsideExtensionBlockNotSupportedMessage), SR.ResourceManager, typeof(FxResources.System.Text.RegularExpressions.Generator.SR)),
+            category: Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true,
+            customTags: WellKnownDiagnosticTags.NotConfigurable);
     }
 }

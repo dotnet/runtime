@@ -87,6 +87,16 @@
         <target state="translated">로깅 메서드에 잘못된 형식의 문자열이 포함되어 있습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="MethodInsideExtensionBlockNotSupportedMessage">
+        <source>Methods decorated with LoggerMessageAttribute cannot be declared inside an extension block because the C# language does not support partial members inside extension blocks.</source>
+        <target state="new">Methods decorated with LoggerMessageAttribute cannot be declared inside an extension block because the C# language does not support partial members inside extension blocks.</target>
+        <note>{Locked="LoggerMessageAttribute"}</note>
+      </trans-unit>
+      <trans-unit id="MethodInsideExtensionBlockNotSupportedTitle">
+        <source>Logging method inside extension block not supported</source>
+        <target state="new">Logging method inside extension block not supported</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
         <source>A LogLevel value must be supplied in the LoggerMessage attribute or as a parameter to the logging method</source>
         <target state="translated">LogLevel 값은 LoggerMessage 특성에 지정하거나 로깅 메서드에 대한 매개 변수로 제공해야 함</target>

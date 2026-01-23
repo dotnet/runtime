@@ -216,5 +216,13 @@ namespace Microsoft.Extensions.Logging.Generators
             category: "LoggingGenerator",
             DiagnosticSeverity.Info,
             isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor MethodInsideExtensionBlockNotSupported { get; } = DiagnosticDescriptorHelper.Create(
+            id: "SYSLIB1028",
+            title: new LocalizableResourceString(nameof(SR.MethodInsideExtensionBlockNotSupportedTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            messageFormat: new LocalizableResourceString(nameof(SR.MethodInsideExtensionBlockNotSupportedMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }

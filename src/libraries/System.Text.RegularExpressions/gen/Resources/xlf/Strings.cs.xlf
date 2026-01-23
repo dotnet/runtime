@@ -147,6 +147,11 @@
         <target state="translated">Chybně formátovaná řídicí sekvence znaků \p{X}.</target>
         <note />
       </trans-unit>
+      <trans-unit id="MemberInsideExtensionBlockNotSupportedMessage">
+        <source>Members decorated with GeneratedRegexAttribute cannot be declared inside an extension block because the C# language does not support partial members inside extension blocks.</source>
+        <target state="new">Members decorated with GeneratedRegexAttribute cannot be declared inside an extension block because the C# language does not support partial members inside extension blocks.</target>
+        <note>{Locked="GeneratedRegexAttribute"}</note>
+      </trans-unit>
       <trans-unit id="MissingControlCharacter">
         <source>Missing control character.</source>
         <target state="translated">Řídicí znak chybí.</target>
