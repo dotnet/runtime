@@ -92,21 +92,17 @@ public class RoundTripTests
     private static byte[] GenerateAssemblyWithResources((string Name, byte[] Data)[] resources)
     {
         var resourceDescriptions = new List<ResourceDescription>();
-        var streamsToDispose = new List<MemoryStream>();
 
-        try
+        foreach (var (name, data) in resources)
         {
-            foreach (var (name, data) in resources)
-            {
-                var memoryStream = new MemoryStream(data, writable: false);
-                streamsToDispose.Add(memoryStream);
-                resourceDescriptions.Add(new ResourceDescription(
-                    resourceName: name,
-                    dataProvider: () => memoryStream,
-                    isPublic: true));
-            }
+            byte[] dataCopy = data;
+            resourceDescriptions.Add(new ResourceDescription(
+                resourceName: name,
+                dataProvider: () => new MemoryStream(dataCopy, writable: false),
+                isPublic: true));
+        }
 
-            var syntaxTree = CSharpSyntaxTree.ParseText(@"
+        var syntaxTree = CSharpSyntaxTree.ParseText(@"
             public class TestClass
             {
                 public static int Main()
@@ -116,33 +112,25 @@ public class RoundTripTests
             }
         ");
 
-            var references = new[]
-            {
-                MetadataReference.CreateFromFile(typeof(object).Assembly.Location)
-            };
-
-            var compilation = CSharpCompilation.Create(
-                assemblyName: "TestAssembly",
-                syntaxTrees: new[] { syntaxTree },
-                references: references,
-                options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
-
-            using var assemblyStream = new MemoryStream();
-            EmitResult result = compilation.Emit(
-                peStream: assemblyStream,
-                manifestResources: resourceDescriptions);
-
-            Assert.True(result.Success, "Compilation failed: " + string.Join(", ", result.Diagnostics));
-
-            return assemblyStream.ToArray();
-        }
-        finally
+        var references = new[]
         {
-            foreach (var stream in streamsToDispose)
-            {
-                stream.Dispose();
-            }
-        }
+            MetadataReference.CreateFromFile(typeof(object).Assembly.Location)
+        };
+
+        var compilation = CSharpCompilation.Create(
+            assemblyName: "TestAssembly",
+            syntaxTrees: new[] { syntaxTree },
+            references: references,
+            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        using var assemblyStream = new MemoryStream();
+        EmitResult result = compilation.Emit(
+            peStream: assemblyStream,
+            manifestResources: resourceDescriptions);
+
+        Assert.True(result.Success, "Compilation failed: " + string.Join(", ", result.Diagnostics));
+
+        return assemblyStream.ToArray();
     }
 
     private static byte[] CreateManagedResource(Dictionary<string, object> entries)
@@ -174,7 +162,14 @@ public class RoundTripTests
             if (resource.Implementation.IsNil)
             {
                 PEMemoryBlock resourceDirectory = peReader.GetSectionData(peReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
-                var blobReader = resourceDirectory.GetReader((int)resource.Offset, resourceDirectory.Length - (int)resource.Offset);
+
+                if (resource.Offset < 0 || resource.Offset > int.MaxValue)
+                {
+                    throw new BadImageFormatException($"Resource offset out of range: {resource.Offset}");
+                }
+
+                int offset = (int)resource.Offset;
+                var blobReader = resourceDirectory.GetReader(offset, resourceDirectory.Length - offset);
                 int length = blobReader.ReadInt32();
 
                 if (length < 0 || length > blobReader.RemainingBytes)
@@ -220,7 +215,14 @@ public class RoundTripTests
 
         ManifestResource managedResource = metadataReader.GetManifestResource(resourceHandle.Value);
         PEMemoryBlock resourceDirectory = peReader.GetSectionData(peReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
-        var blobReader = resourceDirectory.GetReader((int)managedResource.Offset, resourceDirectory.Length - (int)managedResource.Offset);
+
+        if (managedResource.Offset < 0 || managedResource.Offset > int.MaxValue)
+        {
+            throw new BadImageFormatException($"Resource offset out of range: {managedResource.Offset}");
+        }
+
+        int offset = (int)managedResource.Offset;
+        var blobReader = resourceDirectory.GetReader(offset, resourceDirectory.Length - offset);
         int length = blobReader.ReadInt32();
 
         if (length < 0 || length > blobReader.RemainingBytes)
