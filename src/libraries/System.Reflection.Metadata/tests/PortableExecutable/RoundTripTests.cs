@@ -7,9 +7,6 @@ using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Resources;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Emit;
 using Xunit;
 
 namespace System.Reflection.PortableExecutable.Tests;
@@ -89,47 +86,163 @@ public class RoundTripTests
         ValidateEmbeddedResources(originalAssembly, resources);
     }
 
+    private static readonly Guid s_guid = new Guid("97F4DBD4-F6D1-4FAD-91B3-1001F92068E5");
+    private static readonly BlobContentId s_contentId = new BlobContentId(s_guid, 0x04030201);
+
     private static byte[] GenerateAssemblyWithResources((string Name, byte[] Data)[] resources)
     {
-        var resourceDescriptions = new List<ResourceDescription>();
+        var metadataBuilder = new MetadataBuilder();
+        var ilBuilder = new BlobBuilder();
+
+        // Build metadata
+        metadataBuilder.AddModule(
+            0,
+            metadataBuilder.GetOrAddString("TestAssembly.dll"),
+            metadataBuilder.GetOrAddGuid(s_guid),
+            default,
+            default);
+
+        metadataBuilder.AddAssembly(
+            metadataBuilder.GetOrAddString("TestAssembly"),
+            version: new Version(1, 0, 0, 0),
+            culture: default,
+            publicKey: default,
+            flags: default,
+            hashAlgorithm: AssemblyHashAlgorithm.Sha1);
+
+        // Add mscorlib reference
+        var mscorlibAssemblyRef = metadataBuilder.AddAssemblyReference(
+            name: metadataBuilder.GetOrAddString("mscorlib"),
+            version: new Version(4, 0, 0, 0),
+            culture: default,
+            publicKeyOrToken: metadataBuilder.GetOrAddBlob(ImmutableArray.Create<byte>(0xB7, 0x7A, 0x5C, 0x56, 0x19, 0x34, 0xE0, 0x89)),
+            flags: default,
+            hashValue: default);
+
+        var systemObjectTypeRef = metadataBuilder.AddTypeReference(
+            mscorlibAssemblyRef,
+            metadataBuilder.GetOrAddString("System"),
+            metadataBuilder.GetOrAddString("Object"));
+
+        // Build managed resources
+        var resourcesBuilder = new BlobBuilder();
+        var resourceOffsets = new Dictionary<string, uint>();
 
         foreach (var (name, data) in resources)
         {
-            resourceDescriptions.Add(new ResourceDescription(
-                resourceName: name,
-                dataProvider: () => new MemoryStream(data, writable: false),
-                isPublic: true));
+            resourceOffsets[name] = (uint)resourcesBuilder.Count;
+            resourcesBuilder.WriteInt32(data.Length);
+            resourcesBuilder.WriteBytes(data);
         }
 
-        var syntaxTree = CSharpSyntaxTree.ParseText(@"
-            public class TestClass
-            {
-                public static int Main()
-                {
-                    return 42;
-                }
-            }
-        ");
-
-        var references = new[]
+        // Add ManifestResource entries
+        foreach (var (name, _) in resources)
         {
-            MetadataReference.CreateFromFile(typeof(object).Assembly.Location)
-        };
+            metadataBuilder.AddManifestResource(
+                ManifestResourceAttributes.Public,
+                metadataBuilder.GetOrAddString(name),
+                default,
+                resourceOffsets[name]);
+        }
 
-        var compilation = CSharpCompilation.Create(
-            assemblyName: "TestAssembly",
-            syntaxTrees: new[] { syntaxTree },
-            references: references,
-            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        // Create simple method signature and IL
+        var parameterlessCtorSignature = new BlobBuilder();
+        new BlobEncoder(parameterlessCtorSignature)
+            .MethodSignature(isInstanceMethod: true)
+            .Parameters(0, returnType => returnType.Void(), parameters => { });
 
-        using var assemblyStream = new MemoryStream();
-        EmitResult result = compilation.Emit(
-            peStream: assemblyStream,
-            manifestResources: resourceDescriptions);
+        var parameterlessCtorBlobIndex = metadataBuilder.GetOrAddBlob(parameterlessCtorSignature);
 
-        Assert.True(result.Success, "Compilation failed: " + string.Join(", ", result.Diagnostics));
+        var objectCtorMemberRef = metadataBuilder.AddMemberReference(
+            systemObjectTypeRef,
+            metadataBuilder.GetOrAddString(".ctor"),
+            parameterlessCtorBlobIndex);
 
-        return assemblyStream.ToArray();
+        var mainSignature = new BlobBuilder();
+        new BlobEncoder(mainSignature)
+            .MethodSignature()
+            .Parameters(1,
+                returnType => returnType.Type().Int32(),
+                parameters => parameters.AddParameter().Type().SZArray().String());
+
+        var methodBodyStream = new MethodBodyStreamEncoder(ilBuilder);
+        var codeBuilder = new BlobBuilder();
+
+        // .ctor IL
+        var ctorIl = new InstructionEncoder(codeBuilder);
+        ctorIl.LoadArgument(0);
+        ctorIl.Call(objectCtorMemberRef);
+        ctorIl.OpCode(ILOpCode.Ret);
+        int ctorBodyOffset = methodBodyStream.AddMethodBody(ctorIl);
+        codeBuilder.Clear();
+
+        // Main IL
+        var mainIl = new InstructionEncoder(codeBuilder);
+        mainIl.LoadConstantI4(42);
+        mainIl.OpCode(ILOpCode.Ret);
+        int mainBodyOffset = methodBodyStream.AddMethodBody(mainIl);
+        codeBuilder.Clear();
+
+        var mainMethodDef = metadataBuilder.AddMethodDefinition(
+            MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.HideBySig,
+            MethodImplAttributes.IL | MethodImplAttributes.Managed,
+            metadataBuilder.GetOrAddString("Main"),
+            metadataBuilder.GetOrAddBlob(mainSignature),
+            mainBodyOffset,
+            parameterList: default);
+
+        var ctorDef = metadataBuilder.AddMethodDefinition(
+            MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
+            MethodImplAttributes.IL | MethodImplAttributes.Managed,
+            metadataBuilder.GetOrAddString(".ctor"),
+            parameterlessCtorBlobIndex,
+            ctorBodyOffset,
+            parameterList: default);
+
+        metadataBuilder.AddTypeDefinition(
+            default,
+            default,
+            metadataBuilder.GetOrAddString("<Module>"),
+            baseType: default,
+            fieldList: MetadataTokens.FieldDefinitionHandle(1),
+            methodList: mainMethodDef);
+
+        metadataBuilder.AddTypeDefinition(
+            TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.BeforeFieldInit,
+            metadataBuilder.GetOrAddString("TestAssembly"),
+            metadataBuilder.GetOrAddString("TestClass"),
+            systemObjectTypeRef,
+            fieldList: MetadataTokens.FieldDefinitionHandle(1),
+            methodList: mainMethodDef);
+
+        // Build PE
+        using var peStream = new MemoryStream();
+        WritePEImage(peStream, metadataBuilder, ilBuilder, mainMethodDef, resourcesBuilder);
+        return peStream.ToArray();
+    }
+
+    private static void WritePEImage(
+        Stream peStream,
+        MetadataBuilder metadataBuilder,
+        BlobBuilder ilBuilder,
+        MethodDefinitionHandle entryPointHandle,
+        BlobBuilder? managedResources = null)
+    {
+        var peHeaderBuilder = new PEHeaderBuilder(
+            imageCharacteristics: Characteristics.Dll);
+
+        var peBuilder = new ManagedPEBuilder(
+            peHeaderBuilder,
+            new MetadataRootBuilder(metadataBuilder),
+            ilBuilder,
+            managedResources: managedResources,
+            entryPoint: entryPointHandle,
+            flags: CorFlags.ILOnly,
+            deterministicIdProvider: content => s_contentId);
+
+        var peBlob = new BlobBuilder();
+        peBuilder.Serialize(peBlob);
+        peBlob.WriteContentTo(peStream);
     }
 
     private static byte[] CreateManagedResource(Dictionary<string, object> entries)
