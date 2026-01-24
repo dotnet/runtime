@@ -161,9 +161,9 @@ public class RoundTripTests
         var mainSignature = new BlobBuilder();
         new BlobEncoder(mainSignature)
             .MethodSignature()
-            .Parameters(1,
+            .Parameters(0,
                 returnType => returnType.Type().Int32(),
-                parameters => parameters.AddParameter().Type().SZArray().String());
+                parameters => { });
 
         var methodBodyStream = new MethodBodyStreamEncoder(ilBuilder);
         var codeBuilder = new BlobBuilder();
@@ -183,14 +183,6 @@ public class RoundTripTests
         int mainBodyOffset = methodBodyStream.AddMethodBody(mainIl);
         codeBuilder.Clear();
 
-        var mainMethodDef = metadataBuilder.AddMethodDefinition(
-            MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.HideBySig,
-            MethodImplAttributes.IL | MethodImplAttributes.Managed,
-            metadataBuilder.GetOrAddString("Main"),
-            metadataBuilder.GetOrAddBlob(mainSignature),
-            mainBodyOffset,
-            parameterList: default);
-
         var ctorDef = metadataBuilder.AddMethodDefinition(
             MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
             MethodImplAttributes.IL | MethodImplAttributes.Managed,
@@ -199,13 +191,21 @@ public class RoundTripTests
             ctorBodyOffset,
             parameterList: default);
 
+        var mainMethodDef = metadataBuilder.AddMethodDefinition(
+            MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.HideBySig,
+            MethodImplAttributes.IL | MethodImplAttributes.Managed,
+            metadataBuilder.GetOrAddString("Main"),
+            metadataBuilder.GetOrAddBlob(mainSignature),
+            mainBodyOffset,
+            parameterList: default);
+
         metadataBuilder.AddTypeDefinition(
             default,
             default,
             metadataBuilder.GetOrAddString("<Module>"),
             baseType: default,
             fieldList: MetadataTokens.FieldDefinitionHandle(1),
-            methodList: mainMethodDef);
+            methodList: MetadataTokens.MethodDefinitionHandle(1));
 
         metadataBuilder.AddTypeDefinition(
             TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.BeforeFieldInit,
@@ -213,7 +213,7 @@ public class RoundTripTests
             metadataBuilder.GetOrAddString("TestClass"),
             systemObjectTypeRef,
             fieldList: MetadataTokens.FieldDefinitionHandle(1),
-            methodList: mainMethodDef);
+            methodList: ctorDef);
 
         // Build PE
         using var peStream = new MemoryStream();
