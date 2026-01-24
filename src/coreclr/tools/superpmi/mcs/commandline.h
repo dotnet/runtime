@@ -39,7 +39,6 @@ public:
             , nameOfFile2(nullptr)
             , nameOfFile3(nullptr)
             , indexCount(-1)
-            , indexes(nullptr)
         {
         }
 
@@ -68,7 +67,7 @@ public:
         char* nameOfFile2;
         char* nameOfFile3;
         int   indexCount;
-        int*  indexes;
+        std::vector<int> indexes;
     };
 
     static bool Parse(int argc, char* argv[], /* OUT */ Options* o);
