@@ -658,14 +658,8 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VA
         return result;
     }
 
-#if DEBUG
     // Currently, we only handle int32 and smaller integer types.
-    if (!varTypeIsInt(comp->vnStore->TypeOfVN(num)) && !varTypeIsSmall(comp->vnStore->TypeOfVN(num)))
-    {
-        printf("Unexpected type for VN " FMT_VN ": %s\n", num, varTypeName(comp->vnStore->TypeOfVN(num)));
-        unreached();
-    }
-#endif
+    assert(genTypeSize(comp->vnStore->TypeOfVN(num)) <= 4);
 
     //
     // First, let's see if we can tighten the range based on VN information.
