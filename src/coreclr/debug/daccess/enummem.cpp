@@ -593,7 +593,7 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
             // Pulls in data to translate from token to MethodDesc
             FindLoadedMethodRefOrDef(pMD->GetMethodTable()->GetModule(), pMD->GetMemberDef());
 
-            PCODE addr = pMD->GetNativeCode();
+            PCODE addr = pMD->GetCodeForInterpreterOrJitted();
             if (addr != (PCODE)NULL)
             {
                 EECodeInfo codeInfo(addr);

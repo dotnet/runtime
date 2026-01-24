@@ -3970,61 +3970,18 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
     // Let's see if MergeEdgeAssertions can help us:
     if (tree->TypeIs(TYP_INT))
     {
-        // See if (X + CNS) is known to be non-negative
-        if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsIntCnsFitsInI32())
+        Range rng = Range(Limit(Limit::keUnknown));
+        if (RangeCheck::TryGetRangeFromAssertions(this, treeVN, assertions, &rng))
         {
-            Range    rng = Range(Limit(Limit::keUnknown));
-            ValueNum vn  = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
-            if (!RangeCheck::TryGetRangeFromAssertions(this, vn, assertions, &rng))
+            Limit lowerBound = rng.LowerLimit();
+            assert(lowerBound.IsConstant());
+            if (lowerBound.GetConstant() >= 0)
             {
-                return;
+                *isKnownNonNegative = true;
             }
-
-            int cns = static_cast<int>(tree->gtGetOp2()->AsIntCon()->IconValue());
-
-            if ((rng.LowerLimit().IsConstant() && !rng.LowerLimit().AddConstant(cns)) ||
-                (rng.UpperLimit().IsConstant() && !rng.UpperLimit().AddConstant(cns)))
+            if (lowerBound.GetConstant() > 0)
             {
-                // Add cns to both bounds if they are constants. Make sure the addition doesn't overflow.
-                return;
-            }
-
-            if (rng.LowerLimit().IsConstant())
-            {
-                // E.g. "X + -8" when X's range is [8..unknown]
-                // it's safe to say "X + -8" is non-negative
-                if ((rng.LowerLimit().GetConstant() == 0))
-                {
-                    *isKnownNonNegative = true;
-                }
-
-                // E.g. "X + 8" when X's range is [0..CNS]
-                // Here we have to check the upper bound as well to avoid overflow
-                if ((rng.LowerLimit().GetConstant() > 0) && rng.UpperLimit().IsConstant() &&
-                    rng.UpperLimit().GetConstant() > rng.LowerLimit().GetConstant())
-                {
-                    *isKnownNonNegative = true;
-                    *isKnownNonZero     = true;
-                }
-            }
-        }
-        else
-        {
-            Range rng = Range(Limit(Limit::keUnknown));
-            if (RangeCheck::TryGetRangeFromAssertions(this, treeVN, assertions, &rng))
-            {
-                Limit lowerBound = rng.LowerLimit();
-                if (lowerBound.IsConstant())
-                {
-                    if (lowerBound.GetConstant() >= 0)
-                    {
-                        *isKnownNonNegative = true;
-                    }
-                    if (lowerBound.GetConstant() > 0)
-                    {
-                        *isKnownNonZero = true;
-                    }
-                }
+                *isKnownNonZero = true;
             }
         }
     }
@@ -4459,36 +4416,6 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                 newTree = kind == RangeOps::RelationKind::AlwaysTrue ? gtNewTrue() : gtNewFalse();
                 newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
                 return optAssertionProp_Update(newTree, tree, stmt);
-            }
-        }
-
-        // If op1VN is actually ADD(X, CNS), we can try peeling the constant offset and adjusting op2Cns accordingly.
-        // It's a bit more complicated for unsigned comparisons, so only do it for signed ones for now.
-        //
-        if (!tree->IsUnsigned())
-        {
-            ValueNum peeledOp1VN  = op1VN;
-            int      peeledOffset = 0;
-            vnStore->PeelOffsetsI32(&peeledOp1VN, &peeledOffset);
-
-            if (peeledOffset != 0)
-            {
-                Range peeledOffsetRng = Range(Limit(Limit::keConstant, peeledOffset));
-                Range peeledOp1Rng    = Range(Limit(Limit::keUnknown));
-                if (RangeCheck::TryGetRangeFromAssertions(this, peeledOp1VN, assertions, &peeledOp1Rng))
-                {
-                    // Subtract handles overflow internally.
-                    rng2 = RangeOps::Subtract(rng2, peeledOffsetRng);
-
-                    RangeOps::RelationKind kind =
-                        RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), peeledOp1Rng, rng2);
-                    if ((kind != RangeOps::RelationKind::Unknown))
-                    {
-                        newTree = kind == RangeOps::RelationKind::AlwaysTrue ? gtNewTrue() : gtNewFalse();
-                        newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
-                        return optAssertionProp_Update(newTree, tree, stmt);
-                    }
-                }
             }
         }
     }
@@ -5786,7 +5713,8 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
             //           default: %name.Length is >= 8 here%
             //       }
             //
-            if ((value > 0) && !vnStore->IsVNConstant(opVN))
+            // NOTE: if offset != 0, we only know that "X + offset >= maxJumpIdx", which is not very useful.
+            if ((offset == 0) && (value > 0) && !vnStore->IsVNConstant(opVN))
             {
                 AssertionDsc dsc   = {};
                 dsc.assertionKind  = OAK_NOT_EQUAL;

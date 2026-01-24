@@ -67,7 +67,9 @@ namespace System
                     if (hasUnicode)
                     {
                         // Iri'ze and then normalize relative uris
-                        _string = EscapeUnescapeIri(_originalUnicodeString, 0, _originalUnicodeString.Length, isQuery: false);
+                        var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+                        IriHelper.EscapeUnescapeIri(ref vsb, _originalUnicodeString, isQuery: false);
+                        _string = vsb.ToString();
                     }
                     return null;
                 }
@@ -628,17 +630,6 @@ namespace System
         /// <returns><see langword="true"/> if the <paramref name="destination"/> was large enough to hold the entire result; otherwise, <see langword="false"/>.</returns>
         public static bool TryEscapeDataString(ReadOnlySpan<char> charsToEscape, Span<char> destination, out int charsWritten) =>
             UriHelper.TryEscapeDataString(charsToEscape, destination, out charsWritten);
-
-        //
-        // Cleans up the specified component according to Iri rules
-        // a) Chars allowed by iri in a component are unescaped if found escaped
-        // b) Bidi chars are stripped
-        //
-        // should be called only if IRI parsing is switched on
-        internal static string EscapeUnescapeIri(string input, int start, int end, bool isQuery)
-        {
-            return IriHelper.EscapeUnescapeIri(input.AsSpan(start, end - start), isQuery);
-        }
 
         // Should never be used except by the below method
         private Uri(Flags flags, UriParser? uriParser, string uri)

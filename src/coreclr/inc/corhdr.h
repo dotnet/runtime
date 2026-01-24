@@ -329,6 +329,7 @@ typedef enum CorTypeAttr
 enum class CorExtendedLayoutKind
 {
     CStruct = 0, // C-style struct
+    CUnion = 1, // C-style union
 };
 
 // Macros for accessing the members of the CorTypeAttr.

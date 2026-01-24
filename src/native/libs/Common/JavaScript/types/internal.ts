@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { DotnetModuleConfig, RuntimeAPI, AssetEntry, LoaderConfig } from "./public-api";
-import type { EmscriptenModule, ManagedPointer, NativePointer, VoidPtr } from "./emscripten";
-import { InteropJavaScriptExportsTable as InteropJavaScriptExportsTable, LoaderExportsTable, BrowserHostExportsTable, RuntimeExportsTable, NativeBrowserExportsTable, BrowserUtilsExportsTable, DiagnosticsExportsTable } from "./exchange";
+import type { EmscriptenModule, InstantiateWasmCallBack, ManagedPointer, NativePointer, VoidPtr } from "./emscripten";
+import { InteropJavaScriptExportsTable, LoaderExportsTable, BrowserHostExportsTable, RuntimeExportsTable, NativeBrowserExportsTable, BrowserUtilsExportsTable, DiagnosticsExportsTable } from "./exchange";
 
 export type GCHandle = {
     __brand: "GCHandle"
@@ -13,6 +13,12 @@ export type JSHandle = {
 }
 export type JSFnHandle = {
     __brand: "JSFnHandle"
+}
+export interface JSMarshalerArguments extends NativePointer {
+    __brand: "JSMarshalerArguments"
+}
+export type CSFnHandle = {
+    __brand: "CSFnHandle"
 }
 
 export type MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
@@ -37,35 +43,12 @@ export type EmscriptenInternals = {
     updateMemoryViews: () => void,
 };
 
-export declare interface EmscriptenModuleInternal extends EmscriptenModule {
-    HEAP8: Int8Array,
-    HEAP16: Int16Array;
-    HEAP32: Int32Array;
-    HEAP64: BigInt64Array;
-    HEAPU8: Uint8Array;
-    HEAPU16: Uint16Array;
-    HEAPU32: Uint32Array;
-    HEAPF32: Float32Array;
-    HEAPF64: Float64Array;
-
-    locateFile?: (path: string, prefix?: string) => string;
-    mainScriptUrlOrBlob?: string;
-    ENVIRONMENT_IS_PTHREAD?: boolean;
-    FS: any;
-    wasmModule: WebAssembly.Instance | null;
-    ready: Promise<unknown>;
-    wasmExports: any;
-    getWasmTableEntry(index: number): any;
-    removeRunDependency(id: string): void;
-    addRunDependency(id: string): void;
-    safeSetTimeout(func: Function, timeout: number): number;
+export type EmscriptenModuleInternal = EmscriptenModule & DotnetModuleConfig & {
     runtimeKeepalivePush(): void;
     runtimeKeepalivePop(): void;
-    maybeExit(): void;
-    print(message: string): void;
-    printErr(message: string): void;
-    abort(reason: any): void;
-    exitJS(status: number, implicit?: boolean | number): void;
+    instantiateWasm?: InstantiateWasmCallBack;
+    onAbort?: (reason: any, extraJson?: string) => void;
+    onExit?: (code: number) => void;
 }
 
 export interface AssetEntryInternal extends AssetEntry {

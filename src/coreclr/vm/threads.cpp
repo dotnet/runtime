@@ -1708,8 +1708,7 @@ FAILURE:
     return FALSE;
 }
 
-
-void Thread::HandleThreadStartupFailure()
+OBJECTREF Thread::GetExceptionDuringStartup()
 {
     CONTRACTL
     {
@@ -1721,37 +1720,11 @@ void Thread::HandleThreadStartupFailure()
 
     _ASSERTE(GetThreadNULLOk() != NULL);
 
-    struct
-    {
-        OBJECTREF pThrowable;
-        OBJECTREF pReason;
-    } gc;
-    gc.pThrowable = NULL;
-    gc.pReason = NULL;
+    OBJECTREF throwable = CLRException::GetThrowableFromException(m_pExceptionDuringStartup);
+    Exception::Delete(m_pExceptionDuringStartup);
+    m_pExceptionDuringStartup = NULL;
 
-    GCPROTECT_BEGIN(gc);
-
-    MethodTable *pMT = CoreLibBinder::GetException(kThreadStartException);
-    gc.pThrowable = AllocateObject(pMT);
-
-    MethodDescCallSite exceptionCtor(METHOD__THREAD_START_EXCEPTION__EX_CTOR);
-
-    if (m_pExceptionDuringStartup)
-    {
-        gc.pReason = CLRException::GetThrowableFromException(m_pExceptionDuringStartup);
-        Exception::Delete(m_pExceptionDuringStartup);
-        m_pExceptionDuringStartup = NULL;
-    }
-
-    ARG_SLOT args1[] = {
-        ObjToArgSlot(gc.pThrowable),
-        ObjToArgSlot(gc.pReason),
-    };
-    exceptionCtor.Call(args1);
-
-    GCPROTECT_END(); //Prot
-
-    RaiseTheExceptionInternalOnly(gc.pThrowable, FALSE);
+    return throwable;
 }
 
 #ifndef TARGET_UNIX
@@ -6661,7 +6634,7 @@ void Thread::InitializeSpecialUserModeApc()
 
 #endif // FEATURE_SPECIAL_USER_MODE_APC
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
 #endif
 
@@ -6674,6 +6647,8 @@ void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP)
         targetSSP = GetSSP(ContextRecord);
     }
     ClrRestoreNonvolatileContextWorker(ContextRecord, targetSSP);
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    ClrRestoreNonvolatileContextWorker(ContextRecord, 0);
 #elif defined(TARGET_X86) && defined(TARGET_WINDOWS)
     // need to pop the SEH records before write over the stack
     LPVOID oldSP = (LPVOID)GetSP(ContextRecord);

@@ -133,9 +133,7 @@ static string_t build_tpa(const string_t& core_root, const string_t& core_librar
 {
     static const char_t* const tpa_extensions[] =
     {
-        W(".ni.dll"),  // Probe for .ni.dll first so that it's preferred if ni and il coexist in the same dir
         W(".dll"),
-        W(".ni.exe"),
         W(".exe"),
         nullptr
     };

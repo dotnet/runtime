@@ -17,6 +17,7 @@
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
     <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
+    <XunitShowProgress Condition="'$(RuntimeFlavor)' == 'CoreCLR'">true</XunitShowProgress>
   </PropertyGroup>
 
   <ItemGroup>
