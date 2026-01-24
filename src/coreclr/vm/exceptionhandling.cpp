@@ -1836,12 +1836,12 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
         else
         {
             // We would be here only for fixing up context for an async exception in managed code.
-            // This implies that we should have got a personality routine returned from the unwind above.
+            // This implies that we should have got a personality routine returned from the call to
+            // RtlVirtualUnwind above.
             //
-            // However, if the ControlPC happened to be in the prolog or epilog of a managed method,
-            // the OS unwinder will return NULL. We cannot return this NULL back to the OS as it is
-            // an invalid value which the OS does not expect (and attempting to do so will result in
-            // the kernel exception dispatch going haywire).
+            // then RtlVirtualUnwind will always return NULL. We cannot return this NULL back to the
+            // OS as it is an invalid value which the OS does not expect (and attempting to do so will
+            // result in the kernel exception dispatch going haywire).
 #if defined(_DEBUG)
             // We should be in jitted code
             TADDR adrRedirectedIP = PCODEToPINSTR(pDispatcherContext->ControlPc);
