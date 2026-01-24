@@ -278,6 +278,7 @@ struct Range
         return lLimit.IsConstant() && uLimit.IsConstant() && IsValid();
     }
 
+    // Check if the range represents a single constant value. Example: [7..7]
     bool IsSingleConstValue(int* pConstVal) const
     {
         if (lLimit.IsConstant() && lLimit.Equals(uLimit))
@@ -419,22 +420,16 @@ struct RangeOps
         return Range(Limit(Limit::keUnknown));
     }
 
-    static Range UnsignedMod(Range& r1, Range& r2)
+    static Range UnsignedMod(const Range& r1, const Range& r2)
     {
-        Range result = Limit(Limit::keUnknown);
-
-        Limit& r2lo = r2.LowerLimit();
-        Limit& r2hi = r2.UpperLimit();
-
-        // For X UMOD Y we only handle the case when Y is a fixed non-negative constant.
+        // For X UMOD Y we only handle the case when Y is a fixed positive constant.
         // Example: X % 5 -> [0..4]
-        //
-        if (r2lo.IsConstant() && r2lo.Equals(r2hi) && (r2lo.GetConstant() > 0))
+        int r2ConstVal;
+        if (r2.IsSingleConstValue(&r2ConstVal) && (r2ConstVal > 0))
         {
-            result.lLimit = Limit(Limit::keConstant, 0);
-            result.uLimit = Limit(Limit::keConstant, r2lo.GetConstant() - 1);
+            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, r2ConstVal - 1));
         }
-        return result;
+        return Range(Limit(Limit::keUnknown));
     }
 
     // Given two ranges "r1" and "r2", do a Phi merge. If "monIncreasing" is true,
