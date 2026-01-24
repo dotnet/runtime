@@ -517,7 +517,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroid))]
         [MemberData(nameof(GetHMACs))]
         public static void VerifyEmptyHMACKey_Cloned(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
