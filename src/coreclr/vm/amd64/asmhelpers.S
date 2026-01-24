@@ -1808,6 +1808,48 @@ END_PROLOGUE
         ret
 NESTED_END CallJittedMethodRetDouble, _TEXT
 
+NESTED_ENTRY CallJittedMethodRetI1, _TEXT, NoHandler
+        push_nonvol_reg rbp
+        mov  rbp, rsp
+        set_cfa_register rbp, 0
+        push_register r8
+        push_register rdx
+END_PROLOGUE
+        sub rsp, rcx // total stack space
+        mov r11, rdi // The routines list
+        mov r10, rsi // interpreter stack args
+        call qword ptr [r11]
+        movsx rax, al  // Sign extend 1 byte to 64 bit
+        mov r8, [rbp - 8]
+        mov [r8], rcx
+        mov rdx, [rbp - 16]
+        mov qword ptr [rdx], rax
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetI1, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetI2, _TEXT, NoHandler
+        push_nonvol_reg rbp
+        mov  rbp, rsp
+        set_cfa_register rbp, 0
+        push_register r8
+        push_register rdx
+END_PROLOGUE
+        sub rsp, rcx // total stack space
+        mov r11, rdi // The routines list
+        mov r10, rsi // interpreter stack args
+        call qword ptr [r11]
+        movsx rax, ax  // Sign extend 2 bytes to 64 bit
+        mov r8, [rbp - 8]
+        mov [r8], rcx
+        mov rdx, [rbp - 16]
+        mov qword ptr [rdx], rax
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetI2, _TEXT
+
 NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
@@ -1827,6 +1869,48 @@ END_PROLOGUE
         pop rbp
         ret
 NESTED_END CallJittedMethodRetI8, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetU1, _TEXT, NoHandler
+        push_nonvol_reg rbp
+        mov  rbp, rsp
+        set_cfa_register rbp, 0
+        push_register r8
+        push_register rdx
+END_PROLOGUE
+        sub rsp, rcx // total stack space
+        mov r11, rdi // The routines list
+        mov r10, rsi // interpreter stack args
+        call qword ptr [r11]
+        movzx rax, al  // Zero extend 1 byte to 64 bit
+        mov r8, [rbp - 8]
+        mov [r8], rcx
+        mov rdx, [rbp - 16]
+        mov qword ptr [rdx], rax
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetU1, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetU2, _TEXT, NoHandler
+        push_nonvol_reg rbp
+        mov  rbp, rsp
+        set_cfa_register rbp, 0
+        push_register r8
+        push_register rdx
+END_PROLOGUE
+        sub rsp, rcx // total stack space
+        mov r11, rdi // The routines list
+        mov r10, rsi // interpreter stack args
+        call qword ptr [r11]
+        movzx rax, ax  // Zero extend 2 bytes to 64 bit
+        mov r8, [rbp - 8]
+        mov [r8], rcx
+        mov rdx, [rbp - 16]
+        mov qword ptr [rdx], rax
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetU2, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetI8I8, _TEXT, NoHandler
         push_nonvol_reg rbp
@@ -1913,3 +1997,48 @@ END_PROLOGUE
 NESTED_END CallJittedMethodRetDoubleDouble, _TEXT
 
 #endif // FEATURE_INTERPRETER
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Throw_Impl
+// implementation written in C.
+//
+// Input state:
+//   rdi = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Throw, _TEXT, NoHandler
+        PROLOG_WITH_TRANSITION_BLOCK
+        // rdi already contains exception object
+        lea     rsi, [rsp + __PWTB_TransitionBlock]
+        call    C_FUNC(IL_Throw_Impl)
+        // Should never return
+        int3
+NESTED_END IL_Throw, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_ThrowExact_Impl
+// implementation written in C.
+//
+// Input state:
+//   rdi = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_ThrowExact, _TEXT, NoHandler
+        PROLOG_WITH_TRANSITION_BLOCK
+        // rdi already contains exception object
+        lea     rsi, [rsp + __PWTB_TransitionBlock]
+        call    C_FUNC(IL_ThrowExact_Impl)
+        // Should never return
+        int3
+NESTED_END IL_ThrowExact, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Rethrow_Impl
+// implementation written in C.
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
+        PROLOG_WITH_TRANSITION_BLOCK
+        lea     rdi, [rsp + __PWTB_TransitionBlock]
+        call    C_FUNC(IL_Rethrow_Impl)
+        // Should never return
+        int3
+NESTED_END IL_Rethrow, _TEXT
+

@@ -289,10 +289,6 @@ public:
         m_flags = 0;
     }
 
-    BOOL IsRethrown()      { LIMITED_METHOD_CONTRACT; return m_flags & Ex_IsRethrown; }
-    void SetIsRethrown()   { LIMITED_METHOD_CONTRACT; AssertIfReadOnly(); m_flags |= Ex_IsRethrown; }
-    void ResetIsRethrown() { LIMITED_METHOD_CONTRACT; AssertIfReadOnly(); m_flags &= ~Ex_IsRethrown; }
-
     BOOL UnwindHasStarted()      { LIMITED_METHOD_CONTRACT; return m_flags & Ex_UnwindHasStarted; }
     void SetUnwindHasStarted()   { LIMITED_METHOD_CONTRACT; AssertIfReadOnly(); m_flags |= Ex_UnwindHasStarted; }
     void ResetUnwindHasStarted() { LIMITED_METHOD_CONTRACT; AssertIfReadOnly(); m_flags &= ~Ex_UnwindHasStarted; }
@@ -348,7 +344,7 @@ public:
 private:
     enum
     {
-        Ex_IsRethrown                   = 0x00000001,
+        // Unused                       = 0x00000001,
         Ex_UnwindingToFindResumeFrame   = 0x00000002,
         Ex_UnwindHasStarted             = 0x00000004,
         Ex_UseExInfoForStackwalk        = 0x00000008,        // Use this ExInfo to unwind a fault (AV, zerodiv) back to managed code?

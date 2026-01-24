@@ -4633,6 +4633,8 @@ enum class WellKnownArg : unsigned
     RuntimeMethodHandle,
     AsyncExecutionContext,
     AsyncSynchronizationContext,
+    WasmShadowStackPointer,
+    WasmPortableEntryPoint
 };
 
 #ifdef DEBUG
@@ -5273,7 +5275,7 @@ struct GenTreeCall final : public GenTree
                                               gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_GVMLOOKUP_FOR_SLOT)));
     }
 
-    bool IsDevirtualizationCandidate(Compiler* compiler, CORINFO_METHOD_HANDLE* pMethHandle = nullptr) const;
+    bool IsDevirtualizationCandidate(Compiler* compiler) const;
 
     bool IsInlineCandidate() const
     {

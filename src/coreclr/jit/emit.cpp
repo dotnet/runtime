@@ -7049,8 +7049,7 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
         {
             emitSyncThisObjReg = thisDsc->GetRegNum();
 
-            if (emitSyncThisObjReg == (int)REG_ARG_0 &&
-                (codeGen->intRegState.rsCalleeRegArgMaskLiveIn & genRegMask(REG_ARG_0)))
+            if (emitSyncThisObjReg == (int)REG_ARG_0 && (codeGen->calleeRegArgMaskLiveIn & genRegMask(REG_ARG_0)))
             {
                 if (emitFullGCinfo)
                 {

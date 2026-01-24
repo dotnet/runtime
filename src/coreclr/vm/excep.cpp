@@ -95,8 +95,6 @@ BOOL IsExceptionFromManagedCode(const EXCEPTION_RECORD * pExceptionRecord)
 PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord();
 BOOL IsUnmanagedToManagedSEHHandler(EXCEPTION_REGISTRATION_RECORD*);
 
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow);
-
 //-------------------------------------------------------------------------------
 // Basically, this asks whether the exception is a managed exception thrown by
 // this instance of the CLR.
@@ -1966,61 +1964,6 @@ ReplaceExceptionContextRecord(CONTEXT *pTarget, CONTEXT *pSource)
 #endif // !CONTEXT_EXTENDED_REGISTERS
 }
 
-VOID FixupOnRethrow(Thread* pCurThread, EXCEPTION_POINTERS* pExceptionPointers)
-{
-    WRAPPER_NO_CONTRACT;
-
-    ThreadExceptionState* pExState = pCurThread->GetExceptionState();
-
-    // Don't allow rethrow of a STATUS_STACK_OVERFLOW -- it's a new throw of the CLR exception.
-    if (pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW)
-    {
-        return;
-    }
-
-    // For COMPLUS exceptions, we don't need the original context for our rethrow.
-    if (!(pExState->IsComPlusException()))
-    {
-        _ASSERTE(pExState->GetExceptionRecord());
-
-        // don't copy parm args as have already supplied them on the throw
-        memcpy((void*)pExceptionPointers->ExceptionRecord,
-               (void*)pExState->GetExceptionRecord(),
-               offsetof(EXCEPTION_RECORD, ExceptionInformation));
-    }
-
-    pExState->GetFlags()->SetIsRethrown();
-}
-
-struct RaiseExceptionFilterParam
-{
-    BOOL isRethrown;
-};
-
-LONG RaiseExceptionFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    RaiseExceptionFilterParam *pParam = (RaiseExceptionFilterParam *) pv;
-
-    if (1 == pParam->isRethrown)
-    {
-        // need to reset the EH info back to the original thrown exception
-        FixupOnRethrow(GetThread(), ep);
-
-        // only do this once
-        pParam->isRethrown++;
-    }
-    else
-    {
-        CONSISTENCY_CHECK((2 == pParam->isRethrown) || (0 == pParam->isRethrown));
-    }
-
-    return EXCEPTION_CONTINUE_SEARCH;
-}
-
 HRESULT GetHRFromThrowable(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
@@ -2042,14 +1985,14 @@ HRESULT GetHRFromThrowable(OBJECTREF throwable)
     return hr;
 }
 
-VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL rethrow, BOOL fForStackOverflow)
+VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    STRESS_LOG3(LF_EH, LL_INFO100, "******* MANAGED EXCEPTION THROWN: Object thrown: %p MT %pT rethrow %d\n",
-                OBJECTREFToObject(throwable), (throwable!=0)?throwable->GetMethodTable():0, rethrow);
+    STRESS_LOG2(LF_EH, LL_INFO100, "******* MANAGED EXCEPTION THROWN: Object thrown: %p MT %pT\n",
+                OBJECTREFToObject(throwable), (throwable!=0)?throwable->GetMethodTable():0);
 
 #ifdef STRESS_LOG
     // Any object could have been thrown, but System.Exception objects have useful information for the stress log
@@ -2072,26 +2015,16 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     }
 #endif
 
-    struct Param : RaiseExceptionFilterParam
-    {
-        OBJECTREF throwable;
-        BOOL fForStackOverflow;
-        ULONG_PTR exceptionArgs[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE];
-        Thread *pThread;
-        ThreadExceptionState* pExState;
-    } param;
-    param.isRethrown = rethrow ? 1 : 0; // normalize because we use it as a count in RaiseExceptionFilter
-    param.throwable = throwable;
-    param.fForStackOverflow = fForStackOverflow;
-    param.pThread = GetThread();
+    ULONG_PTR exceptionArgs[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE];
+    Thread* pThread = GetThread();
 
-    _ASSERTE(param.pThread);
-    param.pExState = param.pThread->GetExceptionState();
+    _ASSERTE(pThread);
+    ThreadExceptionState* pExState = pThread->GetExceptionState();
 
-    if (param.pThread->IsRudeAbortInitiated())
+    if (pThread->IsRudeAbortInitiated())
     {
         // Nobody should be able to swallow rude thread abort.
-        param.throwable = CLRException::GetBestThreadAbortException();
+        throwable = CLRException::GetBestThreadAbortException();
     }
 
 #if 0
@@ -2099,7 +2032,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
 #ifdef _DEBUG
     // If ThreadAbort exception is thrown, the thread should be marked with AbortRequest.
     // If not, we may see unhandled exception.
-    if (param.throwable->GetMethodTable() == g_pThreadAbortExceptionClass)
+    if (throwable->GetMethodTable() == g_pThreadAbortExceptionClass)
     {
         _ASSERTE(GetThread()->IsAbortRequested()
 #ifdef TARGET_X86
@@ -2112,76 +2045,41 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
 #endif
 
     // raise
-    PAL_TRY(Param *, pParam, &param)
+
+    ULONG argCount = 0;
+    ULONG flags = 0;
+    ULONG code = 0;
+
+    // Always save the current object in the handle so on rethrow we can reuse it. This is important as it
+    // contains stack trace info.
+    //
+    // Note: we use SafeSetLastThrownObject, which will try to set the throwable and if there are any problems,
+    // it will set the throwable to something appropriate (like OOM exception) and return the new
+    // exception. Thus, the user's exception object can be replaced here.
+    throwable = pThread->SafeSetLastThrownObject(throwable);
+
+    ULONG_PTR hr = GetHRFromThrowable(throwable);
+
+    argCount = MarkAsThrownByUs(exceptionArgs, hr);
+    flags = EXCEPTION_NONCONTINUABLE;
+    code = EXCEPTION_COMPLUS;
+
+    if (pThread->IsAbortInitiated () && IsExceptionOfType(kThreadAbortException,&throwable))
     {
-        //_ASSERTE(! pParam->isRethrown || pParam->pExState->m_pExceptionRecord);
-        ULONG_PTR *args = NULL;
-        ULONG argCount = 0;
-        ULONG flags = 0;
-        ULONG code = 0;
+        pThread->ResetPreparingAbort();
 
-        // Always save the current object in the handle so on rethrow we can reuse it. This is important as it
-        // contains stack trace info.
-        //
-        // Note: we use SafeSetLastThrownObject, which will try to set the throwable and if there are any problems,
-        // it will set the throwable to something appropriate (like OOM exception) and return the new
-        // exception. Thus, the user's exception object can be replaced here.
-        pParam->throwable = pParam->pThread->SafeSetLastThrownObject(pParam->throwable);
-
-        if (!pParam->isRethrown ||
-             pParam->pExState->IsComPlusException() ||
-            (pParam->pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW))
+        if (pThread->GetFrame() == FRAME_TOP)
         {
-            ULONG_PTR hr = GetHRFromThrowable(pParam->throwable);
-
-            args = pParam->exceptionArgs;
-            argCount = MarkAsThrownByUs(args, hr);
-            flags = EXCEPTION_NONCONTINUABLE;
-            code = EXCEPTION_COMPLUS;
+            // There is no more managed code on stack.
+            pThread->ResetAbort();
         }
-        else
-        {
-            // Exception code should be consistent.
-            _ASSERTE((DWORD)(pParam->pExState->GetExceptionRecord()->ExceptionCode) == pParam->pExState->GetExceptionCode());
-
-            args     = pParam->pExState->GetExceptionRecord()->ExceptionInformation;
-            argCount = pParam->pExState->GetExceptionRecord()->NumberParameters;
-            flags    = pParam->pExState->GetExceptionRecord()->ExceptionFlags;
-            code     = pParam->pExState->GetExceptionRecord()->ExceptionCode;
-        }
-
-        if (pParam->pThread->IsAbortInitiated () && IsExceptionOfType(kThreadAbortException,&pParam->throwable))
-        {
-            pParam->pThread->ResetPreparingAbort();
-
-            if (pParam->pThread->GetFrame() == FRAME_TOP)
-            {
-                // There is no more managed code on stack.
-                pParam->pThread->ResetAbort();
-            }
-        }
-
-        // Can't access the exception object when are in pre-emptive, so find out before
-        // if its an SO.
-        BOOL fIsStackOverflow = IsExceptionOfType(kStackOverflowException, &pParam->throwable);
-
-        if (fIsStackOverflow || pParam->fForStackOverflow)
-        {
-            // Don't probe if we're already handling an SO.  Just throw the exception.
-            RaiseException(code, flags, argCount, args);
-        }
-
-        // This needs to be both here and inside the handler below
-        // enable preemptive mode before call into OS
-        GCX_PREEMP_NO_DTOR();
-
-        // In non-debug, we can just raise the exception once we've probed.
-        RaiseException(code, flags, argCount, args);
     }
-    PAL_EXCEPT_FILTER (RaiseExceptionFilter)
-    {
-    }
-    PAL_ENDTRY
+
+    // Enable preemptive mode before call into OS
+    GCX_PREEMP_NO_DTOR();
+
+    RaiseException(code, flags, argCount, exceptionArgs);
+
     _ASSERTE(!"Cannot continue after CLR exception");      // Debugger can bring you here.
     // For example,
     // Debugger breaks in due to second chance exception (unhandled)
@@ -2191,7 +2089,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     UNREACHABLE();
 }
 
-static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable, BOOL rethrow)
+static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2209,10 +2107,10 @@ static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable, BOOL r
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
 
-    RaiseTheExceptionInternalOnly(throwable, rethrow);
+    RaiseTheExceptionInternalOnly(throwable);
 }
 
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow)
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2225,41 +2123,18 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow)
 
     _ASSERTE(IsException(throwable->GetMethodTable()));
 
-    // This may look a bit odd, but there is an explanation.  The rethrow boolean
-    //  means that an actual RaiseException(EXCEPTION_COMPLUS,...) is being re-thrown,
-    //  and that the exception context saved on the Thread object should replace
-    //  the exception context from the upcoming RaiseException().  There is logic
-    //  in the stack trace code to preserve MOST of the stack trace, but to drop the
-    //  last element of the stack trace (has to do with having the address of the rethrow
-    //  instead of the address of the original call in the stack trace.  That is
-    //  controversial itself, but we won't get into that here.)
-    // However, if this is not re-raising that original exception, but rather a new
+    // If this is not re-raising that original exception, but rather a new
     //  os exception for what may be an existing exception object, it is generally
     //  a good thing to preserve the stack trace.
-    if (!rethrow)
-    {
-        Thread *pThread = GetThread();
-        pThread->IncPreventAbort();
-        ExceptionPreserveStackTrace(throwable);
-        pThread->DecPreventAbort();
-    }
 
-    RealCOMPlusThrowWorker(throwable, rethrow);
+    Thread *pThread = GetThread();
+    pThread->IncPreventAbort();
+    ExceptionPreserveStackTrace(throwable);
+    pThread->DecPreventAbort();
+
+    RealCOMPlusThrowWorker(throwable);
 
     GCPROTECT_END();
-}
-
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    RealCOMPlusThrow(throwable, FALSE);
 }
 
 #ifdef TARGET_WASM
@@ -2296,7 +2171,7 @@ VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *
 #else
         OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
 #endif // TARGET_WASM
-        RealCOMPlusThrowWorker(throwable, FALSE);
+        RealCOMPlusThrowWorker(throwable);
 #ifdef TARGET_WASM
     }
     PAL_EXCEPT(SetTargetFrame(ex, __param->targetSP))
@@ -5595,8 +5470,9 @@ static uintptr_t writeBarrierAVLocations[] =
 };
 
 // Check if the passed in instruction pointer is in one of the
-// JIT helper functions.
-bool IsIPInMarkedJitHelper(PCODE uControlPc)
+// write barrier helper functions. These are leaf functions that do not
+// set up a frame, so we can unwind them with a simple LR/RA extraction.
+static bool IsIPInWriteBarrierHelper(PCODE uControlPc)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -5614,27 +5490,136 @@ bool IsIPInMarkedJitHelper(PCODE uControlPc)
             return true;
     }
 
-#define CHECK_RANGE(name) \
+#define CHECK_WRITE_BARRIER_RANGE(name) \
     if (GetEEFuncEntryPoint(name) <= uControlPc && uControlPc < GetEEFuncEntryPoint(name##_End)) return true;
 
 #ifndef TARGET_X86
-    CHECK_RANGE(JIT_WriteBarrier)
-    CHECK_RANGE(JIT_CheckedWriteBarrier)
-    CHECK_RANGE(JIT_ByRefWriteBarrier)
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-    CHECK_RANGE(JIT_StackProbe)
-#endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
+    CHECK_WRITE_BARRIER_RANGE(JIT_WriteBarrier)
+    CHECK_WRITE_BARRIER_RANGE(JIT_CheckedWriteBarrier)
+    CHECK_WRITE_BARRIER_RANGE(JIT_ByRefWriteBarrier)
 #else
-    CHECK_RANGE(JIT_WriteBarrierGroup)
-    CHECK_RANGE(JIT_PatchedWriteBarrierGroup)
+    CHECK_WRITE_BARRIER_RANGE(JIT_WriteBarrierGroup)
+    CHECK_WRITE_BARRIER_RANGE(JIT_PatchedWriteBarrierGroup)
 #endif // TARGET_X86
 
 #if defined(TARGET_AMD64) && defined(_DEBUG)
-    CHECK_RANGE(JIT_WriteBarrier_Debug)
+    CHECK_WRITE_BARRIER_RANGE(JIT_WriteBarrier_Debug)
 #endif
+
+#undef CHECK_WRITE_BARRIER_RANGE
 #endif // !FEATURE_PORTABLE_HELPERS
 
     return false;
+}
+
+// Check if the passed in instruction pointer is in JIT_StackProbe.
+// JIT_StackProbe exists on AMD64 and ARM only.
+static bool IsIPInJITStackProbe(PCODE uControlPc)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifndef FEATURE_PORTABLE_HELPERS
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+    if (GetEEFuncEntryPoint(JIT_StackProbe) <= uControlPc && uControlPc < GetEEFuncEntryPoint(JIT_StackProbe_End))
+        return true;
+#endif // !TARGET_X86 && !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
+#endif // !FEATURE_PORTABLE_HELPERS
+
+    return false;
+}
+
+// Check if the passed in instruction pointer is in one of the
+// JIT helper functions.
+bool IsIPInMarkedJitHelper(PCODE uControlPc)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (IsIPInWriteBarrierHelper(uControlPc))
+        return true;
+
+    if (IsIPInJITStackProbe(uControlPc))
+        return true;
+
+    return false;
+}
+
+// Unwind JIT_StackProbe to its caller. JIT_StackProbe has different frame layouts
+// depending on the platform:
+// - AMD64 Windows: leaf function (no frame), return address at [RSP]
+// - AMD64 Unix: RBP frame (push rbp; mov rbp, rsp), return address at [RBP+8]
+// - ARM: R7 frame (push {r7}; mov r7, sp), return address in LR (already saved by caller)
+static void UnwindJITStackProbeToCaller(CONTEXT* pContext)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#if defined(TARGET_AMD64)
+#ifdef TARGET_UNIX
+    // AMD64 Unix: JIT_StackProbe has an RBP frame (push rbp; mov rbp, rsp)
+    // Return address is at [RBP + 8], saved RBP is at [RBP]
+    TADDR rbp = GetFP(pContext);
+    PCODE returnAddress = *dac_cast<PTR_PCODE>(rbp + 8);
+    SetIP(pContext, returnAddress);
+    SetFP(pContext, *dac_cast<PTR_PCODE>(rbp)); // restore RBP
+    SetSP(pContext, rbp + 16); // RSP after ret = RBP + 16
+#else // TARGET_WINDOWS
+    // AMD64 Windows: JIT_StackProbe is a leaf function (no frame)
+    // Return address is at [RSP], simulate a ret instruction
+    PCODE returnAddress = *dac_cast<PTR_PCODE>(GetSP(pContext));
+    SetIP(pContext, returnAddress);
+    SetSP(pContext, GetSP(pContext) + sizeof(void*)); // pop the stack
+#endif // TARGET_UNIX
+#elif defined(TARGET_ARM)
+    // ARM: JIT_StackProbe has an R7 frame (push {r7}; mov r7, sp)
+    // At the point of AV, R7 contains the frame pointer.
+    // Return address is in LR (ARM calling convention, caller saved LR before call).
+    // Saved R7 is at [R7], we need to restore R7 and SP.
+    TADDR r7 = pContext->R7;
+    SetIP(pContext, pContext->Lr);
+    pContext->R7 = *dac_cast<PTR_TADDR>(r7); // restore R7
+    SetSP(pContext, r7 + 4); // SP after pop {r7} and ret
+#else
+    // JIT_StackProbe doesn't exist on other architectures
+    UNREACHABLE();
+#endif
+}
+
+// Unwind a write barrier helper to its caller. Write barriers are leaf functions
+// that do not set up a frame, so we can unwind them by simply extracting the
+// return address from LR/RA (on ARM/RISC-V) or from the stack (on x86/x64).
+//
+// Similar to NativeAOT's UnwindSimpleHelperToCaller in EHHelpers.cpp.
+static void UnwindWriteBarrierToCaller(CONTEXT* pContext)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#if defined(TARGET_AMD64)
+    // On x64, return address is at [RSP], simulate a ret instruction
+    PCODE returnAddress = *dac_cast<PTR_PCODE>(GetSP(pContext));
+    SetIP(pContext, returnAddress);
+    SetSP(pContext, GetSP(pContext) + sizeof(void*)); // pop the stack
+#elif defined(TARGET_X86)
+    // On x86, return address is at [ESP], simulate a ret instruction
+    PCODE returnAddress = *dac_cast<PTR_PCODE>(GetSP(pContext));
+    SetIP(pContext, returnAddress);
+    SetSP(pContext, GetSP(pContext) + sizeof(void*)); // pop the stack
+#elif defined(TARGET_ARM64)
+    // On ARM64, return address is in LR, no stack adjustment needed for leaf
+    SetIP(pContext, pContext->Lr);
+#elif defined(TARGET_ARM)
+    // On ARM, return address is in LR
+    SetIP(pContext, pContext->Lr);
+#elif defined(TARGET_LOONGARCH64)
+    // On LoongArch64, return address is in RA
+    SetIP(pContext, pContext->Ra);
+#elif defined(TARGET_RISCV64)
+    // On RISC-V64, return address is in RA
+    SetIP(pContext, pContext->Ra);
+#elif defined(TARGET_WASM)
+    // WASM uses interpreter, write barriers don't fault
+    UNREACHABLE();
+#else
+#error "UnwindWriteBarrierToCaller not implemented for this architecture"
+#endif
 }
 
 // Returns TRUE if caller should resume execution.
@@ -5743,33 +5728,32 @@ AdjustContextForJITHelpers(
             pContext = &tempContext;
         }
 
-        Thread::VirtualUnwindToFirstManagedCallFrame(pContext);
+        if (IsIPInWriteBarrierHelper(f_IP))
+        {
+            // Write barriers are leaf functions that do not set up a frame.
+            // We can unwind them with a simple LR/RA/stack-pop extraction.
+            UnwindWriteBarrierToCaller(pContext);
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        // We had an AV in the writebarrier that needs to be treated
-        // as originating in managed code. At this point, the stack (growing
-        // from left->right) looks like this:
-        //
-        // ManagedFunc -> Native_WriteBarrierInVM -> AV
-        //
-        // We just performed an unwind from the write-barrier
-        // and now have the context in ManagedFunc. Since
-        // ManagedFunc called into the write-barrier, the return
-        // address in the unwound context corresponds to the
-        // instruction where the call will return.
-        //
-        // On ARM, just like we perform ControlPC adjustment
-        // during exception dispatch (refer to ExInfo::InitializeCrawlFrame),
-        // we will need to perform the corresponding adjustment of IP
-        // we got from unwind above, so as to indicate that the AV
-        // happened "before" the call to the writebarrier and not at
-        // the instruction at which the control will return.
-       PCODE ControlPCPostAdjustment = GetIP(pContext) - STACKWALK_CONTROLPC_ADJUST_OFFSET;
-
-       // Now we save the address back into the context so that it gets used
-       // as the faulting address.
-       SetIP(pContext, ControlPCPostAdjustment);
+            // On ARM/ARM64/LoongArch64/RISC-V, adjust IP to point to the call instruction
+            // rather than the return address, so the exception appears to originate
+            // from the managed code that called the write barrier.
+            PCODE ControlPCPostAdjustment = GetIP(pContext) - STACKWALK_CONTROLPC_ADJUST_OFFSET;
+            SetIP(pContext, ControlPCPostAdjustment);
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+        }
+        else
+        {
+            // JIT_StackProbe has a known frame layout on each platform.
+            UnwindJITStackProbeToCaller(pContext);
+
+#if defined(TARGET_ARM)
+            // On ARM, adjust IP to point to the call instruction
+            // rather than the return address.
+            PCODE ControlPCPostAdjustment = GetIP(pContext) - STACKWALK_CONTROLPC_ADJUST_OFFSET;
+            SetIP(pContext, ControlPCPostAdjustment);
+#endif // TARGET_ARM
+        }
 
         // Unwind the frame chain - On Win64, this is required since we may handle the managed fault and to do so,
         // we will replace the exception context with the managed context and "continue execution" there. Thus, we do not
@@ -6917,7 +6901,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
     }
     else
     {
-        RaiseTheExceptionInternalOnly(orThrowable, FALSE);
+        RaiseTheExceptionInternalOnly(orThrowable);
     }
 }
 
@@ -6929,39 +6913,6 @@ size_t GetSSPForFrameOnCurrentStack(TADDR ip);
 void ThrowResumeAfterCatchException(TADDR resumeSP, TADDR resumeIP)
 {
     throw ResumeAfterCatchException(resumeSP, resumeIP);
-}
-
-VOID DECLSPEC_NORETURN UnwindAndContinueResumeAfterCatch(TADDR resumeSP, TADDR resumeIP)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_ANY;
-
-    CONTEXT context;
-    ClrCaptureContext(&context);
-
-    // Unwind to the caller of the Ex.RhThrowEx / Ex.RhThrowHwEx
-    Thread::VirtualUnwindToFirstManagedCallFrame(&context);
-
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-    size_t targetSSP = GetSSPForFrameOnCurrentStack(GetIP(&context));
-#else
-    size_t targetSSP = 0;
-#endif
-
-    // Skip all managed frames upto a native frame
-    while (ExecutionManager::IsManagedCode(GetIP(&context)))
-    {
-        Thread::VirtualUnwindCallFrame(&context);
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-        if (targetSSP != 0)
-        {
-            targetSSP += sizeof(size_t);
-        }
-#endif
-    }
-
-    ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, &context, targetSSP, resumeSP, resumeIP);
 }
 #endif // FEATURE_INTERPRETER
 
@@ -10878,42 +10829,389 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
 }
 
-#endif // TARGET_X86
+#elif defined(TARGET_AMD64)
 
-//
-// Init a new frame
-//
-void SoftwareExceptionFrame::Init()
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
 {
-    WRAPPER_NO_CONTRACT;
+    LIMITED_METHOD_CONTRACT;
 
-    // On x86 we initialize the context state from transition block in
-    // UpdateContextFromTransitionBlock method.
-#ifndef TARGET_X86
-#define CALLEE_SAVED_REGISTER(regname) m_ContextPointers.regname = NULL;
+#ifdef UNIX_AMD64_ABI
+    // On Unix AMD64, there are no non-volatile FP registers, so we only need
+    // control registers and integer callee-saved registers. We don't need to
+    // capture argument registers or FP state for exception handling.
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+    m_Context.SegCs = 0;
+    m_Context.SegSs = 0;
+    m_Context.EFlags = 0;
+    m_Context.Rax = 0;
+#else
+    // On Windows AMD64, we need FP state because xmm6-xmm15 are non-volatile
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+    m_Context.SegCs = 0;
+    m_Context.SegSs = 0;
+    m_Context.EFlags = 0;
+
+    // Read FP callee-saved registers (xmm6-xmm15) from the stack
+    // They are stored at negative offsets from TransitionBlock:
+    // Layout: [shadow (32)] [xmm6-xmm15 (160)] [xmm0-xmm3 (64)] [padding (8)] [CalleeSavedRegs] [RetAddr] [ArgRegs]
+    // xmm6 is at sp+32, TransitionBlock is at sp+264, so xmm6 is at TransitionBlock - 232
+    M128A *pFpCalleeSaved = (M128A*)((BYTE*)pTransitionBlock - 232);
+
+    m_Context.Xmm6 = pFpCalleeSaved[0];
+    m_Context.Xmm7 = pFpCalleeSaved[1];
+    m_Context.Xmm8 = pFpCalleeSaved[2];
+    m_Context.Xmm9 = pFpCalleeSaved[3];
+    m_Context.Xmm10 = pFpCalleeSaved[4];
+    m_Context.Xmm11 = pFpCalleeSaved[5];
+    m_Context.Xmm12 = pFpCalleeSaved[6];
+    m_Context.Xmm13 = pFpCalleeSaved[7];
+    m_Context.Xmm14 = pFpCalleeSaved[8];
+    m_Context.Xmm15 = pFpCalleeSaved[9];
+
+    // Initialize FP control/status in FltSave - this is what fxrstor restores from
+    m_Context.FltSave.ControlWord = 0x27F;  // Default x87 control word
+    m_Context.FltSave.MxCsr = 0x1F80;       // Default MXCSR value (all exceptions masked)
+    m_Context.FltSave.MxCsr_Mask = 0x1FFF;  // MXCSR mask
+    m_Context.MxCsr = 0x1F80;               // Default MXCSR value (all exceptions masked)
+#endif
+
+#define CALLEE_SAVED_REGISTER(reg) \
+    m_Context.reg = pTransitionBlock->m_calleeSavedRegisters.reg; \
+    m_ContextPointers.reg = &m_Context.reg;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
-#ifndef TARGET_UNIX
-    Thread::VirtualUnwindCallFrame(&m_Context, &m_ContextPointers);
-#else // !TARGET_UNIX
-    BOOL success = PAL_VirtualUnwind(&m_Context, &m_ContextPointers);
-    if (!success)
-    {
-        _ASSERTE(!"SoftwareExceptionFrame::Init failed");
-        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-    }
-#endif // !TARGET_UNIX
-
-#define CALLEE_SAVED_REGISTER(regname) if (m_ContextPointers.regname == NULL) m_ContextPointers.regname = &m_Context.regname;
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-    _ASSERTE(ExecutionManager::IsManagedCode(::GetIP(&m_Context)));
-
-    m_ReturnAddress = ::GetIP(&m_Context);
-#endif // !TARGET_X86
+    m_Context.Rsp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Rip = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
 }
+
+#elif defined(TARGET_ARM)
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+
+    // Copy argument registers (R0-R3)
+    m_Context.R0 = pTransitionBlock->m_argumentRegisters.r[0];
+    m_Context.R1 = pTransitionBlock->m_argumentRegisters.r[1];
+    m_Context.R2 = pTransitionBlock->m_argumentRegisters.r[2];
+    m_Context.R3 = pTransitionBlock->m_argumentRegisters.r[3];
+
+    // Copy callee-saved registers (R4-R11, Lr)
+    m_Context.R4 = pTransitionBlock->m_calleeSavedRegisters.r4;
+    m_Context.R5 = pTransitionBlock->m_calleeSavedRegisters.r5;
+    m_Context.R6 = pTransitionBlock->m_calleeSavedRegisters.r6;
+    m_Context.R7 = pTransitionBlock->m_calleeSavedRegisters.r7;
+    m_Context.R8 = pTransitionBlock->m_calleeSavedRegisters.r8;
+    m_Context.R9 = pTransitionBlock->m_calleeSavedRegisters.r9;
+    m_Context.R10 = pTransitionBlock->m_calleeSavedRegisters.r10;
+    m_Context.R11 = pTransitionBlock->m_calleeSavedRegisters.r11;
+    m_Context.Lr = pTransitionBlock->m_calleeSavedRegisters.r14; // r14 is link register
+
+    // Copy floating point argument registers (d0-d7 / s0-s15)
+    FloatArgumentRegisters *pFloatArgs = (FloatArgumentRegisters*)((BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters());
+    for (int i = 0; i < 8; i++)
+    {
+        m_Context.D[i] = pFloatArgs->d[i];
+    }
+
+    // Read FP callee-saved registers (d8-d15) from the stack
+    // They are stored at negative offset from TransitionBlock:
+    // Layout: [d8-d15 (64 bytes)] [padding (4)] [d0-d7 (64 bytes)] [padding (4)] [TransitionBlock]
+    // FP callee-saved are at TransitionBlock - 136 (64 + 4 + 64 + 4)
+    UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 136);
+    for (int i = 0; i < 8; i++)
+    {
+        m_Context.D[8 + i] = pFpCalleeSaved[i];
+    }
+
+    // Initialize FP status/control register
+    m_Context.Fpscr = 0;
+
+    // Set up context pointers for callee-saved registers
+    m_ContextPointers.R4 = &m_Context.R4;
+    m_ContextPointers.R5 = &m_Context.R5;
+    m_ContextPointers.R6 = &m_Context.R6;
+    m_ContextPointers.R7 = &m_Context.R7;
+    m_ContextPointers.R8 = &m_Context.R8;
+    m_ContextPointers.R9 = &m_Context.R9;
+    m_ContextPointers.R10 = &m_Context.R10;
+    m_ContextPointers.R11 = &m_Context.R11;
+    m_ContextPointers.Lr = &m_Context.Lr;
+
+    m_Context.Sp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Pc = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+}
+
+#elif defined(TARGET_ARM64)
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+
+    // Copy argument registers (X0-X7)
+    for (int i = 0; i < 8; i++)
+    {
+        m_Context.X[i] = pTransitionBlock->m_argumentRegisters.x[i];
+    }
+
+    // Copy return buffer register (X8)
+    m_Context.X8 = pTransitionBlock->m_x8RetBuffReg;
+
+    // Copy callee-saved registers (X19-X28)
+    m_Context.X19 = pTransitionBlock->m_calleeSavedRegisters.x19;
+    m_Context.X20 = pTransitionBlock->m_calleeSavedRegisters.x20;
+    m_Context.X21 = pTransitionBlock->m_calleeSavedRegisters.x21;
+    m_Context.X22 = pTransitionBlock->m_calleeSavedRegisters.x22;
+    m_Context.X23 = pTransitionBlock->m_calleeSavedRegisters.x23;
+    m_Context.X24 = pTransitionBlock->m_calleeSavedRegisters.x24;
+    m_Context.X25 = pTransitionBlock->m_calleeSavedRegisters.x25;
+    m_Context.X26 = pTransitionBlock->m_calleeSavedRegisters.x26;
+    m_Context.X27 = pTransitionBlock->m_calleeSavedRegisters.x27;
+    m_Context.X28 = pTransitionBlock->m_calleeSavedRegisters.x28;
+
+    // Copy frame pointer and link register
+    m_Context.Fp = pTransitionBlock->m_calleeSavedRegisters.x29;
+    m_Context.Lr = pTransitionBlock->m_calleeSavedRegisters.x30;
+
+    // Copy floating point argument registers (V0-V7)
+    FloatArgumentRegisters *pFloatArgs = (FloatArgumentRegisters*)((BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters());
+    for (int i = 0; i < 8; i++)
+    {
+        m_Context.V[i] = pFloatArgs->q[i];
+    }
+
+    // Read FP callee-saved registers (d8-d15) from the stack
+    // They are stored at negative offset from TransitionBlock:
+    // Layout: [d8-d15 (64 bytes)] [q0-q7 (128 bytes)] [TransitionBlock]
+    // FP callee-saved are at TransitionBlock - 192 (64 + 128)
+    UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 192);
+    m_Context.V[8].Low = pFpCalleeSaved[0];
+    m_Context.V[8].High = 0;
+    m_Context.V[9].Low = pFpCalleeSaved[1];
+    m_Context.V[9].High = 0;
+    m_Context.V[10].Low = pFpCalleeSaved[2];
+    m_Context.V[10].High = 0;
+    m_Context.V[11].Low = pFpCalleeSaved[3];
+    m_Context.V[11].High = 0;
+    m_Context.V[12].Low = pFpCalleeSaved[4];
+    m_Context.V[12].High = 0;
+    m_Context.V[13].Low = pFpCalleeSaved[5];
+    m_Context.V[13].High = 0;
+    m_Context.V[14].Low = pFpCalleeSaved[6];
+    m_Context.V[14].High = 0;
+    m_Context.V[15].Low = pFpCalleeSaved[7];
+    m_Context.V[15].High = 0;
+
+    // Initialize remaining V registers (V16-V31) to zero - these are caller-saved
+    for (int i = 16; i < 32; i++)
+    {
+        m_Context.V[i].Low = 0;
+        m_Context.V[i].High = 0;
+    }
+    // Initialize FP control/status registers
+    m_Context.Fpcr = 0;
+    m_Context.Fpsr = 0;
+
+    // Set up context pointers for callee-saved registers
+    m_ContextPointers.X19 = &m_Context.X19;
+    m_ContextPointers.X20 = &m_Context.X20;
+    m_ContextPointers.X21 = &m_Context.X21;
+    m_ContextPointers.X22 = &m_Context.X22;
+    m_ContextPointers.X23 = &m_Context.X23;
+    m_ContextPointers.X24 = &m_Context.X24;
+    m_ContextPointers.X25 = &m_Context.X25;
+    m_ContextPointers.X26 = &m_Context.X26;
+    m_ContextPointers.X27 = &m_Context.X27;
+    m_ContextPointers.X28 = &m_Context.X28;
+    m_ContextPointers.Fp = &m_Context.Fp;
+    m_ContextPointers.Lr = &m_Context.Lr;
+
+    m_Context.Sp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Pc = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+}
+
+#elif defined(TARGET_LOONGARCH64)
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+
+    // Copy argument registers (A0-A7)
+    m_Context.A0 = pTransitionBlock->m_argumentRegisters.a[0];
+    m_Context.A1 = pTransitionBlock->m_argumentRegisters.a[1];
+    m_Context.A2 = pTransitionBlock->m_argumentRegisters.a[2];
+    m_Context.A3 = pTransitionBlock->m_argumentRegisters.a[3];
+    m_Context.A4 = pTransitionBlock->m_argumentRegisters.a[4];
+    m_Context.A5 = pTransitionBlock->m_argumentRegisters.a[5];
+    m_Context.A6 = pTransitionBlock->m_argumentRegisters.a[6];
+    m_Context.A7 = pTransitionBlock->m_argumentRegisters.a[7];
+
+    // Copy callee-saved registers (Fp, Ra, S0-S8)
+    m_Context.Fp = pTransitionBlock->m_calleeSavedRegisters.fp;
+    m_Context.Ra = pTransitionBlock->m_calleeSavedRegisters.ra;
+    m_Context.S0 = pTransitionBlock->m_calleeSavedRegisters.s0;
+    m_Context.S1 = pTransitionBlock->m_calleeSavedRegisters.s1;
+    m_Context.S2 = pTransitionBlock->m_calleeSavedRegisters.s2;
+    m_Context.S3 = pTransitionBlock->m_calleeSavedRegisters.s3;
+    m_Context.S4 = pTransitionBlock->m_calleeSavedRegisters.s4;
+    m_Context.S5 = pTransitionBlock->m_calleeSavedRegisters.s5;
+    m_Context.S6 = pTransitionBlock->m_calleeSavedRegisters.s6;
+    m_Context.S7 = pTransitionBlock->m_calleeSavedRegisters.s7;
+    m_Context.S8 = pTransitionBlock->m_calleeSavedRegisters.s8;
+
+    // Copy floating point argument registers (fa0-fa7)
+    // F[] array in CONTEXT is 4*32 elements for LSX/LASX support.
+    // Each FP register takes 4 slots (for 256-bit LASX vectors).
+    // For 64-bit doubles, we only use the first slot of each register.
+    FloatArgumentRegisters *pFloatArgs = (FloatArgumentRegisters*)((BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters());
+    for (int i = 0; i < 8; i++)
+    {
+        memcpy(&m_Context.F[i * 4], &pFloatArgs->f[i], sizeof(double));
+    }
+
+    // Read FP callee-saved registers (f24-f31) from the stack
+    // They are stored at negative offset from TransitionBlock:
+    // Layout: [f24-f31 (64 bytes)] [fa0-fa7 (64 bytes)] [TransitionBlock]
+    // FP callee-saved are at TransitionBlock - 128 (64 + 64)
+    UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 128);
+    for (int i = 0; i < 8; i++)
+    {
+        // f24-f31 map to indices 24-31 in the F array, each taking 4 slots
+        memcpy(&m_Context.F[(24 + i) * 4], &pFpCalleeSaved[i], sizeof(double));
+    }
+
+    // Initialize remaining F registers (f8-f23) to zero
+    for (int i = 8; i < 24; i++)
+    {
+        memset(&m_Context.F[i * 4], 0, sizeof(double) * 4);
+    }
+    // Initialize FP control/status register
+    m_Context.Fcsr = 0;
+
+    // Set up context pointers for callee-saved registers
+    m_ContextPointers.S0 = &m_Context.S0;
+    m_ContextPointers.S1 = &m_Context.S1;
+    m_ContextPointers.S2 = &m_Context.S2;
+    m_ContextPointers.S3 = &m_Context.S3;
+    m_ContextPointers.S4 = &m_Context.S4;
+    m_ContextPointers.S5 = &m_Context.S5;
+    m_ContextPointers.S6 = &m_Context.S6;
+    m_ContextPointers.S7 = &m_Context.S7;
+    m_ContextPointers.S8 = &m_Context.S8;
+    m_ContextPointers.Fp = &m_Context.Fp;
+    m_ContextPointers.Ra = &m_Context.Ra;
+
+    m_Context.Sp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Pc = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+}
+
+#elif defined(TARGET_RISCV64)
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+
+    // Copy argument registers (A0-A7)
+    m_Context.A0 = pTransitionBlock->m_argumentRegisters.a[0];
+    m_Context.A1 = pTransitionBlock->m_argumentRegisters.a[1];
+    m_Context.A2 = pTransitionBlock->m_argumentRegisters.a[2];
+    m_Context.A3 = pTransitionBlock->m_argumentRegisters.a[3];
+    m_Context.A4 = pTransitionBlock->m_argumentRegisters.a[4];
+    m_Context.A5 = pTransitionBlock->m_argumentRegisters.a[5];
+    m_Context.A6 = pTransitionBlock->m_argumentRegisters.a[6];
+    m_Context.A7 = pTransitionBlock->m_argumentRegisters.a[7];
+
+    // Copy callee-saved registers (Fp, Ra, S1-S11, Tp, Gp)
+    m_Context.Fp = pTransitionBlock->m_calleeSavedRegisters.fp;
+    m_Context.Ra = pTransitionBlock->m_calleeSavedRegisters.ra;
+    m_Context.S1 = pTransitionBlock->m_calleeSavedRegisters.s1;
+    m_Context.S2 = pTransitionBlock->m_calleeSavedRegisters.s2;
+    m_Context.S3 = pTransitionBlock->m_calleeSavedRegisters.s3;
+    m_Context.S4 = pTransitionBlock->m_calleeSavedRegisters.s4;
+    m_Context.S5 = pTransitionBlock->m_calleeSavedRegisters.s5;
+    m_Context.S6 = pTransitionBlock->m_calleeSavedRegisters.s6;
+    m_Context.S7 = pTransitionBlock->m_calleeSavedRegisters.s7;
+    m_Context.S8 = pTransitionBlock->m_calleeSavedRegisters.s8;
+    m_Context.S9 = pTransitionBlock->m_calleeSavedRegisters.s9;
+    m_Context.S10 = pTransitionBlock->m_calleeSavedRegisters.s10;
+    m_Context.S11 = pTransitionBlock->m_calleeSavedRegisters.s11;
+    m_Context.Tp = pTransitionBlock->m_calleeSavedRegisters.tp;
+    m_Context.Gp = pTransitionBlock->m_calleeSavedRegisters.gp;
+
+    // Initialize all F registers to zero first
+    memset(m_Context.F, 0, sizeof(m_Context.F));
+    // Copy floating point argument registers (fa0-fa7)
+    FloatArgumentRegisters *pFloatArgs = (FloatArgumentRegisters*)((BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters());
+    for (int i = 0; i < 8; i++)
+    {
+        // F[10-17] are fa0-fa7 in RISC-V register naming
+        memcpy(&m_Context.F[10 + i], &pFloatArgs->f[i], sizeof(double));
+    }
+
+    // Read FP callee-saved registers (fs0-fs11) from the stack
+    // They are stored at negative offset from TransitionBlock:
+    // Layout: [fs0-fs11 (96 bytes)] [fa0-fa7 (64 bytes)] [TransitionBlock]
+    // FP callee-saved are at TransitionBlock - 160 (96 + 64)
+    // RISC-V FP callee-saved: fs0=f8, fs1=f9, fs2-fs11=f18-f27
+    UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 160);
+    memcpy(&m_Context.F[8], &pFpCalleeSaved[0], sizeof(double));   // fs0 = f8
+    memcpy(&m_Context.F[9], &pFpCalleeSaved[1], sizeof(double));   // fs1 = f9
+    for (int i = 0; i < 10; i++)
+    {
+        memcpy(&m_Context.F[18 + i], &pFpCalleeSaved[2 + i], sizeof(double));  // fs2-fs11 = f18-f27
+    }
+
+    // Initialize FP control/status register
+    m_Context.Fcsr = 0;
+
+    // Set up context pointers for callee-saved registers
+    m_ContextPointers.S1 = &m_Context.S1;
+    m_ContextPointers.S2 = &m_Context.S2;
+    m_ContextPointers.S3 = &m_Context.S3;
+    m_ContextPointers.S4 = &m_Context.S4;
+    m_ContextPointers.S5 = &m_Context.S5;
+    m_ContextPointers.S6 = &m_Context.S6;
+    m_ContextPointers.S7 = &m_Context.S7;
+    m_ContextPointers.S8 = &m_Context.S8;
+    m_ContextPointers.S9 = &m_Context.S9;
+    m_ContextPointers.S10 = &m_Context.S10;
+    m_ContextPointers.S11 = &m_Context.S11;
+    m_ContextPointers.Fp = &m_Context.Fp;
+    m_ContextPointers.Gp = &m_Context.Gp;
+    m_ContextPointers.Tp = &m_Context.Tp;
+    m_ContextPointers.Ra = &m_Context.Ra;
+
+    m_Context.Sp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Pc = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+}
+
+#elif defined(TARGET_WASM)
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // WASM cannot capture execution context, so just zero everything
+    memset(&m_Context, 0, sizeof(m_Context));
+    memset(&m_ContextPointers, 0, sizeof(m_ContextPointers));
+    m_ReturnAddress = 0;
+}
+
+#endif // TARGET_X86
 
 //
 // Init and Link in a new frame
@@ -10922,9 +11220,158 @@ void SoftwareExceptionFrame::InitAndLink(Thread *pThread)
 {
     WRAPPER_NO_CONTRACT;
 
-    Init();
-
     Push(pThread);
 }
+
+// Static helper to populate a CONTEXT from a TransitionBlock for OSR transitions.
+// This shares similar logic with UpdateContextFromTransitionBlock but also handles
+// platform-specific adjustments needed for OSR (like simulating the call stack alignment).
+//
+// Returns the adjusted SP and FP values that the OSR method should use.
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+void SoftwareExceptionFrame::UpdateContextForOSRTransition(TransitionBlock* pTransitionBlock, CONTEXT* pContext, 
+                                                           UINT_PTR* pCurrentSP, UINT_PTR* pCurrentFP)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#if defined(TARGET_AMD64)
+#if defined(TARGET_WINDOWS)
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+
+    // Read FP callee-saved registers (xmm6-xmm15) from the stack
+    // Layout: [shadow (32)] [xmm6-xmm15 (160)] [xmm0-xmm3 (64)] [padding (8)] [CalleeSavedRegs] [RetAddr] [ArgRegs]
+    // xmm6 is at sp+32, TransitionBlock is at sp+264, so xmm6 is at TransitionBlock - 232
+    M128A *pFpCalleeSaved = (M128A*)((BYTE*)pTransitionBlock - 232);
+
+    pContext->Xmm6 = pFpCalleeSaved[0];
+    pContext->Xmm7 = pFpCalleeSaved[1];
+    pContext->Xmm8 = pFpCalleeSaved[2];
+    pContext->Xmm9 = pFpCalleeSaved[3];
+    pContext->Xmm10 = pFpCalleeSaved[4];
+    pContext->Xmm11 = pFpCalleeSaved[5];
+    pContext->Xmm12 = pFpCalleeSaved[6];
+    pContext->Xmm13 = pFpCalleeSaved[7];
+    pContext->Xmm14 = pFpCalleeSaved[8];
+    pContext->Xmm15 = pFpCalleeSaved[9];
+
+    // Initialize FP control/status
+    pContext->FltSave.ControlWord = 0x27F;
+    pContext->FltSave.MxCsr = 0x1F80;
+    pContext->FltSave.MxCsr_Mask = 0x1FFF;
+    pContext->MxCsr = 0x1F80;
+#else // UNIX_AMD64_ABI
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+#endif
+
+    // Copy integer callee-saved registers from TransitionBlock
+    pContext->Rbx = pTransitionBlock->m_calleeSavedRegisters.Rbx;
+    pContext->Rbp = pTransitionBlock->m_calleeSavedRegisters.Rbp;
+    pContext->R12 = pTransitionBlock->m_calleeSavedRegisters.R12;
+    pContext->R13 = pTransitionBlock->m_calleeSavedRegisters.R13;
+    pContext->R14 = pTransitionBlock->m_calleeSavedRegisters.R14;
+    pContext->R15 = pTransitionBlock->m_calleeSavedRegisters.R15;
+#if defined(TARGET_WINDOWS)
+    pContext->Rdi = pTransitionBlock->m_calleeSavedRegisters.Rdi;
+    pContext->Rsi = pTransitionBlock->m_calleeSavedRegisters.Rsi;
+#endif
+
+    // SP points just past the TransitionBlock (after return address)
+    // Adjust for call simulation: OSR method expects SP as if a call just happened
+    *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
+    _ASSERTE(*pCurrentSP % 16 == 0);
+    *pCurrentSP -= 8;  // Simulate the call pushing return address
+    *pCurrentFP = pTransitionBlock->m_calleeSavedRegisters.Rbp;
+
+#elif defined(TARGET_ARM64)
+    // Restore control and integer registers, matching the x64 approach
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+
+    // Copy callee-saved registers x19-x28 from TransitionBlock
+    // These are the values F() had when it called JIT_Patchpoint
+    pContext->X19 = pTransitionBlock->m_calleeSavedRegisters.x19;
+    pContext->X20 = pTransitionBlock->m_calleeSavedRegisters.x20;
+    pContext->X21 = pTransitionBlock->m_calleeSavedRegisters.x21;
+    pContext->X22 = pTransitionBlock->m_calleeSavedRegisters.x22;
+    pContext->X23 = pTransitionBlock->m_calleeSavedRegisters.x23;
+    pContext->X24 = pTransitionBlock->m_calleeSavedRegisters.x24;
+    pContext->X25 = pTransitionBlock->m_calleeSavedRegisters.x25;
+    pContext->X26 = pTransitionBlock->m_calleeSavedRegisters.x26;
+    pContext->X27 = pTransitionBlock->m_calleeSavedRegisters.x27;
+    pContext->X28 = pTransitionBlock->m_calleeSavedRegisters.x28;
+
+    // F()'s FP points to where F() saved [caller_fp, caller_lr]
+    UINT_PTR managedFrameFP = pTransitionBlock->m_calleeSavedRegisters.x29;
+    // Read Test()'s FP and LR from F()'s stack frame
+    TADDR callerFP = *((TADDR*)managedFrameFP);          // Test()'s FP at [F's FP + 0]
+    TADDR callerLR = *((TADDR*)(managedFrameFP + 8));    // LR to Test() at [F's FP + 8]
+
+    // CRITICAL: Use Test()'s FP (callerFP), not F()'s FP (managedFrameFP)!
+    pContext->Fp = callerFP;
+    pContext->Lr = callerLR;
+
+    // SP = F()'s SP when it called JIT_Patchpoint
+    *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
+    // FP output should also be caller's FP
+    *pCurrentFP = callerFP;
+
+#elif defined(TARGET_LOONGARCH64)
+    // Restore control and integer registers, matching the ARM64 approach
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+
+    // Copy callee-saved registers s0-s8 from TransitionBlock
+    pContext->S0 = pTransitionBlock->m_calleeSavedRegisters.s0;
+    pContext->S1 = pTransitionBlock->m_calleeSavedRegisters.s1;
+    pContext->S2 = pTransitionBlock->m_calleeSavedRegisters.s2;
+    pContext->S3 = pTransitionBlock->m_calleeSavedRegisters.s3;
+    pContext->S4 = pTransitionBlock->m_calleeSavedRegisters.s4;
+    pContext->S5 = pTransitionBlock->m_calleeSavedRegisters.s5;
+    pContext->S6 = pTransitionBlock->m_calleeSavedRegisters.s6;
+    pContext->S7 = pTransitionBlock->m_calleeSavedRegisters.s7;
+    pContext->S8 = pTransitionBlock->m_calleeSavedRegisters.s8;
+
+    UINT_PTR managedFrameFP = pTransitionBlock->m_calleeSavedRegisters.fp;
+    TADDR callerFP = *((TADDR*)managedFrameFP);
+    TADDR callerRA = *((TADDR*)(managedFrameFP + 8));
+
+    pContext->Fp = callerFP;
+    pContext->Ra = callerRA;
+
+    *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
+    *pCurrentFP = callerFP;
+
+#elif defined(TARGET_RISCV64)
+    // Restore control and integer registers, matching the ARM64 approach
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+
+    // Copy callee-saved registers s1-s11 from TransitionBlock
+    pContext->S1 = pTransitionBlock->m_calleeSavedRegisters.s1;
+    pContext->S2 = pTransitionBlock->m_calleeSavedRegisters.s2;
+    pContext->S3 = pTransitionBlock->m_calleeSavedRegisters.s3;
+    pContext->S4 = pTransitionBlock->m_calleeSavedRegisters.s4;
+    pContext->S5 = pTransitionBlock->m_calleeSavedRegisters.s5;
+    pContext->S6 = pTransitionBlock->m_calleeSavedRegisters.s6;
+    pContext->S7 = pTransitionBlock->m_calleeSavedRegisters.s7;
+    pContext->S8 = pTransitionBlock->m_calleeSavedRegisters.s8;
+    pContext->S9 = pTransitionBlock->m_calleeSavedRegisters.s9;
+    pContext->S10 = pTransitionBlock->m_calleeSavedRegisters.s10;
+    pContext->S11 = pTransitionBlock->m_calleeSavedRegisters.s11;
+    pContext->Tp = pTransitionBlock->m_calleeSavedRegisters.tp;
+    pContext->Gp = pTransitionBlock->m_calleeSavedRegisters.gp;
+
+    UINT_PTR managedFrameFP = pTransitionBlock->m_calleeSavedRegisters.fp;
+    TADDR callerFP = *((TADDR*)managedFrameFP);
+    TADDR callerRA = *((TADDR*)(managedFrameFP + 8));
+
+    pContext->Fp = callerFP;
+    pContext->Ra = callerRA;
+
+    *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
+    *pCurrentFP = callerFP;
+
+#else
+#error "Unsupported platform for OSR TransitionBlock-based context capture"
+#endif
+}
+#endif // FEATURE_ON_STACK_REPLACEMENT
 
 #endif // DACCESS_COMPILE

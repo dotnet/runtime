@@ -11161,7 +11161,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     assert(blkSize >= 0);
     noway_assert((blkSize % sizeof(int)) == 0);
     // initReg is not a live incoming argument reg
-    assert((genRegMask(initReg) & intRegState.rsCalleeRegArgMaskLiveIn) == 0);
+    assert((genRegMask(initReg) & calleeRegArgMaskLiveIn) == 0);
 
 #if defined(TARGET_AMD64)
     // We will align on x64 so can use the aligned mov
