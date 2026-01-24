@@ -3,7 +3,6 @@
 
 import type { AssemblyAsset, CharPtr, CharPtrPtr, VfsAsset, VoidPtr, VoidPtrPtr } from "./types";
 import { _ems_ } from "../../../libs/Common/JavaScript/ems-ambient";
-import { dotnetLogger } from "../loader/cross-module";
 
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
 
@@ -25,7 +24,7 @@ export function registerDllBytes(bytes: Uint8Array, virtualPath: string) {
         _ems_.HEAPU8.set(bytes, ptr >>> 0);
         const name = virtualPath.substring(virtualPath.lastIndexOf("/") + 1);
 
-        dotnetLogger.debug(`Registered assembly '${virtualPath}' (name: '${name}') at ${ptr.toString(16)} length ${bytes.length}`);
+        _ems_.dotnetLogger.debug(`Registered assembly '${virtualPath}' (name: '${name}') at ${ptr.toString(16)} length ${bytes.length}`);
         loadedAssemblies.set(virtualPath, { ptr, length: bytes.length });
         loadedAssemblies.set(name, { ptr, length: bytes.length });
     } finally {

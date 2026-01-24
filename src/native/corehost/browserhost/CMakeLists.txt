@@ -121,6 +121,8 @@ target_link_options(browserhost PRIVATE
     -sEXPORT_NAME=createDotnetRuntime
     -sENVIRONMENT=web,webview,worker,node,shell
     -lnodefs.js
+    -sNODERAWFS=1
+    -lnodefs.js
     -Wl,-error-limit=0)
 
 target_link_libraries(browserhost PRIVATE
