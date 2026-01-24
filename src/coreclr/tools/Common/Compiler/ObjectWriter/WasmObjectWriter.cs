@@ -109,7 +109,6 @@ namespace ILCompiler.ObjectWriter
             Global = 0x03
         }
 
-        private int NumExports => _numExports;
         private int _numExports;
         private void WriteExport(string name, WasmExportKind kind, int index)
         {
@@ -138,7 +137,7 @@ namespace ILCompiler.ObjectWriter
 
         private List<WasmSection> _sections = new();
         private Dictionary<string, int> _sectionNameToIndex = new();
-        private Dictionary<ObjectNodeSection, WasmSectionType> sectionToType = new()
+        private Dictionary<ObjectNodeSection, WasmSectionType> _sectionToType = new()
         {
             { WasmObjectNodeSection.MemorySection, WasmSectionType.Memory },
             { WasmObjectNodeSection.FunctionSection, WasmSectionType.Function },
@@ -150,13 +149,13 @@ namespace ILCompiler.ObjectWriter
 
         private WasmSectionType GetWasmSectionType(ObjectNodeSection section)
         {
-            if (!sectionToType.ContainsKey(section))
+            if (!_sectionToType.ContainsKey(section))
             {
                 // All other sections map to generic data segments in Wasm
                 // TODO-WASM: Consider making the mapping explicit for every possible node type.
                 return WasmSectionType.Data;
             }
-            return sectionToType[section];
+            return _sectionToType[section];
         }
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
@@ -314,7 +313,7 @@ namespace ILCompiler.ObjectWriter
             PrependCount(_sections[typeIdx], _uniqueSignatures.Count);
 
             int exportIdx = _sectionNameToIndex[WasmObjectNodeSection.ExportSection.Name];
-            PrependCount(_sections[exportIdx], NumExports);
+            PrependCount(_sections[exportIdx], _numExports);
         }
     }
 
