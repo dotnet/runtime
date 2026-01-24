@@ -100,6 +100,7 @@ namespace ILCompiler.ObjectWriter
 
         /// <summary>
         /// WebAssembly export descriptor kinds per the spec.
+        /// </summary>
         internal enum WasmExportKind : byte
         {
             Function = 0x00,
