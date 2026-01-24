@@ -1078,31 +1078,26 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
                 """;
 
-            // Create compilation with multiple syntax trees to simulate partial class declarations in different files.
+            // Create a base compilation to get proper references (including netfx polyfill attributes).
             // File paths are explicitly set to verify the canonical partial selection (first alphabetically).
             // "File1.cs" comes before "File2.cs" alphabetically, so source1 declares the canonical partial.
+            Compilation baseCompilation = CompilationHelper.CreateCompilation("");
+
+            // Add our syntax trees with explicit file paths. Keep any existing polyfill trees from base compilation.
+            var polyfillTrees = baseCompilation.SyntaxTrees.Where(t => string.IsNullOrEmpty(t.FilePath) == false || !t.ToString().Contains("namespace HelloWorld"));
             Compilation compilation = CSharpCompilation.Create(
                 "TestAssembly",
-                syntaxTrees:
-                [
+                syntaxTrees: baseCompilation.SyntaxTrees.Concat(new[]
+                {
                     CSharpSyntaxTree.ParseText(source1, CompilationHelper.CreateParseOptions()).WithFilePath("File1.cs"),
-                    CSharpSyntaxTree.ParseText(source2, CompilationHelper.CreateParseOptions()).WithFilePath("File2.cs"),
-                ],
-                references:
-                [
-                    MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                    MetadataReference.CreateFromFile(typeof(JsonSerializerOptions).Assembly.Location),
-                    MetadataReference.CreateFromFile(typeof(System.Text.Encodings.Web.JavaScriptEncoder).Assembly.Location),
-#if NET
-                    MetadataReference.CreateFromFile(typeof(System.Collections.Generic.LinkedList<>).Assembly.Location),
-                    MetadataReference.CreateFromFile(System.Reflection.Assembly.Load(new System.Reflection.AssemblyName("System.Runtime")).Location),
-#endif
-                ],
-                options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+                    CSharpSyntaxTree.ParseText(source2, CompilationHelper.CreateParseOptions()).WithFilePath("File2.cs")
+                }),
+                references: baseCompilation.References,
+                options: (CSharpCompilationOptions)baseCompilation.Options);
 
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
 
-            // Verify no errors
+            // Verify no errors from the source generator
             var errors = result.Diagnostics
                 .Where(d => d.Severity == DiagnosticSeverity.Error)
                 .ToList();
