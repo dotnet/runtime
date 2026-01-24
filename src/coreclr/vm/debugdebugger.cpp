@@ -294,24 +294,18 @@ extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
 
     GCX_COOP();
 
-    struct
-    {
-        OBJECTREF pException;
-    } gc{};
-    gc.pException = NULL;
-    GCPROTECT_BEGIN(gc);
-    gc.pException = (OBJECTREF)exception.Get();
+    OBJECTREF pException  = NULL;
+    GCPROTECT_BEGIN(pException);
+    pException = (OBJECTREF)exception.Get();
 
-    _ASSERTE(gc.pException != NULL);
-
+    _ASSERTE(pException != NULL);
     // populate exception with information from the continuation object
-    OBJECTHANDLE handle = AppDomain::GetCurrentDomain()->CreateHandle(gc.pException);
     EECodeInfo codeInfo((PCODE)diagnosticIP);
     if (codeInfo.IsValid())
     {
         MethodDesc* methodDesc = codeInfo.GetMethodDesc();
         StackTraceInfo::AppendElement(
-            handle,
+            pException,
             (UINT_PTR)diagnosticIP,
             0,
             methodDesc,

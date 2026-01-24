@@ -70,8 +70,10 @@ class StackTraceInfo
     static OBJECTREF GetKeepAliveObject(MethodDesc* pMethod);
     static void EnsureStackTraceArray(StackTraceArrayProtect *pStackTraceArrayProtected, size_t neededSize);
     static void EnsureKeepAliveArray(PTRARRAYREF *ppKeepAliveArray, size_t neededSize);
+    static void AppendElementImpl(OBJECTREF pThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf, Thread* pThread, BOOL fRaisingForeignException);
 public:
     static void AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf);
+    static void AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf);
 };
 
 
