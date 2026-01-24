@@ -15,11 +15,13 @@ using Internal.TypeSystem;
 using static ILCompiler.DependencyAnalysis.ObjectNode;
 using static ILCompiler.DependencyAnalysis.RelocType;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
+using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
 
 namespace ILCompiler.ObjectWriter
 {
     public abstract partial class ObjectWriter
     {
+        protected virtual CodeDataLayout LayoutMode => CodeDataLayout.Unified;
         private protected sealed record SymbolDefinition(int SectionIndex, long Value, int Size = 0, bool Global = false);
         protected sealed record SymbolicRelocation(long Offset, RelocType Type, Utf8String SymbolName, long Addend = 0);
         private sealed record BlockToRelocate(int SectionIndex, long Offset, byte[] Data, Relocation[] Relocations);
@@ -80,6 +82,20 @@ namespace ILCompiler.ObjectWriter
         private protected SectionWriter GetOrCreateSection(ObjectNodeSection section)
             => GetOrCreateSection(section, default, default);
 
+        private readonly SectionWriter.Params _defaultParams = new SectionWriter.Params
+        {
+            LengthEncodeFormat = LengthEncodeFormat.None
+        };
+
+        /// <summary>
+        /// Some architectures may require section-specific params for the writer. For example, on Wasm,
+        /// certain sections require length prefixes before each object entry which the section writer does support,
+        /// but this has to be indicated by a particular implementation.
+        /// </summary>
+        /// <param name="section"></param>
+        /// <returns></returns>
+        private protected virtual SectionWriter.Params WriterParams(ObjectNodeSection section) => _defaultParams;
+
         /// <summary>
         /// Get or creates an object file section.
         /// </summary>
@@ -121,7 +137,8 @@ namespace ILCompiler.ObjectWriter
             return new SectionWriter(
                 this,
                 sectionIndex,
-                sectionData);
+                sectionData,
+                WriterParams(section));
         }
 
         private protected bool ShouldShareSymbol(ObjectNode node)
@@ -161,6 +178,12 @@ namespace ILCompiler.ObjectWriter
             Utf8String symbolName,
             long addend)
         {
+            if (_nodeFactory.Target.IsWasm)
+            {
+                // TODO-WASM: Implement or resolve relocations
+                return;
+            }
+
             if (!UsesSubsectionsViaSymbols &&
                 relocType is IMAGE_REL_BASED_REL32 or IMAGE_REL_BASED_RELPTR32 or IMAGE_REL_BASED_ARM64_BRANCH26
                 or IMAGE_REL_BASED_THUMB_BRANCH24 or IMAGE_REL_BASED_THUMB_MOV32_PCREL &&
@@ -360,7 +383,11 @@ namespace ILCompiler.ObjectWriter
             List<ChecksumsToCalculate> checksumRelocations = [];
             foreach (DependencyNode depNode in nodes)
             {
-                if (depNode is ISymbolRangeNode symbolRange)
+
+                // TODO-WASM: emit symbol ranges properly when code and data are separated
+                // Right now we still need to determine placements for some traditionally text-placed nodes,
+                // such as DebugDirectoryEntryNode and AssemblyStubNode
+                if (depNode is ISymbolRangeNode symbolRange && LayoutMode == CodeDataLayout.Unified)
                 {
                     symbolRangeNodes.Add(symbolRange);
                     continue;
@@ -401,7 +428,10 @@ namespace ILCompiler.ObjectWriter
                     GetOrCreateSection(section, currentSymbolName, currentSymbolName) :
                     GetOrCreateSection(section);
 
-                sectionWriter.EmitAlignment(nodeContents.Alignment);
+                if (section.NeedsAlignment)
+                {
+                    sectionWriter.EmitAlignment(nodeContents.Alignment);
+                }
 
                 bool isMethod = node is IMethodBodyNode or AssemblyStubNode;
 #if !READYTORUN
@@ -412,6 +442,20 @@ namespace ILCompiler.ObjectWriter
                 // R2R records the thumb bit in the addend when needed, so we don't have to do it here.
                 long thumbBit = 0;
 #endif
+
+                if (node is IMethodBodyNode methodNode && LayoutMode is CodeDataLayout.Separate)
+                {
+                    // Record only information we can get from the MethodDesc here. The actual
+                    // body will be emitted by the call to EmitData() at the end
+                    // of this loop iteration.
+                    RecordMethodSignature((ISymbolDefinitionNode)node, methodNode.Method);
+                }
+                else if (node is AssemblyStubNode && LayoutMode is CodeDataLayout.Separate)
+                {
+                    // TODO-WASM: handle AssemblyStubNode properly here instead of skipping
+                    continue;
+                }
+
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
                     Utf8String mangledName = n == node ? currentSymbolName : GetMangledName(n);
@@ -499,8 +543,7 @@ namespace ILCompiler.ObjectWriter
                     }
                 }
 
-                // Write the data. Note that this has to be done last as not to advance
-                // the section writer position.
+                // Note that this has to be done last as not to advance the section writer position.
                 sectionWriter.EmitData(nodeContents.Data);
             }
 
@@ -606,6 +649,14 @@ namespace ILCompiler.ObjectWriter
                 {
                     _outputInfoBuilder.AddSection(outputSection);
                 }
+            }
+        }
+
+        private protected virtual void RecordMethodSignature(ISymbolDefinitionNode node, MethodDesc desc)
+        {
+            if (LayoutMode != CodeDataLayout.Separate)
+            {
+                throw new InvalidOperationException($"RecordMethod() must only be called on platforms with separated code and data, arch = {_nodeFactory.Target.Architecture}");
             }
         }
 
