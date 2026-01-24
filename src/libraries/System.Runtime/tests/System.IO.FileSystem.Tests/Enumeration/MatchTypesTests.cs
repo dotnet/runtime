@@ -816,6 +816,8 @@ namespace System.IO.Tests.Enumeration
             FileInfo env = new FileInfo(Path.Combine(testDirectory.FullName, ".env"));
             FileInfo envLocal = new FileInfo(Path.Combine(testDirectory.FullName, ".env.local"));
             FileInfo doubleDot = new FileInfo(Path.Combine(testDirectory.FullName, "..hidden"));
+            FileInfo dotA = new FileInfo(Path.Combine(testDirectory.FullName, ".a"));
+            FileInfo dotAB = new FileInfo(Path.Combine(testDirectory.FullName, ".ab"));
             FileInfo normalFile = new FileInfo(Path.Combine(testDirectory.FullName, "normal.txt")); // Decoy
             FileInfo gitDir = new FileInfo(Path.Combine(testDirectory.FullName, "git.txt")); // Decoy - starts with "git" not ".git"
 
@@ -824,6 +826,8 @@ namespace System.IO.Tests.Enumeration
             env.Create().Dispose();
             envLocal.Create().Dispose();
             doubleDot.Create().Dispose();
+            dotA.Create().Dispose();
+            dotAB.Create().Dispose();
             normalFile.Create().Dispose();
             gitDir.Create().Dispose();
 
@@ -835,11 +839,9 @@ namespace System.IO.Tests.Enumeration
             FSAssert.EqualWhenOrdered(new string[] { gitconfig.FullName, gitignore.FullName }, paths);
 
             // .??? - files with dot followed by exactly 3 chars
-            // Win32: .??? with DOS_QM matches .env (and potentially others due to collapsing)
+            // Win32: .??? with DOS_QM collapses to dot, so .a, .ab, .env all match
             paths = GetPaths(testDirectory.FullName, ".???", new EnumerationOptions { MatchType = MatchType.Win32 });
-            Assert.Contains(env.FullName, paths);
-            Assert.DoesNotContain(normalFile.FullName, paths);
-            Assert.DoesNotContain(gitDir.FullName, paths);
+            FSAssert.EqualWhenOrdered(new string[] { dotA.FullName, dotAB.FullName, env.FullName }, paths);
 
             // Simple: .??? must be exactly 3 chars after dot
             paths = GetPaths(testDirectory.FullName, ".???", new EnumerationOptions { MatchType = MatchType.Simple });
