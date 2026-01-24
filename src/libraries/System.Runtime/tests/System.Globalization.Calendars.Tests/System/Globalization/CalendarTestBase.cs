@@ -87,7 +87,7 @@ namespace System.Globalization.Tests
         })();
 
         private static DateTime GetCalendarMinSupportedDateTime(Calendar calendar) =>
-            calendar is JapaneseCalendar ? JapaneseCalendaraMinSupportedDateTime : calendar.MinSupportedDateTime;
+            PlatformDetection.IsIcuGlobalization && calendar is JapaneseCalendar ? JapaneseCalendaraMinSupportedDateTime : calendar.MinSupportedDateTime;
 
         private static int MinEra(Calendar calendar) => calendar.GetEra(GetCalendarMinSupportedDateTime(calendar));
 
