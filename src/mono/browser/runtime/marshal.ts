@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { js_owned_gc_handle_symbol, teardown_managed_proxy } from "./gc-handles";
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
-import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8, localHeapViewF64, localHeapViewI32, localHeapViewU8, _zero_region, forceThreadMemoryViewRefresh, fixupPointer, setB8, getB8, setF64Date } from "./memory";
+import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8, localHeapViewF64, localHeapViewI32, localHeapViewU8, _zero_region, forceThreadMemoryViewRefresh, fixupPointer, setB8, getB8 } from "./memory";
 import { mono_wasm_new_external_root } from "./roots";
 import { GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot, MarshalerType, PThreadPtr, PThreadPtrNull, VoidPtrNull } from "./types/internal";
 import { TypedArray, VoidPtr } from "./types/emscripten";
@@ -307,11 +307,14 @@ export function set_arg_i64_big (arg: JSMarshalerArgument, value: bigint): void 
     setI64Big(<any>arg, value);
 }
 
+const min_dateUnixTime = -0x3883122CD800;
+const max_dateUnixTime = 0xE677D21FDBFF;
 export function set_arg_date (arg: JSMarshalerArgument, value: Date): void {
     mono_assert(arg, "Null arg");
     // getTime() is always UTC
     const unixTime = value.getTime();
-    setF64Date(<any>arg, unixTime);
+    mono_assert(unixTime >= min_dateUnixTime && unixTime <= max_dateUnixTime, `Overflow: value ${value} is out of ${min_dateUnixTime} ${max_dateUnixTime} range`);
+    setF64(<any>arg, unixTime);
 }
 
 export function set_arg_f64 (arg: JSMarshalerArgument, value: number): void {

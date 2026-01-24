@@ -197,11 +197,6 @@ export function setF64 (offset: MemOffset, value: number): void {
     Module.HEAPF64[<any>offset >>> 3] = value;
 }
 
-export function setF64Date (offset: MemOffset, value: number): void {
-    assert_int_in_range(value, -0x3883122CD800, 0xE677D21FDBFF);
-    setF64(offset, value);
-}
-
 let warnDirtyBool = true;
 
 export function getB32 (offset: MemOffset): boolean {
