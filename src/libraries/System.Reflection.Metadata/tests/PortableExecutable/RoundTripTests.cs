@@ -20,21 +20,21 @@ public class RoundTripTests
     [Fact]
     public void RoundTrip_Assembly_WithEmbeddedResources()
     {
+        var random = new Random(42);
+        var randomData100 = new byte[100];
+        var randomData1KB = new byte[1024];
+        random.NextBytes(randomData100);
+        random.NextBytes(randomData1KB);
+
         var resources = new (string Name, byte[] Data)[]
         {
-            ("Resource_100bytes", new byte[100]),
-            ("Resource_1KB", new byte[1024]),
+            ("Resource_100bytes", randomData100),
+            ("Resource_1KB", randomData1KB),
             ("Resource_Empty", Array.Empty<byte>()),
             ("Ресурс", new byte[] { 1, 2, 3, 4, 5 }),
             ("リソース", new byte[] { 0xDE, 0xAD, 0xBE, 0xEF }),
             ("Resource_🎉", new byte[] { 0xCA, 0xFE, 0xBA, 0xBE })
         };
-
-        var random = new Random(42);
-        for (int i = 0; i < resources.Length; i++)
-        {
-            random.NextBytes(resources[i].Data);
-        }
 
         byte[] originalAssembly = GenerateAssemblyWithResources(resources);
 
@@ -93,17 +93,21 @@ public class RoundTripTests
     private static byte[] GenerateAssemblyWithResources((string Name, byte[] Data)[] resources)
     {
         var resourceDescriptions = new List<ResourceDescription>();
+        var streamsToDispose = new List<MemoryStream>();
 
-        foreach (var (name, data) in resources)
+        try
         {
-            var memoryStream = new MemoryStream(data);
-            resourceDescriptions.Add(new ResourceDescription(
-                resourceName: name,
-                dataProvider: () => memoryStream,
-                isPublic: true));
-        }
+            foreach (var (name, data) in resources)
+            {
+                var memoryStream = new MemoryStream(data, writable: false);
+                streamsToDispose.Add(memoryStream);
+                resourceDescriptions.Add(new ResourceDescription(
+                    resourceName: name,
+                    dataProvider: () => memoryStream,
+                    isPublic: true));
+            }
 
-        var syntaxTree = CSharpSyntaxTree.ParseText(@"
+            var syntaxTree = CSharpSyntaxTree.ParseText(@"
             public class TestClass
             {
                 public static int Main()
@@ -113,25 +117,33 @@ public class RoundTripTests
             }
         ");
 
-        var references = new[]
+            var references = new[]
+            {
+                MetadataReference.CreateFromFile(typeof(object).Assembly.Location)
+            };
+
+            var compilation = CSharpCompilation.Create(
+                assemblyName: "TestAssembly",
+                syntaxTrees: new[] { syntaxTree },
+                references: references,
+                options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+            using var assemblyStream = new MemoryStream();
+            EmitResult result = compilation.Emit(
+                peStream: assemblyStream,
+                manifestResources: resourceDescriptions);
+
+            Assert.True(result.Success, "Compilation failed: " + string.Join(", ", result.Diagnostics));
+
+            return assemblyStream.ToArray();
+        }
+        finally
         {
-            MetadataReference.CreateFromFile(typeof(object).Assembly.Location)
-        };
-
-        var compilation = CSharpCompilation.Create(
-            assemblyName: "TestAssembly",
-            syntaxTrees: new[] { syntaxTree },
-            references: references,
-            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
-
-        using var assemblyStream = new MemoryStream();
-        EmitResult result = compilation.Emit(
-            peStream: assemblyStream,
-            manifestResources: resourceDescriptions);
-
-        Assert.True(result.Success, "Compilation failed: " + string.Join(", ", result.Diagnostics));
-
-        return assemblyStream.ToArray();
+            foreach (var stream in streamsToDispose)
+            {
+                stream.Dispose();
+            }
+        }
     }
 
     private static byte[] CreateManagedResource(Dictionary<string, object> entries)
