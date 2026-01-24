@@ -559,7 +559,7 @@
     <!-- for AOT builds we use llvm-size tool to collect size of the DATA segment in each object file -->
     <WriteLinesToFile
         Condition="'$(_WasmShouldAOT)' == 'true'"
-        Lines="@(_AOTObjectFile->'&quot;%(Identity)&quot;', ' ')"
+        Lines="@(_AOTObjectFile->'&quot;%(Identity)&quot;')"
         File="$(_WasmLlvmSizeRsp)"
         Overwrite="true"
         WriteOnlyWhenDifferent="true"
