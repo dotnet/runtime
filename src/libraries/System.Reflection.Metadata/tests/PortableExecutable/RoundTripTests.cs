@@ -183,14 +183,6 @@ public class RoundTripTests
         int mainBodyOffset = methodBodyStream.AddMethodBody(mainIl);
         codeBuilder.Clear();
 
-        var ctorDef = metadataBuilder.AddMethodDefinition(
-            MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
-            MethodImplAttributes.IL | MethodImplAttributes.Managed,
-            metadataBuilder.GetOrAddString(".ctor"),
-            parameterlessCtorBlobIndex,
-            ctorBodyOffset,
-            parameterList: default);
-
         var mainMethodDef = metadataBuilder.AddMethodDefinition(
             MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.HideBySig,
             MethodImplAttributes.IL | MethodImplAttributes.Managed,
@@ -199,13 +191,21 @@ public class RoundTripTests
             mainBodyOffset,
             parameterList: default);
 
+        var ctorDef = metadataBuilder.AddMethodDefinition(
+            MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
+            MethodImplAttributes.IL | MethodImplAttributes.Managed,
+            metadataBuilder.GetOrAddString(".ctor"),
+            parameterlessCtorBlobIndex,
+            ctorBodyOffset,
+            parameterList: default);
+
         metadataBuilder.AddTypeDefinition(
             default,
             default,
             metadataBuilder.GetOrAddString("<Module>"),
             baseType: default,
             fieldList: MetadataTokens.FieldDefinitionHandle(1),
-            methodList: MetadataTokens.MethodDefinitionHandle(1));
+            methodList: mainMethodDef);
 
         metadataBuilder.AddTypeDefinition(
             TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.BeforeFieldInit,
@@ -213,7 +213,7 @@ public class RoundTripTests
             metadataBuilder.GetOrAddString("TestClass"),
             systemObjectTypeRef,
             fieldList: MetadataTokens.FieldDefinitionHandle(1),
-            methodList: ctorDef);
+            methodList: mainMethodDef);
 
         // Build PE
         using var peStream = new MemoryStream();
