@@ -1172,17 +1172,17 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             // 3) Both limits are BinOpArray (which is "arrLen + cns")
             if (l1.IsBinOpArray() && l2.IsBinOpArray())
             {
+                // We shouldn't be seeing BinOpArray limits without a preferredBound.
+                assert(preferredBound != ValueNumStore::NoVN);
+
                 // If one of them is preferredBound and the other is not, use the preferredBound.
-                if (preferredBound != ValueNumStore::NoVN)
+                if ((l1.vn == preferredBound) && (l2.vn != preferredBound))
                 {
-                    if ((l1.vn == preferredBound) && (l2.vn != preferredBound))
-                    {
-                        return l1;
-                    }
-                    if ((l2.vn == preferredBound) && (l1.vn != preferredBound))
-                    {
-                        return l2;
-                    }
+                    return l1;
+                }
+                if ((l2.vn == preferredBound) && (l1.vn != preferredBound))
+                {
+                    return l2;
                 }
 
                 // Otherwise, just use the one with the higher/lower constant.
@@ -1193,13 +1193,16 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             // 4) One of the limits is a constant and the other is BinOpArray
             if ((l1.IsConstant() && l2.IsBinOpArray()) || (l2.IsConstant() && l1.IsBinOpArray()))
             {
+                // We shouldn't be seeing BinOpArray limits without a preferredBound.
+                assert(preferredBound != ValueNumStore::NoVN);
+
                 // l1 - BinOpArray, l2 - constant
                 if (l1.IsConstant())
                 {
                     std::swap(l1, l2);
                 }
 
-                if (((preferredBound == ValueNumStore::NoVN) || (l1.vn != preferredBound)))
+                if (l1.vn != preferredBound)
                 {
                     // if we don't have a preferred bound,
                     // or it doesn't match l1.vn, use the constant (l2).

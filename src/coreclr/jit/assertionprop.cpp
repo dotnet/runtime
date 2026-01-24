@@ -5273,7 +5273,6 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             std::swap(funcApp.m_args[0], funcApp.m_args[1]);
         }
 
-        Range(Limit(Limit::keUnknown));
         if ((funcApp.m_args[0] == vnCurLen) && vnStore->IsVNInt32Constant(funcApp.m_args[1]))
         {
             Range rng = RangeCheck::GetRangeFromAssertions(this, vnCurLen, assertions);
