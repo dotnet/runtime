@@ -482,7 +482,7 @@ namespace System.Security.Cryptography.X509Certificates
         [Event(
             EventId_CrlCacheExpired,
             Level = EventLevel.Verbose,
-            Message = "The CRL cached on disk has a nextUpdate value ({1:O}) that is after the verification time ({0:O}).")]
+            Message = "The CRL cached on disk has a nextUpdate value ({1:O}) that is before the verification time ({0:O}).")]
         internal void CrlCacheExpired(DateTime verificationTime, DateTime nextUpdate)
         {
             if (IsEnabled())
@@ -778,7 +778,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             if (IsEnabled())
             {
-                WriteEvent(EventId_CrlCacheExpired, verificationTime, nextUpdate);
+                WriteEvent(EventId_CrlCacheInMemoryExpired, verificationTime, nextUpdate);
             }
         }
 
