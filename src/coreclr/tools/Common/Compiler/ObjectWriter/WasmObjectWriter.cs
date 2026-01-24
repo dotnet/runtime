@@ -98,16 +98,43 @@ namespace ILCompiler.ObjectWriter
             writer.WriteULEB128((ulong)signatureIndex);
         }
 
-        private void WriteFunctionExport(string methodName, int functionIndex)
+        /// <summary>
+        /// WebAssembly export descriptor kinds per the spec.
+        internal enum WasmExportKind : byte
+        {
+            Function = 0x00,
+            Table = 0x01,
+            Memory = 0x02,
+            Global = 0x03
+        }
+
+        private int NumExports => _numExports;
+        private int _numExports;
+        private void WriteExport(string name, WasmExportKind kind, int index)
         {
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.ExportSection);
-            int length = Encoding.UTF8.GetByteCount(methodName);
+            int length = Encoding.UTF8.GetByteCount(name);
             writer.WriteULEB128((ulong)length);
-            writer.WriteUtf8StringNoNull(methodName);
-            writer.WriteByte(0x00); // export kind: function
-            writer.WriteULEB128((ulong)functionIndex);
+            writer.WriteUtf8StringNoNull(name);
+            writer.WriteByte((byte)kind);
+            writer.WriteULEB128((ulong)index);
+            _numExports++;
         }
-  
+
+        // Convenience methods for specific export types
+        private void WriteFunctionExport(string name, int functionIndex) =>
+            WriteExport(name, WasmExportKind.Function, functionIndex);
+
+        private void WriteTableExport(string name, int tableIndex) =>
+            WriteExport(name, WasmExportKind.Table, tableIndex);
+
+        private void WriteMemoryExport(string name, int memoryIndex) =>
+            WriteExport(name, WasmExportKind.Memory, memoryIndex);
+
+        private void WriteGlobalExport(string name, int globalIndex) =>
+            WriteExport(name, WasmExportKind.Global, globalIndex);
+
+
         private List<WasmSection> _sections = new();
         private Dictionary<string, int> _sectionNameToIndex = new();
         private Dictionary<ObjectNodeSection, WasmSectionType> sectionToType = new()
@@ -268,10 +295,8 @@ namespace ILCompiler.ObjectWriter
         // For now, this function just prepares the function, exports, and type sections for emission by prepending the counts.
         private protected override void EmitSymbolTable(IDictionary<Utf8String, SymbolDefinition> definedSymbols, SortedSet<Utf8String> undefinedSymbols)
         {
-            int funcIdx = _sectionNameToIndex[WasmObjectNodeSection.FunctionSection.Name];
-            PrependCount(_sections[funcIdx], _methodCount);
-            int typeIdx = _sectionNameToIndex[WasmObjectNodeSection.TypeSection.Name];
-            PrependCount(_sections[typeIdx], _uniqueSignatures.Count);
+            WriteMemoryExport("memory", 0);
+            WriteTableExport("table", 0);
 
             string[] functionExports = _uniqueSymbols.Keys.ToArray();
             // TODO-WASM: Handle exports better (e.g., only export public methods, etc.)
@@ -281,8 +306,14 @@ namespace ILCompiler.ObjectWriter
                 WriteFunctionExport(name, _uniqueSymbols[name]);
             }
 
+            int funcIdx = _sectionNameToIndex[WasmObjectNodeSection.FunctionSection.Name];
+            PrependCount(_sections[funcIdx], _methodCount);
+
+            int typeIdx = _sectionNameToIndex[WasmObjectNodeSection.TypeSection.Name];
+            PrependCount(_sections[typeIdx], _uniqueSignatures.Count);
+
             int exportIdx = _sectionNameToIndex[WasmObjectNodeSection.ExportSection.Name];
-            PrependCount(_sections[exportIdx], _methodCount);
+            PrependCount(_sections[exportIdx], NumExports);
         }
     }
 
