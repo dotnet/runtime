@@ -658,8 +658,14 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VA
         return result;
     }
 
+#if DEBUG
     // Currently, we only handle int32 and smaller integer types.
-    assert(varTypeIsInt(comp->vnStore->TypeOfVN(num)) || varTypeIsSmall(comp->vnStore->TypeOfVN(num)));
+    if (!varTypeIsInt(comp->vnStore->TypeOfVN(num)) && !varTypeIsSmall(comp->vnStore->TypeOfVN(num)))
+    {
+        printf("Unexpected type for VN " FMT_VN ": %s\n", num, varTypeName(comp->vnStore->TypeOfVN(num)));
+        unreached();
+    }
+#endif
 
     //
     // First, let's see if we can tighten the range based on VN information.
@@ -813,14 +819,16 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VA
 
         // If phiRange is not yet set, set it to the first edgeRange
         // else merge it with the new edgeRange. Example: [10..100] U [50..150] = [10..150]
-        phiRange = phiRange.LowerLimit().IsUndef() ? edgeRange : RangeOps::Merge(phiRange, edgeRange, false);
+        phiRange = phiRange.IsUndef() ? edgeRange : RangeOps::Merge(phiRange, edgeRange, false);
 
         // if any edge produces a non-constant range, we abort further processing
         // We also give up if the range is full, as it won't help tighten the result.
         return edgeRange.IsConstantRange() && !edgeRange.IsFullRange() ? Compiler::AssertVisit::Continue
                                                                        : Compiler::AssertVisit::Abort;
-    }) == Compiler::AssertVisit::Continue)
+    }) == Compiler::AssertVisit::Continue &&
+        !phiRange.IsUndef())
     {
+        assert(phiRange.IsConstantRange());
         result = phiRange;
     }
 
