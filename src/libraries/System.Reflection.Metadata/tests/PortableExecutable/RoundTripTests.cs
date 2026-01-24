@@ -130,7 +130,12 @@ public class RoundTripTests
 
         foreach (var (name, data) in resources)
         {
-            resourceOffsets[name] = (uint)resourcesBuilder.Count;
+            int currentOffset = resourcesBuilder.Count;
+            if (currentOffset > int.MaxValue || currentOffset < 0)
+            {
+                throw new InvalidOperationException($"Resource offset out of range: {currentOffset}");
+            }
+            resourceOffsets[name] = (uint)currentOffset;
             resourcesBuilder.WriteInt32(data.Length);
             resourcesBuilder.WriteBytes(data);
         }
@@ -212,7 +217,7 @@ public class RoundTripTests
             metadataBuilder.GetOrAddString("TestAssembly"),
             metadataBuilder.GetOrAddString("TestClass"),
             systemObjectTypeRef,
-            fieldList: MetadataTokens.FieldDefinitionHandle(1),
+            fieldList: default(FieldDefinitionHandle),
             methodList: mainMethodDef);
 
         // Build PE
