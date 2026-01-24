@@ -106,9 +106,9 @@ int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32
 #if HAVE_GETRANDOM
     // Try getrandom() first - it's faster than /dev/urandom as it avoids file descriptor overhead.
     // getrandom() was added in Linux 3.17 (2014) and glibc 2.25 (2017).
-    static volatile bool sGetrandomUnavailable;
+    static volatile bool sMissingGetrandom;
 
-    if (!sGetrandomUnavailable)
+    if (!sMissingGetrandom)
     {
         int32_t offset = 0;
         while (offset != bufferLength)
@@ -125,7 +125,7 @@ int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32
                 // Fall back to /dev/urandom for these errors
                 if (errno == ENOSYS || errno == EPERM)
                 {
-                    sGetrandomUnavailable = true;
+                    sMissingGetrandom = true;
                     break;
                 }
                 return -1;
