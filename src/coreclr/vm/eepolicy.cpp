@@ -672,10 +672,18 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         // There are three possible kinds of locations where the stack overflow can happen:
         // 1. In managed code
         // 2. In native code with no explicit frame above the topmost managed frame
-        // 3. In native code with a explicit frame(s) above the topmost managed frame
-        // The FaultingExceptionFrame's context needs to point to the topmost managed code frame except for the case 3.
-        // In that case, it needs to point to the actual frame where the stack overflow happened, otherwise the stack
-        // walker would skip the explicit frame(s) and misbehave.
+        //    This includes: write barriers, JIT stack probes, P/Invoke (InlinedCallFrame),
+        //    and FCALLs (which have no Frame but use standard frame pointer conventions).
+        // 3. In native code with explicit frame(s) above the topmost managed frame
+        //
+        // The FaultingExceptionFrame's context needs to point to the topmost managed code frame
+        // except for case 3. In that case, it needs to point to the actual frame where the stack
+        // overflow happened, otherwise the stack walker would skip the explicit frame(s) and misbehave.
+        //
+        // For case 2, we use deterministic unwinding for known helpers, or walk the frame pointer
+        // chain to find the first managed caller. The frame pointer layout is standard across
+        // supported platforms: [FP] = caller's FP, [FP + sizeof(void*)] = return address.
+        // On ARM32, we also check LR first since it may already contain the managed return address.
         Thread *pThread = GetThreadNULLOk();
         if (pThread)
         {
@@ -717,6 +725,44 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
                         SetIP(pUnwindContext, pICF->m_pCallerReturnAddress);
                         SetSP(pUnwindContext, (TADDR)pICF->m_pCallSiteSP);
                         unwound = true;
+                    }
+                    else
+                    {
+                        // For other native code (e.g., FCALLs which have no Frame),
+                        // unwind through native frames until we reach managed code.
+                        // Limit iterations to avoid infinite loops in case of corrupted stacks.
+                        const int kMaxUnwindIterations = 64;
+
+#if defined(TARGET_ARM)
+                        // On ARM32, the return address is in LR, not on the stack.
+                        // First check if LR already points to managed code - this handles
+                        // the common case where we're only one call deep from managed.
+                        if (ExecutionManager::IsManagedCode(pUnwindContext->Lr))
+                        {
+                            SetIP(pUnwindContext, pUnwindContext->Lr);
+                            unwound = true;
+                        }
+#endif
+                        // Walk the frame pointer chain.
+                        // Standard frame layout: [FP] = caller's FP, [FP + sizeof(void*)] = return address
+                        // GetFP() returns the appropriate register for each architecture:
+                        // x64: RBP, ARM64: X29, ARM32: R7, LoongArch64/RISC-V64: FP
+                        TADDR framePtr = GetFP(pUnwindContext);
+                        for (int i = 0; i < kMaxUnwindIterations && framePtr != 0 && !unwound; i++)
+                        {
+                            TADDR returnAddr = *(TADDR*)(framePtr + sizeof(void*));
+
+                            if (ExecutionManager::IsManagedCode(returnAddr))
+                            {
+                                SetIP(pUnwindContext, returnAddr);
+                                SetSP(pUnwindContext, framePtr + 2 * sizeof(void*));
+                                unwound = true;
+                                break;
+                            }
+
+                            // Move to caller's frame
+                            framePtr = *(TADDR*)framePtr;
+                        }
                     }
                 }
 
