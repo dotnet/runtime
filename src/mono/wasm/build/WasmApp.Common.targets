@@ -564,6 +564,9 @@
         Overwrite="true"
         WriteOnlyWhenDifferent="true"
         />
+    <ItemGroup Condition="'$(_WasmShouldAOT)' == 'true'">
+      <FileWrites Include="$(_WasmLlvmSizeRsp)" />
+    </ItemGroup>
     <Exec Command='llvm-size$(_ExeExt) -d --format=sysv "@$(_WasmLlvmSizeRsp)"'
           Condition="'$(_WasmShouldAOT)' == 'true'"
           IgnoreStandardErrorWarningFormat="true"
