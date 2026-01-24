@@ -673,6 +673,9 @@ bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_
         return true;
     }
 
+    // Start with the widest possible constant range.
+    Range result = Range(Limit(Limit::keConstant, INT32_MIN), Limit(Limit::keConstant, INT32_MAX));
+
     VNFuncApp funcApp;
     if (comp->vnStore->GetVNFunc(num, &funcApp))
     {
@@ -687,34 +690,116 @@ bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_
                     switch (castToType)
                     {
                         case TYP_UBYTE:
-                            pRange->lLimit = Limit(Limit::keConstant, UINT8_MIN);
-                            pRange->uLimit = Limit(Limit::keConstant, UINT8_MAX);
+                            result.lLimit = Limit(Limit::keConstant, UINT8_MIN);
+                            result.uLimit = Limit(Limit::keConstant, UINT8_MAX);
                             break;
 
                         case TYP_BYTE:
-                            pRange->lLimit = Limit(Limit::keConstant, INT8_MIN);
-                            pRange->uLimit = Limit(Limit::keConstant, INT8_MAX);
+                            result.lLimit = Limit(Limit::keConstant, INT8_MIN);
+                            result.uLimit = Limit(Limit::keConstant, INT8_MAX);
                             break;
 
                         case TYP_USHORT:
-                            pRange->lLimit = Limit(Limit::keConstant, UINT16_MIN);
-                            pRange->uLimit = Limit(Limit::keConstant, UINT16_MAX);
+                            result.lLimit = Limit(Limit::keConstant, UINT16_MIN);
+                            result.uLimit = Limit(Limit::keConstant, UINT16_MAX);
                             break;
 
                         case TYP_SHORT:
-                            pRange->lLimit = Limit(Limit::keConstant, INT16_MIN);
-                            pRange->uLimit = Limit(Limit::keConstant, INT16_MAX);
+                            result.lLimit = Limit(Limit::keConstant, INT16_MIN);
+                            result.uLimit = Limit(Limit::keConstant, INT16_MAX);
                             break;
 
                         default:
                             break;
                     }
+
+                    // If we wanted to be more precise, we could also try to get the range of the source
+                    // and if it's smaller than the cast range, use that.
                 }
                 break;
 
+            case VNF_LSH:
+            case VNF_ADD:
+            case VNF_MUL:
+            case VNF_AND:
+            case VNF_OR:
+            case VNF_RSH:
+            case VNF_RSZ:
+            case VNF_UMOD:
+            {
+                // Get ranges of both operands and perform the same operation on the ranges.
+                Range r1 = Range(Limit(Limit::keUnknown));
+                Range r2 = Range(Limit(Limit::keUnknown));
+                if (TryGetRangeFromAssertions(comp, funcApp.m_args[0], assertions, &r1) &&
+                    TryGetRangeFromAssertions(comp, funcApp.m_args[1], assertions, &r2))
+                {
+                    Range binOpResult = Range(Limit(Limit::keUnknown));
+                    switch (funcApp.m_func)
+                    {
+                        case VNF_ADD:
+                            binOpResult = RangeOps::Add(r1, r2);
+                            break;
+                        case VNF_MUL:
+                            binOpResult = RangeOps::Multiply(r1, r2);
+                            break;
+                        case VNF_AND:
+                            binOpResult = RangeOps::And(r1, r2);
+                            break;
+                        case VNF_OR:
+                            binOpResult = RangeOps::Or(r1, r2);
+                            break;
+                        case VNF_LSH:
+                            binOpResult = RangeOps::ShiftLeft(r1, r2);
+                            break;
+                        case VNF_RSH:
+                            binOpResult = RangeOps::ShiftRight(r1, r2, /*logical*/ false);
+                            break;
+                        case VNF_RSZ:
+                            binOpResult = RangeOps::ShiftRight(r1, r2, /*logical*/ true);
+                            break;
+                        case VNF_UMOD:
+                            binOpResult = RangeOps::UnsignedMod(r1, r2);
+                            break;
+                        default:
+                            unreached();
+                    }
+
+                    if (binOpResult.IsConstantRange())
+                    {
+                        result = binOpResult;
+                    }
+                    // if the result is unknown (or may overflow), we'll just analyze the binop itself based on the
+                    // assertions
+                }
+                break;
+            }
+
+            case VNF_MDARR_LENGTH:
             case VNF_ARR_LENGTH:
-                pRange->lLimit = Limit(Limit::keConstant, 0);
-                pRange->uLimit = Limit(Limit::keConstant, CORINFO_Array_MaxLength);
+                result.lLimit = Limit(Limit::keConstant, 0);
+                result.uLimit = Limit(Limit::keConstant, CORINFO_Array_MaxLength);
+                break;
+
+            case VNF_GT:
+            case VNF_GT_UN:
+            case VNF_GE:
+            case VNF_GE_UN:
+            case VNF_LT:
+            case VNF_LT_UN:
+            case VNF_LE_UN:
+            case VNF_LE:
+            case VNF_EQ:
+            case VNF_NE:
+                result.lLimit = Limit(Limit::keConstant, 0);
+                result.uLimit = Limit(Limit::keConstant, 1);
+                break;
+
+            case VNF_LeadingZeroCount:
+            case VNF_TrailingZeroCount:
+            case VNF_PopCount:
+                // We can be a bit more precise here if we want to
+                result.lLimit = Limit(Limit::keConstant, 0);
+                result.uLimit = Limit(Limit::keConstant, 64);
                 break;
 
             default:
@@ -722,9 +807,10 @@ bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_
         }
     }
 
-    MergeEdgeAssertions(comp, num, ValueNumStore::NoVN, assertions, pRange, false);
-    assert(pRange->IsValid());
-    return !pRange->LowerLimit().IsUnknown() || !pRange->UpperLimit().IsUnknown();
+    MergeEdgeAssertions(comp, num, ValueNumStore::NoVN, assertions, &result, false);
+    assert(result.IsConstantRange());
+    *pRange = result;
+    return true;
 }
 
 //------------------------------------------------------------------------

@@ -18,9 +18,10 @@
 
 void emitter::emitIns(instruction ins)
 {
-    instrDesc* id = emitNewInstrSmall(EA_8BYTE);
+    instrDesc* id  = emitNewInstrSmall(EA_8BYTE);
+    insFormat  fmt = emitInsFormat(ins);
     id->idIns(ins);
-    id->idInsFmt(IF_OPCODE);
+    id->idInsFmt(fmt);
 
     dispIns(id);
     appendToCurIG(id);

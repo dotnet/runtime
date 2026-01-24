@@ -177,7 +177,8 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
 {
     // At this point, the IR is already stackified, so we just need to find the first node in the dataflow.
     // TODO-WASM-TP: this is nice and simple, but can we do this more efficiently?
-    GenTree*             op = lclNode->Data();
+    GenTree*             value = lclNode->Data();
+    GenTree*             op    = value;
     GenTree::VisitResult visitResult;
     do
     {
@@ -187,23 +188,25 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
         });
     } while (visitResult == GenTree::VisitResult::Abort);
 
+    // TODO-WASM-RA: figure out the address mode story here. Right now this will produce an address not folded
+    // into the store's address mode. We can utilize a contained LEA, but that will require some liveness work.
+    uint16_t offset = lclNode->GetLclOffs();
+    lclNode->SetOper(GT_LCL_ADDR);
+    lclNode->ChangeType(TYP_I_IMPL);
+    lclNode->AsLclFld()->SetLclOffs(offset);
+
     GenTree*     store;
     GenTreeFlags indFlags = GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
     if (lclNode->TypeIs(TYP_STRUCT))
     {
-        store = m_compiler->gtNewStoreBlkNode(lclNode->GetLayout(m_compiler), lclNode, lclNode->Data(), indFlags);
+        store = m_compiler->gtNewStoreBlkNode(lclNode->GetLayout(m_compiler), lclNode, value, indFlags);
     }
     else
     {
-        store = m_compiler->gtNewStoreIndNode(lclNode->TypeGet(), lclNode, lclNode->Data(), indFlags);
+        store = m_compiler->gtNewStoreIndNode(lclNode->TypeGet(), lclNode, value, indFlags);
     }
     CurrentRange().InsertAfter(lclNode, store);
     CurrentRange().Remove(lclNode);
-
-    // TODO-WASM-RA: figure out the address mode story here. Right now this will produce an address not folded
-    // into the store's address mode. We can utilize a contained LEA, but that will require some liveness work.
-    lclNode->SetOper(GT_LCL_ADDR);
-    lclNode->ChangeType(TYP_I_IMPL);
     CurrentRange().InsertBefore(op, lclNode);
 }
 
