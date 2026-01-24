@@ -221,7 +221,7 @@ Write-Host ""
 Write-Host "Collecting coverage..." -ForegroundColor Cyan
 Write-Host "Running: coverlet $($coverletArgs -join ' ')" -ForegroundColor Gray
 Write-Host ""
-& coverlet @coverletArgs
+& $dotnetPath coverlet @coverletArgs
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Coverage collection failed with exit code $LASTEXITCODE"
@@ -243,7 +243,7 @@ Write-Host "Generating HTML report..." -ForegroundColor Cyan
 
 if ($coverageFile) {
     $htmlOutputDir = Join-Path $OutputDir "html"
-    & reportgenerator "-reports:$($coverageFile.FullName)" "-targetdir:$htmlOutputDir" "-reporttypes:Html"
+    & $dotnetPath reportgenerator "-reports:$($coverageFile.FullName)" "-targetdir:$htmlOutputDir" "-reporttypes:Html"
 
     if ($LASTEXITCODE -eq 0) {
         Write-Host ""
