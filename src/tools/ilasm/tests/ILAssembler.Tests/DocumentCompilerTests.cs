@@ -842,222 +842,35 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
-        public void Diagnostic_InvalidPInvokeSignature_DoesNotThrow()
+        public void Diagnostic_InvalidPInvokeSignature()
         {
-            // InvalidPInvokeSignature is triggered when pinvokeimpl has an empty module name
-            // This is tested via the code path but difficult to reach with valid IL syntax
-            // The implementation handles the error gracefully
+            // P/Invoke with no module name triggers InvalidPInvokeSignature
             string source = """
                 .assembly test { }
                 .class public auto ansi Test
                 {
-                    .method public static void TestMethod() cil managed
+                    .method public static pinvokeimpl() void TestMethod() cil managed
                     {
-                        ret
-                    }
-                }
-                """;
-
-            // Verify that even simple IL compiles - the pinvoke error code exists but requires specific syntax
-            var diagnostics = CompileAndGetDiagnostics(source, new Options());
-            // Should compile successfully
-            Assert.Empty(diagnostics);
-        }
-
-        [Fact]
-        public void Diagnostic_MissingInstanceCallConv_DoesNotThrow()
-        {
-            // MissingInstanceCallConv is triggered when a method reference is expected to have
-            // an instance calling convention but the method is static
-            // This is tested via the code path but requires specific method reference contexts
-            string source = """
-                .assembly test { }
-                .class public auto ansi Test
-                {
-                    .method public static void TestMethod() cil managed
-                    {
-                        ret
-                    }
-                }
-                """;
-
-            // Verify compilation works - this diagnostic code path exists
-            var diagnostics = CompileAndGetDiagnostics(source, new Options());
-            Assert.Empty(diagnostics);
-        }
-
-        [Fact]
-        public void Diagnostic_DeprecatedNativeTypes_CompileWithoutErrors()
-        {
-            // Test that deprecated native type handling doesn't crash
-            // The warnings are internal and don't prevent compilation
-            string source = """
-                .assembly test { }
-                .class public auto ansi Test
-                {
-                    .method public static void TestMethod() cil managed
-                    {
-                        ret
-                    }
-                }
-                """;
-
-            // Should not throw even with deprecated types
-            var diagnostics = CompileAndGetDiagnostics(source, new Options());
-            // If we got here without exception, the code path was handled
-            Assert.True(diagnostics.Length >= 0);
-        }
-
-        [Fact]
-        public void Diagnostic_DeprecatedCustomMarshaller_CompileWithoutErrors()
-        {
-            // Test that deprecated 4-string custom marshaller syntax is handled
-            string source = """
-                .assembly test { }
-                .class public auto ansi Test
-                {
-                    .method public static void TestMethod() cil managed
-                    {
-                        ret
-                    }
-                }
-                """;
-
-            // Should not throw and should handle the deprecated form gracefully
-            var diagnostics = CompileAndGetDiagnostics(source, new Options());
-            Assert.True(diagnostics.Length >= 0);
-        }
-
-        [Fact]
-        public void Diagnostic_UnsupportedSecurityPermission_ReportsError()
-        {
-            // UnsupportedSecurityDeclaration is triggered when using .permission (individual permission)
-            // instead of .permissionset (permission set)
-            // This requires the proper syntax which is difficult to construct in valid IL
-            string source = """
-                .assembly test { }
-                .class public auto ansi Test
-                {
-                    .method public static void TestMethod() cil managed
-                    {
-                        ret
-                    }
-                }
-                """;
-
-            // Verify basic compilation works - the security permission error code exists
-            // but requires specific .permission syntax
-            var diagnostics = CompileAndGetDiagnostics(source, new Options());
-            Assert.Empty(diagnostics);
-        }
-
-        [Fact]
-        public void Diagnostic_ThisOutsideClass()
-        {
-            string source = """
-                .assembly test { }
-                .class public auto ansi Test
-                {
-                    .method public static void TestMethod() cil managed
-                    {
-                        ret
                     }
                 }
                 """;
 
             var diagnostics = CompileAndGetDiagnostics(source, new Options());
-            // ThisOutsideClass is hard to trigger with valid IL - just verify compilation works
-            Assert.True(diagnostics.Length >= 0);
-        }
-
-        [Fact]
-        public void Diagnostic_BaseOutsideClass()
-        {
-            string source = """
-                .assembly test { }
-                .class public auto ansi Test
-                {
-                    .method public static void TestMethod() cil managed
-                    {
-                        ret
-                    }
-                }
-                """;
-
-            var diagnostics = CompileAndGetDiagnostics(source, new Options());
-            // BaseOutsideClass is hard to trigger with valid IL - just verify compilation works
-            Assert.True(diagnostics.Length >= 0);
-        }
-
-        [Fact]
-        public void Diagnostic_NesterOutsideNestedClass()
-        {
-            string source = """
-                .assembly test { }
-                .class public auto ansi Test
-                {
-                    .method public static void TestMethod() cil managed
-                    {
-                        .nester Outer
-                        nop
-                        ret
-                    }
-                }
-                """;
-
-            var diagnostics = CompileAndGetDiagnostics(source, new Options());
-            var error = diagnostics.FirstOrDefault(d => d.Id == DiagnosticIds.NesterOutsideNestedClass);
-            // May or may not trigger depending on parser - just verify compilation doesn't crash
-            Assert.True(diagnostics.Length >= 0);
-        }
-
-        [Fact]
-        public void Diagnostic_ModuleNotFound()
-        {
-            string source = """
-                .assembly test { }
-                .class public auto ansi Test
-                {
-                    .method public static void TestMethod() cil managed
-                    {
-                        ret
-                    }
-                }
-                """;
-
-            var diagnostics = CompileAndGetDiagnostics(source, new Options());
-            // ModuleNotFound diagnostic code path exists - verify compilation works
-            Assert.True(diagnostics.Length >= 0);
-        }
-
-        [Fact]
-        public void Diagnostic_TypeNotFound()
-        {
-            string source = """
-                .assembly test { }
-                .class public auto ansi Test extends NonexistentType
-                {
-                    .method public static void TestMethod() cil managed
-                    {
-                        ret
-                    }
-                }
-                """;
-
-            var diagnostics = CompileAndGetDiagnostics(source, new Options());
-            var error = diagnostics.FirstOrDefault(d => d.Id == DiagnosticIds.TypeNotFound);
-            Assert.NotNull(error);
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.InvalidPInvokeSignature, error.Id);
             Assert.Equal(DiagnosticSeverity.Error, error.Severity);
         }
 
         [Fact]
-        public void Diagnostic_MethodTypeParameterOutsideMethod()
+        public void Diagnostic_DeprecatedNativeType_Variant()
         {
+            // Using deprecated VARIANT native type triggers warning
             string source = """
+                .assembly extern mscorlib { }
                 .assembly test { }
-                .class public auto ansi Test<!T>
+                .class public auto ansi Test extends [mscorlib]System.Object
                 {
-                    .method public static void TestMethod() cil managed
+                    .method public static void TestMethod(object marshal(variant) arg) cil managed
                     {
                         ret
                     }
@@ -1065,102 +878,100 @@ namespace ILAssembler.Tests
                 """;
 
             var diagnostics = CompileAndGetDiagnostics(source, new Options());
-            // Type parameters on class are valid, method params outside method would error
-            Assert.True(diagnostics.Length >= 0);
+            var warning = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.DeprecatedNativeType, warning.Id);
+            Assert.Equal(DiagnosticSeverity.Warning, warning.Severity);
         }
 
         [Fact]
-        public void Diagnostic_TypeParameterOutsideType()
+        public void Diagnostic_DeprecatedCustomMarshaller()
         {
+            // Using 4-string custom marshaller syntax triggers warning
             string source = """
+                .assembly extern mscorlib { }
                 .assembly test { }
-                .method public static void TestMethod<!T>() cil managed
+                .class public auto ansi Test extends [mscorlib]System.Object
                 {
-                    ret
-                }
-                """;
-
-            var diagnostics = CompileAndGetDiagnostics(source, new Options());
-            var error = diagnostics.FirstOrDefault(d => d.Id == DiagnosticIds.TypeParameterOutsideType);
-            // May trigger depending on parsing - verify compilation works
-            Assert.True(diagnostics.Length >= 0);
-        }
-
-        [Fact]
-        public void Diagnostic_TypedefNotFound()
-        {
-            string source = """
-                .assembly test { }
-                .class public auto ansi Test
-                {
-                    .method public static void TestMethod() cil managed
+                    .method public static void TestMethod(object marshal(custom("guid", "nativeType", "marshallerType", "cookie")) arg) cil managed
                     {
-                        .local init (int32 local1)
                         ret
                     }
                 }
                 """;
 
             var diagnostics = CompileAndGetDiagnostics(source, new Options());
-            // TypedefNotFound requires custom typedef - just verify compilation works
-            Assert.True(diagnostics.Length >= 0);
+            var warning = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.DeprecatedCustomMarshaller, warning.Id);
+            Assert.Equal(DiagnosticSeverity.Warning, warning.Severity);
+        }
+
+        [Fact]
+        public void Diagnostic_UnsupportedSecurityDeclaration()
+        {
+            // Using .permission instead of .permissionset triggers error
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        .permission demand [mscorlib]System.Security.Permissions.SecurityPermissionAttribute
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.UnsupportedSecurityDeclaration, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
         }
 
         [Fact]
         public void Diagnostic_GenericParameterIndexOutOfRange()
         {
+            // Referencing generic parameter index that doesn't exist
             string source = """
+                .assembly extern mscorlib { }
                 .assembly test { }
-                .class public auto ansi Test
+                .class public auto ansi Test extends [mscorlib]System.Object
                 {
                     .method public static void TestMethod<T>() cil managed
                     {
+                        .param type [99]
                         ret
                     }
                 }
                 """;
 
             var diagnostics = CompileAndGetDiagnostics(source, new Options());
-            // GenericParameterIndexOutOfRange diagnostic code path exists
-            Assert.True(diagnostics.Length >= 0);
-        }
-
-        [Fact]
-        public void Diagnostic_UnknownGenericParameter()
-        {
-            string source = """
-                .assembly test { }
-                .class public auto ansi Test
-                {
-                    .method public static void TestMethod<T>() cil managed
-                    {
-                        ret
-                    }
-                }
-                """;
-
-            var diagnostics = CompileAndGetDiagnostics(source, new Options());
-            // UnknownGenericParameter diagnostic code path exists
-            Assert.True(diagnostics.Length >= 0);
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.GenericParameterIndexOutOfRange, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
         }
 
         [Fact]
         public void Diagnostic_ParameterIndexOutOfRange()
         {
+            // Referencing parameter index that doesn't exist
             string source = """
+                .assembly extern mscorlib { }
                 .assembly test { }
-                .class public auto ansi Test
+                .class public auto ansi Test extends [mscorlib]System.Object
                 {
                     .method public static void TestMethod(int32 x) cil managed
                     {
+                        .param [99]
                         ret
                     }
                 }
                 """;
 
             var diagnostics = CompileAndGetDiagnostics(source, new Options());
-            // ParameterIndexOutOfRange diagnostic code path exists
-            Assert.True(diagnostics.Length >= 0);
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.ParameterIndexOutOfRange, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
         }
 
         [Fact]
