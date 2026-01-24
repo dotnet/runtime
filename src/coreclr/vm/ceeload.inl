@@ -55,7 +55,7 @@ SIZE_T LookupMap<SIZE_T>::GetValueAt(PTR_TADDR pValue, TADDR* pFlags, TADDR supp
     // dependency instead of an explicit barrier here. However, the access pattern between
     // m_TypeDefToMethodTableMap and m_MethodDefToDescMap/m_FieldDefToDescMap is such that a
     // data dependency is not sufficient to ensure that the MethodTable is visible when we
-    // access the MethodDesc/FieldDesc. Since those loads are independent. So we use
+    // access the MethodDesc/FieldDesc. Since those loads are independent, we use
     // VolatileLoad here to ensure proper ordering.
     TADDR value = VolatileLoad(pValue);
 
