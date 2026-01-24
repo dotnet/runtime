@@ -21,6 +21,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 // MVID: {278BBD66-C040-4E84-A7AB-909BC878147E}
 .imagebase 0x00400000
 .subsystem 0x00000003

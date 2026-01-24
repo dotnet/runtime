@@ -3,6 +3,7 @@
 
 .assembly extern System.Console { }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly 'RMV-2-15-12b'{}
 .assembly extern mscorlib {}
 

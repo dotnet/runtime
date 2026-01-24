@@ -5,6 +5,7 @@
 .assembly extern xunit.core {}
 .assembly BIGDAT {}
 .assembly extern mscorlib{}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .module BIGDAT
 .class public 'BIGDAT'
 {
