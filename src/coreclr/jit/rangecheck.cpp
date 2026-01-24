@@ -1022,7 +1022,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                     // We're not interested in keBinOpArray limits if canUseCheckedBounds is false.
                     // Instead, see if we can deduce anything keConstant out if this BoundsCheckNoThrow
                     int len = 0;
-                    if (comp->vnStore->IsVNIntegralConstant(lenVN, &len))
+                    if (comp->vnStore->IsVNIntegralConstant(lenVN, &len) && (len >= 0))
                     {
                         // length is a constant, so we know "index u< lengthCNS"
                         isUnsigned = true;
