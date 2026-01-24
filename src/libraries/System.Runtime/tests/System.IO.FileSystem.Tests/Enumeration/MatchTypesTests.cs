@@ -222,24 +222,24 @@ namespace System.IO.Tests.Enumeration
             normalFile.Create().Dispose();
 
             // Pattern ".*" matches files starting with dot (includes both .gitignore and ..foo)
-            string[] paths = GetPaths(testDirectory.FullName, ".*", new EnumerationOptions { MatchType = MatchType.Win32 });
+            string[] paths = GetPaths(testDirectory.FullName, ".*", new EnumerationOptions { MatchType = MatchType.Win32, AttributesToSkip = 0 });
             FSAssert.EqualWhenOrdered(new string[] { dotFile.FullName, doubleDotFile.FullName }, paths);
 
-            paths = GetPaths(testDirectory.FullName, ".*", new EnumerationOptions { MatchType = MatchType.Simple });
+            paths = GetPaths(testDirectory.FullName, ".*", new EnumerationOptions { MatchType = MatchType.Simple, AttributesToSkip = 0 });
             FSAssert.EqualWhenOrdered(new string[] { dotFile.FullName, doubleDotFile.FullName }, paths);
 
             // Pattern "..*" should match files starting with two dots
-            paths = GetPaths(testDirectory.FullName, "..*", new EnumerationOptions { MatchType = MatchType.Win32 });
+            paths = GetPaths(testDirectory.FullName, "..*", new EnumerationOptions { MatchType = MatchType.Win32, AttributesToSkip = 0 });
             FSAssert.EqualWhenOrdered(new string[] { doubleDotFile.FullName }, paths);
 
-            paths = GetPaths(testDirectory.FullName, "..*", new EnumerationOptions { MatchType = MatchType.Simple });
+            paths = GetPaths(testDirectory.FullName, "..*", new EnumerationOptions { MatchType = MatchType.Simple, AttributesToSkip = 0 });
             FSAssert.EqualWhenOrdered(new string[] { doubleDotFile.FullName }, paths);
 
             // Exact match for .gitignore
-            paths = GetPaths(testDirectory.FullName, ".gitignore", new EnumerationOptions { MatchType = MatchType.Win32 });
+            paths = GetPaths(testDirectory.FullName, ".gitignore", new EnumerationOptions { MatchType = MatchType.Win32, AttributesToSkip = 0 });
             FSAssert.EqualWhenOrdered(new string[] { dotFile.FullName }, paths);
 
-            paths = GetPaths(testDirectory.FullName, ".gitignore", new EnumerationOptions { MatchType = MatchType.Simple });
+            paths = GetPaths(testDirectory.FullName, ".gitignore", new EnumerationOptions { MatchType = MatchType.Simple, AttributesToSkip = 0 });
             FSAssert.EqualWhenOrdered(new string[] { dotFile.FullName }, paths);
         }
 
@@ -363,11 +363,11 @@ namespace System.IO.Tests.Enumeration
             file3.Create().Dispose();
 
             // Win32: "?.txt" - DOS_QM can skip to the dot, matches "a.txt" and ".txt"
-            string[] paths = GetPaths(testDirectory.FullName, "?.txt", new EnumerationOptions { MatchType = MatchType.Win32 });
+            string[] paths = GetPaths(testDirectory.FullName, "?.txt", new EnumerationOptions { MatchType = MatchType.Win32, AttributesToSkip = 0 });
             FSAssert.EqualWhenOrdered(new string[] { file3.FullName, file1.FullName }, paths);
 
             // Simple: "?.txt" must have exactly one character before .txt
-            paths = GetPaths(testDirectory.FullName, "?.txt", new EnumerationOptions { MatchType = MatchType.Simple });
+            paths = GetPaths(testDirectory.FullName, "?.txt", new EnumerationOptions { MatchType = MatchType.Simple, AttributesToSkip = 0 });
             FSAssert.EqualWhenOrdered(new string[] { file1.FullName }, paths);
         }
 
@@ -832,30 +832,30 @@ namespace System.IO.Tests.Enumeration
             gitDir.Create().Dispose();
 
             // .git* - files starting with .git
-            string[] paths = GetPaths(testDirectory.FullName, ".git*", new EnumerationOptions { MatchType = MatchType.Win32 });
+            string[] paths = GetPaths(testDirectory.FullName, ".git*", new EnumerationOptions { MatchType = MatchType.Win32, AttributesToSkip = 0 });
             FSAssert.EqualWhenOrdered(new string[] { gitconfig.FullName, gitignore.FullName }, paths);
 
-            paths = GetPaths(testDirectory.FullName, ".git*", new EnumerationOptions { MatchType = MatchType.Simple });
+            paths = GetPaths(testDirectory.FullName, ".git*", new EnumerationOptions { MatchType = MatchType.Simple, AttributesToSkip = 0 });
             FSAssert.EqualWhenOrdered(new string[] { gitconfig.FullName, gitignore.FullName }, paths);
 
             // .??? - files with dot followed by exactly 3 chars
             // Win32: .??? with DOS_QM collapses to dot, so .a, .ab, .env all match
-            paths = GetPaths(testDirectory.FullName, ".???", new EnumerationOptions { MatchType = MatchType.Win32 });
+            paths = GetPaths(testDirectory.FullName, ".???", new EnumerationOptions { MatchType = MatchType.Win32, AttributesToSkip = 0 });
             FSAssert.EqualWhenOrdered(new string[] { dotA.FullName, dotAB.FullName, env.FullName }, paths);
 
             // Simple: .??? must be exactly 3 chars after dot
-            paths = GetPaths(testDirectory.FullName, ".???", new EnumerationOptions { MatchType = MatchType.Simple });
+            paths = GetPaths(testDirectory.FullName, ".???", new EnumerationOptions { MatchType = MatchType.Simple, AttributesToSkip = 0 });
             FSAssert.EqualWhenOrdered(new string[] { env.FullName }, paths);
 
             // .env* - matches .env and .env.local
-            paths = GetPaths(testDirectory.FullName, ".env*", new EnumerationOptions { MatchType = MatchType.Win32 });
+            paths = GetPaths(testDirectory.FullName, ".env*", new EnumerationOptions { MatchType = MatchType.Win32, AttributesToSkip = 0 });
             FSAssert.EqualWhenOrdered(new string[] { env.FullName, envLocal.FullName }, paths);
 
             // ..* - files starting with two dots
-            paths = GetPaths(testDirectory.FullName, "..*", new EnumerationOptions { MatchType = MatchType.Win32 });
+            paths = GetPaths(testDirectory.FullName, "..*", new EnumerationOptions { MatchType = MatchType.Win32, AttributesToSkip = 0 });
             FSAssert.EqualWhenOrdered(new string[] { doubleDot.FullName }, paths);
 
-            paths = GetPaths(testDirectory.FullName, "..*", new EnumerationOptions { MatchType = MatchType.Simple });
+            paths = GetPaths(testDirectory.FullName, "..*", new EnumerationOptions { MatchType = MatchType.Simple, AttributesToSkip = 0 });
             FSAssert.EqualWhenOrdered(new string[] { doubleDot.FullName }, paths);
         }
     }
