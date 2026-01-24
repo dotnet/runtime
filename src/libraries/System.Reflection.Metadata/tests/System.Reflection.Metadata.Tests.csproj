@@ -82,6 +82,7 @@
     <Compile Include="PortableExecutable\PEBuilderTests.cs" />
     <Compile Include="PortableExecutable\PEHeadersTests.cs" />
     <Compile Include="PortableExecutable\PEReaderTests.cs" />
+    <Compile Include="PortableExecutable\RoundTripTests.cs" />
     <Compile Include="PortableExecutable\SectionHeaderTests.cs" />
     <Compile Include="Utilities\HashTests.cs" />
     <Compile Include="Utilities\StreamExtensionsTests.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
@@ -155,6 +156,10 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
                       Private="true"
                       SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
