@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
-using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Resources;
@@ -177,6 +176,12 @@ public class RoundTripTests
                 PEMemoryBlock resourceDirectory = peReader.GetSectionData(peReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
                 var blobReader = resourceDirectory.GetReader((int)resource.Offset, resourceDirectory.Length - (int)resource.Offset);
                 int length = blobReader.ReadInt32();
+
+                if (length < 0 || length > blobReader.RemainingBytes)
+                {
+                    throw new BadImageFormatException($"Invalid resource length: {length}");
+                }
+
                 byte[] data = blobReader.ReadBytes(length);
 
                 actualResources[name] = data;
@@ -217,6 +222,12 @@ public class RoundTripTests
         PEMemoryBlock resourceDirectory = peReader.GetSectionData(peReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
         var blobReader = resourceDirectory.GetReader((int)managedResource.Offset, resourceDirectory.Length - (int)managedResource.Offset);
         int length = blobReader.ReadInt32();
+
+        if (length < 0 || length > blobReader.RemainingBytes)
+        {
+            throw new BadImageFormatException($"Invalid resource length: {length}");
+        }
+
         byte[] resourceData = blobReader.ReadBytes(length);
 
         using var resourceStream = new MemoryStream(resourceData);
