@@ -83,7 +83,7 @@ namespace ILAssembler
             });
         }
 
-        private IReadOnlyList<EntityBase> GetSeenEntities(TableIndex table)
+        public IReadOnlyList<EntityBase> GetSeenEntities(TableIndex table)
         {
             if (_seenEntities.TryGetValue(table, out var entities))
             {
@@ -221,6 +221,11 @@ namespace ILAssembler
                 if (fieldDef.MarshallingDescriptor is not null)
                 {
                     builder.AddMarshallingDescriptor(fieldDef.Handle, builder.GetOrAddBlob(fieldDef.MarshallingDescriptor));
+                }
+
+                if (fieldDef.HasConstant)
+                {
+                    builder.AddConstant(fieldDef.Handle, fieldDef.ConstantValue);
                 }
             }
 
@@ -386,41 +391,26 @@ namespace ILAssembler
             }
 
             static FieldDefinitionHandle GetFieldHandleForList(IReadOnlyList<EntityBase> list, IReadOnlyList<EntityBase> listOwner, Func<EntityBase, IReadOnlyList<EntityBase>> getList, int ownerIndex)
-            {
-                var handle = GetHandleForList(list, listOwner, getList, ownerIndex, TableIndex.Field);
-                return handle.IsNil ? default : (FieldDefinitionHandle)handle;
-            }
+                => (FieldDefinitionHandle)GetHandleForList(list, listOwner, getList, ownerIndex, TableIndex.Field);
 
             static MethodDefinitionHandle GetMethodHandleForList(IReadOnlyList<EntityBase> list, IReadOnlyList<EntityBase> listOwner, Func<EntityBase, IReadOnlyList<EntityBase>> getList, int ownerIndex)
-            {
-                var handle = GetHandleForList(list, listOwner, getList, ownerIndex, TableIndex.MethodDef);
-                return handle.IsNil ? default : (MethodDefinitionHandle)handle;
-            }
+                => (MethodDefinitionHandle)GetHandleForList(list, listOwner, getList, ownerIndex, TableIndex.MethodDef);
 
             static PropertyDefinitionHandle GetPropertyHandleForList(IReadOnlyList<EntityBase> list, IReadOnlyList<EntityBase> listOwner, Func<EntityBase, IReadOnlyList<EntityBase>> getList, int ownerIndex)
-            {
-                var handle = GetHandleForList(list, listOwner, getList, ownerIndex, TableIndex.Property);
-                return handle.IsNil ? default : (PropertyDefinitionHandle)handle;
-            }
+                => (PropertyDefinitionHandle)GetHandleForList(list, listOwner, getList, ownerIndex, TableIndex.Property);
 
             static EventDefinitionHandle GetEventHandleForList(IReadOnlyList<EntityBase> list, IReadOnlyList<EntityBase> listOwner, Func<EntityBase, IReadOnlyList<EntityBase>> getList, int ownerIndex)
-            {
-                var handle = GetHandleForList(list, listOwner, getList, ownerIndex, TableIndex.Event);
-                return handle.IsNil ? default : (EventDefinitionHandle)handle;
-            }
+                => (EventDefinitionHandle)GetHandleForList(list, listOwner, getList, ownerIndex, TableIndex.Event);
 
             static ParameterHandle GetParameterHandleForList(IReadOnlyList<EntityBase> list, IReadOnlyList<EntityBase> listOwner, Func<EntityBase, IReadOnlyList<EntityBase>> getList, int ownerIndex)
-            {
-                var handle = GetHandleForList(list, listOwner, getList, ownerIndex, TableIndex.Param);
-                return handle.IsNil ? default : (ParameterHandle)handle;
-            }
+                => (ParameterHandle)GetHandleForList(list, listOwner, getList, ownerIndex, TableIndex.Param);
 
             static EntityHandle GetHandleForList(IReadOnlyList<EntityBase> list, IReadOnlyList<EntityBase> listOwner, Func<EntityBase, IReadOnlyList<EntityBase>> getList, int ownerIndex, TableIndex tokenType)
             {
                 // Return the first entry in the list.
                 // If the list is empty, return the start of the next list.
                 // If there is no next list, return one past the end of the previous list.
-                if (list.Count != 0)
+                if (list.Count != 0 && !list[0].Handle.IsNil)
                 {
                     return list[0].Handle;
                 }
@@ -428,7 +418,7 @@ namespace ILAssembler
                 for (int i = 0; i < listOwner.Count; i++)
                 {
                     var otherList = getList(listOwner[i]);
-                    if (otherList.Count != 0)
+                    if (otherList.Count != 0 && !otherList[0].Handle.IsNil)
                     {
                         return otherList[0].Handle;
                     }
@@ -437,13 +427,13 @@ namespace ILAssembler
                 for (int i = ownerIndex - 1; i >= 0; i--)
                 {
                     var otherList = getList(listOwner[i]);
-                    if (otherList.Count != 0)
+                    if (otherList.Count != 0 && !otherList[otherList.Count - 1].Handle.IsNil)
                     {
                         return MetadataTokens.EntityHandle(tokenType, MetadataTokens.GetRowNumber(otherList[otherList.Count - 1].Handle) + 1);
                     }
                 }
-                // If all lists are empty, return a nil handle
-                return default(EntityHandle);
+                // If all lists are empty, return a nil handle for the right table
+                return MetadataTokens.EntityHandle(tokenType, 0);
             }
         }
 
@@ -1237,6 +1227,11 @@ namespace ILAssembler
 
             public (ModuleReferenceEntity ModuleName, string? EntryPointName, MethodImportAttributes Attributes)? MethodImportInformation { get; set; }
             public MethodImplAttributes ImplementationAttributes { get; set; }
+
+            /// <summary>
+            /// Debug information for this method (sequence points, document).
+            /// </summary>
+            public MethodDebugInfo DebugInfo { get; } = new();
         }
 
         public sealed class ParameterEntity(ParameterAttributes attributes, string? name, BlobBuilder marshallingDescriptor, int sequence) : EntityBase
@@ -1324,6 +1319,10 @@ namespace ILAssembler
 
             // FieldLayout table field (explicit field offset)
             public int? Offset { get; set; }
+
+            // Constant table entry
+            public bool HasConstant { get; set; }
+            public object? ConstantValue { get; set; }
         }
 
         public sealed class InterfaceImplementationEntity(TypeDefinitionEntity type, TypeEntity interfaceType) : EntityBase
@@ -1405,6 +1404,43 @@ namespace ILAssembler
             public EntityBase? Implementation { get; }
 
             public int TypeDefinitionId { get; set; }
+        }
+
+        /// <summary>
+        /// Represents a sequence point mapping IL offset to source location.
+        /// </summary>
+        public readonly struct SequencePoint
+        {
+            public SequencePoint(int ilOffset, int startLine, int startColumn, int endLine, int endColumn)
+            {
+                ILOffset = ilOffset;
+                StartLine = startLine;
+                StartColumn = startColumn;
+                EndLine = endLine;
+                EndColumn = endColumn;
+            }
+
+            public int ILOffset { get; }
+            public int StartLine { get; }
+            public int StartColumn { get; }
+            public int EndLine { get; }
+            public int EndColumn { get; }
+
+            /// <summary>
+            /// Creates a hidden sequence point (used for compiler-generated code).
+            /// </summary>
+            public static SequencePoint Hidden(int ilOffset) => new(ilOffset, 0xFEEFEE, 0, 0xFEEFEE, 0);
+
+            public bool IsHidden => StartLine == 0xFEEFEE;
+        }
+
+        /// <summary>
+        /// Debug information for a method, including sequence points and local scopes.
+        /// </summary>
+        public sealed class MethodDebugInfo
+        {
+            public string? DocumentPath { get; set; }
+            public List<SequencePoint> SequencePoints { get; } = new();
         }
     }
 }

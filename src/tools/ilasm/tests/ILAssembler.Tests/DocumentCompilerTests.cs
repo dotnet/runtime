@@ -1260,5 +1260,76 @@ namespace ILAssembler.Tests
             }, _ => { Assert.Fail("Expected no resources"); return default; }, options);
             return diagnostics;
         }
+
+        [Fact]
+        public void PdbGeneration_WithLineAndLanguageDirectives_CreatesValidEmbeddedPdb()
+        {
+            // Use C# language GUID
+            string csharpGuid = "{3F5162F8-07C6-11D3-9053-00C04FA302A1}";
+            string source = $$"""
+                .assembly test { }
+                .language '{{csharpGuid}}'
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        .line 10 "test.cs"
+                        nop
+                        .line 15 "test.cs"
+                        nop
+                        .line 20 "test.cs"
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+
+            // Verify debug directory exists with embedded PDB
+            var debugDirectory = pe.ReadDebugDirectory();
+            Assert.NotEmpty(debugDirectory);
+
+            var embeddedPdbEntry = debugDirectory.FirstOrDefault(e => e.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
+            Assert.NotEqual(default, embeddedPdbEntry);
+
+            // Read the embedded PDB and verify contents
+            var pdbProvider = pe.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdbEntry);
+            var pdbReader = pdbProvider.GetMetadataReader();
+
+            // Verify document exists with correct name and language
+            Assert.NotEmpty(pdbReader.Documents);
+            var document = pdbReader.GetDocument(pdbReader.Documents.First());
+            var docName = pdbReader.GetString(document.Name);
+            Assert.Contains("test.cs", docName);
+
+            var languageGuid = pdbReader.GetGuid(document.Language);
+            Assert.Equal(Guid.Parse(csharpGuid), languageGuid);
+
+            // Verify method debug info exists (sequence points were recorded)
+            Assert.NotEmpty(pdbReader.MethodDebugInformation);
+        }
+
+        [Fact]
+        public void PdbGeneration_WithoutLineDirectives_NoPdbGenerated()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        nop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+
+            // Verify no embedded PDB when no debug directives
+            var debugDirectory = pe.ReadDebugDirectory();
+            var embeddedPdbEntry = debugDirectory.FirstOrDefault(e => e.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
+            Assert.Equal(default, embeddedPdbEntry);
+        }
     }
 }
