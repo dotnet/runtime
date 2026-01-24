@@ -57,9 +57,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 else if (fixupKind == ReadyToRunFixupKind.ContinuationLayout)
                 {
                     var act = _typeDesc as AsyncContinuationType;
-                    ModuleToken asyncMethodToken = innerContext.Resolver.GetModuleTokenForMethod(act.OwningMethod.GetTargetOfAsyncVariant(), allowDynamicallyCreatedReference: true, throwIfNotFound: true);
-                    MethodWithToken asyncMethodWithToken = new MethodWithToken(act.OwningMethod, asyncMethodToken, null, false, null);
-                    dataBuilder.EmitMethodSignature(asyncMethodWithToken, false, false, innerContext, false);
                     // Emit EcmaType Continuation type
                     dataBuilder.EmitTypeSignature(act.BaseType, innerContext);
                     EncodeTypeLayout(dataBuilder, act);

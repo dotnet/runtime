@@ -13731,7 +13731,7 @@ void ComputeGCRefMap(MethodTable * pMT, BYTE * pGCRefMap, size_t cbGCRefMap)
 }
 
 
-MethodTable* GetContinuationTypeFromLayout(MethodDesc* asyncMethod, PCCOR_SIGNATURE pBlob)
+MethodTable* GetContinuationTypeFromLayout(PCCOR_SIGNATURE pBlob)
 {
     STANDARD_VM_CONTRACT;
 
@@ -13750,6 +13750,10 @@ MethodTable* GetContinuationTypeFromLayout(MethodDesc* asyncMethod, PCCOR_SIGNAT
         return nullptr;
     }
 
+    // Use the global loader allocator (System module's allocator) for R2R fixups
+    LoaderAllocator* allocator = SystemDomain::GetGlobalLoaderAllocator();
+    AsyncContinuationsManager* asyncConts = allocator->GetAsyncContinuationsManager();
+
     if (!(dwFlags & READYTORUN_LAYOUT_GCLayout_Empty))
     {
         uint8_t* pGCRefMapBlob = (uint8_t*)p.GetPtr();
@@ -13765,21 +13769,16 @@ MethodTable* GetContinuationTypeFromLayout(MethodDesc* asyncMethod, PCCOR_SIGNAT
                 objRefs[byteIndex * 8 + bit] = (b & (1 << bit)) != 0;
             }
         }
-        return ::getContinuationType(
-            asyncMethod,
-            dwExpectedSize, // size_t dataSize,
-            objRefs, // bool* objRefs,
-            objRefsSize // size_t objRefsSize
-            );
+        return asyncConts->LookupOrCreateContinuationMethodTableFromLayout(
+            (unsigned)dwExpectedSize,
+            objRefs
+        );
     }
-    else{
-        size_t objRefsSize = 0;
-        bool* objRefs = nullptr;
-        return ::getContinuationType(
-            asyncMethod,
-            dwExpectedSize, // size_t dataSize,
-            objRefs, // bool* objRefs,
-            objRefsSize // size_t objRefsSize
+    else
+    {
+        return asyncConts->LookupOrCreateContinuationMethodTableFromLayout(
+            (unsigned)dwExpectedSize,
+            nullptr
         );
     }
 }
@@ -14258,11 +14257,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     case READYTORUN_FIXUP_Continuation_Layout:
         {
-            PCCOR_SIGNATURE pBlobNext = NULL;
-            SigTypeContext typeContext;    // empty context is OK: encoding should not contain type variables.
-            ZapSig::Context zapSigContext(pInfoModule, (void *)currentModule, ZapSig::NormalTokens);
-            MethodDesc* pOwningMethod = ZapSig::DecodeMethod(pInfoModule, pBlob, &typeContext, &zapSigContext, NULL, NULL, NULL, &pBlobNext, TRUE);
-            MethodTable* continuationTypeMethodTable = GetContinuationTypeFromLayout(pOwningMethod, pBlobNext);
+            MethodTable* continuationTypeMethodTable = GetContinuationTypeFromLayout(pBlob);
             TypeHandle th = TypeHandle(continuationTypeMethodTable);
             result = (size_t)th.AsPtr();
         }

@@ -1475,11 +1475,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                     break;
 
                 case ReadyToRunFixupKind.ContinuationLayout:
-                    var methodBuilder = new StringBuilder();
-                    ParseMethod(methodBuilder);
                     var typeBuilder = new StringBuilder();
                     ParseType(typeBuilder);
-                    builder.Append($"{typeBuilder.ToString()} for '{methodBuilder.ToString()}'");
+                    builder.Append($"{typeBuilder.ToString()}");
                     ReadyToRunTypeLayoutFlags layoutFlags2 = (ReadyToRunTypeLayoutFlags)ReadUInt();
                     builder.Append($" Flags {layoutFlags2}");
                     int actualSize2 = (int)ReadUInt();

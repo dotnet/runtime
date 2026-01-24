@@ -3429,11 +3429,7 @@ namespace Internal.JitInterface
                     gcMapBuilder.MarkGCPointer(i * PointerSize);
             }
 
-#if READYTORUN
-            return ObjectToHandle(_compilation.TypeSystemContext.GetContinuationType(gcMapBuilder.ToGCMap(), MethodBeingCompiled));
-#else
             return ObjectToHandle(_compilation.TypeSystemContext.GetContinuationType(gcMapBuilder.ToGCMap()));
-#endif
         }
 
         private mdToken getMethodDefFromMethod(CORINFO_METHOD_STRUCT_* hMethod)

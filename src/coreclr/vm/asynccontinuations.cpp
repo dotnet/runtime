@@ -269,6 +269,79 @@ MethodTable* AsyncContinuationsManager::LookupOrCreateContinuationMethodTable(un
     return pReturnedMT;
 }
 
+MethodTable* AsyncContinuationsManager::LookupOrCreateContinuationMethodTableFromLayout(unsigned dataSize, const bool* objRefs)
+{
+    STANDARD_VM_CONTRACT;
+
+    ContinuationLayoutKeyData keyData(dataSize, objRefs);
+    {
+        CrstHolder lock(&m_layoutsLock);
+        MethodTable* lookupResult;
+        if (m_layouts.GetValue(ContinuationLayoutKey(&keyData), (HashDatum*)&lookupResult))
+        {
+            return lookupResult;
+        }
+    }
+
+#ifdef FEATURE_EVENT_TRACE
+    UINT32 typeLoad = ETW::TypeSystemLog::TypeLoadBegin();
+#endif
+
+    AllocMemTracker amTracker;
+    // Use System module as the loader module for R2R fixup continuations
+    Module* systemModule = SystemDomain::SystemModule();
+    MethodTable* pNewMT = CreateNewContinuationMethodTable(
+        dataSize,
+        objRefs,
+        GetOrCreateSingletonSubContinuationEEClass(),
+        m_allocator,
+        systemModule,
+        &amTracker);
+
+#ifdef DEBUG
+    StackSString debugName;
+    PrintContinuationName(
+        pNewMT,
+        [&](LPCSTR str, LPCWSTR wstr) { debugName.AppendUTF8(str); },
+        [&](unsigned num) { debugName.AppendPrintf("%u", num); });
+    const char* debugNameUTF8 = debugName.GetUTF8();
+    size_t len = strlen(debugNameUTF8) + 1;
+    char* name = (char*)amTracker.Track(m_allocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(len)));
+    strcpy_s(name, len, debugNameUTF8);
+    pNewMT->SetDebugClassName(name);
+#endif
+
+    MethodTable* pReturnedMT = pNewMT;
+    {
+        CrstHolder lock(&m_layoutsLock);
+        MethodTable* lookupResult;
+        if (m_layouts.GetValue(ContinuationLayoutKey(&keyData), (HashDatum*)&lookupResult))
+        {
+            pReturnedMT = lookupResult;
+        }
+        else
+        {
+            m_layouts.InsertValue(ContinuationLayoutKey(pNewMT), pNewMT);
+        }
+    }
+
+    if (pReturnedMT == pNewMT)
+    {
+        amTracker.SuppressRelease();
+
+        ClassLoader::NotifyLoad(TypeHandle(pNewMT));
+    }
+
+#ifdef FEATURE_EVENT_TRACE
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TypeLoadStop))
+    {
+        ETW::TypeSystemLog::TypeLoadEnd(typeLoad, TypeHandle(pReturnedMT), CLASS_LOADED);
+    }
+#endif
+
+    return pReturnedMT;
+}
+
 ContinuationLayoutKey::ContinuationLayoutKey(MethodTable* pMT)
     : Data(reinterpret_cast<uintptr_t>(pMT) | 1)
 {

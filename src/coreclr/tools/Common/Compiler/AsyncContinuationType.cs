@@ -13,18 +13,13 @@ namespace ILCompiler
 {
     /// <summary>
     /// An async continuation type. The code generator will request this to store local state
-    /// through an async suspension/resumption. We only identify these using a <see cref="GCPointerMap"/> (and owning method for R2R for LoaderAllocator purposes),
+    /// through an async suspension/resumption. We only identify these using a <see cref="GCPointerMap"/>,
     /// since that's all the code generator cares about - size of the type, and where the GC pointers are.
     /// </summary>
     public sealed partial class AsyncContinuationType : MetadataType
     {
         private readonly MetadataType _continuationBaseType;
         public GCPointerMap PointerMap { get; }
-
-#if READYTORUN
-        // CoreCLR R2R needs to know the owning method to associate the type with the right LoaderAllocator
-        public MethodDesc OwningMethod { get; }
-#endif
 
         public override DefType[] ExplicitlyImplementedInterfaces => [];
         public override ReadOnlySpan<byte> Name => Encoding.UTF8.GetBytes(DiagnosticName);
@@ -50,13 +45,8 @@ namespace ILCompiler
         protected override int ClassCode => 0x528741a;
         public override TypeSystemContext Context => _continuationBaseType.Context;
 
-#if READYTORUN
-        public AsyncContinuationType(MetadataType continuationBaseType, GCPointerMap pointerMap, MethodDesc owningMethod)
-            => (_continuationBaseType, PointerMap, OwningMethod) = (continuationBaseType, pointerMap, owningMethod);
-#else
         public AsyncContinuationType(MetadataType continuationBaseType, GCPointerMap pointerMap)
             => (_continuationBaseType, PointerMap) = (continuationBaseType, pointerMap);
-#endif
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => false;
         public override IEnumerable<MetadataType> GetNestedTypes() => [];

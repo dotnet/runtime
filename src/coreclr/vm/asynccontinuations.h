@@ -55,6 +55,7 @@ class AsyncContinuationsManager
 public:
     AsyncContinuationsManager(LoaderAllocator* allocator);
     MethodTable* LookupOrCreateContinuationMethodTable(unsigned dataSize, const bool* objRefs, MethodDesc* asyncMethod);
+    MethodTable* LookupOrCreateContinuationMethodTableFromLayout(unsigned dataSize, const bool* objRefs);
     void NotifyUnloadingClasses();
 
     template<typename AppendString, typename AppendNum>
