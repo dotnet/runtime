@@ -159,7 +159,7 @@ DN_MAC_CTX* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, const EVP_MD* 
         return NULL;
     }
 
-    DN_MAC_CTX* dnCtx = OPENSSL_zalloc(sizeof(DN_MAC_CTX));
+    DN_MAC_CTX* dnCtx = (DN_MAC_CTX*)OPENSSL_zalloc(sizeof(DN_MAC_CTX));
 
     if (dnCtx == NULL)
     {
@@ -188,6 +188,7 @@ void CryptoNative_HmacDestroy(DN_MAC_CTX* ctx)
         {
             OPENSSL_clear_free(ctx->key, ctx->keyLen);
             ctx->key = NULL;
+            ctx->keyLen = 0;
         }
 #endif
         if (ctx->legacy)
@@ -210,7 +211,9 @@ int32_t CryptoNative_HmacReset(DN_MAC_CTX* ctx)
 #ifdef NEED_OPENSSL_3_0
     if (HAVE_EVP_MAC && ctx->mac)
     {
-        // See the Create method for the key and keyLen.
+        // See the Create method for the key and keyLen. These may be NULL and zero. Certain versions of OpenSSL
+        // require the key to re-initialize. In versions that are not affected, key is NULL and is to mean "reuse the
+        // existing key."
         return EVP_MAC_init(ctx->mac, ctx->key, ctx->keyLen, NULL);
     }
 #endif
@@ -363,7 +366,7 @@ DN_MAC_CTX* CryptoNative_HmacCopy(const DN_MAC_CTX* ctx)
         return NULL;
     }
 
-    DN_MAC_CTX* copyCtx = OPENSSL_zalloc(sizeof(DN_MAC_CTX));
+    DN_MAC_CTX* copyCtx = (DN_MAC_CTX*)OPENSSL_zalloc(sizeof(DN_MAC_CTX));
 
     if (copyCtx == NULL)
     {
