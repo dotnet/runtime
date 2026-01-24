@@ -125,6 +125,10 @@ struct Limit
     {
         return type == keConstant;
     }
+    bool IsConstantOrBinOp() const
+    {
+        return (type == keConstant) || (type == keBinOpArray);
+    }
     int GetConstant() const
     {
         return cns;
@@ -146,49 +150,6 @@ struct Limit
                     return false;
                 }
                 cns += i;
-                return true;
-            case keUndef:
-            case keUnknown:
-                // For these values of 'type', conservatively return false
-                break;
-        }
-
-        return false;
-    }
-    bool MultiplyConstant(int i)
-    {
-        switch (type)
-        {
-            case keDependent:
-                return true;
-            case keBinOpArray:
-            case keConstant:
-                if (CheckedOps::MulOverflows(cns, i, CheckedOps::Signed))
-                {
-                    return false;
-                }
-                cns *= i;
-                return true;
-            case keUndef:
-            case keUnknown:
-                // For these values of 'type', conservatively return false
-                break;
-        }
-
-        return false;
-    }
-
-    bool ShiftRightConstant(int i)
-    {
-        switch (type)
-        {
-            case keDependent:
-                return true;
-            case keBinOpArray:
-            case keConstant:
-                // >> never overflows
-                assert((unsigned)i <= 31);
-                cns >>= i;
                 return true;
             case keUndef:
             case keUnknown:
@@ -311,66 +272,16 @@ struct Range
 
         return true;
     }
+
+    bool IsConstantRange() const
+    {
+        return lLimit.IsConstant() && uLimit.IsConstant() && IsValid();
+    }
 };
 
 // Helpers for operations performed on ranges
 struct RangeOps
 {
-    // Perform 'value' + 'cns'
-    static Limit AddConstantLimit(const Limit& value, const Limit& cns)
-    {
-        assert(cns.IsConstant());
-        Limit l = value;
-        if (l.AddConstant(cns.GetConstant()))
-        {
-            return l;
-        }
-        return Limit(Limit::keUnknown);
-    }
-
-    // Perform 'value' - 'cns'
-    static Limit SubtractConstantLimit(const Limit& value, const Limit& cns)
-    {
-        assert(cns.IsConstant());
-
-        if (cns.GetConstant() == INT_MIN)
-        {
-            // Subtracting INT_MIN would overflow
-            return Limit(Limit::keUnknown);
-        }
-
-        Limit l = value;
-        if (l.AddConstant(-cns.GetConstant()))
-        {
-            return l;
-        }
-        return Limit(Limit::keUnknown);
-    }
-
-    // Perform 'value' * 'cns'
-    static Limit MultiplyConstantLimit(const Limit& value, const Limit& cns)
-    {
-        assert(cns.IsConstant());
-        Limit l = value;
-        if (l.MultiplyConstant(cns.GetConstant()))
-        {
-            return l;
-        }
-        return Limit(Limit::keUnknown);
-    }
-
-    // Perform 'value' >> 'cns'
-    static Limit ShiftRightConstantLimit(const Limit& value, const Limit& cns)
-    {
-        assert(value.IsConstant());
-        Limit result = value;
-        if (result.ShiftRightConstant(cns.GetConstant()))
-        {
-            return result;
-        }
-        return Limit(Limit::keUnknown);
-    }
-
     // Given two ranges "r1" and "r2", perform a generic 'op' operation on the ranges.
     template <typename Operation>
     static Range ApplyRangeOp(Range& r1, Range& r2, Operation op)
@@ -381,95 +292,67 @@ struct RangeOps
         Limit& r2hi = r2.UpperLimit();
 
         Range result = Limit(Limit::keUnknown);
-
-        // Check lo ranges if they are dependent and not unknown.
-        if ((r1lo.IsDependent() && !r1lo.IsUnknown()) || (r2lo.IsDependent() && !r2lo.IsUnknown()))
-        {
-            result.lLimit = Limit(Limit::keDependent);
-        }
-        // Check hi ranges if they are dependent and not unknown.
-        if ((r1hi.IsDependent() && !r1hi.IsUnknown()) || (r2hi.IsDependent() && !r2hi.IsUnknown()))
-        {
-            result.uLimit = Limit(Limit::keDependent);
-        }
-
-        if (r1lo.IsConstant())
-        {
-            result.lLimit = op(r2lo, r1lo);
-        }
-        if (r2lo.IsConstant())
-        {
-            result.lLimit = op(r1lo, r2lo);
-        }
-        if (r1hi.IsConstant())
-        {
-            result.uLimit = op(r2hi, r1hi);
-        }
-        if (r2hi.IsConstant())
-        {
-            result.uLimit = op(r1hi, r2hi);
-        }
-
+        // If either limit is dependent, the result is dependent.
+        // otherwise, apply the operation.
+        result.lLimit = (r1lo.IsDependent() || r2lo.IsDependent()) ? Limit(Limit::keDependent) : op(r1lo, r2lo);
+        result.uLimit = (r1hi.IsDependent() || r2hi.IsDependent()) ? Limit(Limit::keDependent) : op(r1hi, r2hi);
         return result;
     }
 
     static Range Add(Range& r1, Range& r2)
     {
-        return ApplyRangeOp(r1, r2, [](Limit& a, Limit& b) {
-            return AddConstantLimit(a, b);
-        });
-    }
+        return ApplyRangeOp(r1, r2, [](const Limit& a, const Limit& b) {
+            // For Add we support:
+            //   keConstant + keConstant  => keConstant
+            //   keBinOpArray + keConstant => keBinOpArray
+            //   keConstant + keBinOpArray => keBinOpArray
+            if (a.IsConstantOrBinOp() && b.IsConstantOrBinOp())
+            {
+                if (a.IsBinOpArray() && b.IsBinOpArray())
+                {
+                    // We can't represent the sum of two BinOpArrays.
+                    return Limit(Limit::keUnknown);
+                }
 
-    static Range Subtract(Range& r1, Range& r2)
-    {
-        return ApplyRangeOp(r1, r2, [](Limit& a, Limit& b) {
-            return SubtractConstantLimit(a, b);
+                if (!IntAddOverflows(a.GetConstant(), b.GetConstant()))
+                {
+                    if (a.IsConstant() && b.IsConstant())
+                    {
+                        return Limit(Limit::keConstant, a.GetConstant() + b.GetConstant());
+                    }
+
+                    return Limit(Limit::keBinOpArray, a.IsBinOpArray() ? a.vn : b.vn,
+                                 a.GetConstant() + b.GetConstant());
+                }
+            }
+            return Limit(Limit::keUnknown);
         });
     }
 
     static Range Multiply(Range& r1, Range& r2)
     {
-        return ApplyRangeOp(r1, r2, [](Limit& a, Limit& b) {
-            return MultiplyConstantLimit(a, b);
+        return ApplyRangeOp(r1, r2, [](const Limit& a, const Limit& b) {
+            // For Mul we require both operands to be constant to produce a constant result.
+            if (b.IsConstant() && a.IsConstant() &&
+                !CheckedOps::MulOverflows(a.GetConstant(), b.GetConstant(), CheckedOps::Signed))
+            {
+                return Limit(Limit::keConstant, a.GetConstant() * b.GetConstant());
+            }
+            return Limit(Limit::keUnknown);
         });
     }
 
     static Range ShiftRight(Range& r1, Range& r2, bool logical)
     {
-        Limit& r1lo = r1.LowerLimit();
-        Limit& r1hi = r1.UpperLimit();
-        Limit& r2lo = r2.LowerLimit();
-        Limit& r2hi = r2.UpperLimit();
-
-        Range result = Limit(Limit::keUnknown);
-
-        // For now we only support r1 >> positive_cns (to simplify)
-        // Hence, it doesn't matter if it's logical or arithmetic shift right (for now).
-        if (!r2lo.IsConstant() || !r2hi.IsConstant() || (r2lo.cns < 0) || (r2hi.cns < 0))
-        {
-            return result;
-        }
-
-        // Check lo ranges if they are dependent and not unknown.
-        if (r1lo.IsDependent())
-        {
-            result.lLimit = Limit(Limit::keDependent);
-        }
-        else if (r1lo.IsConstant())
-        {
-            result.lLimit = ShiftRightConstantLimit(r1lo, r2lo);
-        }
-
-        if (r1hi.IsDependent())
-        {
-            result.uLimit = Limit(Limit::keDependent);
-        }
-        else if (r1hi.IsConstant())
-        {
-            result.uLimit = ShiftRightConstantLimit(r1hi, r2hi);
-        }
-
-        return result;
+        return ApplyRangeOp(r1, r2, [](const Limit& a, const Limit& b) {
+            // For now, we only support r1 >> positive_cns (to simplify)
+            // Hence, it doesn't matter if it's logical or arithmetic.
+            if (a.IsConstant() && b.IsConstant() && (a.GetConstant() >= 0) && ((unsigned)b.GetConstant() <= 31))
+            {
+                return Limit(Limit::keConstant, a.GetConstant() >> b.GetConstant());
+            }
+            return Limit(Limit::keUnknown);
+        });
     }
 
     static Range ShiftLeft(Range& r1, Range& r2)
@@ -487,7 +370,7 @@ struct RangeOps
         // Example: [0..3] | [1..255] = [1..255]
         //          [X..Y] | [1..255] = [unknown..unknown]
         //
-        return ApplyRangeOp(r1, r2, [](Limit& a, Limit& b) {
+        return ApplyRangeOp(r1, r2, [](const Limit& a, const Limit& b) {
             if (a.IsConstant() && b.IsConstant() && (a.GetConstant() >= 0) && (b.GetConstant() >= 0))
             {
                 return Limit(Limit::keConstant, a.GetConstant() | b.GetConstant());

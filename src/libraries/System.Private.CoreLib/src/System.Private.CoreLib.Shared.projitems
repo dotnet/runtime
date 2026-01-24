@@ -2396,8 +2396,8 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ErrNo.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.ErrNo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FileSystemSupportsLocking.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.FileSystemSupportsLocking.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FLock.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.FLock.cs</Link>
