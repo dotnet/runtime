@@ -1615,26 +1615,29 @@ void MyICJI::allocMem(AllocMemArgs* pArgs)
         }
     }
 
-    size_t roDataSizeAligned = ALIGN_UP_SPMI(roDataSize, roDataAlignment);
-    roDataBlock = (uint8_t*)jitInstance->mc->cr->allocateMemory(roDataSizeAligned);
-    roDataBlock = (uint8_t*)ALIGN_UP_SPMI(roDataBlock, roDataAlignment);
-    size_t offset = 0;
-    // Zero the block to ensure all the padding we allocated is zeroed for the later comparisons
-    memset(roDataBlock, 0, roDataSize);
-
-    for (unsigned i = 0; i < pArgs->chunksCount; i++)
+    if (roDataSize > 0)
     {
-        AllocMemChunk& chunk = pArgs->chunks[i];
-        if ((chunk.flags & (CORJIT_ALLOCMEM_HOT_CODE | CORJIT_ALLOCMEM_COLD_CODE)) != 0)
+        size_t roDataSizeAligned = ALIGN_UP_SPMI(roDataSize, roDataAlignment);
+        roDataBlock = (uint8_t*)jitInstance->mc->cr->allocateMemory(roDataSizeAligned);
+        roDataBlock = (uint8_t*)ALIGN_UP_SPMI(roDataBlock, roDataAlignment);
+        size_t offset = 0;
+        // Zero the block to ensure all the padding we allocated is zeroed for the later comparisons
+        memset(roDataBlock, 0, roDataSize);
+
+        for (unsigned i = 0; i < pArgs->chunksCount; i++)
         {
-            continue;
+            AllocMemChunk& chunk = pArgs->chunks[i];
+            if ((chunk.flags & (CORJIT_ALLOCMEM_HOT_CODE | CORJIT_ALLOCMEM_COLD_CODE)) != 0)
+            {
+                continue;
+            }
+
+            offset = ALIGN_UP_SPMI(offset, chunk.alignment);
+            chunk.block = (uint8_t*)roDataBlock + offset;
+            chunk.blockRW = chunk.block;
+
+            offset += chunk.size;
         }
-
-        offset = ALIGN_UP_SPMI(offset, chunk.alignment);
-        chunk.block = (uint8_t*)roDataBlock + offset;
-        chunk.blockRW = chunk.block;
-
-        offset += chunk.size;
     }
 
     jitInstance->mc->cr->recAllocMem((ULONG)hotCodeSize, (ULONG)coldCodeSize, (ULONG)roDataSize, pArgs->xcptnsCount, hotCodeBlock,
