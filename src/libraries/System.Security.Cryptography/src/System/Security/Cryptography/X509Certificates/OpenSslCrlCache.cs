@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
@@ -248,6 +246,7 @@ namespace System.Security.Cryptography.X509Certificates
                             // We couldn't determine when the CRL was last written to,
                             // so consider it expired.
                             Debug.Fail("Failed to get the last write time of the CRL file");
+                            crl.Dispose();
                             return null;
                         }
                     }
@@ -265,6 +264,7 @@ namespace System.Security.Cryptography.X509Certificates
                             OpenSslX509ChainEventSource.Log.CrlCacheExpired(verificationTime, nextUpdate);
                         }
 
+                        crl.Dispose();
                         return null;
                     }
 
@@ -302,6 +302,7 @@ namespace System.Security.Cryptography.X509Certificates
             // null is a valid return (e.g. no remainingDownloadTime)
             if (crl == null || crl.IsInvalid)
             {
+                crl?.Dispose();
                 return null;
             }
 
@@ -506,6 +507,7 @@ namespace System.Security.Cryptography.X509Certificates
                 int hashCode = key.GetHashCode();
                 CachedCrlEntry ret = value;
                 string? fullMemberKey = null;
+                SafeX509CrlHandle? toDispose = null;
 
                 lock (_lock)
                 {
@@ -525,12 +527,12 @@ namespace System.Security.Cryptography.X509Certificates
 
                         if (current.Value.Expiration >= value.Expiration)
                         {
-                            value.CrlHandle.Dispose();
+                            toDispose = value.CrlHandle;
                             ret = current.Value;
                         }
                         else
                         {
-                            current.Value.CrlHandle.Dispose();
+                            toDispose = current.Value.CrlHandle;
                             current.Value = value;
                         }
                     }
@@ -563,7 +565,7 @@ namespace System.Security.Cryptography.X509Certificates
                             Debug.Assert(cur is not null);
 
                             previous.Next = null;
-                            cur.Value.CrlHandle.Dispose();
+                            toDispose = cur.Value.CrlHandle;
                             fullMemberKey = cur.Key;
                         }
 
@@ -572,6 +574,8 @@ namespace System.Security.Cryptography.X509Certificates
 
                     ret.CrlHandle.DangerousAddRef(ref ignore);
                 }
+
+                toDispose?.Dispose();
 
                 if (fullMemberKey is not null && OpenSslX509ChainEventSource.Log.IsEnabled())
                 {
@@ -663,7 +667,6 @@ namespace System.Security.Cryptography.X509Certificates
 
                     if (prune is null)
                     {
-                        _expire = _head;
                         return;
                     }
 
@@ -685,15 +688,9 @@ namespace System.Security.Cryptography.X509Certificates
                             current = current.Next;
                         }
 
-                        if (current is not null)
-                        {
-                            current.Next = null;
-                            _count = count;
-                        }
-                        else
-                        {
-                            Debug.Fail("Prune node not found in list");
-                        }
+                        Debug.Assert(current.Next == prune, "The prune node should be in the list");
+                        current.Next = null;
+                        _count = count;
                     }
 
                     countEnd = _count;
