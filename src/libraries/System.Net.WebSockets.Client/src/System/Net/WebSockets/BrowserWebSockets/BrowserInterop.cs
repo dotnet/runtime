@@ -26,12 +26,12 @@ namespace System.Net.WebSockets
             {
                 return null;
             }
-            if (!webSocket.HasProperty("close_status"))
+            if (!webSocket.HasProperty("closeStatus"))
             {
                 return null;
             }
 
-            int status = webSocket.GetPropertyAsInt32("close_status");
+            int status = webSocket.GetPropertyAsInt32("closeStatus");
             return (WebSocketCloseStatus)status;
         }
 
@@ -42,7 +42,7 @@ namespace System.Net.WebSockets
                 return null;
             }
 
-            string? description = webSocket.GetPropertyAsString("close_status_description");
+            string? description = webSocket.GetPropertyAsString("closeStatusDescription");
             return description;
         }
 
