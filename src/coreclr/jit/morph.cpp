@@ -322,7 +322,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         {
             if (!tree->gtOverflow())
             {
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
                 return nullptr;
 #else
                 if (!varTypeIsLong(dstType))
@@ -339,7 +339,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     default:
                         unreached();
                 }
-#endif // TARGET_64BIT
+#endif // TARGET_64BIT || TARGET_WASM
             }
             else
             {
