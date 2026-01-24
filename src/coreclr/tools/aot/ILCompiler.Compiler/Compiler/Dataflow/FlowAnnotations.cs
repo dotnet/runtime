@@ -771,19 +771,13 @@ namespace ILLink.Shared.TrimAnalysis
                 }
             }
 
-            // Generic parameters are contravariant (like parameters): override can remove annotations
-            // but cannot add annotations that the base doesn't declare.
+            // Generic parameters are invariant in C# - they must match exactly
             if (methodAnnotations.GenericParameterAnnotations != null || baseMethodAnnotations.GenericParameterAnnotations != null)
             {
                 if (methodAnnotations.GenericParameterAnnotations == null)
-                {
-                    // Override has no annotations - this is always valid (removing annotations is allowed)
-                }
+                    ValidateMethodGenericParametersHaveNoAnnotations(baseMethodAnnotations.GenericParameterAnnotations!, method, baseMethod, origin);
                 else if (baseMethodAnnotations.GenericParameterAnnotations == null)
-                {
-                    // Base has no annotations but override adds some - this is invalid
                     ValidateMethodGenericParametersHaveNoAnnotations(methodAnnotations.GenericParameterAnnotations, method, baseMethod, origin);
-                }
                 else
                 {
                     if (methodAnnotations.GenericParameterAnnotations.Length != baseMethodAnnotations.GenericParameterAnnotations.Length)
@@ -791,10 +785,7 @@ namespace ILLink.Shared.TrimAnalysis
 
                     for (int genericParameterIndex = 0; genericParameterIndex < methodAnnotations.GenericParameterAnnotations.Length; genericParameterIndex++)
                     {
-                        var baseAnnotation = baseMethodAnnotations.GenericParameterAnnotations[genericParameterIndex];
-                        var overrideAnnotation = methodAnnotations.GenericParameterAnnotations[genericParameterIndex];
-                        // Valid if override is a subset of base
-                        if ((overrideAnnotation & baseAnnotation) != overrideAnnotation)
+                        if (methodAnnotations.GenericParameterAnnotations[genericParameterIndex] != baseMethodAnnotations.GenericParameterAnnotations[genericParameterIndex])
                         {
                             LogValidationWarning(
                                 method.Instantiation[genericParameterIndex],

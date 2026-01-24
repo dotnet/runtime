@@ -262,11 +262,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // === Generic methods ===
             // Generic parameters are contravariant: override can REMOVE annotations but cannot ADD
 
-            // Removing DAMT from generic parameter is now allowed (contravariant)
-            [LogDoesNotContain("DerivedClass.GenericBaseWithDerivedWithout")]
+            // === Generic methods ===
+            // Generic parameters are invariant in C# - they must match exactly
+
+            // Removing DAMT from generic parameter is NOT allowed (invariant)
+            [ExpectedWarning("IL2095",
+                "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.GenericBaseWithDerivedWithout<T>()",
+                "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.GenericBaseWithDerivedWithout<T>()")]
             public override void GenericBaseWithDerivedWithout<T>() { }
 
-            // Adding DAMT to generic parameter is NOT allowed (contravariant)
+            // Adding DAMT to generic parameter is NOT allowed (invariant)
             [ExpectedWarning("IL2095",
                 "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.GenericBaseWithoutDerivedWith<T>()",
                 "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.GenericBaseWithoutDerivedWith<T>()")]
@@ -391,7 +396,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             public override void SingleParameterBaseWithoutDerivedWithout(Type p) { }
 
             // === Generic methods ===
-            // Adding DAMT to generic parameter is NOT allowed (contravariant - strengthening precondition)
+            // Generic parameters are invariant in C# - they must match exactly
             [ExpectedWarning("IL2095",
                 "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedOverNoAnnotations.GenericBaseWithoutDerivedWith_<T>()",
                 "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseWithNoAnnotations.GenericBaseWithoutDerivedWith_<T>()")]
@@ -470,8 +475,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             { }
 
             // === Generic methods ===
-            // Removing DAMT from generic parameter is now allowed (contravariant - weakening precondition)
-            [LogDoesNotContain("DerivedWithNoAnnotations.GenericBaseWithDerivedWithout")]
+            // Generic parameters are invariant in C# - they must match exactly
+            [ExpectedWarning("IL2095",
+                "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedWithNoAnnotations.GenericBaseWithDerivedWithout<T>()",
+                "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseWithAnnotations.GenericBaseWithDerivedWithout<T>()")]
             public override void GenericBaseWithDerivedWithout<T>() { }
 
             [LogDoesNotContain("DerivedWithNoAnnotations.GenericBaseWithoutDerivedWithout")]
@@ -589,14 +596,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 
             // === Generic methods ===
-            // Adding DAMT to generic parameter is NOT allowed (contravariant - strengthening precondition)
+            // Generic parameters are invariant in C# - they must match exactly
             [ExpectedWarning("IL2095",
                 "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.ImplementationClass.GenericInterfaceBaseWithoutImplementationWith_<T>()",
                 "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.IBase.GenericInterfaceBaseWithoutImplementationWith_<T>()")]
             public void GenericInterfaceBaseWithoutImplementationWith_<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>() { }
 
-            // Removing DAMT from generic parameter is now allowed (contravariant - weakening precondition)
-            [LogDoesNotContain("ImplementationClass.GenericInterfaceBaseWithImplementationWithout")]
+            // Removing DAMT from generic parameter is NOT allowed (invariant)
+            [ExpectedWarning("IL2095",
+                "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.ImplementationClass.GenericInterfaceBaseWithImplementationWithout<T>()",
+                "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.IBase.GenericInterfaceBaseWithImplementationWithout<T>()")]
             public void GenericInterfaceBaseWithImplementationWithout<T>() { }
 
             // === Properties ===
@@ -686,12 +695,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 // NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
                 // So it doesn't matter that the annotations are not in-sync since the access will validate
                 // the annotations on the implementation method - it doesn't even see the base method in this case.
-                // With variance: removing from return is NOT allowed, but removing from params/generics IS allowed
+                // With variance: removing from return is NOT allowed, removing from params IS allowed, but generic params are invariant
                 [ExpectedWarning("IL2093", Tool.Trimmer | Tool.Analyzer, "")]
+                [ExpectedWarning("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
                 public static Type AbstractMethod<T>(Type type) => null;
 
                 // NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
                 [ExpectedWarning("IL2093", Tool.Trimmer | Tool.Analyzer, "")]
+                [ExpectedWarning("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
                 public static Type VirtualMethod<T>(Type type) => null;
             }
 

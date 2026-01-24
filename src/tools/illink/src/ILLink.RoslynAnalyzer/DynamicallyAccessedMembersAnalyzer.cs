@@ -266,13 +266,12 @@ namespace ILLink.RoslynAnalyzer
                 }
             }
 
-            // Generic parameters are contravariant (like parameters): override can remove annotations
-            // but cannot add annotations that the base doesn't declare.
+            // Generic parameters are invariant in C# - they must match exactly
             for (int i = 0; i < overrideMethod.TypeParameters.Length; i++)
             {
                 var overrideTypeParameterAnnotation = overrideMethod.TypeParameters[i].GetDynamicallyAccessedMemberTypes();
                 var baseTypeParameterAnnotation = baseMethod.TypeParameters[i].GetDynamicallyAccessedMemberTypes();
-                if ((overrideTypeParameterAnnotation & baseTypeParameterAnnotation) != overrideTypeParameterAnnotation)
+                if (overrideTypeParameterAnnotation != baseTypeParameterAnnotation)
                 {
 
                     (IMethodSymbol attributableMethod, DynamicallyAccessedMemberTypes missingAttribute) = GetTargetAndRequirements(overrideMethod, baseMethod, overrideTypeParameterAnnotation, baseTypeParameterAnnotation);
