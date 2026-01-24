@@ -95,10 +95,9 @@ public class RoundTripTests
 
         foreach (var (name, data) in resources)
         {
-            byte[] dataRef = data;
             resourceDescriptions.Add(new ResourceDescription(
                 resourceName: name,
-                dataProvider: () => new MemoryStream(dataRef, writable: false),
+                dataProvider: () => new MemoryStream(data, writable: false),
                 isPublic: true));
         }
 
