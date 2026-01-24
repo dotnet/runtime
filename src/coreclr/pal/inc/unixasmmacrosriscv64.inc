@@ -395,6 +395,35 @@ C_FUNC(\Name):
 .endm
 
 // ------------------------------------------------------------------
+// Epilog macro for PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS that restores all registers and returns.
+// Use this for JIT helpers that may return normally (unlike IL_Throw which never returns).
+.macro POP_COOP_PINVOKE_FRAME_WITH_FLOATS_RETURN
+    // Restore FP callee-saved registers (fs0-fs11 = f8,f9,f18-f27) from offset 0
+    fld   fs0,  0(sp)   // f8
+    fld   fs1,  8(sp)   // f9
+    fld   fs2,  16(sp)  // f18
+    fld   fs3,  24(sp)  // f19
+    fld   fs4,  32(sp)  // f20
+    fld   fs5,  40(sp)  // f21
+    fld   fs6,  48(sp)  // f22
+    fld   fs7,  56(sp)  // f23
+    fld   fs8,  64(sp)  // f24
+    fld   fs9,  72(sp)  // f25
+    fld   fs10, 80(sp)  // f26
+    fld   fs11, 88(sp)  // f27
+
+    // Restore callee-saved registers from offset 160
+    RESTORE_CALLEESAVED_REGISTERS sp, 160
+
+    // Restore fp, ra
+    EPILOG_RESTORE_REG_PAIR fp, ra, 160
+
+    // Deallocate stack and return
+    EPILOG_STACK_FREE 352
+    EPILOG_RETURN
+.endm
+
+// ------------------------------------------------------------------
 // Macro to generate Redirection Stubs
 //
 // $reason : reason for redirection

@@ -4,5 +4,6 @@
 
   <PropertyGroup>
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
 </Project>
