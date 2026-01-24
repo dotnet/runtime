@@ -249,7 +249,7 @@ namespace ILCompiler.ObjectWriter
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.TableSection);
             writer.WriteByte(0x01); // number of tables
             writer.WriteByte(0x70); // element type: funcref
-            writer.WriteByte(0x01); // table limits: flags (0 = only minimum)
+            writer.WriteByte(0x01); // table limits: flags (1 = has maximum)
             writer.WriteULEB128((ulong)0);
             writer.WriteULEB128((ulong)_methodCount); // table limits: initial size
         }
