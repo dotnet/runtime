@@ -860,6 +860,8 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         return;
     }
 
+    assert(canUseCheckedBounds || (preferredBoundVN == ValueNumStore::NoVN));
+
     // Walk through the "assertions" to check if they apply.
     BitVecOps::Iter iter(comp->apTraits, assertions);
     unsigned        index = 0;
@@ -1009,9 +1011,31 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             ValueNum lenVN   = curAssertion->op1.bnd.vnLen;
             if (normalLclVN == indexVN)
             {
-                isUnsigned = true;
-                cmpOper    = GT_LT;
-                limit      = Limit(Limit::keBinOpArray, lenVN, 0);
+                if (canUseCheckedBounds)
+                {
+                    isUnsigned = true;
+                    cmpOper    = GT_LT;
+                    limit      = Limit(Limit::keBinOpArray, lenVN, 0);
+                }
+                else
+                {
+                    // We're not interested in keBinOpArray limits if we canUseCheckedBounds is false.
+                    // Instead, see if we can deduce anything keConstant out if this BoundsCheckNoThrow
+                    int len = 0;
+                    if (comp->vnStore->IsVNIntegralConstant(lenVN, &len))
+                    {
+                        // length is a constant, so we know "index u< lengthCNS"
+                        isUnsigned = true;
+                        cmpOper    = GT_LT;
+                        limit      = Limit(Limit::keConstant, len);
+                    }
+                    else
+                    {
+                        // otherwise, the only thing we can deduce is "index >= 0"
+                        cmpOper = GT_GE;
+                        limit   = Limit(Limit::keConstant, 0);
+                    }
+                }
             }
             else if ((normalLclVN == lenVN) && comp->vnStore->IsVNInt32Constant(indexVN))
             {
