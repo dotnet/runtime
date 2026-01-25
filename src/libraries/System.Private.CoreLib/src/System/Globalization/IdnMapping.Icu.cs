@@ -7,11 +7,10 @@ namespace System.Globalization
 {
     public sealed partial class IdnMapping
     {
-        private unsafe string IcuGetAsciiCore(string unicodeString, char* unicode, int count)
+        private unsafe string IcuGetAsciiCore(string? unicodeString, char* unicode, int count)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
-            Debug.Assert(unicodeString != null && unicodeString.Length >= count);
 
             uint flags = IcuFlags;
             CheckInvalidIdnCharacters(unicode, count, flags, nameof(unicode));
@@ -51,11 +50,33 @@ namespace System.Globalization
             }
         }
 
-        private unsafe string IcuGetUnicodeCore(string asciiString, char* ascii, int count)
+        private unsafe bool IcuTryGetAsciiCore(char* unicode, int count, char* destination, int destinationLength, out int charsWritten)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
-            Debug.Assert(asciiString != null && asciiString.Length >= count);
+
+            uint flags = IcuFlags;
+            CheckInvalidIdnCharacters(unicode, count, flags, nameof(unicode));
+
+            int actualLength = Interop.Globalization.ToAscii(flags, unicode, count, destination, destinationLength);
+            if (actualLength == 0)
+            {
+                throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(unicode));
+            }
+            if (actualLength <= destinationLength)
+            {
+                charsWritten = actualLength;
+                return true;
+            }
+
+            charsWritten = 0;
+            return false;
+        }
+
+        private unsafe string IcuGetUnicodeCore(string? asciiString, char* ascii, int count)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             uint flags = IcuFlags;
             CheckInvalidIdnCharacters(ascii, count, flags, nameof(ascii));
@@ -76,11 +97,10 @@ namespace System.Globalization
             }
         }
 
-        private unsafe string IcuGetUnicodeCore(string asciiString, char* ascii, int count, uint flags, char* output, int outputLength, bool reattempt)
+        private unsafe string IcuGetUnicodeCore(string? asciiString, char* ascii, int count, uint flags, char* output, int outputLength, bool reattempt)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
-            Debug.Assert(asciiString != null && asciiString.Length >= count);
 
             int realLen = Interop.Globalization.ToUnicode(flags, ascii, count, output, outputLength);
 
@@ -102,6 +122,29 @@ namespace System.Globalization
             }
 
             throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(ascii));
+        }
+
+        private unsafe bool IcuTryGetUnicodeCore(char* ascii, int count, char* destination, int destinationLength, out int charsWritten)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
+
+            uint flags = IcuFlags;
+            CheckInvalidIdnCharacters(ascii, count, flags, nameof(ascii));
+
+            int actualLength = Interop.Globalization.ToUnicode(flags, ascii, count, destination, destinationLength);
+            if (actualLength == 0)
+            {
+                throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(ascii));
+            }
+            if (actualLength <= destinationLength)
+            {
+                charsWritten = actualLength;
+                return true;
+            }
+
+            charsWritten = 0;
+            return false;
         }
 
         private uint IcuFlags

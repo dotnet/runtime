@@ -91,6 +91,33 @@ namespace System.Globalization
             return bidiCategory;
         }
 
+        internal static StrongBidiCategory GetBidiCategory(ReadOnlySpan<char> s, int index)
+        {
+            Debug.Assert(index >= 0 && index < s.Length, "index < s.Length");
+
+            // The logic below follows Table 3-5 in the Unicode Standard, Sec. 3.9.
+            // First char (high surrogate) = 110110wwwwxxxxxx
+            // Second char (low surrogate) = 110111xxxxxxxxxx
+
+            int c = (int)s[index];
+            if (index < s.Length - 1)
+            {
+                int temp1 = c - HIGH_SURROGATE_START; // temp1 = 000000wwwwxxxxxx
+                if ((uint)temp1 <= HIGH_SURROGATE_RANGE)
+                {
+                    int temp2 = (int)s[index + 1] - LOW_SURROGATE_START; // temp2 = 000000xxxxxxxxxx
+                    if ((uint)temp2 <= HIGH_SURROGATE_RANGE)
+                    {
+                        // |--------temp1--||-temp2--|
+                        // 00000uuuuuuxxxxxxxxxxxxxxxx (where uuuuu = wwww + 1)
+                        c = (temp1 << 10) + temp2 + UNICODE_PLANE01_START;
+                    }
+                }
+            }
+
+            return GetBidiCategoryNoBoundsChecks((uint)c);
+        }
+
         /*
          * GetDecimalDigitValue
          * ====================
