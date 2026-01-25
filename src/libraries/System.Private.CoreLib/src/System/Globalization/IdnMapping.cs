@@ -484,7 +484,7 @@ namespace System.Globalization
                         numProcessed++;
                     }
                     // If its a surrogate, skip the next since our bidi category tester doesn't handle it.
-                    else if (char.IsSurrogatePair(unicode[basicCount], unicode[basicCount + 1]))
+                    else if (basicCount + 1 < iNextDot && char.IsSurrogatePair(unicode[basicCount], unicode[basicCount + 1]))
                         basicCount++;
                 }
 
