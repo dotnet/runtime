@@ -101,8 +101,8 @@
 /src/tools/illink/src/analyzer/ @radekdoulik
 /src/tools/illink/src/ILLink.Tasks/ @sbomer
 /src/tools/illink/src/ILLink.RoslynAnalyzer/ @sbomer
-/src/tools/illink/src/linker/ @mrvoorhe
-/src/tools/illink/test/ @mrvoorhe
+/src/tools/illink/src/linker/ @sbomer
+/src/tools/illink/test/ @sbomer
 
 # Obsoletions / Custom Diagnostics
 
