@@ -24,7 +24,7 @@ if (-not (Test-Path $dotnetPath)) {
 Write-Host "Using dotnet: $dotnetPath" -ForegroundColor Cyan
 
 # Check and install required dotnet tools
-Write-Host "Checking for required global tools..." -ForegroundColor Cyan
+Write-Host "Checking for required tools..." -ForegroundColor Cyan
 $installedTools = & $dotnetPath tool list
 
 $coverletInstalled = $installedTools | Select-String "coverlet.console"
