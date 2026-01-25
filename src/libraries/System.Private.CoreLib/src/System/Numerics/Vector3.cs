@@ -535,7 +535,7 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.EqualsAny(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool EqualsAny(Vector3 left, Vector3 right) => Vector128.EqualsAny(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool EqualsAny(Vector3 left, Vector3 right) => (left.X == right.X) || (left.Y == right.Y) || (left.Z == right.Z);
 
         /// <inheritdoc cref="Vector128.MultiplyAddEstimate(Vector128{float}, Vector128{float}, Vector128{float})" />
         [Intrinsic]
@@ -550,7 +550,7 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.GreaterThanAll(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool GreaterThanAll(Vector3 left, Vector3 right) => Vector128.GreaterThanAll(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool GreaterThanAll(Vector3 left, Vector3 right) => (left.X > right.X) && (left.Y > right.Y) && (left.Z > right.Z);
 
         /// <inheritdoc cref="Vector4.GreaterThanAny(Vector4, Vector4)" />
         [Intrinsic]
@@ -570,7 +570,7 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.GreaterThanOrEqualAny(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool GreaterThanOrEqualAny(Vector3 left, Vector3 right) => Vector128.GreaterThanOrEqualAny(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool GreaterThanOrEqualAny(Vector3 left, Vector3 right) => (left.X >= right.X) || (left.Y >= right.Y) || (left.Z >= right.Z);
 
         /// <inheritdoc cref="Vector4.Hypot(Vector4, Vector4)" />
         [Intrinsic]
@@ -680,7 +680,7 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.LessThanAll(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool LessThanAll(Vector3 left, Vector3 right) => Vector128.LessThanAll(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool LessThanAll(Vector3 left, Vector3 right) => (left.X < right.X) && (left.Y < right.Y) && (left.Z < right.Z);
 
         /// <inheritdoc cref="Vector4.LessThanAny(Vector4, Vector4)" />
         [Intrinsic]
@@ -700,7 +700,7 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.LessThanOrEqualAny(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool LessThanOrEqualAny(Vector3 left, Vector3 right) => Vector128.LessThanOrEqualAny(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool LessThanOrEqualAny(Vector3 left, Vector3 right) => (left.X <= right.X) || (left.Y <= right.Y) || (left.Z <= right.Z);
 
         /// <inheritdoc cref="Vector4.Load(float*)" />
         [Intrinsic]
