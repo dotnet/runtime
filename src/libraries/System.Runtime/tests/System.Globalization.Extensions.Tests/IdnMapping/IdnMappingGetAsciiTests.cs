@@ -176,5 +176,73 @@ namespace System.Globalization.Tests
             // Ensure we are not throwing on Linux because of the 3rd and 4th hyphens in the string.
             Assert.Equal(unicode, new IdnMapping().GetAscii(unicode));
         }
+
+        [Theory]
+        [MemberData(nameof(GetAscii_TestData))]
+        public void TryGetAscii(string unicode, int index, int count, string expected)
+        {
+            var idn = new IdnMapping();
+            ReadOnlySpan<char> unicodeSpan = unicode.AsSpan(index, count);
+
+            // Test with exact size buffer
+            char[] destination = new char[expected.Length];
+            Assert.True(idn.TryGetAscii(unicodeSpan, destination, out int charsWritten));
+            Assert.Equal(expected.Length, charsWritten);
+            // IDN names are case-insensitive; the underlying API may lowercase the output
+            Assert.Equal(expected, new string(destination, 0, charsWritten), StringComparer.OrdinalIgnoreCase);
+
+            // Test with larger buffer
+            destination = new char[expected.Length + 10];
+            Assert.True(idn.TryGetAscii(unicodeSpan, destination, out charsWritten));
+            Assert.Equal(expected.Length, charsWritten);
+            Assert.Equal(expected, new string(destination, 0, charsWritten), StringComparer.OrdinalIgnoreCase);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetAscii_TestData))]
+        public void TryGetAscii_BufferTooSmall(string unicode, int index, int count, string expected)
+        {
+            if (expected.Length == 0)
+            {
+                return;
+            }
+
+            var idn = new IdnMapping();
+            ReadOnlySpan<char> unicodeSpan = unicode.AsSpan(index, count);
+
+            // Test with buffer that is too small
+            char[] destination = new char[expected.Length - 1];
+            Assert.False(idn.TryGetAscii(unicodeSpan, destination, out int charsWritten));
+            Assert.Equal(0, charsWritten);
+        }
+
+        [Fact]
+        public void TryGetAscii_EmptyBuffer()
+        {
+            var idn = new IdnMapping();
+
+            // Test with empty destination when result would be non-empty
+            Assert.False(idn.TryGetAscii("abc", Span<char>.Empty, out int charsWritten));
+            Assert.Equal(0, charsWritten);
+        }
+
+        [Theory]
+        [InlineData("")]
+        public void TryGetAscii_Empty_ThrowsArgumentException(string unicode)
+        {
+            var idn = new IdnMapping();
+            char[] destination = new char[100];
+            Assert.Throws<ArgumentException>(() => idn.TryGetAscii(unicode, destination, out _));
+        }
+
+        [Theory]
+        [InlineData("\u0101\u0000")]
+        [InlineData("\u0101\u0000\u0101")]
+        public void TryGetAscii_NullContaining_ThrowsArgumentException(string unicode)
+        {
+            var idn = new IdnMapping();
+            char[] destination = new char[100];
+            Assert.Throws<ArgumentException>(() => idn.TryGetAscii(unicode, destination, out _));
+        }
     }
 }

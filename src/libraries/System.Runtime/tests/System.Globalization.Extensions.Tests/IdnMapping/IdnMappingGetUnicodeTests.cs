@@ -121,5 +121,64 @@ namespace System.Globalization.Tests
             getUnicode_Invalid(new IdnMapping() { UseStd3AsciiRules = false }, ascii, index, count, exceptionType);
             getUnicode_Invalid(new IdnMapping() { UseStd3AsciiRules = true }, ascii, index, count, exceptionType);
         }
+
+        [Theory]
+        [MemberData(nameof(GetUnicode_TestData))]
+        public void TryGetUnicode(string ascii, int index, int count, string expected)
+        {
+            var idn = new IdnMapping();
+            ReadOnlySpan<char> asciiSpan = ascii.AsSpan(index, count);
+
+            // Test with exact size buffer
+            char[] destination = new char[expected.Length];
+            Assert.True(idn.TryGetUnicode(asciiSpan, destination, out int charsWritten));
+            Assert.Equal(expected.Length, charsWritten);
+            // IDN names are case-insensitive; the underlying API may lowercase the output
+            Assert.Equal(expected, new string(destination, 0, charsWritten), StringComparer.OrdinalIgnoreCase);
+
+            // Test with larger buffer
+            destination = new char[expected.Length + 10];
+            Assert.True(idn.TryGetUnicode(asciiSpan, destination, out charsWritten));
+            Assert.Equal(expected.Length, charsWritten);
+            Assert.Equal(expected, new string(destination, 0, charsWritten), StringComparer.OrdinalIgnoreCase);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetUnicode_TestData))]
+        public void TryGetUnicode_BufferTooSmall(string ascii, int index, int count, string expected)
+        {
+            if (expected.Length == 0)
+            {
+                return;
+            }
+
+            var idn = new IdnMapping();
+            ReadOnlySpan<char> asciiSpan = ascii.AsSpan(index, count);
+
+            // Test with buffer that is too small
+            char[] destination = new char[expected.Length - 1];
+            Assert.False(idn.TryGetUnicode(asciiSpan, destination, out int charsWritten));
+            Assert.Equal(0, charsWritten);
+        }
+
+        [Fact]
+        public void TryGetUnicode_EmptyBuffer()
+        {
+            var idn = new IdnMapping();
+
+            // Test with empty destination when result would be non-empty
+            Assert.False(idn.TryGetUnicode("abc", Span<char>.Empty, out int charsWritten));
+            Assert.Equal(0, charsWritten);
+        }
+
+        [Theory]
+        [InlineData("abc\u0000")]
+        [InlineData("ab\u0000c")]
+        public void TryGetUnicode_NullContaining_ThrowsArgumentException(string ascii)
+        {
+            var idn = new IdnMapping();
+            char[] destination = new char[100];
+            Assert.Throws<ArgumentException>(() => idn.TryGetUnicode(ascii, destination, out _));
+        }
     }
 }
