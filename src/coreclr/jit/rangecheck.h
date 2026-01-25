@@ -394,7 +394,8 @@ struct RangeOps
     {
         // Conservatively expect at least one operand to be a single-value constant.
         // The math gets too complicated otherwise (and rarely useful in practice).
-        int r1ConstVal, r2ConstVal;
+        int  r1ConstVal;
+        bool r2ConstVal;
         bool r1IsConstVal = r1.IsSingleConstValue(&r1ConstVal);
         bool r2IsConstVal = r2.IsSingleConstValue(&r2ConstVal);
 
