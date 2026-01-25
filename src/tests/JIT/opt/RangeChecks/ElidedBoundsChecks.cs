@@ -47,7 +47,7 @@ public class ElidedBoundsChecks
         // X64-NOT: CORINFO_HELP_RNGCHKFAIL
         // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
         ReadOnlySpan<byte> span = new byte[] { 1, 2, 3, 4 };
-        return span[i & 8];
+        return span[i & 2];
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -80,8 +80,8 @@ public class ElidedBoundsChecks
         if (AndByConst(0) != 1)
             return 0;
 
-        //if (AndByConst(255) != 3)
-        //    return 0;
+        if (AndByConst(255) != 3)
+            return 0;
 
         if (AndByLength(0) != 1)
             return 0;
