@@ -124,16 +124,9 @@ namespace System.Globalization
                 return TryGetAsciiInvariant(unicode, destination, out charsWritten);
             }
 
-            unsafe
-            {
-                fixed (char* pUnicode = &MemoryMarshal.GetReference(unicode))
-                fixed (char* pDestination = &MemoryMarshal.GetReference(destination))
-                {
-                    return GlobalizationMode.UseNls ?
-                        NlsTryGetAsciiCore(pUnicode, unicode.Length, pDestination, destination.Length, out charsWritten) :
-                        IcuTryGetAsciiCore(pUnicode, unicode.Length, pDestination, destination.Length, out charsWritten);
-                }
-            }
+            return GlobalizationMode.UseNls ?
+                NlsTryGetAsciiCore(unicode, destination, out charsWritten) :
+                IcuTryGetAsciiCore(unicode, destination, out charsWritten);
         }
 
         // Gets Unicode version of the string.  Normalized and limited to IDNA characters.
@@ -201,16 +194,9 @@ namespace System.Globalization
                 return TryGetUnicodeInvariant(ascii, destination, out charsWritten);
             }
 
-            unsafe
-            {
-                fixed (char* pAscii = &MemoryMarshal.GetReference(ascii))
-                fixed (char* pDestination = &MemoryMarshal.GetReference(destination))
-                {
-                    return GlobalizationMode.UseNls ?
-                        NlsTryGetUnicodeCore(pAscii, ascii.Length, pDestination, destination.Length, out charsWritten) :
-                        IcuTryGetUnicodeCore(pAscii, ascii.Length, pDestination, destination.Length, out charsWritten);
-                }
-            }
+            return GlobalizationMode.UseNls ?
+                NlsTryGetUnicodeCore(ascii, destination, out charsWritten) :
+                IcuTryGetUnicodeCore(ascii, destination, out charsWritten);
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj) =>

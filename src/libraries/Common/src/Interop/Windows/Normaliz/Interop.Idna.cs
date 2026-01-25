@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -20,11 +21,27 @@ internal static partial class Interop
                                         int cchASCIIChar);
 
         [LibraryImport("Normaliz.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial int IdnToAscii(
+                                        uint dwFlags,
+                                        ReadOnlySpan<char> lpUnicodeCharStr,
+                                        int cchUnicodeChar,
+                                        Span<char> lpASCIICharStr,
+                                        int cchASCIIChar);
+
+        [LibraryImport("Normaliz.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int IdnToUnicode(
                                         uint dwFlags,
                                         char* lpASCIICharStr,
                                         int cchASCIIChar,
                                         char* lpUnicodeCharStr,
+                                        int cchUnicodeChar);
+
+        [LibraryImport("Normaliz.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial int IdnToUnicode(
+                                        uint dwFlags,
+                                        ReadOnlySpan<char> lpASCIICharStr,
+                                        int cchASCIIChar,
+                                        Span<char> lpUnicodeCharStr,
                                         int cchUnicodeChar);
 
         internal const int IDN_ALLOW_UNASSIGNED = 0x1;
