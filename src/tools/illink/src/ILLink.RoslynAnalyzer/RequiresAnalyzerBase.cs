@@ -88,7 +88,7 @@ namespace ILLink.RoslynAnalyzer
                     SymbolAnalysisContext symbolAnalysisContext,
                     ISymbol member)
                 {
-                    if ((member.IsVirtual || member.IsOverride) && member.TryGetOverriddenMember(out var overriddenMember) && HasMismatchingAttributes(overriddenMember, member))
+                    if ((member.IsVirtual || member.IsOverride) && member.TryGetOverriddenMember(out var overriddenMember) && HasMismatchingAttributes(member, overriddenMember))
                         ReportMismatchInAttributesDiagnostic(symbolAnalysisContext, member, overriddenMember);
                 }
 
@@ -262,19 +262,13 @@ namespace ILLink.RoslynAnalyzer
                 message));
         }
 
-        /// <summary>
-        /// Returns true if the override adds Requires* attributes that the base doesn't have,
-        /// which violates variance rules (you can remove but not add Requires*).
-        /// </summary>
-        private bool HasMismatchingAttributes(ISymbol baseMember, ISymbol overrideMember)
+        private bool HasMismatchingAttributes(ISymbol member1, ISymbol member2)
         {
-            // Variance rules: Override can remove Requires* attributes (weaker precondition is OK)
-            // but cannot add Requires* attributes that the base doesn't have (stronger precondition is not OK).
-            // Only mismatch if: base doesn't have Requires* but override adds it.
-            bool baseCreatesRequirement = baseMember.DoesMemberRequire(RequiresAttributeName, out _);
-            bool overrideCreatesRequirement = overrideMember.DoesMemberRequire(RequiresAttributeName, out _);
-            bool baseFulfillsRequirement = baseMember.IsInRequiresScope(RequiresAttributeName);
-            return !baseCreatesRequirement && !baseFulfillsRequirement && overrideCreatesRequirement;
+            bool member1CreatesRequirement = member1.DoesMemberRequire(RequiresAttributeName, out _);
+            bool member2CreatesRequirement = member2.DoesMemberRequire(RequiresAttributeName, out _);
+            bool member1FulfillsRequirement = member1.IsInRequiresScope(RequiresAttributeName);
+            bool member2FulfillsRequirement = member2.IsInRequiresScope(RequiresAttributeName);
+            return (member1CreatesRequirement && !member2FulfillsRequirement) || (member2CreatesRequirement && !member1FulfillsRequirement);
         }
 
         protected abstract string GetMessageFromAttribute(AttributeData requiresAttribute);

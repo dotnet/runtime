@@ -47,16 +47,12 @@ namespace Mono.Linker.Steps
             var method = ov.Override;
             var baseMethod = ov.Base;
             var annotations = Context.Annotations;
+            bool methodSatisfies = annotations.IsInRequiresUnreferencedCodeScope(method, out _);
             bool baseRequires = annotations.DoesMethodRequireUnreferencedCode(baseMethod, out _);
-            bool methodRequires = annotations.DoesMethodRequireUnreferencedCode(method, out _);
-
-            // Variance rules: Override can remove Requires* attributes (weaker precondition is OK)
-            // but cannot add Requires* attributes that the base doesn't have (stronger precondition is not OK).
-            // Only warn if: base doesn't have Requires* but override adds it.
-            if (!baseRequires && methodRequires)
+            if ((baseRequires && !methodSatisfies) || (!baseRequires && annotations.DoesMethodRequireUnreferencedCode(method, out _)))
             {
                 string message = MessageFormat.FormatRequiresAttributeMismatch(
-                    methodRequires,
+                    methodSatisfies,
                     baseMethod.DeclaringType.IsInterface,
                     nameof(RequiresUnreferencedCodeAttribute),
                     method.GetDisplayName(),

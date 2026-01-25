@@ -847,13 +847,11 @@ namespace ILCompiler
 
         public static bool HasMismatchingAttributes(MethodDesc baseMethod, MethodDesc overridingMethod, string requiresAttributeName)
         {
-            // Variance rules: Override can remove Requires* attributes (weaker precondition is OK)
-            // but cannot add Requires* attributes that the base doesn't have (stronger precondition is not OK).
-            // Only mismatch if: base doesn't have Requires* but override adds it.
             bool baseMethodCreatesRequirement = baseMethod.DoesMethodRequire(requiresAttributeName, out _);
             bool overridingMethodCreatesRequirement = overridingMethod.DoesMethodRequire(requiresAttributeName, out _);
             bool baseMethodFulfillsRequirement = baseMethod.IsInRequiresScope(requiresAttributeName);
-            return !baseMethodCreatesRequirement && !baseMethodFulfillsRequirement && overridingMethodCreatesRequirement;
+            bool overridingMethodFulfillsRequirement = overridingMethod.IsInRequiresScope(requiresAttributeName);
+            return (baseMethodCreatesRequirement && !overridingMethodFulfillsRequirement) || (overridingMethodCreatesRequirement && !baseMethodFulfillsRequirement);
         }
 
         public MetadataManager ToAnalysisBasedMetadataManager()
