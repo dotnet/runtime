@@ -762,6 +762,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "object", "Date");
         }
 
+        [Fact] // JavaScript Date has millisecond precision, the microseconds are lost during marshalling
+        public async Task DateTimeMarshallingLosesMicrosecondComponentPrecisionLoss()
+        {
+            DateTime now = new DateTime(1995, 4, 1, 10, 43, 6, 94, microsecond: 20);
+            DateTime t = JavaScriptTestHelper.ReturnDateTimeWithOffset(now, 0);
+            Assert.NotEqual(now, t);
+            DateTime nowWithJSPrecision = now.AddMicroseconds(-now.Microsecond);
+            Assert.Equal(nowWithJSPrecision, t);
+        }
         #endregion Datetime
 
         #region DateTimeOffset
