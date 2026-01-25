@@ -1582,6 +1582,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     // - isInstantiatingStub is set to TRUE if the devirtualized method is a generic method instantiating stub
     // - needsMethodContext is set TRUE if the devirtualized method may require a method context
     //     (in which case the method handle and context will be a generic method)
+    // - needsRuntimeLookup is set TRUE if the devirtualized generic method requires a runtime lookup
     //
     CORINFO_METHOD_HANDLE           devirtualizedMethod;
     CORINFO_CONTEXT_HANDLE          exactContext;
@@ -1590,6 +1591,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedUnboxedMethod;
     bool                            isInstantiatingStub;
     bool                            needsMethodContext;
+    bool                            needsRuntimeLookup;
 };
 
 //----------------------------------------------------------------------------

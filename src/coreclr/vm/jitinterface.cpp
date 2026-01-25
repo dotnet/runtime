@@ -8587,6 +8587,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     memset(&info->resolvedTokenDevirtualizedUnboxedMethod, 0, sizeof(info->resolvedTokenDevirtualizedUnboxedMethod));
     info->isInstantiatingStub = false;
     info->needsMethodContext = false;
+    info->needsRuntimeLookup = false;
 
     MethodDesc* pBaseMD = GetMethod(info->virtualMethod);
     MethodTable* pBaseMT = pBaseMD->GetMethodTable();
@@ -8802,6 +8803,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     MethodTable* pExactMT = pApproxMT;
     bool isArray = false;
     bool isGenericVirtual = false;
+    bool needsMethodContext = false;
 
     if (pApproxMT->IsInterface())
     {
@@ -8813,25 +8815,26 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     else if (pBaseMT->IsInterface() && pObjMT->IsArray())
     {
         isArray = true;
+        needsMethodContext = true;
     }
     else
     {
         pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
     }
-    
+
     // This is generic virtual method devirtualization.
     if (!isArray && pBaseMD->HasMethodInstantiation())
     {
-        pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(
-            pDevirtMD, pExactMT, pExactMT->IsValueType() && !pDevirtMD->IsStatic(), pBaseMD->GetMethodInstantiation(), true);
-        
-        // We still can't handle shared generic methods because we don't have
-        // the right generic context for runtime lookup.
-        // TODO: Remove this limitation.
+        MethodDesc* pPrimaryMD = pDevirtMD;
+        pDevirtMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+            pPrimaryMD, pExactMT, pExactMT->IsValueType() && !pPrimaryMD->IsStatic(), pBaseMD->GetMethodInstantiation(), true);
         if (pDevirtMD->IsSharedByGenericMethodInstantiations())
         {
-            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-            return false;
+            pDevirtMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+                pPrimaryMD, pExactMT, pExactMT->IsValueType() && !pPrimaryMD->IsStatic(), pBaseMD->GetMethodInstantiation(), false);
+            info->needsRuntimeLookup = pDevirtMD->IsWrapperStub() &&
+                (pExactMT->IsSharedByGenericInstantiations() || TypeHandle::IsCanonicalSubtypeInstantiation(pDevirtMD->GetMethodInstantiation()));
+            needsMethodContext = true;
         }
 
         isGenericVirtual = true;
@@ -8839,22 +8842,11 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
     // Success! Pass back the results.
     //
-    if (isArray)
+    if (isArray || isGenericVirtual)
     {
-        // Note if array devirtualization produced an instantiation stub
-        // so jit can try and inline it.
-        //
         info->isInstantiatingStub = pDevirtMD->IsInstantiatingStub();
         info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
-        info->needsMethodContext = true;
-    }
-    else if (isGenericVirtual)
-    {
-        // We don't support shared generic methods yet so this should always be false
-        info->needsMethodContext = false;
-        // We don't produce an instantiating stub
-        info->isInstantiatingStub = false;
-        info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
+        info->needsMethodContext = needsMethodContext;
     }
     else
     {
