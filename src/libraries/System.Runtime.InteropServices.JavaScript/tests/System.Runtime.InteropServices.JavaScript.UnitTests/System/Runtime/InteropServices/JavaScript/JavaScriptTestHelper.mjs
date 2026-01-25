@@ -274,6 +274,10 @@ export function returnDateMaxValue() {
     return new Date(8640000000000000);
 }
 
+export function returnDateWithOffset(date, offset) {
+    return new Date(date.getTime() + offset);
+}
+
 export async function invokeReturnCompletedTask() {
     await dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper.ReturnCompletedTask();
     return "resolved";

@@ -194,6 +194,21 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             JSException ex = await Assert.ThrowsAsync<JSException>(() => res);
             Assert.Equal("Error: Assert failed: Overflow: value +275760-09-13T00:00:00.000Z is out of 0001-01-01T00:00:00.000Z 9999-12-31T23:59:59.999Z range", ex.Message);
         }
+
+        [Fact]
+        public async Task TaskOfDateTimeRangeBoundaryConditions()
+        {
+            DateTime t = JavaScriptTestHelper.ReturnDateTimeWithOffset(DateTime.MaxValue, 0);
+            Assert.Equal(DateTime.MaxValue.AddTicks(-9_999), t); // JavaScript Date has millisecond precision only
+            t = JavaScriptTestHelper.ReturnDateTimeWithOffset(DateTime.MinValue, 0);
+            Assert.Equal(DateTime.MinValue, t);
+
+            JSException ex = Assert.Throws<JSException>(() => JavaScriptTestHelper.ReturnDateTimeWithOffset(DateTime.MaxValue, 1));
+            Assert.Equal("Error: Assert failed: Overflow: value +010000-01-01T00:00:00.000Z is out of 0001-01-01T00:00:00.000Z 9999-12-31T23:59:59.999Z range", ex.Message);
+
+            ex = Assert.Throws<JSException>(() => JavaScriptTestHelper.ReturnDateTimeWithOffset(DateTime.MinValue, -1));
+            Assert.Equal("Error: Assert failed: Overflow: value 0000-12-31T23:59:59.999Z is out of 0001-01-01T00:00:00.000Z 9999-12-31T23:59:59.999Z range", ex.Message);
+        }
         #endregion
 
         #region Get/Set Property

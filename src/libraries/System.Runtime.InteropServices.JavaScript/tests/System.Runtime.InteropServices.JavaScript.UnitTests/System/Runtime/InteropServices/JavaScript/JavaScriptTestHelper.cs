@@ -487,6 +487,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [return: JSMarshalAs<JSType.Promise<JSType.Date>>]
         internal static partial Task<DateTime> ReturnResolvedPromiseWithDateMaxValue();
 
+        [JSImport("returnDateWithOffset", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Date>]
+        internal static partial DateTime ReturnDateTimeWithOffset([JSMarshalAs<JSType.Date>] DateTime date, int offset);
+
         [JSExport]
         internal static Task ReturnCompletedTask()
         {
