@@ -544,7 +544,7 @@ namespace System.Collections.Concurrent.Tests
                                     switch (j % 3)
                                     {
                                         case 0:
-                                            dict.AddOrUpdate(j, -j, (k, v) => -k);
+                                            dict.AddOrUpdate(j, -j, (k, v) => v);
                                             break;
                                         case 1:
                                             dict.AddOrUpdate(j, (k) => -k, (k, v) => -k);
