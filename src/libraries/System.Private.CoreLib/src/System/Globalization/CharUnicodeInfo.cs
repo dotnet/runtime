@@ -48,7 +48,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            return GetBidiCategoryNoBoundsChecks((uint)GetCodePointFromString(s, index));
+            return GetBidiCategory(s.AsSpan(), index);
         }
 
         internal static StrongBidiCategory GetBidiCategory(StringBuilder s, int index)
