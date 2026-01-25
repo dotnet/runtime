@@ -209,31 +209,35 @@ namespace System.IO.Tests.Enumeration
             cdFile.Create().Dispose();
             dotFile.Create().Dispose();
 
-            // Win32 + CaseInsensitive: ?.txt - DOS_QM matches exactly one char before .txt
+            // Win32 + CaseInsensitive: ?.txt - DOS_QM can collapse to dot
             // Note: CaseInsensitive means pattern matching is case-insensitive
-            // .txt doesn't match because ? requires at least one character
+            // With DOS_QM transformation, ?.txt becomes >.txt which can match .txt (zero chars), a.txt, and B.TXT
+            // AttributesToSkip=0 needed to include .txt on Unix where dotfiles are marked Hidden
             string[] paths = GetPaths(testDirectory.FullName, "?.txt", new EnumerationOptions
             {
                 MatchType = MatchType.Win32,
-                MatchCasing = MatchCasing.CaseInsensitive
+                MatchCasing = MatchCasing.CaseInsensitive,
+                AttributesToSkip = 0
             });
             
-            // Should match a.txt and B.TXT (one char before dot, case-insensitive)
-            FSAssert.EqualWhenOrdered(new string[] { aFile.FullName, bFile.FullName }, paths);
+            // Should match .txt (DOS_QM can collapse), a.txt, and B.TXT (case-insensitive)
+            FSAssert.EqualWhenOrdered(new string[] { dotFile.FullName, aFile.FullName, bFile.FullName }, paths);
 
-            // Win32 + CaseSensitive: ?.txt - only matches a.txt (one char before dot, lowercase extension)
+            // Win32 + CaseSensitive: ?.txt - DOS_QM can collapse, matches .txt and a.txt (lowercase extension)
             paths = GetPaths(testDirectory.FullName, "?.txt", new EnumerationOptions
             {
                 MatchType = MatchType.Win32,
-                MatchCasing = MatchCasing.CaseSensitive
+                MatchCasing = MatchCasing.CaseSensitive,
+                AttributesToSkip = 0
             });
-            FSAssert.EqualWhenOrdered(new string[] { aFile.FullName }, paths);
+            FSAssert.EqualWhenOrdered(new string[] { dotFile.FullName, aFile.FullName }, paths);
 
-            // Win32 + CaseSensitive: ?.TXT - only matches B.TXT (one char before dot, uppercase extension)
+            // Win32 + CaseSensitive: ?.TXT - DOS_QM can collapse, matches B.TXT (uppercase extension)
             paths = GetPaths(testDirectory.FullName, "?.TXT", new EnumerationOptions
             {
                 MatchType = MatchType.Win32,
-                MatchCasing = MatchCasing.CaseSensitive
+                MatchCasing = MatchCasing.CaseSensitive,
+                AttributesToSkip = 0
             });
             FSAssert.EqualWhenOrdered(new string[] { bFile.FullName }, paths);
 
