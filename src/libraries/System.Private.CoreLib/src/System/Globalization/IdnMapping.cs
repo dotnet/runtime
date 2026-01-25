@@ -88,7 +88,30 @@ namespace System.Globalization
         /// <exception cref="ArgumentException"><paramref name="unicode"/> is invalid based on the <see cref="AllowUnassigned"/> and <see cref="UseStd3AsciiRules"/> properties, and the IDNA standard.</exception>
         public bool TryGetAscii(ReadOnlySpan<char> unicode, Span<char> destination, out int charsWritten)
         {
-            return TryGetAsciiCore(unicode, destination, out charsWritten);
+            if (unicode.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_IdnBadLabelSize, nameof(unicode));
+            }
+            if (unicode[^1] == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidCharSequence, unicode.Length - 1), nameof(unicode));
+            }
+
+            if (GlobalizationMode.Invariant)
+            {
+                return TryGetAsciiInvariant(unicode, destination, out charsWritten);
+            }
+
+            unsafe
+            {
+                fixed (char* pUnicode = &MemoryMarshal.GetReference(unicode))
+                fixed (char* pDestination = &MemoryMarshal.GetReference(destination))
+                {
+                    return GlobalizationMode.UseNls ?
+                        NlsTryGetAsciiCore(pUnicode, unicode.Length, pDestination, destination.Length, out charsWritten) :
+                        IcuTryGetAsciiCore(pUnicode, unicode.Length, pDestination, destination.Length, out charsWritten);
+                }
+            }
         }
 
         private string GetAsciiCore(string? originalUnicode, ReadOnlySpan<char> unicode)
@@ -114,34 +137,6 @@ namespace System.Globalization
                     return GlobalizationMode.UseNls ?
                         NlsGetAsciiCore(originalUnicode, pUnicode, unicode.Length) :
                         IcuGetAsciiCore(originalUnicode, pUnicode, unicode.Length);
-                }
-            }
-        }
-
-        private bool TryGetAsciiCore(ReadOnlySpan<char> unicode, Span<char> destination, out int charsWritten)
-        {
-            if (unicode.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_IdnBadLabelSize, nameof(unicode));
-            }
-            if (unicode[^1] == 0)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidCharSequence, unicode.Length - 1), nameof(unicode));
-            }
-
-            if (GlobalizationMode.Invariant)
-            {
-                return TryGetAsciiInvariant(unicode, destination, out charsWritten);
-            }
-
-            unsafe
-            {
-                fixed (char* pUnicode = &MemoryMarshal.GetReference(unicode))
-                fixed (char* pDestination = &MemoryMarshal.GetReference(destination))
-                {
-                    return GlobalizationMode.UseNls ?
-                        NlsTryGetAsciiCore(pUnicode, unicode.Length, pDestination, destination.Length, out charsWritten) :
-                        IcuTryGetAsciiCore(pUnicode, unicode.Length, pDestination, destination.Length, out charsWritten);
                 }
             }
         }
@@ -184,7 +179,27 @@ namespace System.Globalization
         /// <exception cref="ArgumentException"><paramref name="ascii"/> is invalid based on the <see cref="AllowUnassigned"/> and <see cref="UseStd3AsciiRules"/> properties, and the IDNA standard.</exception>
         public bool TryGetUnicode(ReadOnlySpan<char> ascii, Span<char> destination, out int charsWritten)
         {
-            return TryGetUnicodeCore(ascii, destination, out charsWritten);
+            // This is a case (i.e. explicitly null-terminated input) where behavior in .NET and Win32 intentionally differ.
+            // The .NET APIs should (and did in v4.0 and earlier) throw an ArgumentException on input that includes a terminating null.
+            // The Win32 APIs fail on an embedded null, but not on a terminating null.
+            if (ascii.Length > 0 && ascii[^1] == (char)0)
+                throw new ArgumentException(SR.Argument_IdnBadPunycode, nameof(ascii));
+
+            if (GlobalizationMode.Invariant)
+            {
+                return TryGetUnicodeInvariant(ascii, destination, out charsWritten);
+            }
+
+            unsafe
+            {
+                fixed (char* pAscii = &MemoryMarshal.GetReference(ascii))
+                fixed (char* pDestination = &MemoryMarshal.GetReference(destination))
+                {
+                    return GlobalizationMode.UseNls ?
+                        NlsTryGetUnicodeCore(pAscii, ascii.Length, pDestination, destination.Length, out charsWritten) :
+                        IcuTryGetUnicodeCore(pAscii, ascii.Length, pDestination, destination.Length, out charsWritten);
+                }
+            }
         }
 
         private string GetUnicodeCore(string? originalAscii, ReadOnlySpan<char> ascii)
@@ -207,31 +222,6 @@ namespace System.Globalization
                     return GlobalizationMode.UseNls ?
                         NlsGetUnicodeCore(originalAscii, pAscii, ascii.Length) :
                         IcuGetUnicodeCore(originalAscii, pAscii, ascii.Length);
-                }
-            }
-        }
-
-        private bool TryGetUnicodeCore(ReadOnlySpan<char> ascii, Span<char> destination, out int charsWritten)
-        {
-            // This is a case (i.e. explicitly null-terminated input) where behavior in .NET and Win32 intentionally differ.
-            // The .NET APIs should (and did in v4.0 and earlier) throw an ArgumentException on input that includes a terminating null.
-            // The Win32 APIs fail on an embedded null, but not on a terminating null.
-            if (ascii.Length > 0 && ascii[^1] == (char)0)
-                throw new ArgumentException(SR.Argument_IdnBadPunycode, nameof(ascii));
-
-            if (GlobalizationMode.Invariant)
-            {
-                return TryGetUnicodeInvariant(ascii, destination, out charsWritten);
-            }
-
-            unsafe
-            {
-                fixed (char* pAscii = &MemoryMarshal.GetReference(ascii))
-                fixed (char* pDestination = &MemoryMarshal.GetReference(destination))
-                {
-                    return GlobalizationMode.UseNls ?
-                        NlsTryGetUnicodeCore(pAscii, ascii.Length, pDestination, destination.Length, out charsWritten) :
-                        IcuTryGetUnicodeCore(pAscii, ascii.Length, pDestination, destination.Length, out charsWritten);
                 }
             }
         }
