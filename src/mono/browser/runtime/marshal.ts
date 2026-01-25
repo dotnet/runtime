@@ -313,7 +313,7 @@ export function set_arg_date (arg: JSMarshalerArgument, value: Date): void {
     mono_assert(arg, "Null arg");
     // getTime() is always UTC
     const unixTime = value.getTime();
-    mono_assert(unixTime >= min_dateUnixTime && unixTime <= max_dateUnixTime, `Overflow: value ${value} is out of ${min_dateUnixTime} ${max_dateUnixTime} range`);
+    mono_assert(unixTime >= min_dateUnixTime && unixTime <= max_dateUnixTime, `Overflow: value ${value.toISOString()} is out of ${new Date(min_dateUnixTime).toISOString()} ${new Date(max_dateUnixTime).toISOString()} range`);
     setF64(<any>arg, unixTime);
 }
 
