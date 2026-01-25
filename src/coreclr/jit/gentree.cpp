@@ -2637,7 +2637,7 @@ AGAIN:
     }
 
     /* Sensible flags must be equal */
-    if ((op1->gtFlags & (GTF_UNSIGNED)) != (op2->gtFlags & (GTF_UNSIGNED)))
+    if (op1->IsUnsigned() != op2->IsUnsigned())
     {
         return false;
     }
@@ -5483,10 +5483,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx = 1;
                     costSz = 4;
 #elif defined(TARGET_WASM)
-                    // TODO-WASM: 1 byte opcodes except for the int->fp saturating casts which are 2 bytes.
-                    NYI_WASM("Cast costing");
-                    costEx = 0;
-                    costSz = 0;
+                    // TODO-WASM: Determine if we need a better costing model for casts.
+                    // Some operations may use 2-byte opcodes, and some operations may need
+                    // multiple wasm instructions.
+                    costEx = 2;
+                    costSz = varTypeIsFloating(op1) && !varTypeIsFloating(tree->TypeGet()) ? 2 : 1;
 #else
 #error "Unknown TARGET"
 #endif
@@ -12739,7 +12740,7 @@ void Compiler::gtDispTree(GenTree*                    tree,
             var_types finalType = tree->TypeGet();
 
             /* if GTF_UNSIGNED is set then force fromType to an unsigned type */
-            if (tree->gtFlags & GTF_UNSIGNED)
+            if (tree->IsUnsigned())
             {
                 fromType = varTypeToUnsigned(fromType);
             }
