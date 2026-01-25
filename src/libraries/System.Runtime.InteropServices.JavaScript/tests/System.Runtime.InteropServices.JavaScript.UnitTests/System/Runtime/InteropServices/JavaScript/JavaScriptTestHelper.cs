@@ -469,6 +469,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [return: JSMarshalAs<JSType.Promise<JSType.Number>>]
         internal static partial Task<short> invoke1_TaskOfOutOfRangeShort([JSMarshalAs<JSType.Promise<JSType.Number>>] Task<int> value, [JSMarshalAs<JSType.String>] string name);
 
+        [JSImport("invokeDelegate_DateTimeWithOffset", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Date>]
+        internal static partial DateTime invokeDelegateOfDateTime([JSMarshalAs<JSType.Function<JSType.Date, JSType.Date>>] Func<DateTime, DateTime> datetransformer, [JSMarshalAs<JSType.Date>] DateTime date, int offsetMilliseconds);
+
         [JSImport("returnResolvedPromise", "JavaScriptTestHelper")]
         internal static partial Task ReturnResolvedPromise();
 
@@ -489,7 +493,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [JSImport("returnDateWithOffset", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Date>]
-        internal static partial DateTime ReturnDateTimeWithOffset([JSMarshalAs<JSType.Date>] DateTime date, int offset);
+        internal static partial DateTime ReturnDateTimeWithOffset([JSMarshalAs<JSType.Date>] DateTime date, int offsetMilliseconds);
 
         [JSExport]
         internal static Task ReturnCompletedTask()
@@ -599,6 +603,24 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 return arg1(a);
             };
         }
+
+        [JSImport("invoke1", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Function<JSType.Number, JSType.Number>>]
+        internal static partial Func<long, long> invoke1_FuncOfLongLong([JSMarshalAs<JSType.Function<JSType.Number, JSType.Number>>] Func<long, long> value, [JSMarshalAs<JSType.String>] string name);
+
+        [JSExport]
+        [return: JSMarshalAs<JSType.Function<JSType.Number, JSType.Number>>]
+        public static Func<long, long> BackFuncOfLongLong([JSMarshalAs<JSType.Function<JSType.Number, JSType.Number>>] Func<long, long> arg1)
+        {
+            return (long a) =>
+            {
+                return arg1(a);
+            };
+        }
+
+        [JSImport("invokeFuncWithOffset", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Number>]
+        internal static partial long invokeFuncOfLongLong([JSMarshalAs<JSType.Function<JSType.Number, JSType.Number>>] Func<long, long> fn, [JSMarshalAs<JSType.Number>] long value, [JSMarshalAs<JSType.Number>] int offset);
 
         #endregion
 

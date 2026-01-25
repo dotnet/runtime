@@ -258,6 +258,10 @@ export function invokeExportWithDateMaxValue(exportName) {
     return res;
 }
 
+export function invokeDelegate_DateTimeWithOffset(delegate, date, offset) {
+    return delegate(returnDateWithOffset(date, offset));
+}
+
 export function returnResolvedPromise() {
     return Promise.resolve();
 }
@@ -281,6 +285,10 @@ export function returnDateWithOffset(date, offset) {
 export async function invokeReturnCompletedTask() {
     await dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper.ReturnCompletedTask();
     return "resolved";
+}
+
+export function invokeFuncWithOffset(fn, arg, offset) {
+    return fn(arg + offset);
 }
 
 export function invokeStructClassRecords(arg1) {

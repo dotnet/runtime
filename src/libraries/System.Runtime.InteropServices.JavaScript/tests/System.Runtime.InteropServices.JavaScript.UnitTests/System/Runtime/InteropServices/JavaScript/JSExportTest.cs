@@ -449,6 +449,18 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Same(expected, actual);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        public async Task JsExportFunctionDateTimeDateTime()
+        {
+            DateTime input = DateTime.Now;
+            DateTime receivedArg = DateTime.MinValue;
+            DateTime returnVal = JavaScriptTestHelper.invokeDelegateOfDateTime((DateTime date) => {
+                return receivedArg = date;
+            }, input, 0);
+            Assert.Equal(input, receivedArg);
+            Assert.Equal(input, returnVal);
+        }
+
         private void JsExportTest<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>(T value
         , Func<T, string, T> invoke, string echoName, string jsType, string? jsClass = null)
         {
@@ -490,7 +502,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public async Task JsExportTaskOfLong_OverflowInt52()
+        public async Task JsExportTaskOfLong_TaskReturnValue_OverflowInt52()
         {
             long value = 1L << 53;
             TaskCompletionSource<long> tcs = new TaskCompletionSource<long>();
@@ -501,7 +513,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public async Task JsExportTaskOfDateTime_OverflowNETDateTime()
+        public async Task JsExportTaskOfDateTime_TaskReturnValue_OverflowNETDateTime()
         {
             var res = JavaScriptTestHelper.invokeExportWithTaskOfMaxJSDateTime(nameof(JavaScriptTestHelper.AwaitTaskOfDateTime));
             JSException ex = await Assert.ThrowsAsync<JSException>(() => res);
@@ -509,10 +521,49 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public async Task JsExportDateTime_OverflowNETDateTime()
+        public async Task JsExportDateTime_ReturnValue_OverflowNETDateTime()
         {
             JSException ex = Assert.Throws<JSException>(() => JavaScriptTestHelper.invokeExportWithMaxJSDateTime(nameof(JavaScriptTestHelper.EchoDateTime)));
             Assert.Equal("Error: Assert failed: Overflow: value +275760-09-13T00:00:00.000Z is out of 0001-01-01T00:00:00.000Z 9999-12-31T23:59:59.999Z range", ex.Message);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        public async Task JsExportFuncOfDateTime_Argument_OverflowNETDateTime()
+        {
+            DateTime receivedArg = DateTime.MinValue;
+            JSException ex = Assert.Throws<JSException>(() => JavaScriptTestHelper.invokeDelegateOfDateTime((DateTime date) => {
+                return receivedArg = date;
+            }, DateTime.MaxValue, 60_001));
+            Assert.Equal("Error: Assert failed: Overflow: value +010000-01-01T00:01:00.000Z is out of 0001-01-01T00:00:00.000Z 9999-12-31T23:59:59.999Z range", ex.Message);
+            Assert.Equal(DateTime.MinValue, receivedArg); // delegate invoke failed, no change to arg
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        public void JsExportCallback_FunctionLongLong_OverflowInt52_JSSide()
+        {
+            long called = -1;
+            Assert.Equal(-1, called);
+            JSException ex = Assert.Throws<JSException>(() => JavaScriptTestHelper.invokeFuncOfLongLong((long a) =>
+            {
+                return called = a;
+            }, 9007199254740991, offset: 1));
+            Assert.Equal(-1, called);
+            Assert.Equal("Error: Assert failed: Value is not an integer: 9007199254740992 (number)", ex.Message);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        public void JsExportCallback_FunctionLongLong_OverflowInt52_NETSide()
+        {
+            long called = -1;
+            var chain = JavaScriptTestHelper.invoke1_FuncOfLongLong((long a) =>
+            {
+                return called = a;
+            }, nameof(JavaScriptTestHelper.BackFuncOfLongLong));
+
+            Assert.Equal(-1, called);
+            OverflowException ex = Assert.Throws<OverflowException>(() => chain(long.MaxValue));
+            Assert.Equal(-1, called);
+            Assert.Equal("Overflow: value 9223372036854775807 is out of -9007199254740991 9007199254740991 range.", ex.Message);
         }
         #endregion
     }
