@@ -197,11 +197,7 @@ namespace System.IO.Hashing
                 }
                 s1 %= Base;
                 s2 %= Base;
-#if NETSTANDARD2_0 || NETFRAMEWORK
                 buf = buf.Slice(k);
-#else
-                buf = buf[k..];
-#endif
             }
 
             return (s2 << 16) | s1;
