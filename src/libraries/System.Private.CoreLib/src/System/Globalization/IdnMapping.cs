@@ -86,18 +86,12 @@ namespace System.Globalization
 
             if (GlobalizationMode.Invariant)
             {
-                return GetAsciiInvariant(unicode.AsSpan(index, count));
+                return GetAsciiInvariant(unicode, index, count);
             }
 
-            unsafe
-            {
-                fixed (char* pUnicode = unicode)
-                {
-                    return GlobalizationMode.UseNls ?
-                        NlsGetAsciiCore(unicode, pUnicode + index, count) :
-                        IcuGetAsciiCore(unicode, pUnicode + index, count);
-                }
-            }
+            return GlobalizationMode.UseNls ?
+                NlsGetAsciiCore(unicode, index, count) :
+                IcuGetAsciiCore(unicode, index, count);
         }
 
         /// <summary>
@@ -159,18 +153,12 @@ namespace System.Globalization
 
             if (GlobalizationMode.Invariant)
             {
-                return GetUnicodeInvariant(ascii.AsSpan(index, count));
+                return GetUnicodeInvariant(ascii, index, count);
             }
 
-            unsafe
-            {
-                fixed (char* pAscii = ascii)
-                {
-                    return GlobalizationMode.UseNls ?
-                        NlsGetUnicodeCore(ascii, pAscii + index, count) :
-                        IcuGetUnicodeCore(ascii, pAscii + index, count);
-                }
-            }
+            return GlobalizationMode.UseNls ?
+                NlsGetUnicodeCore(ascii, index, count) :
+                IcuGetUnicodeCore(ascii, index, count);
         }
 
         /// <summary>
@@ -208,19 +196,19 @@ namespace System.Globalization
             (_allowUnassigned ? 100 : 200) + (_useStd3AsciiRules ? 1000 : 2000);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe string GetStringForOutput(string? originalString, char* input, int inputLength, char* output, int outputLength)
+        private static string GetStringForOutput(string? originalString, ReadOnlySpan<char> input, ReadOnlySpan<char> output)
         {
-            Debug.Assert(inputLength > 0);
+            Debug.Assert(input.Length > 0);
 
             if (originalString is not null &&
-                originalString.Length == inputLength &&
-                inputLength == outputLength &&
-                Ordinal.EqualsIgnoreCase(ref *input, ref *output, inputLength))
+                originalString.Length == input.Length &&
+                input.Length == output.Length &&
+                Ordinal.EqualsIgnoreCase(ref MemoryMarshal.GetReference(input), ref MemoryMarshal.GetReference(output), input.Length))
             {
                 return originalString;
             }
 
-            return new string(output, 0, outputLength);
+            return output.ToString();
         }
 
         //
@@ -240,11 +228,18 @@ namespace System.Globalization
         private const int c_skew = 38;
         private const int c_damp = 700;
 
-        private string GetAsciiInvariant(ReadOnlySpan<char> unicode)
+        private string GetAsciiInvariant(string unicodeString, int index, int count)
         {
+            ReadOnlySpan<char> unicode = unicodeString.AsSpan(index, count);
+
             // Check for ASCII only string, which will be unchanged
             if (ValidateStd3AndAscii(unicode, UseStd3AsciiRules, true))
             {
+                // Return original string if the entire string was requested and it doesn't need modification
+                if (index == 0 && count == unicodeString.Length)
+                {
+                    return unicodeString;
+                }
                 return unicode.ToString();
             }
 
@@ -268,7 +263,35 @@ namespace System.Globalization
 
         private bool TryGetAsciiInvariant(ReadOnlySpan<char> unicode, Span<char> destination, out int charsWritten)
         {
-            string result = GetAsciiInvariant(unicode);
+            // Check for ASCII only string, which will be unchanged
+            if (ValidateStd3AndAscii(unicode, UseStd3AsciiRules, true))
+            {
+                if (unicode.Length <= destination.Length)
+                {
+                    unicode.CopyTo(destination);
+                    charsWritten = unicode.Length;
+                    return true;
+                }
+                charsWritten = 0;
+                return false;
+            }
+
+            // Cannot be null terminated (normalization won't help us with this one, and
+            // may have returned false before checking the whole string above)
+            Debug.Assert(unicode.Length >= 1, "[IdnMapping.GetAscii] Expected 0 length strings to fail before now.");
+            if (unicode[^1] <= 0x1f)
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidCharSequence, unicode.Length - 1), nameof(unicode));
+            }
+
+            // May need to check Std3 rules again for non-ascii
+            if (UseStd3AsciiRules)
+            {
+                ValidateStd3AndAscii(unicode, true, false);
+            }
+
+            // Go ahead and encode it
+            string result = PunycodeEncode(unicode);
             if (result.Length <= destination.Length)
             {
                 result.CopyTo(destination);
@@ -615,7 +638,26 @@ namespace System.Globalization
                 throw new ArgumentException(SR.Format(SR.Argument_IdnBadStd3, c), nameof(c));
         }
 
-        private string GetUnicodeInvariant(ReadOnlySpan<char> ascii)
+        private string GetUnicodeInvariant(string asciiString, int index, int count)
+        {
+            // Convert Punycode to Unicode
+            string strUnicode = PunycodeDecode(asciiString.Substring(index, count));
+
+            // Output name MUST obey IDNA rules & round trip (casing differences are allowed)
+            string ascii = GetAscii(strUnicode);
+            if (!ascii.Equals(asciiString.Substring(index, count), StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(asciiString));
+
+            // If the ASCII round-trip equals the original string, return it as-is (no allocation)
+            if (index == 0 && count == asciiString.Length && strUnicode.Equals(asciiString, StringComparison.OrdinalIgnoreCase))
+            {
+                return asciiString;
+            }
+
+            return strUnicode;
+        }
+
+        private bool TryGetUnicodeInvariant(ReadOnlySpan<char> ascii, Span<char> destination, out int charsWritten)
         {
             // Convert the span to a string for PunycodeDecode since it uses string operations extensively
             string asciiString = ascii.ToString();
@@ -627,16 +669,10 @@ namespace System.Globalization
             if (!asciiString.Equals(GetAscii(strUnicode), StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(ascii));
 
-            return strUnicode;
-        }
-
-        private bool TryGetUnicodeInvariant(ReadOnlySpan<char> ascii, Span<char> destination, out int charsWritten)
-        {
-            string result = GetUnicodeInvariant(ascii);
-            if (result.Length <= destination.Length)
+            if (strUnicode.Length <= destination.Length)
             {
-                result.CopyTo(destination);
-                charsWritten = result.Length;
+                strUnicode.CopyTo(destination);
+                charsWritten = strUnicode.Length;
                 return true;
             }
 

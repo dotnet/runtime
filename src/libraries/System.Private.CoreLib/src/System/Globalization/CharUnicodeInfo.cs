@@ -438,6 +438,13 @@ namespace System.Globalization
             Debug.Assert(s != null);
             Debug.Assert((uint)index < (uint)s.Length, "index < s.Length");
 
+            return GetCodePoint(s.AsSpan(), index);
+        }
+
+        private static int GetCodePoint(ReadOnlySpan<char> s, int index)
+        {
+            Debug.Assert((uint)index < (uint)s.Length, "index < s.Length");
+
             int codePoint = 0;
 
             // We know the 'if' block below will always succeed, but it allows the
