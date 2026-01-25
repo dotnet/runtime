@@ -2234,8 +2234,8 @@ namespace System.Tests
             yield return new object[] { "3:45 PM", "h:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault, new DateTime(1, 1, 1, 15, 45, 0) };
 
             // AllowInnerWhite (standalone): allows white space to appear in the middle of the string
-            yield return new object[] { "2017 - 10 - 11  01:23:45", "yyyy'-'MM'-'dd HH':'mm':'ss", CultureInfo.InvariantCulture, DateTimeStyles.AllowInnerWhite, new DateTime(2017, 10, 11, 1, 23, 45) };
-            yield return new object[] { "9 / 8 / 2017  10 : 11 : 12", "M'/'d'/'yyyy HH':'mm':'ss", CultureInfo.InvariantCulture, DateTimeStyles.AllowInnerWhite, new DateTime(2017, 9, 8, 10, 11, 12) };
+            yield return new object[] { "2017 - 10 - 11  01:23:45", "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AllowInnerWhite, new DateTime(2017, 10, 11, 1, 23, 45) };
+            yield return new object[] { "9 / 8 / 2017  10 : 11 : 12", "M/d/yyyy HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AllowInnerWhite, new DateTime(2017, 9, 8, 10, 11, 12) };
 
             if (PlatformDetection.IsNotInvariantGlobalization)
             {
