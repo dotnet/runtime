@@ -718,51 +718,41 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
                 else
                 {
                     Frame* pFrame = pThread->GetFrame();
-                    if (pFrame != FRAME_TOP && InlinedCallFrame::FrameHasActiveCall(pFrame))
-                    {
-                        // PInvoke - InlinedCallFrame has the managed caller's context
-                        PTR_InlinedCallFrame pICF = dac_cast<PTR_InlinedCallFrame>(pFrame);
-                        SetIP(pUnwindContext, pICF->m_pCallerReturnAddress);
-                        SetSP(pUnwindContext, (TADDR)pICF->m_pCallSiteSP);
-                        unwound = true;
-                    }
-                    else
-                    {
-                        // For other native code (e.g., FCALLs which have no Frame),
-                        // unwind through native frames until we reach managed code.
-                        // Limit iterations to avoid infinite loops in case of corrupted stacks.
-                        const int kMaxUnwindIterations = 64;
+                
+                    // For other native code (e.g., FCALLs which have no Frame),
+                    // unwind through native frames until we reach managed code.
+                    // Limit iterations to avoid infinite loops in case of corrupted stacks.
+                    const int kMaxUnwindIterations = 64;
 
 #if defined(TARGET_ARM)
-                        // On ARM32, the return address is in LR, not on the stack.
-                        // First check if LR already points to managed code - this handles
-                        // the common case where we're only one call deep from managed.
-                        if (ExecutionManager::IsManagedCode(pUnwindContext->Lr))
-                        {
-                            SetIP(pUnwindContext, pUnwindContext->Lr);
-                            unwound = true;
-                        }
+                    // On ARM32, the return address is in LR, not on the stack.
+                    // First check if LR already points to managed code - this handles
+                    // the common case where we're only one call deep from managed.
+                    if (ExecutionManager::IsManagedCode(pUnwindContext->Lr))
+                    {
+                        SetIP(pUnwindContext, pUnwindContext->Lr);
+                        unwound = true;
+                    }
 #endif
-                        // Walk the frame pointer chain.
-                        // Standard frame layout: [FP] = caller's FP, [FP + sizeof(void*)] = return address
-                        // GetFP() returns the appropriate register for each architecture:
-                        // x64: RBP, ARM64: X29, ARM32: R7, LoongArch64/RISC-V64: FP
-                        TADDR framePtr = GetFP(pUnwindContext);
-                        for (int i = 0; i < kMaxUnwindIterations && framePtr != 0 && !unwound; i++)
+                    // Walk the frame pointer chain.
+                    // Standard frame layout: [FP] = caller's FP, [FP + sizeof(void*)] = return address
+                    // GetFP() returns the appropriate register for each architecture:
+                    // x64: RBP, ARM64: X29, ARM32: R7, LoongArch64/RISC-V64: FP
+                    TADDR framePtr = GetFP(pUnwindContext);
+                    for (int i = 0; i < kMaxUnwindIterations && framePtr != 0 && !unwound; i++)
+                    {
+                        TADDR returnAddr = *(TADDR*)(framePtr + sizeof(void*));
+
+                        if (ExecutionManager::IsManagedCode(returnAddr))
                         {
-                            TADDR returnAddr = *(TADDR*)(framePtr + sizeof(void*));
-
-                            if (ExecutionManager::IsManagedCode(returnAddr))
-                            {
-                                SetIP(pUnwindContext, returnAddr);
-                                SetSP(pUnwindContext, framePtr + 2 * sizeof(void*));
-                                unwound = true;
-                                break;
-                            }
-
-                            // Move to caller's frame
-                            framePtr = *(TADDR*)framePtr;
+                            SetIP(pUnwindContext, returnAddr);
+                            SetSP(pUnwindContext, framePtr + 2 * sizeof(void*));
+                            unwound = true;
+                            break;
                         }
+
+                        // Move to caller's frame
+                        framePtr = *(TADDR*)framePtr;
                     }
                 }
 
