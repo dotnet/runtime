@@ -505,14 +505,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             var res = JavaScriptTestHelper.invokeExportWithTaskOfMaxJSDateTime(nameof(JavaScriptTestHelper.AwaitTaskOfDateTime));
             JSException ex = await Assert.ThrowsAsync<JSException>(() => res);
-            Assert.Equal("Error: Assert failed: Overflow: value 8640000000000000 is out of -62135596800000 253402300799999 range", ex.Message);
+            Assert.Equal("Error: Assert failed: Overflow: value +275760-09-13T00:00:00.000Z is out of 0001-01-01T00:00:00.000Z 9999-12-31T23:59:59.999Z range", ex.Message);
         }
 
         [Fact]
         public async Task JsExportDateTime_OverflowNETDateTime()
         {
             JSException ex = Assert.Throws<JSException>(() => JavaScriptTestHelper.invokeExportWithMaxJSDateTime(nameof(JavaScriptTestHelper.EchoDateTime)));
-            Assert.Equal("Error: Assert failed: Overflow: value 8640000000000000 is out of -62135596800000 253402300799999 range", ex.Message);
+            Assert.Equal("Error: Assert failed: Overflow: value +275760-09-13T00:00:00.000Z is out of 0001-01-01T00:00:00.000Z 9999-12-31T23:59:59.999Z range", ex.Message);
         }
         #endregion
     }
