@@ -2344,6 +2344,13 @@ bool GenTreeCall::HasNonStandardAddedArgs(Compiler* compiler) const
 //
 int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
 {
+#if defined(TARGET_WASM)
+    // TODO-WASM: may need adjustments for other hidden args
+    // For now: managed calls get extra SP + PortableEntryPoint args, but
+    // we're not adding the PE arg yet. So just note one extra arg.
+    return IsUnmanaged() ? 0 : 1;
+#endif // defined(TARGET_WASM)
+
     if (IsUnmanaged() && !compiler->opts.ShouldUsePInvokeHelpers())
     {
         // R11 = PInvoke cookie param
@@ -2630,7 +2637,7 @@ AGAIN:
     }
 
     /* Sensible flags must be equal */
-    if ((op1->gtFlags & (GTF_UNSIGNED)) != (op2->gtFlags & (GTF_UNSIGNED)))
+    if (op1->IsUnsigned() != op2->IsUnsigned())
     {
         return false;
     }
@@ -5476,10 +5483,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx = 1;
                     costSz = 4;
 #elif defined(TARGET_WASM)
-                    // TODO-WASM: 1 byte opcodes except for the int->fp saturating casts which are 2 bytes.
-                    NYI_WASM("Cast costing");
-                    costEx = 0;
-                    costSz = 0;
+                    // TODO-WASM: Determine if we need a better costing model for casts.
+                    // Some operations may use 2-byte opcodes, and some operations may need
+                    // multiple wasm instructions.
+                    costEx = 2;
+                    costSz = varTypeIsFloating(op1) && !varTypeIsFloating(tree->TypeGet()) ? 2 : 1;
 #else
 #error "Unknown TARGET"
 #endif
@@ -11938,6 +11946,12 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             {
                 ilName = "AsyncCont";
             }
+#if defined(TARGET_WASM)
+            else if (lclNum == lvaWasmSpArg)
+            {
+                ilName = "SP";
+            }
+#endif // defined(TARGET_WASM)
             else
             {
                 ilKind = "tmp";
@@ -11954,7 +11968,7 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
     }
     else if (lclNum < (compIsForInlining() ? impInlineInfo->InlinerCompiler->info.compArgsCount : info.compArgsCount))
     {
-        if (ilNum == 0 && !info.compIsStatic)
+        if ((ilNum == 0) && !info.compIsStatic)
         {
             ilName = "this";
         }
@@ -12726,7 +12740,7 @@ void Compiler::gtDispTree(GenTree*                    tree,
             var_types finalType = tree->TypeGet();
 
             /* if GTF_UNSIGNED is set then force fromType to an unsigned type */
-            if (tree->gtFlags & GTF_UNSIGNED)
+            if (tree->IsUnsigned())
             {
                 fromType = varTypeToUnsigned(fromType);
             }

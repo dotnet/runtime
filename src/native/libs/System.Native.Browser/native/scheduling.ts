@@ -30,4 +30,3 @@ export function SystemJS_ScheduleBackgroundJob(): void {
         _ems_._SystemJS_ExecuteBackgroundJobCallback();
     }
 }
-
