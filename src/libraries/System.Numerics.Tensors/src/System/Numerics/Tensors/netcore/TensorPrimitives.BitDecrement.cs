@@ -40,14 +40,13 @@ namespace System.Numerics.Tensors
                     Vector128<uint> bits = xFloat.AsUInt32();
 
                     // Create masks for special cases
-                    Vector128<float> isNaNMask = Vector128.Create(BitConverter.UInt32BitsToSingle(0xFFFFFFFF));
-                    Vector128<uint> isNaN = Vector128.Equals(xFloat, xFloat).AsUInt32() ^ isNaNMask.AsUInt32();
-                    Vector128<uint> isPosInf = Vector128.Equals(bits, Vector128.Create(float.PositiveInfinityBits));
-                    Vector128<uint> isPosZero = Vector128.Equals(bits, Vector128.Create(float.PositiveZeroBits));
-                    Vector128<uint> isNegInf = Vector128.Equals(bits, Vector128.Create(float.NegativeInfinityBits));
+                    Vector128<uint> isNaN = ~Vector128.Equals(xFloat, xFloat).AsUInt32();
+                    Vector128<uint> isPosInf = Vector128.Equals(bits, Vector128.Create(0x7F80_0000u)); // PositiveInfinityBits
+                    Vector128<uint> isPosZero = Vector128.Equals(bits, Vector128.Create(0x0000_0000u)); // PositiveZeroBits
+                    Vector128<uint> isNegInf = Vector128.Equals(bits, Vector128.Create(0xFF80_0000u)); // NegativeInfinityBits
 
                     // Determine if negative (sign bit set)
-                    Vector128<uint> isNegative = Vector128.LessThan(xFloat, Vector128<float>.Zero).AsUInt32();
+                    Vector128<uint> isNegative = Vector128.Equals(bits & Vector128.Create(0x8000_0000u), Vector128.Create(0x8000_0000u));
 
                     // Compute bit incremented/decremented results
                     Vector128<uint> incremented = bits + Vector128<uint>.One;
@@ -75,14 +74,13 @@ namespace System.Numerics.Tensors
                     Vector128<ulong> bits = xDouble.AsUInt64();
 
                     // Create masks for special cases
-                    Vector128<double> isNaNMask = Vector128.Create(BitConverter.UInt64BitsToDouble(0xFFFFFFFFFFFFFFFF));
-                    Vector128<ulong> isNaN = Vector128.Equals(xDouble, xDouble).AsUInt64() ^ isNaNMask.AsUInt64();
-                    Vector128<ulong> isPosInf = Vector128.Equals(bits, Vector128.Create(double.PositiveInfinityBits));
-                    Vector128<ulong> isPosZero = Vector128.Equals(bits, Vector128.Create(double.PositiveZeroBits));
-                    Vector128<ulong> isNegInf = Vector128.Equals(bits, Vector128.Create(double.NegativeInfinityBits));
+                    Vector128<ulong> isNaN = ~Vector128.Equals(xDouble, xDouble).AsUInt64();
+                    Vector128<ulong> isPosInf = Vector128.Equals(bits, Vector128.Create(0x7FF0_0000_0000_0000ul)); // PositiveInfinityBits
+                    Vector128<ulong> isPosZero = Vector128.Equals(bits, Vector128.Create(0x0000_0000_0000_0000ul)); // PositiveZeroBits
+                    Vector128<ulong> isNegInf = Vector128.Equals(bits, Vector128.Create(0xFFF0_0000_0000_0000ul)); // NegativeInfinityBits
 
                     // Determine if negative (sign bit set)
-                    Vector128<ulong> isNegative = Vector128.LessThan(xDouble, Vector128<double>.Zero).AsUInt64();
+                    Vector128<ulong> isNegative = Vector128.Equals(bits & Vector128.Create(0x8000_0000_0000_0000ul), Vector128.Create(0x8000_0000_0000_0000ul));
 
                     // Compute bit incremented/decremented results
                     Vector128<ulong> incremented = bits + Vector128<ulong>.One;
@@ -105,7 +103,8 @@ namespace System.Numerics.Tensors
                     return result.AsDouble().As<double, T>();
                 }
 
-                return ApplyScalar<BitDecrementOperator<T>>(x);
+                // Fallback for unsupported types - should not be reached since Vectorizable returns false
+                throw new NotSupportedException();
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -117,14 +116,13 @@ namespace System.Numerics.Tensors
                     Vector256<uint> bits = xFloat.AsUInt32();
 
                     // Create masks for special cases
-                    Vector256<float> isNaNMask = Vector256.Create(BitConverter.UInt32BitsToSingle(0xFFFFFFFF));
-                    Vector256<uint> isNaN = Vector256.Equals(xFloat, xFloat).AsUInt32() ^ isNaNMask.AsUInt32();
-                    Vector256<uint> isPosInf = Vector256.Equals(bits, Vector256.Create(float.PositiveInfinityBits));
-                    Vector256<uint> isPosZero = Vector256.Equals(bits, Vector256.Create(float.PositiveZeroBits));
-                    Vector256<uint> isNegInf = Vector256.Equals(bits, Vector256.Create(float.NegativeInfinityBits));
+                    Vector256<uint> isNaN = ~Vector256.Equals(xFloat, xFloat).AsUInt32();
+                    Vector256<uint> isPosInf = Vector256.Equals(bits, Vector256.Create(0x7F80_0000u)); // PositiveInfinityBits
+                    Vector256<uint> isPosZero = Vector256.Equals(bits, Vector256.Create(0x0000_0000u)); // PositiveZeroBits
+                    Vector256<uint> isNegInf = Vector256.Equals(bits, Vector256.Create(0xFF80_0000u)); // NegativeInfinityBits
 
                     // Determine if negative (sign bit set)
-                    Vector256<uint> isNegative = Vector256.LessThan(xFloat, Vector256<float>.Zero).AsUInt32();
+                    Vector256<uint> isNegative = Vector256.Equals(bits & Vector256.Create(0x8000_0000u), Vector256.Create(0x8000_0000u));
 
                     // Compute bit incremented/decremented results
                     Vector256<uint> incremented = bits + Vector256<uint>.One;
@@ -152,14 +150,13 @@ namespace System.Numerics.Tensors
                     Vector256<ulong> bits = xDouble.AsUInt64();
 
                     // Create masks for special cases
-                    Vector256<double> isNaNMask = Vector256.Create(BitConverter.UInt64BitsToDouble(0xFFFFFFFFFFFFFFFF));
-                    Vector256<ulong> isNaN = Vector256.Equals(xDouble, xDouble).AsUInt64() ^ isNaNMask.AsUInt64();
-                    Vector256<ulong> isPosInf = Vector256.Equals(bits, Vector256.Create(double.PositiveInfinityBits));
-                    Vector256<ulong> isPosZero = Vector256.Equals(bits, Vector256.Create(double.PositiveZeroBits));
-                    Vector256<ulong> isNegInf = Vector256.Equals(bits, Vector256.Create(double.NegativeInfinityBits));
+                    Vector256<ulong> isNaN = ~Vector256.Equals(xDouble, xDouble).AsUInt64();
+                    Vector256<ulong> isPosInf = Vector256.Equals(bits, Vector256.Create(0x7FF0_0000_0000_0000ul)); // PositiveInfinityBits
+                    Vector256<ulong> isPosZero = Vector256.Equals(bits, Vector256.Create(0x0000_0000_0000_0000ul)); // PositiveZeroBits
+                    Vector256<ulong> isNegInf = Vector256.Equals(bits, Vector256.Create(0xFFF0_0000_0000_0000ul)); // NegativeInfinityBits
 
                     // Determine if negative (sign bit set)
-                    Vector256<ulong> isNegative = Vector256.LessThan(xDouble, Vector256<double>.Zero).AsUInt64();
+                    Vector256<ulong> isNegative = Vector256.Equals(bits & Vector256.Create(0x8000_0000_0000_0000ul), Vector256.Create(0x8000_0000_0000_0000ul));
 
                     // Compute bit incremented/decremented results
                     Vector256<ulong> incremented = bits + Vector256<ulong>.One;
@@ -182,7 +179,8 @@ namespace System.Numerics.Tensors
                     return result.AsDouble().As<double, T>();
                 }
 
-                return ApplyScalar<BitDecrementOperator<T>>(x);
+                // Fallback for unsupported types - should not be reached since Vectorizable returns false
+                throw new NotSupportedException();
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -194,14 +192,13 @@ namespace System.Numerics.Tensors
                     Vector512<uint> bits = xFloat.AsUInt32();
 
                     // Create masks for special cases
-                    Vector512<float> isNaNMask = Vector512.Create(BitConverter.UInt32BitsToSingle(0xFFFFFFFF));
-                    Vector512<uint> isNaN = Vector512.Equals(xFloat, xFloat).AsUInt32() ^ isNaNMask.AsUInt32();
-                    Vector512<uint> isPosInf = Vector512.Equals(bits, Vector512.Create(float.PositiveInfinityBits));
-                    Vector512<uint> isPosZero = Vector512.Equals(bits, Vector512.Create(float.PositiveZeroBits));
-                    Vector512<uint> isNegInf = Vector512.Equals(bits, Vector512.Create(float.NegativeInfinityBits));
+                    Vector512<uint> isNaN = ~Vector512.Equals(xFloat, xFloat).AsUInt32();
+                    Vector512<uint> isPosInf = Vector512.Equals(bits, Vector512.Create(0x7F80_0000u)); // PositiveInfinityBits
+                    Vector512<uint> isPosZero = Vector512.Equals(bits, Vector512.Create(0x0000_0000u)); // PositiveZeroBits
+                    Vector512<uint> isNegInf = Vector512.Equals(bits, Vector512.Create(0xFF80_0000u)); // NegativeInfinityBits
 
                     // Determine if negative (sign bit set)
-                    Vector512<uint> isNegative = Vector512.LessThan(xFloat, Vector512<float>.Zero).AsUInt32();
+                    Vector512<uint> isNegative = Vector512.Equals(bits & Vector512.Create(0x8000_0000u), Vector512.Create(0x8000_0000u));
 
                     // Compute bit incremented/decremented results
                     Vector512<uint> incremented = bits + Vector512<uint>.One;
@@ -229,14 +226,13 @@ namespace System.Numerics.Tensors
                     Vector512<ulong> bits = xDouble.AsUInt64();
 
                     // Create masks for special cases
-                    Vector512<double> isNaNMask = Vector512.Create(BitConverter.UInt64BitsToDouble(0xFFFFFFFFFFFFFFFF));
-                    Vector512<ulong> isNaN = Vector512.Equals(xDouble, xDouble).AsUInt64() ^ isNaNMask.AsUInt64();
-                    Vector512<ulong> isPosInf = Vector512.Equals(bits, Vector512.Create(double.PositiveInfinityBits));
-                    Vector512<ulong> isPosZero = Vector512.Equals(bits, Vector512.Create(double.PositiveZeroBits));
-                    Vector512<ulong> isNegInf = Vector512.Equals(bits, Vector512.Create(double.NegativeInfinityBits));
+                    Vector512<ulong> isNaN = ~Vector512.Equals(xDouble, xDouble).AsUInt64();
+                    Vector512<ulong> isPosInf = Vector512.Equals(bits, Vector512.Create(0x7FF0_0000_0000_0000ul)); // PositiveInfinityBits
+                    Vector512<ulong> isPosZero = Vector512.Equals(bits, Vector512.Create(0x0000_0000_0000_0000ul)); // PositiveZeroBits
+                    Vector512<ulong> isNegInf = Vector512.Equals(bits, Vector512.Create(0xFFF0_0000_0000_0000ul)); // NegativeInfinityBits
 
                     // Determine if negative (sign bit set)
-                    Vector512<ulong> isNegative = Vector512.LessThan(xDouble, Vector512<double>.Zero).AsUInt64();
+                    Vector512<ulong> isNegative = Vector512.Equals(bits & Vector512.Create(0x8000_0000_0000_0000ul), Vector512.Create(0x8000_0000_0000_0000ul));
 
                     // Compute bit incremented/decremented results
                     Vector512<ulong> incremented = bits + Vector512<ulong>.One;
@@ -259,7 +255,8 @@ namespace System.Numerics.Tensors
                     return result.AsDouble().As<double, T>();
                 }
 
-                return ApplyScalar<BitDecrementOperator<T>>(x);
+                // Fallback for unsupported types - should not be reached since Vectorizable returns false
+                throw new NotSupportedException();
             }
         }
     }
