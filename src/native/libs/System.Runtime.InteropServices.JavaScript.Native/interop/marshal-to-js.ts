@@ -462,7 +462,7 @@ function _marshalArrayToJs_impl(arg: JSMarshalerArgument, elementType: Marshaler
         const sourceView = dotnetApi.localHeapViewF64().subarray(bufferOffset, bufferOffset + length);
         result = sourceView.slice();//copy
     } else if (elementType == MarshalerType.Single) {
-        const bufferOffset = fixupPointer(bufferPtr, 3);
+        const bufferOffset = fixupPointer(bufferPtr, 2);
         const sourceView = dotnetApi.localHeapViewF32().subarray(bufferOffset, bufferOffset + length);
         result = sourceView.slice();//copy
     } else {

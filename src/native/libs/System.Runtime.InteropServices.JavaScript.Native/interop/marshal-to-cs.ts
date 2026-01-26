@@ -468,7 +468,7 @@ export function marshalArrayToCsImpl(arg: JSMarshalerArgument, value: Array<any>
             targetView.set(value);
         } else if (elementType == MarshalerType.Single) {
             dotnetAssert.check(Array.isArray(value) || value instanceof Float32Array, "Value is not an Array or Float32Array");
-            const bufferOffset = fixupPointer(bufferPtr, 1);
+            const bufferOffset = fixupPointer(bufferPtr, 2);
             const targetView = dotnetApi.localHeapViewF32().subarray(bufferOffset, bufferOffset + length);
             targetView.set(value);
         } else {

@@ -224,6 +224,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         internal static partial double? store_DoubleArray([JSMarshalAs<JSType.Array<JSType.Number>>] double[]? value, [JSMarshalAs<JSType.Number>] int index);
 
         [JSImport("echo1", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Array<JSType.Number>>]
+        internal static partial float[]? echo1_SingleArray([JSMarshalAs<JSType.Array<JSType.Number>>] float[]? value);
+
+        [JSImport("storeAt", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Number>]
+        internal static partial float? store_SingleArray([JSMarshalAs<JSType.Array<JSType.Number>>] float[]? value, [JSMarshalAs<JSType.Number>] int index);
+
+        [JSImport("echo1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Array<JSType.String>>]
         internal static partial string[]? echo1_StringArray([JSMarshalAs<JSType.Array<JSType.String>>] string[]? value);
 
@@ -278,6 +286,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("echo1view", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.MemoryView>]
         internal static partial ArraySegment<double> echo1_ArraySegmentOfDouble([JSMarshalAs<JSType.MemoryView>] ArraySegment<double> value, [JSMarshalAs<JSType.Boolean>] bool edit);
+
+        [JSImport("echo1view", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.MemoryView>]
+        internal static partial ArraySegment<float> echo1_ArraySegmentOfSingle([JSMarshalAs<JSType.MemoryView>] ArraySegment<float> value, [JSMarshalAs<JSType.Boolean>] bool edit);
 
         #endregion
 

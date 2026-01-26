@@ -292,6 +292,18 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     Assert.Equal(expected[i], actualI);
                 }
         }
+        [Theory]
+        [MemberData(nameof(MarshalSingleArrayCases))]
+        public unsafe void JsImportSingleArray(float[]? expected)
+        {
+            var actual = JavaScriptTestHelper.echo1_SingleArray(expected);
+            Assert.Equal(expected, actual);
+            if (expected != null) for (int i = 0; i < expected.Length; i++)
+                {
+                    var actualI = JavaScriptTestHelper.store_SingleArray(expected, i);
+                    Assert.Equal(expected[i], actualI);
+                }
+        }
 
         [Theory]
         [MemberData(nameof(MarshalStringArrayCases))]
@@ -485,8 +497,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public unsafe void JsImportArraySegmentOfInt32()
         {
-            var expectedBytes = new int[] { 88, 0, 1, -2, 42, int.MaxValue, int.MinValue };
-            ArraySegment<int> expected = new ArraySegment<int>(expectedBytes, 1, 6);
+            var expectedInts = new int[] { 88, 0, 1, -2, 42, int.MaxValue, int.MinValue };
+            ArraySegment<int> expected = new ArraySegment<int>(expectedInts, 1, 6);
             ArraySegment<int> actual = JavaScriptTestHelper.echo1_ArraySegmentOfInt32(expected, false);
             Assert.Equal(expected.Count, actual.Count);
             Assert.NotEqual(expected[0], expected[1]);
@@ -499,13 +511,27 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public unsafe void JsImportArraySegmentOfDouble()
         {
-            var expectedBytes = new double[] { 88.88, 0, 1, -1, double.Pi, 42, double.MaxValue, double.MinValue, double.NaN, double.PositiveInfinity, double.NegativeInfinity };
-            ArraySegment<double> expected = new ArraySegment<double>(expectedBytes, 1, 10);
+            var expectedDoubles = new double[] { 88.88, 0, 1, -1, double.Pi, 42, double.MaxValue, double.MinValue, double.NaN, double.PositiveInfinity, double.NegativeInfinity };
+            ArraySegment<double> expected = new ArraySegment<double>(expectedDoubles, 1, 10);
             ArraySegment<double> actual = JavaScriptTestHelper.echo1_ArraySegmentOfDouble(expected, false);
             Assert.Equal(expected.Count, actual.Count);
             Assert.NotEqual(expected[0], expected[1]);
             Assert.Equal(expected.Array, actual.Array);
             actual = JavaScriptTestHelper.echo1_ArraySegmentOfDouble(expected, true);
+            Assert.Equal(expected[0], expected[1]);
+            Assert.Equal(actual[0], actual[1]);
+        }
+
+        [Fact]
+        public unsafe void JsImportArraySegmentOfSingle()
+        {
+            var expectedFloats = new float[] { 88.88F, 0, 1, -1, float.Pi, 42, float.MaxValue, float.MinValue, float.NaN, float.PositiveInfinity, float.NegativeInfinity };
+            ArraySegment<float> expected = new ArraySegment<float>(expectedFloats, 1, 10);
+            ArraySegment<float> actual = JavaScriptTestHelper.echo1_ArraySegmentOfSingle(expected, false);
+            Assert.Equal(expected.Count, actual.Count);
+            Assert.NotEqual(expected[0], expected[1]);
+            Assert.Equal(expected.Array, actual.Array);
+            actual = JavaScriptTestHelper.echo1_ArraySegmentOfSingle(expected, true);
             Assert.Equal(expected[0], expected[1]);
             Assert.Equal(actual[0], actual[1]);
         }
