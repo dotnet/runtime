@@ -1822,13 +1822,12 @@ namespace System.Text.RegularExpressions.Generator
                 // the whole alternation can be treated as a simple switch, so we special-case that. However,
                 // we can't goto _into_ switch cases, which means we can't use this approach if there's any
                 // possibility of backtracking into the alternation.
-                if ((node.Options & RegexOptions.RightToLeft) == 0 &&
-                    TryEmitAlternationAsSwitch())
+                if ((node.Options & RegexOptions.RightToLeft) != 0 ||
+                    !TryEmitAlternationAsSwitch())
                 {
-                    return;
+                    EmitAllBranches();
                 }
 
-                EmitAllBranches();
                 return;
 
                 // Tries to emit an alternation as a switch on the first character of each branch.
