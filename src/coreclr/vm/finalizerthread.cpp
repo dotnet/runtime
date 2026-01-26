@@ -419,13 +419,12 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
     }
 }
 
-static BOOL s_FinalizerThreadOK = FALSE;
-static BOOL s_InitializedFinalizerThreadForPlatform = FALSE;
-static BOOL s_PriorityBoosted = FALSE;
+static bool s_FinalizerThreadOK = false;
+static bool s_InitializedFinalizerThreadForPlatform = false;
+static bool s_PriorityBoosted = false;
 
 VOID FinalizerThread::FinalizerThreadWorker(void *args)
 {
-
     while (!fQuitFinalizer)
     {
         FinalizerThread::FinalizerThreadWorkerIteration();
@@ -437,6 +436,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
 
 VOID FinalizerThread::FinalizerThreadWorkerIteration()
 {
+    GetFinalizerThread()->EnablePreemptiveGC();
 #ifndef TARGET_WASM
     // Wait for work to do...
 
@@ -446,7 +446,6 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration()
         GetFinalizerThread()->m_GCOnTransitionsOK = FALSE;
     }
 #endif
-    GetFinalizerThread()->EnablePreemptiveGC();
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel())
     {
@@ -510,7 +509,7 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration()
     if (!s_PriorityBoosted)
     {
         if (GetFinalizerThread()->SetThreadPriority(THREAD_PRIORITY_HIGHEST))
-            s_PriorityBoosted = TRUE;
+            s_PriorityBoosted = true;
     }
 
     // The Finalizer thread is started very early in EE startup. We deferred
@@ -518,7 +517,7 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration()
     // this point we make a single attempt and if it fails won't try again.
     if (!s_InitializedFinalizerThreadForPlatform)
     {
-        s_InitializedFinalizerThreadForPlatform = TRUE;
+        s_InitializedFinalizerThreadForPlatform = true;
         Thread::InitializationForManagedThreadInNative(GetFinalizerThread());
     }
 
@@ -647,6 +646,7 @@ void FinalizerThread::FinalizerThreadCreate()
         MODE_ANY;
     } CONTRACTL_END;
 
+#ifndef TARGET_WASM
 #ifndef TARGET_UNIX
     MHandles[kLowMemoryNotification] =
         CreateMemoryResourceNotification(LowMemoryResourceNotification);
@@ -684,6 +684,10 @@ void FinalizerThread::FinalizerThreadCreate()
         // and the moment we execute the test below.
         _ASSERTE(dwRet == 1 || dwRet == 2);
     }
+#else // !TARGET_WASM
+    Thread * pThread = ThreadStore::GetCurrentThread();
+    g_pFinalizerThread = PTR_Thread(pThread);
+#endif // !TARGET_WASM
 }
 
 static int g_fullGcCountSeenByFinalization;
