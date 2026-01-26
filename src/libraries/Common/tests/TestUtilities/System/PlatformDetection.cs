@@ -446,8 +446,7 @@ namespace System
             }
         }
 
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/121871")]
-        public static bool IsRuntimeAsyncSupported => !IsMonoRuntime && !(IsNativeAot && IsNotWindows);
+        public static bool IsRuntimeAsyncSupported => !IsMonoRuntime;
 
         private static Version GetICUVersion()
         {
