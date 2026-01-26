@@ -30,3 +30,17 @@ export function SystemJS_ScheduleBackgroundJob(): void {
         _ems_._SystemJS_ExecuteBackgroundJobCallback();
     }
 }
+
+export function SystemJS_ScheduleFinalization(): void {
+    if (_ems_.DOTNET.lastScheduledFinalizationId) {
+        globalThis.clearTimeout(_ems_.DOTNET.lastScheduledFinalizationId);
+        _ems_.runtimeKeepalivePop();
+        _ems_.DOTNET.lastScheduledFinalizationId = undefined;
+    }
+    _ems_.DOTNET.lastScheduledFinalizationId = _ems_.safeSetTimeout(SystemJS_ScheduleFinalizationTick, 0);
+
+    function SystemJS_ScheduleFinalizationTick(): void {
+        _ems_.DOTNET.lastScheduledFinalizationId = undefined;
+        _ems_._SystemJS_ExecuteFinalizationCallback();
+    }
+}

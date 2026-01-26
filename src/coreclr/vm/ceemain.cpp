@@ -922,8 +922,8 @@ void EEStartupHelper()
         // right before doing HasStarted(). We will release it now.
         FinalizerThread::EnableFinalization();
 #elif defined(TARGET_WASM)
-        // on wasm we need to run finalizers on main thread as we are single threaded
-        // active issue: https://github.com/dotnet/runtime/issues/114096
+        // on wasm this would just schedule finalization onto browser event loop
+        FinalizerThread::EnableFinalization();
 #else
         // This isn't done as part of InitializeGarbageCollector() above because
         // debugger must be initialized before creating EE thread objects

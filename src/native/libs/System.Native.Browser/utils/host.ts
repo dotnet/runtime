@@ -28,6 +28,11 @@ export function abortBackgroundTimers(): void {
         _ems_.runtimeKeepalivePop();
         _ems_.DOTNET.lastScheduledThreadPoolId = undefined;
     }
+    if (_ems_.DOTNET.lastScheduledFinalizationId) {
+        globalThis.clearTimeout(_ems_.DOTNET.lastScheduledFinalizationId);
+        _ems_.runtimeKeepalivePop();
+        _ems_.DOTNET.lastScheduledFinalizationId = undefined;
+    }
 }
 
 export function abortPosix(exitCode: number): void {
