@@ -1994,13 +1994,16 @@ namespace System.Tests
             }
         }
 
-        [Fact]
-        public static void InvalidDateTimeStyles()
+        [Theory]
+        [InlineData(DateTimeStyles.AssumeLocal | DateTimeStyles.AssumeUniversal)]
+        [InlineData(DateTimeStyles.RoundtripKind | DateTimeStyles.AssumeLocal)]
+        [InlineData(DateTimeStyles.RoundtripKind | DateTimeStyles.AssumeUniversal)]
+        [InlineData(DateTimeStyles.RoundtripKind | DateTimeStyles.AdjustToUniversal)]
+        public static void InvalidDateTimeStyles(DateTimeStyles style)
         {
             string strDateTime = "Thursday, August 31, 2006 1:14";
             string[] formats = new string[] { "f" };
             IFormatProvider provider = new CultureInfo("en-US");
-            DateTimeStyles style = DateTimeStyles.AssumeLocal | DateTimeStyles.AssumeUniversal;
             AssertExtensions.Throws<ArgumentException>("style", () => DateTime.ParseExact(strDateTime, formats, provider, style));
         }
 
@@ -2216,6 +2219,23 @@ namespace System.Tests
             yield return new object[] { "9/8/2017 10 : 11 : 12 AM", "M/d/yyyy HH':'mm':'ss tt\'  \'", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, new DateTime(2017, 9, 8, 10, 11, 12) };
             yield return new object[] { " 9 / 8 / 2017    10 : 11 : 12 AM", "M/d/yyyy HH':'mm':'ss tt\'  \'", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, new DateTime(2017, 9, 8, 10, 11, 12) };
             yield return new object[] { "   9   /   8   /   2017    10  :   11  :   12  AM", "M/d/yyyy HH':'mm':'ss tt\'  \'", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, new DateTime(2017, 9, 8, 10, 11, 12) };
+
+            // RoundtripKind: preserves the UTC kind when parsing UTC strings (indicated by 'Z')
+            yield return new object[] { "2017-10-11T01:23:45Z", "yyyy-MM-dd'T'HH:mm:ssK", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, new DateTime(2017, 10, 11, 1, 23, 45, DateTimeKind.Utc) };
+            yield return new object[] { "2017-10-11T01:23:45.678Z", "yyyy-MM-dd'T'HH:mm:ss.fffK", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, new DateTime(2017, 10, 11, 1, 23, 45, 678, DateTimeKind.Utc) };
+            yield return new object[] { "2017-10-11T01:23:45.6789012Z", "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, null }; // roundtrip format
+
+            // AssumeLocal: interprets date/time as local when no timezone is specified
+            yield return new object[] { "2017-10-11 01:23:45", "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, new DateTime(2017, 10, 11, 1, 23, 45, DateTimeKind.Local) };
+            yield return new object[] { "9/8/2017 10:11:12 AM", "M/d/yyyy h:mm:ss tt", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, new DateTime(2017, 9, 8, 10, 11, 12, DateTimeKind.Local) };
+
+            // NoCurrentDateDefault: uses 0001-01-01 instead of current date when date components are missing
+            yield return new object[] { "10:30:45", "HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault, new DateTime(1, 1, 1, 10, 30, 45) };
+            yield return new object[] { "3:45 PM", "h:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault, new DateTime(1, 1, 1, 15, 45, 0) };
+
+            // AllowInnerWhite (standalone): allows white space to appear in the middle of the string
+            yield return new object[] { "2017 - 10 - 11  01:23:45", "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AllowInnerWhite, new DateTime(2017, 10, 11, 1, 23, 45) };
+            yield return new object[] { "9 / 8 / 2017  10 : 11 : 12", "M/d/yyyy HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AllowInnerWhite, new DateTime(2017, 9, 8, 10, 11, 12) };
 
             if (PlatformDetection.IsNotInvariantGlobalization)
             {
