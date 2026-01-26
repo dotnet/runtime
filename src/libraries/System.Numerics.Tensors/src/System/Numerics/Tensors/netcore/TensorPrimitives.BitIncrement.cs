@@ -49,13 +49,10 @@ namespace System.Numerics.Tensors
                     Vector128<uint> isNegativeZero = Vector128.Equals(bits, Vector128.Create(0x8000_0000u));
                     Vector128<uint> specialValue = Vector128.Create(0x0000_0001u) & isNegativeZero;
 
-                    Vector128<uint> isNegInf = Vector128.IsNegativeInfinity(xFloat).AsUInt32();
-                    specialValue |= Vector128.Create(BitConverter.SingleToUInt32Bits(float.MinValue)) & isNegInf;
-
                     Vector128<uint> isNaNOrPosInf = (Vector128.IsNaN(xFloat) | Vector128.IsPositiveInfinity(xFloat)).AsUInt32();
                     specialValue |= bits & isNaNOrPosInf;
 
-                    Vector128<uint> specialMask = isNegativeZero | isNegInf | isNaNOrPosInf;
+                    Vector128<uint> specialMask = isNegativeZero | isNaNOrPosInf;
                     return Vector128.ConditionalSelect(specialMask, specialValue, result).AsSingle().As<float, T>();
                 }
 
@@ -74,13 +71,10 @@ namespace System.Numerics.Tensors
                     Vector128<ulong> isNegativeZero = Vector128.Equals(bits, Vector128.Create(0x8000_0000_0000_0000ul));
                     Vector128<ulong> specialValue = Vector128.Create(0x0000_0000_0000_0001ul) & isNegativeZero;
 
-                    Vector128<ulong> isNegInf = Vector128.IsNegativeInfinity(xDouble).AsUInt64();
-                    specialValue |= Vector128.Create(BitConverter.DoubleToUInt64Bits(double.MinValue)) & isNegInf;
-
                     Vector128<ulong> isNaNOrPosInf = (Vector128.IsNaN(xDouble) | Vector128.IsPositiveInfinity(xDouble)).AsUInt64();
                     specialValue |= bits & isNaNOrPosInf;
 
-                    Vector128<ulong> specialMask = isNegativeZero | isNegInf | isNaNOrPosInf;
+                    Vector128<ulong> specialMask = isNegativeZero | isNaNOrPosInf;
                     return Vector128.ConditionalSelect(specialMask, specialValue, result).AsDouble().As<double, T>();
                 }
 
@@ -106,13 +100,10 @@ namespace System.Numerics.Tensors
                     Vector256<uint> isNegativeZero = Vector256.Equals(bits, Vector256.Create(0x8000_0000u));
                     Vector256<uint> specialValue = Vector256.Create(0x0000_0001u) & isNegativeZero;
 
-                    Vector256<uint> isNegInf = Vector256.IsNegativeInfinity(xFloat).AsUInt32();
-                    specialValue |= Vector256.Create(BitConverter.SingleToUInt32Bits(float.MinValue)) & isNegInf;
-
                     Vector256<uint> isNaNOrPosInf = (Vector256.IsNaN(xFloat) | Vector256.IsPositiveInfinity(xFloat)).AsUInt32();
                     specialValue |= bits & isNaNOrPosInf;
 
-                    Vector256<uint> specialMask = isNegativeZero | isNegInf | isNaNOrPosInf;
+                    Vector256<uint> specialMask = isNegativeZero | isNaNOrPosInf;
                     return Vector256.ConditionalSelect(specialMask, specialValue, result).AsSingle().As<float, T>();
                 }
 
@@ -131,13 +122,10 @@ namespace System.Numerics.Tensors
                     Vector256<ulong> isNegativeZero = Vector256.Equals(bits, Vector256.Create(0x8000_0000_0000_0000ul));
                     Vector256<ulong> specialValue = Vector256.Create(0x0000_0000_0000_0001ul) & isNegativeZero;
 
-                    Vector256<ulong> isNegInf = Vector256.IsNegativeInfinity(xDouble).AsUInt64();
-                    specialValue |= Vector256.Create(BitConverter.DoubleToUInt64Bits(double.MinValue)) & isNegInf;
-
                     Vector256<ulong> isNaNOrPosInf = (Vector256.IsNaN(xDouble) | Vector256.IsPositiveInfinity(xDouble)).AsUInt64();
                     specialValue |= bits & isNaNOrPosInf;
 
-                    Vector256<ulong> specialMask = isNegativeZero | isNegInf | isNaNOrPosInf;
+                    Vector256<ulong> specialMask = isNegativeZero | isNaNOrPosInf;
                     return Vector256.ConditionalSelect(specialMask, specialValue, result).AsDouble().As<double, T>();
                 }
 
@@ -163,13 +151,10 @@ namespace System.Numerics.Tensors
                     Vector512<uint> isNegativeZero = Vector512.Equals(bits, Vector512.Create(0x8000_0000u));
                     Vector512<uint> specialValue = Vector512.Create(0x0000_0001u) & isNegativeZero;
 
-                    Vector512<uint> isNegInf = Vector512.IsNegativeInfinity(xFloat).AsUInt32();
-                    specialValue |= Vector512.Create(BitConverter.SingleToUInt32Bits(float.MinValue)) & isNegInf;
-
                     Vector512<uint> isNaNOrPosInf = (Vector512.IsNaN(xFloat) | Vector512.IsPositiveInfinity(xFloat)).AsUInt32();
                     specialValue |= bits & isNaNOrPosInf;
 
-                    Vector512<uint> specialMask = isNegativeZero | isNegInf | isNaNOrPosInf;
+                    Vector512<uint> specialMask = isNegativeZero | isNaNOrPosInf;
                     return Vector512.ConditionalSelect(specialMask, specialValue, result).AsSingle().As<float, T>();
                 }
 
@@ -188,13 +173,10 @@ namespace System.Numerics.Tensors
                     Vector512<ulong> isNegativeZero = Vector512.Equals(bits, Vector512.Create(0x8000_0000_0000_0000ul));
                     Vector512<ulong> specialValue = Vector512.Create(0x0000_0000_0000_0001ul) & isNegativeZero;
 
-                    Vector512<ulong> isNegInf = Vector512.IsNegativeInfinity(xDouble).AsUInt64();
-                    specialValue |= Vector512.Create(BitConverter.DoubleToUInt64Bits(double.MinValue)) & isNegInf;
-
                     Vector512<ulong> isNaNOrPosInf = (Vector512.IsNaN(xDouble) | Vector512.IsPositiveInfinity(xDouble)).AsUInt64();
                     specialValue |= bits & isNaNOrPosInf;
 
-                    Vector512<ulong> specialMask = isNegativeZero | isNegInf | isNaNOrPosInf;
+                    Vector512<ulong> specialMask = isNegativeZero | isNaNOrPosInf;
                     return Vector512.ConditionalSelect(specialMask, specialValue, result).AsDouble().As<double, T>();
                 }
 
