@@ -15,6 +15,7 @@ using Xunit;
 
 namespace System.Net.Security.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123472", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot), nameof(PlatformDetection.IsLinux))]
     public class NegotiateAuthenticationTests
     {
         // Ubuntu 24 and 26 ship with broekn gss-ntlmssp 1.2
@@ -95,7 +96,6 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(IsNtlmUnavailable))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123472", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Package_Unsupported_NTLM()
         {
             NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "NTLM", Credential = s_testCredentialRight, TargetName = "HTTP/foo" };

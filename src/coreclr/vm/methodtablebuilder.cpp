@@ -832,6 +832,17 @@ MethodTableBuilder::bmtRTType::GetEnclosingTypeToken() const
 
 //*******************************************************************************
 /*static*/ bool
+MethodTableBuilder::MethodSignature::SameAsyncVariantKind(
+    const MethodSignature& sig1,
+    const MethodSignature& sig2)
+{
+    STANDARD_VM_CONTRACT;
+
+    return sig1.m_asyncVariantKind == sig2.m_asyncVariantKind;
+}
+
+//*******************************************************************************
+/*static*/ bool
 MethodTableBuilder::MethodSignature::NamesEqual(
     const MethodSignature & sig1,
     const MethodSignature & sig2)
@@ -888,7 +899,7 @@ MethodTableBuilder::MethodSignature::Equivalent(
 {
     STANDARD_VM_CONTRACT;
 
-    return NamesEqual(*this, rhs) && SignaturesEquivalent(*this, rhs, FALSE);
+    return SameAsyncVariantKind(*this, rhs) && NamesEqual(*this, rhs) && SignaturesEquivalent(*this, rhs, FALSE);
 }
 
 //*******************************************************************************
@@ -898,7 +909,7 @@ MethodTableBuilder::MethodSignature::ExactlyEqual(
 {
     STANDARD_VM_CONTRACT;
 
-    return NamesEqual(*this, rhs) && SignaturesExactlyEqual(*this, rhs);
+    return SameAsyncVariantKind(*this, rhs) && NamesEqual(*this, rhs) && SignaturesExactlyEqual(*this, rhs);
 }
 
 //*******************************************************************************
@@ -923,7 +934,7 @@ MethodTableBuilder::MethodSignature::GetMethodAttributes() const
         {   // We have empty name or signature on error, do nothing
         }
     }
-    // Don't overwrite signature that may have already been provided for AsyncThunk method
+    // Don't overwrite signature that may have already been provided for an AsyncVariant method
     if (m_cSig == 0)
     {
         m_cSig = static_cast<size_t>(cSig);
@@ -993,6 +1004,7 @@ MethodTableBuilder::bmtRTMethod::bmtRTMethod(
       m_methodSig(pMD->IsAsyncVariantMethod()
        ? MethodSignature(pMD->GetModule(),
                          pMD->GetMemberDef(),
+                         pMD->IsAsyncVariantForValueTaskReturningMethod(), 
                          pMD->GetSignature(),
                          &pOwningType->GetSubstitution())
        : MethodSignature(pMD->GetModule(),
@@ -1058,10 +1070,15 @@ MethodTableBuilder::bmtMDMethod::bmtMDMethod(
       m_type(type),
       m_asyncMethodFlags(asyncMethodFlags),
       m_implType(implType),
-      m_methodSig(pOwningType->GetModule(),
-                  tok,
-                  sig,
-                  &pOwningType->GetSubstitution()),
+      m_methodSig(hasAsyncFlags(asyncMethodFlags, AsyncMethodFlags::IsAsyncVariant)
+          ? MethodSignature(pOwningType->GetModule(),
+              tok,
+              hasAsyncFlags(asyncMethodFlags, AsyncMethodFlags::IsAsyncVariantForValueTask),
+              sig,
+              &pOwningType->GetSubstitution())
+          : MethodSignature(pOwningType->GetModule(),
+              tok,
+              &pOwningType->GetSubstitution())),
       m_pMD(NULL),
       m_pUnboxedMD(NULL),
       m_slotIndex(INVALID_SLOT_INDEX),
@@ -3381,38 +3398,51 @@ MethodTableBuilder::EnumerateClassMethods()
             {
                 // Second pass, add the async variant.
 
-                ULONG cAsyncThunkMemberSignature = cMemberSignature;
-                ULONG originalTokenOffsetFromAsyncDetailsOffset;
-                ULONG newTokenOffsetFromAsyncDetailsOffset;
-                ULONG originalPrefixSize;
-                ULONG originalSuffixSize;
-                ULONG newSuffixSize;
-                ULONG newPrefixSize;
+                ULONG cAsyncThunkMemberSignature;
+                ULONG taskTokenOffsetFromAsyncDetailsOffset;
+                ULONG taskTypePrefixSize;
+                ULONG taskTypePrefixReplacementSize;
 
                 AsyncMethodFlags asyncFlags = (AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant);
+                if (returnsValueTask)
+                {
+                    asyncFlags |= AsyncMethodFlags::IsAsyncVariantForValueTask;
+                }
+
                 // The opposite of the "if (IsMiAsync(dwImplFlags))" code above.
                 if (!IsMiAsync(dwImplFlags))
                     asyncFlags |= AsyncMethodFlags::Thunk;
 
+                // Here we construct the signature of async call variant given its task-returning counterpart.
+                // It is basically just removing the Task/ValueTask part of the return type and keeping
+                // the token for T or inserting void instead.
+                // The rest of the signature stays exactly the same.
+                ULONG tokenLen = 0;
                 if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
                 {
-                    cAsyncThunkMemberSignature += 1;
-                    originalTokenOffsetFromAsyncDetailsOffset = 1;
-                    newTokenOffsetFromAsyncDetailsOffset = 1;
-                    originalPrefixSize = 1;
-                    newPrefixSize = 1;
-                    originalSuffixSize = 0;
-                    newSuffixSize = 1;
+                    // from ". . . Task . . . Method(args);"        we construct
+                    //      ". . . void . . . Method(args);"
+
+                    taskTokenOffsetFromAsyncDetailsOffset = 1;
+                    tokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + taskTokenOffsetFromAsyncDetailsOffset]);
+
+                    taskTypePrefixSize = 1 + tokenLen;     // E_T_CLASS/E_T_VALUETYPE <TokenOfTask>
+                    taskTypePrefixReplacementSize = 1;     // ELEMENT_TYPE_VOID
+
+                    cAsyncThunkMemberSignature = cMemberSignature - taskTypePrefixSize + taskTypePrefixReplacementSize;
                 }
                 else if (returnKind == MethodReturnKind::GenericTaskReturningMethod)
                 {
-                    cAsyncThunkMemberSignature -= 2;
-                    originalTokenOffsetFromAsyncDetailsOffset = 2;
-                    newTokenOffsetFromAsyncDetailsOffset = 1;
-                    originalPrefixSize = 2;
-                    newPrefixSize = 1;
-                    originalSuffixSize = 1;
-                    newSuffixSize = 0;
+                    // from ". . . Task<tk> . . . Method(args);"    we construct
+                    //      ". . .      tk  . . . Method(args);"
+
+                    taskTokenOffsetFromAsyncDetailsOffset = 2;
+                    tokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + taskTokenOffsetFromAsyncDetailsOffset]);
+
+                    taskTypePrefixSize = 2 + tokenLen + 1; // E_T_GENERICINST E_T_CLASS/E_T_VALUETYPE <TokenOfTask> 1
+                    taskTypePrefixReplacementSize = 0;
+
+                    cAsyncThunkMemberSignature = cMemberSignature - taskTypePrefixSize + taskTypePrefixReplacementSize;
                 }
                 else
                 {
@@ -3420,39 +3450,20 @@ MethodTableBuilder::EnumerateClassMethods()
                 }
 
                 BYTE* pNewMemberSignature = AllocateFromHighFrequencyHeap(S_SIZE_T(cAsyncThunkMemberSignature));
-                ULONG tokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + originalTokenOffsetFromAsyncDetailsOffset]);
-                ULONG originalTokenOffset = offsetOfAsyncDetails + originalTokenOffsetFromAsyncDetailsOffset;
-                ULONG newTokenOffset = offsetOfAsyncDetails + newTokenOffsetFromAsyncDetailsOffset;
-                ULONG originalRemainingSigOffset = offsetOfAsyncDetails + originalPrefixSize + tokenLen + originalSuffixSize;
-                ULONG newRemainingSigOffset = offsetOfAsyncDetails + newPrefixSize + tokenLen + newSuffixSize;
+                ULONG originalRemainingSigOffset = offsetOfAsyncDetails + taskTypePrefixSize;
+                ULONG newRemainingSigOffset = offsetOfAsyncDetails + taskTypePrefixReplacementSize;
 
                 ULONG initialCopyLen = offsetOfAsyncDetails;
+                // copy bytes before the original async prefix
                 memcpy(pNewMemberSignature, pMemberSignature, initialCopyLen);
-                memcpy(pNewMemberSignature + newTokenOffset, pMemberSignature + originalTokenOffset, tokenLen);
 
+                // copy bytes after the original async prefix
                 _ASSERTE((cMemberSignature - originalRemainingSigOffset) == (cAsyncThunkMemberSignature - newRemainingSigOffset));
                 memcpy(pNewMemberSignature + newRemainingSigOffset, pMemberSignature + originalRemainingSigOffset, cMemberSignature - originalRemainingSigOffset);
 
-                BYTE elemTypeClassOrValuetype = returnsValueTask ? (BYTE)ELEMENT_TYPE_VALUETYPE : (BYTE)ELEMENT_TYPE_CLASS;
-
-                // for more info about constructing the signature of an async variant see comments in AsyncMethodFlags
                 if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
                 {
-                    // Incoming sig will look like ... E_T_CLASS/E_T_VALUETYPE <TokenOfTask>
-                    // and needs to be translated to ELEMENT_TYPE_CMOD_REQD <TokenOfTask> E_T_VOID
-
-                    // Replace the E_T_CLASS/E_T_VALUETYPE with ELEMENT_TYPE_CMOD_REQD, and then add the E_T_VOID
-                    pNewMemberSignature[offsetOfAsyncDetails] = ELEMENT_TYPE_CMOD_REQD;
                     pNewMemberSignature[newRemainingSigOffset - 1] = ELEMENT_TYPE_VOID;
-                }
-                else
-                {
-                    _ASSERTE(returnKind == MethodReturnKind::GenericTaskReturningMethod);
-                    // Incoming sig will look something like ... E_T_GENERICINST E_T_CLASS/E_T_VALUETYPE <TokenOfTask> 1 E_T_I4 ....
-                    // And needs to be translated to ELEMENT_TYPE_CMOD_REQD <TokenOfTask> E_T_I4
-
-                    // Replace the ELEMENT_TYPE_GENERICINST with ELEMENT_TYPE_CMOD_REQD, and then remove the 1 which specifies the generic arg count for Task<T>
-                    pNewMemberSignature[offsetOfAsyncDetails] = ELEMENT_TYPE_CMOD_REQD;
                 }
 
                 MethodClassification asyncVariantType = type;
