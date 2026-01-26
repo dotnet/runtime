@@ -466,6 +466,11 @@ export function marshalArrayToCsImpl(arg: JSMarshalerArgument, value: Array<any>
             const bufferOffset = fixupPointer(bufferPtr, 3);
             const targetView = dotnetApi.localHeapViewF64().subarray(bufferOffset, bufferOffset + length);
             targetView.set(value);
+        } else if (elementType == MarshalerType.Single) {
+            dotnetAssert.check(Array.isArray(value) || value instanceof Float32Array, "Value is not an Array or Float32Array");
+            const bufferOffset = fixupPointer(bufferPtr, 1);
+            const targetView = dotnetApi.localHeapViewF32().subarray(bufferOffset, bufferOffset + length);
+            targetView.set(value);
         } else {
             throw new Error("not implemented");
         }
@@ -505,6 +510,8 @@ function checkViewType(elementType: MarshalerType, viewType: MemoryViewType) {
         dotnetAssert.check(MemoryViewType.Int32 == viewType, "Expected MemoryViewType.Int32");
     } else if (elementType == MarshalerType.Double) {
         dotnetAssert.check(MemoryViewType.Double == viewType, "Expected MemoryViewType.Double");
+    } else if (elementType == MarshalerType.Single) {
+        dotnetAssert.check(MemoryViewType.Single == viewType, "Expected MemoryViewType.Single");
     } else {
         throw new Error(`NotImplementedException ${elementType} `);
     }
