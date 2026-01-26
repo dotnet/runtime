@@ -47,7 +47,34 @@ extern "C"
 {
     void SystemJS_ExecuteFinalizationCallback()
     {
-        FinalizerThread::FinalizerThreadWorkerRound();
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            ENTRY_POINT;  // This is called by a host.
+        }
+        CONTRACTL_END;
+
+        HRESULT hr=S_OK;
+
+        BEGIN_EXTERNAL_ENTRYPOINT(&hr);
+        
+        EX_TRY
+        {
+            GCX_COOP();
+            FinalizerThread::FinalizerThreadWorkerRound();
+        }
+        EX_HOOK
+        {
+            Exception *ex = GET_EXCEPTION();
+            SString err;
+            ex->GetMessage(err);
+            LogErrorToHost("Error message: %s", err.GetUTF8());
+            abort();
+        }
+        EX_END_HOOK;
+        
+        END_EXTERNAL_ENTRYPOINT;
     }
 }
 
