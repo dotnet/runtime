@@ -272,15 +272,40 @@ namespace System.Globalization.Tests
                 return; // TryGetAscii takes ReadOnlySpan<char>, which can't be null
             }
 
-            static void tryGetAscii_Invalid(IdnMapping idnMapping, string unicode, int index, int count, Type exceptionType)
-            {
-                ReadOnlySpan<char> unicodeSpan = unicode.AsSpan(index, count);
-                char[] destination = new char[100];
-                Assert.Throws(exceptionType, () => idnMapping.TryGetAscii(unicodeSpan, destination, out _));
-            }
+            string slice = unicode.Substring(index, count);
+            char[] destination = new char[100];
 
-            tryGetAscii_Invalid(new IdnMapping() { UseStd3AsciiRules = false }, unicode, index, count, exceptionType);
-            tryGetAscii_Invalid(new IdnMapping() { UseStd3AsciiRules = true }, unicode, index, count, exceptionType);
+            var idnNoStd3 = new IdnMapping() { UseStd3AsciiRules = false };
+            Assert.Throws(exceptionType, () => idnNoStd3.TryGetAscii(slice, destination, out _));
+
+            var idnStd3 = new IdnMapping() { UseStd3AsciiRules = true };
+            Assert.Throws(exceptionType, () => idnStd3.TryGetAscii(slice, destination, out _));
+        }
+
+        [Fact]
+        public void TryGetAscii_OverlappingBuffers()
+        {
+            // Test with overlapping input and destination buffers
+            // The native functions should handle this correctly by copying to destination
+            var idn = new IdnMapping();
+
+            // Test case: input and destination start at same location
+            char[] buffer = "example.com\0\0\0\0\0\0\0\0\0\0".ToCharArray();
+            ReadOnlySpan<char> input = buffer.AsSpan(0, 11); // "example.com"
+            Span<char> destination = buffer.AsSpan(0, buffer.Length);
+
+            Assert.True(idn.TryGetAscii(input, destination, out int charsWritten));
+            Assert.Equal(11, charsWritten);
+            Assert.Equal("example.com", new string(buffer, 0, charsWritten));
+
+            // Test case: destination offset but overlapping
+            buffer = "example.com\0\0\0\0\0\0\0\0\0\0".ToCharArray();
+            input = buffer.AsSpan(0, 11);
+            destination = buffer.AsSpan(5, buffer.Length - 5);
+
+            Assert.True(idn.TryGetAscii(input, destination, out charsWritten));
+            Assert.Equal(11, charsWritten);
+            Assert.Equal("example.com", new string(buffer, 5, charsWritten));
         }
     }
 }

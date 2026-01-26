@@ -256,10 +256,7 @@ namespace System
                         }
 
                         // Now convert the ASCII form to Unicode and append directly to dest
-                        if (!TryAppendIdnUnicode(asciiBuffer.Slice(0, asciiWritten), ref dest))
-                        {
-                            return false;
-                        }
+                        AppendIdnUnicode(asciiBuffer.Slice(0, asciiWritten), ref dest);
                     }
                     catch (ArgumentException)
                     {
@@ -275,10 +272,8 @@ namespace System
                         // check ace validity - use span-based API to avoid string allocation
                         try
                         {
-                            if (TryAppendIdnUnicode(label, ref dest))
-                            {
-                                aceValid = true;
-                            }
+                            AppendIdnUnicode(label, ref dest);
+                            aceValid = true;
                         }
                         catch (ArgumentException)
                         {
@@ -301,31 +296,18 @@ namespace System
         }
 
         /// <summary>
-        /// Attempts to convert ASCII (punycode) to Unicode and append directly to the ValueStringBuilder.
+        /// Converts ASCII (punycode) to Unicode and appends directly to the ValueStringBuilder.
         /// </summary>
-        private static bool TryAppendIdnUnicode(scoped ReadOnlySpan<char> ascii, ref ValueStringBuilder dest)
+        private static void AppendIdnUnicode(scoped ReadOnlySpan<char> ascii, ref ValueStringBuilder dest)
         {
-            // Unicode output is typically similar length to ASCII input for IDN labels
-            // Start with a reasonable estimate and grow if needed
-            const int InitialBufferSize = 64;
+            int charsWritten;
 
-            // First try with the initial buffer size
-            Span<char> buffer = dest.AppendSpan(InitialBufferSize);
-
-            if (s_idnMapping.TryGetUnicode(ascii, buffer, out int charsWritten))
+            while (!s_idnMapping.TryGetUnicode(ascii, dest.RawChars.Slice(dest.Length), out charsWritten))
             {
-                // Shrink the buffer to actual size
-                dest.Length -= InitialBufferSize - charsWritten;
-                return true;
+                dest.EnsureCapacity(dest.Capacity + 1);
             }
 
-            // Buffer was too small - undo the append and try with a larger buffer
-            dest.Length -= InitialBufferSize;
-
-            // For longer results, fall back to string-based API
-            // This is rare since domain labels are limited to 63 chars
-            dest.Append(s_idnMapping.GetUnicode(ascii.ToString()));
-            return true;
+            dest.Length += charsWritten;
         }
     }
 }

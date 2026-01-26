@@ -208,15 +208,37 @@ namespace System.Globalization.Tests
                 return; // TryGetUnicode takes ReadOnlySpan<char>, which can't be null
             }
 
-            static void tryGetUnicode_Invalid(IdnMapping idnMapping, string ascii, int index, int count, Type exceptionType)
-            {
-                ReadOnlySpan<char> asciiSpan = ascii.AsSpan(index, count);
-                char[] destination = new char[100];
-                Assert.Throws(exceptionType, () => idnMapping.TryGetUnicode(asciiSpan, destination, out _));
-            }
+            string slice = ascii.Substring(index, count);
+            char[] destination = new char[100];
 
-            tryGetUnicode_Invalid(new IdnMapping() { UseStd3AsciiRules = false }, ascii, index, count, exceptionType);
-            tryGetUnicode_Invalid(new IdnMapping() { UseStd3AsciiRules = true }, ascii, index, count, exceptionType);
+            var idnNoStd3 = new IdnMapping() { UseStd3AsciiRules = false };
+            Assert.Throws(exceptionType, () => idnNoStd3.TryGetUnicode(slice, destination, out _));
+
+            var idnStd3 = new IdnMapping() { UseStd3AsciiRules = true };
+            Assert.Throws(exceptionType, () => idnStd3.TryGetUnicode(slice, destination, out _));
+        }
+
+        [Fact]
+        public void TryGetUnicode_OverlappingBuffers()
+        {
+            // Test with overlapping input and destination buffers
+            // The native functions should handle this correctly by copying to destination
+            var idn = new IdnMapping();
+
+            // Test case: input and destination start at same location
+            char[] buffer = "xn--nxasmq5b.com\0\0\0\0\0\0\0\0\0\0".ToCharArray();
+            ReadOnlySpan<char> input = buffer.AsSpan(0, 16); // "xn--nxasmq5b.com"
+            Span<char> destination = buffer.AsSpan(0, buffer.Length);
+
+            Assert.True(idn.TryGetUnicode(input, destination, out int charsWritten));
+            // The expected output is the Unicode equivalent
+
+            // Test case: destination offset but overlapping
+            buffer = "xn--nxasmq5b.com\0\0\0\0\0\0\0\0\0\0".ToCharArray();
+            input = buffer.AsSpan(0, 16);
+            destination = buffer.AsSpan(5, buffer.Length - 5);
+
+            Assert.True(idn.TryGetUnicode(input, destination, out charsWritten));
         }
     }
 }
