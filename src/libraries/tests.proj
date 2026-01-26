@@ -533,11 +533,20 @@
     <SmokeTestProject Condition="'$(UseNativeAOTRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
   </ItemGroup>
 
-  <!-- browser smoke tests -->
-  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
+  <!-- browser smoke tests Mono -->
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono'">
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.Intrinsics\tests\System.Runtime.Intrinsics.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.UnitTests\System.Runtime.InteropServices.JavaScript.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Linq\tests\System.Linq.Tests.csproj" />
+  </ItemGroup>
+
+  <!-- browser smoke tests CoreCLR -->
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'">
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.UnitTests\System.Runtime.InteropServices.JavaScript.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Threading\tests\System.Threading.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Threading.Tasks.Tests\System.Threading.Tasks.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
   </ItemGroup>
 
   <!-- wasi/interp smoke tests -->
@@ -632,7 +641,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(UseNativeAOTRuntime)' != 'true'">
-    <SmokeTestProject Remove="@(SmokeTestProject)" />
     <SmokeTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\CoreCLR\*.Test.csproj"/>
   </ItemGroup>
 
@@ -812,12 +820,12 @@
 
     <ItemGroup>
       <NormalTestAppBundles Include="$(NormalTestsAppBundleRoot)*/AppBundle/CMakeLists.txt" />
-      <NormalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.20)" />
+      <NormalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.26)" />
       <NormalTestCMakeEntries Include="project(NormalTestAppBundles)" />
       <NormalTestCMakeEntries Include="add_subdirectory(%(NormalTestAppBundles.RootDir)%(NormalTestAppBundles.Directory) %(NormalTestAppBundles.RecursiveDir) EXCLUDE_FROM_ALL)" />
 
       <FunctionalTestAppBundles Include="$(FunctionalTestsAppBundleRoot)*/AppBundle/CMakeLists.txt" />
-      <FunctionalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.20)" />
+      <FunctionalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.26)" />
       <FunctionalTestCMakeEntries Include="project(FunctionalTestAppBundles)" />
       <FunctionalTestCMakeEntries Include="add_subdirectory(%(FunctionalTestAppBundles.RootDir)%(FunctionalTestAppBundles.Directory) %(FunctionalTestAppBundles.RecursiveDir) EXCLUDE_FROM_ALL)" />
     </ItemGroup>

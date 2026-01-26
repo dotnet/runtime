@@ -15,10 +15,10 @@ namespace ILCompiler
     {
         private TargetDetails _target;
 
-        public static Utf8String NonGCStaticMemberName = "__NONGCSTATICS";
-        public static Utf8String GCStaticMemberName = "__GCSTATICS";
-        public static Utf8String ThreadStaticMemberName = "__THREADSTATICS";
-        public static Utf8String ThreadStaticIndexName = "__THREADSTATICINDEX";
+        public static Utf8String NonGCStaticMemberName = new Utf8String("__NONGCSTATICS"u8);
+        public static Utf8String GCStaticMemberName = new Utf8String("__GCSTATICS"u8);
+        public static Utf8String ThreadStaticMemberName = new Utf8String("__THREADSTATICS"u8);
+        public static Utf8String ThreadStaticIndexName = new Utf8String("__THREADSTATICINDEX"u8);
 
         public WindowsNodeMangler(TargetDetails target)
         {
@@ -116,9 +116,9 @@ namespace ILCompiler
 
             return callConv switch
             {
-                UnmanagedCallingConventions.Stdcall => $"_{unmangledName}@{signatureBytes}",
-                UnmanagedCallingConventions.Fastcall => $"@{unmangledName}@{signatureBytes}",
-                UnmanagedCallingConventions.Cdecl => $"_{unmangledName}",
+                UnmanagedCallingConventions.Stdcall => new Utf8StringBuilder().Append('_').Append(unmangledName).Append('@').Append(signatureBytes).ToUtf8String(),
+                UnmanagedCallingConventions.Fastcall => new Utf8StringBuilder().Append('@').Append(unmangledName).Append('@').Append(signatureBytes).ToUtf8String(),
+                UnmanagedCallingConventions.Cdecl => Utf8String.Concat("_"u8, unmangledName.AsSpan()),
                 _ => throw new System.NotImplementedException()
             };
         }
@@ -130,7 +130,7 @@ namespace ILCompiler
                 return unmangledName;
             }
 
-            return $"_{unmangledName}";
+            return Utf8String.Concat("_"u8, unmangledName.AsSpan());
         }
     }
 }

@@ -43,7 +43,7 @@ namespace System.Formats.Nrbf
         private protected override Array Deserialize(Type arrayType, bool allowNulls)
         {
             Array result =
-#if NET9_0_OR_GREATER
+#if NET
                 Array.CreateInstanceFromArrayType(arrayType, _lengths);
 #else
                 Array.CreateInstance(typeof(T), _lengths);

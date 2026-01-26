@@ -27,8 +27,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 //    ins  reg1, reg2, imm
 //
-// However the imm might not fit as a directly encodable immediate,
-// when it doesn't fit we generate extra instruction(s) that sets up
+// The immediate value may not fit as a directly encodable immediate.
+// In that case, additional instruction(s) are generated to set up
 // the 'regTmp' with the proper immediate value.
 //
 //     mov  regTmp, imm
@@ -60,7 +60,7 @@ bool CodeGen::genInstrWithConstant(instruction ins,
 
     // reg1 is usually a dest register
     // reg2 is always source register
-    assert(tmpReg != reg2); // tmpReg can not match any source register
+    assert(tmpReg != reg2); // tmpReg cannot match any source register
 
 #ifdef DEBUG
     switch (ins)
@@ -99,14 +99,14 @@ bool CodeGen::genInstrWithConstant(instruction ins,
     }
     else
     {
-        // caller can specify REG_NA  for tmpReg, when it "knows" that the immediate will always fit
+        // caller can specify REG_NA for tmpReg, when it "knows" that the immediate will always fit
         assert(tmpReg != REG_NA);
 
         // generate two or more instructions
 
         // first we load the immediate into tmpReg
         assert(!EA_IS_RELOC(size));
-        GetEmitter()->emitLoadImmediate(size, tmpReg, imm);
+        GetEmitter()->emitLoadImmediate<true>(size, tmpReg, imm);
         regSet.verifyRegUsed(tmpReg);
 
         // when we are in an unwind code region
@@ -133,8 +133,7 @@ bool CodeGen::genInstrWithConstant(instruction ins,
 // genStackPointerAdjustment: add a specified constant value to the stack pointer in either the prolog
 // or the epilog. The unwind codes for the generated instructions are produced. An available temporary
 // register is required to be specified, in case the constant is too large to encode in an "add"
-// instruction, such that we need to load the constant
-// into a register first, before using it.
+// instruction, such that we need to load the constant into a register first, before using it.
 //
 // Arguments:
 //    spDelta                 - the value to add to SP (can be negative)
@@ -184,7 +183,7 @@ void CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg, bool*
 // we need to use (SD) are encodable with the stack-pointer immediate offsets we need to use.
 //
 // The caller can tell us to fold in a stack pointer adjustment, which we will do with the first instruction.
-// Note that the stack pointer adjustment must be by a multiple of 16 to preserve the invariant that the
+// Note that the stack pointer adjustment must be a multiple of 16 to preserve the invariant that the
 // stack pointer is always 16 byte aligned. If we are saving an odd number of callee-saved
 // registers, though, we will have an empty alignment slot somewhere. It turns out we will put
 // it below (at a lower address) the callee-saved registers, as that is currently how we
@@ -545,6 +544,14 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     {
         delta_PSP -= TARGET_POINTER_SIZE;
     }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta_PSP -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta_PSP -= TARGET_POINTER_SIZE;
+    }
 
     funcletFrameSize = funcletFrameSize - delta_PSP;
     funcletFrameSize = roundUp((unsigned)funcletFrameSize, STACK_ALIGN);
@@ -723,16 +730,15 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
     regMaskTP availMask = regSet.rsGetModifiedRegsMask() | RBM_INT_CALLEE_TRASH; // Set of available registers
     // see: src/jit/registerriscv64.h
-    availMask &= ~intRegState.rsCalleeRegArgMaskLiveIn; // Remove all of the incoming argument registers as they are
-                                                        // currently live
-    availMask &= ~genRegMask(initReg); // Remove the pre-calculated initReg as we will zero it and maybe use it for
-                                       // a large constant.
+    availMask &= ~calleeRegArgMaskLiveIn; // Remove all of the incoming argument registers as they are currently live
+    availMask &= ~genRegMask(initReg);    // Remove the pre-calculated initReg as we will zero it and maybe use it for
+                                          // a large constant.
 
     rAddr           = initReg;
     *pInitRegZeroed = false;
 
     // rAddr is not a live incoming argument reg
-    assert((genRegMask(rAddr) & intRegState.rsCalleeRegArgMaskLiveIn) == 0);
+    assert((genRegMask(rAddr) & calleeRegArgMaskLiveIn) == 0);
     assert(untrLclLo % 4 == 0);
 
     if (emitter::isValidSimm12(untrLclLo))
@@ -770,7 +776,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         availMask &= ~regMask;
 
         // rEndAddr is not a live incoming argument reg
-        assert((genRegMask(rEndAddr) & intRegState.rsCalleeRegArgMaskLiveIn) == 0);
+        assert((genRegMask(rEndAddr) & calleeRegArgMaskLiveIn) == 0);
 
         ssize_t uLoopBytes = (uRegSlots & ~0x3) * REGSIZE_BYTES;
 
@@ -906,12 +912,37 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
     }
     else
     {
-        emit->emitLoadImmediate(size, reg, imm);
+        emit->emitLoadImmediate<true>(size, reg, imm);
     }
 
     regSet.verifyRegUsed(reg);
 }
 
+//------------------------------------------------------------------------
+// genSetRegToConst: Generate code to load a constant value into a register.
+//
+// Arguments:
+//    targetReg  - The destination register to receive the constant value.
+//    targetType - The type of the value being loaded.
+//    tree       - The GenTree node representing the constant.
+//
+// Assumptions:
+//    - 'tree' is a constant node of type GT_CNS_INT or GT_CNS_DBL.
+//    - For floating-point constants, a temporary integer register is
+//      available when required.
+//
+// Notes:
+//    Integer constants are materialized using appropriate immediate load
+//    sequences, with the detailed instruction selection delegated to
+//    instGen_Set_Reg_To_Imm.
+//
+//    Floating-point constants whose bit patterns can be materialized using
+//    a single integer immediate instruction are first constructed in a
+//    temporary integer register using `addi` or `lui`, and then transferred
+//    to the FP register via `fmv_w_x` or `fmv_d_x`. For all other floating-point
+//    constants, the value is emitted into the data section and loaded
+//    from memory.
+//
 void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree)
 {
     switch (tree->gtOper)
@@ -1010,7 +1041,8 @@ void CodeGen::genCodeForIncSaturate(GenTree* tree)
     genProduceReg(tree);
 }
 
-// Generate code to get the high N bits of a N*N=2N bit multiplication result
+// Generate code to get the upper N bits of a 2N-bit product
+// Multiplying two N-bit operands yields a 2N-bit result; this method keeps the high half
 void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 {
     assert(!treeNode->gtOverflowEx());
@@ -1021,7 +1053,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     var_types targetType = treeNode->TypeGet();
     emitter*  emit       = GetEmitter();
     emitAttr  attr       = emitActualTypeSize(treeNode);
-    unsigned  isUnsigned = (treeNode->gtFlags & GTF_UNSIGNED);
+    unsigned  isUnsigned = treeNode->IsUnsigned();
 
     GenTree* op1 = treeNode->gtGetOp1();
     GenTree* op2 = treeNode->gtGetOp2();
@@ -1063,14 +1095,15 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 }
 
 // Generate code for ADD, SUB, MUL, AND, AND_NOT, OR, OR_NOT, XOR, and XOR_NOT
-// This method is expected to have called genConsumeOperands() before calling it.
+// genConsumeOperands() is expected to have been called before this method is invoked.
 void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 {
     const genTreeOps oper      = treeNode->OperGet();
     regNumber        targetReg = treeNode->GetRegNum();
     emitter*         emit      = GetEmitter();
 
-    assert(treeNode->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_AND_NOT, GT_OR, GT_OR_NOT, GT_XOR, GT_XOR_NOT));
+    assert(treeNode->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_AND_NOT, GT_OR, GT_OR_NOT, GT_XOR, GT_XOR_NOT,
+                            GT_BIT_SET, GT_BIT_CLEAR, GT_BIT_INVERT));
 
     GenTree*    op1 = treeNode->gtGetOp1();
     GenTree*    op2 = treeNode->gtGetOp2();
@@ -1245,9 +1278,20 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             }
             else if (data->IsIntegralConst())
             {
-                ssize_t imm = data->AsIntConCommon()->IconValue();
-                emit->emitLoadImmediate(EA_PTRSIZE, rsGetRsvdReg(), imm);
-                dataReg = rsGetRsvdReg();
+                ssize_t cnsVal = data->AsIntConCommon()->IconValue();
+                dataReg        = (targetReg == REG_NA) ? rsGetRsvdReg() : targetReg; // Use tempReg if spilled
+
+                if (data->IsIconHandle() && data->AsIntCon()->FitsInAddrBase(compiler) &&
+                    data->AsIntCon()->AddrNeedsReloc(compiler))
+                {
+                    // Support emitting PC-relative addresses for handles hoisted by constant CSE
+                    emitAttr attr = EA_SET_FLG(emitActualTypeSize(targetType), EA_DSP_RELOC_FLG);
+                    emit->emitIns_R_AI(INS_addi, attr, dataReg, dataReg, cnsVal);
+                }
+                else
+                {
+                    emit->emitLoadImmediate<true>(EA_PTRSIZE, dataReg, cnsVal);
+                }
             }
             else
             {
@@ -1498,7 +1542,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             {
                 if (tempReg == REG_NA)
                     tempReg = internalRegisters.Extract(tree);
-                emit->emitLoadImmediate(EA_PTRSIZE, tempReg, amount);
+                emit->emitLoadImmediate<true>(EA_PTRSIZE, tempReg, amount);
                 emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tempReg);
             }
 
@@ -1646,7 +1690,7 @@ BAILOUT:
 // Arguments:
 //    tree - the node
 //
-void CodeGen::genCodeForNegNot(GenTree* tree)
+void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_NEG, GT_NOT));
 
@@ -1718,11 +1762,13 @@ void CodeGen::genCodeForBswap(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// genCodeForDivMod: Produce code for a GT_DIV/GT_UDIV node.
-// (1) float/double MOD is morphed into a helper call by front-end.
+// genCodeForDivMod: Produce code for a GT_DIV/GT_UDIV/GT_MOD/GT_UMOD node.
 //
 // Arguments:
 //    tree - the node
+//
+// Notes:
+//    float/double MOD is morphed into a helper call by front-end.
 //
 void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 {
@@ -1788,7 +1834,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 tempReg    = internalRegisters.GetSingle(tree);
                 divisorReg = tempReg;
             }
-            emit->emitLoadImmediate(EA_PTRSIZE, divisorReg, intConst);
+            emit->emitLoadImmediate<true>(EA_PTRSIZE, divisorReg, intConst);
         }
         else
         {
@@ -2698,6 +2744,21 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 ins = INS_xnor;
                 break;
 
+            case GT_BIT_SET:
+                assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbs));
+                ins = isImmed(treeNode) ? INS_bseti : INS_bset;
+                break;
+
+            case GT_BIT_CLEAR:
+                assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbs));
+                ins = isImmed(treeNode) ? INS_bclri : INS_bclr;
+                break;
+
+            case GT_BIT_INVERT:
+                assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbs));
+                ins = isImmed(treeNode) ? INS_binvi : INS_binv;
+                break;
+
             default:
                 NO_WAY("Unhandled oper in genGetInsForOper() - integer");
                 break;
@@ -2880,7 +2941,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     emitAttr srcSize = EA_ATTR(genTypeSize(srcType));
     noway_assert((srcSize == EA_4BYTE) || (srcSize == EA_8BYTE));
 
-    bool        isUnsigned = treeNode->gtFlags & GTF_UNSIGNED;
+    bool        isUnsigned = treeNode->IsUnsigned();
     instruction ins        = INS_invalid;
 
     if (isUnsigned)
@@ -3303,6 +3364,14 @@ int CodeGenInterface::genSPtoFPdelta() const
     {
         delta -= TARGET_POINTER_SIZE;
     }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta -= TARGET_POINTER_SIZE;
+    }
 
     assert(delta >= 0);
     return delta;
@@ -3717,7 +3786,7 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTm
     }
     else
     {
-        GetEmitter()->emitLoadImmediate(EA_PTRSIZE, regTmp, spDelta);
+        GetEmitter()->emitLoadImmediate<true>(EA_PTRSIZE, regTmp, spDelta);
         GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, regTmp);
     }
 }
@@ -3870,7 +3939,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_NOT:
         case GT_NEG:
-            genCodeForNegNot(treeNode);
+            genCodeForNegNot(treeNode->AsOp());
             break;
 
         case GT_BSWAP:
@@ -3891,6 +3960,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_AND_NOT:
         case GT_OR_NOT:
         case GT_XOR_NOT:
+        case GT_BIT_SET:
+        case GT_BIT_CLEAR:
+        case GT_BIT_INVERT:
             assert(varTypeIsIntegralOrI(treeNode));
 
             FALLTHROUGH;
@@ -4142,6 +4214,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_RECORD_ASYNC_RESUME:
             genRecordAsyncResume(treeNode->AsVal());
+            break;
+
+        case GT_ASYNC_CONTINUATION:
+            genCodeForAsyncContinuation(treeNode);
+            break;
+
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
             break;
 
         case GT_SH1ADD:
@@ -4955,7 +5035,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         }
         else
         {
-            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, tempReg, scale);
+            GetEmitter()->emitLoadImmediate<true>(EA_PTRSIZE, tempReg, scale);
 
             instruction ins;
             instruction ins2;
@@ -5995,7 +6075,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         regNumber tmpReg = internalRegisters.GetSingle(lea);
 
         // First load tmpReg with the large offset constant
-        emit->emitLoadImmediate(EA_PTRSIZE, tmpReg, offset);
+        emit->emitLoadImmediate<true>(EA_PTRSIZE, tmpReg, offset);
 
         // Then compute target reg from [memBase + tmpReg]
         emit->emitIns_R_R_R(INS_add, size, targetReg, memBaseReg, tmpReg);
@@ -6087,7 +6167,7 @@ void CodeGen::genCodeForSlliUw(GenTreeOp* tree)
 // Arguments:
 //    delta - the offset to add to the current stack pointer to establish the frame pointer
 //    reportUnwindData - true if establishing the frame pointer should be reported in the OS unwind data.
-
+//
 void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 {
     assert(compiler->compGeneratingProlog);
@@ -6374,6 +6454,14 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     {
         localFrameSize -= TARGET_POINTER_SIZE;
     }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
 
 #ifdef DEBUG
     if (compiler->opts.disAsm)
@@ -6444,6 +6532,14 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     {
         localFrameSize -= TARGET_POINTER_SIZE;
     }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
 
     JITDUMP("Frame type. #outsz=%d; #framesz=%d; #calleeSaveRegsPushed:%d; "
             "localloc? %s\n",
@@ -6476,7 +6572,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
             else
             {
                 regNumber tempReg = rsGetRsvdReg();
-                emit->emitLoadImmediate(EA_PTRSIZE, tempReg, SPtoFPdelta);
+                emit->emitLoadImmediate<true>(EA_PTRSIZE, tempReg, SPtoFPdelta);
                 emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, tempReg);
             }
         }
@@ -6506,7 +6602,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     else
     {
         regNumber tempReg = rsGetRsvdReg();
-        emit->emitLoadImmediate(EA_PTRSIZE, tempReg, remainingSPSize);
+        emit->emitLoadImmediate<true>(EA_PTRSIZE, tempReg, remainingSPSize);
         emit->emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tempReg);
     }
     compiler->unwindAllocStack(remainingSPSize);
@@ -6524,7 +6620,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         else
         {
             regNumber tempReg = rsGetRsvdReg();
-            emit->emitLoadImmediate(EA_PTRSIZE, tempReg, tier0FrameSize);
+            emit->emitLoadImmediate<true>(EA_PTRSIZE, tempReg, tier0FrameSize);
             emit->emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tempReg);
         }
         compiler->unwindAllocStack(tier0FrameSize);

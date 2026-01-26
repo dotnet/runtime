@@ -335,6 +335,9 @@ struct InterpBasicBlock
     // Valid only for BBs of call islands. It is set to true if it is a finally call island, false if is is a catch leave island.
     bool isFinallyCallIsland;
 
+    // Is a leave chain island basic block
+    bool isLeaveChainIsland;
+
     // If this basic block is a catch or filter funclet entry, this is the index of the variable
     // that holds the exception object.
     int clauseVarIndex;
@@ -344,8 +347,6 @@ struct InterpBasicBlock
 
     // Number of try blocks that enclose this basic block.
     int32_t enclosingTryBlockCount;
-
-    InterpBasicBlock(int32_t index) : InterpBasicBlock(index, 0) { }
 
     InterpBasicBlock(int32_t index, int32_t ilOffset)
     {
@@ -368,6 +369,7 @@ struct InterpBasicBlock
         clauseType = BBClauseNone;
         isFilterOrCatchFuncletEntry = false;
         isFinallyCallIsland = false;
+        isLeaveChainIsland = false;
         clauseVarIndex = -1;
         overlappingEHClauseCount = 0;
         enclosingTryBlockCount = -1;
@@ -540,6 +542,57 @@ struct OpcodePeep
     }
 };
 
+class InterpreterRetryData
+{
+    bool m_needsRetry = false;
+    int32_t m_tryCount = 0;
+    const char *m_reasonString = "";
+
+    dn_simdhash_u32_ptr_holder m_ilMergePointStackTypes;
+
+    static void FreeStackInfo(uint32_t key, void *value, void *userdata)
+    {
+        free(value);
+    }
+public:
+
+    InterpreterRetryData()
+        : m_ilMergePointStackTypes(FreeStackInfo)
+    {
+
+    }
+    bool NeedsRetry() const
+    {
+        return m_needsRetry;
+    }
+
+    const char *GetReasonString() const
+    {
+        return m_reasonString;
+    }
+
+    void SetNeedsRetry(const char *reasonString)
+    {
+        assert(reasonString != nullptr);
+        m_reasonString = reasonString;
+        m_needsRetry = true;
+    }
+
+    void StartCompilationAttempt()
+    {
+        m_reasonString = "";
+        m_needsRetry = false;
+        m_tryCount++;
+        if (m_tryCount > 1000)
+        {
+            BADCODE("Exceeded maximum number of compilation attempts");
+        }
+    }
+
+    void SetOverrideILMergePointStack(int32_t ilOffset, uint32_t stackHeight, StackInfo *pStackInfo);
+    bool GetOverrideILMergePointStackType(int32_t ilOffset, uint32_t* stackHeight, StackInfo** stack);
+};
+
 class InterpCompiler
 {
     friend class InterpIAllocator;
@@ -552,6 +605,7 @@ private:
     CORINFO_MODULE_HANDLE m_compScopeHnd;
     COMP_HANDLE m_compHnd;
     CORINFO_METHOD_INFO* m_methodInfo;
+    CORJIT_FLAGS m_corJitFlags;
 
     void DeclarePointerIsClass(CORINFO_CLASS_HANDLE clsHnd)
     {
@@ -593,7 +647,10 @@ private:
 
     static int32_t InterpGetMovForType(InterpType interpType, bool signExtend);
 
+    InterpreterRetryData *m_pRetryData;
     const uint8_t* m_ip;
+
+    CORINFO_RESOLVED_TOKEN* m_pConstrainedToken = NULL;
     uint8_t* m_pILCode;
     int32_t m_ILCodeSizeFromILHeader;
     int32_t m_ILCodeSize; // This can differ from the size of the header if we add instructions for synchronized methods
@@ -821,9 +878,13 @@ private:
     void PushInterpType(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd);
     void PushTypeVT(CORINFO_CLASS_HANDLE clsHnd, int size);
     void ConvertFloatingPointStackEntryToStackType(StackInfo* entry, StackType type);
+    bool DisallowTailCall(CORINFO_SIG_INFO* callerSig, CORINFO_SIG_INFO* calleeSig);
 
     // Opcode peeps
     bool    FindAndApplyPeep(OpcodePeep* Peeps[]);
+
+    bool    IsConvRUnR4Peep(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo) { return true; }
+    int     ApplyConvRUnR4Peep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
     bool    IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
     int     ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
@@ -852,6 +913,9 @@ private:
     bool    IsTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
     int     ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
+    bool    IsLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
     enum class ContinuationContextHandling : uint8_t
     {
         ContinueOnCapturedContext,
@@ -876,6 +940,7 @@ private:
     void    EmitShiftOp(int32_t opBase);
     void    EmitCompareOp(int32_t opBase);
     void    EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli);
+    void    EmitRet(CORINFO_METHOD_INFO* methodInfo);
     void    EmitSuspend(const CORINFO_CALL_INFO &callInfo, ContinuationContextHandling ContinuationContextHandling);
     void    EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig);
     bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCall, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
@@ -892,6 +957,10 @@ private:
     void    EmitPushSyncObject();
     void    EmitCallsiteCallout(CorInfoIsAccessAllowedResult accessAllowed, CORINFO_HELPER_DESC* calloutDesc);
     void    EmitCanAccessCallout(CORINFO_RESOLVED_TOKEN *pResolvedToken);
+    void    CheckForPInvokeThisCallWithNoArgs(CORINFO_SIG_INFO* sigInfo, CORINFO_METHOD_HANDLE methodHnd);
+    void    EmitLdftn(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isLdvirtftn);
+    void    EmitDup();
+    void    EmitLoadPointer(intptr_t value);
 
     // Var Offset allocator
     TArray<InterpInst*, MemPoolAllocator> *m_pActiveCalls;
@@ -970,7 +1039,7 @@ private:
 #endif // DEBUG
 public:
 
-    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo);
+    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, InterpreterRetryData *pretryData);
 
     InterpMethod* CompileMethod();
     void BuildGCInfo(InterpMethod *pInterpMethod);

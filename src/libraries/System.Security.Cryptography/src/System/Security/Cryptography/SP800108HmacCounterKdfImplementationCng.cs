@@ -19,7 +19,7 @@ namespace System.Security.Cryptography
             if (key.Length > hashAlgorithmBlockSize)
             {
                 Span<byte> buffer = stackalloc byte[512 / 8]; // Largest supported digest is SHA512.
-                symmetricKeyMaterialLength = HashOneShot(hashAlgorithm, key, buffer);
+                symmetricKeyMaterialLength = CryptographicOperations.HashData(hashAlgorithm, key, buffer);
                 clearSpan = buffer.Slice(0, symmetricKeyMaterialLength);
                 symmetricKeyMaterial = clearSpan;
             }
@@ -48,33 +48,6 @@ namespace System.Security.Cryptography
             }
 
             _hashAlgorithm = hashAlgorithm;
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "Weak algorithms are used as instructed by the caller")]
-        private static int HashOneShot(HashAlgorithmName hashAlgorithm, ReadOnlySpan<byte> data, Span<byte> destination)
-        {
-            Debug.Assert(hashAlgorithm.Name is not null);
-
-            switch (hashAlgorithm.Name)
-            {
-                case HashAlgorithmNames.SHA1:
-                    return SHA1.HashData(data, destination);
-                case HashAlgorithmNames.SHA256:
-                    return SHA256.HashData(data, destination);
-                case HashAlgorithmNames.SHA384:
-                    return SHA384.HashData(data, destination);
-                case HashAlgorithmNames.SHA512:
-                    return SHA512.HashData(data, destination);
-                case HashAlgorithmNames.SHA3_256:
-                    return SHA3_256.IsSupported ? SHA3_256.HashData(data, destination) : throw new PlatformNotSupportedException();
-                case HashAlgorithmNames.SHA3_384:
-                    return SHA3_384.IsSupported ? SHA3_384.HashData(data, destination) : throw new PlatformNotSupportedException();
-                case HashAlgorithmNames.SHA3_512:
-                    return SHA3_512.IsSupported ? SHA3_512.HashData(data, destination) : throw new PlatformNotSupportedException();
-                default:
-                    Debug.Fail($"Unexpected hash algorithm '{hashAlgorithm.Name}'");
-                    throw new CryptographicException();
-            }
         }
     }
 }

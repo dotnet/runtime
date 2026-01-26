@@ -135,5 +135,5 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
                 parameters:
-                    extraTestArgs: '/p:WasmBuildNative=false'
+                    extraTestArgs: '/p:WasmBuildNative=false /p:RuntimeFlavor=Mono'
                     runAotTests: false

@@ -29,7 +29,19 @@ int64_t minipal_hires_tick_frequency()
 
 int64_t minipal_lowres_ticks()
 {
-    return GetTickCount64();
+    // GetTickCount64 uses fixed resolution of 10-16ms for backward compatibility. Use
+    // QueryUnbiasedInterruptTime instead which becomes more accurate if the underlying system
+    // resolution is improved. This helps responsiveness in the case an app is trying to opt
+    // into things like multimedia scenarios and additionally does not include "bias" from time
+    // the system is spent asleep or in hibernation.
+
+    const ULONGLONG TicksPerMillisecond = 10000;
+
+    ULONGLONG unbiasedTime;
+    BOOL ret;
+    ret = QueryUnbiasedInterruptTime(&unbiasedTime);
+    assert(ret); // The function is documented to only fail if a null-ptr is passed in
+    return (int64_t)(unbiasedTime / TicksPerMillisecond);
 }
 
 uint64_t minipal_get_system_time()

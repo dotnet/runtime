@@ -79,7 +79,7 @@ namespace Wasm.Build.Tests
         {
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "browser", extraProperties: extraProperties);
             UpdateBrowserProgramFile();
-            UpdateBrowserMainJs();
+            UpdateBrowserMainJs(forwardConsole: true);
 
             string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir;
             string projectFilePath = info.ProjectFilePath;
@@ -169,7 +169,7 @@ namespace Wasm.Build.Tests
         {
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false);
             UpdateBrowserProgramFile();
-            UpdateBrowserMainJs();
+            UpdateBrowserMainJs(forwardConsole: true);
 
             bool isPublish = false;
             string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath) ?? "";
@@ -347,6 +347,30 @@ namespace Wasm.Build.Tests
             else
             {
                 Assert.False(fileExists, $"dotnet.d.ts should not exist at {dotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions={shouldEmit}");
+            }
+        }
+
+        [Theory]
+        [InlineData("true", false)]
+        [InlineData("false", true)]
+        [InlineData("", false)] // Default case
+        public void UseMonoRuntimeParameter(string useMonoRuntimeArg, bool expectUseMonoRuntimeProperty)
+        {
+            Configuration config = Configuration.Debug;
+            string extraArgs = string.IsNullOrEmpty(useMonoRuntimeArg) ? "" : $"--UseMonoRuntime {useMonoRuntimeArg}";
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "usemonoruntime", extraArgs: extraArgs);
+
+            string projectFile = File.ReadAllText(info.ProjectFilePath);
+
+            // Verify UseMonoRuntime presence in the project file
+            bool containsUseMonoRuntime = projectFile.Contains("<UseMonoRuntime>false</UseMonoRuntime>");
+            if (expectUseMonoRuntimeProperty)
+            {
+                Assert.True(containsUseMonoRuntime, $"Expected <UseMonoRuntime>false</UseMonoRuntime> to be present in the project file when --UseMonoRuntime {useMonoRuntimeArg}");
+            }
+            else
+            {
+                Assert.False(containsUseMonoRuntime, $"Expected <UseMonoRuntime>false</UseMonoRuntime> to not be present in the project file when --UseMonoRuntime {useMonoRuntimeArg}");
             }
         }
     }

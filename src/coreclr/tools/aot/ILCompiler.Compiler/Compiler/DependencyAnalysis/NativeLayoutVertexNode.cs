@@ -1382,6 +1382,11 @@ namespace ILCompiler.DependencyAnalysis
 
             factory.MetadataManager.GetDependenciesDueToLdToken(ref result, factory, _method.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
+            if (_method.IsVirtual && _method.HasInstantiation && !_method.IsGenericMethodDefinition && !_method.OwningType.IsGenericDefinition)
+            {
+                result.Add(factory.GVMDependencies(_method.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Potential dynamic GVM call");
+            }
+
             result.Add(factory.NativeLayout.MethodEntry(_method), "wrappednode");
 
             return result;

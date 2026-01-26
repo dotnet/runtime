@@ -224,7 +224,7 @@ namespace System.Tests
         [Fact]
         public void Version_Valid()
         {
-            Assert.True(Environment.Version >= new Version(3, 0));
+            Assert.Equal(Version.Parse((string)AppContext.GetData("System.Runtime.Extensions.Tests.EnvironmentTests.ExpectedVersion")), Environment.Version);
         }
 
         [Fact]
