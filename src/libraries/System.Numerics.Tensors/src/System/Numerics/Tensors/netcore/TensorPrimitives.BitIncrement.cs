@@ -47,7 +47,7 @@ namespace System.Numerics.Tensors
                     Vector128<uint> bits = xFloat.AsUInt32();
 
                     // Select based on sign: negative -> decrement, positive -> increment
-                    Vector128<uint> isNegative = Vector128.Equals(bits & Vector128.Create(0x8000_0000u), Vector128.Create(0x8000_0000u));
+                    Vector128<uint> isNegative = Vector128.IsNegative(xFloat).AsUInt32();
                     Vector128<uint> result = Vector128.ConditionalSelect(
                         isNegative,
                         bits - Vector128<uint>.One,
@@ -76,7 +76,7 @@ namespace System.Numerics.Tensors
                     Vector128<ulong> bits = xDouble.AsUInt64();
 
                     // Select based on sign: negative -> decrement, positive -> increment
-                    Vector128<ulong> isNegative = Vector128.Equals(bits & Vector128.Create(0x8000_0000_0000_0000ul), Vector128.Create(0x8000_0000_0000_0000ul));
+                    Vector128<ulong> isNegative = Vector128.IsNegative(xDouble).AsUInt64();
                     Vector128<ulong> result = Vector128.ConditionalSelect(
                         isNegative,
                         bits - Vector128<ulong>.One,
@@ -112,7 +112,7 @@ namespace System.Numerics.Tensors
                     Vector256<uint> bits = xFloat.AsUInt32();
 
                     // Select based on sign: negative -> decrement, positive -> increment
-                    Vector256<uint> isNegative = Vector256.Equals(bits & Vector256.Create(0x8000_0000u), Vector256.Create(0x8000_0000u));
+                    Vector256<uint> isNegative = Vector256.IsNegative(xFloat).AsUInt32();
                     Vector256<uint> result = Vector256.ConditionalSelect(
                         isNegative,
                         bits - Vector256<uint>.One,
@@ -141,7 +141,7 @@ namespace System.Numerics.Tensors
                     Vector256<ulong> bits = xDouble.AsUInt64();
 
                     // Select based on sign: negative -> decrement, positive -> increment
-                    Vector256<ulong> isNegative = Vector256.Equals(bits & Vector256.Create(0x8000_0000_0000_0000ul), Vector256.Create(0x8000_0000_0000_0000ul));
+                    Vector256<ulong> isNegative = Vector256.IsNegative(xDouble).AsUInt64();
                     Vector256<ulong> result = Vector256.ConditionalSelect(
                         isNegative,
                         bits - Vector256<ulong>.One,
@@ -177,7 +177,7 @@ namespace System.Numerics.Tensors
                     Vector512<uint> bits = xFloat.AsUInt32();
 
                     // Select based on sign: negative -> decrement, positive -> increment
-                    Vector512<uint> isNegative = Vector512.Equals(bits & Vector512.Create(0x8000_0000u), Vector512.Create(0x8000_0000u));
+                    Vector512<uint> isNegative = Vector512.IsNegative(xFloat).AsUInt32();
                     Vector512<uint> result = Vector512.ConditionalSelect(
                         isNegative,
                         bits - Vector512<uint>.One,
@@ -206,7 +206,7 @@ namespace System.Numerics.Tensors
                     Vector512<ulong> bits = xDouble.AsUInt64();
 
                     // Select based on sign: negative -> decrement, positive -> increment
-                    Vector512<ulong> isNegative = Vector512.Equals(bits & Vector512.Create(0x8000_0000_0000_0000ul), Vector512.Create(0x8000_0000_0000_0000ul));
+                    Vector512<ulong> isNegative = Vector512.IsNegative(xDouble).AsUInt64();
                     Vector512<ulong> result = Vector512.ConditionalSelect(
                         isNegative,
                         bits - Vector512<ulong>.One,
