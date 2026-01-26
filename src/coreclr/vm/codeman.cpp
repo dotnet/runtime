@@ -6487,6 +6487,11 @@ TypeHandle ReadyToRunJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClaus
     _ASSERTE(NULL != pEHClause);
     _ASSERTE(IsTypedHandler(pEHClause));
 
+    if (pEHClause->Flags & COR_ILEXCEPTION_CLAUSE_R2R_SYSTEM_EXCEPTION)
+    {
+        return TypeHandle(g_pExceptionClass);
+    }
+
     MethodDesc *pMD = PTR_MethodDesc(pCf->GetFunction());
 
     _ASSERTE(pMD != NULL);
