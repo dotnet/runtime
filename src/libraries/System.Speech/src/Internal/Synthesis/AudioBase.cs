@@ -151,7 +151,7 @@ namespace System.Speech.Internal.Synthesis
 
                     try
                     {
-                        byte[] wfx = GetWaveFormat(br);
+                        byte[]? wfx = GetWaveFormat(br);
 
                         if (wfx == null)
                         {
@@ -205,7 +205,7 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-        internal static byte[] GetWaveFormat(BinaryReader br)
+        internal static byte[]? GetWaveFormat(BinaryReader br)
         {
             // Read the riff Header
             RIFFHDR riff = new();
@@ -313,7 +313,7 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-        internal virtual byte[] WaveFormat { get { return null; } }
+        internal virtual byte[]? WaveFormat { get { return null; } }
 
         #endregion
 

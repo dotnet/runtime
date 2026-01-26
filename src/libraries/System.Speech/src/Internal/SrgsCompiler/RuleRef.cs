@@ -19,8 +19,8 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Special private constructor for Special Rulerefs
         /// </summary>
-        private RuleRef(SpecialRuleRefType type, Rule rule)
-            : base(rule)
+        private RuleRef(SpecialRuleRefType type)
+            : base(null!)
         {
             _type = type;
         }
@@ -28,12 +28,12 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Add transition corresponding to Special or Uri.
         /// </summary>
-        internal RuleRef(ParseElementCollection parent, Backend backend, Uri uri, List<Rule> undefRules, string semanticKey, string initParameters)
+        internal RuleRef(ParseElementCollection parent, Backend backend, Uri uri, List<Rule> undefRules, string? semanticKey, string? initParameters)
             : base(parent._rule)
         {
             string id = uri.OriginalString;
 
-            Rule ruleRef = null;
+            Rule? ruleRef = null;
             int posPound = id.IndexOf('#');
 
             // Get the initial state for the RuleRef.
@@ -94,7 +94,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         internal void InitSpecialRuleRef(Backend backend, ParseElementCollection parent)
         {
-            Rule rule = null;
+            Rule? rule = null;
 
             // Create a transition corresponding to Special or Uri
             switch (_type)
@@ -143,7 +143,7 @@ namespace System.Speech.Internal.SrgsCompiler
             System.Diagnostics.Debug.Assert(!string.IsNullOrEmpty(sRuleId));
 
             // Get specified rule.
-            Rule rule = backend.FindRule(sRuleId);
+            Rule? rule = backend.FindRule(sRuleId);
 
             if (rule == null)
             {
@@ -163,7 +163,7 @@ namespace System.Speech.Internal.SrgsCompiler
         {
             get
             {
-                return new RuleRef(SpecialRuleRefType.Null, null);
+                return new RuleRef(SpecialRuleRefType.Null);
             }
         }
 
@@ -171,14 +171,14 @@ namespace System.Speech.Internal.SrgsCompiler
         {
             get
             {
-                return new RuleRef(SpecialRuleRefType.Void, null);
+                return new RuleRef(SpecialRuleRefType.Void);
             }
         }
         internal static IRuleRef Garbage
         {
             get
             {
-                return new RuleRef(SpecialRuleRefType.Garbage, null);
+                return new RuleRef(SpecialRuleRefType.Garbage);
             }
         }
 
