@@ -28,7 +28,13 @@ jobs:
   - job: evaluate_paths
     displayName: Evaluate Paths
     pool:
-      vmImage: 'ubuntu-latest'
+      ${{ if eq(variables['System.TeamProject'], 'public') }}:
+          name:  $(DncEngPublicBuildPool)
+          demands: ImageOverride -equals Azure-Linux-3-Amd64-Public
+      ${{ else }}:
+          name: $(DncEngInternalBuildPool)
+          demands: ImageOverride -equals Azure-Linux-3-Amd64
+          os: linux
 
     steps:
     - checkout: self
