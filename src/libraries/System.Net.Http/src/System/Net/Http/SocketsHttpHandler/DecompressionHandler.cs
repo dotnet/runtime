@@ -36,7 +36,7 @@ namespace System.Net.Http
             _decompressionMethods = decompressionMethods;
             _innerHandler = innerHandler;
 
-            Span<string?> methods = ["", "", "", ""];
+            Span<string?> methods = [null, null, null, null];
             int count = 0;
             if (GZipEnabled) methods[count++] = Gzip;
             if (DeflateEnabled) methods[count++] = Deflate;
