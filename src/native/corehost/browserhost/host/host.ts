@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssemblyAsset, CharPtrPtr, VoidPtr } from "./types";
+import type { CharPtrPtr, VoidPtr } from "./types";
 import { _ems_ } from "../../../libs/Common/JavaScript/ems-ambient";
+import { browserAppBase } from "./per-module";
 
 const HOST_PROPERTY_RUNTIME_CONTRACT = "HOST_RUNTIME_CONTRACT";
 const HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES = "TRUSTED_PLATFORM_ASSEMBLIES";
@@ -21,14 +22,20 @@ export function initializeCoreCLR(): number {
             runtimeConfigProperties.set(key, "" + value);
         }
     }
-    const assemblyPaths = loaderConfig.resources!.assembly.map(a => absoluteDllPath(a));
-    const coreAssemblyPaths = loaderConfig.resources!.coreAssembly.map(a => absoluteDllPath(a));
+    const virtualDllPath = (virtualPath: string): string => {
+        return virtualPath.startsWith("/")
+            ? virtualPath
+            : browserAppBase + "/" + virtualPath;
+    };
+
+    const assemblyPaths = loaderConfig.resources!.assembly.map(asset => virtualDllPath(asset.virtualPath));
+    const coreAssemblyPaths = loaderConfig.resources!.coreAssembly.map(asset => virtualDllPath(asset.virtualPath));
     const tpa = [...coreAssemblyPaths, ...assemblyPaths].join(":");
     runtimeConfigProperties.set(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES, tpa);
     runtimeConfigProperties.set(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES, loaderConfig.virtualWorkingDirectory!);
     runtimeConfigProperties.set(HOST_PROPERTY_APP_PATHS, loaderConfig.virtualWorkingDirectory!);
     runtimeConfigProperties.set(HOST_PROPERTY_ENTRY_ASSEMBLY_NAME, loaderConfig.mainAssemblyName!);
-    runtimeConfigProperties.set(APP_CONTEXT_BASE_DIRECTORY, "/");
+    runtimeConfigProperties.set(APP_CONTEXT_BASE_DIRECTORY, browserAppBase);
     runtimeConfigProperties.set(RUNTIME_IDENTIFIER, "browser-wasm");
     runtimeConfigProperties.set(HOST_PROPERTY_RUNTIME_CONTRACT, `0x${(hostContractPtr as unknown as number).toString(16)}`);
 
@@ -54,12 +61,6 @@ export function initializeCoreCLR(): number {
         _ems_._free(buf as any);
     }
     return res;
-
-    function absoluteDllPath(asset: AssemblyAsset): string {
-        return asset.virtualPath.startsWith("/")
-            ? asset.virtualPath
-            : "/" + asset.virtualPath;
-    }
 }
 
 export async function runMain(mainAssemblyName?: string, args?: string[]): Promise<number> {

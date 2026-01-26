@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { browserAppBase } from "./per-module";
 import type { Assets, LoaderConfig, LoaderConfigInternal } from "./types";
 
 export const loaderConfig: LoaderConfigInternal = {};
@@ -85,7 +86,7 @@ function defaultConfig(target: LoaderConfigInternal) {
     if (target.loadAllSatelliteResources === undefined) target.loadAllSatelliteResources = false;
     if (target.debugLevel === undefined) target.debugLevel = 0;
     if (target.diagnosticTracing === undefined) target.diagnosticTracing = false;
-    if (target.virtualWorkingDirectory === undefined) target.virtualWorkingDirectory = "/";
+    if (target.virtualWorkingDirectory === undefined) target.virtualWorkingDirectory = browserAppBase;
     if (target.maxParallelDownloads === undefined) target.maxParallelDownloads = 16;
     normalizeConfig(target);
 }

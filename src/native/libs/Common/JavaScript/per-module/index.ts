@@ -13,3 +13,4 @@ export const ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE;
 export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
 export const CharPtrNull: CharPtr = <CharPtr><any>0;
 export const NativePointerNull: NativePointer = <NativePointer><any>0;
+export const browserAppBase = "/managed"; // keep in sync other places that define browserAppBase

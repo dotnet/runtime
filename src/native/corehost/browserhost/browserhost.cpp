@@ -112,7 +112,7 @@ extern "C" int BrowserHost_InitializeCoreCLR(int propertiesCount, const char** p
 {
     coreclr_set_error_writer(log_error_info);
 
-    int retval = coreclr_initialize("/", "corehost", propertiesCount, propertyKeys, propertyValues, &CurrentClrInstance, &CurrentAppDomainId);
+    int retval = coreclr_initialize("/managed", "corehost", propertiesCount, propertyKeys, propertyValues, &CurrentClrInstance, &CurrentAppDomainId);
 
     if (retval < 0)
     {

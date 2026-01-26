@@ -5,7 +5,7 @@ import type { AssetEntryInternal } from "./types/internal";
 
 import cwraps from "./cwraps";
 import { wasm_load_icu_data } from "./icu";
-import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { Module, browserAppBase, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { mono_log_info, mono_log_debug, parseSymbolMapFile } from "./logging";
 import { mono_wasm_load_bytes_into_heap_persistent } from "./memory";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
@@ -52,7 +52,7 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
                 fileName = fileName.substring(1);
             if (parentDirectory) {
                 if (!parentDirectory.startsWith("/"))
-                    parentDirectory = "/" + parentDirectory;
+                    parentDirectory = browserAppBase + "/" + parentDirectory;
 
                 mono_log_debug(`Creating directory '${parentDirectory}'`);
 
@@ -60,7 +60,7 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
                     "/", parentDirectory, true, true // fixme: should canWrite be false?
                 );
             } else {
-                parentDirectory = "/";
+                parentDirectory = browserAppBase;
             }
 
             mono_log_debug(() => `Creating file '${fileName}' in directory '${parentDirectory}'`);

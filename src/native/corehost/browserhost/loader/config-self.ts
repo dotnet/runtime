@@ -3,7 +3,7 @@
 
 import type { LoaderConfig, DotnetHostBuilder } from "./types";
 import { GlobalizationMode } from "./types";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, globalThisAny } from "./per-module";
+import { browserAppBase, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, globalThisAny } from "./per-module";
 import { fetchLike, nodeFs } from "./polyfills";
 import { quitNow, exit } from "./exit";
 import { isValidLoaderConfig } from "./config";
@@ -23,7 +23,6 @@ export async function selfConfigureAndRun(dotnet: DotnetHostBuilder): Promise<vo
         exit(1, err);
     }
 }
-
 
 function isShellHosted(): boolean {
     if (!ENVIRONMENT_IS_SHELL || isValidLoaderConfig()) {
@@ -73,7 +72,7 @@ async function shellFindResources(dotnet: DotnetHostBuilder): Promise<void> {
     return findResources(dotnet, files, mainAssemblyName);
 }
 
-export async function nodeFindResources(dotnet: DotnetHostBuilder): Promise<void> {
+async function nodeFindResources(dotnet: DotnetHostBuilder): Promise<void> {
     if (!ENVIRONMENT_IS_NODE) {
         return;
     }
@@ -87,7 +86,7 @@ export async function nodeFindResources(dotnet: DotnetHostBuilder): Promise<void
 // Finds resources when running in NodeJS environment without explicit configuration
 async function findResources(dotnet: DotnetHostBuilder, files: string[], mainAssemblyName: string): Promise<void> {
     const assemblies = files
-        // TODO-WASM: webCIL
+        // TODO-WASM: webCIL https://github.com/dotnet/runtime/issues/120248
         .filter(file => file.endsWith(".dll"))
         .map(filepath => {
             // ignore path and just use file name
@@ -95,7 +94,7 @@ async function findResources(dotnet: DotnetHostBuilder, files: string[], mainAss
             return { virtualPath: filepath, name };
         });
     const coreAssembly = files
-        // TODO-WASM: webCIL
+        // TODO-WASM: webCIL https://github.com/dotnet/runtime/issues/120248
         .filter(file => file.endsWith("System.Private.CoreLib.dll"))
         .map(filepath => {
             // ignore path and just use file name
@@ -128,7 +127,7 @@ async function findResources(dotnet: DotnetHostBuilder, files: string[], mainAss
         mainAssemblyName,
         runtimeConfig,
         globalizationMode,
-        virtualWorkingDirectory: "/",
+        virtualWorkingDirectory: browserAppBase,
         environmentVariables,
         resources: {
             jsModuleNative: [{ name: "dotnet.native.js" }],

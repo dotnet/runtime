@@ -59,6 +59,15 @@
                         for (const key in loaderConfig.environmentVariables) {
                             ENV[key] = loaderConfig.environmentVariables[key];
                         }
+
+                        Module.preInit = [() => {
+                            const browserAppBase = "/managed"; // keep in sync other places that define browserAppBase
+                            FS.mkdir(browserAppBase);
+                            if (ENVIRONMENT_IS_NODE) {
+                                FS.mount(NODEFS, { root: "." }, browserAppBase);
+                            }
+                            FS.chdir(browserAppBase);
+                        }];
                     }
                 },
             },
@@ -101,18 +110,4 @@
 
     LibraryManager.library.__syscall_socket = trim;
     delete LibraryManager.library.__syscall_socket__deps;
-
-    if (LibraryManager.library.$NODERAWFS__postset) {
-        // this allows the NODERAWFS to be ignored in startup in non-Node.js environments
-        const cutWhat = "throw new Error(\"NODERAWFS is currently only supported on Node.js environment.\")";
-        LibraryManager.library.$NODERAWFS__postset = LibraryManager.library.$NODERAWFS__postset.replace(cutWhat, "");
-    }
-    if (LibraryManager.library.$NODERAWFS) {
-        LibraryManager.library.$NODERAWFS.cwd = () => {
-            const path = process.cwd();
-            return NODEFS.isWindows
-                ? path.replace(/^[a-zA-Z]:/, "").replace(/\\/g, "/")
-                : path;
-        };
-    }
 })();

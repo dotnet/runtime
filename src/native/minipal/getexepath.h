@@ -84,8 +84,8 @@ static inline char* minipal_getexepath(void)
 
     return strdup(path);
 #elif defined(TARGET_WASM)
-    // This is a packaging convention that our tooling should enforce.
-    return strdup("/");
+    // keep in sync other places that define browserAppBase
+    return strdup("/managed");
 #else
 #ifdef __linux__
     const char* symlinkEntrypointExecutable = "/proc/self/exe";
