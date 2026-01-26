@@ -139,9 +139,12 @@
       />
   </Target>
 
-  <Import Project="$(MSBuildThisFileDirectory)WasiSdk.Defaults.props" />
   <Target Name="_SetupWasiSdk" BeforeTargets="_SetupToolchain">
     <PropertyGroup>
+      <WasiClang>$(WASI_SDK_PATH)bin/clang</WasiClang>
+      <WasiClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(WasiClang).exe</WasiClang>
+      <WasiSdkBinPath>$([MSBuild]::NormalizeDirectory($(WASI_SDK_PATH), 'bin'))</WasiSdkBinPath>
+
       <_ToolchainMissingPaths Condition="'$(_ToolchainMissingPaths)' == '' and ('$(WasiClang)' == '' or !Exists('$(WasiClang)'))">%24(WasiClang)=$(WasiClang) </_ToolchainMissingPaths>
     </PropertyGroup>
 
@@ -157,8 +160,10 @@
       <_IsToolchainMissing Condition="'$(_ToolchainMissingErrorMessage)' != ''">true</_IsToolchainMissing>
     </PropertyGroup>
 
+    <ItemGroup>
+      <WasmToolchainEnvVars Include="PATH=$(WasiSdkBinPath)$(_PathSeparator)$([MSBuild]::Escape($(PATH)))" />
+    </ItemGroup>
     <PropertyGroup>
-      <WasiSdkBinPath Condition="'$(WasiSdkBinPath)' != ''">$([MSBuild]::NormalizeDirectory($(WasiSdkBinPath)))</WasiSdkBinPath>
       <_WasmLLVMPathForAOT>$(WasiSdkBinPath)</_WasmLLVMPathForAOT>
     </PropertyGroup>
   </Target>
@@ -171,7 +176,6 @@
       <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','wasi-wasm'))</_MonoAotCrossCompilerPath>
       <_WasmDefaultFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'wasi-default.rsp'))</_WasmDefaultFlagsRsp>
       <_WasmDefaultLinkFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'wasi-link.rsp'))</_WasmDefaultLinkFlagsRsp>
-      <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
 
       <_WasmICallTablePath>$(_WasmIntermediateOutputPath)icall-table.h</_WasmICallTablePath>
@@ -237,7 +241,6 @@
       <_WasiClangCommonFlags Include="$(WasiClangFlags)" />
       <_WasiClangCommonFlags Include="--sysroot=&quot;$(WASI_SDK_PATH.Replace('\', '/'))share/wasi-sysroot&quot;" />
       <_WasiClangCommonFlags Include="--target=wasm32-unknown-wasip2" />
-      <_WasiClangCommonFlags Include="-g"                                Condition="'$(WasmNativeStrip)' == 'false'" />
       <_WasiClangCommonFlags Include="-v"                                Condition="'$(WasiClangVerbose)' != 'false'" />
       <!--<_WasiClangCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"   Condition="'$(WasmEnableExceptionHandling)' == 'false'" />-->
       <!--<_WasiClangCommonFlags Include="-fwasm-exceptions"                 Condition="'$(WasmEnableExceptionHandling)' == 'true'" />-->
@@ -248,7 +251,6 @@
       <_WasmCommonCFlags Condition="'$(_DriverGenCNeeded)' == 'true'"      Include="-DDRIVER_GEN=1" />
       <_WasmCommonCFlags Condition="'$(WasmSingleFileBundle)' == 'true'"   Include="-DWASM_SINGLE_FILE=1" />
       <_WasmCommonCFlags Condition="'$(InvariantGlobalization)' == 'true'" Include="-DINVARIANT_GLOBALIZATION=1" />
-      <_WasmCommonCFlags Condition="'$(InvariantTimezone)' == 'true'"      Include="-DINVARIANT_TIMEZONE=1" />
       <_WasmCommonCFlags Condition="'$(WasmLinkIcalls)' == 'true'"         Include="-DLINK_ICALLS=1" />
       <_WasmCommonCFlags Condition="'$(_IsLibraryMode)' == 'true'"          Include="-DWASM_LIBRARY_MODE=1" />
       <_WasiClangCFlags Include="@(_WasmCommonCFlags)" />
@@ -360,9 +362,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_MonoRuntimeComponentDontLink Include="wasm-bundled-timezones.a" Condition="'$(InvariantTimezone)' == 'true'"/>
       <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" Condition="'$(EnableDiagnostics)' != 'true'" />
       <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-stub-static.lib" Condition="'$(EnableDiagnostics)' == 'true'" />
+      <_MonoRuntimeComponentDontLink Include="libSystem.Native.TimeZoneData.Invariant.a" Condition="'$(InvariantTimezone)' != 'true'" />
+      <_MonoRuntimeComponentDontLink Include="libSystem.Native.TimeZoneData.a" Condition="'$(InvariantTimezone)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup>
@@ -387,10 +390,7 @@
       <_WasmNativeFileForLinking Condition="'$(_WasmSIMDLib)' != ''" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmSIMDLib)" />
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLibToExclude)" />
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmSIMDLibToExclude)" />
-
-      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasip2\libc++.a" />
-      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasip2\libc++abi.a" />
-
+      <_WasmNativeFileForLinking Include="-lstdc++" />
       <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
     </ItemGroup>
 
@@ -405,9 +405,7 @@
       <_WasiLinkStepArgs Condition="'$(OS)' == 'Windows_NT'" Include="&quot;$([System.String]::new(%(_WasiFilePathForFixup.Identity)).Replace('\', '/'))&quot;" />
       <_WasiLinkStepArgs Condition="'$(OS)' != 'Windows_NT'" Include="@(_WasiFilePathForFixup -> '&quot;%(Identity)&quot;')" />
 
-      <_WasiLinkStepArgs Include="-Wl,--export=malloc,--export=free,--export=__heap_base,--export=__data_end" />
       <!-- keep in sync with src\mono\wasi\wasi.proj -->
-      <!-- keep in sync with src\native\libs\CMakeLists.txt -->
       <_WasiLinkStepArgs Include="-Wl,-z,stack-size=8388608,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman,-lwasi-emulated-pthread"/>
       <!--
       this together with some DLLImports makes dependency on wasi:http@0.2.0

@@ -1349,6 +1349,9 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         case 0: // tdSequentialLayout:
             dwFlags = (dwFlags & ~tdLayoutMask) | tdSequentialLayout;
             break;
+        case 1: // tdExtendedLayout:
+            dwFlags = (dwFlags & ~tdLayoutMask) | tdExtendedLayout;
+            break;
         case 2: // tdExplicitLayout:
             dwFlags = (dwFlags & ~tdLayoutMask) | tdExplicitLayout;
             break;

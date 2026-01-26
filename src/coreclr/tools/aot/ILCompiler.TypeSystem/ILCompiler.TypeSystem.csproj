@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <RootNamespace>Internal.TypeSystem</RootNamespace>
@@ -33,6 +33,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\Internal\VersionResilientHashCode.cs">
+      <Link>TypeSystem\Common\VersionResilientHashCode.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\ArrayMethod.Diagnostic.cs">
       <Link>TypeSystem\Common\ArrayMethod.Diagnostic.cs</Link>
     </Compile>
@@ -191,6 +194,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\UniversalCanonLayoutAlgorithm.cs">
       <Link>TypeSystem\Common\UniversalCanonLayoutAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\VersionResilientHashCode.TypeSystem.cs">
+      <Link>TypeSystem\Common\VersionResilientHashCode.TypeSystem.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\Utilities\CustomAttributeTypeNameFormatter.cs">
       <Link>Utilities\CustomAttributeTypeNameFormatter.cs</Link>

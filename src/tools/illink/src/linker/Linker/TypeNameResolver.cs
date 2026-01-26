@@ -5,10 +5,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Mono.Cecil;
-
+using AssemblyNameInfo = System.Reflection.Metadata.AssemblyNameInfo;
 using TypeName = System.Reflection.Metadata.TypeName;
 using TypeNameParseOptions = System.Reflection.Metadata.TypeNameParseOptions;
-using AssemblyNameInfo = System.Reflection.Metadata.AssemblyNameInfo;
 
 #nullable enable
 
@@ -100,7 +99,7 @@ namespace Mono.Linker
             Debug.Assert(typeName.IsSimple);
             TypeName topLevelTypeName = typeName;
             while (topLevelTypeName.IsNested)
-                topLevelTypeName = topLevelTypeName.DeclaringType!;
+                topLevelTypeName = topLevelTypeName.DeclaringType;
             Debug.Assert(topLevelTypeName.AssemblyName == typeName.AssemblyName);
             TypeDefinition? resolvedType = GetSimpleTypeFromModule(typeName, assembly.MainModule);
 
@@ -133,7 +132,7 @@ namespace Mono.Linker
             {
                 if (typeName.IsNested)
                 {
-                    TypeDefinition? type = GetSimpleTypeFromModule(typeName.DeclaringType!, module);
+                    TypeDefinition? type = GetSimpleTypeFromModule(typeName.DeclaringType, module);
                     if (type == null)
                         return null;
                     return GetNestedType(type, TypeName.Unescape(typeName.Name));

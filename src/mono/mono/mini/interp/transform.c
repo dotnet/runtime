@@ -739,7 +739,7 @@ handle_branch (TransformData *td, int long_op, int offset)
 		guint16 samplepoint_profiling = 0;
 		if (mono_jit_trace_calls != NULL && mono_trace_eval (rtm->method))
 			samplepoint_profiling |= TRACING_FLAG;
-		if (rtm->prof_flags & (MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT | MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT_CONTEXT ))
+		if (rtm->prof_flags & (MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT))
 			samplepoint_profiling |= PROFILING_FLAG;
 		if (samplepoint_profiling) {
 			interp_add_ins (td, MINT_PROF_SAMPLEPOINT);
@@ -2139,6 +2139,16 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				return TRUE;
 			}
 		}
+	} else if (in_corlib && !strcmp (klass_name_space, "System") && (!strcmp (klass_name, "BitConverter"))) {
+		if (!strcmp (tm, "DoubleToInt64Bits") || !strcmp (tm, "DoubleToUInt64Bits")) {
+			*op = MINT_MOV_8;
+		} else if (!strcmp (tm, "Int32BitsToSingle") || !strcmp (tm, "UInt32BitsToSingle")) {
+			*op = MINT_MOV_4;
+		} else if (!strcmp (tm, "Int64BitsToDouble") || !strcmp (tm, "UInt64BitsToDouble")) {
+			*op = MINT_MOV_8;
+		} else if (!strcmp (tm, "SingleToInt32Bits") || !strcmp (tm, "SingleToUInt32Bits")) {
+			*op = MINT_MOV_4;
+		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Runtime.CompilerServices") && !strcmp (klass_name, "Unsafe")) {
 		if (!strcmp (tm, "AddByteOffset"))
 #if SIZEOF_VOID_P == 4
@@ -2156,6 +2166,72 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			return TRUE;
 		} else if (!strcmp (tm, "AreSame")) {
 			*op = MINT_CEQ_P;
+		} else if (!strcmp (tm, "BitCast")) {
+			MonoGenericContext *ctx = mono_method_get_context (target_method);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+			g_assert (ctx->method_inst->type_argc == 2);
+			g_assert (csignature->param_count == 1);
+
+			// We explicitly do not handle gsharedvt as it is meant as a slow fallback strategy
+			// instead we fallback to the managed implementation which will do the right things
+
+			MonoType *tfrom = ctx->method_inst->type_argv [0];
+			MonoType *tto = ctx->method_inst->type_argv [1];
+			tfrom = mini_get_underlying_type (tfrom);
+			tto = mini_get_underlying_type (tto);
+
+			// The underlying API always throws for reference type inputs, so we
+			// fallback to the managed implementation to let that handling occur
+
+			if (MONO_TYPE_IS_REFERENCE (tfrom) || MONO_TYPE_IS_REFERENCE (tto)) {
+				return FALSE;
+			}
+
+			MonoClass *tto_klass = mono_class_from_mono_type_internal (tto);
+
+			// The same applies for when the type sizes do not match, as this will always throw
+			// and so its not an expected case and we can fallback to the managed implementation
+
+			int tfrom_align, tto_align;
+			gint32 size = mono_type_size (tfrom, &tfrom_align);
+			if (size != mono_type_size (tto, &tto_align)) {
+				return FALSE;
+			}
+			g_assert (size < G_MAXUINT16);
+
+			// We have several different move opcodes to handle the data depending on the
+			// source and target types, so detect and optimize the most common ones falling
+			// back to what is effectively `ReadUnaligned<TTo>(ref As<TFrom, byte>(ref source))`
+			// for anything that can't be special cased as potentially zero-cost move.
+
+			if (m_class_is_enumtype (tto_klass)) {
+				tto = mono_class_enum_basetype_internal (tto_klass);
+			}
+
+			int mov_op = interp_get_mov_for_type (mono_mint_type (tto), TRUE);
+
+			if (mov_op == MINT_MOV_VT ) {
+				if (size <= 4) {
+					*op = MINT_MOV_4;
+				} else if (size <= 8) {
+					*op = MINT_MOV_8;
+				} else {
+					td->sp--;
+					interp_add_ins (td, MINT_MOV_VT);
+					interp_ins_set_sreg (td->last_ins, td->sp [0].var);
+					push_type_vt (td, tto_klass, size);
+					interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
+					td->last_ins->data [0] = GINT32_TO_UINT16 (size);
+					td->ip += 5;
+					return TRUE;
+				}
+			} else {
+				if (size < 4)
+					return FALSE;
+
+				*op = mov_op;
+			}
 		} else if (!strcmp (tm, "ByteOffset")) {
 #if SIZEOF_VOID_P == 4
 			interp_add_ins (td, MINT_SUB_I4);
@@ -2914,6 +2990,8 @@ interp_get_icall_sig (MonoMethodSignature *sig)
 /* larger than mono jit; chosen to ensure that List<T>.get_Item can be inlined */
 #define INLINE_LENGTH_LIMIT 30
 #define INLINE_DEPTH_LIMIT 10
+// How much imported IL we allow before we stop inlining
+#define INLINE_IL_BUDGET 1000000
 
 static gboolean
 is_metadata_update_disabled (void)
@@ -2931,6 +3009,9 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 	MonoMethodHeaderSummary header;
 
 	if (td->disable_inlining)
+		return FALSE;
+
+	if (td->total_il_size > INLINE_IL_BUDGET)
 		return FALSE;
 
 	// Exception handlers are always uncommon, with the exception of finally.
@@ -3014,6 +3095,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	int *prev_in_offsets;
 	gboolean ret;
 	unsigned int prev_max_stack_height, prev_locals_size;
+	unsigned int prev_total_il_size;
 	int prev_n_data_items;
 	int i;
 	int prev_sp_offset;
@@ -3053,6 +3135,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	prev_aggressive_inlining = td->aggressive_inlining;
 	prev_imethod_items = td->imethod_items;
 	prev_has_inlined_one_call = td->has_inlined_one_call;
+	prev_total_il_size = td->total_il_size;
 	td->has_inlined_one_call = FALSE;
 	td->inlined_method = target_method;
 
@@ -3089,6 +3172,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 			g_print ("Inline aborted method %s.%s\n", m_class_get_name (target_method->klass), target_method->name);
 		td->max_stack_height = prev_max_stack_height;
 		td->vars_size = prev_locals_size;
+		td->total_il_size = prev_total_il_size;
 
 		/* Remove any newly added items */
 		for (i = prev_n_data_items; i < td->n_data_items; i++) {
@@ -3233,6 +3317,8 @@ interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSi
 	if (!interp_inline_method (td, target_method, mheader, error))
 		goto fail;
 	td->ip += 5;
+
+	td->headers_to_free = g_slist_prepend_mempool (td->mempool, td->headers_to_free, mheader);
 
 	push_var (td, dreg);
 	return TRUE;
@@ -3394,6 +3480,12 @@ interp_realign_simd_params (TransformData *td, StackInfo *sp_params, int num_arg
 			td->last_ins->data [0] = GINT_TO_UINT16 (sp_params [i].offset + prev_offset);
 			td->last_ins->data [1] = offset_amount;
 			td->last_ins->data [2] = GINT_TO_UINT16 (get_stack_size (td, sp_params + i, num_args - i));
+
+			// The stack move applies to all arguments starting at this one. Because we push
+			// simd valuetypes in aligned fashion on the execution stack, the offset between two
+			// simd values will be a multiple of simd alignment. This means that if this arg is
+			// correctly aligned, all following args will be aligned as well.
+			return;
 		}
 	}
 }
@@ -3829,6 +3921,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		return_val_if_nok (error, FALSE);
 
 		if (interp_inline_method (td, target_method, mheader, error)) {
+			td->headers_to_free = g_slist_prepend_mempool (td->mempool, td->headers_to_free, mheader);
 			td->ip += 5;
 			goto done;
 		}
@@ -4573,7 +4666,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	// 64 vars * 72 bytes = 4608 bytes. Many methods need less than this
 	int target_vars_capacity = num_locals + 64;
 
-	imethod->local_offsets = (guint32*)g_malloc (num_il_locals * sizeof(guint32));
+	imethod->local_offsets = (guint32*)imethod_alloc0 (td, num_il_locals * sizeof(guint32));
 	td->vars = (InterpVar*)g_malloc0 (target_vars_capacity * sizeof (InterpVar));
 	td->vars_size = num_locals;
 	td->vars_capacity = target_vars_capacity;
@@ -4671,7 +4764,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	}
 #endif
 
-	imethod->clause_data_offsets = (guint32*)g_malloc (header->num_clauses * sizeof (guint32));
+	imethod->clause_data_offsets = (guint32*)imethod_alloc0 (td, header->num_clauses * sizeof (guint32));
 	td->clause_vars = (int*)mono_mempool_alloc (td->mempool, sizeof (int) * header->num_clauses);
 	for (guint i = 0; i < header->num_clauses; i++) {
 		int var = interp_create_var (td, mono_get_object_type ());
@@ -5267,6 +5360,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	td->il_code = header->code;
 	td->in_start = td->ip = header->code;
 	end = td->ip + header->code_size;
+
+	td->total_il_size += header->code_size;
 
 	td->cbb = td->entry_bb = interp_alloc_bb (td);
 	td->entry_bb->emit_state = BB_STATE_EMITTING;
@@ -8793,10 +8888,10 @@ retry_emit:
 				memcpy (td->stack, exit_bb->stack_state, exit_bb->stack_height * sizeof(td->stack [0]));
 			td->sp = td->stack + exit_bb->stack_height;
 		}
-		// If exit_bb is not reached by any other bb in this method, just mark it as dead so the
-		// method that does the inlining no longer generates code for the following IL opcodes.
+		// If exit_bb is not reached by any other bb in this method, it means the method always
+		// throws an exception. Inlining it isn't beneficial since this shouldn't be perf sensitive code.
 		if (exit_bb->in_count == 0)
-			exit_bb->dead = TRUE;
+			INLINE_FAILURE;
 		else
 			exit_bb->emit_state = BB_STATE_EMITTING;
 	}
@@ -9581,7 +9676,7 @@ get_native_offset (TransformData *td, int il_offset, gboolean precise)
 	return GPTRDIFF_TO_INT (td->new_code_end - td->new_code);
 }
 
-static void
+static GSList*
 generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoGenericContext *generic_context, MonoError *error)
 {
 	TransformData transform_data;
@@ -9774,12 +9869,10 @@ retry:
 	rtm->alloca_size = td->total_locals_size + td->max_stack_size;
 	g_assert ((rtm->alloca_size % MINT_STACK_ALIGNMENT) == 0);
 	rtm->locals_size = td->param_area_offset;
-	// FIXME: Can't allocate this using imethod_alloc0 as its registered with mono_interp_register_imethod_data_items ()
-	//rtm->data_items = (gpointer*)imethod_alloc0 (td, td->n_data_items * sizeof (td->data_items [0]));
-	rtm->data_items = (gpointer*)mono_mem_manager_alloc0 (td->mem_manager, td->n_data_items * sizeof (td->data_items [0]));
+	rtm->data_items = (gpointer*)imethod_alloc0 (td, td->n_data_items * sizeof (td->data_items [0]));
 	memcpy (rtm->data_items, td->data_items, td->n_data_items * sizeof (td->data_items [0]));
+	rtm->n_data_items = td->n_data_items;
 
-	mono_interp_register_imethod_data_items (rtm->data_items, td->imethod_items);
 	rtm->patchpoint_data = td->patchpoint_data;
 
 	if (td->ref_slots) {
@@ -9853,7 +9946,8 @@ exit:
 	g_ptr_array_free (td->seq_points, TRUE);
 	if (td->line_numbers)
 		g_array_free (td->line_numbers, TRUE);
-	g_slist_free (td->imethod_items);
+	for (GSList *l = td->headers_to_free; l; l = l->next)
+		mono_metadata_free_mh ((MonoMethodHeader *)l->data);
 	mono_mempool_destroy (td->mempool);
 	mono_interp_pgo_generate_end ();
 	if (td->retry_compilation) {
@@ -9861,6 +9955,8 @@ exit:
 		retry_with_inlining = td->retry_with_inlining;
 		goto retry;
 	}
+
+	return td->imethod_items;
 }
 
 gboolean
@@ -10010,7 +10106,8 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	memcpy (&tmp_imethod, imethod, sizeof (InterpMethod));
 	imethod = &tmp_imethod;
 
-	MONO_TIME_TRACK (mono_interp_stats.transform_time, generate (method, header, imethod, generic_context, error));
+	GSList *imethod_data_items;
+	MONO_TIME_TRACK (mono_interp_stats.transform_time, imethod_data_items = generate (method, header, imethod, generic_context, error));
 
 	mono_metadata_free_mh (header);
 
@@ -10031,6 +10128,8 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		mono_interp_stats.methods_transformed++;
 		mono_atomic_fetch_add_i32 (&mono_jit_stats.methods_with_interp, 1);
 
+		mono_interp_register_imethod_data_items (imethod->data_items, imethod_data_items);
+
 		// FIXME Publishing of seq points seems to be racy with tiereing. We can have both tiered and untiered method
 		// running at the same time. We could therefore get the optimized imethod seq points for the unoptimized method.
 		gpointer seq_points = dn_simdhash_ght_get_value_or_default (jit_mm->seq_points, imethod->method);
@@ -10038,6 +10137,8 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 			dn_simdhash_ght_replace (jit_mm->seq_points, imethod->method, imethod->jinfo->seq_points);
 	}
 	jit_mm_unlock (jit_mm);
+
+	g_slist_free (imethod_data_items);
 
 	if (mono_stats_method_desc && mono_method_desc_full_match (mono_stats_method_desc, imethod->method)) {
 		g_printf ("Printing runtime stats at method: %s\n", mono_method_get_full_name (imethod->method));

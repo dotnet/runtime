@@ -62,6 +62,8 @@ struct InstructionAttribute
     }
 };
 
+#ifndef DACCESS_COMPILE
+
 /* ------------------------------------------------------------------------- *
  * Classes
  * ------------------------------------------------------------------------- */
@@ -279,5 +281,7 @@ private:
     DWORD m_opcode;           // Current instruction or opcode
 };
 #endif
+
+#endif // DACCESS_COMPILE
 
 #endif // WALKER_H_

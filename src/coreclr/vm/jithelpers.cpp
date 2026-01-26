@@ -54,9 +54,6 @@
 #include "pgo_formatprocessing.h"
 #include "patchpointinfo.h"
 
-#ifndef FEATURE_EH_FUNCLETS
-#include "excep.h"
-#endif
 #include "exinfo.h"
 #include "arraynative.inl"
 
@@ -560,7 +557,7 @@ DictionaryEntry GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPV
     }
 
     DictionaryEntry * pSlot;
-    result = Dictionary::PopulateEntry(pMD, pDeclaringMT, signature, FALSE, &pSlot, dictionaryIndexAndSlot, pModule);
+    result = Dictionary::PopulateEntry(pMD, pDeclaringMT, signature, &pSlot, dictionaryIndexAndSlot, pModule);
 
     if (pMT != NULL && pDeclaringMT != pMT)
     {
@@ -748,9 +745,6 @@ HCIMPL1(EnregisteredTypeHandle, JIT_GetClassFromMethodParam, MethodDesc* pMD)
 HCIMPLEND
 #include <optdefault.h>
 
-
-
-
 //========================================================================
 //
 //      EXCEPTION HELPERS
@@ -768,12 +762,8 @@ HCIMPLEND
 
 /*************************************************************/
 
-#if defined(TARGET_X86)
 EXTERN_C FCDECL1(void, IL_Throw,  Object* obj);
-EXTERN_C HCIMPL2(void, IL_Throw_x86,  Object* obj, TransitionBlock* transitionBlock)
-#else
-HCIMPL1(void, IL_Throw,  Object* obj)
-#endif
+EXTERN_C HCIMPL2(void, IL_Throw_Impl,  Object* obj, TransitionBlock* transitionBlock)
 {
     FCALL_CONTRACT;
 
@@ -785,84 +775,16 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     Thread *pThread = GetThread();
 
     SoftwareExceptionFrame exceptionFrame;
-#ifdef TARGET_X86
     exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
-#else
-    RtlCaptureContext(exceptionFrame.GetContext());
-#endif
     exceptionFrame.InitAndLink(pThread);
 
     FC_CAN_TRIGGER_GC();
 
-#ifdef FEATURE_EH_FUNCLETS
     if (oref == 0)
         DispatchManagedException(kNullReferenceException);
-    else
-    if (!IsException(oref->GetMethodTable()))
-    {
-        GCPROTECT_BEGIN(oref);
 
-        WrapNonCompliantException(&oref);
-
-        GCPROTECT_END();
-    }
-    else
-    {   // We know that the object derives from System.Exception
-
-        // If the flag indicating ForeignExceptionRaise has been set,
-        // then do not clear the "_stackTrace" field of the exception object.
-        if (pThread->GetExceptionState()->IsRaisingForeignException())
-        {
-            ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
-        }
-        else
-        {
-            ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
-        }
-    }
-
+    NormalizeThrownObject(&oref);
     DispatchManagedException(oref, exceptionFrame.GetContext());
-#elif defined(TARGET_X86)
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-#if defined(_DEBUG) && defined(TARGET_X86)
-    g_ExceptionEIP = (PVOID)transitionBlock->m_ReturnAddress;
-#endif // defined(_DEBUG) && defined(TARGET_X86)
-
-    if (oref == 0)
-        COMPlusThrow(kNullReferenceException);
-    else
-    if (!IsException(oref->GetMethodTable()))
-    {
-        GCPROTECT_BEGIN(oref);
-
-        WrapNonCompliantException(&oref);
-
-        GCPROTECT_END();
-    }
-    else
-    {   // We know that the object derives from System.Exception
-
-        // If the flag indicating ForeignExceptionRaise has been set,
-        // then do not clear the "_stackTrace" field of the exception object.
-        if (GetThread()->GetExceptionState()->IsRaisingForeignException())
-        {
-            ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
-        }
-        else
-        {
-            ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
-        }
-    }
-
-    RaiseTheExceptionInternalOnly(oref, FALSE);
-
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-#else // FEATURE_EH_FUNCLETS
-    PORTABILITY_ASSERT("IL_Throw");
-#endif // FEATURE_EH_FUNCLETS
 
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
@@ -871,62 +793,28 @@ HCIMPLEND
 
 /*************************************************************/
 
-#if defined(TARGET_X86)
 EXTERN_C FCDECL0(void, IL_Rethrow);
-EXTERN_C HCIMPL1(void, IL_Rethrow_x86, TransitionBlock* transitionBlock)
-#else
-HCIMPL0(void, IL_Rethrow)
-#endif
+EXTERN_C HCIMPL1(void, IL_Rethrow_Impl, TransitionBlock* transitionBlock)
 {
     FCALL_CONTRACT;
 
     Thread *pThread = GetThread();
 
     SoftwareExceptionFrame exceptionFrame;
-#ifdef TARGET_X86
     exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
-#else
-    RtlCaptureContext(exceptionFrame.GetContext());
-#endif
     exceptionFrame.InitAndLink(pThread);
 
     FC_CAN_TRIGGER_GC();
 
-#ifdef FEATURE_EH_FUNCLETS
     DispatchRethrownManagedException(exceptionFrame.GetContext());
-#elif defined(TARGET_X86)
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-    OBJECTREF throwable = GetThread()->GetThrowable();
-    if (throwable != NULL)
-    {
-        RaiseTheExceptionInternalOnly(throwable, TRUE);
-    }
-    else
-    {
-        // This can only be the result of bad IL (or some internal EE failure).
-        _ASSERTE(!"No throwable on rethrow");
-        RealCOMPlusThrow(kInvalidProgramException, (UINT)IDS_EE_RETHROW_NOT_ALLOWED);
-    }
-
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-#else // FEATURE_EH_FUNCLETS
-    PORTABILITY_ASSERT("IL_Rethrow");
-#endif // FEATURE_EH_FUNCLETS
 
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
 }
 HCIMPLEND
 
-#if defined(TARGET_X86)
 EXTERN_C FCDECL1(void, IL_ThrowExact,  Object* obj);
-EXTERN_C HCIMPL2(void, IL_ThrowExact_x86,  Object* obj, TransitionBlock* transitionBlock)
-#else
-HCIMPL1(void, IL_ThrowExact, Object* obj)
-#endif
+EXTERN_C HCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transitionBlock)
 {
     FCALL_CONTRACT;
 
@@ -939,37 +827,42 @@ HCIMPL1(void, IL_ThrowExact, Object* obj)
     Thread *pThread = GetThread();
 
     SoftwareExceptionFrame exceptionFrame;
-#ifdef TARGET_X86
     exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
-#else
-    RtlCaptureContext(exceptionFrame.GetContext());
-#endif
     exceptionFrame.InitAndLink(pThread);
 
     FC_CAN_TRIGGER_GC();
 
-#ifdef FEATURE_EH_FUNCLETS
     DispatchManagedException(oref, exceptionFrame.GetContext());
-#elif defined(TARGET_X86)
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-#if defined(_DEBUG) && defined(TARGET_X86)
-    g_ExceptionEIP = (PVOID)transitionBlock->m_ReturnAddress;
-#endif // defined(_DEBUG) && defined(TARGET_X86)
-
-    RaiseTheExceptionInternalOnly(oref, FALSE);
-
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-#else // FEATURE_EH_FUNCLETS
-    PORTABILITY_ASSERT("IL_ThrowExact");
-#endif // FEATURE_EH_FUNCLETS
 
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
 }
 HCIMPLEND
+
+#ifdef TARGET_WASM
+// WASM doesn't have assembly stubs, so provide thin wrapper entry points
+// that call the _Impl functions with NULL (which zeros the context)
+HCIMPL1(void, IL_Throw, Object* obj)
+{
+    FCALL_CONTRACT;
+    IL_Throw_Impl(obj, NULL);
+}
+HCIMPLEND
+
+HCIMPL0(void, IL_Rethrow)
+{
+    FCALL_CONTRACT;
+    IL_Rethrow_Impl(NULL);
+}
+HCIMPLEND
+
+HCIMPL1(void, IL_ThrowExact, Object* obj)
+{
+    FCALL_CONTRACT;
+    IL_ThrowExact_Impl(obj, NULL);
+}
+HCIMPLEND
+#endif // TARGET_WASM
 
 #ifndef STATUS_STACK_BUFFER_OVERRUN  // Not defined yet in CESDK includes
 # define STATUS_STACK_BUFFER_OVERRUN      ((NTSTATUS)0xC0000409L)
@@ -1034,6 +927,20 @@ HCIMPL0(void, JIT_FailFast)
     DoJITFailFast ();
 }
 HCIMPLEND
+
+// FailFast if a method marked UnmanagedCallersOnlyAttribute is
+// invoked directly from managed code. UMThunkStub.asm check the
+// mode and call this function to failfast.
+void ReversePInvokeBadTransition()
+{
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    // Fail
+    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
+                                             COR_E_EXECUTIONENGINE,
+                                             W("Invalid Program: attempted to call a UnmanagedCallersOnly method from managed code.")
+                                            );
+}
 
 //========================================================================
 //
@@ -1176,7 +1083,7 @@ void JIT_PInvokeEndRarePath()
 }
 
 /*************************************************************/
-// For an inlined N/Direct call (and possibly for other places that need this service)
+// For an inlined PInvoke call (and possibly for other places that need this service)
 // we have noticed that the returning thread should trap for one reason or another.
 // ECall sets up the frame.
 
@@ -1717,95 +1624,61 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
         pThread->UnhijackThread();
 #endif
 
-        // Find context for the original method
         CONTEXT *pFrameContext = NULL;
+        UINT_PTR currentSP;
+        UINT_PTR currentFP;
+
+        // Build CONTEXT directly from TransitionBlock
+        CONTEXT frameContext;
+        memset(&frameContext, 0, sizeof(frameContext));
+        pFrameContext = &frameContext;
+
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-        DWORD contextSize = 0;
-        ULONG64 xStateCompactionMask = 0;
-        DWORD contextFlags = CONTEXT_FULL;
+        // Handle extended context for shadow stacks if enabled
+        CONTEXT* pAllocatedContext = NULL;
         if (Thread::AreShadowStacksEnabled())
         {
-            xStateCompactionMask = XSTATE_MASK_CET_U;
-            contextFlags |= CONTEXT_XSTATE;
+            DWORD contextSize = 0;
+            ULONG64 xStateCompactionMask = XSTATE_MASK_CET_U;
+            DWORD contextFlags = CONTEXT_FULL | CONTEXT_XSTATE;
+
+            // The initialize call should fail but return contextSize
+            BOOL success = g_pfnInitializeContext2 ?
+                g_pfnInitializeContext2(NULL, contextFlags, NULL, &contextSize, xStateCompactionMask) :
+                InitializeContext(NULL, contextFlags, NULL, &contextSize);
+
+            _ASSERTE(!success && (GetLastError() == ERROR_INSUFFICIENT_BUFFER));
+
+            PVOID pBuffer = _alloca(contextSize);
+            success = g_pfnInitializeContext2 ?
+                g_pfnInitializeContext2(pBuffer, contextFlags, &pAllocatedContext, &contextSize, xStateCompactionMask) :
+                InitializeContext(pBuffer, contextFlags, &pAllocatedContext, &contextSize);
+            _ASSERTE(success);
+
+            pFrameContext = pAllocatedContext;
         }
+#endif
 
-        // The initialize call should fail but return contextSize
-        BOOL success = g_pfnInitializeContext2 ?
-            g_pfnInitializeContext2(NULL, contextFlags, NULL, &contextSize, xStateCompactionMask) :
-            InitializeContext(NULL, contextFlags, NULL, &contextSize);
-
-        _ASSERTE(!success && (GetLastError() == ERROR_INSUFFICIENT_BUFFER));
-
-        PVOID pBuffer = _alloca(contextSize);
-        success = g_pfnInitializeContext2 ?
-            g_pfnInitializeContext2(pBuffer, contextFlags, &pFrameContext, &contextSize, xStateCompactionMask) :
-            InitializeContext(pBuffer, contextFlags, &pFrameContext, &contextSize);
-        _ASSERTE(success);
-#else // TARGET_WINDOWS && TARGET_AMD64
-        CONTEXT frameContext;
-        frameContext.ContextFlags = CONTEXT_FULL;
-        pFrameContext = &frameContext;
-#endif // TARGET_WINDOWS && TARGET_AMD64
-
-        // Find context for the original method
-        RtlCaptureContext(pFrameContext);
+        // Use the shared helper to populate the CONTEXT from TransitionBlock
+        SoftwareExceptionFrame::UpdateContextForOSRTransition(pTransitionBlock, pFrameContext, &currentSP, &currentFP);
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
         if (Thread::AreShadowStacksEnabled())
         {
             pFrameContext->ContextFlags |= CONTEXT_XSTATE;
-            SetXStateFeaturesMask(pFrameContext, xStateCompactionMask);
+            SetXStateFeaturesMask(pFrameContext, XSTATE_MASK_CET_U);
             SetSSP(pFrameContext, _rdsspq());
+
+            DWORD64 ssp = GetSSP(pFrameContext);
+            if (ssp != 0)
+            {
+                SetSSP(pFrameContext, ssp - 8);  // Simulate call pushing shadow stack
+            }
         }
-#endif // TARGET_WINDOWS && TARGET_AMD64
-
-        // Walk back to the original method frame
-        pThread->VirtualUnwindToFirstManagedCallFrame(pFrameContext);
-
-        // Remember original method FP and SP because new method will inherit them.
-        UINT_PTR currentSP = GetSP(pFrameContext);
-        UINT_PTR currentFP = GetFP(pFrameContext);
-
-        // We expect to be back at the right IP
-        if ((UINT_PTR)ip != GetIP(pFrameContext))
-        {
-            // Should be fatal
-            STRESS_LOG2(LF_TIEREDCOMPILATION, LL_FATALERROR, "Jit_Patchpoint: patchpoint (0x%p) TRANSITION"
-                " unexpected context IP 0x%p\n", ip, GetIP(pFrameContext));
-            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-        }
-
-        // Now unwind back to the original method caller frame.
-        EECodeInfo callerCodeInfo(GetIP(pFrameContext));
-        ULONG_PTR establisherFrame = 0;
-        PVOID handlerData = NULL;
-        RtlVirtualUnwind(UNW_FLAG_NHANDLER, callerCodeInfo.GetModuleBase(), GetIP(pFrameContext), callerCodeInfo.GetFunctionEntry(),
-            pFrameContext, &handlerData, &establisherFrame, NULL);
-
-        // Now, set FP and SP back to the values they had just before this helper was called,
-        // since the new method must have access to the original method frame.
-        //
-        // TODO: if we access the patchpointInfo here, we can read out the FP-SP delta from there and
-        // use that to adjust the stack, likely saving some stack space.
-
-#if defined(TARGET_AMD64)
-        // If calls push the return address, we need to simulate that here, so the OSR
-        // method sees the "expected" SP misalgnment on entry.
-        _ASSERTE(currentSP % 16 == 0);
-        currentSP -= 8;
-
-#if defined(TARGET_WINDOWS)
-        DWORD64 ssp = GetSSP(pFrameContext);
-        if (ssp != 0)
-        {
-            SetSSP(pFrameContext, ssp - 8);
-        }
-#endif // TARGET_WINDOWS
-
-        pFrameContext->Rbp = currentFP;
-#endif // TARGET_AMD64
+#endif
 
         SetSP(pFrameContext, currentSP);
+        SetFP(pFrameContext, currentFP);
 
         // Note we can get here w/o triggering, if there is an existing OSR method and
         // we hit the patchpoint.
@@ -1878,8 +1751,8 @@ FORCEINLINE static bool CheckSample(T* pIndex, size_t* sampleIndex)
 {
     const unsigned S = ICorJitInfo::HandleHistogram32::SIZE;
     const unsigned N = ICorJitInfo::HandleHistogram32::SAMPLE_INTERVAL;
-    static_assert_no_msg(N >= S);
-    static_assert_no_msg((std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
+    static_assert(N >= S);
+    static_assert((std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
 
     // If table is not yet full, just add entries in
     // and increment the table index.
@@ -2295,15 +2168,31 @@ Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame)
 EXTERN_C void JIT_PInvokeBegin(InlinedCallFrame* pFrame);
 EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame);
 
-// Forward declaration
-EXTERN_C void STDCALL ReversePInvokeBadTransition();
+#ifdef DEBUGGING_SUPPORTED
+void DebuggerTraceCall(void* returnAddr, void* thunkDataMaybe)
+{
+    _ASSERTE(CORDebuggerTraceCall());
+    _ASSERTE(returnAddr != NULL);
 
-#ifndef FEATURE_EH_FUNCLETS
-EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
-#endif
+    const BYTE* addr;
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    addr = (const BYTE*)returnAddr;
+    _ASSERTE(thunkDataMaybe == NULL); // Should not be used with portable entrypoints
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+    addr = (thunkDataMaybe != NULL) ? (const BYTE*)((UMEntryThunkData*)thunkDataMaybe)->GetManagedTarget() : (const BYTE*)returnAddr;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+    // If the debugger is attached, we use this opportunity to see if
+    // we're disabling preemptive GC on the way into the runtime from
+    // unmanaged code. We end up here because
+    // Increment/DecrementTraceCallCount() will bump
+    // g_TrapReturningThreads for us.
+    g_pDebugInterface->TraceCall(addr);
+}
+#endif // DEBUGGING_SUPPORTED
 
 // This is a slower version of the reverse PInvoke enter function.
-NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame, void* returnAddr, UMEntryThunkData* pUMEntryThunkData = NULL)
+NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame, void* returnAddr, void* thunkDataMaybe = NULL)
 {
     _ASSERTE(frame != NULL);
 
@@ -2326,27 +2215,17 @@ NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame, voi
 
     thread->DisablePreemptiveGC();
 #ifdef DEBUGGING_SUPPORTED
-    // If the debugger is attached, we use this opportunity to see if
-    // we're disabling preemptive GC on the way into the runtime from
-    // unmanaged code. We end up here because
-    // Increment/DecrementTraceCallCount() will bump
-    // g_TrapReturningThreads for us.
     if (CORDebuggerTraceCall())
-        g_pDebugInterface->TraceCall(pUMEntryThunkData ? (const BYTE*)pUMEntryThunkData->GetManagedTarget() : (const BYTE*)returnAddr);
+        DebuggerTraceCall(returnAddr, thunkDataMaybe);
 #endif // DEBUGGING_SUPPORTED
 }
 
-NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, void* returnAddr, UMEntryThunkData* pUMEntryThunkData = NULL)
+NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, void* returnAddr, void* thunkDataMaybe = NULL)
 {
     frame->currentThread->RareDisablePreemptiveGC();
 #ifdef DEBUGGING_SUPPORTED
-    // If the debugger is attached, we use this opportunity to see if
-    // we're disabling preemptive GC on the way into the runtime from
-    // unmanaged code. We end up here because
-    // Increment/DecrementTraceCallCount() will bump
-    // g_TrapReturningThreads for us.
     if (CORDebuggerTraceCall())
-        g_pDebugInterface->TraceCall(pUMEntryThunkData ? (const BYTE*)pUMEntryThunkData->GetManagedTarget() : (const BYTE*)returnAddr);
+        DebuggerTraceCall(returnAddr, thunkDataMaybe);
 #endif // DEBUGGING_SUPPORTED
 }
 
@@ -2355,15 +2234,14 @@ NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, vo
 // We may not have a managed thread set up in JIT_ReversePInvokeEnter, and the GC mode may be incorrect.
 // On x86, SEH handlers are set up and torn down explicitly, so we avoid using dynamic contracts.
 // This method uses the correct calling convention and argument layout manually, without relying on standard macros or contracts.
-HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* frame, MethodDesc* pMD, UMEntryThunkData* pUMEntryThunkData)
+HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* frame, MethodDesc* pMD, void* thunkDataMaybe)
 {
     _ASSERTE(frame != NULL && pMD != NULL);
-    _ASSERTE(!pMD->IsILStub() || pUMEntryThunkData != NULL);
+    _ASSERTE(!pMD->IsILStub() || thunkDataMaybe != NULL);
 
-    if (pUMEntryThunkData != NULL)
-    {
-        pMD = pUMEntryThunkData->GetMethod();
-    }
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+    pMD = (thunkDataMaybe != NULL) ? ((UMEntryThunkData*)thunkDataMaybe)->GetMethod() : pMD;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
     frame->pMD = pMD;
 
     Thread* thread = GetThreadNULLOk();
@@ -2388,25 +2266,19 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
         {
             // If we're in an IL stub, we want to trace the address of the target method,
             // not the next instruction in the stub.
-            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), pUMEntryThunkData);
+            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), thunkDataMaybe);
         }
     }
     else
     {
         // If we're in an IL stub, we want to trace the address of the target method,
         // not the next instruction in the stub.
-        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), pUMEntryThunkData);
+        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), thunkDataMaybe);
     }
 
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-#ifndef FEATURE_EH_FUNCLETS
-    frame->record.m_pEntryFrame = frame->currentThread->GetFrame();
-    frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
-    INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
-#else
     frame->m_ExReg.Handler = (PEXCEPTION_ROUTINE)ProcessCLRException;
     INSTALL_SEH_RECORD(&frame->m_ExReg);
-#endif
 #endif
 }
 HCIMPLEND_RAW
@@ -2437,14 +2309,8 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
     }
 
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-#ifndef FEATURE_EH_FUNCLETS
-    frame->record.m_pEntryFrame = frame->currentThread->GetFrame();
-    frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
-    INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
-#else
     frame->m_ExReg.Handler = (PEXCEPTION_ROUTINE)ProcessCLRException;
     INSTALL_SEH_RECORD(&frame->m_ExReg);
-#endif
 #endif
 }
 HCIMPLEND_RAW
@@ -2460,11 +2326,7 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* f
     frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
 
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-#ifndef FEATURE_EH_FUNCLETS
-    UNINSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
-#else
     UNINSTALL_SEH_RECORD(&frame->m_ExReg);
-#endif
 #endif
 
 #ifdef PROFILING_SUPPORTED
@@ -2487,18 +2349,16 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
     frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
 
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-#ifndef FEATURE_EH_FUNCLETS
-    UNINSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
-#else
     UNINSTALL_SEH_RECORD(&frame->m_ExReg);
-#endif
 #endif
 }
 HCIMPLEND_RAW
 
-// These two do take args but have a custom calling convention.
+// These do take args but have a custom calling convention.
 EXTERN_C void JIT_ValidateIndirectCall();
 EXTERN_C void JIT_DispatchIndirectCall();
+
+EXTERN_C void JIT_InterfaceLookupForSlot();
 
 //========================================================================
 //
@@ -2511,28 +2371,35 @@ enum __CorInfoHelpFunc {
 #define JITHELPER(code, pfnHelper, sig) __##code,
 #include "jithelpers.h"
 };
-#define JITHELPER(code, pfnHelper, sig) C_ASSERT((int)__##code == (int)code);
+#define JITHELPER(code, pfnHelper, sig) static_assert((int)__##code == (int)code);
 #include "jithelpers.h"
 
 #ifdef _DEBUG
-#define HELPERDEF(code, lpv, sig) { (LPVOID)(lpv), #code },
+#define HELPERDEF(code, lpv, isDynamicHelper) { (PCODE)(lpv), #code, isDynamicHelper },
+#elif defined(TARGET_WASM)
+#define HELPERDEF(code, lpv, isDynamicHelper) { (PCODE)(lpv), isDynamicHelper },
 #else // !_DEBUG
-#define HELPERDEF(code, lpv, sig) { (LPVOID)(lpv) },
+#define HELPERDEF(code, lpv, isDynamicHelper) { (PCODE)(lpv) },
 #endif // !_DEBUG
 
 // static helpers - constant array
 const VMHELPDEF hlpFuncTable[CORINFO_HELP_COUNT] =
 {
-#define JITHELPER(code, pfnHelper, binderId) HELPERDEF(code, pfnHelper, binderId)
-#define DYNAMICJITHELPER(code, pfnHelper, binderId) HELPERDEF(code, 1 + DYNAMIC_##code, binderId)
+#define JITHELPER(code, pfnHelper, binderId) HELPERDEF(code, pfnHelper, false)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) HELPERDEF(code, 1 + DYNAMIC_##code, true)
 #include "jithelpers.h"
 };
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+// Collection of entry points for JIT helpers
+PCODE hlpFuncEntryPoints[CORINFO_HELP_COUNT] = {};
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 // dynamic helpers - filled in at runtime - See definition of DynamicCorInfoHelpFunc.
 VMHELPDEF hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_COUNT] =
 {
 #define JITHELPER(code, pfnHelper, binderId)
-#define DYNAMICJITHELPER(code, pfnHelper, binderId) HELPERDEF(DYNAMIC_ ## code, pfnHelper, binderId)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) HELPERDEF(DYNAMIC_##code, pfnHelper, true)
 #include "jithelpers.h"
 };
 
@@ -2543,6 +2410,34 @@ static const BinderMethodID hlpDynamicToBinderMap[DYNAMIC_CORINFO_HELP_COUNT] =
 #define DYNAMICJITHELPER(code, pfnHelper, binderId) (pfnHelper != NULL) ? (BinderMethodID)METHOD__NIL : (BinderMethodID)binderId, // If pre-compiled code is provided for a jit helper, prefer that over the IL implementation
 #include "jithelpers.h"
 };
+
+bool VMHELPDEF::IsDynamicHelper(DynamicCorInfoHelpFunc* dynamicFtnNum) const
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(dynamicFtnNum != nullptr);
+
+    size_t dynamicFtnNumMaybe = (size_t)pfnHelper - 1;
+
+    bool isDynamic;
+#ifdef TARGET_WASM
+    // Functions on Wasm are ordinal values, not memory addresses.
+    // On Wasm, we need some metadata to indicate whether the helper is a dynamic helper.
+    isDynamic = _isDynamicHelper;
+#else // !TARGET_WASM
+    // If pfnHelper is an index into the dynamic helper table, it should be less
+    // than DYNAMIC_CORINFO_HELP_COUNT.
+    isDynamic = (dynamicFtnNumMaybe < DYNAMIC_CORINFO_HELP_COUNT);
+#endif // TARGET_WASM
+
+#if defined(_DEBUG) || defined(TARGET_WASM)
+    _ASSERTE(isDynamic == _isDynamicHelper);
+#endif // _DEBUG || TARGET_WASM
+
+    if (isDynamic)
+        *dynamicFtnNum = (DynamicCorInfoHelpFunc)dynamicFtnNumMaybe;
+
+    return isDynamic;
+}
 
 // Set the JIT helper function in the helper table
 // Handles the case where the function does not reside in mscorwks.dll
@@ -2561,18 +2456,18 @@ void _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc)
     LOG((LF_JIT, LL_INFO1000000, "Setting JIT dynamic helper %3d (%s) to %p\n",
         ftnNum, hlpDynamicFuncTable[ftnNum].name, pFunc));
 
-    hlpDynamicFuncTable[ftnNum].pfnHelper = (void*)pFunc;
+    hlpDynamicFuncTable[ftnNum].pfnHelper = (PCODE)pFunc;
 }
 
-VMHELPDEF LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDesc)
+PCODE LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum)
 {
     STANDARD_VM_CONTRACT;
 
     _ASSERTE(ftnNum < DYNAMIC_CORINFO_HELP_COUNT);
 
     MethodDesc* pMD = NULL;
-    void* helper = VolatileLoad(&hlpDynamicFuncTable[ftnNum].pfnHelper);
-    if (helper == NULL)
+    PCODE helper = VolatileLoad(&hlpDynamicFuncTable[ftnNum].pfnHelper);
+    if (helper == (PCODE)NULL)
     {
         BinderMethodID binderId = hlpDynamicToBinderMap[ftnNum];
 
@@ -2584,32 +2479,26 @@ VMHELPDEF LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** metho
 
         pMD = CoreLibBinder::GetMethod(binderId);
         PCODE pFunc = pMD->GetMultiCallableAddrOfCode();
-        InterlockedCompareExchangeT<void*>(&hlpDynamicFuncTable[ftnNum].pfnHelper, (void*)pFunc, nullptr);
+        InterlockedCompareExchangeT<PCODE>(&hlpDynamicFuncTable[ftnNum].pfnHelper, (PCODE)pFunc, (PCODE)NULL);
     }
 
-    // If the caller wants the MethodDesc, we may need to try and load it.
-    if (methodDesc != NULL)
-    {
-        if (pMD == NULL)
-        {
-            BinderMethodID binderId = hlpDynamicToBinderMap[ftnNum];
-            pMD = binderId != METHOD__NIL
-                ? CoreLibBinder::GetMethod(binderId)
-                : NULL;
-        }
-        *methodDesc = pMD;
-    }
-
-    return hlpDynamicFuncTable[ftnNum];
+    return hlpDynamicFuncTable[ftnNum].pfnHelper;
 }
 
 bool HasILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum)
 {
-    STANDARD_VM_CONTRACT;
+    LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(ftnNum < DYNAMIC_CORINFO_HELP_COUNT);
 
     return (METHOD__NIL != hlpDynamicToBinderMap[ftnNum]);
+}
+
+MethodDesc* GetMethodDescForILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(HasILBasedDynamicJitHelper(ftnNum));
+    return CoreLibBinder::GetMethod(hlpDynamicToBinderMap[ftnNum]);
 }
 
 bool IndirectionAllowedForJitHelper(CorInfoHelpFunc ftnNum)

@@ -16,8 +16,9 @@ internal static class Entrypoints
     private static unsafe int Init(
         ulong descriptor,
         delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget,
+        delegate* unmanaged<ulong, byte*, uint, void*, int> writeToTarget,
         delegate* unmanaged<uint, uint, uint, byte*, void*, int> readThreadContext,
-        void* readContext,
+        void* delegateContext,
         IntPtr* handle)
     {
         // TODO: [cdac] Better error code/details
@@ -27,16 +28,24 @@ internal static class Entrypoints
             {
                 fixed (byte* bufferPtr = buffer)
                 {
-                    return readFromTarget(address, bufferPtr, (uint)buffer.Length, readContext);
+                    return readFromTarget(address, bufferPtr, (uint)buffer.Length, delegateContext);
+                }
+            },
+            (address, buffer) =>
+            {
+                fixed (byte* bufferPtr = buffer)
+                {
+                    return writeToTarget(address, bufferPtr, (uint)buffer.Length, delegateContext);
                 }
             },
             (threadId, contextFlags, buffer) =>
             {
                 fixed (byte* bufferPtr = buffer)
                 {
-                    return readThreadContext(threadId, contextFlags, (uint)buffer.Length, bufferPtr, readContext);
+                    return readThreadContext(threadId, contextFlags, (uint)buffer.Length, bufferPtr, delegateContext);
                 }
             },
+            [],
             out ContractDescriptorTarget? target))
             return -1;
 
@@ -124,6 +133,14 @@ internal static class Entrypoints
                     return dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, &bytesRead);
                 }
             },
+            (address, buffer) =>
+            {
+                fixed (byte* bufferPtr = buffer)
+                {
+                    uint bytesWritten;
+                    return dataTarget.WriteVirtual(address, bufferPtr, (uint)buffer.Length, &bytesWritten);
+                }
+            },
             (threadId, contextFlags, bufferToFill) =>
             {
                 fixed (byte* bufferPtr = bufferToFill)
@@ -131,6 +148,7 @@ internal static class Entrypoints
                     return dataTarget.GetThreadContext(threadId, contextFlags, (uint)bufferToFill.Length, bufferPtr);
                 }
             },
+            [],
             out ContractDescriptorTarget? target))
         {
             return -1;

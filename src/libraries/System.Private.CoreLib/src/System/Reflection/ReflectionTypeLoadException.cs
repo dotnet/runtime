@@ -20,7 +20,7 @@ namespace System.Reflection
         public ReflectionTypeLoadException(Type?[]? classes, Exception?[]? exceptions, string? message)
             : base(message)
         {
-            Types = classes ?? Type.EmptyTypes;
+            Types = classes ?? [];
             LoaderExceptions = exceptions ?? Array.Empty<Exception>();
             HResult = HResults.COR_E_REFLECTIONTYPELOAD;
         }
@@ -29,7 +29,7 @@ namespace System.Reflection
         private ReflectionTypeLoadException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            Types = Type.EmptyTypes;
+            Types = [];
             LoaderExceptions = (Exception?[]?)info.GetValue("Exceptions", typeof(Exception[])) ?? Array.Empty<Exception?>();
         }
 

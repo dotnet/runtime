@@ -2535,6 +2535,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo3(FunctionID functionId,
         if (SUCCEEDED(hr))
         {
             PCODE pCodeStart = (PCODE)NULL;
+#ifdef FEATURE_CODE_VERSIONING
             CodeVersionManager* pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
             {
                 ILCodeVersion ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMethodDesc, reJitId);
@@ -2549,6 +2550,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo3(FunctionID functionId,
                     break;
                 }
             }
+#endif // FEATURE_CODE_VERSIONING
 
             hr = GetCodeInfoFromCodeStart(pCodeStart,
                                           cCodeInfos,
@@ -4919,6 +4921,7 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping2(FunctionID functionId,
         else
         {
             PCODE pCodeStart = (PCODE)NULL;
+#ifdef FEATURE_CODE_VERSIONING
             CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
             ILCodeVersion ilCodeVersion = NULL;
             {
@@ -4934,6 +4937,7 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping2(FunctionID functionId,
                     break;
                 }
             }
+#endif // FEATURE_CODE_VERSIONING
 
             hr = GetILToNativeMapping3(pCodeStart, cMap, pcMap, map);
         }
@@ -6439,6 +6443,7 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
         ULONG32 trueLen = 0;
         StackSArray<UINT_PTR> addresses;
 
+#ifdef FEATURE_CODE_VERSIONING
         CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
 
         ILCodeVersion ilCodeVersion = NULL;
@@ -6459,6 +6464,7 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
                 }
             }
         }
+#endif // FEATURE_CODE_VERSIONING
 
         if (pcCodeStartAddresses != NULL)
         {
@@ -8016,10 +8022,7 @@ typedef struct _PROFILER_STACK_WALK_DATA
     ULONG32 infoFlags;
     ULONG32 contextFlags;
     void *clientData;
-
-#ifdef FEATURE_EH_FUNCLETS
     StackFrame sfParent;
-#endif
 } PROFILER_STACK_WALK_DATA;
 
 
@@ -8051,7 +8054,6 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     CONTEXT builtContext;
 #endif
 
-#ifdef FEATURE_EH_FUNCLETS
     //
     // Skip all managed exception handling functions
     //
@@ -8062,7 +8064,6 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     {
         return SWA_CONTINUE;
     }
-#endif // FEATURE_EH_FUNCLETS
 
     //
     // For Unmanaged-to-managed transitions we get a NativeMarker back, which we want
@@ -8082,19 +8083,17 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
         return SWA_CONTINUE;
     }
 
-#ifdef FEATURE_EH_FUNCLETS
     if (!pCf->IsFrameless() && InlinedCallFrame::FrameHasActiveCall(pCf->GetFrame()))
     {
         // Skip new exception handling helpers
         InlinedCallFrame *pInlinedCallFrame = dac_cast<PTR_InlinedCallFrame>(pCf->GetFrame());
-        PTR_NDirectMethodDesc pMD = pInlinedCallFrame->m_Datum;
+        PTR_PInvokeMethodDesc pMD = pInlinedCallFrame->m_Datum;
         TADDR datum = dac_cast<TADDR>(pMD);
         if ((datum & (TADDR)InlinedCallFrameMarker::Mask) == (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper)
         {
             return SWA_CONTINUE;
         }
     }
-#endif // FEATURE_EH_FUNCLETS
 
     //
     // If this is not a transition of any sort and not a managed
@@ -8871,9 +8870,8 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
     data.infoFlags = infoFlags;
     data.contextFlags = 0;
     data.clientData = clientData;
-#ifdef FEATURE_EH_FUNCLETS
+
     data.sfParent.Clear();
-#endif
 
     // workaround: The ForbidTypeLoad book keeping in the stackwalker is not robust against exceptions.
     // Unfortunately, it is hard to get it right in the stackwalker since it has to be exception
@@ -10666,9 +10664,7 @@ void __stdcall ProfilerUnmanagedToManagedTransitionMD(MethodDesc *pMD,
 // These do a lot of work for us, setting up Frames, gathering arg info and resolving generics.
   //*******************************************************************************************
 
-HCIMPL2_RAW(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecificHandle)
-GCX_COOP_THREAD_EXISTS(GET_THREAD());
-HCIMPL_PROLOG(ProfileEnter)
+HCIMPL2(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecificHandle)
 {
     FCALL_CONTRACT;
 
@@ -10844,11 +10840,11 @@ LExit:
 }
 HCIMPLEND
 
-HCIMPL2_RAW(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecificHandle)
-GCX_COOP();
-HCIMPL_PROLOG(ProfileLeave)
+HCIMPL2(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecificHandle)
 {
     FCALL_CONTRACT;
+
+    GCX_COOP();
 
 #ifdef PROFILING_SUPPORTED
 

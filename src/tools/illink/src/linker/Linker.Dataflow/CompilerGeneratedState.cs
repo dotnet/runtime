@@ -22,8 +22,8 @@ namespace Mono.Linker.Dataflow
         readonly record struct TypeArgumentInfo(
             /// <summary>The method which calls the ctor for the given type</summary>
             MethodDefinition CreatingMethod,
-            /// <summary>Attributes for the type, pulled from the creators type arguments</summary>
-            IReadOnlyList<ICustomAttributeProvider>? OriginalAttributes);
+            /// <summary>Generic parameters of the creator used as type arguments for the type</summary>
+            IList<GenericParameter>? OriginalAttributes);
 
         readonly Dictionary<MethodDefinition, MethodDefinition> _compilerGeneratedMethodToUserCodeMethod;
 
@@ -180,8 +180,8 @@ namespace Mono.Linker.Dataflow
                                 // Find calls to state machine constructors that occur outside the type
                                 if (referencedMethod.IsConstructor &&
                                     referencedMethod.DeclaringType is var generatedType &&
-                                    // Don't consider calls in the same type, like inside a static constructor
-                                    method.DeclaringType != generatedType &&
+                                    // Don't consider calls in the same/nested type, like inside a static constructor
+                                    !IsSameOrNestedType(method.DeclaringType, generatedType) &&
                                     CompilerGeneratedNames.IsLambdaDisplayClass(generatedType.Name))
                                 {
                                     // fill in null for now, attribute providers will be filled in later
@@ -219,8 +219,8 @@ namespace Mono.Linker.Dataflow
                                     continue;
 
                                 if (field.DeclaringType is var generatedType &&
-                                    // Don't consider field accesses in the same type, like inside a static constructor
-                                    method.DeclaringType != generatedType &&
+                                    // Don't consider field accesses in the same/nested type, like inside a static constructor
+                                    !IsSameOrNestedType(method.DeclaringType, generatedType) &&
                                     CompilerGeneratedNames.IsLambdaDisplayClass(generatedType.Name))
                                 {
                                     if (!generatedTypeToTypeArgs.TryAdd(generatedType, new TypeArgumentInfo(method, null)))
@@ -252,6 +252,19 @@ namespace Mono.Linker.Dataflow
                     // Already warned above if multiple methods map to the same type
                     // Fill in null for argument providers now, the real providers will be filled in later
                     generatedTypeToTypeArgs[stateMachineType] = new TypeArgumentInfo(method, null);
+                }
+
+                static bool IsSameOrNestedType(TypeDefinition type, TypeDefinition potentialOuterType)
+                {
+                    do
+                    {
+                        if (type == potentialOuterType)
+                            return true;
+
+                        type = type.DeclaringType;
+                    } while (type != null);
+
+                    return false;
                 }
             }
 
@@ -354,15 +367,15 @@ namespace Mono.Linker.Dataflow
             /// Attempts to reverse the process of the compiler's alpha renaming. So if the original code was
             /// something like this:
             /// <code>
-            /// void M&lt;T&gt; () {
-            ///     Action a = () => { Console.WriteLine (typeof (T)); };
+            /// void M&lt;T&gt;() {
+            ///     Action a = () => { Console.WriteLine(typeof(T)); };
             /// }
             /// </code>
             /// The compiler will generate a nested class like this:
             /// <code>
             /// class &lt;&gt;c__DisplayClass0&lt;T&gt; {
-            ///     public void &lt;M&gt;b__0 () {
-            ///         Console.WriteLine (typeof (T));
+            ///     public void &lt;M&gt;b__0() {
+            ///         Console.WriteLine(typeof(T));
             ///     }
             /// }
             /// </code>
@@ -386,7 +399,7 @@ namespace Mono.Linker.Dataflow
                 var method = typeInfo.CreatingMethod;
                 if (method.Body is { } body)
                 {
-                    var typeArgs = new ICustomAttributeProvider[generatedType.GenericParameters.Count];
+                    var typeArgs = new GenericParameter[generatedType.GenericParameters.Count];
                     var typeRef = ScanForInit(generatedType, body, context);
                     if (typeRef is null)
                     {
@@ -397,7 +410,7 @@ namespace Mono.Linker.Dataflow
                     {
                         var typeArg = typeRef.GenericArguments[i];
                         // Start with the existing parameters, in case we can't find the mapped one
-                        ICustomAttributeProvider userAttrs = generatedType.GenericParameters[i];
+                        GenericParameter userAttrs = generatedType.GenericParameters[i];
                         // The type parameters of the state machine types are alpha renames of the
                         // the method parameters, so the type ref should always be a GenericParameter. However,
                         // in the case of nesting, there may be multiple renames, so if the parameter is a method
@@ -518,9 +531,18 @@ namespace Mono.Linker.Dataflow
         /// Gets the attributes on the "original" method of a generated type, i.e. the
         /// attributes on the corresponding type parameters from the owning method.
         /// </summary>
-        public IReadOnlyList<ICustomAttributeProvider>? GetGeneratedTypeAttributes(TypeDefinition generatedType)
+        public IList<GenericParameter>? GetGeneratedTypeAttributes(TypeDefinition generatedType)
         {
             Debug.Assert(CompilerGeneratedNames.IsStateMachineOrDisplayClass(generatedType.Name));
+
+            // Avoid the heuristics for .NET10+, where DynamicallyAccessedMembers flows to generated code
+            // because it is annotated with CompilerLoweringPreserveAttribute.
+            if (_context.DisableGeneratedCodeHeuristics && generatedType.Module.Assembly.GetTargetFrameworkVersion() >= new Version(10, 0))
+            {
+                // Still run the logic for coverage to help us find bugs, but don't use the result.
+                GetCompilerGeneratedStateForType(generatedType);
+                return null;
+            }
 
             var typeToCache = GetCompilerGeneratedStateForType(generatedType);
             if (typeToCache is null)

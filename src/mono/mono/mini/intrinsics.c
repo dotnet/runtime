@@ -750,6 +750,11 @@ MONO_RESTORE_WARNING
 			}
 		} else if (mini_class_is_simd (cfg, tfrom_klass) && mini_class_is_simd (cfg, tto_klass)) {
 #if TARGET_SIZEOF_VOID_P == 8 || defined(TARGET_WASM)
+#if defined(TARGET_WIN32) && defined(TARGET_AMD64)
+			if (!COMPILE_LLVM (cfg))
+				// FIXME: Fix the register allocation for SIMD on Windows x64
+				return NULL;
+#endif
 			opcode = OP_XCAST;
 			tto_stack = STACK_VTYPE;
 #else

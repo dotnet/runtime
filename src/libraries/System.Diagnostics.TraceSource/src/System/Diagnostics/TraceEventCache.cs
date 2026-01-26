@@ -13,7 +13,6 @@ namespace System.Diagnostics
     {
         private long _timeStamp = -1;
         private DateTime _dateTime = DateTime.MinValue;
-        private string? _stackTrace;
 
         public DateTime DateTime
         {
@@ -51,7 +50,7 @@ namespace System.Diagnostics
             }
         }
 
-        public string Callstack => _stackTrace ??= Environment.StackTrace;
+        public string Callstack => field ??= Environment.StackTrace;
 
         public Stack LogicalOperationStack
         {

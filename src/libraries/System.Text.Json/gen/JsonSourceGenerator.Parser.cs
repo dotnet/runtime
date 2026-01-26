@@ -846,6 +846,11 @@ namespace System.Text.Json.SourceGeneration
                     collectionType = CollectionType.ISet;
                     valueType = actualTypeToConvert.TypeArguments[0];
                 }
+                else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.IReadOnlySetOfTType)) != null)
+                {
+                    collectionType = CollectionType.IReadOnlySetOfT;
+                    valueType = actualTypeToConvert.TypeArguments[0];
+                }
                 else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.ICollectionOfTType)) != null)
                 {
                     collectionType = CollectionType.ICollectionOfT;
@@ -1105,14 +1110,39 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 INamedTypeSymbol? actualDictionaryType = type.GetCompatibleGenericBaseType(_knownSymbols.IDictionaryOfTKeyTValueType);
-                if (actualDictionaryType == null)
+                if (actualDictionaryType != null)
                 {
-                    return false;
+                    if (SymbolEqualityComparer.Default.Equals(actualDictionaryType.TypeArguments[0], _knownSymbols.StringType) &&
+                        (SymbolEqualityComparer.Default.Equals(actualDictionaryType.TypeArguments[1], _knownSymbols.ObjectType) ||
+                         SymbolEqualityComparer.Default.Equals(actualDictionaryType.TypeArguments[1], _knownSymbols.JsonElementType)))
+                    {
+                        return true;
+                    }
                 }
 
-                return SymbolEqualityComparer.Default.Equals(actualDictionaryType.TypeArguments[0], _knownSymbols.StringType) &&
-                        (SymbolEqualityComparer.Default.Equals(actualDictionaryType.TypeArguments[1], _knownSymbols.ObjectType) ||
-                         SymbolEqualityComparer.Default.Equals(actualDictionaryType.TypeArguments[1], _knownSymbols.JsonElementType));
+                // Also check for IReadOnlyDictionary<string, object> or IReadOnlyDictionary<string, JsonElement>
+                // but only if Dictionary can be assigned to it (to exclude ImmutableDictionary and similar types)
+                INamedTypeSymbol? actualReadOnlyDictionaryType = type.GetCompatibleGenericBaseType(_knownSymbols.IReadonlyDictionaryOfTKeyTValueType);
+                if (actualReadOnlyDictionaryType != null)
+                {
+                    if (SymbolEqualityComparer.Default.Equals(actualReadOnlyDictionaryType.TypeArguments[0], _knownSymbols.StringType) &&
+                        (SymbolEqualityComparer.Default.Equals(actualReadOnlyDictionaryType.TypeArguments[1], _knownSymbols.ObjectType) ||
+                         SymbolEqualityComparer.Default.Equals(actualReadOnlyDictionaryType.TypeArguments[1], _knownSymbols.JsonElementType)))
+                    {
+                        // Check if Dictionary can be assigned to this type
+                        INamedTypeSymbol? dictionaryType = SymbolEqualityComparer.Default.Equals(actualReadOnlyDictionaryType.TypeArguments[1], _knownSymbols.ObjectType)
+                            ? _knownSymbols.StringObjectDictionaryType
+                            : _knownSymbols.StringJsonElementDictionaryType;
+
+                        if (dictionaryType != null)
+                        {
+                            Conversion conversion = _knownSymbols.Compilation.ClassifyConversion(dictionaryType, type);
+                            return conversion.IsImplicit || conversion.IsIdentity;
+                        }
+                    }
+                }
+
+                return false;
             }
 
             private PropertyGenerationSpec? ParsePropertyGenerationSpec(
@@ -1547,7 +1577,7 @@ namespace System.Text.Json.SourceGeneration
 
                             var propertyInitializer = new PropertyInitializerGenerationSpec
                             {
-                                Name = property.MemberName,
+                                Name = property.NameSpecifiedInSourceCode,
                                 ParameterType = property.PropertyType,
                                 MatchesConstructorParameter = matchingConstructorParameter is not null,
                                 ParameterIndex = matchingConstructorParameter?.ParameterIndex ?? paramCount++,

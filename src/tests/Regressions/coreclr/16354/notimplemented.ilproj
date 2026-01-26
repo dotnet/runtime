@@ -5,7 +5,9 @@
 
     <!-- Crossgen is not intended to serve as an IL verifier, and is not designed to provide error semantics on bad input. -->
     <CrossGenTest>false</CrossGenTest>
-    
+
+    <!-- https://github.com/dotnet/runtime/issues/111191 -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>    
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="notimplemented.il" />

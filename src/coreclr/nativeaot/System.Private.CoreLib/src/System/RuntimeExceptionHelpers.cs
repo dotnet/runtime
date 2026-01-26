@@ -192,23 +192,49 @@ namespace System
         }
 
         private static ulong s_crashingThreadId;
+        private static IntPtr s_triageBufferAddress;
+        private static int s_triageBufferSize;
+        private static volatile int s_crashInfoPresent;
+
+        internal static void SerializeCrashInfo(RhFailFastReason reason, string? message, Exception? exception)
+        {
+            int previousState = Interlocked.CompareExchange(ref s_crashInfoPresent, -1, 0);
+            if (previousState == 0)
+            {
+                CrashInfo crashInfo = new();
+
+                crashInfo.Open(reason, Thread.CurrentOSThreadId, message ?? GetStringForFailFastReason(reason));
+                if (exception != null)
+                {
+                    crashInfo.WriteException(exception);
+                }
+                crashInfo.Close();
+                s_triageBufferAddress = crashInfo.TriageBufferAddress;
+                s_triageBufferSize = crashInfo.TriageBufferSize;
+
+                s_crashInfoPresent = 1;
+            }
+            else
+            {
+                while (s_crashInfoPresent != 1)
+                {
+                    // Some other thread is generating the crash info
+                    Thread.Sleep(1);
+                }
+            }
+        }
 
         [DoesNotReturn]
         internal static unsafe void FailFast(string? message = null, Exception? exception = null, string? errorSource = null,
             RhFailFastReason reason = RhFailFastReason.EnvironmentFailFast,
             IntPtr pExAddress = 0, IntPtr pExContext = 0)
         {
-            IntPtr triageBufferAddress = IntPtr.Zero;
-            int triageBufferSize = 0;
             int errorCode = 0;
 
             ulong currentThreadId = Thread.CurrentOSThreadId;
             ulong previousThreadId = Interlocked.CompareExchange(ref s_crashingThreadId, currentThreadId, 0);
             if (previousThreadId == 0)
             {
-                CrashInfo crashInfo = new();
-                crashInfo.Open(reason, s_crashingThreadId, message ?? GetStringForFailFastReason(reason));
-
                 bool minimalFailFast = (exception == PreallocatedOutOfMemoryException.Instance);
                 if (!minimalFailFast)
                 {
@@ -264,17 +290,9 @@ namespace System
                         reporter.Report();
                     }
 #endif
+                } // !minimalFailFast
 
-                    if (exception != null)
-                    {
-                        crashInfo.WriteException(exception);
-                    }
-                }
-
-                crashInfo.Close();
-
-                triageBufferAddress = crashInfo.TriageBufferAddress;
-                triageBufferSize = crashInfo.TriageBufferSize;
+                SerializeCrashInfo(reason, message, minimalFailFast ? null : exception);
 
                 // Try to map the failure into a HRESULT that makes sense
                 errorCode = exception != null ? exception.HResult : reason switch
@@ -310,8 +328,8 @@ namespace System
             exceptionRecord.NumberParameters = 4;
             exceptionRecord.ExceptionInformation[0] = FAST_FAIL_EXCEPTION_DOTNET_AOT;
             exceptionRecord.ExceptionInformation[1] = (uint)errorCode;
-            exceptionRecord.ExceptionInformation[2] = (nuint)triageBufferAddress;
-            exceptionRecord.ExceptionInformation[3] = (uint)triageBufferSize;
+            exceptionRecord.ExceptionInformation[2] = (nuint)s_triageBufferAddress;
+            exceptionRecord.ExceptionInformation[3] = (uint)s_triageBufferSize;
 
 #if TARGET_WINDOWS
             Interop.Kernel32.RaiseFailFastException(new IntPtr(&exceptionRecord), pExContext, pExAddress == IntPtr.Zero ? FAIL_FAST_GENERATE_EXCEPTION_ADDRESS : 0);

@@ -126,12 +126,41 @@ namespace System.Globalization.Tests
 
             AssertExtensions.Throws<ArgumentException>("strInput", () => "\uD800\uD800".Normalize()); // Invalid surrogate pair
             AssertExtensions.Throws<ArgumentException>("source", () => "\uD800\uD800".AsSpan().TryNormalize(destination, out int charsWritten)); // Invalid surrogate pair
+
+            char[] overlappingDestination = new char[5] { 'a', 'b', 'c', 'd', 'e' };
+            Assert.Throws<ArgumentException>(() => overlappingDestination.AsSpan().TryNormalize(overlappingDestination.AsSpan(), out int charsWritten, NormalizationForm.FormC));
+            Assert.Throws<ArgumentException>(() => overlappingDestination.AsSpan(0, 3).TryNormalize(overlappingDestination.AsSpan(), out int charsWritten, NormalizationForm.FormC));
+            Assert.Throws<ArgumentException>(() => overlappingDestination.AsSpan(4).TryNormalize(overlappingDestination.AsSpan(), out int charsWritten, NormalizationForm.FormC));
         }
 
         [Fact]
         public void Normalize_Null()
         {
             AssertExtensions.Throws<ArgumentNullException>("strInput", () => StringNormalizationExtensions.Normalize(null));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
+        public void NormalizationForms_ThrowOnNotSupportedPlatforms()
+        {
+            AssertNormalizationFormThrows(NormalizationForm.FormKC);
+            AssertNormalizationFormThrows(NormalizationForm.FormKD);
+        }
+
+        private static void AssertNormalizationFormThrows(NormalizationForm normalizationForm)
+        {
+            foreach (string value in new[] { "ascii", "😊" })
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => value.IsNormalized(normalizationForm));
+                Assert.Throws<PlatformNotSupportedException>(() => value.AsSpan().IsNormalized(normalizationForm));
+                Assert.Throws<PlatformNotSupportedException>(() => value.Normalize(normalizationForm));
+
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                {
+                    Span<char> destination = stackalloc char[32];
+                    value.AsSpan().TryNormalize(destination, out _, normalizationForm);
+                });
+                Assert.Throws<PlatformNotSupportedException>(() => value.AsSpan().GetNormalizedLength(normalizationForm));
+            }
         }
     }
 }

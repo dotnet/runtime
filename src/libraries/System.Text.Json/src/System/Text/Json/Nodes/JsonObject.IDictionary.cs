@@ -32,6 +32,46 @@ namespace System.Text.Json.Nodes
         }
 
         /// <summary>
+        ///   Adds an element with the provided name and value to the <see cref="JsonObject"/>, if a property named <paramref name="propertyName"/> doesn't already exist.
+        /// </summary>
+        /// <param name="propertyName">The property name of the element to add.</param>
+        /// <param name="value">The value of the element to add.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="propertyName"/> is null.</exception>
+        /// <returns>
+        ///   <see langword="true"/> if the property didn't exist and the element was added; otherwise, <see langword="false"/>.
+        /// </returns>
+        public bool TryAdd(string propertyName, JsonNode? value) => TryAdd(propertyName, value, out _);
+
+        /// <summary>
+        ///   Adds an element with the provided name and value to the <see cref="JsonObject"/>, if a property named <paramref name="propertyName"/> doesn't already exist.
+        /// </summary>
+        /// <param name="propertyName">The property name of the element to add.</param>
+        /// <param name="value">The value of the element to add.</param>
+        /// <param name="index">The index of the added or existing <paramref name="propertyName"/>. This is always a valid index into the <see cref="JsonObject"/>.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="propertyName"/> is null.</exception>
+        /// <returns>
+        ///   <see langword="true"/> if the property didn't exist and the element was added; otherwise, <see langword="false"/>.
+        /// </returns>
+        public bool TryAdd(string propertyName, JsonNode? value, out int index)
+        {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+#if NET9_0
+            bool success = Dictionary.TryAdd(propertyName, value);
+            index = success ? Dictionary.Count - 1 : Dictionary.IndexOf(propertyName);
+#else
+            bool success = Dictionary.TryAdd(propertyName, value, out index);
+#endif
+            if (success)
+            {
+                value?.AssignParent(this);
+            }
+            return success;
+        }
+
+        /// <summary>
         ///   Adds the specified property to the <see cref="JsonObject"/>.
         /// </summary>
         /// <param name="property">
@@ -210,26 +250,33 @@ namespace System.Text.Json.Nodes
 
             if (dictionary is null)
             {
-                dictionary = CreateDictionary(Options);
+                OrderedDictionary<string, JsonNode?> newDictionary = CreateDictionary(Options);
 
                 if (jsonElement.HasValue)
                 {
                     foreach (JsonProperty jElementProperty in jsonElement.Value.EnumerateObject())
                     {
                         JsonNode? node = JsonNodeConverter.Create(jElementProperty.Value, Options);
-                        if (node != null)
-                        {
-                            node.Parent = this;
-                        }
+                        node?.Parent = this;
 
-                        dictionary.Add(jElementProperty.Name, node);
+                        newDictionary.Add(jElementProperty.Name, node);
                     }
                 }
 
-                // Ensure _jsonElement is written to after _dictionary
-                _dictionary = dictionary;
-                Interlocked.MemoryBarrier();
-                _jsonElement = null;
+                // Ensure only one dictionary instance is published using CompareExchange
+                OrderedDictionary<string, JsonNode?>? exchangedDictionary = Interlocked.CompareExchange(ref _dictionary, newDictionary, null);
+                if (exchangedDictionary is null)
+                {
+                    // We won the race and published our dictionary
+                    // Ensure _jsonElement is written to after _dictionary
+                    _jsonElement = null;
+                    dictionary = newDictionary;
+                }
+                else
+                {
+                    // Another thread won the race, use their dictionary
+                    dictionary = exchangedDictionary;
+                }
             }
 
             return dictionary;

@@ -56,6 +56,7 @@ ObjectAllocator::ObjectAllocator(Compiler* comp)
     , m_regionsToClone(0)
     , m_trackFields(false)
     , m_StoreAddressToIndexMap(comp->getAllocator(CMK_ObjectAllocator))
+    , m_initialMaxBlockID(comp->compBasicBlockID)
 {
     m_EscapingPointers                = BitVecOps::UninitVal();
     m_PossiblyStackPointingPointers   = BitVecOps::UninitVal();
@@ -1106,6 +1107,13 @@ bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
             return false;
         }
 
+        // Bail out if the array is definitely too large - we don't want to even start building its layout.
+        if (ClassLayoutBuilder::IsArrayTooLarge(comp, clsHnd, (unsigned)length, m_StackAllocMaxSize))
+        {
+            *reason = "[array is too large]";
+            return false;
+        }
+
         ClassLayout* const layout = comp->typGetArrayLayout(clsHnd, (unsigned)length);
         classSize                 = layout->GetSize();
     }
@@ -1324,7 +1332,8 @@ void ObjectAllocator::MorphAllocObjNode(AllocationCandidate& candidate)
     else
     {
         assert(candidate.m_onHeapReason != nullptr);
-        JITDUMP("Allocating V%02u on the heap: %s\n", lclNum, candidate.m_onHeapReason);
+        JITDUMP("Allocating V%02u / [%06u] on the heap: %s\n", lclNum, comp->dspTreeID(candidate.m_tree),
+                candidate.m_onHeapReason);
         if ((candidate.m_allocType == OAT_NEWOBJ) || (candidate.m_allocType == OAT_NEWOBJ_HEAP))
         {
             GenTree* const stmtExpr      = candidate.m_tree;
@@ -1365,6 +1374,70 @@ bool ObjectAllocator::MorphAllocObjNodeHelper(AllocationCandidate& candidate)
     {
         candidate.m_onHeapReason = "[alloc in loop]";
         return false;
+    }
+
+    // Don't stack allocate at sites that were cloned or are clones. These sites now violate
+    // the single assignment assumption used by the escape analysis.
+    //
+    // This is something we can fix by keeping track of which allocation sites are clones
+    // of other sites, and just allocating one var to cover them all.
+    //
+    if (BlockIsCloneOrWasCloned(candidate.m_block))
+    {
+        candidate.m_onHeapReason = "[allocation was cloned]";
+        return false;
+    }
+
+    // If we have done any cloning for conditional escape, verify this allocation
+    // is not on one of the "slow paths" that are now forcibly making interface calls.
+    //
+    for (CloneInfo* const c : CloneMap::ValueIteration(&m_CloneMap))
+    {
+        if (!c->m_willClone)
+        {
+            // We didn't clone so there is no check needed.
+            //
+            continue;
+        }
+
+        if (c->m_guardBlock == nullptr)
+        {
+            // This clone wasn't guarded by a GDV, so we should
+            // only have a fast path.
+            continue;
+        }
+
+        GenTree* const allocTree = candidate.m_tree->AsLclVar()->Data();
+
+        if (c->m_allocTree == allocTree)
+        {
+            // This is the conditionally escaping allocation, so it's
+            // on the fast path.
+            //
+            continue;
+        }
+
+        if (!comp->m_dfsTree->Contains(candidate.m_block))
+        {
+            // If the def block is not in the DFS tree then the allocation
+            // is not within the hammock, so it is not on the slow path.
+            //
+            continue;
+        }
+
+        // This allocation candidate might be on the "slow path". Check.
+        //
+        // c->m_guardBlock and c->m_defBlock form a GDV hammock.
+        //
+        // So if an allocation site is dominated by c->m_guardBlock and
+        // not dominated by c->m_defBlock, it is within the hammock.
+        //
+        if (comp->m_domTree->Dominates(c->m_guardBlock, candidate.m_block) &&
+            !comp->m_domTree->Dominates(c->m_defBlock, candidate.m_block))
+        {
+            candidate.m_onHeapReason = "[on slow path of conditional escape clone]";
+            return false;
+        }
     }
 
     switch (candidate.m_allocType)
@@ -2137,10 +2210,18 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                     switch (comp->lookupNamedIntrinsic(call->gtCallMethHnd))
                     {
                         case NI_System_SpanHelpers_ClearWithoutReferences:
-                        case NI_System_SpanHelpers_Fill:
                         case NI_System_SpanHelpers_Memmove:
                         case NI_System_SpanHelpers_SequenceEqual:
                             canLclVarEscapeViaParentStack = false;
+                            break;
+
+                        case NI_System_SpanHelpers_Fill:
+                            // For Fill only the first (byref span) arg does not escape
+                            //
+                            if (tree == call->gtArgs.GetUserArgByIndex(0)->GetNode())
+                            {
+                                canLclVarEscapeViaParentStack = false;
+                            }
                             break;
 
                         default:
@@ -2374,11 +2455,30 @@ void ObjectAllocator::UpdateAncestorTypes(
                 {
                     assert(tree == parent->AsIndir()->Data());
 
-                    // If we are storing to a GC struct field, we may need to retype the store
-                    //
                     if (varTypeIsGC(parent->TypeGet()))
                     {
-                        parent->ChangeType(newType);
+                        // We are storing a non-struct value, possibly to a struct field.
+                        //
+                        // See if we can figure out the field type from the address.
+                        // It might be TYP_BYREF even if the value we are storing is TYP_I_IMPL.
+                        //
+                        StoreInfo* const info       = m_StoreAddressToIndexMap.LookupPointer(parent);
+                        bool             wasRetyped = false;
+
+                        if (info != nullptr)
+                        {
+                            unsigned const addressIndex = info->m_index;
+                            if ((addressIndex != BAD_VAR_NUM) && !DoesIndexPointToStack(addressIndex))
+                            {
+                                parent->ChangeType(TYP_BYREF);
+                                wasRetyped = true;
+                            }
+                        }
+
+                        if (!wasRetyped)
+                        {
+                            parent->ChangeType(newType);
+                        }
                     }
                     else if (retypeFields && parent->OperIs(GT_STORE_BLK))
                     {
@@ -3317,102 +3417,89 @@ void ObjectAllocator::CheckForGuardedAllocationOrCopy(BasicBlock* block,
     //
     if (data->OperIs(GT_ALLOCOBJ))
     {
-        // See if this store is made under a successful GDV test.
+        // This may be an allocation of a concrete class under GDV.
         //
-        GuardInfo controllingGDV;
-        if (IsGuarded(block, tree, &controllingGDV, /* testOutcome */ true))
+        // Find the local that will ultimately represent its uses (we have kept track of
+        // this during importation and GDV expansion). Note it is usually *not* lclNum.
+        //
+        // We will keep special track of all accesses to this local.
+        //
+        Compiler::NodeToUnsignedMap* const map             = comp->getImpEnumeratorGdvLocalMap();
+        unsigned                           enumeratorLocal = BAD_VAR_NUM;
+        if (map->Lookup(data, &enumeratorLocal))
         {
-            // This is the allocation of concrete class under GDV.
+            // If it turns out we can't stack allocate this new object even if it does not escape,
+            // then don't bother setting up tracking. Note length here is just set to a nominal
+            // value that won't cause failure. We will do the real length check later if we decide to allocate.
             //
-            // Find the local that will ultimately represent its uses (we have kept track of
-            // this during importation and GDV expansion). Note it is usually *not* lclNum.
-            //
-            // We will keep special track of all accesses to this local.
-            //
-            Compiler::NodeToUnsignedMap* const map             = comp->getImpEnumeratorGdvLocalMap();
-            unsigned                           enumeratorLocal = BAD_VAR_NUM;
-            if (map->Lookup(data, &enumeratorLocal))
+            CORINFO_CLASS_HANDLE clsHnd = data->AsAllocObj()->gtAllocObjClsHnd;
+            const char*          reason = nullptr;
+            unsigned             size   = 0;
+            unsigned             length = TARGET_POINTER_SIZE;
+            ObjectAllocationType oat    = AllocationKind(data);
+            if (CanAllocateLclVarOnStack(enumeratorLocal, clsHnd, oat, length, &size, &reason,
+                                         /* preliminaryCheck */ true))
             {
-                // If it turns out we can't stack allocate this new object even if it does not escape,
-                // then don't bother setting up tracking. Note length here is just set to a nominal
-                // value that won't cause failure. We will do the real length check later if we decide to allocate.
+                // We are going to conditionally track accesses to the enumerator local via a pseudo.
                 //
-                CORINFO_CLASS_HANDLE clsHnd = data->AsAllocObj()->gtAllocObjClsHnd;
-                const char*          reason = nullptr;
-                unsigned             size   = 0;
-                unsigned             length = TARGET_POINTER_SIZE;
-                ObjectAllocationType oat    = AllocationKind(data);
-                if (CanAllocateLclVarOnStack(enumeratorLocal, clsHnd, oat, length, &size, &reason,
-                                             /* preliminaryCheck */ true))
+                const unsigned pseudoIndex = NewPseudoIndex();
+                assert(pseudoIndex != BAD_VAR_NUM);
+                bool added = m_EnumeratorLocalToPseudoIndexMap.AddOrUpdate(enumeratorLocal, pseudoIndex);
+
+                if (!added)
                 {
-                    // We are going to conditionally track accesses to the enumerator local via a pseudo.
+                    // Seems like we have multiple GDVs that can define this local.
+                    // Carry on for now, but later we may see these collide
+                    // and end up not cloning any of them.
                     //
-                    const unsigned pseudoIndex = NewPseudoIndex();
-                    assert(pseudoIndex != BAD_VAR_NUM);
-                    bool added = m_EnumeratorLocalToPseudoIndexMap.AddOrUpdate(enumeratorLocal, pseudoIndex);
-
-                    if (!added)
-                    {
-                        // Seems like we have multiple GDVs that can define this local.
-                        // Carry on for now, but later we may see these collide
-                        // and end up not cloning any of them.
-                        //
-                        // Since we are walking in RPO we may also be able to see that
-                        // they are properly disjoint and things will work out just fine.
-                        //
-                        JITDUMP("Looks like enumerator var re-use (multiple defining GDVs)\n");
-                    }
-
-                    // We will query this info if we see CALL(enumeratorLocal)
-                    // during subsequent analysis, to verify that access is
-                    // under the same guard conditions.
+                    // Since we are walking in RPO we may also be able to see that
+                    // they are properly disjoint and things will work out just fine.
                     //
-                    CompAllocator alloc(comp->getAllocator(CMK_ObjectAllocator));
-                    CloneInfo*    info    = new (alloc) CloneInfo();
-                    info->m_local         = enumeratorLocal;
-                    info->m_type          = clsHnd;
-                    info->m_pseudoIndex   = pseudoIndex;
-                    info->m_appearanceMap = new (alloc) EnumeratorVarMap(alloc);
-                    info->m_allocBlock    = block;
-                    info->m_allocStmt     = stmt;
-                    info->m_allocTree     = data;
-                    info->m_domBlock      = controllingGDV.m_block;
-                    m_CloneMap.Set(pseudoIndex, info);
-
-                    JITDUMP("Enumerator allocation [%06u]: will track accesses to V%02u guarded by type %s via",
-                            comp->dspTreeID(data), enumeratorLocal, comp->eeGetClassName(clsHnd));
-                    JITDUMPEXEC(DumpIndex(pseudoIndex));
-                    JITDUMP("\n");
-
-                    // If this is not a direct assignment to the enumerator var we also need to
-                    // track the temps that will appear in between. Later we will rewrite these
-                    // to a fresh set of temps.
-                    //
-                    if (lclNum != enumeratorLocal)
-                    {
-                        CheckForEnumeratorUse(enumeratorLocal, lclNum);
-                        RecordAppearance(lclNum, block, stmt, use);
-                    }
+                    JITDUMP("Looks like enumerator var re-use (multiple defining GDVs)\n");
                 }
-                else
+
+                // We will query this info if we see CALL(enumeratorLocal)
+                // during subsequent analysis, to verify that access is
+                // under the same guard conditions.
+                //
+                CompAllocator alloc(comp->getAllocator(CMK_ObjectAllocator));
+                CloneInfo*    info    = new (alloc) CloneInfo();
+                info->m_local         = enumeratorLocal;
+                info->m_type          = clsHnd;
+                info->m_pseudoIndex   = pseudoIndex;
+                info->m_appearanceMap = new (alloc) EnumeratorVarMap(alloc);
+                info->m_allocBlock    = block;
+                info->m_allocStmt     = stmt;
+                info->m_allocTree     = data;
+                m_CloneMap.Set(pseudoIndex, info);
+
+                JITDUMP("Enumerator allocation [%06u]: will track accesses to V%02u guarded by type %s via",
+                        comp->dspTreeID(data), enumeratorLocal, comp->eeGetClassName(clsHnd));
+                JITDUMPEXEC(DumpIndex(pseudoIndex));
+                JITDUMP("\n");
+
+                // If this is not a direct assignment to the enumerator var we also need to
+                // track the temps that will appear in between. Later we will rewrite these
+                // to a fresh set of temps.
+                //
+                if (lclNum != enumeratorLocal)
                 {
-                    JITDUMP(
-                        "Enumerator allocation [%06u]: enumerator type %s cannot be stack allocated, so not tracking enumerator local V%02u\n",
-                        comp->dspTreeID(data), comp->eeGetClassName(clsHnd), enumeratorLocal);
+                    CheckForEnumeratorUse(enumeratorLocal, lclNum);
+                    RecordAppearance(lclNum, block, stmt, use);
                 }
             }
             else
             {
-                // This allocation is not currently of interest
-                //
-                JITDUMP("Allocation [%06u] was not flagged for conditional escape tracking\n", comp->dspTreeID(data));
+                JITDUMP(
+                    "Enumerator allocation [%06u]: enumerator type %s cannot be stack allocated, so not tracking enumerator local V%02u\n",
+                    comp->dspTreeID(data), comp->eeGetClassName(clsHnd), enumeratorLocal);
             }
         }
         else
         {
-            // This allocation was not done under a GDV guard
+            // This allocation is not currently of interest
             //
-            JITDUMP("Allocation [%06u] is not under a GDV guard\n", comp->dspTreeID(data));
+            JITDUMP("Allocation [%06u] was not flagged for conditional escape tracking\n", comp->dspTreeID(data));
         }
     }
     else if (data->OperIs(GT_LCL_VAR, GT_BOX))
@@ -3577,7 +3664,7 @@ void ObjectAllocator::RecordAppearance(unsigned lclNum, BasicBlock* block, State
 bool ObjectAllocator::CloneOverlaps(CloneInfo* info)
 {
     bool         overlaps = false;
-    BitVecTraits traits(comp->compBasicBlockID, comp);
+    BitVecTraits traits(m_initialMaxBlockID, comp);
 
     for (CloneInfo* const c : CloneMap::ValueIteration(&m_CloneMap))
     {
@@ -3610,6 +3697,56 @@ bool ObjectAllocator::CloneOverlaps(CloneInfo* info)
 }
 
 //------------------------------------------------------------------------------
+// BlockIsCloneOrWasCloned: check if this block is a clone or was cloned as
+//    part of an conditional escape optimization
+//
+// Arguments:
+//   block -- block in question
+//
+// Returns:
+//   true if block was cloned
+//
+// Notes:
+//   Such blocks are interesting when they contain ALLCOBJs that we can prove
+//   won't escape.
+//
+bool ObjectAllocator::BlockIsCloneOrWasCloned(BasicBlock* block)
+{
+    if (block->bbID >= m_initialMaxBlockID)
+    {
+        JITDUMP("Block " FMT_BB " was cloned as part of conditional escape processing\n", block->bbNum);
+        return true;
+    }
+
+    BitVecTraits traits(m_initialMaxBlockID, comp);
+
+    for (CloneInfo* const c : CloneMap::ValueIteration(&m_CloneMap))
+    {
+        // Ignore regions that we did not clone
+        //
+        if (!c->m_willClone)
+        {
+            continue;
+        }
+
+        // We don't actually clone the alloc blocks, despite them being
+        // in the block set for the clone.
+        //
+        if (block == c->m_allocBlock)
+        {
+            continue;
+        }
+
+        if (BitVecOps::IsMember(&traits, c->m_blocks, block->bbID))
+        {
+            JITDUMP("Block " FMT_BB " was cloned as part of conditional escape processing\n", block->bbNum);
+            return true;
+        }
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
 // ShouldClone: check if this cloning looks profitable
 //
 // Arguments:
@@ -3626,22 +3763,24 @@ bool ObjectAllocator::ShouldClone(CloneInfo* info)
     unsigned const sizeLimit   = (sizeConfig >= 0) ? (unsigned)sizeConfig : UINT_MAX;
     unsigned       size        = 0;
     bool           shouldClone = true;
+    auto           countNode   = [&size](GenTree* tree) -> unsigned {
+        size++;
+        return 1;
+    };
 
     for (BasicBlock* const block : *info->m_blocksToClone)
     {
         // Note this overstates the size a bit since we'll resolve GDVs
         // in the clone and the original...
         //
-        unsigned const slack     = sizeLimit - size;
-        unsigned       blockSize = 0;
-        if (block->ComplexityExceeds(comp, slack, &blockSize))
+        unsigned const slack = sizeLimit - size;
+        if (block->ComplexityExceeds(comp, slack, countNode))
         {
             JITDUMP("Rejecting");
             JITDUMPEXEC(DumpIndex(info->m_pseudoIndex));
             JITDUMP(" cloning: exceeds size limit %u\n", sizeLimit);
             return false;
         }
-        size += blockSize;
     }
 
     // TODO: some kind of profile check...
@@ -3783,6 +3922,8 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
     JITDUMP("V%02u has single def in " FMT_BB " at [%06u]\n", info->m_local, defBlock->bbNum,
             comp->dspTreeID(defStmt->GetRootNode()));
 
+    info->m_defBlock = defBlock;
+
     // We expect to be able to follow all paths from alloc block to defBlock
     // without reaching "beyond" defBlock.
     //
@@ -3799,7 +3940,7 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
     jitstd::vector<BasicBlock*>* visited         = new (alloc) jitstd::vector<BasicBlock*>(alloc);
     jitstd::vector<BasicBlock*>* toVisitTryEntry = new (alloc) jitstd::vector<BasicBlock*>(alloc);
 
-    BitVecTraits traits(comp->compBasicBlockID, comp);
+    BitVecTraits traits(m_initialMaxBlockID, comp);
     BitVec       visitedBlocks(BitVecOps::MakeEmpty(&traits));
     toVisit.Push(allocBlock);
     BitVecOps::AddElemD(&traits, visitedBlocks, allocBlock->bbID);
@@ -3858,13 +3999,50 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
     // (if it does, optimization does not require cloning, as
     // there should be only one reaching def...)
     //
+    // For now we're going to just go ahead and clone, despite the
+    // fact that this is wasteful.
+    //
+    // In the transformation that follows the cloned path is the
+    // "fast" path and gets properly specialized; the original "slow
+    // path" will become unreachable and get cleaned up later on.
+    //
+    // See dotnet/runtime issue #117204.
+    //
     if (comp->m_domTree->Dominates(allocBlock, defBlock))
     {
-        JITDUMP("Unexpected, alloc site " FMT_BB " dominates def block " FMT_BB "\n", allocBlock->bbNum,
-                defBlock->bbNum);
-
-        return false;
+        JITDUMP("Unexpected, alloc site " FMT_BB " dominates def block " FMT_BB ". We will clone anyways.\n",
+                allocBlock->bbNum, defBlock->bbNum);
     }
+    else
+    {
+        // The allocation is conditional. See if we can find the GDV guard
+        // so we can check what other possible stack allocations might reach
+        // the def block.
+        //
+        BasicBlock* possibleGuardBlock = defBlock->bbIDom;
+        GuardInfo   gi;
+        if (IsGuard(possibleGuardBlock, &gi))
+        {
+            // Todo: validate guard is the right guard.
+            //
+            JITDUMP("Conditional allocation is guarded by a GDV\n");
+            info->m_guardBlock = possibleGuardBlock;
+        }
+        else
+        {
+            // The allocation is conditional but the enumerator var def is
+            // not dominated by a GDV. Perhaps we resolved the GDV already.
+            //
+            // We want to allow cloning to proceed in this case as alternative
+            // enumerators might be non-allocating (say the static empty array
+            // enumerator).
+            //
+            // But consider adding more checking in this case.
+            //
+            JITDUMP("Conditional allocation is not guarded by a GDV\n");
+        }
+    }
+
     // Classify the other local appearances
     // as Ts (allocTemps) or Us (useTemps), and look for guard appearances.
     //
@@ -3957,6 +4135,22 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
 
     // The allocation block must dominate all T appearances, save for the final T use.
     //
+    // If we have an empty static case, we generalized slightly, and allow T appearances
+    // to be dominated by the allocation block's (unique) pred.
+    //
+    BasicBlock* domCheckBlock     = allocBlock;
+    const char* domCheckBlockName = "alloc";
+    if ((info->m_allocTree->gtFlags & GTF_ALLOCOBJ_EMPTY_STATIC) != 0)
+    {
+        BasicBlock* const uniquePred = domCheckBlock->GetUniquePred(comp);
+
+        if (uniquePred != nullptr)
+        {
+            domCheckBlock     = uniquePred;
+            domCheckBlockName = "alloc-pred";
+        }
+    }
+
     for (unsigned lclNum : EnumeratorVarMap::KeyIteration(info->m_appearanceMap))
     {
         EnumeratorVar* ev = nullptr;
@@ -3975,10 +4169,10 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
                 continue;
             }
 
-            if (!comp->m_domTree->Dominates(allocBlock, a->m_block))
+            if (!comp->m_domTree->Dominates(domCheckBlock, a->m_block))
             {
-                JITDUMP("Alloc temp V%02u %s in " FMT_BB " not dominated by alloc " FMT_BB "\n", a->m_lclNum,
-                        a->m_isDef ? "def" : "use", a->m_block->bbNum, allocBlock->bbNum);
+                JITDUMP("Alloc temp V%02u %s in " FMT_BB " not dominated by %s " FMT_BB "\n", a->m_lclNum,
+                        a->m_isDef ? "def" : "use", a->m_block->bbNum, domCheckBlockName, domCheckBlock->bbNum);
                 return false;
             }
         }

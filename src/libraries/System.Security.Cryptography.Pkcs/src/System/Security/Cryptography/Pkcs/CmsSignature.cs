@@ -21,12 +21,14 @@ namespace System.Security.Cryptography.Pkcs
             PrepareRegistrationRsa(s_lookup);
             PrepareRegistrationDsa(s_lookup);
             PrepareRegistrationECDsa(s_lookup);
+            PrepareRegistrationMLDsa(s_lookup);
             PrepareRegistrationSlhDsa(s_lookup);
         }
 
         static partial void PrepareRegistrationRsa(Dictionary<string, CmsSignature> lookup);
         static partial void PrepareRegistrationDsa(Dictionary<string, CmsSignature> lookup);
         static partial void PrepareRegistrationECDsa(Dictionary<string, CmsSignature> lookup);
+        static partial void PrepareRegistrationMLDsa(Dictionary<string, CmsSignature> lookup);
         static partial void PrepareRegistrationSlhDsa(Dictionary<string, CmsSignature> lookup);
 
         internal abstract RSASignaturePadding? SignaturePadding { get; }

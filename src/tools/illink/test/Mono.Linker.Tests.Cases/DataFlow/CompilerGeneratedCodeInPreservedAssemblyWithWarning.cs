@@ -25,8 +25,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         // The compiler generated state will see the modified body,
         // and will not associate the local function with the user method.
-        // Generic argument warnings from the local function will not be suppressed
-        // by RUC on the user method.
+        // This is a repro for a bug where generic argument warnings from the local
+        // function was not suppressed by RUC on the user method.
+        // The bug has been fixed so this should produce no warnings
 
         class Inner
         {
@@ -38,10 +39,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     LocalWithWarning<int>();
                 }
 
-                [ExpectedWarning("IL2091", Tool.Trimmer, "https://github.com/dotnet/linker/issues/2937")]
                 void LocalWithWarning<T>()
                 {
-                    // Warning!
                     RequiresAllOnT<T>();
                 }
             }
@@ -55,10 +54,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 LocalWithWarning<int>();
             }
 
-            [ExpectedWarning("IL2091", Tool.Trimmer, "https://github.com/dotnet/linker/issues/2937")]
             void LocalWithWarning<T>()
             {
-                // No warning
                 RequiresAllOnT<T>();
             }
         }

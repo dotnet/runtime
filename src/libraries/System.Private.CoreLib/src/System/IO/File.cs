@@ -20,10 +20,9 @@ namespace System.IO
     public static partial class File
     {
         private const int ChunkSize = 8192;
-        private static Encoding? s_UTF8NoBOM;
 
         // UTF-8 without BOM and with error detection. Same as the default encoding for StreamWriter.
-        private static Encoding UTF8NoBOM => s_UTF8NoBOM ??= new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        private static Encoding UTF8NoBOM => field ??= new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
         internal const int DefaultBufferSize = 4096;
 
@@ -1410,6 +1409,29 @@ namespace System.IO
 
         public static Task AppendAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default) =>
             WriteAllLinesAsync(path, contents, encoding, append: true, cancellationToken);
+
+        /// <summary>
+        /// Creates a hard link located in <paramref name="path"/> that refers to the same file content as <paramref name="pathToTarget"/>.
+        /// </summary>
+        /// <param name="path">The path where the hard link should be created.</param>
+        /// <param name="pathToTarget">The path of the hard link target.</param>
+        /// <returns>A <see cref="FileInfo"/> instance that wraps the newly created file.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="path"/> or <paramref name="pathToTarget"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="path"/> or <paramref name="pathToTarget"/> is empty.
+        /// -or-
+        /// <paramref name="path"/> or <paramref name="pathToTarget"/> contains a null character.</exception>
+        /// <exception cref="FileNotFoundException">The file specified by <paramref name="pathToTarget"/> does not exist.</exception>
+        /// <exception cref="IOException">A file or directory already exists in the location of <paramref name="path"/>.
+        /// -or-
+        /// An I/O error occurred.</exception>
+        public static FileSystemInfo CreateHardLink(string path, string pathToTarget)
+        {
+            string fullPath = Path.GetFullPath(path);
+            FileSystem.VerifyValidPath(pathToTarget, nameof(pathToTarget));
+
+            FileSystem.CreateHardLink(path, pathToTarget);
+            return new FileInfo(originalPath: path, fullPath: fullPath, isNormalized: true);
+        }
 
         /// <summary>
         /// Creates a file symbolic link identified by <paramref name="path"/> that points to <paramref name="pathToTarget"/>.

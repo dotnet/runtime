@@ -4,7 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-[assembly: ExpectedWarning("IL2121", "IL2071", Tool.Trimmer, "")]
+[assembly: ExpectedWarning("IL2121", "IL2071", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
 [assembly: UnconditionalSuppressMessage("Test", "IL2071:Redundant suppression, warning is not issued in this assembly")]
 
 

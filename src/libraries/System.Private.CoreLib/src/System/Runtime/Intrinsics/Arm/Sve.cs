@@ -5698,7 +5698,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint16_t svldnf1ub_s16(svbool_t pg, const uint8_t *base)</para>
         ///   <para>  LDNF1B Zresult.H, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<short> LoadVectorByteNonFaultingZeroExtendToInt16(byte* address) => LoadVectorByteNonFaultingZeroExtendToInt16(address);
+        public static unsafe Vector<short> LoadVectorByteNonFaultingZeroExtendToInt16(Vector<short> mask, byte* address) => LoadVectorByteNonFaultingZeroExtendToInt16(mask, address);
 
 
         // Load 8-bit data and zero-extend, non-faulting
@@ -5707,7 +5707,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint32_t svldnf1ub_s32(svbool_t pg, const uint8_t *base)</para>
         ///   <para>  LDNF1B Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<int> LoadVectorByteNonFaultingZeroExtendToInt32(byte* address) => LoadVectorByteNonFaultingZeroExtendToInt32(address);
+        public static unsafe Vector<int> LoadVectorByteNonFaultingZeroExtendToInt32(Vector<int> mask, byte* address) => LoadVectorByteNonFaultingZeroExtendToInt32(mask, address);
 
 
         // Load 8-bit data and zero-extend, non-faulting
@@ -5716,7 +5716,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint64_t svldnf1ub_s64(svbool_t pg, const uint8_t *base)</para>
         ///   <para>  LDNF1B Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<long> LoadVectorByteNonFaultingZeroExtendToInt64(byte* address) => LoadVectorByteNonFaultingZeroExtendToInt64(address);
+        public static unsafe Vector<long> LoadVectorByteNonFaultingZeroExtendToInt64(Vector<long> mask, byte* address) => LoadVectorByteNonFaultingZeroExtendToInt64(mask, address);
 
 
         // Load 8-bit data and zero-extend, non-faulting
@@ -5725,7 +5725,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint16_t svldnf1ub_u16(svbool_t pg, const uint8_t *base)</para>
         ///   <para>  LDNF1B Zresult.H, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<ushort> LoadVectorByteNonFaultingZeroExtendToUInt16(byte* address) => LoadVectorByteNonFaultingZeroExtendToUInt16(address);
+        public static unsafe Vector<ushort> LoadVectorByteNonFaultingZeroExtendToUInt16(Vector<ushort> mask, byte* address) => LoadVectorByteNonFaultingZeroExtendToUInt16(mask, address);
 
 
         // Load 8-bit data and zero-extend, non-faulting
@@ -5734,7 +5734,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint32_t svldnf1ub_u32(svbool_t pg, const uint8_t *base)</para>
         ///   <para>  LDNF1B Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<uint> LoadVectorByteNonFaultingZeroExtendToUInt32(byte* address) => LoadVectorByteNonFaultingZeroExtendToUInt32(address);
+        public static unsafe Vector<uint> LoadVectorByteNonFaultingZeroExtendToUInt32(Vector<uint> mask, byte* address) => LoadVectorByteNonFaultingZeroExtendToUInt32(mask, address);
 
 
         // Load 8-bit data and zero-extend, non-faulting
@@ -5743,7 +5743,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint64_t svldnf1ub_u64(svbool_t pg, const uint8_t *base)</para>
         ///   <para>  LDNF1B Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<ulong> LoadVectorByteNonFaultingZeroExtendToUInt64(byte* address) => LoadVectorByteNonFaultingZeroExtendToUInt64(address);
+        public static unsafe Vector<ulong> LoadVectorByteNonFaultingZeroExtendToUInt64(Vector<ulong> mask, byte* address) => LoadVectorByteNonFaultingZeroExtendToUInt64(mask, address);
 
 
         /// <summary>
@@ -5904,7 +5904,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint32_t svldnf1sh_s32(svbool_t pg, const int16_t *base)</para>
         ///   <para>  LDNF1SH Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<int> LoadVectorInt16NonFaultingSignExtendToInt32(short* address) => LoadVectorInt16NonFaultingSignExtendToInt32(address);
+        public static unsafe Vector<int> LoadVectorInt16NonFaultingSignExtendToInt32(Vector<int> mask, short* address) => LoadVectorInt16NonFaultingSignExtendToInt32(mask, address);
 
 
         // Load 16-bit data and sign-extend, non-faulting
@@ -5913,7 +5913,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint64_t svldnf1sh_s64(svbool_t pg, const int16_t *base)</para>
         ///   <para>  LDNF1SH Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<long> LoadVectorInt16NonFaultingSignExtendToInt64(short* address) => LoadVectorInt16NonFaultingSignExtendToInt64(address);
+        public static unsafe Vector<long> LoadVectorInt16NonFaultingSignExtendToInt64(Vector<long> mask, short* address) => LoadVectorInt16NonFaultingSignExtendToInt64(mask, address);
 
 
         // Load 16-bit data and sign-extend, non-faulting
@@ -5922,7 +5922,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint32_t svldnf1sh_u32(svbool_t pg, const int16_t *base)</para>
         ///   <para>  LDNF1SH Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<uint> LoadVectorInt16NonFaultingSignExtendToUInt32(short* address) => LoadVectorInt16NonFaultingSignExtendToUInt32(address);
+        public static unsafe Vector<uint> LoadVectorInt16NonFaultingSignExtendToUInt32(Vector<uint> mask, short* address) => LoadVectorInt16NonFaultingSignExtendToUInt32(mask, address);
 
 
         // Load 16-bit data and sign-extend, non-faulting
@@ -5931,7 +5931,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint64_t svldnf1sh_u64(svbool_t pg, const int16_t *base)</para>
         ///   <para>  LDNF1SH Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<ulong> LoadVectorInt16NonFaultingSignExtendToUInt64(short* address) => LoadVectorInt16NonFaultingSignExtendToUInt64(address);
+        public static unsafe Vector<ulong> LoadVectorInt16NonFaultingSignExtendToUInt64(Vector<ulong> mask, short* address) => LoadVectorInt16NonFaultingSignExtendToUInt64(mask, address);
 
 
         ///   <para> Load 16-bit data and sign-extend, first-faulting</para>
@@ -6003,7 +6003,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint64_t svldnf1sw_s64(svbool_t pg, const int32_t *base)</para>
         ///   <para>  LDNF1SW Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<long> LoadVectorInt32NonFaultingSignExtendToInt64(int* address) => LoadVectorInt32NonFaultingSignExtendToInt64(address);
+        public static unsafe Vector<long> LoadVectorInt32NonFaultingSignExtendToInt64(Vector<long> mask, int* address) => LoadVectorInt32NonFaultingSignExtendToInt64(mask, address);
 
 
         // Load 32-bit data and sign-extend, non-faulting
@@ -6012,7 +6012,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint64_t svldnf1sw_u64(svbool_t pg, const int32_t *base)</para>
         ///   <para>  LDNF1SW Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<ulong> LoadVectorInt32NonFaultingSignExtendToUInt64(int* address) => LoadVectorInt32NonFaultingSignExtendToUInt64(address);
+        public static unsafe Vector<ulong> LoadVectorInt32NonFaultingSignExtendToUInt64(Vector<ulong> mask, int* address) => LoadVectorInt32NonFaultingSignExtendToUInt64(mask, address);
 
 
         ///   <para> Load 32-bit data and sign-extend, first-faulting</para>
@@ -6054,61 +6054,61 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint8_t svldnf1[_u8](svbool_t pg, const uint8_t *base)</para>
         ///   <para>  LDNF1B Zresult.B, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<byte> LoadVectorNonFaulting(byte* address) => LoadVectorNonFaulting(address);
+        public static unsafe Vector<byte> LoadVectorNonFaulting(Vector<byte> mask, byte* address) => LoadVectorNonFaulting(mask, address);
 
         /// <summary>
         ///   <para>svfloat64_t svldnf1[_f64](svbool_t pg, const float64_t *base)</para>
         ///   <para>  LDNF1D Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<double> LoadVectorNonFaulting(double* address) => LoadVectorNonFaulting(address);
+        public static unsafe Vector<double> LoadVectorNonFaulting(Vector<double> mask, double* address) => LoadVectorNonFaulting(mask, address);
 
         /// <summary>
         ///   <para>svint16_t svldnf1[_s16](svbool_t pg, const int16_t *base)</para>
         ///   <para>  LDNF1H Zresult.H, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<short> LoadVectorNonFaulting(short* address) => LoadVectorNonFaulting(address);
+        public static unsafe Vector<short> LoadVectorNonFaulting(Vector<short> mask, short* address) => LoadVectorNonFaulting(mask, address);
 
         /// <summary>
         ///   <para>svint32_t svldnf1[_s32](svbool_t pg, const int32_t *base)</para>
         ///   <para>  LDNF1W Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<int> LoadVectorNonFaulting(int* address) => LoadVectorNonFaulting(address);
+        public static unsafe Vector<int> LoadVectorNonFaulting(Vector<int> mask, int* address) => LoadVectorNonFaulting(mask, address);
 
         /// <summary>
         ///   <para>svint64_t svldnf1[_s64](svbool_t pg, const int64_t *base)</para>
         ///   <para>  LDNF1D Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<long> LoadVectorNonFaulting(long* address) => LoadVectorNonFaulting(address);
+        public static unsafe Vector<long> LoadVectorNonFaulting(Vector<long> mask, long* address) => LoadVectorNonFaulting(mask, address);
 
         /// <summary>
         ///   <para>svint8_t svldnf1[_s8](svbool_t pg, const int8_t *base)</para>
         ///   <para>  LDNF1B Zresult.B, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<sbyte> LoadVectorNonFaulting(sbyte* address) => LoadVectorNonFaulting(address);
+        public static unsafe Vector<sbyte> LoadVectorNonFaulting(Vector<sbyte> mask, sbyte* address) => LoadVectorNonFaulting(mask, address);
 
         /// <summary>
         ///   <para>svfloat32_t svldnf1[_f32](svbool_t pg, const float32_t *base)</para>
         ///   <para>  LDNF1W Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<float> LoadVectorNonFaulting(float* address) => LoadVectorNonFaulting(address);
+        public static unsafe Vector<float> LoadVectorNonFaulting(Vector<float> mask, float* address) => LoadVectorNonFaulting(mask, address);
 
         /// <summary>
         ///   <para>svuint16_t svldnf1[_u16](svbool_t pg, const uint16_t *base)</para>
         ///   <para>  LDNF1H Zresult.H, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<ushort> LoadVectorNonFaulting(ushort* address) => LoadVectorNonFaulting(address);
+        public static unsafe Vector<ushort> LoadVectorNonFaulting(Vector<ushort> mask, ushort* address) => LoadVectorNonFaulting(mask, address);
 
         /// <summary>
         ///   <para>svuint32_t svldnf1[_u32](svbool_t pg, const uint32_t *base)</para>
         ///   <para>  LDNF1W Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<uint> LoadVectorNonFaulting(uint* address) => LoadVectorNonFaulting(address);
+        public static unsafe Vector<uint> LoadVectorNonFaulting(Vector<uint> mask, uint* address) => LoadVectorNonFaulting(mask, address);
 
         /// <summary>
         ///   <para>svuint64_t svldnf1[_u64](svbool_t pg, const uint64_t *base)</para>
         ///   <para>  LDNF1D Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<ulong> LoadVectorNonFaulting(ulong* address) => LoadVectorNonFaulting(address);
+        public static unsafe Vector<ulong> LoadVectorNonFaulting(Vector<ulong> mask, ulong* address) => LoadVectorNonFaulting(mask, address);
 
 
         // Unextended load, non-temporal
@@ -6180,7 +6180,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint16_t svldnf1sb_s16(svbool_t pg, const int8_t *base)</para>
         ///   <para>  LDNF1SB Zresult.H, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<short> LoadVectorSByteNonFaultingSignExtendToInt16(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToInt16(address);
+        public static unsafe Vector<short> LoadVectorSByteNonFaultingSignExtendToInt16(Vector<short> mask, sbyte* address) => LoadVectorSByteNonFaultingSignExtendToInt16(mask, address);
 
 
         // Load 8-bit data and sign-extend, non-faulting
@@ -6189,7 +6189,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint32_t svldnf1sb_s32(svbool_t pg, const int8_t *base)</para>
         ///   <para>  LDNF1SB Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<int> LoadVectorSByteNonFaultingSignExtendToInt32(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToInt32(address);
+        public static unsafe Vector<int> LoadVectorSByteNonFaultingSignExtendToInt32(Vector<int> mask, sbyte* address) => LoadVectorSByteNonFaultingSignExtendToInt32(mask, address);
 
 
         // Load 8-bit data and sign-extend, non-faulting
@@ -6198,7 +6198,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint64_t svldnf1sb_s64(svbool_t pg, const int8_t *base)</para>
         ///   <para>  LDNF1SB Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<long> LoadVectorSByteNonFaultingSignExtendToInt64(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToInt64(address);
+        public static unsafe Vector<long> LoadVectorSByteNonFaultingSignExtendToInt64(Vector<long> mask, sbyte* address) => LoadVectorSByteNonFaultingSignExtendToInt64(mask, address);
 
 
         // Load 8-bit data and sign-extend, non-faulting
@@ -6207,7 +6207,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint16_t svldnf1sb_u16(svbool_t pg, const int8_t *base)</para>
         ///   <para>  LDNF1SB Zresult.H, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<ushort> LoadVectorSByteNonFaultingSignExtendToUInt16(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToUInt16(address);
+        public static unsafe Vector<ushort> LoadVectorSByteNonFaultingSignExtendToUInt16(Vector<ushort> mask, sbyte* address) => LoadVectorSByteNonFaultingSignExtendToUInt16(mask, address);
 
 
         // Load 8-bit data and sign-extend, non-faulting
@@ -6216,7 +6216,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint32_t svldnf1sb_u32(svbool_t pg, const int8_t *base)</para>
         ///   <para>  LDNF1SB Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<uint> LoadVectorSByteNonFaultingSignExtendToUInt32(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToUInt32(address);
+        public static unsafe Vector<uint> LoadVectorSByteNonFaultingSignExtendToUInt32(Vector<uint> mask, sbyte* address) => LoadVectorSByteNonFaultingSignExtendToUInt32(mask, address);
 
 
         // Load 8-bit data and sign-extend, non-faulting
@@ -6225,7 +6225,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint64_t svldnf1sb_u64(svbool_t pg, const int8_t *base)</para>
         ///   <para>  LDNF1SB Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<ulong> LoadVectorSByteNonFaultingSignExtendToUInt64(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToUInt64(address);
+        public static unsafe Vector<ulong> LoadVectorSByteNonFaultingSignExtendToUInt64(Vector<ulong> mask, sbyte* address) => LoadVectorSByteNonFaultingSignExtendToUInt64(mask, address);
 
 
         ///   <para> Load 8-bit data and sign-extend, first-faulting</para>
@@ -6327,7 +6327,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint32_t svldnf1uh_s32(svbool_t pg, const uint16_t *base)</para>
         ///   <para>  LDNF1H Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<int> LoadVectorUInt16NonFaultingZeroExtendToInt32(ushort* address) => LoadVectorUInt16NonFaultingZeroExtendToInt32(address);
+        public static unsafe Vector<int> LoadVectorUInt16NonFaultingZeroExtendToInt32(Vector<int> mask, ushort* address) => LoadVectorUInt16NonFaultingZeroExtendToInt32(mask, address);
 
 
         // Load 16-bit data and zero-extend, non-faulting
@@ -6336,7 +6336,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint64_t svldnf1uh_s64(svbool_t pg, const uint16_t *base)</para>
         ///   <para>  LDNF1H Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<long> LoadVectorUInt16NonFaultingZeroExtendToInt64(ushort* address) => LoadVectorUInt16NonFaultingZeroExtendToInt64(address);
+        public static unsafe Vector<long> LoadVectorUInt16NonFaultingZeroExtendToInt64(Vector<long> mask, ushort* address) => LoadVectorUInt16NonFaultingZeroExtendToInt64(mask, address);
 
 
         // Load 16-bit data and zero-extend, non-faulting
@@ -6345,7 +6345,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint32_t svldnf1uh_u32(svbool_t pg, const uint16_t *base)</para>
         ///   <para>  LDNF1H Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<uint> LoadVectorUInt16NonFaultingZeroExtendToUInt32(ushort* address) => LoadVectorUInt16NonFaultingZeroExtendToUInt32(address);
+        public static unsafe Vector<uint> LoadVectorUInt16NonFaultingZeroExtendToUInt32(Vector<uint> mask, ushort* address) => LoadVectorUInt16NonFaultingZeroExtendToUInt32(mask, address);
 
 
         // Load 16-bit data and zero-extend, non-faulting
@@ -6354,7 +6354,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint64_t svldnf1uh_u64(svbool_t pg, const uint16_t *base)</para>
         ///   <para>  LDNF1H Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<ulong> LoadVectorUInt16NonFaultingZeroExtendToUInt64(ushort* address) => LoadVectorUInt16NonFaultingZeroExtendToUInt64(address);
+        public static unsafe Vector<ulong> LoadVectorUInt16NonFaultingZeroExtendToUInt64(Vector<ulong> mask, ushort* address) => LoadVectorUInt16NonFaultingZeroExtendToUInt64(mask, address);
 
 
         /// <summary>
@@ -6424,7 +6424,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint64_t svldnf1uw_s64(svbool_t pg, const uint32_t *base)</para>
         ///   <para>  LDNF1W Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<long> LoadVectorUInt32NonFaultingZeroExtendToInt64(uint* address) => LoadVectorUInt32NonFaultingZeroExtendToInt64(address);
+        public static unsafe Vector<long> LoadVectorUInt32NonFaultingZeroExtendToInt64(Vector<long> mask, uint* address) => LoadVectorUInt32NonFaultingZeroExtendToInt64(mask, address);
 
 
         // Load 32-bit data and zero-extend, non-faulting
@@ -6433,7 +6433,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint64_t svldnf1uw_u64(svbool_t pg, const uint32_t *base)</para>
         ///   <para>  LDNF1W Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<ulong> LoadVectorUInt32NonFaultingZeroExtendToUInt64(uint* address) => LoadVectorUInt32NonFaultingZeroExtendToUInt64(address);
+        public static unsafe Vector<ulong> LoadVectorUInt32NonFaultingZeroExtendToUInt64(Vector<ulong> mask, uint* address) => LoadVectorUInt32NonFaultingZeroExtendToUInt64(mask, address);
 
 
         /// <summary>
@@ -8822,6 +8822,54 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static void Scatter16BitNarrowing(Vector<ulong> mask, Vector<ulong> addresses, Vector<ulong> data) => Scatter16BitNarrowing(mask, addresses, data);
 
+        /// <summary>
+        /// void svst1h_scatter_[s32]index[_s32](svbool_t pg, int16_t *base, svint32_t indices, svint32_t data)
+        ///   ST1H Zdata.S, Pg, [Xbase, Zindices.S, SXTW #1]
+        /// </summary>
+        public static unsafe void Scatter16BitNarrowing(Vector<int> mask, short* address, Vector<int> indices, Vector<int> data) => Scatter16BitNarrowing(mask, address, indices, data);
+
+        /// <summary>
+        /// void svst1h_scatter_[u32]index[_s32](svbool_t pg, int16_t *base, svuint32_t indices, svint32_t data)
+        ///   ST1H Zdata.S, Pg, [Xbase, Zindices.S, UXTW #1]
+        /// </summary>
+        public static unsafe void Scatter16BitNarrowing(Vector<int> mask, short* address, Vector<uint> indices, Vector<int> data) => Scatter16BitNarrowing(mask, address, indices, data);
+
+        /// <summary>
+        /// void svst1h_scatter_[s64]index[_s64](svbool_t pg, int16_t *base, svint64_t indices, svint64_t data)
+        ///   ST1H Zdata.D, Pg, [Xbase, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe void Scatter16BitNarrowing(Vector<long> mask, short* address, Vector<long> indices, Vector<long> data) => Scatter16BitNarrowing(mask, address, indices, data);
+
+        /// <summary>
+        /// void svst1h_scatter_[u64]index[_s64](svbool_t pg, int16_t *base, svuint64_t indices, svint64_t data)
+        ///   ST1H Zdata.D, Pg, [Xbase, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe void Scatter16BitNarrowing(Vector<long> mask, short* address, Vector<ulong> indices, Vector<long> data) => Scatter16BitNarrowing(mask, address, indices, data);
+
+        /// <summary>
+        /// void svst1h_scatter_[s32]index[_u32](svbool_t pg, uint16_t *base, svint32_t indices, svuint32_t data)
+        ///   ST1H Zdata.S, Pg, [Xbase, Zindices.S, SXTW #1]
+        /// </summary>
+        public static unsafe void Scatter16BitNarrowing(Vector<uint> mask, ushort* address, Vector<int> indices, Vector<uint> data) => Scatter16BitNarrowing(mask, address, indices, data);
+
+        /// <summary>
+        /// void svst1h_scatter_[u32]index[_u32](svbool_t pg, uint16_t *base, svuint32_t indices, svuint32_t data)
+        ///   ST1H Zdata.S, Pg, [Xbase, Zindices.S, UXTW #1]
+        /// </summary>
+        public static unsafe void Scatter16BitNarrowing(Vector<uint> mask, ushort* address, Vector<uint> indices, Vector<uint> data) => Scatter16BitNarrowing(mask, address, indices, data);
+
+        /// <summary>
+        /// void svst1h_scatter_[s64]index[_u64](svbool_t pg, uint16_t *base, svint64_t indices, svuint64_t data)
+        ///   ST1H Zdata.D, Pg, [Xbase, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe void Scatter16BitNarrowing(Vector<ulong> mask, ushort* address, Vector<long> indices, Vector<ulong> data) => Scatter16BitNarrowing(mask, address, indices, data);
+
+        /// <summary>
+        /// void svst1h_scatter_[u64]index[_u64](svbool_t pg, uint16_t *base, svuint64_t indices, svuint64_t data)
+        ///   ST1H Zdata.D, Pg, [Xbase, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe void Scatter16BitNarrowing(Vector<ulong> mask, ushort* address, Vector<ulong> indices, Vector<ulong> data) => Scatter16BitNarrowing(mask, address, indices, data);
+
 
         // Truncate to 16 bits and store
 
@@ -8887,6 +8935,30 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  ST1W Zdata.D, Pg, [Zbases.D, #0]</para>
         /// </summary>
         public static void Scatter32BitNarrowing(Vector<ulong> mask, Vector<ulong> addresses, Vector<ulong> data) => Scatter32BitNarrowing(mask, addresses, data);
+
+        /// <summary>
+        /// void svst1w_scatter_[s64]index[_s64](svbool_t pg, int32_t *base, svint64_t indices, svint64_t data)
+        ///   ST1W Zdata.D, Pg, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe void Scatter32BitNarrowing(Vector<long> mask, int* address, Vector<long> indices, Vector<long> data) => Scatter32BitNarrowing(mask, address, indices, data);
+
+        /// <summary>
+        /// void svst1w_scatter_[u64]index[_s64](svbool_t pg, int32_t *base, svuint64_t indices, svint64_t data)
+        ///   ST1W Zdata.D, Pg, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe void Scatter32BitNarrowing(Vector<long> mask, int* address, Vector<ulong> indices, Vector<long> data) => Scatter32BitNarrowing(mask, address, indices, data);
+
+        /// <summary>
+        /// void svst1w_scatter_[s64]index[_u64](svbool_t pg, uint32_t *base, svint64_t indices, svuint64_t data)
+        ///   ST1W Zdata.D, Pg, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe void Scatter32BitNarrowing(Vector<ulong> mask, uint* address, Vector<long> indices, Vector<ulong> data) => Scatter32BitNarrowing(mask, address, indices, data);
+
+        /// <summary>
+        /// void svst1w_scatter_[u64]index[_u64](svbool_t pg, uint32_t *base, svuint64_t indices, svuint64_t data)
+        ///   ST1W Zdata.D, Pg, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe void Scatter32BitNarrowing(Vector<ulong> mask, uint* address, Vector<ulong> indices, Vector<ulong> data) => Scatter32BitNarrowing(mask, address, indices, data);
 
 
         // Truncate to 32 bits and store
@@ -8994,6 +9066,81 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  ST1B Zdata.D, Pg, [Xbase, Zoffsets.D]</para>
         /// </summary>
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(Vector<ulong> mask, byte* address, Vector<ulong> offsets, Vector<ulong> data) => Scatter8BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+
+        // Non-truncating store
+
+        /// <summary>
+        /// void svst1_scatter_[s64]offset[_f64](svbool_t pg, float64_t *base, svint64_t offsets, svfloat64_t data)
+        ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<double> mask, double* address, Vector<long> offsets, Vector<double> data) => ScatterWithByteOffsets(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[u64]offset[_f64](svbool_t pg, float64_t *base, svuint64_t offsets, svfloat64_t data)
+        ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<double> mask, double* address, Vector<ulong> offsets, Vector<double> data) => ScatterWithByteOffsets(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[s32]offset[_s32](svbool_t pg, int32_t *base, svint32_t offsets, svint32_t data)
+        ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<int> mask, int* address, Vector<int> offsets, Vector<int> data) => ScatterWithByteOffsets(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[u32]offset[_s32](svbool_t pg, int32_t *base, svuint32_t offsets, svint32_t data)
+        ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<int> mask, int* address, Vector<uint> offsets, Vector<int> data) => ScatterWithByteOffsets(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[s64]offset[_s64](svbool_t pg, int64_t *base, svint64_t offsets, svint64_t data)
+        ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<long> mask, long* address, Vector<long> offsets, Vector<long> data) => ScatterWithByteOffsets(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[u64]offset[_s64](svbool_t pg, int64_t *base, svuint64_t offsets, svint64_t data)
+        ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<long> mask, long* address, Vector<ulong> offsets, Vector<long> data) => ScatterWithByteOffsets(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[s32]offset[_f32](svbool_t pg, float32_t *base, svint32_t offsets, svfloat32_t data)
+        ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<float> mask, float* address, Vector<int> offsets, Vector<float> data) => ScatterWithByteOffsets(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[u32]offset[_f32](svbool_t pg, float32_t *base, svuint32_t offsets, svfloat32_t data)
+        ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<float> mask, float* address, Vector<uint> offsets, Vector<float> data) => ScatterWithByteOffsets(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[s32]offset[_u32](svbool_t pg, uint32_t *base, svint32_t offsets, svuint32_t data)
+        ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<uint> mask, uint* address, Vector<int> offsets, Vector<uint> data) => ScatterWithByteOffsets(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[u32]offset[_u32](svbool_t pg, uint32_t *base, svuint32_t offsets, svuint32_t data)
+        ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<uint> mask, uint* address, Vector<uint> offsets, Vector<uint> data) => ScatterWithByteOffsets(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[s64]offset[_u64](svbool_t pg, uint64_t *base, svint64_t offsets, svuint64_t data)
+        ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<ulong> mask, ulong* address, Vector<long> offsets, Vector<ulong> data) => ScatterWithByteOffsets(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[u64]offset[_u64](svbool_t pg, uint64_t *base, svuint64_t offsets, svuint64_t data)
+        ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<ulong> mask, ulong* address, Vector<ulong> offsets, Vector<ulong> data) => ScatterWithByteOffsets(mask, address, offsets, data);
 
 
         // Write to the first-fault register

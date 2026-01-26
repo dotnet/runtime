@@ -35,7 +35,7 @@ public class BilinearTest
     const int lengthB = 500;
     const double deltaB = (maxXB - minXB) / (double)(lengthB - 1);
 
-    //ref values 
+    //ref values
     double[] A, B, input, output;
 
     internal void Setup()
@@ -229,7 +229,7 @@ public class BilinearTest
 
             Vector128<int> ALengthMinusOne = Vector128.Create(A.Length - 1);
             Vector128<int> BLengthMinusOne = Vector128.Create(B.Length - 1);
-            Vector128<int> One = Vector128.Create(1);
+            Vector128<int> One = Vector128<int>.One;
 
             for (var i = 0; i < x.Length; i += Vector256<double>.Count)
             {

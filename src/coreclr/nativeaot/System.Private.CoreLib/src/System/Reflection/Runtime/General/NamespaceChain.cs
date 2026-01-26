@@ -22,7 +22,7 @@ namespace System.Reflection.Runtime.General
             NamespaceDefinition currentNamespaceDefinition = innerMostNamespaceHandle.GetNamespaceDefinition(reader);
             ConstantStringValueHandle currentNameHandle = currentNamespaceDefinition.Name;
             Handle currentNamespaceHandle;
-            LowLevelList<string> names = new LowLevelList<string>();
+            ListBuilder<string> names = default;
             for (; ; )
             {
                 string name = currentNameHandle.GetStringOrNull(reader);

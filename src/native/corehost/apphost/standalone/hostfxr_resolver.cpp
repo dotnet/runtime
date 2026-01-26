@@ -121,6 +121,7 @@ hostfxr_resolver_t::hostfxr_resolver_t(const pal::string_t& app_root)
     else if (!pal::is_path_fully_qualified(m_fxr_path))
     {
         // We should always be loading hostfxr from an absolute path
+        trace::error(_X("Path to %s must be fully qualified: [%s]"), LIBFXR_NAME, m_fxr_path.c_str());
         m_status_code = StatusCode::CoreHostLibMissingFailure;
     }
     else if (pal::load_library(&m_fxr_path, &m_hostfxr_dll))

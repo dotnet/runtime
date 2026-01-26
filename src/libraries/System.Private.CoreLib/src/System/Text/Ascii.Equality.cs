@@ -83,7 +83,7 @@ namespace System.Text
                     currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, Vector512<TLeft>.Count);
                     currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, Vector512<TLeft>.Count);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if (length % (uint)Vector512<TLeft>.Count != 0)
@@ -113,7 +113,7 @@ namespace System.Text
                     currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, Vector256<TLeft>.Count);
                     currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, Vector256<TLeft>.Count);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if (length % (uint)Vector256<TLeft>.Count != 0)
@@ -147,7 +147,7 @@ namespace System.Text
                     currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, (uint)Vector128<TRight>.Count);
                     currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count128);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if (length % (uint)Vector128<TRight>.Count != 0)
@@ -274,7 +274,7 @@ namespace System.Text
                     currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, (uint)Vector512<TRight>.Count);
                     currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count512);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if (length % (uint)Vector512<TRight>.Count != 0)
@@ -346,7 +346,7 @@ namespace System.Text
                     currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, (uint)Vector256<TRight>.Count);
                     currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count256);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if (length % (uint)Vector256<TRight>.Count != 0)
@@ -419,7 +419,7 @@ namespace System.Text
                     currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, (uint)Vector128<TRight>.Count);
                     currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count128);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if (length % (uint)Vector128<TRight>.Count != 0)

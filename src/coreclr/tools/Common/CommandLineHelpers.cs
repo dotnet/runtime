@@ -82,6 +82,8 @@ namespace System.CommandLine
                 "ios" => TargetOS.iOS,
                 "tvossimulator" => TargetOS.tvOSSimulator,
                 "tvos" => TargetOS.tvOS,
+                "browser" => TargetOS.Browser,
+                "wasi" => TargetOS.Wasi,
                 _ => throw new CommandLineException($"Target OS '{token}' is not supported")
             };
         }
@@ -96,6 +98,7 @@ namespace System.CommandLine
                     Architecture.X64 => TargetArchitecture.X64,
                     Architecture.Arm => TargetArchitecture.ARM,
                     Architecture.Arm64 => TargetArchitecture.ARM64,
+                    Architecture.Wasm => TargetArchitecture.Wasm32,
                     Architecture.LoongArch64 => TargetArchitecture.LoongArch64,
                     Architecture.RiscV64 => TargetArchitecture.RiscV64,
                     _ => throw new NotImplementedException()
@@ -109,6 +112,7 @@ namespace System.CommandLine
                     "x64" => TargetArchitecture.X64,
                     "arm" or "armel" => TargetArchitecture.ARM,
                     "arm64" => TargetArchitecture.ARM64,
+                    "wasm" => TargetArchitecture.Wasm32,
                     "loongarch64" => TargetArchitecture.LoongArch64,
                     "riscv64" => TargetArchitecture.RiscV64,
                     _ => throw new CommandLineException($"Target architecture '{token}' is not supported")
@@ -311,9 +315,22 @@ namespace System.CommandLine
                         string reproFileDir = prefix + originalToReproPackageFileName.Count.ToString() + Path.DirectorySeparatorChar;
                         reproPackagePath = Path.Combine(reproFileDir, Path.GetFileName(originalPath));
                         if (!input)
+                        {
                             archive.CreateEntry(reproFileDir); // for outputs just create output directory
+                        }
                         else
+                        {
                             archive.CreateEntryFromFile(originalPath, reproPackagePath);
+
+                            // The compiler probes for .pdb files next to input assemblies. For simplicity, just try to look
+                            // for PDB next to any file we package.
+                            string originalPdbPath = Path.ChangeExtension(originalPath, "pdb");
+                            if (!string.Equals(originalPath, originalPdbPath, StringComparison.InvariantCultureIgnoreCase)
+                                && File.Exists(originalPdbPath))
+                            {
+                                archive.CreateEntryFromFile(originalPdbPath, Path.ChangeExtension(reproPackagePath, "pdb"));
+                            }
+                        }
                         originalToReproPackageFileName.Add(originalPath, reproPackagePath);
 
                         return reproPackagePath;

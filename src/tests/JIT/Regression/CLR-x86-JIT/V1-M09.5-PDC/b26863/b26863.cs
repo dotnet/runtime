@@ -12,7 +12,7 @@ Running time 1.693 sec
 JE0 JR0 C(null) I0 S(null) G0
 Running time 0.921 sec
 */
-namespace Test
+namespace b26863
 {
     using System;
 

@@ -197,12 +197,15 @@ struct Agnostic_CORINFO_ASYNC_INFO
 {
     DWORDLONG continuationClsHnd;
     DWORDLONG continuationNextFldHnd;
-    DWORDLONG continuationResumeFldHnd;
+    DWORDLONG continuationResumeInfoFldHnd;
     DWORDLONG continuationStateFldHnd;
     DWORDLONG continuationFlagsFldHnd;
-    DWORDLONG continuationDataFldHnd;
-    DWORDLONG continuationGCDataFldHnd;
-    DWORD continuationsNeedMethodHandle;
+    DWORDLONG captureExecutionContextMethHnd;
+    DWORDLONG restoreExecutionContextMethHnd;
+    DWORDLONG captureContinuationContextMethHnd;
+    DWORDLONG captureContextsMethHnd;
+    DWORDLONG restoreContextsMethHnd;
+    DWORDLONG restoreContextsOnSuspensionMethHnd;
 };
 
 struct Agnostic_GetOSRInfo
@@ -657,6 +660,13 @@ struct Agnostic_GetFpStructLowering
     DWORD numLoweredElements;
 };
 
+struct Agnostic_GetContinuationTypeIn
+{
+    DWORDLONG dataSize;
+    DWORD     objRefs;
+    DWORD     objRefsSize;
+};
+
 struct Agnostic_ResolveVirtualMethodKey
 {
     DWORDLONG                       virtualMethod;
@@ -671,7 +681,7 @@ struct Agnostic_ResolveVirtualMethodResult
     bool                            returnValue;
     DWORDLONG                       devirtualizedMethod;
     bool                            isInstantiatingStub;
-    bool                            wasArrayInterfaceDevirt;
+    bool                            needsMethodContext;
     DWORDLONG                       exactContext;
     DWORD                           detail;
     Agnostic_CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;
@@ -703,12 +713,7 @@ struct GetVarArgsHandleValue
     DWORD     pSig_Index;
     DWORDLONG scope;
     DWORD     token;
-};
-
-struct CanGetVarArgsHandleValue
-{
-    DWORDLONG scope;
-    DWORD     token;
+    DWORDLONG methHnd;
 };
 
 struct GetCookieForPInvokeCalliSigValue
@@ -723,12 +728,6 @@ struct GetCookieForInterpreterCalliSigValue
 {
     DWORD     cbSig;
     DWORD     pSig_Index;
-    DWORDLONG scope;
-    DWORD     token;
-};
-
-struct CanGetCookieForPInvokeCalliSigValue
-{
     DWORDLONG scope;
     DWORD     token;
 };

@@ -194,7 +194,7 @@ public class TypeDescTests
 
     private static Target CreateTarget(MockDescriptors.RuntimeTypeSystem rtsBuilder)
     {
-        var target = new TestPlaceholderTarget(rtsBuilder.Builder.TargetTestHelpers.Arch, rtsBuilder.Builder.GetReadContext().ReadFromTarget, rtsBuilder.Types, rtsBuilder.Globals);
+        var target = new TestPlaceholderTarget(rtsBuilder.Builder.TargetTestHelpers.Arch, rtsBuilder.Builder.GetMemoryContext().ReadFromTarget, rtsBuilder.Types, rtsBuilder.Globals);
         target.SetContracts(Mock.Of<ContractRegistry>(
             c => c.RuntimeTypeSystem == ((IContractFactory<IRuntimeTypeSystem>)new RuntimeTypeSystemFactory()).CreateContract(target, 1)));
         return target;

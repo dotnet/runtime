@@ -93,7 +93,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // Not implied by the DynamicallyAccessedMemberTypes logic, but
             // explicit cctors would be kept by ILLink.
             // [Kept]
-            // static PublicParameterlessConstructorType () { }
+            // static PublicParameterlessConstructorType() { }
 
             public void Method1() { }
             public bool Property1 { get; set; }
@@ -166,7 +166,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // Not implied by the DynamicallyAccessedMemberTypes logic, but
             // explicit cctors would be kept by ILLink.
             // [Kept]
-            // static PublicConstructorsType () { }
+            // static PublicConstructorsType() { }
 
             public void Method1() { }
             public bool Property1 { get; set; }
@@ -205,7 +205,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // Not implied by the DynamicallyAccessedMemberTypes logic, but
             // explicit cctors would be kept by ILLink.
             // [Kept]
-            // static PublicConstructorsType () { }
+            // static PublicConstructorsType() { }
 
             public void Method1() { }
             public bool Property1 { get; set; }

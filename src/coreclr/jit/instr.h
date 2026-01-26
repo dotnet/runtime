@@ -20,12 +20,12 @@
 enum instruction : uint32_t
 {
 #if defined(TARGET_XARCH)
-    #define INST0(id, nm, um, mr,                 tt, flags) INS_##id,
-    #define INST1(id, nm, um, mr,                 tt, flags) INS_##id,
-    #define INST2(id, nm, um, mr, mi,             tt, flags) INS_##id,
-    #define INST3(id, nm, um, mr, mi, rm,         tt, flags) INS_##id,
-    #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) INS_##id,
-    #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) INS_##id,
+    #define INST0(id, nm, um, mr,                 lat, tp, tt, flags) INS_##id,
+    #define INST1(id, nm, um, mr,                 lat, tp, tt, flags) INS_##id,
+    #define INST2(id, nm, um, mr, mi,             lat, tp, tt, flags) INS_##id,
+    #define INST3(id, nm, um, mr, mi, rm,         lat, tp, tt, flags) INS_##id,
+    #define INST4(id, nm, um, mr, mi, rm, a4,     lat, tp, tt, flags) INS_##id,
+    #define INST5(id, nm, um, mr, mi, rm, a4, rr, lat, tp, tt, flags) INS_##id,
     #include "instrs.h"
 
 #elif defined(TARGET_ARM)
@@ -76,6 +76,10 @@ enum instruction : uint32_t
     #include "instrs.h"
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
+#elif defined(TARGET_WASM)
+    #define INST(id, nm, info, fmt, opcode) INS_##id,
+    #include "instrs.h"
+
 #else
 #error Unsupported target architecture
 #endif
@@ -236,6 +240,9 @@ enum insFlags : uint64_t
     KMask_Base16   = 1ULL << 51,
     KMask_BaseMask = (0x1FULL) << 47,
 
+    // The instruction has a pseudo name that should be used for disasm display
+    INS_FLAGS_HasPseudoName = 1ULL << 52,
+
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,
 };
@@ -245,13 +252,17 @@ enum insOpts: unsigned
     INS_OPTS_NONE = 0,
 
     // Two-bits: 0b0000_0011
-    INS_OPTS_EVEX_b_MASK = 0x03,         // mask for EVEX.b related features.
+    INS_OPTS_EVEX_b_MASK = 0x03,    // mask for EVEX.b related features.
 
-    INS_OPTS_EVEX_eb_er_rd = 1,     // Embedded Broadcast or Round down
+    INS_OPTS_EVEX_eb = 1,           // Embedded broadcast
 
-    INS_OPTS_EVEX_er_ru = 2,        // Round up
+    INS_OPTS_EVEX_cd = 2,           // Compressed displacement
 
-    INS_OPTS_EVEX_er_rz = 3,        // Round towards zero
+    INS_OPTS_EVEX_er_rd = 1,        // Embedded round down
+
+    INS_OPTS_EVEX_er_ru = 2,        // Embedded round up
+
+    INS_OPTS_EVEX_er_rz = 3,        // Embedded round towards zero
 
     // Three-bits: 0b0001_1100
     INS_OPTS_EVEX_aaa_MASK = 0x1C,  // mask for EVEX.aaa related features
@@ -299,9 +310,13 @@ enum insOpts: unsigned
     // One-bit:  0b10_0000_0000_0000
     INS_OPTS_APX_ppx_MASK = 0x2000,   // mask for APX-EVEX.ppx feature.
 
+    INS_OPTS_EVEX_zu = 1 << 14,      // Zero Upper for APX-EVEX
+    // One-bit:  0b100_0000_0000_0000
+    INS_OPTS_EVEX_zu_MASK = 0x4000,   // mask for APX-EVEX.zu feature.
+
 };
 
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
 // TODO-Cleanup: Move 'insFlags' under TARGET_ARM
 enum insFlags: unsigned
 {
@@ -542,9 +557,7 @@ enum insOpts : unsigned
 
     INS_OPTS_RC,     // see ::emitIns_R_C().
     INS_OPTS_RL,     // see ::emitIns_R_L().
-    INS_OPTS_JALR,   // see ::emitIns_J_R().
-    INS_OPTS_J,      // see ::emitIns_J().
-    INS_OPTS_J_cond, // see ::emitIns_J_cond_la().
+    INS_OPTS_JUMP,   // see ::emitIns_J and ::emitIns_J_cond_la().
     INS_OPTS_I,      // see ::emitLoadImmediate().
     INS_OPTS_C,      // see ::emitIns_Call().
     INS_OPTS_RELOC,  // see ::emitIns_R_AI().
@@ -554,7 +567,11 @@ enum insBarrier : unsigned
 {
     INS_BARRIER_FULL  =  0x33,
 };
-
+#elif defined(TARGET_WASM)
+enum insOpts : unsigned
+{
+    INS_OPTS_NONE,
+};
 #endif
 
 #if defined(TARGET_XARCH)

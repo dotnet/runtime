@@ -52,7 +52,7 @@ namespace Internal.Cryptography
                 case Oids.Sha512:
                 case Oids.RsaPkcs1Sha512 when forVerification:
                     return HashAlgorithmName.SHA512;
-#if NET8_0_OR_GREATER
+#if NET
                 case Oids.Sha3_256:
                 case Oids.RsaPkcs1Sha3_256 when forVerification:
                     return HashAlgorithmName.SHA3_256;

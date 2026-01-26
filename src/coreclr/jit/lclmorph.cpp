@@ -1142,21 +1142,43 @@ public:
             {
                 Value& rhs = TopValue(0);
                 Value& lhs = TopValue(1);
-                if (m_compiler->opts.OptimizationEnabled() && lhs.IsAddress() && rhs.IsAddress() &&
-                    (lhs.LclNum() == rhs.LclNum()) && (rhs.Offset() <= lhs.Offset()) &&
-                    FitsIn<int>(lhs.Offset() - rhs.Offset()))
+                if (m_compiler->opts.OptimizationEnabled() && lhs.IsAddress() && rhs.IsAddress())
                 {
-                    // TODO-Bug: Due to inlining we may end up with incorrectly typed SUB trees here.
-                    assert(node->TypeIs(TYP_I_IMPL, TYP_BYREF));
+                    LclVarDsc* lhsDsc = m_compiler->lvaGetDesc(lhs.LclNum());
+                    LclVarDsc* rhsDsc = m_compiler->lvaGetDesc(rhs.LclNum());
 
-                    ssize_t result = (ssize_t)(lhs.Offset() - rhs.Offset());
-                    node->BashToConst(result, TYP_I_IMPL);
-                    INDEBUG(lhs.Consume());
-                    INDEBUG(rhs.Consume());
-                    PopValue();
-                    PopValue();
-                    m_stmtModified = true;
-                    break;
+                    unsigned lhsLclNum = lhs.LclNum();
+                    unsigned rhsLclNum = rhs.LclNum();
+
+                    unsigned lhsOffset = lhs.Offset();
+                    unsigned rhsOffset = rhs.Offset();
+
+                    if (lhsDsc->lvIsStructField)
+                    {
+                        lhsLclNum = lhsDsc->lvParentLcl;
+                        lhsOffset += lhsDsc->lvFldOffset;
+                    }
+
+                    if (rhsDsc->lvIsStructField)
+                    {
+                        rhsLclNum = rhsDsc->lvParentLcl;
+                        rhsOffset += rhsDsc->lvFldOffset;
+                    }
+
+                    if ((lhsLclNum == rhsLclNum) && (rhsOffset <= lhsOffset) && FitsIn<int>(lhsOffset - rhsOffset))
+                    {
+                        // TODO-Bug: Due to inlining we may end up with incorrectly typed SUB trees here.
+                        assert(node->TypeIs(TYP_I_IMPL, TYP_BYREF));
+
+                        ssize_t result = (ssize_t)(lhsOffset - rhsOffset);
+                        node->BashToConst(result, TYP_I_IMPL);
+                        INDEBUG(lhs.Consume());
+                        INDEBUG(rhs.Consume());
+                        PopValue();
+                        PopValue();
+                        m_stmtModified = true;
+                        break;
+                    }
                 }
 
                 EscapeValue(TopValue(0), node);
@@ -1240,6 +1262,22 @@ public:
                 PopValue();
                 break;
 
+            case GT_CAST:
+            {
+                assert(TopValue(1).Node() == node);
+                assert(TopValue(0).Node() == node->AsCast()->CastOp());
+
+                var_types castToType = node->CastToType();
+                bool isPtrCast = (castToType == TYP_I_IMPL) || (castToType == TYP_U_IMPL) || (castToType == TYP_BYREF);
+                if (!isPtrCast || node->gtOverflow() || !TopValue(0).IsAddress() ||
+                    !TopValue(1).AddOffset(TopValue(0), 0))
+                {
+                    EscapeValue(TopValue(0), node);
+                }
+
+                PopValue();
+                break;
+            }
             case GT_CALL:
                 while (TopValue(0).Node() != node)
                 {
@@ -1462,9 +1500,9 @@ private:
         unsigned   lclNum = val.LclNum();
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
-        GenTreeFlags defFlag            = GTF_EMPTY;
-        GenTreeCall* callUser           = (user != nullptr) && user->IsCall() ? user->AsCall() : nullptr;
-        bool         hasHiddenStructArg = false;
+        GenTreeFlags defFlag    = GTF_EMPTY;
+        GenTreeCall* callUser   = (user != nullptr) && user->IsCall() ? user->AsCall() : nullptr;
+        bool         escapeAddr = true;
         if (m_compiler->opts.compJitOptimizeStructHiddenBuffer && (callUser != nullptr) &&
             m_compiler->IsValidLclAddr(lclNum, val.Offset()))
         {
@@ -1484,7 +1522,7 @@ private:
                 (val.Node() == callUser->gtArgs.GetRetBufferArg()->GetNode()))
             {
                 m_compiler->lvaSetHiddenBufferStructArg(lclNum);
-                hasHiddenStructArg = true;
+                escapeAddr = false;
                 callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
                 defFlag = GTF_VAR_DEF;
 
@@ -1496,7 +1534,7 @@ private:
             }
         }
 
-        if (!hasHiddenStructArg)
+        if (escapeAddr)
         {
             unsigned exposedLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
 
@@ -1516,7 +1554,8 @@ private:
         // a ByRef to an INT32 when they actually write a SIZE_T or INT64. There are cases where
         // overwriting these extra 4 bytes corrupts some data (such as a saved register) that leads
         // to A/V. Whereas previously the JIT64 codegen did not lead to an A/V.
-        if ((callUser != nullptr) && !varDsc->lvIsParam && !varDsc->lvIsStructField && genActualTypeIsInt(varDsc))
+        if ((callUser != nullptr) && !varDsc->lvIsParam && !varDsc->lvIsStructField && genActualTypeIsInt(varDsc) &&
+            escapeAddr)
         {
             varDsc->lvQuirkToLong = true;
             JITDUMP("Adding a quirk for the storage size of V%02u of type %s\n", val.LclNum(),
@@ -1618,7 +1657,7 @@ private:
         assert(addr->TypeIs(TYP_BYREF, TYP_I_IMPL));
         assert(m_compiler->lvaVarAddrExposed(lclNum) ||
                ((m_lclAddrAssertions != nullptr) && m_lclAddrAssertions->IsMarkedForExposure(lclNum)) ||
-               m_compiler->lvaGetDesc(lclNum)->IsHiddenBufferStructArg());
+               m_compiler->lvaGetDesc(lclNum)->IsDefinedViaAddress());
 
         if (m_compiler->IsValidLclAddr(lclNum, offset))
         {
@@ -1698,8 +1737,8 @@ private:
                     {
                         // Handle case 1 or the float field of case 2
                         GenTree* indexNode = m_compiler->gtNewIconNode(offset / genTypeSize(elementType));
-                        hwiNode            = m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode,
-                                                                                 CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
+                        hwiNode = m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode, TYP_FLOAT,
+                                                                      genTypeSize(varDsc));
                         break;
                     }
 
@@ -1708,7 +1747,7 @@ private:
                         // Handle the Vector3 field of case 2
                         assert(genTypeSize(varDsc) == 16);
                         hwiNode = m_compiler->gtNewSimdHWIntrinsicNode(elementType, lclNode, NI_Vector128_AsVector3,
-                                                                       CORINFO_TYPE_FLOAT, 16);
+                                                                       TYP_FLOAT, 16);
                         break;
                     }
 
@@ -1722,14 +1761,14 @@ private:
                         assert(genTypeSize(elementType) * 2 == genTypeSize(varDsc));
                         if (offset == 0)
                         {
-                            hwiNode = m_compiler->gtNewSimdGetLowerNode(elementType, lclNode, CORINFO_TYPE_FLOAT,
-                                                                        genTypeSize(varDsc));
+                            hwiNode =
+                                m_compiler->gtNewSimdGetLowerNode(elementType, lclNode, TYP_FLOAT, genTypeSize(varDsc));
                         }
                         else
                         {
                             assert(offset == genTypeSize(elementType));
-                            hwiNode = m_compiler->gtNewSimdGetUpperNode(elementType, lclNode, CORINFO_TYPE_FLOAT,
-                                                                        genTypeSize(varDsc));
+                            hwiNode =
+                                m_compiler->gtNewSimdGetUpperNode(elementType, lclNode, TYP_FLOAT, genTypeSize(varDsc));
                         }
 
                         break;
@@ -1756,9 +1795,8 @@ private:
                     {
                         // Handle case 1 or the float field of case 2
                         GenTree* indexNode = m_compiler->gtNewIconNode(offset / genTypeSize(elementType));
-                        hwiNode =
-                            m_compiler->gtNewSimdWithElementNode(varDsc->TypeGet(), simdLclNode, indexNode, elementNode,
-                                                                 CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
+                        hwiNode = m_compiler->gtNewSimdWithElementNode(varDsc->TypeGet(), simdLclNode, indexNode,
+                                                                       elementNode, TYP_FLOAT, genTypeSize(varDsc));
                         break;
                     }
 
@@ -1771,17 +1809,17 @@ private:
                         // simdLclNode[3] as the new value. This gives us a new TYP_SIMD16 with all elements in the
                         // right spots
 
-                        elementNode = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, elementNode,
-                                                                           NI_Vector128_AsVector128Unsafe,
-                                                                           CORINFO_TYPE_FLOAT, 12);
+                        elementNode =
+                            m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, elementNode,
+                                                                 NI_Vector128_AsVector128Unsafe, TYP_FLOAT, 12);
 
                         GenTree* indexNode1 = m_compiler->gtNewIconNode(3, TYP_INT);
-                        simdLclNode         = m_compiler->gtNewSimdGetElementNode(TYP_FLOAT, simdLclNode, indexNode1,
-                                                                                  CORINFO_TYPE_FLOAT, 16);
+                        simdLclNode =
+                            m_compiler->gtNewSimdGetElementNode(TYP_FLOAT, simdLclNode, indexNode1, TYP_FLOAT, 16);
 
                         GenTree* indexNode2 = m_compiler->gtNewIconNode(3, TYP_INT);
                         hwiNode = m_compiler->gtNewSimdWithElementNode(TYP_SIMD16, elementNode, indexNode2, simdLclNode,
-                                                                       CORINFO_TYPE_FLOAT, 16);
+                                                                       TYP_FLOAT, 16);
                         break;
                     }
 
@@ -1796,13 +1834,13 @@ private:
                         if (offset == 0)
                         {
                             hwiNode = m_compiler->gtNewSimdWithLowerNode(varDsc->TypeGet(), simdLclNode, elementNode,
-                                                                         CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
+                                                                         TYP_FLOAT, genTypeSize(varDsc));
                         }
                         else
                         {
                             assert(offset == genTypeSize(elementType));
                             hwiNode = m_compiler->gtNewSimdWithUpperNode(varDsc->TypeGet(), simdLclNode, elementNode,
-                                                                         CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
+                                                                         TYP_FLOAT, genTypeSize(varDsc));
                         }
 
                         break;
@@ -1985,7 +2023,7 @@ private:
                 }
 
                 if ((genTypeSize(indir) == genTypeSize(varDsc)) && (genTypeSize(indir) <= TARGET_POINTER_SIZE) &&
-                    (varTypeIsFloating(indir) || varTypeIsFloating(varDsc)))
+                    (varTypeIsFloating(indir) || varTypeIsFloating(varDsc)) && !varDsc->lvPromoted)
                 {
                     return IndirTransform::BitCast;
                 }
@@ -2321,8 +2359,9 @@ private:
 };
 
 //------------------------------------------------------------------------
-// fgMarkAddressExposedLocals: Traverses the entire method and marks address
-//    exposed locals.
+// fgLocalMorph:
+//   Traverses the entire method and simplifies local accesses.
+//   Also marks locals that are address exposed.
 //
 // Returns:
 //    Suitable phase status
@@ -2332,7 +2371,7 @@ private:
 //    to just LCL_VAR, do not result in the involved local being marked
 //    address exposed.
 //
-PhaseStatus Compiler::fgMarkAddressExposedLocals()
+PhaseStatus Compiler::fgLocalMorph()
 {
     bool madeChanges = false;
 

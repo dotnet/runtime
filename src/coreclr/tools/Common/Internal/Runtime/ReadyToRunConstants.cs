@@ -17,8 +17,9 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_FLAG_NonSharedPInvokeStubs = 0x00000008,     // PInvoke stubs compiled into image are non-shareable (no secret parameter)
         READYTORUN_FLAG_EmbeddedMSIL = 0x00000010,              // MSIL is embedded in the composite R2R executable
         READYTORUN_FLAG_Component = 0x00000020,                 // This is the header describing a component assembly of composite R2R
-        READYTORUN_FLAG_MultiModuleVersionBubble = 0x00000040,   // This R2R module has multiple modules within its version bubble
+        READYTORUN_FLAG_MultiModuleVersionBubble = 0x00000040,  // This R2R module has multiple modules within its version bubble
         READYTORUN_FLAG_UnrelatedR2RCode = 0x00000080,          // This R2R module has generic code in it that would not be naturally encoded into this module
+        READYTORUN_FLAG_PlatformNativeImage = 0x00000100,       // The owning composite executable is in the platform native format
     }
 
     public enum ReadyToRunImportSectionType : byte
@@ -41,7 +42,7 @@ namespace Internal.ReadyToRunConstants
     /// Constants for method and field encoding
     /// </summary>
     [Flags]
-    public enum ReadyToRunMethodSigFlags : byte
+    public enum ReadyToRunMethodSigFlags : uint
     {
         READYTORUN_METHOD_SIG_None = 0x00,
         READYTORUN_METHOD_SIG_UnboxingStub = 0x01,
@@ -52,6 +53,7 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_METHOD_SIG_Constrained = 0x20,
         READYTORUN_METHOD_SIG_OwnerType = 0x40,
         READYTORUN_METHOD_SIG_UpdateContext = 0x80,
+        READYTORUN_METHOD_SIG_AsyncVariant = 0x100,
     }
 
     [Flags]

@@ -23,15 +23,21 @@ internal struct PrecodeStubs_2_Impl : IPrecodeStubsContractCommonApi<Data.StubPr
 
     public static TargetPointer ThisPtrRetBufPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
     {
-            TargetPointer stubPrecodeDataAddress = instrPointer + precodeMachineDescriptor.StubCodePageSize;
-            Data.StubPrecodeData_2 stubPrecodeData = target.ProcessedData.GetOrAdd<Data.StubPrecodeData_2>(stubPrecodeDataAddress);
-            Data.ThisPtrRetBufPrecodeData thisPtrRetBufPrecodeData = target.ProcessedData.GetOrAdd<Data.ThisPtrRetBufPrecodeData>(stubPrecodeData.SecretParam);
-            return thisPtrRetBufPrecodeData.MethodDesc;
+        TargetPointer stubPrecodeDataAddress = instrPointer + precodeMachineDescriptor.StubCodePageSize;
+        Data.StubPrecodeData_2 stubPrecodeData = target.ProcessedData.GetOrAdd<Data.StubPrecodeData_2>(stubPrecodeDataAddress);
+        Data.ThisPtrRetBufPrecodeData thisPtrRetBufPrecodeData = target.ProcessedData.GetOrAdd<Data.ThisPtrRetBufPrecodeData>(stubPrecodeData.SecretParam);
+        return thisPtrRetBufPrecodeData.MethodDesc;
     }
 
     public static byte StubPrecodeData_GetType(Data.StubPrecodeData_2 stubPrecodeData)
     {
         return stubPrecodeData.Type;
+    }
+
+    public static KnownPrecodeType? TryGetKnownPrecodeType(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+    {
+        // Version 2 of this contract behaves just like version 1 other than the details that are abstracted away through the IPrecodeStubsContractCommonApi interface
+        return PrecodeStubs_1_Impl.TryGetKnownPrecodeType_Impl<PrecodeStubs_2_Impl, Data.StubPrecodeData_2>(instrPointer, target, precodeMachineDescriptor);
     }
 }
 

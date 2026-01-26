@@ -25,6 +25,8 @@
 #include "dbginterface.h"
 #include "argdestination.h"
 
+#include "interpexec.h"
+
 extern "C" void QCALLTYPE RuntimeFieldHandle_GetValue(FieldDesc* fieldDesc, QCall::ObjectHandleOnStack instance, QCall::TypeHandle fieldType, QCall::TypeHandle declaringType, BOOL* pIsClassInitialized, QCall::ObjectHandleOnStack result)
 {
     QCALL_CONTRACT;
@@ -223,12 +225,24 @@ protected:
         LIMITED_METHOD_CONTRACT;
     }
 
-    FORCEINLINE BOOL IsRegPassedStruct(MethodTable* pMT)
+    FORCEINLINE BOOL IsRegPassedStruct(TypeHandle th)
     {
-        return pMT->IsRegPassedStruct();
+        return th.AsMethodTable()->IsRegPassedStruct();
     }
 
+#if defined(UNIX_AMD64_ABI)
+    FORCEINLINE SystemVEightByteRegistersInfo GetEightByteRegistersInfo(TypeHandle th)
+    {
+        return th.AsMethodTable()->GetClass()->GetEightByteRegistersInfo();
+    }
+#endif // defined(UNIX_AMD64_ABI)
+
 public:
+    FORCEINLINE BOOL IsRetBuffPassedAsFirstArg()
+    {
+        return ::IsRetBuffPassedAsFirstArg();
+    }
+
     BOOL HasThis()
     {
         LIMITED_METHOD_CONTRACT;
@@ -239,6 +253,13 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         // param type methods are not supported for reflection invoke, so HasParamType is always false for them
+        return FALSE;
+    }
+
+    BOOL HasAsyncContinuation()
+    {
+        LIMITED_METHOD_CONTRACT;
+        // async calls are also not supported for reflection invoke
         return FALSE;
     }
 
@@ -399,6 +420,10 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     callDescrData.dwRegTypeMap = 0;
 #endif
     callDescrData.fpReturnSize = argit.GetFPReturnSize();
+#ifdef TARGET_WASM
+    // WASM-TODO: this is now called from the interpreter, so the arguments layout is OK. reconsider with codegen
+    callDescrData.nArgsSize = nStackBytes;
+#endif // TARGET_WASM
 
     // This is duplicated logic from MethodDesc::GetCallTarget
     PCODE pTarget;
@@ -605,7 +630,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
         // We have a special case for Strings...The object is returned...
         if (fCtorOfVariableSizedObject) {
             PVOID pReturnValue = &callDescrData.returnValue;
-            gc.retVal = *(OBJECTREF *)pReturnValue;
+            gc.retVal = ObjectToOBJECTREF(*(Object**)pReturnValue);
         }
 
         // If it is a Nullable<T>, box it using Nullable<T> conventions.
@@ -681,8 +706,28 @@ Done:
 }
 
 struct SkipStruct {
-    StackCrawlMark* pStackMark;
-    MethodDesc*     pMeth;
+    SkipStruct(StackCrawlMark* mark, PTR_Thread thread) :
+        pStackMark(mark)
+#ifdef FEATURE_INTERPRETER
+        // Since the interpreter has its own stack, we need to get a pointer which can be compared on the real
+        // stack so that IsInCalleesFrames can work correctly.
+        , stackMarkOnOSStack(ConvertStackMarkToPointerOnOSStack(thread, mark))
+#endif
+    {
+    }
+    StackCrawlMark* const pStackMark;
+#ifdef FEATURE_INTERPRETER
+    PTR_VOID const stackMarkOnOSStack;
+#endif
+    PTR_VOID GetStackMarkPointerToCheckAgainstStack()
+    {
+#ifdef FEATURE_INTERPRETER
+        return stackMarkOnOSStack;
+#else
+        return (PTR_VOID)pStackMark;
+#endif
+    }
+    MethodDesc*     pMeth = NULL;
 };
 
 // This method is called by the GetMethod function and will crawl backward
@@ -710,7 +755,7 @@ static StackWalkAction SkipMethods(CrawlFrame* frame, VOID* data) {
     // which frame the stack mark was in one frame later. This is
     // fine since we only implement LookForMyCaller.
     _ASSERTE(*pSkip->pStackMark == LookForMyCaller);
-    if (!frame->IsInCalleesFrames(pSkip->pStackMark))
+    if (!frame->IsInCalleesFrames(pSkip->GetStackMarkPointerToCheckAgainstStack()))
         return SWA_CONTINUE;
 
     pSkip->pMeth = pFunc;
@@ -726,10 +771,9 @@ extern "C" MethodDesc* QCALLTYPE MethodBase_GetCurrentMethod(QCall::StackCrawlMa
 
     BEGIN_QCALL;
 
-    SkipStruct skip;
-    skip.pStackMark = stackMark;
-    skip.pMeth = 0;
-    GetThread()->StackWalkFrames(SkipMethods, &skip, FUNCTIONSONLY | LIGHTUNWIND);
+    PTR_Thread pThread = GetThread();
+    SkipStruct skip(stackMark, pThread);
+    pThread->StackWalkFrames(SkipMethods, &skip, FUNCTIONSONLY | LIGHTUNWIND);
 
     // If C<Foo>.m<Bar> was called, the stack walker returns C<__Canon>.m<__Canon>. We cannot
     // get know that the instantiation used Foo or Bar at that point. So the next best thing
@@ -1190,7 +1234,7 @@ extern "C" void QCALLTYPE ReflectionInvocation_CompileMethod(MethodDesc * pMD)
     // Argument is checked on the managed side
     PRECONDITION(pMD != NULL);
 
-    if (!pMD->IsPointingToPrestub())
+    if (!pMD->ShouldCallPrestub())
         return;
 
     BEGIN_QCALL;
@@ -1239,13 +1283,13 @@ static void PrepareMethodHelper(MethodDesc * pMD)
 
     pMD->EnsureActive();
 
-    if (pMD->IsPointingToPrestub())
+    if (pMD->ShouldCallPrestub())
         pMD->DoPrestub(NULL);
 
     if (pMD->IsWrapperStub())
     {
         pMD = pMD->GetWrappedMethodDesc();
-        if (pMD->IsPointingToPrestub())
+        if (pMD->ShouldCallPrestub())
             pMD->DoPrestub(NULL);
     }
 }
@@ -1335,6 +1379,23 @@ FCIMPL0(FC_BOOL_RET, ReflectionInvocation::TryEnsureSufficientExecutionStack)
     // plenty close enough for the purposes of this method.
 	UINT_PTR current = reinterpret_cast<UINT_PTR>(&pThread);
 	UINT_PTR limit = pThread->GetCachedStackSufficientExecutionLimit();
+
+#ifdef FEATURE_INTERPRETER
+    InterpThreadContext* pInterpThreadContext = pThread->GetInterpThreadContext();
+    if (pInterpThreadContext != nullptr)
+    {
+        // The interpreter has its own stack, so we need to check against that too.
+#ifdef HOST_64BIT
+        const UINT_PTR MinExecutionStackSize = 128 * 1024;
+#else // !HOST_64BIT
+        const UINT_PTR MinExecutionStackSize = 64 * 1024;
+#endif // HOST_64BIT
+        if (pInterpThreadContext->pStackPointer >= pInterpThreadContext->pStackEnd - MinExecutionStackSize)
+        {
+            FC_RETURN_BOOL(FALSE);
+        }
+    }
+#endif // FEATURE_INTERPRETER
 
 	FC_RETURN_BOOL(current >= limit);
 }
@@ -1468,11 +1529,13 @@ extern "C" void QCALLTYPE ReflectionInvocation_GetGuid(MethodTable* pMT, GUID* r
  * doesn't guarantee that a ctor will succeed, only that the VM is able
  * to support an instance of this type on the heap.
  * ==========
+ * The 'allowByRefLike' parameter controls whether the type should be validated as not ByRefLike.
  * The 'fForGetUninitializedInstance' parameter controls the type of
  * exception that is thrown if a check fails.
  */
-void RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(
+static void ValidateTypeAbleToBeInstantiated(
     TypeHandle typeHandle,
+    bool allowByRefLike,
     bool fGetUninitializedObject)
 {
     STANDARD_VM_CONTRACT;
@@ -1528,14 +1591,14 @@ void RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(
     }
 
     // Don't allow ref structs
-    if (pMT->IsByRefLike())
+    if (!allowByRefLike && pMT->IsByRefLike())
     {
         COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefLike"));
     }
 }
 
 /*
- * Given a RuntimeType, queries info on how to instantiate the object.
+ * Given a RuntimeType, queries info on how to instantiate the type.
  * pRuntimeType - [required] the RuntimeType object
  * ppfnAllocator - [required, null-init] fnptr to the allocator
  *                 mgd sig: void* -> object
@@ -1586,7 +1649,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
         typeHandle = ((REFLECTCLASSBASEREF)pRuntimeType.Get())->GetType();
     }
 
-    RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(typeHandle, false /* fGetUninitializedObject */);
+    ValidateTypeAbleToBeInstantiated(typeHandle, true /* allowByRefLike */, false /* fGetUninitializedObject */);
 
     MethodTable* pMT = typeHandle.AsMethodTable();
     _ASSERTE(pMT != NULL);
@@ -1739,7 +1802,8 @@ extern "C" void QCALLTYPE ReflectionSerialization_GetCreateUninitializedObjectIn
 
     TypeHandle type = pType.AsTypeHandle();
 
-    RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(type, true /* fForGetUninitializedInstance */);
+    // ByRefLike types can't be boxed (allocated as an uninitialized object).
+    ValidateTypeAbleToBeInstantiated(type, false /* allowRefLike */, true /* fForGetUninitializedInstance */);
 
     MethodTable* pMT = type.AsMethodTable();
 
@@ -1825,8 +1889,8 @@ extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QC
         _ASSERTE(defaultValue.m_bType != ELEMENT_TYPE_STRING); // Strings in metadata are little-endian.
 
         // The following code assumes that the address of all union members is the same.
-        static_assert_no_msg(offsetof(MDDefaultValue, m_byteValue) == offsetof(MDDefaultValue, m_usValue));
-        static_assert_no_msg(offsetof(MDDefaultValue, m_ulValue) == offsetof(MDDefaultValue, m_ullValue));
+        static_assert(offsetof(MDDefaultValue, m_byteValue) == offsetof(MDDefaultValue, m_usValue));
+        static_assert(offsetof(MDDefaultValue, m_ulValue) == offsetof(MDDefaultValue, m_ullValue));
         temp.value = defaultValue.m_ullValue;
 
         temps.Append(temp);
@@ -1912,7 +1976,8 @@ extern "C" void QCALLTYPE ReflectionInvocation_GetBoxInfo(
 
     TypeHandle type = pType.AsTypeHandle();
 
-    RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(type, true /* fForGetUninitializedInstance */);
+    // ByRefLike types can't be boxed.
+    ValidateTypeAbleToBeInstantiated(type, false /* allowRefLike */, true /* fForGetUninitializedInstance */);
 
     MethodTable* pMT = type.AsMethodTable();
 

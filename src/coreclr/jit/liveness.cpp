@@ -66,9 +66,10 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
 
         if (compRationalIRForm && (varDsc->lvType != TYP_STRUCT) && !varTypeIsMultiReg(varDsc))
         {
-            // If this is an enregisterable variable that is not marked doNotEnregister,
+            // If this is an enregisterable variable that is not marked doNotEnregister and not defined via address,
             // we should only see direct references (not ADDRs).
-            assert(varDsc->lvDoNotEnregister || tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
+            assert(varDsc->lvDoNotEnregister || varDsc->lvDefinedViaAddress ||
+                   tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
         }
 
         if (isUse && !VarSetOps::IsMember(this, fgCurDefSet, varDsc->lvVarIndex))
@@ -342,11 +343,11 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
                 }
             }
 
-            GenTreeLclVarCommon* definedLcl = gtCallGetDefinedRetBufLclAddr(call);
-            if (definedLcl != nullptr)
-            {
-                fgMarkUseDef<!lowered>(definedLcl);
-            }
+            auto visitDef = [=](GenTreeLclVarCommon* lcl) {
+                fgMarkUseDef<!lowered>(lcl);
+                return GenTree::VisitResult::Continue;
+            };
+            call->VisitLocalDefNodes(this, visitDef);
             break;
         }
 
@@ -796,13 +797,11 @@ void Compiler::fgLiveVarAnalysis()
 //    call          - The call node in question.
 //
 // Returns:
-//    local defined by the call, if any (eg retbuf)
+//    partially defined local by the call, if any (eg retbuf)
 //
 GenTreeLclVarCommon* Compiler::fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTreeCall* call)
 {
     assert(call != nullptr);
-    GenTreeLclVarCommon* definedLcl = nullptr;
-
     // If this is a tail-call via helper, and we have any unmanaged p/invoke calls in
     // the method, then we're going to run the p/invoke epilog
     // So we mark the FrameRoot as used by this instruction.
@@ -824,7 +823,7 @@ GenTreeLclVarCommon* Compiler::fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_
     }
 
     // TODO: we should generate the code for saving to/restoring
-    //       from the inlined N/Direct frame instead.
+    //       from the inlined PInvoke frame instead.
 
     /* Is this call to unmanaged code? */
     if (call->IsUnmanaged() && compMethodRequiresPInvokeFrame())
@@ -861,13 +860,22 @@ GenTreeLclVarCommon* Compiler::fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_
         }
     }
 
-    definedLcl = gtCallGetDefinedRetBufLclAddr(call);
-    if (definedLcl != nullptr)
-    {
-        fgComputeLifeLocal(life, keepAliveVars, definedLcl);
-    }
+    GenTreeLclVarCommon* partialDef = nullptr;
 
-    return definedLcl;
+    auto visitDef = [&](const LocalDef& def) {
+        if (!def.IsEntire)
+        {
+            assert(partialDef == nullptr);
+            partialDef = def.Def;
+        }
+
+        fgComputeLifeLocal(life, keepAliveVars, def.Def);
+        return GenTree::VisitResult::Continue;
+    };
+
+    call->VisitLocalDefs(this, visitDef);
+
+    return partialDef;
 }
 
 //------------------------------------------------------------------------
@@ -936,6 +944,8 @@ bool Compiler::fgComputeLifeTrackedLocalDef(VARSET_TP&           life,
     if (VarSetOps::IsMember(this, life, varIndex))
     {
         // The variable is live
+        node->gtFlags &= ~GTF_VAR_DEATH;
+
         if ((node->gtFlags & GTF_VAR_USEASG) == 0)
         {
             // Remove the variable from the live set if it is not in the keepalive set.
@@ -1207,11 +1217,12 @@ void Compiler::fgComputeLife(VARSET_TP&           life,
 
         if (tree->IsCall())
         {
-            GenTreeLclVarCommon* const definedLcl = fgComputeLifeCall(life, keepAliveVars, tree->AsCall());
-            if (definedLcl != nullptr)
+            GenTreeLclVarCommon* const partialDef = fgComputeLifeCall(life, keepAliveVars, tree->AsCall());
+            if (partialDef != nullptr)
             {
-                isUse  = (definedLcl->gtFlags & GTF_VAR_USEASG) != 0;
-                varDsc = lvaGetDesc(definedLcl);
+                assert((partialDef->gtFlags & GTF_VAR_USEASG) != 0);
+                isUse  = true;
+                varDsc = lvaGetDesc(partialDef);
             }
         }
         else if (tree->OperIsNonPhiLocal())
@@ -1483,15 +1494,13 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_START_NONGC:
             case GT_START_PREEMPTGC:
             case GT_PROF_HOOK:
-#if defined(FEATURE_EH_WINDOWS_X86)
-            case GT_END_LFIN:
-#endif // FEATURE_EH_WINDOWS_X86
             case GT_SWITCH_TABLE:
             case GT_PINVOKE_PROLOG:
             case GT_PINVOKE_EPILOG:
             case GT_RETURNTRAP:
             case GT_PUTARG_STK:
             case GT_IL_OFFSET:
+            case GT_RECORD_ASYNC_RESUME:
             case GT_KEEPALIVE:
             case GT_SWIFT_ERROR_RET:
             case GT_GCPOLL:

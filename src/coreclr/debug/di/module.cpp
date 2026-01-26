@@ -15,7 +15,7 @@
 #include "corsym.h"
 
 #include "pedecoder.h"
-#include "stgpool.h"
+#include "memorystreams.h"
 
 //---------------------------------------------------------------------------------------
 // Initialize a new CordbModule around a Module in the target.
@@ -27,7 +27,7 @@ CordbModule::CordbModule(
     CordbProcess *     pProcess,
     VMPTR_Module        vmModule,
     VMPTR_DomainAssembly    vmDomainAssembly)
-: CordbBase(pProcess, vmDomainAssembly.IsNull() ? VmPtrToCookie(vmModule) : VmPtrToCookie(vmDomainAssembly), enumCordbModule),
+: CordbBase(pProcess, VmPtrToCookie(vmModule), enumCordbModule),
     m_pAssembly(0),
     m_pAppDomain(0),
     m_classes(11),
@@ -65,12 +65,12 @@ CordbModule::CordbModule(
         pProcess->GetDAC()->GetDomainAssemblyData(vmDomainAssembly, &dfInfo); // throws
 
         m_pAppDomain = pProcess->LookupOrCreateAppDomain(dfInfo.vmAppDomain);
+        _ASSERTE(m_pAppDomain == pProcess->GetAppDomain());
         m_pAssembly  = m_pAppDomain->LookupOrCreateAssembly(dfInfo.vmDomainAssembly);
     }
     else
     {
-        // Not yet implemented
-        m_pAppDomain = pProcess->GetSharedAppDomain();
+        m_pAppDomain = pProcess->GetAppDomain();
         m_pAssembly = m_pAppDomain->LookupOrCreateAssembly(modInfo.vmAssembly);
     }
 #ifdef _DEBUG
@@ -3258,7 +3258,7 @@ HRESULT CordbILCode::CreateNativeBreakpoint(ICorDebugFunctionBreakpoint **ppBrea
 }
 
 
-
+#ifdef FEATURE_CODE_VERSIONING
 CordbReJitILCode::CordbReJitILCode(CordbFunction *pFunction, SIZE_T encVersion, VMPTR_ILCodeVersionNode vmILCodeVersionNode) :
 CordbILCode(pFunction, TargetBuffer(), encVersion, mdSignatureNil, VmPtrToCookie(vmILCodeVersionNode)),
 m_cClauses(0),
@@ -3544,6 +3544,7 @@ HRESULT CordbReJitILCode::GetInstrumentedILMap(ULONG32 cMap, ULONG32 *pcMap, COR
     }
     return S_OK;
 }
+#endif // FEATURE_CODE_VERSIONING
 
 // FindNativeInfoInILVariableArray
 // Linear search through an array of NativeVarInfos, to find the variable of index dwIndex, valid
@@ -4354,7 +4355,7 @@ HRESULT CordbNativeCode::EnumerateVariableHomes(ICorDebugVariableHomeEnum **ppEn
 
 int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
 {
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     if (Is32BitInstruction(*(WORD*)ip))
         return 4;
     else
@@ -4726,8 +4727,6 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
 
     _ASSERTE(!"Invalid opcode!");
     return -1;
-#elif defined(TARGET_RISCV64)
-    return MAX_INSTRUCTION_LENGTH;
 #else
 #error Platform not implemented
 #endif
@@ -5104,7 +5103,7 @@ CordbNativeCode * CordbModule::LookupOrCreateNativeCode(mdMethodDef methodToken,
 
     if (pNativeCode == NULL)
     {
-        GetProcess()->GetDAC()->GetNativeCodeInfoForAddr(methodDesc, startAddress, &codeInfo);
+        GetProcess()->GetDAC()->GetNativeCodeInfoForAddr(startAddress, &codeInfo, NULL, NULL);
 
         // We didn't have an instance, so we'll build one and add it to the hash table
         LOG((LF_CORDB,

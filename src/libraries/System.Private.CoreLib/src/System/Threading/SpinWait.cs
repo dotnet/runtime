@@ -86,9 +86,9 @@ namespace System.Threading
         /// for here.
         /// </remarks>
 #if FEATURE_SINGLE_THREADED
-        internal const int SpinCountforSpinBeforeWait = 1;
+        internal const int SpinCountForSpinBeforeWait = 1;
 #else
-        internal static readonly int SpinCountforSpinBeforeWait = Environment.IsSingleProcessor ? 1 : 35;
+        internal static readonly int SpinCountForSpinBeforeWait = Environment.IsSingleProcessor ? 1 : 35;
 #endif
 
         // The number of times we've spun already.
@@ -315,7 +315,7 @@ namespace System.Threading
             uint startTime = 0;
             if (millisecondsTimeout != 0 && millisecondsTimeout != Timeout.Infinite)
             {
-                startTime = TimeoutHelper.GetTime();
+                startTime = (uint)Environment.TickCount;
             }
             SpinWait spinner = default;
             while (!condition())
@@ -329,7 +329,7 @@ namespace System.Threading
 
                 if (millisecondsTimeout != Timeout.Infinite && spinner.NextSpinWillYield)
                 {
-                    if (millisecondsTimeout <= (TimeoutHelper.GetTime() - startTime))
+                    if (millisecondsTimeout <= (uint)Environment.TickCount - startTime)
                     {
                         return false;
                     }

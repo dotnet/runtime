@@ -6,6 +6,10 @@
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
+    // Workaround for Xcode 15 ld-classic linker which cannot deal with
+    // .alt_entry labels at beginning of section.
+    nop
+
 //
 // Stub dispatch routine for dispatch to a vtable slot
 //

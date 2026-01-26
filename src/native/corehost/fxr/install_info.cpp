@@ -6,29 +6,47 @@
 #include "trace.h"
 #include "utils.h"
 
+#include <algorithm>
+#include <vector>
+
 bool install_info::print_environment(const pal::char_t* leading_whitespace)
 {
-    bool found_any = false;
-
-    const pal::char_t* fmt = _X("%s%-17s [%s]");
-    pal::string_t value;
-    if (pal::getenv(DOTNET_ROOT_ENV_VAR, &value))
+    // Enumerate environment variables and filter for DOTNET_
+    std::vector<std::pair<pal::string_t, pal::string_t>> env_vars;
+    bool found_complus_var = false;
+    pal::enumerate_environment_variables([&](const pal::char_t* name, const pal::char_t* value)
     {
-        found_any = true;
-        trace::println(fmt, leading_whitespace, DOTNET_ROOT_ENV_VAR, value.c_str());
-    }
-
-    for (uint32_t i = 0; i < static_cast<uint32_t>(pal::architecture::__last); ++i)
-    {
-        pal::string_t env_var = get_dotnet_root_env_var_for_arch(static_cast<pal::architecture>(i));
-        if (pal::getenv(env_var.c_str(), &value))
+        // Check if the environment variable starts with DOTNET_
+#if defined(TARGET_WINDOWS)
+        // Environment variables are case-insensitive on Windows
+        auto comp_func = pal::strncasecmp;
+#else
+        auto comp_func = pal::strncmp;
+#endif
+        if (comp_func(name, _X("DOTNET_"), STRING_LENGTH("DOTNET_")) == 0)
         {
-            found_any = true;
-            trace::println(fmt, leading_whitespace, env_var.c_str(), value.c_str());
+            env_vars.push_back(std::make_pair(name, value));
         }
+        else if (!found_complus_var && comp_func(name, _X("COMPlus_"), STRING_LENGTH("COMPlus_")) == 0)
+        {
+            found_complus_var = true;
+        }
+    });
+
+    // Sort for consistent output
+    std::sort(env_vars.begin(), env_vars.end());
+
+    // Print all relevant environment variables
+    const pal::char_t* fmt = _X("%s%-40s [%s]");
+    for (const auto& env_var : env_vars)
+    {
+        trace::println(fmt, leading_whitespace, env_var.first.c_str(), env_var.second.c_str());
     }
 
-    return found_any;
+    if (found_complus_var)
+        trace::println(_X("%sDetected COMPlus_* environment variable(s). Consider transitioning to DOTNET_* equivalent."), leading_whitespace);
+
+    return env_vars.size() > 0 || found_complus_var;
 }
 
 bool install_info::try_get_install_location(pal::architecture arch, pal::string_t& out_install_location, bool* out_is_registered)

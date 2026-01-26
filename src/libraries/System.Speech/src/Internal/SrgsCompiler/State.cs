@@ -158,14 +158,8 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal void Remove()
         {
-            if (_prev != null)
-            {
-                _prev._next = _next;
-            }
-            if (_next != null)
-            {
-                _next._prev = _prev;
-            }
+            _prev?._next = _next;
+            _next?._prev = _prev;
             _next = _prev = null;
         }
 

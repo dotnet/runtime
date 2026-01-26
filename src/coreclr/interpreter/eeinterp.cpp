@@ -48,27 +48,55 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
                                    uint32_t*            nativeSizeOfCode)
 {
 
-    bool doInterpret;
+    bool doInterpret = false;
 
-    if (g_interpModule != NULL)
+    if ((g_interpModule != NULL) && (methodInfo->scope == g_interpModule))
+        doInterpret = true;
+
     {
-        if (methodInfo->scope == g_interpModule)
-            doInterpret = true;
-        else
-            doInterpret = false;
-    }
-    else
-    {
-        const char *methodName = compHnd->getMethodNameFromMetadata(methodInfo->ftn, nullptr, nullptr, nullptr, 0);
-#ifdef TARGET_WASM
-        // interpret everything on wasm
+        switch (InterpConfig.InterpMode())
+        {
+            // 0: default, do not use interpreter except explicit opt-in via DOTNET_Interpreter
+            case 0:
+                break;
+
+            // 1: use interpreter for everything except (1) methods that have R2R compiled code and (2) all code in System.Private.CoreLib. All code in System.Private.CoreLib falls back to JIT if there is no R2R available for it.
+            case 1:
+            {
+                doInterpret = true;
+                const char *assemblyName = compHnd->getClassAssemblyName(compHnd->getMethodClass(methodInfo->ftn));
+                if (assemblyName && !strcmp(assemblyName, "System.Private.CoreLib"))
+                    doInterpret = false;
+                break;
+            }
+
+            // 2: use interpreter for everything except intrinsics. All intrinsics fallback to JIT. Implies DOTNET_ReadyToRun=0
+            case 2:
+                doInterpret = !(compHnd->getMethodAttribs(methodInfo->ftn) & CORINFO_FLG_INTRINSIC);
+                break;
+
+            // 3: use interpreter for everything, the full interpreter-only mode, no fallbacks to R2R or JIT whatsoever. Implies DOTNET_ReadyToRun=0, DOTNET_EnableHWIntrinsic=0, DOTNET_MaxVectorTBitWidth=128, DOTNET_PreferredVectorBitWidth=128
+            case 3:
+                doInterpret = true;
+                break;
+
+            default:
+                NO_WAY("Unsupported value for DOTNET_InterpMode");
+                break;
+        }
+
+#if !defined(FEATURE_JIT)
+        // interpret everything when we do not have a JIT
         doInterpret = true;
 #else
-        doInterpret = (InterpConfig.Interpreter().contains(compHnd, methodInfo->ftn, compHnd->getMethodClass(methodInfo->ftn), &methodInfo->args));
-#endif
-
-        if (doInterpret)
+        // NOTE: We do this check even if doInterpret==true in order to populate g_interpModule
+        const char *methodName = compHnd->getMethodNameFromMetadata(methodInfo->ftn, nullptr, nullptr, nullptr, 0);
+        if (InterpConfig.Interpreter().contains(compHnd, methodInfo->ftn, compHnd->getMethodClass(methodInfo->ftn), &methodInfo->args))
+        {
+            doInterpret = true;
             g_interpModule = methodInfo->scope;
+        }
+#endif
     }
 
     if (!doInterpret)
@@ -78,32 +106,49 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
 
     try
     {
-        InterpCompiler compiler(compHnd, methodInfo);
-        InterpMethod *pMethod = compiler.CompileMethod();
-        int32_t IRCodeSize = 0;
-        int32_t *pIRCode = compiler.GetCode(&IRCodeSize);
+        InterpreterRetryData retryData;
 
-        uint32_t sizeOfCode = sizeof(InterpMethod*) + IRCodeSize * sizeof(int32_t);
-        uint8_t unwindInfo[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+        while (true)
+        {
+            retryData.StartCompilationAttempt();
+            InterpCompiler compiler(compHnd, methodInfo, &retryData);
+            InterpMethod *pMethod = compiler.CompileMethod();
+            if (pMethod == NULL)
+            {
+                assert(retryData.NeedsRetry());
+                continue;
+            }
 
-        AllocMemArgs args {};
-        args.hotCodeSize = sizeOfCode;
-        args.coldCodeSize = 0;
-        args.roDataSize = 0;
-        args.xcptnsCount = 0;
-        args.flag = CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN;
-        compHnd->allocMem(&args);
+            // Once we reach here we will not attempt to retry again.
+            assert(!retryData.NeedsRetry());
 
-        // We store first the InterpMethod pointer as the code header, followed by the actual code
-        *(InterpMethod**)args.hotCodeBlockRW = pMethod;
-        memcpy ((uint8_t*)args.hotCodeBlockRW + sizeof(InterpMethod*), pIRCode, IRCodeSize * sizeof(int32_t));
+            int32_t IRCodeSize = 0;
+            int32_t *pIRCode = compiler.GetCode(&IRCodeSize);
 
-        *entryAddress = (uint8_t*)args.hotCodeBlock;
-        *nativeSizeOfCode = sizeOfCode;
+            uint32_t sizeOfCode = sizeof(InterpMethod*) + IRCodeSize * sizeof(int32_t);
+            uint8_t unwindInfo[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
-        // We can't do this until we've called allocMem
-        compiler.BuildGCInfo(pMethod);
-        compiler.BuildEHInfo();
+            AllocMemArgs args {};
+            args.hotCodeSize = sizeOfCode;
+            args.coldCodeSize = 0;
+            args.roDataSize = 0;
+            args.xcptnsCount = 0;
+            args.flag = CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN;
+            compHnd->allocMem(&args);
+
+            // We store first the InterpMethod pointer as the code header, followed by the actual code
+            *(InterpMethod**)args.hotCodeBlockRW = pMethod;
+            memcpy ((uint8_t*)args.hotCodeBlockRW + sizeof(InterpMethod*), pIRCode, IRCodeSize * sizeof(int32_t));
+
+            compiler.UpdateWithFinalMethodByteCodeAddress((InterpByteCodeStart*)args.hotCodeBlock);
+            *entryAddress = (uint8_t*)args.hotCodeBlock;
+            *nativeSizeOfCode = sizeOfCode;
+
+            // We can't do this until we've called allocMem
+            compiler.BuildGCInfo(pMethod);
+            compiler.BuildEHInfo();
+            break;
+        }
     }
     catch(const InterpException& e)
     {
@@ -130,11 +175,15 @@ void CILInterp::setTargetOS(CORINFO_OS os)
 
 INTERPRETER_NORETURN void NO_WAY(const char* message)
 {
+    if (IsInterpDumpActive())
+        printf("Error during interpreter method compilation: %s\n", message ? message : "unknown error");
     throw InterpException(message, CORJIT_INTERNALERROR);
 }
 
 INTERPRETER_NORETURN void BADCODE(const char* message)
 {
+    if (IsInterpDumpActive())
+        printf("Error during interpreter method compilation: %s\n", message ? message : "unknown error");
     throw InterpException(message, CORJIT_BADCODE);
 }
 

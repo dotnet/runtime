@@ -62,6 +62,7 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
     /// <exception cref="ArgumentOutOfRangeException">mode specified an invalid value.</exception>
     /// <exception cref="InvalidDataException">The contents of the stream could not be interpreted as a Zip file. -or- mode is Update and an entry is missing from the archive or is corrupt and cannot be read. -or- mode is Update and an entry is too large to fit into memory.</exception>
     /// <exception cref="ArgumentException">If a Unicode encoding other than UTF-8 is specified for the <code>entryNameEncoding</code>.</exception>
+    /// <returns>A task that represents the asynchronous initialization. The task result is a <see cref="ZipArchive"/> instance opened on the provided stream.</returns>
     public static async Task<ZipArchive> CreateAsync(Stream stream, ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -91,6 +92,10 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                     break;
                 case ZipArchiveMode.Read:
                     await zipArchive.ReadEndOfCentralDirectoryAsync(cancellationToken).ConfigureAwait(false);
+
+                    // As there is no API for accessing .Entries asynchronously, we are expected to read the central
+                    // directory up-front
+                    await zipArchive.EnsureCentralDirectoryReadAsync(cancellationToken).ConfigureAwait(false);
                     break;
                 case ZipArchiveMode.Update:
                 default:
@@ -125,6 +130,10 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Asynchronously releases the resources used by the <see cref="ZipArchive"/>.
+    /// </summary>
+    /// <returns>A <see cref="ValueTask"/> that represents the asynchronous dispose operation.</returns>
     public async ValueTask DisposeAsync() => await DisposeAsyncCore().ConfigureAwait(false);
 
     protected virtual async ValueTask DisposeAsyncCore()
@@ -247,10 +256,12 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                     cancellationToken).ConfigureAwait(false))
                 throw new InvalidDataException(SR.EOCDNotFound);
 
+            long eocdStart = _archiveStream.Position;
+
             // read the EOCD
             ZipEndOfCentralDirectoryBlock eocd = await ZipEndOfCentralDirectoryBlock.ReadBlockAsync(_archiveStream, cancellationToken).ConfigureAwait(false);
 
-            ReadEndOfCentralDirectoryInnerWork(eocd, out long eocdStart);
+            ReadEndOfCentralDirectoryInnerWork(eocd);
 
             await TryReadZip64EndOfCentralDirectoryAsync(eocd, eocdStart, cancellationToken).ConfigureAwait(false);
 
@@ -283,6 +294,12 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
             eocd.NumberOfEntriesInTheCentralDirectory == ZipHelper.Mask16Bit)
         {
             // Read Zip64 End of Central Directory Locator
+
+            // Check if there's enough space before the EOCD to look for the Zip64 EOCDL
+            if (eocdStart < Zip64EndOfCentralDirectoryLocator.TotalSize)
+            {
+                throw new InvalidDataException(SR.Zip64EOCDNotWhereExpected);
+            }
 
             // This seeks forwards almost to the beginning of the Zip64-EOCDL, one byte after where the signature would be located
             _archiveStream.Seek(eocdStart - Zip64EndOfCentralDirectoryLocator.SizeOfBlockWithoutSignature, SeekOrigin.Begin);

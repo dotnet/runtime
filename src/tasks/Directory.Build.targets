@@ -1,5 +1,8 @@
 <Project>
-  <ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
+
+  <ItemGroup Condition="'$(MSBuildProjectName)' != 'tasks'">
     <!-- reference MSBuild directly to avoid bringing in it's package closure.  These all represent assemblies available to tasks and provided by MSBuild -->
     <PackageDownloadAndReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" Folder="ref/net472" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net472'))" />
     <PackageDownloadAndReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" Folder="ref/net8.0" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))" />
@@ -10,7 +13,7 @@
     <PackageDownloadAndReference Include="System.Reflection.MetadataLoadContext" Version="$(SystemReflectionMetadataLoadContextToolsetVersion)" Folder="lib/netstandard2.0" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and '$(MSBuildProjectName)' != 'tasks'">
+  <ItemGroup Condition="'$(MSBuildProjectName)' != 'tasks' and '$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <!-- These assemblies and their dependencies are made available by MSBuild on .NET Framework -->
     <PackageDownloadAndReference Include="Microsoft.Bcl.AsyncInterfaces" Version="$(MicrosoftBclAsyncInterfacesToolsetVersion)" Folder="lib/net462" />
     <PackageDownloadAndReference Include="System.Buffers" Version="$(SystemBuffersToolsetVersion)" Folder="lib/net461" />
@@ -24,5 +27,4 @@
 
   <Import Project="$(RepositoryEngineeringDir)PackageDownloadAndReference.targets" Condition="'$(MSBuildProjectName)' != 'tasks'" />
 
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
 </Project>

@@ -33,7 +33,8 @@ public static partial class ZipFileExtensions
     /// <param name="destinationFileName">The name of the file that will hold the contents of the entry.
     /// The path is permitted to specify relative or absolute path information.
     /// Relative path information is interpreted as relative to the current working directory.</param>
-    /// /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous extract operation. The task completes when the entry contents have been written to the destination file.</returns>
     public static Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, CancellationToken cancellationToken = default) =>
         ExtractToFileAsync(source, destinationFileName, false, cancellationToken);
 
@@ -65,6 +66,7 @@ public static partial class ZipFileExtensions
     /// Relative path information is interpreted as relative to the current working directory.</param>
     /// <param name="overwrite">True to indicate overwrite.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous extract operation. The task completes when the entry contents have been written to the destination file.</returns>
     public static async Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, bool overwrite, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();

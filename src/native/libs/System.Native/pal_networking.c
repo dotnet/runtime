@@ -407,8 +407,10 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t address
     char name[_POSIX_HOST_NAME_MAX];
     result = gethostname((char*)name, _POSIX_HOST_NAME_MAX);
 
-    bool includeIPv4Loopback = true;
-    bool includeIPv6Loopback = true;
+    bool includeIPv4Loopback;
+    bool includeIPv6Loopback;
+    includeIPv4Loopback = true;
+    includeIPv6Loopback = true;
 
     if (result == 0 && strcasecmp((const char*)address, name) == 0)
     {
@@ -1186,6 +1188,7 @@ int32_t SystemNative_GetIPv4MulticastOption(intptr_t socket, int32_t multicastOp
     return Error_SUCCESS;
 }
 
+
 int32_t SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option)
 {
     if (option == NULL)
@@ -1200,6 +1203,16 @@ int32_t SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOp
     {
         return Error_EINVAL;
     }
+
+#if HAVE_IP_MULTICAST_IFINDEX
+    // Use IP_MULTICAST_IFINDEX when available for interface index specification
+    if (optionName == SocketOptionName_SO_IP_MULTICAST_IF)
+    {
+        uint32_t ifindex = (uint32_t)option->InterfaceIndex;
+        int err = setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IFINDEX, &ifindex, sizeof(ifindex));
+        return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+    }
+#endif
 
 #if HAVE_IP_MREQN
     struct ip_mreqn opt;
@@ -1515,7 +1528,7 @@ int32_t SystemNative_ReceiveSocketError(intptr_t socket, MessageHeader* messageH
 #if HAVE_LINUX_ERRQUEUE_H
     char buffer[sizeof(struct sock_extended_err) + sizeof(struct sockaddr_storage)];
     messageHeader->ControlBufferLen = sizeof(buffer);
-    messageHeader->ControlBuffer = (void*)buffer;
+    messageHeader->ControlBuffer = (uint8_t*)buffer;
 
     struct msghdr header;
     struct icmphdr icmph;

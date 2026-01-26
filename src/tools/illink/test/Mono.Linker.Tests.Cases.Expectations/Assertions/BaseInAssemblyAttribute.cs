@@ -10,6 +10,6 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
         /// This property can override that by setting only the platforms
         /// which are expected to preserve the desired behavior.
         /// </summary>
-        public Tool Tool { get; set; } = Tool.TrimmerAnalyzerAndNativeAot;
+        public Tool Tool { get; set; } = Tool.All;
     }
 }

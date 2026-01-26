@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <Optimize>True</Optimize>
     <DefineConstants>ASYNC1_TASK;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>

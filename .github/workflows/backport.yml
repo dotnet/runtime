@@ -46,7 +46,8 @@ jobs:
 
         **IMPORTANT**: If this backport is for a servicing release, please verify that:
 
-        - The PR target branch is `release/X.0-staging`, not `release/X.0`.
+        - For .NET 8 and .NET 9: The PR target branch is `release/X.0-staging`, not `release/X.0`.
+        - For .NET 10+: The PR target branch is `release/X.0` (no `-staging` suffix).
 
         ## Package authoring no longer needed in .NET 9
 

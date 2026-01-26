@@ -289,6 +289,9 @@ public:
     // occurs.
     void RecordGap(WORD StartMTSlot, WORD NumSkipSlots);
 
+    // Record that the method table slot at MTSlot is excluded from the VT slots.
+    void RecordExcludedMethod(WORD MTSlot);
+
     // Then call FinalizeMapping to create the actual mapping list.
     void FinalizeMapping(WORD TotalMTSlots);
 
@@ -338,7 +341,9 @@ class EEClassLayoutInfo
         {
             Auto = 0, // Make sure Auto is the default value as the default-constructed value represents the "auto layout" case
             Sequential,
-            Explicit
+            Explicit,
+            CStruct,
+            CUnion
         };
     private:
         enum {
@@ -486,6 +491,18 @@ class EEClassLayoutInfo
             mdTypeDef cl
         );
 
+        ULONG InitializeCStructFieldLayout(
+            FieldDesc* pFields,
+            MethodTable** pByValueClassCache,
+            ULONG cFields
+        );
+
+        ULONG InitializeCUnionFieldLayout(
+            FieldDesc* pFields,
+            MethodTable** pByValueClassCache,
+            ULONG cFields
+        );
+
     private:
         void SetIsZeroSized(BOOL isZeroSized)
         {
@@ -630,12 +647,8 @@ class EEClassOptionalFields
     //
 
 #if defined(UNIX_AMD64_ABI)
-    // Number of eightBytes in the following arrays
-    int m_numberEightBytes;
-    // Classification of the eightBytes
-    SystemVClassificationType m_eightByteClassifications[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
-    // Size of data the eightBytes
-    unsigned int m_eightByteSizes[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+    // Information about the eightByte classifications for structs passed in registers
+    SystemVEightByteRegistersInfo m_eightByteRegistersInfo;
 #endif // UNIX_AMD64_ABI
 
     // Required alignment for this fields of this type (only set in auto-layout structures when different from pointer alignment)
@@ -1317,15 +1330,15 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= (DWORD)VMFLAG_INLINE_ARRAY;
     }
-    DWORD HasNonPublicFields()
+    DWORD HasRVAStaticFields()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_VMFlags & VMFLAG_HASNONPUBLICFIELDS);
+        return (m_VMFlags & VMFLAG_HASRVASTATICFIELDS);
     }
-    void SetHasNonPublicFields()
+    void SetHasRVAStaticFields()
     {
         LIMITED_METHOD_CONTRACT;
-        m_VMFlags |= (DWORD)VMFLAG_HASNONPUBLICFIELDS;
+        m_VMFlags |= (DWORD)VMFLAG_HASRVASTATICFIELDS;
     }
     DWORD IsNotTightlyPacked()
     {
@@ -1411,41 +1424,19 @@ public:
 
 
 #if defined(UNIX_AMD64_ABI)
-    // Get number of eightbytes used by a struct passed in registers.
-    inline int GetNumberEightBytes()
+    inline SystemVEightByteRegistersInfo GetEightByteRegistersInfo()
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasOptionalFields());
-        return GetOptionalFields()->m_numberEightBytes;
-    }
-
-    // Get eightbyte classification for the eightbyte with the specified index.
-    inline SystemVClassificationType GetEightByteClassification(int index)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasOptionalFields());
-        return GetOptionalFields()->m_eightByteClassifications[index];
-    }
-
-    // Get size of the data in the eightbyte with the specified index.
-    inline unsigned int GetEightByteSize(int index)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasOptionalFields());
-        return GetOptionalFields()->m_eightByteSizes[index];
+        return GetOptionalFields()->m_eightByteRegistersInfo;
     }
 
     // Set the eightByte classification
-    inline void SetEightByteClassification(int eightByteCount, SystemVClassificationType *eightByteClassifications, unsigned int *eightByteSizes)
+    inline void SetEightByteClassification(SystemVEightByteRegistersInfo eightByteInfo)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasOptionalFields());
-        GetOptionalFields()->m_numberEightBytes = eightByteCount;
-        for (int i = 0; i < eightByteCount; i++)
-        {
-            GetOptionalFields()->m_eightByteClassifications[i] = eightByteClassifications[i];
-            GetOptionalFields()->m_eightByteSizes[i] = eightByteSizes[i];
-        }
+        GetOptionalFields()->m_eightByteRegistersInfo = eightByteInfo;
     }
 #endif // UNIX_AMD64_ABI
 
@@ -1647,7 +1638,7 @@ public:
 
         VMFLAG_INLINE_ARRAY                    = 0x00010000,
         VMFLAG_NO_GUID                         = 0x00020000,
-        VMFLAG_HASNONPUBLICFIELDS              = 0x00040000,
+        VMFLAG_HASRVASTATICFIELDS              = 0x00040000,
         VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT      = 0x00080000,
         VMFLAG_CONTAINS_STACK_PTR              = 0x00100000,
         VMFLAG_PREFER_ALIGN8                   = 0x00200000, // Would like to have 8-byte alignment
@@ -1799,8 +1790,13 @@ template<> struct cdac_data<EEClass>
 {
     static constexpr size_t InternalCorElementType = offsetof(EEClass, m_NormType);
     static constexpr size_t MethodTable = offsetof(EEClass, m_pMethodTable);
+    static constexpr size_t FieldDescList = offsetof(EEClass, m_pFieldDescList);
+    static constexpr size_t MethodDescChunk = offsetof(EEClass, m_pChunks);
     static constexpr size_t NumMethods = offsetof(EEClass, m_NumMethods);
     static constexpr size_t CorTypeAttr = offsetof(EEClass, m_dwAttrClass);
+    static constexpr size_t NumInstanceFields = offsetof(EEClass, m_NumInstanceFields);
+    static constexpr size_t NumStaticFields = offsetof(EEClass, m_NumStaticFields);
+    static constexpr size_t NumThreadStaticFields = offsetof(EEClass, m_NumThreadStaticFields);
     static constexpr size_t NumNonVirtualSlots = offsetof(EEClass, m_NumNonVirtualSlots);
 };
 
@@ -2043,7 +2039,7 @@ inline PCODE GetPreStubEntryPoint()
 
 PCODE TheUMThunkPreStub();
 
-PCODE TheVarargNDirectStub(BOOL hasRetBuffArg);
+PCODE TheVarargPInvokeStub(BOOL hasRetBuffArg);
 
 
 

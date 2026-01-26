@@ -78,7 +78,7 @@ namespace System.Net.NetworkInformation.Tests
                 : Array.Empty<byte>();
 
         public static bool DoesNotUsePingUtility => OperatingSystem.IsWindows() ||
-                                OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsWatchOS() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() ||
+                                OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() ||
                                 Capability.CanUseRawSockets(TestSettings.GetLocalIPAddress().AddressFamily);
         public static bool UsesPingUtility => !DoesNotUsePingUtility;
 
@@ -803,15 +803,20 @@ namespace System.Net.NetworkInformation.Tests
                 reply = await sendPing(sender, TestSettings.UnreachableAddress3);
             }
 
+            if (reply.Status == IPStatus.DestinationNetworkUnreachable)
+            {
+                throw new SkipTestException("Unable to verify timeouts. Skipping test.");
+            }
+
             Assert.Equal(IPStatus.TimedOut, reply.Status);
         }
 
-        [Fact]
+        [ConditionalFact]
         [OuterLoop]
         public Task Ping_TimedOut_Sync_Success()
             => Ping_TimedOut_Core((sender, address) => Task.Run(() => sender.Send(address)));
 
-        [Fact]
+        [ConditionalFact]
         [OuterLoop]
         public Task Ping_TimedOut_EAP_Success()
             => Ping_TimedOut_Core(async (sender, address) =>
@@ -841,7 +846,7 @@ namespace System.Net.NetworkInformation.Tests
                 return reply;
             });
 
-        [Fact]
+        [ConditionalFact]
         [OuterLoop]
         public Task Ping_TimedOut_TAP_Success()
             => Ping_TimedOut_Core((sender, address) => sender.SendPingAsync(address));
@@ -885,7 +890,7 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(AddressFamily.InterNetworkV6, "ja_JP.UTF8", null, null)]
         [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", "ja_JP.UTF8", null)]
         [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", null, "ja_JP.UTF8")]
-        public async Task SendPing_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string envVar_LC_MESSAGES, string envVar_LC_ALL)
+        public async Task SendPing_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string? envVar_LC_MESSAGES, string? envVar_LC_ALL)
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
             if (localIpAddress == null)
@@ -919,7 +924,7 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(AddressFamily.InterNetworkV6, "ja_JP.UTF8", null, null)]
         [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", "ja_JP.UTF8", null)]
         [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", null, "ja_JP.UTF8")]
-        public async Task SendPingAsync_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string envVar_LC_MESSAGES, string envVar_LC_ALL)
+        public async Task SendPingAsync_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string? envVar_LC_MESSAGES, string? envVar_LC_ALL)
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
 

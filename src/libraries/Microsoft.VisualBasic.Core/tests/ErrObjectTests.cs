@@ -10,7 +10,7 @@ namespace Microsoft.VisualBasic.Tests
     public class ErrObjectTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
+        [ActiveIssue("https://github.com/mono/mono/issues/14854", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
         [ActiveIssue("https://github.com/mono/mono/issues/14854", TestRuntimes.Mono)]
         public void Clear()
         {
@@ -122,7 +122,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("#-3", -3, "")]
         [InlineData("MyFile1", 0, "MyFile1")]
         [InlineData("MyFile4#4", 4, "MyFile4")]
-        public void ParseHelpLink(string helpLink, int expectedHelpContext, string expectedHelpFile)
+        public void ParseHelpLink(string? helpLink, int expectedHelpContext, string expectedHelpFile)
         {
             ProjectData.ClearProjectError();
             ProjectData.SetProjectError(new ArgumentException() { HelpLink = helpLink });

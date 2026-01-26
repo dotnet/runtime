@@ -289,8 +289,8 @@ mono_memory_barrier_process_wide (void)
 	g_assert (status == 0);
 
 	if (memory_barrier_process_wide_helper_page == NULL) {
-		status = posix_memalign (&memory_barrier_process_wide_helper_page, mono_pagesize (), mono_pagesize ());
-		g_assert (status == 0);
+		memory_barrier_process_wide_helper_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_NONE, MONO_MEM_ACCOUNT_OTHER);
+		g_assert (memory_barrier_process_wide_helper_page != NULL);
 	}
 
 	// Changing a helper memory page protection from read / write to no access

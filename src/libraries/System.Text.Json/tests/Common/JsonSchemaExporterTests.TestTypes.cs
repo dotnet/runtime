@@ -121,6 +121,18 @@ namespace System.Text.Json.Schema.Tests
                 }
                 """);
 
+            yield return new TestData<int?>(
+                Value: 42,
+                AdditionalValues: [null],
+                ExpectedJsonSchema: """{"type":["integer","null"]}""",
+                Options: new() { TreatNullObliviousAsNonNullable = true });
+
+            yield return new TestData<DateTimeOffset?>(
+                Value: DateTimeOffset.MinValue,
+                AdditionalValues: [null],
+                ExpectedJsonSchema: """{"type":["string","null"],"format":"date-time"}""",
+                Options: new() { TreatNullObliviousAsNonNullable = true });
+
             // User-defined POCOs
             yield return new TestData<SimplePoco>(
                 Value: new() { String = "string", StringNullable = "string", Int = 42, Double = 3.14, Boolean = true },

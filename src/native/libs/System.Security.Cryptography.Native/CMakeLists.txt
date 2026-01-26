@@ -1,7 +1,11 @@
 # Required for StaticOpenSslLinking
-cmake_minimum_required(VERSION 3.10..3.20)
+cmake_minimum_required(VERSION 3.10..3.26)
 
 project(System.Security.Cryptography.Native C)
+
+if(CLR_CMAKE_TARGET_ARCH_WASM)
+    message(FATAL_ERROR "Not implemented for WASM")
+endif()
 
 # These are happening inside of OpenSSL-defined macros out of our control
 add_compile_options(-Wno-cast-align)
@@ -19,7 +23,6 @@ append_extra_cryptography_libs(NATIVE_LIBS_EXTRA)
 include_directories(${OPENSSL_INCLUDE_DIR})
 
 set(NATIVECRYPTO_SOURCES
-    apibridge.c
     apibridge_30.c
     memory_debug.c
     openssl.c
@@ -41,6 +44,7 @@ set(NATIVECRYPTO_SOURCES
     pal_evp_pkey_ecdsa.c
     pal_evp_pkey_eckey.c
     pal_evp_pkey_rsa.c
+    pal_evp_pkey_raw_signverify.c
     pal_evp_pkey_ml_dsa.c
     pal_evp_pkey_slh_dsa.c
     pal_hmac.c
@@ -65,18 +69,6 @@ if (LOCAL_BUILD)
     configure_file(
         ../Common/pal_config.h.in
         ${CMAKE_CURRENT_BINARY_DIR}/pal_config.h)
-endif()
-
-
-# Always build portable on macOS because OpenSSL is not a system component
-# and our prebuilts should not assume a specific ABI version for the types
-# that use OpenSSL at runtime.
-if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST)
-    set(FEATURE_DISTRO_AGNOSTIC_SSL True)
-
-    # by default uninitialized variables like the shim _ptr functions, will turn into common symbols
-    # and on OSX those have linking problems in libraries (ELF vs. Mach-O difference)
-    add_compile_options(-fno-common)
 endif()
 
 if (FEATURE_DISTRO_AGNOSTIC_SSL)
@@ -124,16 +116,14 @@ if (GEN_SHARED_LIB)
         endif()
     endif()
 
-    if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
-        add_custom_command(TARGET System.Security.Cryptography.Native.OpenSsl POST_BUILD
-            COMMENT "Verifying System.Security.Cryptography.Native.OpenSsl entry points against entrypoints.c "
-            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
-                $<TARGET_FILE:System.Security.Cryptography.Native.OpenSsl>
-                ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
-                ${CMAKE_NM}
-            VERBATIM
-        )
-    endif()
+    add_custom_command(TARGET System.Security.Cryptography.Native.OpenSsl POST_BUILD
+        COMMENT "Verifying System.Security.Cryptography.Native.OpenSsl entry points against entrypoints.c "
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
+            $<TARGET_FILE:System.Security.Cryptography.Native.OpenSsl>
+            ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
+            ${CMAKE_NM}
+        VERBATIM
+    )
 
     target_link_libraries(System.Security.Cryptography.Native.OpenSsl
         PRIVATE

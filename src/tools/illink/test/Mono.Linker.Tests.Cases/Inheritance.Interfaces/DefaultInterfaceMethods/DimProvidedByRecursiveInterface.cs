@@ -12,22 +12,22 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
     [SkipILVerify]
 
 #if IL_ASSEMBLY_AVAILABLE
-	[KeptMemberInAssembly ("library.dll", typeof(Program.IFoo), "Method()")]
-	[KeptTypeInAssembly ("library.dll", typeof(Program.IBar))]
-	[KeptMemberInAssembly ("library.dll", typeof(Program.IBar), "Program.IFoo.Method()")]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.IBar), "library.dll", typeof (Program.IFoo))]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.MyFoo), "library.dll", typeof (Program.IBaz))]
-	[KeptTypeInAssembly ("library.dll", typeof(Program.IBaz))]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.IBaz), "library.dll", typeof (Program.IBar))]
-	[KeptMemberInAssembly ("library.dll", typeof(Program), "CallMethod(Program/IFoo)")]
+    [KeptMemberInAssembly("library.dll", typeof(Program.IFoo), "Method()")]
+    [KeptTypeInAssembly("library.dll", typeof(Program.IBar))]
+    [KeptMemberInAssembly("library.dll", typeof(Program.IBar), "Program.IFoo.Method()")]
+    [KeptInterfaceOnTypeInAssembly("library.dll", typeof(Program.IBar), "library.dll", typeof(Program.IFoo))]
+    [KeptInterfaceOnTypeInAssembly("library.dll", typeof(Program.MyFoo), "library.dll", typeof(Program.IBaz))]
+    [KeptTypeInAssembly("library.dll", typeof(Program.IBaz))]
+    [KeptInterfaceOnTypeInAssembly("library.dll", typeof(Program.IBaz), "library.dll", typeof(Program.IBar))]
+    [KeptMemberInAssembly("library.dll", typeof(Program), "CallMethod(Program/IFoo)")]
 #endif
     class DimProvidedByRecursiveInterface
     {
         static void Main()
         {
 #if IL_ASSEMBLY_AVAILABLE
-			Program.IFoo foo = new Program.MyFoo ();
-			Program.CallMethod(foo);
+            Program.IFoo foo = new Program.MyFoo();
+            Program.CallMethod(foo);
 #endif
         }
     }
@@ -37,31 +37,31 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 
 // public static class Program
 // {
-// 	[Kept]
-// 	interface IFoo
-// 	{
-// 		void Method();
-// 	}
+//     [Kept]
+//     interface IFoo
+//     {
+//         void Method();
+//     }
 
-// 	[Kept]
-// 	interface IBar : IFoo
-// 	{
-// 		[Kept]
-// 		void IFoo.Method() { }
-// 	}
+//     [Kept]
+//     interface IBar : IFoo
+//     {
+//         [Kept]
+//         void IFoo.Method() { }
+//     }
 
-// 	[Kept]
-// 	interface IBaz: IBar /* not IFoo */
-// 	{
-// 	}
+//     [Kept]
+//     interface IBaz: IBar /* not IFoo */
+//     {
+//     }
 
-// 	[Kept]
-// 	[KeptInterface(typeof(IBaz))]
-// 	class MyFoo : IBaz /* not IBar, not IFoo */
-// 	{ }
+//     [Kept]
+//     [KeptInterface(typeof(IBaz))]
+//     class MyFoo : IBaz /* not IBar, not IFoo */
+//     { }
 
-// 	static void CallMethod(IFoo foo)
-// 	{
-// 		foo.Method();
-// 	}
+//     static void CallMethod(IFoo foo)
+//     {
+//         foo.Method();
+//     }
 // }

@@ -24,6 +24,7 @@
     <Compile Include="System\Linq\AnyAsync.cs" />
     <Compile Include="System\Linq\Append.cs" />
     <Compile Include="System\Linq\AsyncEnumerable.cs" />
+    <Compile Include="System\Linq\AsyncIterator.cs" />
     <Compile Include="System\Linq\AverageAsync.cs" />
     <Compile Include="System\Linq\Cast.cs" />
     <Compile Include="System\Linq\Chunk.cs" />
@@ -63,6 +64,7 @@
     <Compile Include="System\Linq\SequenceEqualAsync.cs" />
     <Compile Include="System\Linq\Shuffle.cs" />
     <Compile Include="System\Linq\SingleAsync.cs" />
+    <Compile Include="System\Linq\SingleLinkedNode.cs" />
     <Compile Include="System\Linq\Skip.cs" />
     <Compile Include="System\Linq\SkipLast.cs" />
     <Compile Include="System\Linq\SkipWhile.cs" />
@@ -88,16 +90,16 @@
     <Compile Include="System\Linq\Sequence.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
-  </ItemGroup>
-
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\OverloadResolutionPriorityAttribute.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Linq\src\System.Linq.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

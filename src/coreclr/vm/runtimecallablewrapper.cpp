@@ -37,7 +37,6 @@ class Object;
 #include "typestring.h"
 #include "caparser.h"
 #include "classnames.h"
-#include "objectnative.h"
 #include "finalizerthread.h"
 #include "dynamicinterfacecastable.h"
 
@@ -941,7 +940,7 @@ VOID RCWCleanupList::AddWrapper(RCW* pRCW)
     CONTRACTL_END;
 
     // For the global cleanup list, this is called only from the finalizer thread
-    _ASSERTE(this != g_pRCWCleanupList || GetThread() == FinalizerThread::GetFinalizerThread());
+    _ASSERTE(this != g_pRCWCleanupList || FinalizerThread::IsCurrentThreadFinalizer());
 
     {
         CrstHolder ch(&m_lock);
@@ -1002,7 +1001,7 @@ VOID RCWCleanupList::CleanupAllWrappers()
         MODE_ANY;
 
         // For the global cleanup list, this is called only from the finalizer thread
-        PRECONDITION( (this != g_pRCWCleanupList) || (GetThread() == FinalizerThread::GetFinalizerThread()));
+        PRECONDITION( (this != g_pRCWCleanupList) || FinalizerThread::IsCurrentThreadFinalizer());
     }
     CONTRACTL_END;
 
@@ -1195,7 +1194,7 @@ VOID RCWCleanupList::CleanupWrappersInCurrentCtxThread(BOOL fWait, BOOL fManualC
 
             // Do a noop wait just to make sure we are cooperating
             // with the finalizer thread
-            pThread->Join(1, TRUE);
+            pThread->DoReentrantWaitWithRetry(pThread->GetThreadHandle(), 1, WaitMode_Alertable);
         }
     }
 }
@@ -1280,14 +1279,6 @@ VOID RCWCleanupList::ReleaseRCWListRaw(RCW* pRCW)
         pRCW = pNext;
     }
 }
-
-const int RCW::s_rGCPressureTable[GCPressureSize_COUNT] =
-{
-    0,                           // GCPressureSize_None
-    GC_PRESSURE_PROCESS_LOCAL,   // GCPressureSize_ProcessLocal
-    GC_PRESSURE_MACHINE_LOCAL,   // GCPressureSize_MachineLocal
-    GC_PRESSURE_REMOTE,          // GCPressureSize_Remote
-};
 
 //--------------------------------------------------------------------------------
 // The IUnknown passed in is AddRef'ed if we succeed in creating the wrapper.
@@ -1476,42 +1467,6 @@ RCW::MarshalingType RCW::GetMarshalingType(IUnknown* pUnk, MethodTable *pClassMT
     if (IUnkEntry::IsComponentFreeThreaded(pUnk))
         return MarshalingType_FreeThreaded;
     return MarshalingType_Unknown;
-}
-
-void RCW::AddMemoryPressure(GCPressureSize pressureSize)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    int pressure = s_rGCPressureTable[pressureSize];
-    GCInterface::AddMemoryPressure(pressure);
-
-    // Remember the pressure we set.
-    m_Flags.m_GCPressure = pressureSize;
-}
-
-void RCW::RemoveMemoryPressure()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    if (GCPressureSize_None == m_Flags.m_GCPressure)
-        return;
-
-    int pressure = s_rGCPressureTable[m_Flags.m_GCPressure];
-    GCInterface::RemoveMemoryPressure(pressure);
-
-    m_Flags.m_GCPressure = GCPressureSize_None;
 }
 
 
@@ -1728,9 +1683,6 @@ void RCW::Cleanup()
 
         // Release the IUnkEntry and the InterfaceEntries.
         ReleaseAllInterfacesCallBack(this);
-
-        // Remove the memory pressure caused by this RCW (if present)
-        RemoveMemoryPressure();
     }
 
 #ifdef _DEBUG

@@ -824,7 +824,6 @@ mono_debugger_agent_init_internal (void)
 	}
 	mono_de_set_log_level (log_level, log_file);
 
-	objrefs_init ();
 	suspend_init ();
 
 #ifdef HAVE_SETPGID
@@ -1638,6 +1637,8 @@ mono_init_debugger_agent_common (MonoProfilerHandle *prof)
 	tid_to_thread = mono_g_hash_table_new_type_internal (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger Thread Table");
 
 	tid_to_thread_obj = mono_g_hash_table_new_type_internal (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger Thread Object Table");
+
+	objrefs_init ();
 }
 
 #ifdef TARGET_WASM
@@ -4139,7 +4140,7 @@ jit_end (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 		if (assembly) {
 			DebuggerTlsData *tls;
 			tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
-			if (!CHECK_ICORDBG (TRUE) || tls->invoke == NULL) {
+			if (!CHECK_ICORDBG (TRUE) || !tls || tls->invoke == NULL) {
 				process_profiler_event (EVENT_KIND_ASSEMBLY_LOAD, assembly);
 			} else {
 				mono_dbg_assembly_load (prof, assembly); //send later
@@ -7184,6 +7185,10 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case CMD_VM_SET_PROTOCOL_VERSION: {
+		if (protocol_version_set) {
+			PRINT_DEBUG_MSG (1, "[dbg] Trying to reset the protocol version, ignoring it\n");
+			break;
+		}
 		major_version = decode_int (p, &p, end);
 		minor_version = decode_int (p, &p, end);
 		if (p < end)
@@ -9323,7 +9328,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		names = g_new (char *, sig->param_count);
 		mono_method_get_param_names_internal (method, (const char **) names);
 		for (guint16 i = 0; i < sig->param_count; ++i)
-			buffer_add_string (buf, names [i]);
+			buffer_add_string (buf, names [i] ? names [i] : "");
 		g_free (names);
 
 		break;
@@ -10345,6 +10350,10 @@ array_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				buffer_add_typeid (buf, arr->obj.vtable->domain, m_class_get_element_class (arr->obj.vtable->klass));
 				if (CHECK_ICORDBG (TRUE))
 					buffer_add_byte (buf, GINT_TO_UINT8 (MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass)))));
+			}
+			if (type == MONO_TYPE_SZARRAY && CHECK_ICORDBG (TRUE) && CHECK_PROTOCOL_VERSION (2, 67))
+			{
+				buffer_add_typeid (buf, arr->obj.vtable->domain, m_class_get_element_class (arr->obj.vtable->klass));
 			}
 		}
 		break;

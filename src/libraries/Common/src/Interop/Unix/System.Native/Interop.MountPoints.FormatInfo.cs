@@ -4,22 +4,12 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 internal static partial class Interop
 {
     internal static partial class Sys
     {
-#if DEBUG
-        static Sys()
-        {
-            foreach (string name in Enum.GetNames<UnixFileSystemTypes>())
-            {
-                System.Diagnostics.Debug.Assert(GetDriveType(name) != DriveType.Unknown,
-                    $"Expected {nameof(UnixFileSystemTypes)}.{name} to have an entry in {nameof(GetDriveType)}.");
-            }
-        }
-#endif
-
         private const int MountPointFormatBufferSizeInBytes = 32;
 
         [StructLayout(LayoutKind.Sequential)]
@@ -59,8 +49,7 @@ internal static partial class Interop
             int result = GetFileSystemTypeNameForMountPoint(name, formatBuffer, MountPointFormatBufferSizeInBytes, &formatType);
             if (result == 0)
             {
-                format = formatType == -1 ? Marshal.PtrToStringUTF8((IntPtr)formatBuffer)!
-                                          : (Enum.GetName(typeof(UnixFileSystemTypes), formatType) ?? "");
+                format = formatType == -1 ? Utf8StringMarshaller.ConvertToManaged(formatBuffer)! : "";
                 return Error.SUCCESS;
             }
             else
@@ -92,7 +81,6 @@ internal static partial class Interop
             // This list is based primarily on "man fs", "man mount", "mntent.h", "/proc/filesystems", coreutils "stat.c",
             // and "wiki.debian.org/FileSystem". It can be extended over time as we find additional file systems that should
             // be recognized as a particular drive type.
-            // Keep this in sync with the UnixFileSystemTypes enum in Interop.UnixFileSystemTypes.cs
             switch (fileSystemName)
             {
                 case "cddafs":

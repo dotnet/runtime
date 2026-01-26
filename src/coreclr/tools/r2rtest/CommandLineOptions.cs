@@ -299,7 +299,7 @@ namespace R2RTest
             new Option<DirectoryInfo>("--asp-net-path", "-asp") { Description = "Path to SERP's ASP.NET Core folder" }.AcceptExistingOnly();
 
         private static int Main(string[] args) =>
-            new CommandLineConfiguration(new R2RTestRootCommand().UseVersion()).Invoke(args);
+            new R2RTestRootCommand().UseVersion().Parse(args).Invoke();
     }
 
     public partial class BuildOptions

@@ -168,7 +168,7 @@ namespace Internal.Runtime.Augments
 
         public static IntPtr GetAllocateObjectHelperForType(RuntimeTypeHandle type)
         {
-            return RuntimeImports.RhGetRuntimeHelperForType(type.ToMethodTable(), RuntimeHelperKind.AllocateObject);
+            return RuntimeImports.RhGetNewObjectHelper(type.ToMethodTable());
         }
 
         public static IntPtr GetFallbackDefaultConstructor()
@@ -547,6 +547,11 @@ namespace Internal.Runtime.Augments
             return result;
         }
 
+        public static unsafe IntPtr ResolveDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot)
+        {
+            return RuntimeImports.RhResolveDispatchOnType(instanceType.ToMethodTable(), interfaceType.ToMethodTable(), checked((ushort)slot));
+        }
+
         public static bool IsUnmanagedPointerType(RuntimeTypeHandle typeHandle)
         {
             return typeHandle.ToMethodTable()->IsPointer;
@@ -692,19 +697,6 @@ namespace Internal.Runtime.Augments
             {
                 return s_stackTraceMetadataCallbacks;
             }
-        }
-
-        public static string TryGetMethodDisplayStringFromIp(IntPtr ip)
-        {
-            StackTraceMetadataCallbacks callbacks = StackTraceCallbacksIfAvailable;
-            if (callbacks == null)
-                return null;
-
-            ip = RuntimeImports.RhFindMethodStartAddress(ip);
-            if (ip == IntPtr.Zero)
-                return null;
-
-            return callbacks.TryGetMethodNameFromStartAddress(ip, out _);
         }
 
         private static TypeLoaderCallbacks s_typeLoaderCallbacks;

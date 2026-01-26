@@ -9,12 +9,6 @@
   <Import Project="$(MSBuildThisFileDirectory)\Common\dir.common.props" Condition="'$(UsingMicrosoftNETSdk)' != 'true'"  />
 
   <PropertyGroup>
-    <!-- Override the compiler version with a private build that supports runtime-async -->
-    <MicrosoftNetCompilersToolsetVersion>5.0.0-1.25259.6</MicrosoftNetCompilersToolsetVersion>
-    <RoslynCompilerType>Custom</RoslynCompilerType>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <RunningOnUnix Condition="('$(RunningOnUnix)' == '') And ('$(MSBuildRuntimeType)' == 'Core') And ('$(OS)'!='Windows_NT')">true</RunningOnUnix>
   </PropertyGroup>
 
@@ -128,6 +122,11 @@
     <DefineConstants>$(DefineConstants);DEBUG;TRACE;XUNIT_PERF</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup>
+     <!-- The SDK for VB.NET requires the DefineConstants variable to be , delimited instead of ; -->
+     <DefineConstants Condition="'$(MSBuildProjectExtension)' == '.vbproj'">$(DefineConstants.Replace(';',','))</DefineConstants>
+  </PropertyGroup>
+
   <!-- Setup the default output and intermediate paths -->
   <PropertyGroup>
     <SkipXunitDependencyCopying>true</SkipXunitDependencyCopying>
@@ -139,7 +138,8 @@
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <!-- Disable some C# warnings for the tests. -->
-    <NoWarn>78,162,164,168,169,219,251,252,414,429,618,642,649,652,659,675,1691,1717,1718,3001,3002,3003,3005,3008,8981</NoWarn>
+    <NoWarn>78,162,164,168,169,219,251,252,414,429,618,642,649,652,659,675,1691,1717,1718,3001,3002,3003,3005,3008,8500,8981</NoWarn>
+
     <!--
       Disable xunit warnings that aren't relevant with our custom runner.
       xUnit1028: Use supported test return types. We support test methods that return int where 100 is passing and everything else is failure.
@@ -220,7 +220,7 @@
     <ImportProjectExtensionTargets>false</ImportProjectExtensionTargets>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or ('$(TargetOS)' == 'android' and '$(TestBuildMode)' == 'nativeaot')">
     <EnableAggressiveTrimming Condition="'$(OutputType)' == 'Exe'">true</EnableAggressiveTrimming>
     <PublishTrimmed Condition="'$(OutputType)' == 'Exe'">true</PublishTrimmed>
     <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
@@ -240,6 +240,21 @@
     <HybridGlobalization Condition="'$(_IsApplePlatform)' == 'true'">true</HybridGlobalization>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(UsingMicrosoftNETSdk)' == 'true' and '$(TargetOS)' == 'android' and '$(TestBuildMode)' == 'nativeaot' and '$(OutputType)' == 'Exe'">
+    <NativeLib>shared</NativeLib>
+    <CustomNativeMain>true</CustomNativeMain>
+  </PropertyGroup>
+
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props"  Condition="'$(IsTestsCommonProject)' != 'true'" />
   <Import Project="$(BaseOutputPath)\packages\Common\test_dependencies\test_dependencies\test_dependencies.*.props" Condition="'$(IsTestsCommonProject)' != 'true'" />
+
+  <PropertyGroup Condition="'$(UsingMicrosoftNETSdk)' == 'true' and '$(TargetsAndroid)' == 'true' and '$(TestBuildMode)' == 'nativeaot'">
+    <!-- We need the library import generator when running android tests. -->
+    <DisableImplicitFrameworkReferences>false</DisableImplicitFrameworkReferences>
+    <!-- Treat as merged runners so that each assembly gets its own apk -->
+    <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
+    <HasMergedInTests>true</HasMergedInTests>
+    <ExpectedExitCode>100</ExpectedExitCode>
+  </PropertyGroup>
+
 </Project>

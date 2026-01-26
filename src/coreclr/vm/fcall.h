@@ -19,8 +19,6 @@
 //
 //      FCIMPL2(INT32, Div, INT32 x, INT32 y)
 //      {
-//          if (y == 0)
-//              FCThrow(kDivideByZeroException);
 //          return x/y;
 //      }
 //      FCIMPLEND
@@ -212,23 +210,14 @@ public:
 };
 
         // FC_COMMON_PROLOG is used for both FCalls and HCalls
-#define FC_COMMON_PROLOG(target, assertFn)      \
+#define FC_COMMON_PROLOG()                      \
         /* The following line has to be first.  We do not want to trash last error */ \
         DWORD __lastError = ::GetLastError();   \
-        static void* __cache = 0;               \
-        assertFn(__cache, (LPVOID)target);      \
-        {                                       \
-            Thread *_pThread = GetThread();     \
-            Thread::ObjectRefFlush(_pThread);    \
-        }                                       \
         ForbidGC __fCallCheck(__FILE__, __LINE__); \
         ::SetLastError(__lastError);            \
 
-void FCallAssert(void*& cache, void* target);
-void HCallAssert(void*& cache, void* target);
-
 #else
-#define FC_COMMON_PROLOG(target, assertFn)
+#define FC_COMMON_PROLOG()
 #define FC_CAN_TRIGGER_GC()
 #define FC_CAN_TRIGGER_GC_END()
 #endif // ENABLE_CONTRACTS
@@ -244,9 +233,7 @@ void HCallAssert(void*& cache, void* target);
 #define GetEEFuncEntryPointMacro(func)  ((LPVOID)(func))
 
 #define FCIMPL_PROLOG(funcname)  \
-    LPVOID __me; \
-    __me = GetEEFuncEntryPointMacro(funcname); \
-    FC_COMMON_PROLOG(__me, FCallAssert)
+    FC_COMMON_PROLOG()
 
 
 #if defined(_DEBUG) && !defined(__GNUC__)
@@ -419,7 +406,7 @@ public:
 
 #define FCIMPLEND }
 
-#define HCIMPL_PROLOG(funcname) LPVOID __me; __me = 0; FC_COMMON_PROLOG(funcname, HCallAssert)
+#define HCIMPL_PROLOG(funcname) FC_COMMON_PROLOG()
 
 // HCIMPL macros are used to implement JIT helpers. The only difference is that
 // HCIMPL methods are not mapped to a managed method in CoreLib in ecalllist.h.
@@ -499,11 +486,6 @@ typedef UINT32 FC_UINT16_RET;
 typedef INT32 FC_BOOL_ARG;
 
 #define FC_ACCESS_BOOL(x) ((BYTE)x != 0)
-
-// The fcall entrypoints has to be at unique addresses. Use this helper macro to make
-// the code of the fcalls unique if you get assert in ecall.cpp that mentions it.
-// The parameter of the FCUnique macro is an arbitrary 32-bit random non-zero number.
-#define FCUnique(unique) { Volatile<int> u = (unique); while (u.LoadWithoutBarrier() == 0) { }; }
 
 // FCALL contracts come in two forms:
 //

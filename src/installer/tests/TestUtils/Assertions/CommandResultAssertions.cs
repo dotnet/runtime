@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Linq;
 using System.Text.RegularExpressions;
 using FluentAssertions;
 using FluentAssertions.Execution;
@@ -63,7 +62,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public AndConstraint<CommandResultAssertions> HaveStdOutContaining(string pattern)
         {
-            CurrentAssertionChain.ForCondition(Result.StdOut.Contains(pattern))
+            CurrentAssertionChain.ForCondition(!string.IsNullOrEmpty(Result.StdOut) && Result.StdOut.Contains(pattern))
                 .FailWith($"The command output did not contain expected result: '{pattern}'{GetDiagnosticsInfo()}");
             return new AndConstraint<CommandResultAssertions>(this);
         }
@@ -98,7 +97,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public AndConstraint<CommandResultAssertions> HaveStdErrContaining(string pattern)
         {
-            CurrentAssertionChain.ForCondition(Result.StdErr.Contains(pattern))
+            CurrentAssertionChain.ForCondition(!string.IsNullOrEmpty(Result.StdErr) && Result.StdErr.Contains(pattern))
                 .FailWith($"The command error output did not contain expected result: '{pattern}'{GetDiagnosticsInfo()}");
             return new AndConstraint<CommandResultAssertions>(this);
         }
@@ -154,18 +153,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
             return new AndConstraint<CommandResultAssertions>(this);
         }
 
-        public string GetDiagnosticsInfo()
-            => $"""
-
-                File Name: {Result.StartInfo.FileName}
-                Arguments: {Result.StartInfo.Arguments}
-                Environment:
-                {string.Join(Environment.NewLine, Result.StartInfo.Environment.Where(i => i.Key.StartsWith(Constants.DotnetRoot.EnvironmentVariable)).Select(i => $"  {i.Key} = {i.Value}"))}
-                Exit Code: 0x{Result.ExitCode:x}
-                StdOut:
-                {Result.StdOut}
-                StdErr:
-                {Result.StdErr}
-                """;
+        public string GetDiagnosticsInfo() => Result.GetDiagnosticsInfo();
     }
 }

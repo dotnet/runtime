@@ -131,15 +131,12 @@ namespace System.Text.Json.Serialization.Tests
             // We should have more than one write called due to the large byte count.
             if (Serializer.IsAsyncSerializer)
             {
-                Assert.InRange(stream.TestAsyncWriteCount, 1, int.MaxValue);
+                Assert.InRange(stream.TestAsyncWriteCount, 2, int.MaxValue);
             }
             else
             {
-                Assert.InRange(stream.TestWriteCount, 1, int.MaxValue);
+                Assert.InRange(stream.TestWriteCount, 2, int.MaxValue);
             }
-
-            // We don't auto-flush.
-            Assert.Equal(0, stream.TestFlushCount);
         }
 
         private async Task ReadAsync(TestStream stream)
@@ -155,7 +152,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.InRange(stream.TestRequestedReadBytesCount, 551368, int.MaxValue);
 
             // We should have more than one read called due to the large byte count.
-            Assert.InRange(stream.TestReadCount, 1, int.MaxValue);
+            Assert.InRange(stream.TestReadCount, 2, int.MaxValue);
 
             // We don't auto-flush.
             Assert.Equal(0, stream.TestFlushCount);
@@ -338,8 +335,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(2, true, false)]
         [InlineData(2, false, false)]
         [InlineData(4, false, false)]
-        [InlineData(8, false, false)]
-        [InlineData(16, false, false)] // This results a reader\writer depth of 324 which currently works on all test platforms.
+        [InlineData(8, false, false)] // Greater depths have caused failures on some test machine configurations due to memory constraints
         public async Task DeepNestedJsonFileTest(int depthFactor, bool ignoreNull, bool writeIndented)
         {
             const int ListLength = 10;

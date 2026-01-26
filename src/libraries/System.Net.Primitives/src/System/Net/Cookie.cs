@@ -460,12 +460,12 @@ namespace System.Net
             }
 
             // Set the default port if Port attribute was present but had no value.
-            if (m_port_implicit == false && m_port.Length == 0)
+            if (!m_port_implicit && m_port.Length == 0)
             {
                 m_port_list = new int[1] { port };
             }
 
-            if (m_port_implicit == false)
+            if (!m_port_implicit)
             {
                 // Port must match against the one from the uri.
                 bool valid = false;

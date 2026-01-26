@@ -119,6 +119,7 @@ namespace Internal.JitInterface
         private uint totalILArgs() { return (uint)(numArgs + (hasImplicitThis() ? 1 : 0)); }
         private bool isVarArg() { return ((getCallConv() == CorInfoCallConv.CORINFO_CALLCONV_VARARG) || (getCallConv() == CorInfoCallConv.CORINFO_CALLCONV_NATIVEVARARG)); }
         internal bool hasTypeArg() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE) != 0); }
+        private bool isAsyncCall() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_ASYNCCALL) != 0); }
     };
 
     //----------------------------------------------------------------------------
@@ -234,10 +235,10 @@ namespace Internal.JitInterface
         public bool testForNull { get { return _testForNull != 0; } set { _testForNull = value ? (byte)1 : (byte)0; } }
 
         public ushort sizeOffset;
-        public IntPtr offset0;
-        public IntPtr offset1;
-        public IntPtr offset2;
-        public IntPtr offset3;
+        public nint offset0;
+        public nint offset1;
+        public nint offset2;
+        public nint offset3;
 
         public byte _indirectFirstOffset;
         public bool indirectFirstOffset { get { return _indirectFirstOffset != 0; } set { _indirectFirstOffset = value ? (byte)1 : (byte)0; } }
@@ -377,6 +378,7 @@ namespace Internal.JitInterface
         CORINFO_CALLCONV_HASTHIS = 0x20,
         CORINFO_CALLCONV_EXPLICITTHIS = 0x40,
         CORINFO_CALLCONV_PARAMTYPE = 0x80,     // Passed last. Same as CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
+        CORINFO_CALLCONV_ASYNCCALL = 0x100,    // Is this a call with async calling convention?
     }
 
     // Represents the calling conventions supported with the extensible calling convention syntax
@@ -436,6 +438,7 @@ namespace Internal.JitInterface
                                                    CORINFO_GENERICS_CTXT_FROM_METHODDESC |
                                                    CORINFO_GENERICS_CTXT_FROM_METHODTABLE),
         CORINFO_GENERICS_CTXT_KEEP_ALIVE = 0x00000100, // Keep the generics context alive throughout the method even if there is no explicit use, and report its location to the CLR
+        CORINFO_ASYNC_SAVE_CONTEXTS = 0x00000200, // Runtime async method must save and restore contexts
     }
 
     // These are used to detect array methods as NamedIntrinsic in JIT importer,
@@ -456,6 +459,47 @@ namespace Internal.JitInterface
         IAT_PVALUE,     // The value needs to be accessed via an       indirection
         IAT_PPVALUE,    // The value needs to be accessed via a double indirection
         IAT_RELPVALUE   // The value needs to be accessed via a relative indirection
+    }
+
+    public enum CorInfoReloc
+    {
+        NONE,
+
+        // General relocation types
+        DIRECT,                                // Direct/absolute pointer sized address
+        RELATIVE32,                            // 32-bit relative address from byte following reloc
+
+        // Arm64 relocs
+        ARM64_BRANCH26,                        // Arm64: B, BL
+        ARM64_PAGEBASE_REL21,                  // ADRP
+        ARM64_PAGEOFFSET_12A,                  // ADD/ADDS (immediate) with zero shift, for page offset
+        // Linux arm64
+        ARM64_LIN_TLSDESC_ADR_PAGE21,
+        ARM64_LIN_TLSDESC_LD64_LO12,
+        ARM64_LIN_TLSDESC_ADD_LO12,
+        ARM64_LIN_TLSDESC_CALL,
+        // Windows arm64
+        ARM64_WIN_TLS_SECREL_HIGH12A,          // ADD high 12-bit offset for tls
+        ARM64_WIN_TLS_SECREL_LOW12A,           // ADD low 12-bit offset for tls
+
+        // Windows x64
+        AMD64_WIN_SECREL,
+        // Linux x64
+        AMD64_LIN_TLSGD,
+
+        // Arm32 relocs
+        ARM32_THUMB_BRANCH24,                  // Thumb2: based B, BL
+        ARM32_THUMB_MOV32,                     // Thumb2: based MOVW/MOVT
+        ARM32_THUMB_MOV32_PCREL,               // Thumb2: based MOVW/MOVT
+
+        // LoongArch64 relocs
+        LOONGARCH64_PC,                        // LoongArch64: pcalau12i+imm12
+        LOONGARCH64_JIR,                       // LoongArch64: pcaddu18i+jirl
+
+        // RISCV64 relocs
+        RISCV64_CALL_PLT,                      // RiscV64: auipc + jalr
+        RISCV64_PCREL_I,                       // RiscV64: auipc + I-type
+        RISCV64_PCREL_S,                       // RiscV64: auipc + S-type
     }
 
     public enum CorInfoGCType
@@ -547,6 +591,7 @@ namespace Internal.JitInterface
         CORINFO_ACCESS_NONNULL = 0x0004, // Instance is guaranteed non-null
 
         CORINFO_ACCESS_LDFTN = 0x0010, // Accessed via ldftn
+        CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE = 0x0020, // Method might be attributed with UnmanagedCallersOnlyAttribute.
 
         // Field access flags
         CORINFO_ACCESS_GET = 0x0100, // Field get (ldfld)
@@ -621,6 +666,7 @@ namespace Internal.JitInterface
         CORINFO_EH_CLAUSE_FINALLY = 0x0002, // This clause is a finally clause
         CORINFO_EH_CLAUSE_FAULT = 0x0004, // This clause is a fault clause
         CORINFO_EH_CLAUSE_SAMETRY = 0x0010, // This clause covers same try block as the previous one.
+        CORINFO_EH_CLAUSE_R2R_SYSTEM_EXCEPTION = 0x0020, // R2R only: This clause catches System.Exception
     };
 
     public struct CORINFO_EH_CLAUSE
@@ -807,6 +853,16 @@ namespace Internal.JitInterface
         public CORINFO_HELPER_ARG args3;
     }
 
+    public enum CorInfoArch
+    {
+        CORINFO_ARCH_X86,
+        CORINFO_ARCH_X64,
+        CORINFO_ARCH_ARM,
+        CORINFO_ARCH_ARM64,
+        CORINFO_ARCH_LOONGARCH64,
+        CORINFO_ARCH_RISCV64,
+        CORINFO_ARCH_WASM32,
+    }
 
     public enum CORINFO_OS
     {
@@ -860,10 +916,10 @@ namespace Internal.JitInterface
         public uint sizeOfReversePInvokeFrame;
 
         // OS Page size
-        public UIntPtr osPageSize;
+        public nuint osPageSize;
 
         // Null object offset
-        public UIntPtr maxUncheckedOffsetForNullObject;
+        public nuint maxUncheckedOffsetForNullObject;
 
         // Target ABI. Combined with target architecture and OS to determine
         // GC, EH, and unwind styles.
@@ -878,10 +934,20 @@ namespace Internal.JitInterface
         public CORINFO_CLASS_STRUCT_* continuationClsHnd;
         // 'Next' field
         public CORINFO_FIELD_STRUCT_* continuationNextFldHnd;
-        // 'Data' field
-        public CORINFO_FIELD_STRUCT_* continuationDataFldHnd;
-        // 'GCData' field
-        public CORINFO_FIELD_STRUCT_* continuationGCDataFldHnd;
+        // 'ResumeInfo' field
+        public CORINFO_FIELD_STRUCT_* continuationResumeInfoFldHnd;
+        // 'State' field
+        public CORINFO_FIELD_STRUCT_* continuationStateFldHnd;
+        // 'Flags' field
+        public CORINFO_FIELD_STRUCT_* continuationFlagsFldHnd;
+        // Method handle for AsyncHelpers.CaptureExecutionContext
+        public CORINFO_METHOD_STRUCT_* captureExecutionContextMethHnd;
+        // Method handle for AsyncHelpers.RestoreExecutionContext
+        public CORINFO_METHOD_STRUCT_* restoreExecutionContextMethHnd;
+        public CORINFO_METHOD_STRUCT_* captureContinuationContextMethHnd;
+        public CORINFO_METHOD_STRUCT_* captureContextsMethHnd;
+        public CORINFO_METHOD_STRUCT_* restoreContextsMethHnd;
+        public CORINFO_METHOD_STRUCT_* restoreContextsOnSuspensionMethHnd;
     }
 
     // Flags passed from JIT to runtime.
@@ -1073,6 +1139,7 @@ namespace Internal.JitInterface
         CORINFO_DEVIRTUALIZATION_FAILED_DUPLICATE_INTERFACE,           // crossgen2 virtual method algorithm and runtime algorithm differ in the presence of duplicate interface implementations
         CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE,        // Decl method cannot be represented in R2R image
         CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE,              // Support for type equivalence in devirtualization is not yet implemented in crossgen2
+        CORINFO_DEVIRTUALIZATION_FAILED_GENERIC_VIRTUAL,               // Devirtualization of generic virtual methods is not yet implemented in crossgen2
         CORINFO_DEVIRTUALIZATION_COUNT,                                // sentinel for maximum value
     }
 
@@ -1093,7 +1160,7 @@ namespace Internal.JitInterface
         // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
         // - detail describes the computation done by the jit host
         // - isInstantiatingStub is set to TRUE if the devirtualized method is a method instantiation stub
-        // - wasArrayInterfaceDevirt is set TRUE for array interface method devirtualization
+        // - needsMethodContext is set TRUE if the devirtualized method may require a method context
         //     (in which case the method handle and context will be a generic method)
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
@@ -1103,8 +1170,8 @@ namespace Internal.JitInterface
         public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
         public byte _isInstantiatingStub;
         public bool isInstantiatingStub { get { return _isInstantiatingStub != 0; } set { _isInstantiatingStub = value ? (byte)1 : (byte)0; } }
-        public byte _wasArrayInterfaceDevirt;
-        public bool wasArrayInterfaceDevirt { get { return _wasArrayInterfaceDevirt != 0; } set { _wasArrayInterfaceDevirt = value ? (byte)1 : (byte)0; } }
+        public byte _needsMethodContext;
+        public bool needsMethodContext { get { return _needsMethodContext != 0; } set { _needsMethodContext = value ? (byte)1 : (byte)0; } }
     }
 
     //----------------------------------------------------------------------------
@@ -1262,7 +1329,8 @@ namespace Internal.JitInterface
         STACK_EMPTY = 0x02, // The stack is empty here
         CALL_SITE = 0x04, // This is a call site.
         NATIVE_END_OFFSET_UNKNOWN = 0x08, // Indicates a epilog endpoint
-        CALL_INSTRUCTION = 0x10  // The actual instruction of a call.
+        CALL_INSTRUCTION = 0x10, // The actual instruction of a call.
+        ASYNC = 0x20, // async suspension/resumption code for a specific async call
     };
 
     public struct OffsetMapping
@@ -1319,6 +1387,32 @@ namespace Internal.JitInterface
         public SourceTypes Source;
     }
 
+    public struct AsyncContinuationVarInfo
+    {
+        // IL number of variable (or one of the special IL numbers, like TYPECTXT_ILNUM)
+        public uint VarNumber;
+        // Offset in continuation object where this variable is stored
+        public uint Offset;
+    }
+
+    public struct AsyncSuspensionPoint
+    {
+        // Offset of IP stored in ResumeInfo.DiagnosticIP. This offset maps to
+        // the IL call that resulted in the suspension point through an ASYNC
+        // mapping. Also used as a unique key for debug information about the
+        // suspension point. See ResumeInfo.DiagnosticIP in SPC for more info.
+        public uint DiagnosticNativeOffset;
+        // Count of AsyncContinuationVarInfo in array of locals starting where
+        // the previous suspension point's locals end.
+        public uint NumContinuationVars;
+    }
+
+    public struct AsyncInfo
+    {
+        // Number of suspension points in the method.
+        public uint NumSuspensionPoints;
+    }
+
     // This enum is used for JIT to tell EE where this token comes from.
     // E.g. Depending on different opcodes, we might allow/disallow certain types of tokens or
     // return different types of handles (e.g. boxed vs. regular entrypoints)
@@ -1355,6 +1449,9 @@ namespace Internal.JitInterface
 
         // token comes from resolved static virtual method
         CORINFO_TOKENKIND_ResolvedStaticVirtualMethod = 0x1000 | CORINFO_TOKENKIND_Method,
+
+        // token comes from runtime async awaiting pattern
+        CORINFO_TOKENKIND_Await = 0x2000 | CORINFO_TOKENKIND_Method,
     };
 
     // These are error codes returned by CompileMethod
@@ -1414,6 +1511,7 @@ namespace Internal.JitInterface
         // ARM only
         CORJIT_FLAG_RELATIVE_CODE_RELOCS    = 29, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
+        CORJIT_FLAG_ASYNC                   = 31,  // Generate code for use as an async function
     }
 
     public struct CORJIT_FLAGS

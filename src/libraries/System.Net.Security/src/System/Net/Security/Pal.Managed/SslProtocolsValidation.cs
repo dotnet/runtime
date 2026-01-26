@@ -8,7 +8,7 @@ namespace System.Net
 {
     internal static class SslProtocolsValidation
     {
-        public static (int MinIndex, int MaxIndex) ValidateContiguous(this SslProtocols protocols, SslProtocols[] orderedSslProtocols)
+        public static (int MinIndex, int MaxIndex) ValidateContiguous(this SslProtocols protocols, ReadOnlySpan<SslProtocols> orderedSslProtocols)
         {
             // A contiguous range of protocols is required.  Find the min and max of the range,
             // or throw if it's non-contiguous or if no protocols are specified.

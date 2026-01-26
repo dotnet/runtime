@@ -3,8 +3,8 @@
 
 using System.Collections.Generic;
 using ILLink.Shared.DataFlow;
-using ILLink.Shared.TrimAnalysis;
 using Mono.Linker.Steps;
+using Mono.Cecil;
 
 namespace Mono.Linker.Dataflow
 {
@@ -12,6 +12,7 @@ namespace Mono.Linker.Dataflow
     {
         readonly Dictionary<(MessageOrigin, int?), TrimAnalysisAssignmentPattern> AssignmentPatterns;
         readonly Dictionary<MessageOrigin, TrimAnalysisMethodCallPattern> MethodCallPatterns;
+        readonly Dictionary<(MessageOrigin, MemberReference), TrimAnalysisGenericInstantiationAccessPattern> GenericInstantiations;
         readonly ValueSetLattice<SingleValue> Lattice;
         readonly LinkContext _context;
 
@@ -19,6 +20,7 @@ namespace Mono.Linker.Dataflow
         {
             AssignmentPatterns = new Dictionary<(MessageOrigin, int?), TrimAnalysisAssignmentPattern>();
             MethodCallPatterns = new Dictionary<MessageOrigin, TrimAnalysisMethodCallPattern>();
+            GenericInstantiations = new Dictionary<(MessageOrigin, MemberReference), TrimAnalysisGenericInstantiationAccessPattern>();
             Lattice = lattice;
             _context = context;
         }
@@ -46,12 +48,23 @@ namespace Mono.Linker.Dataflow
             MethodCallPatterns[pattern.Origin] = pattern.Merge(Lattice, existingPattern);
         }
 
+        public void Add(TrimAnalysisGenericInstantiationAccessPattern pattern)
+        {
+            GenericInstantiations.TryAdd((pattern.Origin, pattern.MemberReference), pattern);
+
+            // No Merge - there's nothing to merge since this pattern is uniquely identified by both the origin and the member reference
+            // and there's only one way to "access" a generic instantiation.
+        }
+
         public void MarkAndProduceDiagnostics(ReflectionMarker reflectionMarker, MarkStep markStep)
         {
             foreach (var pattern in AssignmentPatterns.Values)
                 pattern.MarkAndProduceDiagnostics(reflectionMarker, _context);
 
             foreach (var pattern in MethodCallPatterns.Values)
+                pattern.MarkAndProduceDiagnostics(reflectionMarker, markStep, _context);
+
+            foreach (var pattern in GenericInstantiations.Values)
                 pattern.MarkAndProduceDiagnostics(reflectionMarker, markStep, _context);
         }
     }

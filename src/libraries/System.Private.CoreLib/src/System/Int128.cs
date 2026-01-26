@@ -1180,7 +1180,12 @@ namespace System
             return lower;
         }
 
-        internal static Int128 BigMul(Int128 left, Int128 right, out Int128 lower)
+        /// <summary>Produces the full product of two unsigned native integers.</summary>
+        /// <param name="left">The integer to multiply with <paramref name="right" />.</param>
+        /// <param name="right">The integer to multiply with <paramref name="left" />.</param>
+        /// <param name="lower">The lower half of the full product.</param>
+        /// <returns>The upper half of the full product.</returns>
+        public static Int128 BigMul(Int128 left, Int128 right, out Int128 lower)
         {
             // This follows the same logic as is used in `long Math.BigMul(long, long, out long)`
 

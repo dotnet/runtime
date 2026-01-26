@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Numerics.Tensors
 {
     /// <summary>Represents a tensor.</summary>
-    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public interface ITensor : IReadOnlyTensor
     {
         /// <summary>Gets or sets the specified element of the tensor.</summary>

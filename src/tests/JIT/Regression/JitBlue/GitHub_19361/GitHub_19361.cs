@@ -93,6 +93,7 @@ namespace Repro
             return list;
         }
 
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

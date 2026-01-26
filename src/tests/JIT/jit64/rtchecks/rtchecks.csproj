@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="overflow\overflow01_add.cs" />
+    <Compile Include="overflow\overflow01_div.cs" />
+    <Compile Include="overflow\overflow01_mul.cs" />
+    <Compile Include="overflow\overflow01_sub.cs" />
+    <Compile Include="overflow\overflow02_add.cs" />
+    <Compile Include="overflow\overflow02_div.cs" />
+    <Compile Include="overflow\overflow02_mul.cs" />
+    <Compile Include="overflow\overflow02_sub.cs" />
+    <Compile Include="overflow\overflow03_add.cs" />
+    <Compile Include="overflow\overflow03_div.cs" />
+    <Compile Include="overflow\overflow03_mul.cs" />
+    <Compile Include="overflow\overflow03_sub.cs" />
+    <Compile Include="overflow\overflow04_add.cs" />
+    <Compile Include="overflow\overflow04_div.cs" />
+    <Compile Include="overflow\overflow04_mul.cs" />
+    <Compile Include="overflow\overflow04_sub.cs" />
+  </ItemGroup>
+</Project>

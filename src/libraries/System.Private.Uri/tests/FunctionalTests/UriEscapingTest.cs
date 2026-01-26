@@ -18,7 +18,7 @@ namespace System.PrivateUri.Tests
         private const string AlphaNumeric = "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         private const string RFC2396Unreserved = AlphaNumeric + "-_.!~*'()";
         private const string RFC2396Reserved = @";/:@&=+$,?";
-        private const string RFC3986Unreserved = AlphaNumeric + "-._~";
+        public const string RFC3986Unreserved = AlphaNumeric + "-._~";
         private const string RFC3986Reserved = @":/[]@!$&'()*+,;=?#";
         private const string GB18030CertificationString1 =
             "\u6570\u636E eq '\uD840\uDC00\uD840\uDC01\uD840\uDC02\uD840\uDC03\uD869\uDED1\uD869\uDED2\uD869\uDED3"
@@ -303,9 +303,7 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UriEscapeUnescapeDataString_LongInputs()
         {
-            // Test the no-longer-existing "c_MaxUriBufferSize" limit of 0xFFF0,
-            // as well as lengths longer than the max Uri length of ushort.MaxValue.
-            foreach (int length in new[] { 1, 0xFFF0, 0xFFF1, ushort.MaxValue + 10 })
+            foreach (int length in new[] { 1, 64_000, 66_000, 1_000_000 })
             {
                 string unescaped = new string('s', length);
                 string escaped = unescaped;
@@ -411,9 +409,7 @@ namespace System.PrivateUri.Tests
 
         public static IEnumerable<object[]> UriEscapingUriString_Long_MemberData()
         {
-            // Test the no-longer-existing "c_MaxUriBufferSize" limit of 0xFFF0,
-            // as well as lengths longer than the max Uri length of ushort.MaxValue.
-            foreach (int length in new[] { 1, 0xFFF0, 0xFFF1, ushort.MaxValue + 10 })
+            foreach (int length in new[] { 1, 64_000, 66_000, 1_000_000 })
             {
                 yield return new object[] { new string('s', length), string.Concat(Enumerable.Repeat("s", length)) };
                 yield return new object[] { new string('<', length), string.Concat(Enumerable.Repeat("%3C", length)) };

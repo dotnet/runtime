@@ -247,7 +247,7 @@ namespace System.Text.Json.Serialization.Converters
 
             int charsWritten = reader.CopyString(charBuffer);
             charBuffer = charBuffer.Slice(0, charsWritten);
-#if NET9_0_OR_GREATER
+#if NET
             ReadOnlySpan<char> source = charBuffer.Trim();
             ConcurrentDictionary<string, ulong>.AlternateLookup<ReadOnlySpan<char>> lookup = _nameCacheForReading.GetAlternateLookup<ReadOnlySpan<char>>();
 #else
@@ -295,14 +295,14 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         private bool TryParseNamedEnum(
-#if NET9_0_OR_GREATER
+#if NET
             ReadOnlySpan<char> source,
 #else
             string source,
 #endif
             out T result)
         {
-#if NET9_0_OR_GREATER
+#if NET
             Dictionary<string, EnumFieldInfo>.AlternateLookup<ReadOnlySpan<char>> lookup = _enumFieldInfoIndex.GetAlternateLookup<ReadOnlySpan<char>>();
             ReadOnlySpan<char> rest = source;
 #else
@@ -327,7 +327,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 if (lookup.TryGetValue(
-#if NET9_0_OR_GREATER
+#if NET
                         next,
 #else
                         next.ToString(),
@@ -553,6 +553,13 @@ namespace System.Text.Json.Serialization.Converters
                 enumFields[i] = new EnumFieldInfo(key, kind, originalName, jsonName);
             }
 
+            if (s_isFlagsEnum)
+            {
+                // Perform topological sort for flags enums to ensure values that are supersets of other values come first.
+                // This is important for flags enums to ensure proper parsing and formatting.
+                enumFields = TopologicalSortEnumFields(enumFields);
+            }
+
             return enumFields;
         }
 
@@ -657,6 +664,52 @@ namespace System.Text.Json.Serialization.Converters
 
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Performs a topological sort on enum fields to ensure values that are supersets of other values come first.
+        /// </summary>
+        private static EnumFieldInfo[] TopologicalSortEnumFields(EnumFieldInfo[] enumFields)
+        {
+            if (enumFields.Length <= 1)
+            {
+                return enumFields;
+            }
+
+            var indices = new (int negativePopCount, int index)[enumFields.Length];
+            for (int i = 0; i < enumFields.Length; i++)
+            {
+                // We want values with more bits set to come first so negate the pop count.
+                // Keep the index as a second comparand so that sorting stability is preserved.
+                indices[i] = (-PopCount(enumFields[i].Key), i);
+            }
+
+            Array.Sort(indices);
+
+            var sortedFields = new EnumFieldInfo[enumFields.Length];
+            for (int i = 0; i < indices.Length; i++)
+            {
+                // extract the index from the sorted tuple
+                int index = indices[i].index;
+                sortedFields[i] = enumFields[index];
+            }
+
+            return sortedFields;
+        }
+
+        private static int PopCount(ulong value)
+        {
+#if NET
+            return (int)ulong.PopCount(value);
+#else
+            int count = 0;
+            while (value != 0)
+            {
+                value &= value - 1;
+                count++;
+            }
+            return count;
+#endif
         }
 
         private enum EnumFieldNameKind

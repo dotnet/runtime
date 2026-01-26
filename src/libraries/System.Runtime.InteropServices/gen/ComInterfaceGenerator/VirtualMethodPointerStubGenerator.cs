@@ -16,12 +16,12 @@ namespace Microsoft.Interop
 {
     internal static class VirtualMethodPointerStubGenerator
     {
-        private const string NativeThisParameterIdentifier = "__this";
-        private const string VirtualMethodTableIdentifier = "__vtable";
-        private const string VirtualMethodTarget = "__target";
+        internal const string NativeThisParameterIdentifier = "__this";
+        internal const string VirtualMethodTableIdentifier = "__vtable";
+        internal const string VirtualMethodTarget = "__target";
 
         public static (MethodDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateManagedToNativeStub(
-            IncrementalMethodStubGenerationContext methodStub,
+            SourceAvailableIncrementalMethodStubGenerationContext methodStub,
             Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorResolverCreator)
         {
             var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), methodStub.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
@@ -128,7 +128,7 @@ namespace Microsoft.Interop
         private const string ManagedThisParameterIdentifier = "@this";
 
         public static (MethodDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateNativeToManagedStub(
-            IncrementalMethodStubGenerationContext methodStub,
+            SourceAvailableIncrementalMethodStubGenerationContext methodStub,
             Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorResolverCreator)
         {
             var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), methodStub.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
@@ -174,7 +174,7 @@ namespace Microsoft.Interop
                 methodStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
         }
 
-        private static ImmutableArray<TypePositionInfo> AddManagedToUnmanagedImplicitThis(IncrementalMethodStubGenerationContext methodStub)
+        private static ImmutableArray<TypePositionInfo> AddManagedToUnmanagedImplicitThis(SourceAvailableIncrementalMethodStubGenerationContext methodStub)
         {
             ImmutableArray<TypePositionInfo> originalElements = methodStub.SignatureContext.ElementTypeInformation;
 
@@ -232,7 +232,7 @@ namespace Microsoft.Interop
         }
 
         public static BlockSyntax GenerateVirtualMethodTableSlotAssignments(
-            IEnumerable<IncrementalMethodStubGenerationContext> vtableMethods,
+            IEnumerable<SourceAvailableIncrementalMethodStubGenerationContext> vtableMethods,
             string vtableIdentifier,
             Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorResolverCreator)
         {

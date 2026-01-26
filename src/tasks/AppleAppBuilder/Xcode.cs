@@ -189,11 +189,12 @@ internal sealed class Xcode
         bool enableAppSandbox,
         string? diagnosticPorts,
         IEnumerable<string> runtimeComponents,
+        IEnumerable<string> environmentVariables,
         string? nativeMainSource = null,
         TargetRuntime targetRuntime = TargetRuntime.MonoVM,
         bool isLibraryMode = false)
     {
-        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, excludes, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, hybridGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource, targetRuntime, isLibraryMode);
+        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, excludes, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, hybridGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, environmentVariables, nativeMainSource, targetRuntime, isLibraryMode);
         CreateXcodeProject(projectName, cmakeDirectoryPath);
         return Path.Combine(binDir, projectName, projectName + ".xcodeproj");
     }
@@ -234,7 +235,7 @@ internal sealed class Xcode
         else
         {
             // arch is passed later when invoking xcodebuild
-            cmakeArgs.Append(" -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2");
+            cmakeArgs.Append(" -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0");
         }
 
         Utils.RunProcess(Logger, "cmake", cmakeArgs.ToString(), workingDir: cmakeDirectoryPath);
@@ -262,6 +263,7 @@ internal sealed class Xcode
         bool enableAppSandbox,
         string? diagnosticPorts,
         IEnumerable<string> runtimeComponents,
+        IEnumerable<string> environmentVariables,
         string? nativeMainSource = null,
         TargetRuntime targetRuntime = TargetRuntime.MonoVM,
         bool isLibraryMode = false)
@@ -292,6 +294,12 @@ internal sealed class Xcode
         if (targetRuntime != TargetRuntime.CoreCLR)
         {
             predefinedExcludes.Add("libcoreclr.dylib");
+        }
+        else
+        {
+            // Interpreter is statically linked into the runtime already
+            predefinedExcludes.Add("libclrjit.dylib");
+            predefinedExcludes.Add("libclrinterpreter.dylib");
         }
 
         string[] resources = Directory.GetFileSystemEntries(workspace, "", SearchOption.TopDirectoryOnly)
@@ -384,37 +392,14 @@ internal sealed class Xcode
         }
         else
         {
-            string[] allComponentLibs = Directory.GetFiles(workspace, "libmono-component-*-static.a");
-            string[] staticComponentStubLibs = Directory.GetFiles(workspace, "libmono-component-*-stub-static.a");
-
-            // by default, component stubs will be linked and depending on how mono runtime has been build,
-            // stubs can disable or dynamic load components.
-            foreach (string staticComponentStubLib in staticComponentStubLibs)
-            {
-                string componentLibToLink = staticComponentStubLib;
-                foreach (string runtimeComponent in runtimeComponents)
-                {
-                    if (componentLibToLink.Contains(runtimeComponent, StringComparison.OrdinalIgnoreCase))
-                    {
-                        // static link component.
-                        componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
-                        break;
-                    }
-                }
-
-                // if lib doesn't exist (primarily due to runtime build without static lib support), fallback linking stub lib.
-                if (!File.Exists(componentLibToLink))
-                {
-                    Logger.LogMessage(MessageImportance.High, $"\nCouldn't find static component library: {componentLibToLink}, linking static component stub library: {staticComponentStubLib}.\n");
-                    componentLibToLink = staticComponentStubLib;
-                }
-
-                toLink += $"    \"-force_load {componentLibToLink}\"{Environment.NewLine}";
-            }
-
-            string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
             if (targetRuntime == TargetRuntime.CoreCLR)
             {
+                string[] dylibsPatterns = new string[] {
+                    "libcoreclr.dylib",
+                    "libbrotli*.dylib",
+                    "libSystem*.dylib"
+                };
+                string[] dylibs = dylibsPatterns.SelectMany(pattern => Directory.GetFiles(workspace, pattern)).ToArray();
                 foreach (string lib in dylibs)
                 {
                     toLink += $"    \"-force_load {lib}\"{Environment.NewLine}";
@@ -422,6 +407,35 @@ internal sealed class Xcode
             }
             else
             {
+                string[] allComponentLibs = Directory.GetFiles(workspace, "libmono-component-*-static.a");
+                string[] staticComponentStubLibs = Directory.GetFiles(workspace, "libmono-component-*-stub-static.a");
+
+                // by default, component stubs will be linked and depending on how mono runtime has been build,
+                // stubs can disable or dynamic load components.
+                foreach (string staticComponentStubLib in staticComponentStubLibs)
+                {
+                    string componentLibToLink = staticComponentStubLib;
+                    foreach (string runtimeComponent in runtimeComponents)
+                    {
+                        if (componentLibToLink.Contains(runtimeComponent, StringComparison.OrdinalIgnoreCase))
+                        {
+                            // static link component.
+                            componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
+                            break;
+                        }
+                    }
+
+                    // if lib doesn't exist (primarily due to runtime build without static lib support), fallback linking stub lib.
+                    if (!File.Exists(componentLibToLink))
+                    {
+                        Logger.LogMessage(MessageImportance.High, $"\nCouldn't find static component library: {componentLibToLink}, linking static component stub library: {staticComponentStubLib}.\n");
+                        componentLibToLink = staticComponentStubLib;
+                    }
+
+                    toLink += $"    \"-force_load {componentLibToLink}\"{Environment.NewLine}";
+                }
+
+                string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
                 // Sort the static libraries to link so the brotli libs are added to the list last (after the compression native libs)
                 List<string> staticLibsToLink = Directory.GetFiles(workspace, "*.a").OrderBy(libName => libName.Contains("brotli") ? 1 : 0).ToList();
                 foreach (string lib in staticLibsToLink)
@@ -545,11 +559,23 @@ internal sealed class Xcode
 
         File.WriteAllText(Path.Combine(binDir, "CMakeLists.txt"), cmakeLists);
 
-        if (needEntitlements) {
+        string envVariables = string.Empty;
+        foreach (var item in environmentVariables)
+        {
+            var split = item.Split('=');
+            if (split.Length == 2)
+            {
+                envVariables += $"\t\tsetenv (\"{split[0].Trim()}\", \"{split[1].Trim()}\", true);\n";
+            }
+        }
+
+        if (needEntitlements)
+        {
             var ent = new StringBuilder();
-            foreach ((var key, var value) in entitlements) {
-                ent.AppendLine ($"<key>{key}</key>");
-                ent.AppendLine (value);
+            foreach ((var key, var value) in entitlements)
+            {
+                ent.AppendLine($"<key>{key}</key>");
+                ent.AppendLine(value);
             }
             string entitlementsTemplate = Utils.GetEmbeddedResource("app.entitlements.template");
             File.WriteAllText(Path.Combine(binDir, "app.entitlements"), entitlementsTemplate.Replace("%Entitlements%", ent.ToString()));
@@ -592,12 +618,15 @@ internal sealed class Xcode
             {
                 File.WriteAllText(Path.Combine(binDir, "coreclrhost.h"),
                     Utils.GetEmbeddedResource("coreclrhost.h"));
+                File.WriteAllText(Path.Combine(binDir, "host_runtime_contract.h"),
+                    Utils.GetEmbeddedResource("host_runtime_contract.h"));
 
                 // NOTE: Library mode is not supported yet
                 File.WriteAllText(Path.Combine(binDir, "runtime.m"),
                     Utils.GetEmbeddedResource("runtime-coreclr.m")
                         .Replace("//%APPLE_RUNTIME_IDENTIFIER%", RuntimeIdentifier)
-                        .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
+                        .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib))
+                        .Replace("%EnvVariables%", envVariables));
             }
         }
 
@@ -661,7 +690,7 @@ internal sealed class Xcode
                         .Append(" -UseModernBuildSystem=YES")
                         .Append(" -archivePath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
                         .Append(" -derivedDataPath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
-                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.0");
+                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.2");
                     break;
             }
         }
@@ -686,7 +715,7 @@ internal sealed class Xcode
                         .Append(" -UseModernBuildSystem=YES")
                         .Append(" -archivePath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
                         .Append(" -derivedDataPath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
-                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.0");
+                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.2");
                     break;
             }
         }

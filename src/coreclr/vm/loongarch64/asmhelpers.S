@@ -9,7 +9,7 @@ LEAF_ENTRY GetCurrentIP, _TEXT
     jirl  $r0, $ra, 0
 LEAF_END GetCurrentIP, _TEXT
 
-// LPVOID __stdcall GetCurrentSP(void)//
+// void* GetCurrentSP(void)//
 LEAF_ENTRY GetCurrentSP, _TEXT
     ori  $a0, $sp, 0
     jirl  $r0, $ra, 0
@@ -359,30 +359,28 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
 NESTED_END ThePreStub, _TEXT
 
 // ------------------------------------------------------------------
-// The call in ndirect import precode points to this function.
-NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
+// The call in PInvokeImportPrecode points to this function.
+NESTED_ENTRY PInvokeImportThunk, _TEXT, NoHandler
 
     //                            $fp,$ra
     PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0xa0
-    //PROLOG_SAVE_REG gp, 16
     SAVE_ARGUMENT_REGISTERS  $sp, 0x20
     SAVE_FLOAT_ARGUMENT_REGISTERS  $sp, 0x60
 
     ori  $a0, $t2, 0
-    bl C_FUNC(NDirectImportWorker)
+    bl C_FUNC(PInvokeImportWorker)
     ori  $t4,$a0,0
 
     // pop the stack and restore original register state
     RESTORE_FLOAT_ARGUMENT_REGISTERS  $sp, 0x60
     RESTORE_ARGUMENT_REGISTERS  $sp, 0x20
-    //EPILOG_RESTORE_REG  gp, 16
     //                              $fp,$ra
     EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0xa0
 
-    // If we got back from NDirectImportWorker, the MD has been successfully
+    // If we got back from PInvokeImportWorker, the MD has been successfully
     // linked. Proceed to execute the original DLL call.
     EPILOG_BRANCH_REG  $t4
-NESTED_END NDirectImportThunk, _TEXT
+NESTED_END PInvokeImportThunk, _TEXT
 
 #ifdef FEATURE_PREJIT
 //------------------------------------------------
@@ -406,7 +404,6 @@ NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
     // Save arguments and return address
     //                            $fp,$ra
     PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0xa0
-    //PROLOG_SAVE_REG  gp, 16
     SAVE_ARGUMENT_REGISTERS  $sp, 32
     SAVE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
 
@@ -425,7 +422,6 @@ NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
     // pop the stack and restore original register state
     RESTORE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
     RESTORE_ARGUMENT_REGISTERS  $sp, 32
-    //EPILOG_RESTORE_REG  gp, 16
     //                              $fp,$ra
     EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0xa0
 
@@ -476,7 +472,6 @@ NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
     // Save arguments and return address
     //                            $fp,$ra
     PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0xa0
-    //PROLOG_SAVE_REG  gp, 16
     SAVE_ARGUMENT_REGISTERS  $sp, 32
     SAVE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
 
@@ -488,7 +483,6 @@ NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
     // pop the stack and restore original register state
     RESTORE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
     RESTORE_ARGUMENT_REGISTERS  $sp, 32
-    //EPILOG_RESTORE_REG  gp, 16
     //                              $fp,$ra
     EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0xa0
 
@@ -604,34 +598,6 @@ LOCAL_LABEL(Fail):
     b       C_FUNC(ResolveWorkerAsmStub) // call the ResolveWorkerAsmStub method to transition into the VM
 NESTED_END ResolveWorkerChainLookupAsmStub, _TEXT
 
-
-//NOTE:  Frame_Size = SIZEOF__ArgumentRegisters + SIZEOF__FloatArgumentRegisters + extra.
-//
-//     |gp   |
-//     |s0   |
-//     |$t2   |
-//     |t9   |
-//     |$a7   |
-//     |$a6   |
-//     |$a5   |
-//     |$a4   |
-//     |$a3   |
-//     |$a2   |
-//     |$a1   |
-//     |$a0   |
-//     |$ra   | $sp+8
-//     |fp   | $sp
-//
-//     |f19  | if needed.
-//     |f18  |
-//     |f17  |
-//     |f16  |
-//     |f15  |
-//     |f14  |
-//     |f13  |
-//     |f12  |
-//
-
 // ------------------------------------------------------------------
 // void ResolveWorkerAsmStub(args in regs $a0-$a7 & stack, t8:IndirectionCellAndFlags, $t2:DispatchToken)
 //
@@ -723,7 +689,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     //
     // $a0 = throwable
     // $a1 = PC to invoke
-    // $a2 = address of s0 register in CONTEXT record// used to restore the non-volatile registers of CrawlFrame
+    // $a2 = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
     // $a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
 
@@ -741,16 +707,16 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     // Save the SP of this function
     st.d  $sp, $a3, 0
 
-    ld.d  $fp, $a2, -8  // offset of fp in PCONTEXT relative to S0.
-    ld.d  $s0, $a2, 0
-    ld.d  $s1, $a2, 8
-    ld.d  $s2, $a2, 16
-    ld.d  $s3, $a2, 24
-    ld.d  $s4, $a2, 32
-    ld.d  $s5, $a2, 40
-    ld.d  $s6, $a2, 48
-    ld.d  $s7, $a2, 56
-    ld.d  $s8, $a2, 64
+    ld.d  $fp, $a2, OFFSETOF__CONTEXT__Fp
+    ld.d  $s0, $a2, OFFSETOF__CONTEXT__S0
+    ld.d  $s1, $a2, OFFSETOF__CONTEXT__S0+8
+    ld.d  $s2, $a2, OFFSETOF__CONTEXT__S0+16
+    ld.d  $s3, $a2, OFFSETOF__CONTEXT__S0+24
+    ld.d  $s4, $a2, OFFSETOF__CONTEXT__S0+32
+    ld.d  $s5, $a2, OFFSETOF__CONTEXT__S0+40
+    ld.d  $s6, $a2, OFFSETOF__CONTEXT__S0+48
+    ld.d  $s7, $a2, OFFSETOF__CONTEXT__S0+56
+    ld.d  $s8, $a2, OFFSETOF__CONTEXT__S0+64
 
     // Invoke the funclet
     jirl $ra, $a1, 0
@@ -983,10 +949,15 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG $t4
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
+#endif // FEATURE_TIERED_COMPILATION
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+
 NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
-    addi.d  $a0, $sp, __PWTB_TransitionBlock // TransitionBlock *
+    // $a0 = pointer to TransitionBlock
+    addi.d  $a0, $sp, __PWTB_TransitionBlock
     bl      C_FUNC(JIT_PatchpointWorkerWorkerWithPolicy)
 
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
@@ -999,7 +970,7 @@ LEAF_ENTRY JIT_PatchpointForced, _TEXT
     b C_FUNC(JIT_Patchpoint)
 LEAF_END JIT_PatchpointForced, _TEXT
 
-#endif // FEATURE_TIERED_COMPILATION
+#endif // FEATURE_ON_STACK_REPLACEMENT
 
 // ------------------------------------------------------------------
 // size_t GetThreadStaticsVariableOffset()
@@ -1050,3 +1021,124 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     move  $a1, $t0     // Move temp register to first arg register for static method with return buffer
     EPILOG_BRANCH_REG $METHODDESC_REGISTER
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Throw_Impl
+// implementation written in C.
+//
+// Input state:
+//   $a0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Throw, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS $a1
+    // $a0 already contains exception object
+    // $a1 contains pointer to TransitionBlock
+    bl   C_FUNC(IL_Throw_Impl)
+    // Should never return
+    break 0
+NESTED_END IL_Throw, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_ThrowExact_Impl
+// implementation written in C.
+//
+// Input state:
+//   $a0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_ThrowExact, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS $a1
+    // $a0 already contains exception object
+    // $a1 contains pointer to TransitionBlock
+    bl   C_FUNC(IL_ThrowExact_Impl)
+    // Should never return
+    break 0
+NESTED_END IL_ThrowExact, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Rethrow_Impl
+// implementation written in C.
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS $a0
+    // $a0 contains pointer to TransitionBlock
+    bl   C_FUNC(IL_Rethrow_Impl)
+    // Should never return
+    break 0
+NESTED_END IL_Rethrow, _TEXT
+
+// ------------------------------------------------------------------
+// ClrRestoreNonvolatileContextWorker
+//
+// Restores registers based on ContextFlags and jumps to target PC.
+// When CONTEXT_INTEGER is set, restores ALL integer registers
+// because exception handling needs $a0 (exception object).
+// When CONTEXT_FLOATING_POINT is set, restores non-volatile FP regs (f24-f31).
+//
+// Arguments:
+//   $a0 - pointer to CONTEXT structure
+//   $a1 - unused (SSP, not supported on LoongArch64)
+// ------------------------------------------------------------------
+LEAF_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT
+
+    // Save CONTEXT pointer in $t0 before we potentially clobber $a0
+    move    $t0, $a0
+
+    // Check if CONTEXT_FLOATING_POINT is set
+    ld.w    $t1, $t0, OFFSETOF__CONTEXT__ContextFlags
+    andi    $t2, $t1, (1 << CONTEXT_FLOATING_POINT_BIT)
+    beqz    $t2, LOCAL_LABEL(SkipFloatingPointRestore)
+
+    // Restore non-volatile FP registers f24-f31
+    // F24 is at OFFSETOF__CONTEXT__F + 24*8 = 0x110 + 0xC0 = 0x1D0
+    fld.d   $f24, $t0, (OFFSETOF__CONTEXT__F + 24*8)
+    fld.d   $f25, $t0, (OFFSETOF__CONTEXT__F + 25*8)
+    fld.d   $f26, $t0, (OFFSETOF__CONTEXT__F + 26*8)
+    fld.d   $f27, $t0, (OFFSETOF__CONTEXT__F + 27*8)
+    fld.d   $f28, $t0, (OFFSETOF__CONTEXT__F + 28*8)
+    fld.d   $f29, $t0, (OFFSETOF__CONTEXT__F + 29*8)
+    fld.d   $f30, $t0, (OFFSETOF__CONTEXT__F + 30*8)
+    fld.d   $f31, $t0, (OFFSETOF__CONTEXT__F + 31*8)
+
+LOCAL_LABEL(SkipFloatingPointRestore):
+    // Check if CONTEXT_INTEGER is set
+    andi    $t2, $t1, (1 << CONTEXT_INTEGER_BIT)
+    beqz    $t2, LOCAL_LABEL(SkipIntegerRestore)
+
+    // Restore ALL integer registers (needed by exception handling)
+    // Argument registers a1-a7 (a0 last since we use it)
+    ld.d    $a1, $t0, (OFFSETOF__CONTEXT__A0 + 8)
+    ld.d    $a2, $t0, (OFFSETOF__CONTEXT__A0 + 16)
+    ld.d    $a3, $t0, (OFFSETOF__CONTEXT__A0 + 24)
+    ld.d    $a4, $t0, (OFFSETOF__CONTEXT__A0 + 32)
+    ld.d    $a5, $t0, (OFFSETOF__CONTEXT__A0 + 40)
+    ld.d    $a6, $t0, (OFFSETOF__CONTEXT__A0 + 48)
+    ld.d    $a7, $t0, (OFFSETOF__CONTEXT__A0 + 56)
+
+    // Callee-saved registers s0-s8
+    ld.d    $s0, $t0, OFFSETOF__CONTEXT__S0
+    ld.d    $s1, $t0, (OFFSETOF__CONTEXT__S0 + 8)
+    ld.d    $s2, $t0, (OFFSETOF__CONTEXT__S0 + 16)
+    ld.d    $s3, $t0, (OFFSETOF__CONTEXT__S0 + 24)
+    ld.d    $s4, $t0, (OFFSETOF__CONTEXT__S0 + 32)
+    ld.d    $s5, $t0, (OFFSETOF__CONTEXT__S0 + 40)
+    ld.d    $s6, $t0, (OFFSETOF__CONTEXT__S0 + 48)
+    ld.d    $s7, $t0, (OFFSETOF__CONTEXT__S0 + 56)
+    ld.d    $s8, $t0, (OFFSETOF__CONTEXT__S0 + 64)
+
+    // Restore $a0 last (exception object for exception handling)
+    ld.d    $a0, $t0, OFFSETOF__CONTEXT__A0
+
+LOCAL_LABEL(SkipIntegerRestore):
+    // Restore fp, ra
+    ld.d    $fp, $t0, OFFSETOF__CONTEXT__Fp
+    ld.d    $ra, $t0, OFFSETOF__CONTEXT__Ra
+
+    // Load sp and pc ($t0 will be overwritten)
+    ld.d    $t1, $t0, OFFSETOF__CONTEXT__Pc
+    ld.d    $t0, $t0, OFFSETOF__CONTEXT__Sp
+
+    // Set sp and jump
+    move    $sp, $t0
+    jr      $t1
+
+LEAF_END ClrRestoreNonvolatileContextWorker, _TEXT

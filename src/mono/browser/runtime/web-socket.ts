@@ -5,8 +5,8 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, createPromiseController, loaderHelpers, mono_assert } from "./globals";
-import { setI32, localHeapViewU8, forceThreadMemoryViewRefresh } from "./memory";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, createPromiseController, loaderHelpers, mono_assert, Module } from "./globals";
+import { setI32, localHeapViewU8, forceThreadMemoryViewRefresh, fixupPointer } from "./memory";
 import { VoidPtr } from "./types/emscripten";
 import { PromiseController } from "./types/internal";
 import { mono_log_warn } from "./logging";
@@ -51,7 +51,7 @@ export function ws_get_state (ws: WebSocketExtension): number {
     const queued_events_count = receive_event_queue.getLength();
     if (queued_events_count == 0)
         return ws.readyState ?? -1;
-    return WebSocket.OPEN;
+    return ws[wasm_ws_close_sent] ? WebSocket.CLOSING : WebSocket.OPEN;
 }
 
 export function ws_wasm_create (uri: string, sub_protocols: string[] | null, receive_status_ptr: VoidPtr): WebSocketExtension {
@@ -72,7 +72,7 @@ export function ws_wasm_create (uri: string, sub_protocols: string[] | null, rec
     ws[wasm_ws_pending_open_promise] = open_promise_control;
     ws[wasm_ws_pending_send_promises] = [];
     ws[wasm_ws_pending_close_promises] = [];
-    ws[wasm_ws_receive_status_ptr] = receive_status_ptr;
+    ws[wasm_ws_receive_status_ptr] = fixupPointer(receive_status_ptr, 0);
     ws.binaryType = "arraybuffer";
     const local_on_open = () => {
         try {
@@ -104,8 +104,8 @@ export function ws_wasm_create (uri: string, sub_protocols: string[] | null, rec
             forceThreadMemoryViewRefresh();
 
             ws[wasm_ws_close_received] = true;
-            ws["close_status"] = ev.code;
-            ws["close_status_description"] = ev.reason;
+            ws["closeStatus"] = ev.code;
+            ws["closeStatusDescription"] = ev.reason;
 
             if (ws[wasm_ws_pending_open_promise_used]) {
                 open_promise_control.reject(new Error(ev.reason));
@@ -116,13 +116,15 @@ export function ws_wasm_create (uri: string, sub_protocols: string[] | null, rec
             }
 
             // send close to any pending receivers, to wake them
-            const receive_promise_queue = ws[wasm_ws_pending_receive_promise_queue];
-            receive_promise_queue.drain((receive_promise_control) => {
-                setI32(receive_status_ptr, 0); // count
-                setI32(<any>receive_status_ptr + 4, 2); // type:close
-                setI32(<any>receive_status_ptr + 8, 1);// end_of_message: true
-                receive_promise_control.resolve();
-            });
+            Module.safeSetTimeout(() => {
+                const receive_promise_queue = ws[wasm_ws_pending_receive_promise_queue];
+                receive_promise_queue.drain((receive_promise_control) => {
+                    setI32(receive_status_ptr, 0); // count
+                    setI32(<any>receive_status_ptr + 4, 2); // type:close
+                    setI32(<any>receive_status_ptr + 8, 1);// end_of_message: true
+                    receive_promise_control.resolve();
+                });
+            }, 0);
         } catch (error: any) {
             mono_log_warn("failed to propagate WebSocket close event: " + error.toString());
         }
@@ -183,7 +185,7 @@ export function ws_wasm_send (ws: WebSocketExtension, buffer_ptr: VoidPtr, buffe
         return resolvedPromise();
     }
 
-    const buffer_view = new Uint8Array(localHeapViewU8().buffer, <any>buffer_ptr, buffer_length);
+    const buffer_view = new Uint8Array(localHeapViewU8().buffer, fixupPointer(buffer_ptr, 0), buffer_length);
     const whole_buffer = web_socket_send_buffering(ws, buffer_view, message_type, end_of_message);
 
     if (!end_of_message || !whole_buffer) {
@@ -230,7 +232,7 @@ export function ws_wasm_receive (ws: WebSocketExtension, buffer_ptr: VoidPtr, bu
 
     const { promise, promise_control } = createPromiseController<void>();
     const receive_promise_control = promise_control as ReceivePromiseControl;
-    receive_promise_control.buffer_ptr = buffer_ptr;
+    receive_promise_control.buffer_ptr = fixupPointer(buffer_ptr, 0);
     receive_promise_control.buffer_length = buffer_length;
     receive_promise_queue.enqueue(receive_promise_control);
 
@@ -400,7 +402,7 @@ function web_socket_receive_buffering (ws: WebSocketExtension, event_queue: Queu
     const count = Math.min(buffer_length, event.data.length - event.offset);
     if (count > 0) {
         const sourceView = event.data.subarray(event.offset, event.offset + count);
-        const bufferView = new Uint8Array(localHeapViewU8().buffer, <any>buffer_ptr, buffer_length);
+        const bufferView = new Uint8Array(localHeapViewU8().buffer, fixupPointer(buffer_ptr, 0), buffer_length);
         bufferView.set(sourceView, 0);
         event.offset += count;
     }
@@ -490,8 +492,8 @@ type WebSocketExtension = WebSocket & {
     [wasm_ws_pending_send_buffer_offset]: number
     [wasm_ws_pending_send_buffer_type]: number
     [wasm_ws_pending_send_buffer]: Uint8Array | null
-    ["close_status"]: number | undefined
-    ["close_status_description"]: string | undefined
+    ["closeStatus"]: number | undefined
+    ["closeStatusDescription"]: string | undefined
     dispose(): void
 }
 
@@ -515,7 +517,7 @@ function resolvedPromise (): Promise<void> | null {
         // passing synchronous `null` as value of the result of the async JSImport function is not possible when there is message sent across threads.
         const resolved = Promise.resolve();
         // the C# code in the BrowserWebSocket expects that promise returned from this code is instance of `ControllablePromise`
-        // so that C# side could call `mono_wasm_cancel_promise` on it.
+        // so that C# side could call `SystemInteropJS_CancelPromise` on it.
         // in practice the `resolve()` callback would arrive before the `reject()` of the cancelation.
         return wrap_as_cancelable<void>(resolved);
     }

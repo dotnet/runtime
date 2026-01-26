@@ -35,16 +35,16 @@ namespace System.Text.Json.Serialization.Converters
             {
                 jObject[propertyName] = jNodeValue;
             }
-            else
+            else if (!jObject.TryAdd(propertyName, jNodeValue))
             {
-                // TODO: Use TryAdd once https://github.com/dotnet/runtime/issues/110244 is resolved.
-                if (jObject.ContainsKey(propertyName))
-                {
-                    ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(propertyName);
-                }
-
-                jObject.Add(propertyName, jNodeValue);
+                ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(propertyName);
             }
+        }
+
+        internal override void WriteExtensionDataValue(Utf8JsonWriter writer, JsonObject? value, JsonSerializerOptions options)
+        {
+            Debug.Assert(value is not null);
+            value.WriteContentsTo(writer, options);
         }
 
         public override void Write(Utf8JsonWriter writer, JsonObject? value, JsonSerializerOptions options)

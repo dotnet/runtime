@@ -6,6 +6,9 @@
 
 // The JIT32 only supports up to 32767 variables
 
+
+namespace b602004;
+
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -2822,6 +2825,7 @@ public class Test_Inline_Vars2
         Console.WriteLine(a400);
         return 100;
     }
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

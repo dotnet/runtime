@@ -133,7 +133,7 @@ namespace System.Numerics
 
             return Vector128.AndNot(
                 (value.AsVector128() / Vector128.Sqrt(lengthSquared)),
-                Vector128.Equals(lengthSquared, Vector128.Create(float.PositiveInfinity))
+                Vector128.Equals(lengthSquared, Vector128<float>.PositiveInfinity)
             ).AsPlane();
         }
 

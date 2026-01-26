@@ -140,7 +140,7 @@ namespace System.Runtime.CompilerServices
         internal CastResult TryGet(nuint source, nuint target)
         {
             // table is always initialized and is not null.
-            return TryGet(_table!, source, target);
+            return TryGet(_table, source, target);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

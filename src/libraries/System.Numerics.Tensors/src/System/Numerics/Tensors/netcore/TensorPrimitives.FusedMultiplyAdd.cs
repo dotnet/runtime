@@ -123,7 +123,6 @@ namespace System.Numerics.Tensors
 
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> z)
             {
-#if NET9_0_OR_GREATER
                 if (typeof(T) == typeof(double))
                 {
                     return Vector128.FusedMultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
@@ -133,50 +132,10 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(float));
                     return Vector128.FusedMultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
                 }
-#else
-                if (Fma.IsSupported)
-                {
-                    if (typeof(T) == typeof(float)) return Fma.MultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
-                    if (typeof(T) == typeof(double)) return Fma.MultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
-                }
-
-                if (AdvSimd.IsSupported)
-                {
-                    if (typeof(T) == typeof(float)) return AdvSimd.FusedMultiplyAdd(z.AsSingle(), x.AsSingle(), y.AsSingle()).As<float, T>();
-                }
-
-                if (AdvSimd.Arm64.IsSupported)
-                {
-                    if (typeof(T) == typeof(double)) return AdvSimd.Arm64.FusedMultiplyAdd(z.AsDouble(), x.AsDouble(), y.AsDouble()).As<double, T>();
-                }
-
-                if (typeof(T) == typeof(float))
-                {
-                    Vector128<float> xFloats = x.AsSingle();
-                    Vector128<float> yFloats = y.AsSingle();
-                    Vector128<float> zFloats = z.AsSingle();
-                    return Vector128.Create(
-                        float.FusedMultiplyAdd(xFloats[0], yFloats[0], zFloats[0]),
-                        float.FusedMultiplyAdd(xFloats[1], yFloats[1], zFloats[1]),
-                        float.FusedMultiplyAdd(xFloats[2], yFloats[2], zFloats[2]),
-                        float.FusedMultiplyAdd(xFloats[3], yFloats[3], zFloats[3])).As<float, T>();
-                }
-                else
-                {
-                    Debug.Assert(typeof(T) == typeof(double));
-                    Vector128<double> xDoubles = x.AsDouble();
-                    Vector128<double> yDoubles = y.AsDouble();
-                    Vector128<double> zDoubles = z.AsDouble();
-                    return Vector128.Create(
-                        double.FusedMultiplyAdd(xDoubles[0], yDoubles[0], zDoubles[0]),
-                        double.FusedMultiplyAdd(xDoubles[1], yDoubles[1], zDoubles[1])).As<double, T>();
-                }
-#endif
             }
 
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y, Vector256<T> z)
             {
-#if NET9_0_OR_GREATER
                 if (typeof(T) == typeof(double))
                 {
                     return Vector256.FusedMultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
@@ -186,22 +145,10 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(float));
                     return Vector256.FusedMultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
                 }
-#else
-                if (Fma.IsSupported)
-                {
-                    if (typeof(T) == typeof(float)) return Fma.MultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
-                    if (typeof(T) == typeof(double)) return Fma.MultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
-                }
-
-                return Vector256.Create(
-                    Invoke(x.GetLower(), y.GetLower(), z.GetLower()),
-                    Invoke(x.GetUpper(), y.GetUpper(), z.GetUpper()));
-#endif
             }
 
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y, Vector512<T> z)
             {
-#if NET9_0_OR_GREATER
                 if (typeof(T) == typeof(double))
                 {
                     return Vector512.FusedMultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
@@ -211,17 +158,6 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(float));
                     return Vector512.FusedMultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
                 }
-#else
-                if (Avx512F.IsSupported)
-                {
-                    if (typeof(T) == typeof(float)) return Avx512F.FusedMultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
-                    if (typeof(T) == typeof(double)) return Avx512F.FusedMultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
-                }
-
-                return Vector512.Create(
-                    Invoke(x.GetLower(), y.GetLower(), z.GetLower()),
-                    Invoke(x.GetUpper(), y.GetUpper(), z.GetUpper()));
-#endif
             }
         }
     }

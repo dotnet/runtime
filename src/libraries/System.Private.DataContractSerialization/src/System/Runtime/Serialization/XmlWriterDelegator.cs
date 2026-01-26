@@ -347,6 +347,10 @@ namespace System.Runtime.Serialization
                         WriteUri((Uri)value);
                     else if (valueType == Globals.TypeOfXmlQualifiedName)
                         WriteQName((XmlQualifiedName)value);
+                    else if (valueType == Globals.TypeOfDateOnly)
+                        WriteDateOnly((DateOnly)value);
+                    else if (valueType == Globals.TypeOfTimeOnly)
+                        WriteTimeOnly((TimeOnly)value);
                     else
                         handled = false;
                     break;
@@ -426,6 +430,10 @@ namespace System.Runtime.Serialization
                         WriteUri(((DataNode<Uri>)dataNode).GetValue());
                     else if (valueType == Globals.TypeOfXmlQualifiedName)
                         WriteQName(((DataNode<XmlQualifiedName>)dataNode).GetValue());
+                    else if (valueType == Globals.TypeOfDateOnly)
+                        WriteDateOnly(((DataNode<DateOnly>)dataNode).GetValue());
+                    else if (valueType == Globals.TypeOfTimeOnly)
+                        WriteTimeOnly(((DataNode<TimeOnly>)dataNode).GetValue());
                     else
                         handled = false;
                     break;
@@ -462,6 +470,30 @@ namespace System.Runtime.Serialization
         {
             WriteStartElementPrimitive(name, ns);
             WriteDateTime(value);
+            WriteEndElementPrimitive();
+        }
+
+        // DateOnly / TimeOnly
+        internal virtual void WriteDateOnly(DateOnly value)
+        {
+            writer.WriteString(value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+        }
+        internal void WriteDateOnly(DateOnly value, XmlDictionaryString name, XmlDictionaryString? ns)
+        {
+            WriteStartElementPrimitive(name, ns);
+            WriteDateOnly(value);
+            WriteEndElementPrimitive();
+        }
+        internal virtual void WriteTimeOnly(TimeOnly value)
+        {
+            // Use optional fractional second digits (F) so trailing zeros and the '.' are omitted automatically.
+            // "f" forces zeros; "F" suppresses them. "HH:mm:ss.FFFFFFF" yields minimal length representation.
+            writer.WriteString(value.ToString("HH:mm:ss.FFFFFFF", CultureInfo.InvariantCulture));
+        }
+        internal void WriteTimeOnly(TimeOnly value, XmlDictionaryString name, XmlDictionaryString? ns)
+        {
+            WriteStartElementPrimitive(name, ns);
+            WriteTimeOnly(value);
             WriteEndElementPrimitive();
         }
 

@@ -7,10 +7,9 @@ namespace System.Runtime.InteropServices
 {
     public static partial class RuntimeInformation
     {
-        private static string? s_osDescription;
         private static volatile int s_osArchPlusOne;
 
-        public static string OSDescription => s_osDescription ??=
+        public static string OSDescription => field ??=
 #if TARGET_ANDROID
             $"Android (API level {Environment.OSVersion.Version.Major})";
 #elif TARGET_OSX

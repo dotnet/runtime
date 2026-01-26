@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The new instance of T if successful, default(T) otherwise.</returns>
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
-        public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration)
+        public static T? Get<T>(this IConfiguration configuration)
             => configuration.Get<T>(null);
 
         /// <summary>
@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The new instance of T if successful, default(T) otherwise.</returns>
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
-        public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration, Action<BinderOptions>? configureOptions)
+        public static T? Get<T>(this IConfiguration configuration, Action<BinderOptions>? configureOptions)
         {
             ArgumentNullException.ThrowIfNull(configuration);
 
@@ -86,7 +86,6 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         public static object? Get(
             this IConfiguration configuration,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
             Action<BinderOptions>? configureOptions)
         {
@@ -153,7 +152,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="key">The key of the configuration section's value to convert.</param>
         /// <returns>The converted value.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
-        public static T? GetValue<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration, string key)
+        public static T? GetValue<T>(this IConfiguration configuration, string key)
         {
             return GetValue(configuration, key, default(T));
         }
@@ -168,7 +167,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The converted value.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         [return: NotNullIfNotNull(nameof(defaultValue))]
-        public static T? GetValue<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration, string key, T defaultValue)
+        public static T? GetValue<T>(this IConfiguration configuration, string key, T defaultValue)
         {
             return (T?)GetValue(configuration, typeof(T), key, defaultValue);
         }
@@ -183,7 +182,6 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         public static object? GetValue(
             this IConfiguration configuration,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
             string key)
         {
@@ -202,7 +200,6 @@ namespace Microsoft.Extensions.Configuration
         [return: NotNullIfNotNull(nameof(defaultValue))]
         public static object? GetValue(
             this IConfiguration configuration,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type, string key,
             object? defaultValue)
         {
@@ -321,7 +318,7 @@ namespace Microsoft.Extensions.Configuration
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         private static void BindInstance(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+            Type type,
             BindingPoint bindingPoint,
             IConfiguration config,
             BinderOptions options,
@@ -506,20 +503,19 @@ namespace Microsoft.Extensions.Configuration
                         throw new InvalidOperationException(SR.Format(SR.Error_FailedBinding, configValue, section.Path, type));
                     }
                 }
-                else
+                else if (!bindingPoint.IsReadOnly && bindingPoint.Value is null)
                 {
-                    if (isParentCollection && bindingPoint.Value is null)
+                    if (isParentCollection)
                     {
                         // Try to create the default instance of the type
                         bindingPoint.TrySetValue(CreateInstance(type, config, options, out _));
                     }
-                    else if (isConfigurationExist && bindingPoint.Value is null)
+                    else if (isConfigurationExist)
                     {
-                        // Don't override the existing array in bindingPoint.Value if it is already set.
-                        if (type.IsArray || IsImmutableArrayCompatibleInterface(type))
+                        if (type.IsArray || IsIEnumerableInterface(type))
                         {
                             // When having configuration value set to empty string, we create an empty array
-                            bindingPoint.TrySetValue(configValue is null ? null : Array.CreateInstance(type.GetElementType()!, 0));
+                            bindingPoint.TrySetValue(configValue is null ? null : Array.CreateInstance(type.IsArray ? type.GetElementType()! : type.GetGenericArguments()[0], 0));
                         }
                         else
                         {
@@ -971,7 +967,6 @@ namespace Microsoft.Extensions.Configuration
 
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         private static bool TryConvertValue(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
             string? value, string? path, out object? result, out Exception? error)
         {
@@ -1030,7 +1025,6 @@ namespace Microsoft.Extensions.Configuration
 
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         private static object? ConvertValue(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
             string value, string? path)
         {
@@ -1060,6 +1054,9 @@ namespace Microsoft.Extensions.Configuration
                 || genericTypeDefinition == typeof(IReadOnlyCollection<>)
                 || genericTypeDefinition == typeof(IReadOnlyList<>);
         }
+
+        private static bool IsIEnumerableInterface(Type type)
+            => type.IsInterface && type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>);
 
         private static bool TypeIsASetInterface(Type type)
         {
@@ -1096,7 +1093,13 @@ namespace Microsoft.Extensions.Configuration
             return null;
         }
 
-        private static List<PropertyInfo> GetAllProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        private static List<PropertyInfo> GetAllProperties(
+#if NET
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllProperties)]
+#else
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+#endif
+            Type type)
         {
             var allProperties = new List<PropertyInfo>();
 

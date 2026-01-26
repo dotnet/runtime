@@ -142,7 +142,7 @@ namespace System.Xml.Xsl.XsltOld
                 case NameDone:
                     {
                         PrefixQName qname = frame.CalculatedName!;
-                        if (processor.BeginEvent(XPathNodeType.Attribute, qname.Prefix, qname.Name, qname.Namespace, false) == false)
+                        if (!processor.BeginEvent(XPathNodeType.Attribute, qname.Prefix, qname.Name, qname.Namespace, false))
                         {
                             // Come back later
                             frame.State = NameDone;
@@ -154,7 +154,7 @@ namespace System.Xml.Xsl.XsltOld
                         break;                              // Allow children to run
                     }
                 case ProcessingChildren:
-                    if (processor.EndEvent(XPathNodeType.Attribute) == false)
+                    if (!processor.EndEvent(XPathNodeType.Attribute))
                     {
                         frame.State = ProcessingChildren;
                         break;

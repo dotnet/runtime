@@ -119,7 +119,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             typeof(IBaseWithoutRequires).RequiresPublicMethods();
             typeof(ImplementationClassWithRequires).RequiresPublicMethods();
             typeof(ImplementationClassWithoutRequires).RequiresPublicMethods();
+            new ExplicitImplementationClassWithRequires(); // we need to see this one as constructed too
             typeof(ExplicitImplementationClassWithRequires).RequiresPublicMethods();
+            new ExplicitImplementationClassWithoutRequires(); // we need to see this one as constructed too
             typeof(ExplicitImplementationClassWithoutRequires).RequiresPublicMethods();
             typeof(ImplementationClassWithoutRequiresInSource).RequiresPublicMethods();
             typeof(ImplementationClassWithRequiresInSource).RequiresPublicMethods();
@@ -176,8 +178,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [RequiresAssemblyFiles("Message")]
             [RequiresDynamicCode("Message")]
             [ExpectedWarning("IL2046", "DerivedClassWithRequires.VirtualMethod()", "BaseClassWithoutRequires.VirtualMethod()")]
-            [ExpectedWarning("IL3003", "DerivedClassWithRequires.VirtualMethod()", "BaseClassWithoutRequires.VirtualMethod()", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3051", "DerivedClassWithRequires.VirtualMethod()", "BaseClassWithoutRequires.VirtualMethod()", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3003", "DerivedClassWithRequires.VirtualMethod()", "BaseClassWithoutRequires.VirtualMethod()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3051", "DerivedClassWithRequires.VirtualMethod()", "BaseClassWithoutRequires.VirtualMethod()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             public override void VirtualMethod()
             {
             }
@@ -186,8 +188,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             public override string VirtualPropertyAnnotationInAccesor
             {
                 [ExpectedWarning("IL2046", "DerivedClassWithRequires.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithoutRequires.VirtualPropertyAnnotationInAccesor.get")]
-                [ExpectedWarning("IL3003", "DerivedClassWithRequires.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithoutRequires.VirtualPropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL3051", "DerivedClassWithRequires.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithoutRequires.VirtualPropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "DerivedClassWithRequires.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithoutRequires.VirtualPropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+                [ExpectedWarning("IL3051", "DerivedClassWithRequires.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithoutRequires.VirtualPropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 [RequiresUnreferencedCode("Message")]
                 [RequiresAssemblyFiles("Message")]
                 [RequiresDynamicCode("Message")]
@@ -198,9 +200,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [RequiresAssemblyFiles("Message")]
             public override string VirtualPropertyAnnotationInProperty
             {
-                [ExpectedWarning("IL3003", "DerivedClassWithRequires.VirtualPropertyAnnotationInProperty", "BaseClassWithoutRequires.VirtualPropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "DerivedClassWithRequires.VirtualPropertyAnnotationInProperty", "BaseClassWithoutRequires.VirtualPropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get;
-                [ExpectedWarning("IL3003", "DerivedClassWithRequires.VirtualPropertyAnnotationInProperty", "BaseClassWithoutRequires.VirtualPropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "DerivedClassWithRequires.VirtualPropertyAnnotationInProperty", "BaseClassWithoutRequires.VirtualPropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 set;
             }
         }
@@ -243,8 +245,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         class DerivedClassWithoutRequires : BaseClassWithRequires
         {
             [ExpectedWarning("IL2046", "DerivedClassWithoutRequires.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()")]
-            [ExpectedWarning("IL3003", "DerivedClassWithoutRequires.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3051", "DerivedClassWithoutRequires.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3003", "DerivedClassWithoutRequires.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3051", "DerivedClassWithoutRequires.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             public override void VirtualMethod()
             {
             }
@@ -253,26 +255,26 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             public override string VirtualPropertyAnnotationInAccesor
             {
                 [ExpectedWarning("IL2046", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get")]
-                [ExpectedWarning("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL3051", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+                [ExpectedWarning("IL3051", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get { return name; }
                 set { name = value; }
             }
 
             public override string VirtualPropertyAnnotationInProperty
             {
-                [ExpectedWarning("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInProperty", "BaseClassWithRequires.VirtualPropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInProperty", "BaseClassWithRequires.VirtualPropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get;
-                [ExpectedWarning("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInProperty", "BaseClassWithRequires.VirtualPropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInProperty", "BaseClassWithRequires.VirtualPropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 set;
             }
 
             public override string VirtualPropertyAnnotationInPropertyAndAccessor
             {
                 [ExpectedWarning("IL2046", "VirtualPropertyAnnotationInPropertyAndAccessor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get")]
-                [ExpectedWarning("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get;
-                [ExpectedWarning("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInPropertyAndAccessor", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInPropertyAndAccessor", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 set;
             }
         }
@@ -280,8 +282,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         class DerivedClassWithAllWarnings : BaseClassWithRequires
         {
             [ExpectedWarning("IL2046", "DerivedClassWithAllWarnings.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()")]
-            [ExpectedWarning("IL3003", "DerivedClassWithAllWarnings.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3051", "DerivedClassWithAllWarnings.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3003", "DerivedClassWithAllWarnings.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3051", "DerivedClassWithAllWarnings.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             public override void VirtualMethod()
             {
             }
@@ -292,12 +294,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             public override string VirtualPropertyAnnotationInAccesor
             {
                 [ExpectedWarning("IL2046", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get")]
-                [ExpectedWarning("IL3051", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3051", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get { return name; }
                 [RequiresAssemblyFiles("Message")]
                 [RequiresUnreferencedCode("Message")]
                 [ExpectedWarning("IL2046", "VirtualPropertyAnnotationInAccesor.set", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.set")]
-                [ExpectedWarning("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor.set", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.set", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor.set", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.set", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 set { name = value; }
             }
 
@@ -316,7 +318,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             public override string VirtualPropertyAnnotationInPropertyAndAccessor
             {
                 [ExpectedWarning("IL2046", "VirtualPropertyAnnotationInPropertyAndAccessor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get")]
-                [ExpectedWarning("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInPropertyAndAccessor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInPropertyAndAccessor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get;
                 [RequiresAssemblyFiles("Message")]
                 [RequiresUnreferencedCode("Message")]
@@ -371,8 +373,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [RequiresAssemblyFiles("Message")]
             [RequiresDynamicCode("Message")]
             [ExpectedWarning("IL2046", "ImplementationClassWithRequires.Method()", "IBaseWithoutRequires.Method()")]
-            [ExpectedWarning("IL3003", "ImplementationClassWithRequires.Method()", "IBaseWithoutRequires.Method()", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3051", "ImplementationClassWithRequires.Method()", "IBaseWithoutRequires.Method()", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3003", "ImplementationClassWithRequires.Method()", "IBaseWithoutRequires.Method()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3051", "ImplementationClassWithRequires.Method()", "IBaseWithoutRequires.Method()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             public void Method()
             {
             }
@@ -381,8 +383,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             public string PropertyAnnotationInAccesor
             {
                 [ExpectedWarning("IL2046", "ImplementationClassWithRequires.PropertyAnnotationInAccesor.get", "IBaseWithoutRequires.PropertyAnnotationInAccesor.get")]
-                [ExpectedWarning("IL3003", "ImplementationClassWithRequires.PropertyAnnotationInAccesor.get", "IBaseWithoutRequires.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL3051", "ImplementationClassWithRequires.PropertyAnnotationInAccesor.get", "IBaseWithoutRequires.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "ImplementationClassWithRequires.PropertyAnnotationInAccesor.get", "IBaseWithoutRequires.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+                [ExpectedWarning("IL3051", "ImplementationClassWithRequires.PropertyAnnotationInAccesor.get", "IBaseWithoutRequires.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 [RequiresUnreferencedCode("Message")]
                 [RequiresAssemblyFiles("Message")]
                 [RequiresDynamicCode("Message")]
@@ -394,9 +396,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [ExpectedWarning("IL3003", "ImplementationClassWithRequires.PropertyAnnotationInProperty", "IBaseWithoutRequires.PropertyAnnotationInProperty", Tool.Analyzer, "")]
             public string PropertyAnnotationInProperty
             {
-                [ExpectedWarning("IL3003", "ImplementationClassWithRequires.PropertyAnnotationInProperty", "IBaseWithoutRequires.PropertyAnnotationInProperty", Tool.NativeAot | Tool.Analyzer, "")]
+                [ExpectedWarning("IL3003", "ImplementationClassWithRequires.PropertyAnnotationInProperty", "IBaseWithoutRequires.PropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get;
-                [ExpectedWarning("IL3003", "ImplementationClassWithRequires.PropertyAnnotationInProperty", "IBaseWithoutRequires.PropertyAnnotationInProperty", Tool.NativeAot | Tool.Analyzer, "")]
+                [ExpectedWarning("IL3003", "ImplementationClassWithRequires.PropertyAnnotationInProperty", "IBaseWithoutRequires.PropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 set;
             }
 
@@ -407,9 +409,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 [RequiresAssemblyFiles("Message")]
                 [RequiresUnreferencedCode("Message")]
                 [ExpectedWarning("IL2046", "ImplementationClassWithRequires.PropertyAnnotationInPropertyAndAccessor.get", "IBaseWithoutRequires.PropertyAnnotationInPropertyAndAccessor.get")]
-                [ExpectedWarning("IL3003", "ImplementationClassWithRequires.PropertyAnnotationInPropertyAndAccessor.get", "IBaseWithoutRequires.PropertyAnnotationInPropertyAndAccessor.get", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "ImplementationClassWithRequires.PropertyAnnotationInPropertyAndAccessor.get", "IBaseWithoutRequires.PropertyAnnotationInPropertyAndAccessor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get;
-                [ExpectedWarning("IL3003", "ImplementationClassWithRequires.PropertyAnnotationInPropertyAndAccessor", "IBaseWithoutRequires.PropertyAnnotationInPropertyAndAccessor", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "ImplementationClassWithRequires.PropertyAnnotationInPropertyAndAccessor", "IBaseWithoutRequires.PropertyAnnotationInPropertyAndAccessor", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 set;
             }
         }
@@ -434,8 +436,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             string IBaseWithoutRequires.PropertyAnnotationInAccesor
             {
                 [ExpectedWarning("IL2046", "PropertyAnnotationInAccesor.get", "IBaseWithoutRequires.PropertyAnnotationInAccesor.get")]
-                [ExpectedWarning("IL3003", "PropertyAnnotationInAccesor.get", "IBaseWithoutRequires.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL3051", "PropertyAnnotationInAccesor.get", "IBaseWithoutRequires.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "PropertyAnnotationInAccesor.get", "IBaseWithoutRequires.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+                [ExpectedWarning("IL3051", "PropertyAnnotationInAccesor.get", "IBaseWithoutRequires.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 [RequiresUnreferencedCode("Message")]
                 [RequiresAssemblyFiles("Message")]
                 [RequiresDynamicCode("Message")]
@@ -447,9 +449,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [ExpectedWarning("IL3003", "ExplicitImplementationClassWithRequires.Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithoutRequires.PropertyAnnotationInProperty", "IBaseWithoutRequires.PropertyAnnotationInProperty", Tool.Analyzer, "")]
             string IBaseWithoutRequires.PropertyAnnotationInProperty
             {
-                [ExpectedWarning("IL3003", "Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithoutRequires.PropertyAnnotationInProperty", "IBaseWithoutRequires.PropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithoutRequires.PropertyAnnotationInProperty", "IBaseWithoutRequires.PropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get;
-                [ExpectedWarning("IL3003", "Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithoutRequires.PropertyAnnotationInProperty", "IBaseWithoutRequires.PropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithoutRequires.PropertyAnnotationInProperty", "IBaseWithoutRequires.PropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 set;
             }
 
@@ -460,9 +462,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 [RequiresAssemblyFiles("Message")]
                 [RequiresUnreferencedCode("Message")]
                 [ExpectedWarning("IL2046", "PropertyAnnotationInPropertyAndAccessor.get", "IBaseWithoutRequires.PropertyAnnotationInPropertyAndAccessor.get")]
-                [ExpectedWarning("IL3003", "PropertyAnnotationInPropertyAndAccessor.get", "IBaseWithoutRequires.PropertyAnnotationInPropertyAndAccessor.get", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "PropertyAnnotationInPropertyAndAccessor.get", "IBaseWithoutRequires.PropertyAnnotationInPropertyAndAccessor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get;
-                [ExpectedWarning("IL3003", "PropertyAnnotationInPropertyAndAccessor", "IBaseWithoutRequires.PropertyAnnotationInPropertyAndAccessor", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "PropertyAnnotationInPropertyAndAccessor", "IBaseWithoutRequires.PropertyAnnotationInPropertyAndAccessor", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 set;
             }
         }
@@ -470,8 +472,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         class ImplementationClassWithoutRequires : IBaseWithRequires
         {
             [ExpectedWarning("IL2046", "ImplementationClassWithoutRequires.Method()", "IBaseWithRequires.Method()")]
-            [ExpectedWarning("IL3003", "ImplementationClassWithoutRequires.Method()", "IBaseWithRequires.Method()", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3051", "ImplementationClassWithoutRequires.Method()", "IBaseWithRequires.Method()", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3003", "ImplementationClassWithoutRequires.Method()", "IBaseWithRequires.Method()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3051", "ImplementationClassWithoutRequires.Method()", "IBaseWithRequires.Method()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             public void Method()
             {
             }
@@ -480,8 +482,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             public string PropertyAnnotationInAccesor
             {
                 [ExpectedWarning("IL2046", "ImplementationClassWithoutRequires.PropertyAnnotationInAccesor.get", "IBaseWithRequires.PropertyAnnotationInAccesor.get")]
-                [ExpectedWarning("IL3003", "ImplementationClassWithoutRequires.PropertyAnnotationInAccesor.get", "IBaseWithRequires.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL3051", "ImplementationClassWithoutRequires.PropertyAnnotationInAccesor.get", "IBaseWithRequires.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "ImplementationClassWithoutRequires.PropertyAnnotationInAccesor.get", "IBaseWithRequires.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+                [ExpectedWarning("IL3051", "ImplementationClassWithoutRequires.PropertyAnnotationInAccesor.get", "IBaseWithRequires.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get { return name; }
                 set { name = value; }
             }
@@ -489,9 +491,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [ExpectedWarning("IL3003", "ImplementationClassWithoutRequires.PropertyAnnotationInProperty", "IBaseWithRequires.PropertyAnnotationInProperty", Tool.Analyzer, "")]
             public string PropertyAnnotationInProperty
             {
-                [ExpectedWarning("IL3003", "ImplementationClassWithoutRequires.PropertyAnnotationInProperty", "IBaseWithRequires.PropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "ImplementationClassWithoutRequires.PropertyAnnotationInProperty", "IBaseWithRequires.PropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get;
-                [ExpectedWarning("IL3003", "ImplementationClassWithoutRequires.PropertyAnnotationInProperty", "IBaseWithRequires.PropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "ImplementationClassWithoutRequires.PropertyAnnotationInProperty", "IBaseWithRequires.PropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 set;
             }
 
@@ -503,7 +505,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 [ExpectedWarning("IL2046", "ImplementationClassWithoutRequires.PropertyAnnotationInPropertyAndAccessor.get", "IBaseWithRequires.PropertyAnnotationInPropertyAndAccessor.get")]
                 get;
                 [ExpectedWarning("IL2046", "ImplementationClassWithoutRequires.PropertyAnnotationInPropertyAndAccessor.set", "IBaseWithRequires.PropertyAnnotationInPropertyAndAccessor.set")]
-                [ExpectedWarning("IL3003", "ImplementationClassWithoutRequires.PropertyAnnotationInPropertyAndAccessor.set", "IBaseWithRequires.PropertyAnnotationInPropertyAndAccessor.set", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "ImplementationClassWithoutRequires.PropertyAnnotationInPropertyAndAccessor.set", "IBaseWithRequires.PropertyAnnotationInPropertyAndAccessor.set", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 set;
             }
         }
@@ -525,8 +527,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             string IBaseWithRequires.PropertyAnnotationInAccesor
             {
                 [ExpectedWarning("IL2046", "PropertyAnnotationInAccesor.get", "IBaseWithRequires.PropertyAnnotationInAccesor.get")]
-                [ExpectedWarning("IL3003", "PropertyAnnotationInAccesor.get", "IBaseWithRequires.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL3051", "PropertyAnnotationInAccesor.get", "IBaseWithRequires.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "PropertyAnnotationInAccesor.get", "IBaseWithRequires.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+                [ExpectedWarning("IL3051", "PropertyAnnotationInAccesor.get", "IBaseWithRequires.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get { return name; }
                 set { name = value; }
             }
@@ -534,19 +536,19 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [ExpectedWarning("IL3003", "ExplicitImplementationClassWithoutRequires.Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithRequires.PropertyAnnotationInProperty", "IBaseWithRequires.PropertyAnnotationInProperty", Tool.Analyzer, "")]
             string IBaseWithRequires.PropertyAnnotationInProperty
             {
-                [ExpectedWarning("IL3003", "Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithRequires.PropertyAnnotationInProperty", "IBaseWithRequires.PropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithRequires.PropertyAnnotationInProperty", "IBaseWithRequires.PropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get;
-                [ExpectedWarning("IL3003", "Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithRequires.PropertyAnnotationInProperty", "IBaseWithRequires.PropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithRequires.PropertyAnnotationInProperty", "IBaseWithRequires.PropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 set;
             }
 
             [ExpectedWarning("IL3003", "ExplicitImplementationClassWithoutRequires.Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithRequires.PropertyAnnotationInPropertyAndAccessor", "IBaseWithRequires.PropertyAnnotationInPropertyAndAccessor", Tool.Analyzer, "")]
             string IBaseWithRequires.PropertyAnnotationInPropertyAndAccessor
             {
-                [ExpectedWarning("IL3003", "Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithRequires.PropertyAnnotationInPropertyAndAccessor", "IBaseWithRequires.PropertyAnnotationInPropertyAndAccessor", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithRequires.PropertyAnnotationInPropertyAndAccessor", "IBaseWithRequires.PropertyAnnotationInPropertyAndAccessor", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get;
                 [ExpectedWarning("IL2046", "PropertyAnnotationInPropertyAndAccessor.set", "IBaseWithRequires.PropertyAnnotationInPropertyAndAccessor.set")]
-                [ExpectedWarning("IL3003", "PropertyAnnotationInPropertyAndAccessor.set", "IBaseWithRequires.PropertyAnnotationInPropertyAndAccessor.set", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "PropertyAnnotationInPropertyAndAccessor.set", "IBaseWithRequires.PropertyAnnotationInPropertyAndAccessor.set", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 set;
             }
         }
@@ -554,8 +556,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         class ImplementationClassWithoutRequiresInSource : ReferenceInterfaces.IBaseWithRequiresInReference
         {
             [ExpectedWarning("IL2046", "ImplementationClassWithoutRequiresInSource.Method()", "IBaseWithRequiresInReference.Method()")]
-            [ExpectedWarning("IL3003", "ImplementationClassWithoutRequiresInSource.Method()", "IBaseWithRequiresInReference.Method()", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3051", "ImplementationClassWithoutRequiresInSource.Method()", "IBaseWithRequiresInReference.Method()", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3003", "ImplementationClassWithoutRequiresInSource.Method()", "IBaseWithRequiresInReference.Method()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3051", "ImplementationClassWithoutRequiresInSource.Method()", "IBaseWithRequiresInReference.Method()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             public void Method()
             {
             }
@@ -564,8 +566,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             public string PropertyAnnotationInAccesor
             {
                 [ExpectedWarning("IL2046", "ImplementationClassWithoutRequiresInSource.PropertyAnnotationInAccesor.get", "IBaseWithRequiresInReference.PropertyAnnotationInAccesor.get")]
-                [ExpectedWarning("IL3003", "ImplementationClassWithoutRequiresInSource.PropertyAnnotationInAccesor.get", "IBaseWithRequiresInReference.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL3051", "ImplementationClassWithoutRequiresInSource.PropertyAnnotationInAccesor.get", "IBaseWithRequiresInReference.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "ImplementationClassWithoutRequiresInSource.PropertyAnnotationInAccesor.get", "IBaseWithRequiresInReference.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+                [ExpectedWarning("IL3051", "ImplementationClassWithoutRequiresInSource.PropertyAnnotationInAccesor.get", "IBaseWithRequiresInReference.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get { return name; }
                 set { name = value; }
             }
@@ -573,9 +575,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [ExpectedWarning("IL3003", "ImplementationClassWithoutRequiresInSource.PropertyAnnotationInProperty", "IBaseWithRequiresInReference.PropertyAnnotationInProperty", Tool.Analyzer, "")]
             public string PropertyAnnotationInProperty
             {
-                [ExpectedWarning("IL3003", "ImplementationClassWithoutRequiresInSource.PropertyAnnotationInProperty.get", "IBaseWithRequiresInReference.PropertyAnnotationInProperty.get", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "ImplementationClassWithoutRequiresInSource.PropertyAnnotationInProperty.get", "IBaseWithRequiresInReference.PropertyAnnotationInProperty.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get;
-                [ExpectedWarning("IL3003", "ImplementationClassWithoutRequiresInSource.PropertyAnnotationInProperty.set", "IBaseWithRequiresInReference.PropertyAnnotationInProperty.set", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "ImplementationClassWithoutRequiresInSource.PropertyAnnotationInProperty.set", "IBaseWithRequiresInReference.PropertyAnnotationInProperty.set", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 set;
             }
         }
@@ -583,8 +585,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         class ImplementationClassWithRequiresInSource : ReferenceInterfaces.IBaseWithoutRequiresInReference
         {
             [ExpectedWarning("IL2046", "ImplementationClassWithRequiresInSource.Method()", "IBaseWithoutRequiresInReference.Method()")]
-            [ExpectedWarning("IL3003", "ImplementationClassWithRequiresInSource.Method()", "IBaseWithoutRequiresInReference.Method()", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3051", "ImplementationClassWithRequiresInSource.Method()", "IBaseWithoutRequiresInReference.Method()", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3003", "ImplementationClassWithRequiresInSource.Method()", "IBaseWithoutRequiresInReference.Method()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3051", "ImplementationClassWithRequiresInSource.Method()", "IBaseWithoutRequiresInReference.Method()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             [RequiresUnreferencedCode("Message")]
             [RequiresAssemblyFiles("Message")]
             [RequiresDynamicCode("Message")]
@@ -596,8 +598,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             public string PropertyAnnotationInAccesor
             {
                 [ExpectedWarning("IL2046", "ImplementationClassWithRequiresInSource.PropertyAnnotationInAccesor.get", "IBaseWithoutRequiresInReference.PropertyAnnotationInAccesor.get")]
-                [ExpectedWarning("IL3003", "ImplementationClassWithRequiresInSource.PropertyAnnotationInAccesor.get", "IBaseWithoutRequiresInReference.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL3051", "ImplementationClassWithRequiresInSource.PropertyAnnotationInAccesor.get", "IBaseWithoutRequiresInReference.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "ImplementationClassWithRequiresInSource.PropertyAnnotationInAccesor.get", "IBaseWithoutRequiresInReference.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+                [ExpectedWarning("IL3051", "ImplementationClassWithRequiresInSource.PropertyAnnotationInAccesor.get", "IBaseWithoutRequiresInReference.PropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 [RequiresUnreferencedCode("Message")]
                 [RequiresAssemblyFiles("Message")]
                 [RequiresDynamicCode("Message")]
@@ -609,9 +611,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [RequiresAssemblyFiles("Message")]
             public string PropertyAnnotationInProperty
             {
-                [ExpectedWarning("IL3003", "ImplementationClassWithRequiresInSource.PropertyAnnotationInProperty", "IBaseWithoutRequiresInReference.PropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "ImplementationClassWithRequiresInSource.PropertyAnnotationInProperty", "IBaseWithoutRequiresInReference.PropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get;
-                [ExpectedWarning("IL3003", "ImplementationClassWithRequiresInSource.PropertyAnnotationInProperty", "IBaseWithoutRequiresInReference.PropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "ImplementationClassWithRequiresInSource.PropertyAnnotationInProperty", "IBaseWithoutRequiresInReference.PropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 set;
             }
         }
@@ -680,13 +682,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             class ImplIRequiresMismatching : IRequires
             {
                 [ExpectedWarning("IL2046", "ImplIRequiresMismatching.VirtualMethod", "IRequires.VirtualMethod")]
-                [ExpectedWarning("IL3003", "ImplIRequiresMismatching.VirtualMethod", "IRequires.VirtualMethod", Tool.Analyzer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL3051", "ImplIRequiresMismatching.VirtualMethod", "IRequires.VirtualMethod", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "ImplIRequiresMismatching.VirtualMethod", "IRequires.VirtualMethod", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+                [ExpectedWarning("IL3051", "ImplIRequiresMismatching.VirtualMethod", "IRequires.VirtualMethod", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 public static void VirtualMethod() { }
 
                 [ExpectedWarning("IL2046", "ImplIRequiresMismatching.AbstractMethod", "IRequires.AbstractMethod")]
-                [ExpectedWarning("IL3003", "ImplIRequiresMismatching.AbstractMethod", "IRequires.AbstractMethod", Tool.Analyzer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL3051", "ImplIRequiresMismatching.AbstractMethod", "IRequires.AbstractMethod", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "ImplIRequiresMismatching.AbstractMethod", "IRequires.AbstractMethod", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+                [ExpectedWarning("IL3051", "ImplIRequiresMismatching.AbstractMethod", "IRequires.AbstractMethod", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 public static void AbstractMethod() { }
             }
             class ImplINoRequiresMatching : INoRequires
@@ -699,16 +701,16 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             class ImplINoRequiresMismatching : INoRequires
             {
                 [ExpectedWarning("IL2046", "ImplINoRequiresMismatching.VirtualMethod", "INoRequires.VirtualMethod")]
-                [ExpectedWarning("IL3003", "ImplINoRequiresMismatching.VirtualMethod", "INoRequires.VirtualMethod", Tool.Analyzer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL3051", "ImplINoRequiresMismatching.VirtualMethod", "INoRequires.VirtualMethod", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "ImplINoRequiresMismatching.VirtualMethod", "INoRequires.VirtualMethod", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+                [ExpectedWarning("IL3051", "ImplINoRequiresMismatching.VirtualMethod", "INoRequires.VirtualMethod", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 [RequiresUnreferencedCode("Message for --StaticInterfaceMethods.ImplINoRequiresMatching.VirtualMethod--")]
                 [RequiresAssemblyFiles("Message for --StaticInterfaceMethods.ImplINoRequiresMatching.VirtualMethod--")]
                 [RequiresDynamicCode("Message for --StaticInterfaceMethods.ImplINoRequiresMatching.VirtualMethod--")]
                 public static void VirtualMethod() { }
 
                 [ExpectedWarning("IL2046", "ImplINoRequiresMismatching.AbstractMethod", "INoRequires.AbstractMethod")]
-                [ExpectedWarning("IL3003", "ImplINoRequiresMismatching.AbstractMethod", "INoRequires.AbstractMethod", Tool.Analyzer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL3051", "ImplINoRequiresMismatching.AbstractMethod", "INoRequires.AbstractMethod", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3003", "ImplINoRequiresMismatching.AbstractMethod", "INoRequires.AbstractMethod", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+                [ExpectedWarning("IL3051", "ImplINoRequiresMismatching.AbstractMethod", "INoRequires.AbstractMethod", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 [RequiresUnreferencedCode("Message for --StaticInterfaceMethods.ImplINoRequiresMatching.AbstractMethod--")]
                 [RequiresAssemblyFiles("Message for --StaticInterfaceMethods.ImplINoRequiresMatching.AbstractMethod--")]
                 [RequiresDynamicCode("Message for --StaticInterfaceMethods.ImplINoRequiresMatching.AbstractMethod--")]

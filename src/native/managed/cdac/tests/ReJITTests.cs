@@ -20,7 +20,7 @@ public class ReJITTests
         MockReJIT builder,
         Mock<ICodeVersions> mockCodeVersions = null)
     {
-        TestPlaceholderTarget target = new TestPlaceholderTarget(arch, builder.Builder.GetReadContext().ReadFromTarget, builder.Types, builder.Globals);
+        TestPlaceholderTarget target = new TestPlaceholderTarget(arch, builder.Builder.GetMemoryContext().ReadFromTarget, builder.Types, builder.Globals);
 
         mockCodeVersions ??= new Mock<ICodeVersions>();
 

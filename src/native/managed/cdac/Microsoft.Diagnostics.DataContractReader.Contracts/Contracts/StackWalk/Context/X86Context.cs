@@ -22,8 +22,9 @@ public struct X86Context : IPlatformContext
         CONTEXT_SEGMENTS = CONTEXT_i386 | 0x4,
         CONTEXT_FLOATING_POINT = CONTEXT_i386 | 0x8,
         CONTEXT_DEBUG_REGISTERS = CONTEXT_i386 | 0x10,
+        CONTEXT_EXTENDED_REGISTERS = CONTEXT_i386 | 0x20,
         CONTEXT_FULL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT,
-        CONTEXT_ALL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS,
+        CONTEXT_ALL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS | CONTEXT_EXTENDED_REGISTERS,
         CONTEXT_XSTATE = CONTEXT_i386 | 0x40,
 
         //
@@ -37,7 +38,7 @@ public struct X86Context : IPlatformContext
     }
 
     public readonly uint Size => 0x2cc;
-    public readonly uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
+    public readonly uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
 
     public TargetPointer StackPointer
     {

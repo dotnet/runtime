@@ -19,7 +19,7 @@ namespace ILLink.Shared.TypeSystemProxy
 
         public readonly MethodDesc Method;
 
-        public string Name { get => Method.Name; }
+        public string Name { get => Method.GetName(); }
 
         public string GetDisplayName() => Method.GetDisplayName();
 
@@ -48,7 +48,7 @@ namespace ILLink.Shared.TypeSystemProxy
 
         internal partial bool HasGenericParameters() => Method.HasInstantiation;
 
-        internal partial bool HasGenericParametersCount(int genericParameterCount) => Method.Instantiation.Length == genericParameterCount;
+        internal partial bool HasGenericArgumentsCount(int genericArgumentCount) => Method.Instantiation.Length == genericArgumentCount;
 
         internal partial ImmutableArray<GenericParameterProxy> GetGenericParameters()
         {

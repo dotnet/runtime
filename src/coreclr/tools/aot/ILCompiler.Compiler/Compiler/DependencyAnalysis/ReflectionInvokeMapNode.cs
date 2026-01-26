@@ -65,6 +65,10 @@ namespace ILCompiler.DependencyAnalysis
 
             if (!method.IsAbstract)
             {
+                if (method.IsSharedByGenericInstantiations)
+                {
+                    dependencies.Add(factory.ShadowNonConcreteMethod(method), "Shadow generic reflectable method");
+                }
                 dependencies.Add(factory.AddressTakenMethodEntrypoint(method), "Body of a reflectable method");
             }
 
@@ -107,7 +111,7 @@ namespace ILCompiler.DependencyAnalysis
                 else if (isOut && !type.IsGCPointer)
                     dependencies.Add(factory.MaximallyConstructableType(type.NormalizeInstantiation()), reason);
                 else
-                    dependencies.Add(factory.NecessaryTypeSymbol(type.NormalizeInstantiation()), reason);
+                    dependencies.Add(factory.MetadataTypeSymbol(type.NormalizeInstantiation()), reason);
             }
             catch (TypeSystemException)
             {

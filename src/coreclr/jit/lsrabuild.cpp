@@ -1,4 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1003,14 +1004,28 @@ regMaskTP LinearScan::getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node)
 // getKillSetForReturn: Determine the liveness kill set for a return node.
 //
 // Arguments:
-//    NONE (this kill set is independent of the details of the specific return.)
+//    returnNode - the return node
 //
 // Return Value:    a register mask of the registers killed
 //
-regMaskTP LinearScan::getKillSetForReturn()
+regMaskTP LinearScan::getKillSetForReturn(GenTree* returnNode)
 {
-    return compiler->compIsProfilerHookNeeded() ? compiler->compHelperCallKillSet(CORINFO_HELP_PROF_FCN_LEAVE)
-                                                : RBM_NONE;
+    regMaskTP killSet = RBM_NONE;
+
+    if (compiler->compIsProfilerHookNeeded())
+    {
+        killSet = compiler->compHelperCallKillSet(CORINFO_HELP_PROF_FCN_LEAVE);
+
+#if defined(TARGET_ARM)
+        // For arm methods with no return value R0 is also trashed.
+        if (returnNode->TypeIs(TYP_VOID))
+        {
+            killSet |= RBM_R0;
+        }
+#endif
+    }
+
+    return killSet;
 }
 
 //------------------------------------------------------------------------
@@ -1091,7 +1106,7 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
         // more details.
         case GT_RETURN:
         case GT_SWIFT_ERROR_RET:
-            killMask = getKillSetForReturn();
+            killMask = getKillSetForReturn(tree);
             break;
 
         case GT_PROF_HOOK:
@@ -2193,12 +2208,10 @@ void LinearScan::buildIntervals()
     // Assign these RefPositions to the (nonexistent) BB0.
     curBBNum = 0;
 
-    RegState* intRegState                   = &compiler->codeGen->intRegState;
-    RegState* floatRegState                 = &compiler->codeGen->floatRegState;
-    intRegState->rsCalleeRegArgMaskLiveIn   = RBM_NONE;
-    floatRegState->rsCalleeRegArgMaskLiveIn = RBM_NONE;
-    regsInUseThisLocation                   = RBM_NONE;
-    regsInUseNextLocation                   = RBM_NONE;
+    regMaskTP* calleeRegArgMaskLiveIn = &compiler->codeGen->calleeRegArgMaskLiveIn;
+    *calleeRegArgMaskLiveIn           = RBM_NONE;
+    regsInUseThisLocation             = RBM_NONE;
+    regsInUseNextLocation             = RBM_NONE;
 
     // Compute live incoming parameter registers. The liveness is based on the
     // locals we are expecting to store the registers into in the prolog.
@@ -2242,8 +2255,7 @@ void LinearScan::buildIntervals()
 
             if (isLive)
             {
-                RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;
-                regState->rsCalleeRegArgMaskLiveIn |= seg.GetRegisterMask();
+                *calleeRegArgMaskLiveIn |= seg.GetRegisterMask();
             }
         }
     }
@@ -2323,7 +2335,7 @@ void LinearScan::buildIntervals()
     // If there is a secret stub param, it is also live in
     if (compiler->info.compPublishStubParam)
     {
-        intRegState->rsCalleeRegArgMaskLiveIn.AddGprRegs(RBM_SECRET_STUB_PARAM.GetIntRegSet() DEBUG_ARG(RBM_ALLINT));
+        calleeRegArgMaskLiveIn->AddGprRegs(RBM_SECRET_STUB_PARAM.GetIntRegSet() DEBUG_ARG(RBM_ALLINT));
 
         LclVarDsc* stubParamDsc = compiler->lvaGetDesc(compiler->lvaStubArgumentVar);
         if (isCandidateVar(stubParamDsc))
@@ -2520,6 +2532,16 @@ void LinearScan::buildIntervals()
             currentLoc += 2;
         }
 
+        if (compiler->getNeedsGSSecurityCookie() && block->KindIs(BBJ_RETURN))
+        {
+            // The cookie check will kill some registers that it is using.
+            // Model this to ensure values that are kept live throughout the
+            // method are properly made available.
+            bool isTailCall = block->HasFlag(BBF_HAS_JMP);
+            addKillForRegs(compiler->codeGen->genGetGSCookieTempRegs(isTailCall), currentLoc + 1);
+            currentLoc += 2;
+        }
+
         if (localVarsEnregistered)
         {
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
@@ -2709,16 +2731,14 @@ void LinearScan::buildIntervals()
                     {
                         calleeSaveCount = CNT_CALLEE_ENREG;
                     }
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
                     else if (varTypeUsesMaskReg(interval->registerType))
                     {
-                        calleeSaveCount = CNT_CALLEE_SAVED_MASK;
+                        calleeSaveCount = CNT_CALLEE_ENREG_MASK;
                     }
-#endif // FEATURE_MASKED_HW_INTRINSICS
                     else
                     {
                         assert(varTypeUsesFloatReg(interval->registerType));
-                        calleeSaveCount = CNT_CALLEE_SAVED_FLOAT;
+                        calleeSaveCount = CNT_CALLEE_ENREG_FLOAT;
                     }
 
                     if ((weight <= (BB_UNITY_WEIGHT * 7)) || varDsc->lvVarIndex >= calleeSaveCount)
@@ -2758,7 +2778,7 @@ void LinearScan::buildIntervals()
     // If the last block has successors, create a RefTypeBB to record
     // what's live
 
-    if (prevBlock->NumSucc(compiler) > 0)
+    if (prevBlock->NumSucc() > 0)
     {
         RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeBB, nullptr, RBM_NONE);
     }
@@ -2848,8 +2868,8 @@ void LinearScan::stressSetRandomParameterPreferences()
 {
     CLRRandom rng;
     rng.Init(compiler->info.compMethodHash());
-    regMaskTP intRegs   = compiler->codeGen->intRegState.rsCalleeRegArgMaskLiveIn;
-    regMaskTP floatRegs = compiler->codeGen->floatRegState.rsCalleeRegArgMaskLiveIn;
+    regMaskTP intRegs   = compiler->codeGen->calleeRegArgMaskLiveIn & RBM_ALLINT;
+    regMaskTP floatRegs = compiler->codeGen->calleeRegArgMaskLiveIn & RBM_ALLFLOAT;
 
     for (unsigned int varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
     {
@@ -4151,22 +4171,6 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
         {
             BuildUse(op1, RBM_NONE, i);
         }
-#if defined(FEATURE_SIMD) && defined(TARGET_X86)
-        if (TargetOS::IsWindows && !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
-        {
-            if (varTypeIsSIMD(storeLoc) && op1->IsCall())
-            {
-                // Need an additional register to create a SIMD8 from EAX/EDX without SSE4.1.
-                buildInternalFloatRegisterDefForNode(storeLoc, allSIMDRegs());
-
-                if (isCandidateVar(varDsc))
-                {
-                    // This internal register must be different from the target register.
-                    setInternalRegsDelayFree = true;
-                }
-            }
-        }
-#endif // FEATURE_SIMD && TARGET_X86
     }
     else if (op1->isContained() && op1->OperIs(GT_BITCAST))
     {

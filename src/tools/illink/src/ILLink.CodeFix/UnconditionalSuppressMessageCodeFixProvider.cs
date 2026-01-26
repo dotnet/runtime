@@ -55,7 +55,7 @@ namespace ILLink.CodeFix
             var suppressionJustification = syntaxGenerator.AttributeArgument(Justification,
                 syntaxGenerator.LiteralExpression("<Pending>"));
 
-            // [UnconditionalSuppressWarning (category, id, Justification = "<Pending>")]
+            // [UnconditionalSuppressWarning(category, id, Justification = "<Pending>")]
             return [ruleCategory, ruleId, suppressionJustification];
         }
     }

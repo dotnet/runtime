@@ -52,18 +52,21 @@ bool utils::ends_with(const pal::string_t& value, const pal::char_t* suffix, siz
 
 void append_path(pal::string_t* path1, const pal::char_t* path2)
 {
-    if (pal::is_path_rooted(path2))
+    if (pal::strlen(path2) == 0)
+        return;
+
+    if (path1->empty())
     {
         path1->assign(path2);
+        return;
     }
-    else
+
+    if (path1->back() != DIR_SEPARATOR && path2[0] != DIR_SEPARATOR)
     {
-        if (!path1->empty() && path1->back() != DIR_SEPARATOR)
-        {
-            path1->push_back(DIR_SEPARATOR);
-        }
-        path1->append(path2);
+        path1->push_back(DIR_SEPARATOR);
     }
+
+    path1->append(path2);
 }
 
 pal::string_t strip_executable_ext(const pal::string_t& filename)
@@ -201,7 +204,8 @@ namespace
         _X("riscv64"),
         _X("s390x"),
         _X("x64"),
-        _X("x86")
+        _X("x86"),
+        _X("wasm")
     };
     static_assert((sizeof(s_all_architectures) / sizeof(*s_all_architectures)) == static_cast<size_t>(pal::architecture::__last), "Invalid known architectures count");
 }
@@ -226,6 +230,8 @@ pal::architecture get_current_arch()
     return pal::architecture::s390X;
 #elif defined(TARGET_POWERPC64)
     return pal::architecture::ppc64le;
+#elif defined(TARGET_WASM)
+    return pal::architecture::wasm;
 #else
 #error "Unknown target"
 #endif
@@ -357,23 +363,33 @@ pal::string_t get_dotnet_root_env_var_for_arch(pal::architecture arch)
 
 bool get_dotnet_root_from_env(pal::string_t* dotnet_root_env_var_name, pal::string_t* recv)
 {
-    *dotnet_root_env_var_name = get_dotnet_root_env_var_for_arch(get_current_arch());
-    if (get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv))
+    pal::string_t env_var_name = get_dotnet_root_env_var_for_arch(get_current_arch());
+    if (get_file_path_from_env(env_var_name.c_str(), recv))
+    {
+        *dotnet_root_env_var_name = env_var_name;
         return true;
+    }
 
 #if defined(WIN32)
     if (pal::is_running_in_wow64())
     {
-        *dotnet_root_env_var_name = _X("DOTNET_ROOT(x86)");
-        if (get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv))
+        if (get_file_path_from_env(_X("DOTNET_ROOT(x86)"), recv))
+        {
+            *dotnet_root_env_var_name = _X("DOTNET_ROOT(x86)");
             return true;
+        }
     }
 #endif
 
     // If no architecture-specific environment variable was set
     // fallback to the default DOTNET_ROOT.
-    *dotnet_root_env_var_name = DOTNET_ROOT_ENV_VAR;
-    return get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv);
+    if (get_file_path_from_env(DOTNET_ROOT_ENV_VAR, recv))
+    {
+        *dotnet_root_env_var_name = DOTNET_ROOT_ENV_VAR;
+        return true;
+    }
+
+    return false;
 }
 
 /**

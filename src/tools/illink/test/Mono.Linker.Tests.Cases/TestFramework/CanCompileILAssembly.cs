@@ -13,7 +13,7 @@ namespace Mono.Linker.Tests.Cases.TestFramework
         static void Main()
         {
 #if IL_ASSEMBLY_AVAILABLE
-			Console.WriteLine (new Mono.Linker.Tests.Cases.TestFramework.Dependencies.ILAssemblySample ().GiveMeAValue ());
+            Console.WriteLine(new Mono.Linker.Tests.Cases.TestFramework.Dependencies.ILAssemblySample().GiveMeAValue());
 #endif
         }
     }

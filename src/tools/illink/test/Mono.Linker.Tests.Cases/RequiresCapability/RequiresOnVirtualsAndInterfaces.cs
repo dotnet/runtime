@@ -46,8 +46,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--BaseType.VirtualMethodRequires--")]
-            [ExpectedWarning("IL3002", "--BaseType.VirtualMethodRequires--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--BaseType.VirtualMethodRequires--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--BaseType.VirtualMethodRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--BaseType.VirtualMethodRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             static void TestCallOnBase()
             {
                 var tmp = new BaseType();
@@ -55,8 +55,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--BaseType.VirtualMethodRequires--")]
-            [ExpectedWarning("IL3002", "--BaseType.VirtualMethodRequires--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--BaseType.VirtualMethodRequires--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--BaseType.VirtualMethodRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--BaseType.VirtualMethodRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             static void TestCallOnOverride()
             {
                 var tmp = new TypeWhichOverridesMethod();
@@ -64,8 +64,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--BaseType.VirtualMethodRequires--")]
-            [ExpectedWarning("IL3002", "--BaseType.VirtualMethodRequires--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--BaseType.VirtualMethodRequires--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--BaseType.VirtualMethodRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--BaseType.VirtualMethodRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             static void TestCallOnOverrideViaBase()
             {
                 BaseType tmp = new TypeWhichOverridesMethod();
@@ -135,8 +135,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--PropertyBaseType.VirtualPropertyRequires--")]
-            [ExpectedWarning("IL3002", "--PropertyBaseType.VirtualPropertyRequires--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--PropertyBaseType.VirtualPropertyRequires--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--PropertyBaseType.VirtualPropertyRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--PropertyBaseType.VirtualPropertyRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             static void CallOnDerived()
             {
                 var tmp = new TypeWhichOverridesProperty();
@@ -173,8 +173,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--IRequires.MethodWithRequires--")]
-            [ExpectedWarning("IL3002", "--IRequires.MethodWithRequires--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--IRequires.MethodWithRequires--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--IRequires.MethodWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--IRequires.MethodWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             static void TestCallViaInterface()
             {
                 IRequires inst = new ImplementationClass();
@@ -182,8 +182,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--ImplementationClass.RequiresMethod--")]
-            [ExpectedWarning("IL3002", "--ImplementationClass.RequiresMethod--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--ImplementationClass.RequiresMethod--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--ImplementationClass.RequiresMethod--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--ImplementationClass.RequiresMethod--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             static void TestCallViaImplementationClass()
             {
                 ImplementationClass inst = new ImplementationClass();
@@ -242,8 +242,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--CovariantReturnDerived.GetRequires--")]
-            [ExpectedWarning("IL3002", "--CovariantReturnDerived.GetRequires--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--CovariantReturnDerived.GetRequires--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--CovariantReturnDerived.GetRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--CovariantReturnDerived.GetRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             static void CallOnDerived()
             {
                 var tmp = new CovariantReturnDerived();
@@ -278,8 +278,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--CovariantReturnViaLdftn.Derived.GetRequires--")]
-            [ExpectedWarning("IL3002", "--CovariantReturnViaLdftn.Derived.GetRequires--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--CovariantReturnViaLdftn.Derived.GetRequires--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--CovariantReturnViaLdftn.Derived.GetRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--CovariantReturnViaLdftn.Derived.GetRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             public static void Test()
             {
                 var tmp = new Derived();
@@ -345,11 +345,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--StaticInterfaces.IRequires.VirtualMethod--")]
-            [ExpectedWarning("IL3002", "--StaticInterfaces.IRequires.VirtualMethod--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--StaticInterfaces.IRequires.VirtualMethod--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--StaticInterfaces.IRequires.VirtualMethod--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--StaticInterfaces.IRequires.VirtualMethod--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             [ExpectedWarning("IL2026", "--StaticInterfaces.IRequires.AbstractMethod--")]
-            [ExpectedWarning("IL3002", "--StaticInterfaces.IRequires.AbstractMethod--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--StaticInterfaces.IRequires.AbstractMethod--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--StaticInterfaces.IRequires.AbstractMethod--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--StaticInterfaces.IRequires.AbstractMethod--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             static void UseRequiresMethods<T>() where T : IRequires
             {
                 T.AbstractMethod();

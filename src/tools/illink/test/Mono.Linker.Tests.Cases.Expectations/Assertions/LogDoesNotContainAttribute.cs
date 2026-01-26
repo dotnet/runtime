@@ -21,6 +21,6 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
         /// Property used by the result checkers of trimmer and analyzers to determine whether
         /// the tool should have produced the specified warning on the annotated member.
         /// </summary>
-        public Tool ProducedBy { get; set; } = Tool.TrimmerAnalyzerAndNativeAot;
+        public Tool ProducedBy { get; set; } = Tool.All;
     }
 }

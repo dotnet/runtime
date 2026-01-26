@@ -830,10 +830,13 @@
   <data name="DuplicatePropertiesNotAllowed_JsonPropertyInfo" xml:space="preserve">
     <value>Duplicate property '{0}' encountered during deserialization of type '{1}'.</value>
   </data>
-    <data name="DuplicatePropertiesNotAllowed_NameSpan" xml:space="preserve">
+  <data name="DuplicatePropertiesNotAllowed_NameSpan" xml:space="preserve">
     <value>Duplicate property '{0}' encountered during deserialization.</value>
   </data>
   <data name="DuplicatePropertiesNotAllowed" xml:space="preserve">
     <value>Duplicate properties not allowed during deserialization.</value>
+  </data>
+  <data name="PipeReaderCanceled" xml:space="preserve">
+    <value>PipeReader.ReadAsync was canceled.</value>
   </data>
 </root>

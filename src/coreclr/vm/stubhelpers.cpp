@@ -266,6 +266,14 @@ FORCEINLINE static IUnknown* GetCOMIPFromRCW_GetTargetFromRCWCache(SOleTlsData* 
     return NULL;
 }
 
+FCIMPL1(MethodTable*, StubHelpers::GetComInterfaceFromMethodDesc, MethodDesc* pMD)
+{
+    FCALL_CONTRACT;
+    _ASSERTE(pMD != NULL);
+    return CLRToCOMCallInfo::FromMethodDesc(pMD)->m_pInterfaceMT;
+}
+FCIMPLEND
+
 //==================================================================================================================
 // The GetCOMIPFromRCW helper exists in four specialized versions to optimize CLR->COM perf. Please be careful when
 // changing this code as one of these methods is executed as part of every CLR->COM call so every instruction counts.
@@ -481,29 +489,6 @@ FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
 }
 FCIMPLEND
 
-#include <optsmallperfcritical.h>
-FCIMPL2(FC_BOOL_RET, StubHelpers::TryGetStringTrailByte, StringObject* thisRefUNSAFE, UINT8 *pbData)
-{
-    FCALL_CONTRACT;
-
-    STRINGREF thisRef = ObjectToSTRINGREF(thisRefUNSAFE);
-    FC_RETURN_BOOL(thisRef->GetTrailByte(pbData));
-}
-FCIMPLEND
-#include <optdefault.h>
-
-extern "C" void QCALLTYPE StubHelpers_SetStringTrailByte(QCall::StringHandleOnStack str, UINT8 bData)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-    str.Get()->SetTrailByte(bData);
-
-    END_QCALL;
-}
-
 extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT paramIdx)
 {
     QCALL_CONTRACT;
@@ -542,81 +527,6 @@ extern "C" void QCALLTYPE StubHelpers_ProfilerEndTransitionCallback(MethodDesc* 
     END_QCALL;
 }
 #endif // PROFILING_SUPPORTED
-
-extern "C" void QCALLTYPE StubHelpers_GetHRExceptionObject(HRESULT hr, QCall::ObjectHandleOnStack result)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    OBJECTREF oThrowable = NULL;
-    GCPROTECT_BEGIN(oThrowable);
-
-    // GetExceptionForHR uses equivalant logic as COMPlusThrowHR
-    GetExceptionForHR(hr, &oThrowable);
-    result.Set(oThrowable);
-
-    GCPROTECT_END();
-
-    END_QCALL;
-}
-
-#ifdef FEATURE_COMINTEROP
-extern "C" void QCALLTYPE StubHelpers_GetCOMHRExceptionObject(
-    HRESULT hr,
-    MethodDesc* pMD,
-    QCall::ObjectHandleOnStack pThis,
-    QCall::ObjectHandleOnStack result)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    struct
-    {
-        OBJECTREF oThrowable;
-        OBJECTREF oref;
-    } gc;
-    gc.oThrowable = NULL;
-    gc.oref = NULL;
-    GCPROTECT_BEGIN(gc);
-
-    IErrorInfo* pErrorInfo = NULL;
-    if (pMD != NULL)
-    {
-        // Retrieve the interface method table.
-        MethodTable* pItfMT = CLRToCOMCallInfo::FromMethodDesc(pMD)->m_pInterfaceMT;
-
-        // get 'this'
-        gc.oref = ObjectToOBJECTREF(pThis.Get());
-
-        // Get IUnknown pointer for this interface on this object
-        IUnknown* pUnk = ComObject::GetComIPFromRCW(&gc.oref, pItfMT);
-        if (pUnk != NULL)
-        {
-            // Check to see if the component supports error information for this interface.
-            IID ItfIID;
-            pItfMT->GetGuid(&ItfIID, TRUE);
-            pErrorInfo = GetSupportedErrorInfo(pUnk, ItfIID);
-
-            DWORD cbRef = SafeRelease(pUnk);
-            LogInteropRelease(pUnk, cbRef, "IUnk to QI for ISupportsErrorInfo");
-        }
-    }
-
-    // GetExceptionForHR will handle lifetime of IErrorInfo.
-    GetExceptionForHR(hr, pErrorInfo, &gc.oThrowable);
-    result.Set(gc.oThrowable);
-
-    GCPROTECT_END();
-
-    END_QCALL;
-}
-#endif // FEATURE_COMINTEROP
 
 extern "C" void QCALLTYPE StubHelpers_MarshalToManagedVaList(va_list va, VARARGS* pArgIterator)
 {
@@ -724,15 +634,6 @@ extern "C" void QCALLTYPE StubHelpers_ValidateByref(void *pByref, MethodDesc *pM
     END_QCALL;
 }
 
-FCIMPL0(void*, StubHelpers::GetStubContext)
-{
-    FCALL_CONTRACT;
-
-    FCUnique(0xa0);
-    UNREACHABLE_MSG_RET("This is a JIT intrinsic!");
-}
-FCIMPLEND
-
 FCIMPL2(void, StubHelpers::LogPinnedArgument, MethodDesc *target, Object *pinnedArg)
 {
     FCALL_CONTRACT;
@@ -776,10 +677,3 @@ extern "C" void QCALLTYPE StubHelpers_MulticastDebuggerTraceHelper(QCall::Object
 
     END_QCALL;
 }
-
-FCIMPL0(void*, StubHelpers::NextCallReturnAddress)
-{
-    FCALL_CONTRACT;
-    UNREACHABLE_MSG("This is a JIT intrinsic!");
-}
-FCIMPLEND

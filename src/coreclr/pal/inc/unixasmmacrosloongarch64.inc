@@ -82,14 +82,8 @@ C_FUNC(\Name\()_End):
 
 ////NOTE: reg1 and reg2 must be the number and GPR type !!!
 .macro PROLOG_SAVE_REG_PAIR reg1, reg2, ofs, __def_cfa_save=0
-//#ifdef FEATURE_LOONGSONISA
-//        //NOTE:The offset of gssq/gslq must be 16-bytes aligned.
-//        //     here ofs must be 16-bytes aligned.
-//        gssq \reg2, \reg1, \ofs(sp)
-//#else
         st.d $r\reg1, $sp, \ofs
         st.d $r\reg2, $sp, \ofs+8
-//#endif
 
         .cfi_rel_offset \reg1, \ofs
         .cfi_rel_offset \reg2, \ofs + 8
@@ -123,23 +117,15 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro EPILOG_RESTORE_REG_PAIR reg1, reg2, ofs
-//#ifdef FEATURE_LOONGSONISA
-//        gslq \reg2, \reg1, \ofs(sp)
-//#else
         ld.d  $r\reg2, $sp, \ofs+8
         ld.d  $r\reg1, $sp, \ofs
-//#endif
         .cfi_restore \reg2
         .cfi_restore \reg1
 .endm
 
 .macro EPILOG_RESTORE_REG_PAIR_INDEXED reg1, reg2, ssize
-//#ifdef FEATURE_LOONGSONISA
-//        gslq \reg2, \reg1, 0(sp)
-//#else
         ld.d  $r\reg2, $sp, 8
         ld.d  $r\reg1, $sp, 0
-//#endif
         .cfi_restore \reg2
         .cfi_restore \reg1
 
@@ -183,14 +169,6 @@ C_FUNC(\Name\()_End):
 // Reserve 64 bytes of memory before calling  SAVE_ARGUMENT_REGISTERS
 .macro SAVE_ARGUMENT_REGISTERS reg, ofs
 
-//#ifdef FEATURE_LOONGSONISA
-//        //NOTE:The offset of gssq/gslq must be 16-bytes aligned.
-//        //     here ofs must be 16-bytes aligned.
-//        gssq  a1, a0, \ofs(\reg)
-//        gssq  a3, a2, \ofs+16(\reg)
-//        gssq  a5, a4, \ofs+32(\reg)
-//        gssq  a7, a6, \ofs+48(\reg)
-//#else
         st.d  $a0, \reg, \ofs
         st.d  $a1, \reg, \ofs+8
         st.d  $a2, \reg, \ofs+16
@@ -199,21 +177,12 @@ C_FUNC(\Name\()_End):
         st.d  $a5, \reg, \ofs+40
         st.d  $a6, \reg, \ofs+48
         st.d  $a7, \reg, \ofs+56
-//#endif
 
 .endm
 
 // Reserve 64 bytes of memory before calling  SAVE_FLOAT_ARGUMENT_REGISTERS
 .macro SAVE_FLOAT_ARGUMENT_REGISTERS reg, ofs
 
-//#ifdef FEATURE_LOONGSONISA
-//        //NOTE:The offset of gssqc1/gslqc1 must be 16-bytes aligned.
-//        //     here ofs must be 16-bytes aligned.
-//        gssqc1  $f13, $f12, \ofs(\reg)
-//        gssqc1  $f15, $f14, \ofs+16(\reg)
-//        gssqc1  $f17, $f16, \ofs+32(\reg)
-//        gssqc1  $f19, $f18, \ofs+48(\reg)
-//#else
         fst.d $f0, \reg, \ofs
         fst.d $f1, \reg, \ofs+8
         fst.d $f2, \reg, \ofs+16
@@ -222,21 +191,12 @@ C_FUNC(\Name\()_End):
         fst.d $f5, \reg, \ofs+40
         fst.d $f6, \reg, \ofs+48
         fst.d $f7, \reg, \ofs+56
-//#endif
 
 .endm
 
 // Reserve 64 bytes of memory before calling  SAVE_FLOAT_CALLEESAVED_REGISTERS
 .macro SAVE_FLOAT_CALLEESAVED_REGISTERS reg, ofs
 
-//#ifdef FEATURE_LOONGSONISA
-//        //NOTE:The offset of gssqc1/gslqc1 must be 16-bytes aligned.
-//        //     here ofs must be 16-bytes aligned.
-//        gssqc1  $f25, $f24, \ofs(\reg)
-//        gssqc1  $f27, $f26, \ofs+16(\reg)
-//        gssqc1  $f29, $f28, \ofs+32(\reg)
-//        gssqc1  $f31, $f30, \ofs+48(\reg)
-//#else
         fst.d  $f24, \reg, \ofs
         fst.d  $f25, \reg, \ofs+8
         fst.d  $f26, \reg, \ofs+16
@@ -245,7 +205,6 @@ C_FUNC(\Name\()_End):
         fst.d  $f29, \reg, \ofs+40
         fst.d  $f30, \reg, \ofs+48
         fst.d  $f31, \reg, \ofs+56
-//#endif
 
 .endm
 
@@ -260,14 +219,6 @@ C_FUNC(\Name\()_End):
 
 .macro RESTORE_ARGUMENT_REGISTERS reg, ofs
 
-//#ifdef FEATURE_LOONGSONISA
-//        //NOTE:The offset of gssq/gslq must be 16-bytes aligned.
-//        //     here ofs must be 16-bytes aligned.
-//        gslq  a7, a6, \ofs+48(\reg)
-//        gslq  a5, a4, \ofs+32(\reg)
-//        gslq  a3, a2, \ofs+16(\reg)
-//        gslq  a1, a0, \ofs(\reg)
-//#else
         ld.d $a7, \reg, \ofs+56
         ld.d $a6, \reg, \ofs+48
         ld.d $a5, \reg, \ofs+40
@@ -276,18 +227,11 @@ C_FUNC(\Name\()_End):
         ld.d $a2, \reg, \ofs+16
         ld.d $a1, \reg, \ofs+8
         ld.d $a0, \reg, \ofs
-//#endif
 
 .endm
 
 .macro RESTORE_FLOAT_ARGUMENT_REGISTERS reg, ofs
 
-//#ifdef FEATURE_LOONGSONISA
-//        gslqc1  $f19, $f18, \ofs+48(\reg)
-//        gslqc1  $f17, $f16, \ofs+32(\reg)
-//        gslqc1  $f15, $f14, \ofs+16(\reg)
-//        gslqc1  $f13, $f12, \ofs(\reg)
-//#else
         fld.d  $f7, \reg, \ofs+56
         fld.d  $f6, \reg, \ofs+48
         fld.d  $f5, \reg, \ofs+40
@@ -296,20 +240,11 @@ C_FUNC(\Name\()_End):
         fld.d  $f2, \reg, \ofs+16
         fld.d  $f1, \reg, \ofs+8
         fld.d  $f0, \reg, \ofs
-//#endif
 
 .endm
 
 .macro RESTORE_FLOAT_CALLEESAVED_REGISTERS reg, ofs
 
-//#ifdef FEATURE_LOONGSONISA
-//        //NOTE:The offset of gssqc1/gslqc1 must be 16-bytes aligned.
-//        //     here ofs must be 16-bytes aligned.
-//        gslqc1  $f25, $f24, \ofs(\reg)
-//        gslqc1  $f27, $f26, \ofs+16(\reg)
-//        gslqc1  $f29, $f28, \ofs+32(\reg)
-//        gslqc1  $f31, $f30, \ofs+48(\reg)
-//#else
         fld.d  $f24, $r\reg, \ofs
         fld.d  $f25, $r\reg, \ofs+8
         fld.d  $f26, $r\reg, \ofs+16
@@ -318,7 +253,6 @@ C_FUNC(\Name\()_End):
         fld.d  $f29, $r\reg, \ofs+40
         fld.d  $f30, $r\reg, \ofs+48
         fld.d  $f31, $r\reg, \ofs+56
-//#endif
 
 .endm
 
@@ -468,6 +402,70 @@ C_FUNC(\Name\()_End):
         RESTORE_CALLEESAVED_REGISTERS  3, 0
         EPILOG_RESTORE_REG_PAIR  22, 1, 0
         EPILOG_STACK_FREE  160
+.endm
+
+// Pushes a full TransitionBlock on the stack including argument registers and
+// floating point argument registers. Used for exception throw helpers where we
+// need to capture the complete register state.
+//
+// Stack layout (from low to high address):
+//   sp+0:     FloatArgumentRegisters (fa0-fa7, 64 bytes)
+//   sp+64:    TransitionBlock start
+//             - CalleeSavedRegisters (fp, ra, s0-s8 - 96 bytes)
+//             - ArgumentRegisters (a0-a7, 64 bytes)
+//
+// On exit, \target contains the TransitionBlock pointer (sp+128).
+.macro PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS target
+        // Stack: FPCalleeSaved(64) + FloatArgs(64) + CalleeSaved(96) + Args(64) = 288 bytes
+        PROLOG_STACK_ALLOC 288
+        PROLOG_SAVE_REG_PAIR  22, 1, 128, 1
+
+        // Save callee-saved registers at offset 128 (after FP callee-saved and FloatArgumentRegisters)
+        SAVE_CALLEESAVED_REGISTERS $sp, 128
+
+        // Save argument registers (a0-a7) at offset 224
+        SAVE_ARGUMENT_REGISTERS $sp, 224
+
+        // Save floating-point argument registers (fa0-fa7) at offset 64
+        SAVE_FLOAT_ARGUMENT_REGISTERS $sp, 64
+
+        // Save FP callee-saved registers (f24-f31) at offset 0
+        fst.d   $f24, $sp, 0
+        fst.d   $f25, $sp, 8
+        fst.d   $f26, $sp, 16
+        fst.d   $f27, $sp, 24
+        fst.d   $f28, $sp, 32
+        fst.d   $f29, $sp, 40
+        fst.d   $f30, $sp, 48
+        fst.d   $f31, $sp, 56
+
+        // Set target to TransitionBlock pointer
+        addi.d  \target, $sp, 128
+.endm
+
+// ------------------------------------------------------------------
+// Epilog macro for PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS that restores all registers and returns.
+// Use this for JIT helpers that may return normally (unlike IL_Throw which never returns).
+.macro POP_COOP_PINVOKE_FRAME_WITH_FLOATS_RETURN
+        // Restore FP callee-saved registers (f24-f31) from offset 0
+        fld.d   $f24, $sp, 0
+        fld.d   $f25, $sp, 8
+        fld.d   $f26, $sp, 16
+        fld.d   $f27, $sp, 24
+        fld.d   $f28, $sp, 32
+        fld.d   $f29, $sp, 40
+        fld.d   $f30, $sp, 48
+        fld.d   $f31, $sp, 56
+
+        // Restore callee-saved registers from offset 128
+        RESTORE_CALLEESAVED_REGISTERS $sp, 128
+
+        // Restore fp, ra
+        EPILOG_RESTORE_REG_PAIR 22, 1, 128
+
+        // Deallocate stack and return
+        EPILOG_STACK_FREE 288
+        EPILOG_RETURN
 .endm
 
 // ------------------------------------------------------------------

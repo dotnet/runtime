@@ -4,11 +4,10 @@
 // File: DllImportCallback.h
 //
 
-//
-
-
 #ifndef __dllimportcallback_h__
 #define __dllimportcallback_h__
+
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 
 #include "object.h"
 #include "stublink.h"
@@ -134,7 +133,7 @@ public:
     PTR_UMEntryThunkData GetData() const
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         return dac_cast<PTR_UMEntryThunkData>(GetSecretParam());
     }
 };
@@ -142,12 +141,19 @@ public:
 class UMEntryThunkData
 {
     friend class UMEntryThunkFreeList;
-    friend class NDirectStubLinker;
+    friend class PInvokeStubLinker;
 
     // The start of the managed code.
     // if m_pObjectHandle is non-NULL, this field is still set to help with diagnostic of call on collected delegate crashes
     // but it may not have the correct value.
     PCODE                   m_pManagedTarget;
+
+#ifdef FEATURE_INTERPRETER
+    // InterpreterPrecode to tailcall if the target is interpreted. This allows TheUMEntryPrestubWorker
+    // stash the hidden argument in a thread static and avoid collision with the hidden argument
+    // used by InterpreterPrecode.
+    Volatile<PCODE>         m_pInterpretedTarget;
+#endif
 
     // This is used for debugging and profiling.
     PTR_MethodDesc          m_pMD;
@@ -200,6 +206,9 @@ public:
         m_pManagedTarget = pManagedTarget;
         m_pObjectHandle     = pObjectHandle;
         m_pUMThunkMarshInfo = pUMThunkMarshInfo;
+#ifdef FEATURE_INTERPRETER
+        m_pInterpretedTarget = (PCODE)0;
+#endif
 
         m_pMD = pMD;
 
@@ -208,11 +217,21 @@ public:
 #ifdef _DEBUG
         m_state = kLoadTimeInited;
 #endif
+
+        FlushCacheForDynamicMappedStub(m_pUMEntryThunk, sizeof(UMEntryThunk));
     }
 
     void Terminate();
 
-    VOID RunTimeInit()
+#ifdef FEATURE_INTERPRETER
+    PCODE GetInterpreterTarget()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pInterpretedTarget;
+    }
+#endif
+
+    void RunTimeInit()
     {
         STANDARD_VM_CONTRACT;
 
@@ -225,7 +244,28 @@ public:
         if (m_pObjectHandle == NULL && m_pManagedTarget == (TADDR)0)
             m_pManagedTarget = m_pMD->GetMultiCallableAddrOfCode();
 
-        m_pUMEntryThunk->SetTargetUnconditional(m_pUMThunkMarshInfo->GetExecStubEntryPoint());
+        PCODE entryPoint = m_pUMThunkMarshInfo->GetExecStubEntryPoint();
+
+        bool setTarget = true;
+#if defined(FEATURE_INTERPRETER)
+        // For interpreted stubs we need to ensure that TheUMEntryPrestubWorker runs for every
+        // unmanaged-to-managed invocation in order to populate the TLS variable every time.
+        auto stubKind = RangeSectionStubManager::GetStubKind(entryPoint);
+        if (stubKind == STUB_CODE_BLOCK_STUBPRECODE)
+        {
+            StubPrecode* pPrecode = Precode::GetPrecodeFromEntryPoint(entryPoint)->AsStubPrecode();
+            if (pPrecode->GetType() == PRECODE_INTERPRETER)
+            {
+                m_pInterpretedTarget = entryPoint;
+                setTarget = false;
+            }
+        }
+#endif // FEATURE_INTERPRETER
+
+        if (setTarget)
+        {
+            m_pUMEntryThunk->SetTargetUnconditional(entryPoint);
+        }
 
 #ifdef _DEBUG
         m_state = kRunTimeInited;
@@ -376,11 +416,13 @@ private:
     AppDomain *m_pDomain;
 };
 
-#ifndef FEATURE_EH_FUNCLETS
-EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
-#endif // FEATURE_EH_FUNCLETS
-
 extern "C" void TheUMEntryPrestub(void);
 extern "C" PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunk);
+
+#if defined(FEATURE_INTERPRETER)
+UMEntryThunkData* GetMostRecentUMEntryThunkData();
+UMEntryThunkData* GetMostRecentUMEntryThunkDataNonDestructive();
+#endif // FEATURE_INTERPRETER
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 #endif //__dllimportcallback_h__

@@ -28,7 +28,7 @@ namespace System.Reflection
             Type Initialize()
             {
                 Interlocked.CompareExchange(ref _returnType, GetTypeParameter(UnmodifiedType.GetFunctionPointerReturnType(), 0), null);
-                return _returnType!;
+                return _returnType;
             }
         }
 
@@ -79,7 +79,7 @@ namespace System.Reflection
                     break;
             }
 
-            return builder.Count == 0 ? EmptyTypes : builder.ToArray();
+            return builder.ToArray();
         }
     }
 }

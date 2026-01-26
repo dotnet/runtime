@@ -307,10 +307,10 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
 
         case BBJ_EHFINALLYRET:
         {
-            BBehfDesc* const ehfDesc = block->GetEhfTargets();
-            for (unsigned i = 0; i < ehfDesc->bbeCount; i++)
+            BBJumpTable* const ehfDesc = block->GetEhfTargets();
+            for (unsigned i = 0; i < ehfDesc->GetSuccCount(); i++)
             {
-                fgRemoveRefPred(ehfDesc->bbeSuccs[i]);
+                fgRemoveAllRefPreds(ehfDesc->GetSucc(i)->getDestinationBlock(), block);
             }
             break;
         }
@@ -323,9 +323,9 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
         case BBJ_SWITCH:
         {
             BBswtDesc* const swtDesc = block->GetSwitchTargets();
-            for (unsigned i = 0; i < swtDesc->bbsCount; i++)
+            for (unsigned i = 0; i < swtDesc->GetSuccCount(); i++)
             {
-                fgRemoveRefPred(swtDesc->bbsDstTab[i]);
+                fgRemoveAllRefPreds(swtDesc->GetSucc(i)->getDestinationBlock(), block);
             }
             break;
         }
@@ -403,71 +403,4 @@ void Compiler::fgRedirectEdge(FlowEdge*& edge, BasicBlock* newTarget)
 
     // Pred list of target should still be ordered
     assert(newTarget->checkPredListOrder());
-}
-
-Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switchBlk)
-{
-    assert(switchBlk->KindIs(BBJ_SWITCH));
-    BlockToSwitchDescMap* switchMap = GetSwitchDescMap();
-    SwitchUniqueSuccSet   res;
-    if (switchMap->Lookup(switchBlk, &res))
-    {
-        return res;
-    }
-    else
-    {
-        // We must compute the descriptor. Find which are dups, by creating a bit set with the unique successors.
-        // We create a temporary bitset of blocks to compute the unique set of successor blocks,
-        // since adding a block's number twice leaves just one "copy" in the bitset.
-
-        BitVecTraits blockVecTraits(fgBBNumMax + 1, this);
-        BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&blockVecTraits));
-        for (BasicBlock* const targ : switchBlk->SwitchTargets())
-        {
-            BitVecOps::AddElemD(&blockVecTraits, uniqueSuccBlocks, targ->bbNum);
-        }
-        // Now we have a set of unique successors.
-        unsigned numNonDups = BitVecOps::Count(&blockVecTraits, uniqueSuccBlocks);
-
-        FlowEdge** nonDups = new (getAllocator()) FlowEdge*[numNonDups];
-
-        unsigned nonDupInd = 0;
-
-        // At this point, all unique targets are in "uniqueSuccBlocks".  As we encounter each,
-        // add to nonDups, remove from "uniqueSuccBlocks".
-        BBswtDesc* const swtDesc = switchBlk->GetSwitchTargets();
-        for (unsigned i = 0; i < swtDesc->bbsCount; i++)
-        {
-            FlowEdge* const   succEdge = swtDesc->bbsDstTab[i];
-            BasicBlock* const targ     = succEdge->getDestinationBlock();
-            if (BitVecOps::IsMember(&blockVecTraits, uniqueSuccBlocks, targ->bbNum))
-            {
-                nonDups[nonDupInd] = succEdge;
-                nonDupInd++;
-                BitVecOps::RemoveElemD(&blockVecTraits, uniqueSuccBlocks, targ->bbNum);
-            }
-        }
-
-        assert(nonDupInd == numNonDups);
-        assert(BitVecOps::Count(&blockVecTraits, uniqueSuccBlocks) == 0);
-        res.numDistinctSuccs = numNonDups;
-        res.nonDuplicates    = nonDups;
-        switchMap->Set(switchBlk, res);
-        return res;
-    }
-}
-
-/*****************************************************************************
- *
- *  Simple utility function to remove an entry for a block in the switch desc
- *  map. So it can be called from other phases.
- *
- */
-void Compiler::fgInvalidateSwitchDescMapEntry(BasicBlock* block)
-{
-    // Check if map has no entries yet.
-    if (m_switchDescMap != nullptr)
-    {
-        m_switchDescMap->Remove(block);
-    }
 }

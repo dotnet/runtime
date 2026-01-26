@@ -22,6 +22,7 @@ PAGE_SIZE = 4096
 
     LEAF_ENTRY FixupPrecodeCode
         ldr pc, DATA_SLOT(FixupPrecode, Target)
+        dmb
         ldr r12, DATA_SLOT(FixupPrecode, MethodDesc)
         ldr pc, DATA_SLOT(FixupPrecode, PrecodeFixupThunk)
     LEAF_END_MARKED FixupPrecodeCode

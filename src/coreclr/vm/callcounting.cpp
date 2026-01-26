@@ -7,6 +7,7 @@
 
 #include "callcounting.h"
 #include "threadsuspend.h"
+#include <minipal/memorybarrierprocesswide.h>
 
 #ifndef DACCESS_COMPILE
 extern "C" void STDCALL OnCallCountThresholdReachedStub();
@@ -263,6 +264,8 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
     allocationAddressHolder.SuppressRelease();
     stub->Initialize(targetForMethod, remainingCallCountCell);
 
+    FlushCacheForDynamicMappedStub(stub, CallCountingStub::CodeSize);
+
     return stub;
 }
 
@@ -324,11 +327,13 @@ void CallCountingStub::StaticInitialize()
         // This should fail if the template is used on a platform which doesn't support the supported page size for templates
         ThrowHR(COR_E_EXECUTIONENGINE);
     }
+#elif defined(TARGET_WASM)
+    // CallCountingStub is not implemented on WASM
 #else
     _ASSERTE((SIZE_T)((BYTE*)CallCountingStubCode_End - (BYTE*)CallCountingStubCode) <= CallCountingStub::CodeSize);
 #endif
 
-    InitializeLoaderHeapConfig(&s_callCountingHeapConfig, CallCountingStub::CodeSize, (void*)CallCountingStubCodeTemplate, CallCountingStub::GenerateCodePage);
+    InitializeLoaderHeapConfig(&s_callCountingHeapConfig, CallCountingStub::CodeSize, (void*)CallCountingStubCodeTemplate, CallCountingStub::GenerateCodePage, NULL);
 }
 
 #endif // DACCESS_COMPILE
@@ -1021,7 +1026,7 @@ void CallCountingManager::StopAndDeleteAllCallCountingStubs()
     // will not be used after resuming the runtime. The following ensures that other threads will not use an old cached
     // entry point value that will not be valid. Do this here in case of exception later.
     MemoryBarrier(); // flush writes from this thread first to guarantee ordering
-    FlushProcessWriteBuffers();
+    minipal_memory_barrier_process_wide();
 
     // At this point, allocated call counting stubs won't be used anymore. Call counting stubs and corresponding infos may
     // now be safely deleted. Note that call counting infos may not be deleted prior to this point because call counting

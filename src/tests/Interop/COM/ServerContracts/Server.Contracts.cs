@@ -237,7 +237,8 @@ namespace Server.Contract
 
     public enum IDispatchTesting_Exception
     {
-        Disp,
+        Disp,       // scode
+        DispLegacy, // wCode
         HResult,
         Int,
     }

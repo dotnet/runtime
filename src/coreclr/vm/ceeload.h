@@ -22,7 +22,6 @@
 #include "peassembly.h"
 #include "typehash.h"
 #include "contractimpl.h"
-#include "bitmask.h"
 #include "instmethhash.h"
 #include "eetwain.h"    // For EnumGCRefs (we should probably move that somewhere else, but can't
                         // find anything better (modulo common or vars.hpp)
@@ -344,7 +343,7 @@ struct VASigCookie
     // The JIT wants knows that the size of the arguments comes first
     // so please keep this field first
     unsigned        sizeOfArgs;             // size of argument list
-    Volatile<PCODE> pNDirectILStub;         // will be use if target is NDirect (tag == 0)
+    Volatile<PCODE> pPInvokeILStub;         // will be use if target is PInvoke (tag == 0)
     PTR_Module      pModule;
     PTR_Module      pLoaderModule;
     Signature       signature;
@@ -357,7 +356,7 @@ struct VASigCookie
 // allocation cost and allow proper bookkeeping.
 //
 
-struct VASigCookieBlock
+struct VASigCookieBlock final
 {
     enum {
 #ifdef _DEBUG
@@ -368,7 +367,7 @@ struct VASigCookieBlock
     };
 
     VASigCookieBlock    *m_Next;
-    UINT                 m_numcookies;
+    UINT                 m_numCookies;
     VASigCookie          m_cookies[kVASigCookieBlockSize];
 };
 
@@ -423,6 +422,16 @@ public:
 
 typedef SHash<DynamicILBlobTraits> DynamicILBlobTable;
 typedef DPTR(DynamicILBlobTable) PTR_DynamicILBlobTable;
+
+template<>
+struct cdac_data<DynamicILBlobTable>
+{
+    static constexpr size_t Table = offsetof(DynamicILBlobTable, m_table);
+    static constexpr size_t TableSize = offsetof(DynamicILBlobTable, m_tableSize);
+    static constexpr size_t EntrySize = sizeof(DynamicILBlobEntry);
+    static constexpr size_t EntryMethodToken = offsetof(DynamicILBlobEntry, m_methodToken);
+    static constexpr size_t EntryIL = offsetof(DynamicILBlobEntry, m_il);
+};
 
 #ifdef FEATURE_READYTORUN
 typedef DPTR(class ReadyToRunInfo)      PTR_ReadyToRunInfo;
@@ -643,12 +652,12 @@ private:
         IS_BEING_UNLOADED           = 0x00100000,
     };
 
-    static_assert_no_msg(DEBUGGER_USER_OVERRIDE_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_USER_OVERRIDE);
-    static_assert_no_msg(DEBUGGER_ALLOW_JIT_OPTS_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_ALLOW_JIT_OPTS);
-    static_assert_no_msg(DEBUGGER_TRACK_JIT_INFO_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_OBSOLETE_TRACK_JIT_INFO);
-    static_assert_no_msg(DEBUGGER_ENC_ENABLED_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_ENC_ENABLED);
-    static_assert_no_msg(DEBUGGER_PDBS_COPIED >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_PDBS_COPIED);
-    static_assert_no_msg(DEBUGGER_IGNORE_PDBS >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_IGNORE_PDBS);
+    static_assert(DEBUGGER_USER_OVERRIDE_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_USER_OVERRIDE);
+    static_assert(DEBUGGER_ALLOW_JIT_OPTS_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_ALLOW_JIT_OPTS);
+    static_assert(DEBUGGER_TRACK_JIT_INFO_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_OBSOLETE_TRACK_JIT_INFO);
+    static_assert(DEBUGGER_ENC_ENABLED_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_ENC_ENABLED);
+    static_assert(DEBUGGER_PDBS_COPIED >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_PDBS_COPIED);
+    static_assert(DEBUGGER_IGNORE_PDBS >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_IGNORE_PDBS);
 
     enum {
         // These are the values set in m_dwPersistedFlags.
@@ -676,6 +685,8 @@ private:
         RUNTIME_MARSHALLING_ENABLED_IS_CACHED = 0x00008000,
         //If runtime marshalling is enabled for this assembly
         RUNTIME_MARSHALLING_ENABLED = 0x00010000,
+
+        SKIP_TYPE_VALIDATION = 0x00020000,
     };
 
     Volatile<DWORD>          m_dwTransientFlags;
@@ -730,15 +741,17 @@ private:
     // For generic methods, IsGenericTypeDefinition() is true i.e. instantiation at formals
     LookupMap<PTR_MethodDesc>       m_MethodDefToDescMap;
 
-    // Linear mapping from MethodDef token to ILCodeVersioningState *
-    // This is used for Code Versioning logic
-    LookupMap<PTR_ILCodeVersioningState>    m_ILCodeVersioningStateMap;
-
     // Linear mapping from FieldDef token to FieldDesc*
     LookupMap<PTR_FieldDesc>        m_FieldDefToDescMap;
 
     // Linear mapping from GenericParam token to TypeVarTypeDesc*
     LookupMap<PTR_TypeVarTypeDesc>  m_GenericParamToDescMap;
+
+#ifdef FEATURE_CODE_VERSIONING
+    // Linear mapping from MethodDef token to ILCodeVersioningState *
+    // This is used for Code Versioning logic
+    LookupMap<PTR_ILCodeVersioningState>    m_ILCodeVersioningStateMap;
+#endif // FEATURE_CODE_VERSIONING
 
     // IL stub cache with fabricated MethodTable parented by this module.
     ILStubCache                *m_pILStubCache;
@@ -861,7 +874,9 @@ protected:
 
     void ApplyMetaData();
 
+#ifdef FEATURE_IJW
     void FixupVTables();
+#endif // FEATURE_IJW
 
     void FreeClassTables();
 
@@ -1242,6 +1257,7 @@ public:
     }
 #endif // !DACCESS_COMPILE
 
+#ifdef FEATURE_CODE_VERSIONING
     PTR_ILCodeVersioningState LookupILCodeVersioningState(mdMethodDef token);
 
 #ifndef DACCESS_COMPILE
@@ -1260,6 +1276,7 @@ public:
         m_ILCodeVersioningStateMap.SetElement(RidFromToken(token), value);
     }
 #endif // !DACCESS_COMPILE
+#endif // FEATURE_CODE_VERSIONING
 
 #ifndef DACCESS_COMPILE
     FieldDesc *LookupFieldDef(mdFieldDef token)
@@ -1427,7 +1444,7 @@ public:
     LPCUTF8 GetDebugName() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetDebugName(); }
 #endif
 
-    PEImageLayout * GetReadyToRunImage();
+    ReadyToRunLoadedImage * GetReadyToRunImage();
     PTR_READYTORUN_IMPORT_SECTION GetImportSections(COUNT_T *pCount);
     PTR_READYTORUN_IMPORT_SECTION GetImportSectionFromIndex(COUNT_T index);
     PTR_READYTORUN_IMPORT_SECTION GetImportSectionForRVA(RVA rva);
@@ -1462,17 +1479,17 @@ public:
     IMDInternalImport *GetNativeAssemblyImport(BOOL loadAllowed = TRUE);
     IMDInternalImport *GetNativeAssemblyImportIfLoaded();
 
-    BOOL FixupNativeEntry(READYTORUN_IMPORT_SECTION * pSection, SIZE_T fixupIndex, SIZE_T *fixup, BOOL mayUsePrecompiledNDirectMethods = TRUE);
+    BOOL FixupNativeEntry(READYTORUN_IMPORT_SECTION * pSection, SIZE_T fixupIndex, SIZE_T *fixup, BOOL mayUsePrecompiledPInvokeMethods = TRUE);
 
     //this split exists to support new CLR Dump functionality in DAC.  The
     //template removes any indirections.
-    BOOL FixupDelayList(TADDR pFixupList, BOOL mayUsePrecompiledNDirectMethods = TRUE);
+    BOOL FixupDelayList(TADDR pFixupList, BOOL mayUsePrecompiledPInvokeMethods = TRUE);
 
     template<typename Ptr, typename FixupNativeEntryCallback>
     BOOL FixupDelayListAux(TADDR pFixupList,
                            Ptr pThis, FixupNativeEntryCallback pfnCB,
                            PTR_READYTORUN_IMPORT_SECTION pImportSections, COUNT_T nImportSections,
-                           PEDecoder * pNativeImage, BOOL mayUsePrecompiledNDirectMethods = TRUE);
+                           ReadyToRunLoadedImage * pNativeImage, BOOL mayUsePrecompiledPInvokeMethods = TRUE);
     void RunEagerFixups();
     void RunEagerFixupsUnlocked();
 
@@ -1490,6 +1507,12 @@ public:
 #endif
     }
 
+    bool SkipTypeValidation() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return (m_dwPersistedFlags & SKIP_TYPE_VALIDATION) != 0;
+    }
 #ifdef FEATURE_READYTORUN
     PTR_ReadyToRunInfo GetReadyToRunInfo() const
     {
@@ -1512,6 +1535,8 @@ public:
 
     BOOL IsIJWFixedUp() { return m_dwTransientFlags & IS_IJW_FIXED_UP; }
     void SetIsIJWFixedUp();
+
+    static bool HasAnyIJWBeenLoaded();
 
     BOOL IsBeingUnloaded() { return m_dwTransientFlags & IS_BEING_UNLOADED; }
     void   SetBeingUnloaded();
@@ -1640,7 +1665,7 @@ private:
 #endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 
     // a.dll calls a method in b.dll and that method call a method in c.dll. When ngening
-    // a.dll it is possible then method in b.dll can be inlined. When that happens a.ni.dll stores
+    // a.dll it is possible then method in b.dll can be inlined. When that happens a.dll R2R image stores
     // an added native metadata which has information about assemblyRef to c.dll
     // Now due to facades, this scenario is very common. This led to lots of calls to
     // binder to get the module corresponding to assemblyRef in native metadata.
@@ -1702,7 +1727,10 @@ struct cdac_data<Module>
     static constexpr size_t MethodDefToDescMap = offsetof(Module, m_MethodDefToDescMap);
     static constexpr size_t TypeDefToMethodTableMap = offsetof(Module, m_TypeDefToMethodTableMap);
     static constexpr size_t TypeRefToMethodTableMap = offsetof(Module, m_TypeRefToMethodTableMap);
+#ifdef FEATURE_CODE_VERSIONING
     static constexpr size_t MethodDefToILCodeVersioningStateMap = offsetof(Module, m_ILCodeVersioningStateMap);
+#endif // FEATURE_CODE_VERSIONING
+    static constexpr size_t DynamicILBlobTable = offsetof(Module, m_debuggerSpecificData.m_pDynamicILBlobTable);
 };
 
 //

@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
@@ -106,15 +107,19 @@ namespace System.Reflection.Metadata.Tests.Metadata
             Assert.Throws<ArgumentException>(() => AssemblyNameInfo.Parse("".AsSpan()));
         }
 
-        [Fact]
-        public void CultureNameGetLoweredByToAssemblyName()
+        [Theory]
+        [InlineData("aA")]
+        [InlineData("B-BB")]
+        public void ToAssemblyNameReturnsSameCultureNameAsCultureInfo(string input)
         {
-            AssemblyNameInfo assemblyNameInfo = AssemblyNameInfo.Parse("test,culture=aA".AsSpan());
-            Assert.Equal("aA", assemblyNameInfo.CultureName);
+            AssemblyNameInfo assemblyNameInfo = AssemblyNameInfo.Parse($"test,culture={input}".AsSpan());
+            Assert.Equal(input, assemblyNameInfo.CultureName);
             // When converting to AssemblyName, the culture name is lower-cased
             // by the CultureInfo ctor that calls CultureData.GetCultureData
             // which lowers the name for caching and normalization purposes.
-            Assert.Equal("aa", assemblyNameInfo.ToAssemblyName().CultureName);
+            // It lowers only the part before the `-` character,
+            // but not for all configurations (Full Framework, Nano and more).
+            Assert.Equal(new CultureInfo(input).Name, assemblyNameInfo.ToAssemblyName().CultureName);
         }
 
         [Theory]

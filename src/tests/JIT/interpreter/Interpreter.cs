@@ -3,7 +3,10 @@
 
 using System;
 using System.Numerics;
+using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 public interface ITest
 {
@@ -605,6 +608,51 @@ public class InterpreterTest
         }
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention13(int a, int b, int c, int d, int e, int f, int g, int h, TestStruct4ii s)
+    {
+        Console.WriteLine("TestCallingConvention13: a = {0}, b = {1}, c = {2}, d = {3}, e = {4}, f = {5}, g = {6}, h = {7}, s = ({8}, {9}, {10}, {11})", a, b, c, d, e, f, g, h, s.a, s.b, s.c, s.d);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention13Rev(int a, int b, int c, int d, int e, int f, int g, int h, TestStruct4ii s)
+    {
+        Console.Write("TestCallingConvention13Rev: a = ");
+        Console.Write(a);
+        Console.Write(", b = ");
+        Console.Write(b);
+        Console.Write(", c = ");
+        Console.Write(c);
+        Console.Write(", d = ");
+        Console.Write(d);
+        Console.Write(", e = ");
+        Console.Write(e);
+        Console.Write(", f = ");
+        Console.Write(f);
+        Console.Write(", g = ");
+        Console.Write(g);
+        Console.Write(", h = ");
+        Console.Write(h);
+        Console.Write(", s = (");
+        Console.Write(s.a);
+        Console.Write(", ");
+        Console.Write(s.b);
+        Console.Write(", ");
+        Console.Write(s.c);
+        Console.Write(", ");
+        Console.Write(s.d);
+        Console.WriteLine(")");
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention13JitToInterpreter(bool init)
+    {
+        if (!init)
+        {
+            TestCallingConvention13Rev(1, 2, 3, 4, 5, 6, 7, 8, new TestStruct4ii { a = 9, b = 10, c = 11, d = 12 });
+        }
+    }
+
     // This method is invoked before we start interpretting anything, so the methods invoked in it will be jitted.
     // This is necessary for the calling convention tests that test calls from the interpreter to the JITted code
     // to actually test things.
@@ -655,6 +703,7 @@ public class InterpreterTest
         Console.WriteLine(s11.c);
 
         TestCallingConvention12(1, 2, 3, 4, 5, 6, 7, 8, 9, 'a', 10, 11, 12);
+        TestCallingConvention13(1, 2, 3, 4, 5, 6, 7, 8, new TestStruct4ii { a = 9, b = 10, c = 11, d = 12 });
 
         TestCallingConvention0JitToInterpreter(true);
         TestCallingConvention1JitToInterpreter(true);
@@ -669,6 +718,7 @@ public class InterpreterTest
         TestCallingConvention10JitToInterpreter(true);
         TestCallingConvention11JitToInterpreter(true);
         TestCallingConvention12JitToInterpreter(true);
+        TestCallingConvention13JitToInterpreter(true);
     }
 
     static int Main(string[] args)
@@ -698,6 +748,7 @@ public class InterpreterTest
         TestCallingConvention10JitToInterpreter(false);
         TestCallingConvention11JitToInterpreter(false);
         TestCallingConvention12JitToInterpreter(false);
+        TestCallingConvention13JitToInterpreter(false);
 
         TestCallingConvention0(1, 2.0f, 3, 4.0, 5, 6.0);
 
@@ -779,6 +830,7 @@ public class InterpreterTest
         Console.WriteLine(s11.c);
 
         TestCallingConvention12(1, 2, 3, 4, 5, 6, 7, 8, 9, 'a', 10, 11, 12);
+        TestCallingConvention13(1, 2, 3, 4, 5, 6, 7, 8, new TestStruct4ii { a = 9, b = 10, c = 11, d = 12 });
 
         // Console.WriteLine("Run interp tests");
         Console.WriteLine("Sum");
@@ -814,9 +866,15 @@ public class InterpreterTest
         // Unchecked to ensure that the divide-by-zero here doesn't throw since we're using it to generate a NaN
         unchecked
         {
+            Console.WriteLine("TestConvOvf");
             if (!TestConvOvf(1, 2, 3, 4, 1.0 / 0.0, -32, 1234567890))
                 Environment.FailFast(null);
 
+            Console.WriteLine("TestConvOvfUn");
+            if (!TestConvOvfUn(1, 2, 3, uint.MaxValue, ulong.MaxValue))
+                Environment.FailFast(null);
+
+            Console.WriteLine("TestConvBoundaries");
             if (!TestConvBoundaries(
                 32767.999999999996, 32768.00000000001,
                 2147483647.9999998, 2147483648.0000005
@@ -877,6 +935,10 @@ public class InterpreterTest
         if (!TestDelegate())
             Environment.FailFast(null);
 
+        Console.WriteLine("TestIntrinsics");
+        if (!TestIntrinsics())
+            Environment.FailFast(null);
+
         Console.WriteLine("TestCalli");
         if (!TestCalli())
             Environment.FailFast(null);
@@ -885,15 +947,47 @@ public class InterpreterTest
         if (!TestStaticVirtualGeneric_CodePointerCase())
             Environment.FailFast(null);
 
-	Console.WriteLine("Empty string length: {0}", string.Empty.Length);
+        Console.WriteLine("TestPreciseInitCctors");
+        if (!TestPreciseInitCctors())
+            Environment.FailFast(null);
 
-	Console.WriteLine("BitConverter.IsLittleEndian: {0}", BitConverter.IsLittleEndian);
+        Console.WriteLine("TestThreading_Interlocked_CompareExchange");
+        if (!TestThreading_Interlocked_CompareExchange())
+            Environment.FailFast(null);
 
-	Console.WriteLine("IntPtr.Zero: {0}, UIntPtr.Zero: {1}", IntPtr.Zero, UIntPtr.Zero);
+        Console.WriteLine("TestRuntimeHelpers_IsReferenceOrContainsReferences");
+        if (!TestRuntimeHelpers_IsReferenceOrContainsReferences())
+            Environment.FailFast(null);
 
+        Console.WriteLine("TestMemoryMarshal_GetArrayDataReference");
+        if (!TestMemoryMarshal_GetArrayDataReference())
+            Environment.FailFast(null);
+
+        Console.WriteLine("Empty string length: {0}", string.Empty.Length);
+
+        Console.WriteLine("BitConverter.IsLittleEndian: {0}", BitConverter.IsLittleEndian);
+
+        Console.WriteLine("IntPtr.Zero: {0}, UIntPtr.Zero: {1}", IntPtr.Zero, UIntPtr.Zero);
+
+        Console.WriteLine("TestPInvoke");
+        if (!TestPInvoke())
+            Environment.FailFast(null);
+
+        // For stackwalking validation
         System.GC.Collect();
 
         Console.WriteLine("All tests passed successfully!");
+    }
+
+    public static bool TestIntrinsics()
+    {
+        Console.WriteLine("Vector128.IsHardwareAccelerated=");
+        Console.WriteLine(Vector128.IsHardwareAccelerated);
+        Console.WriteLine("X86Base.IsSupported=");
+        Console.WriteLine(System.Runtime.Intrinsics.X86.X86Base.IsSupported);
+        Console.WriteLine("ArmBase.IsSupported=");
+        Console.WriteLine(System.Runtime.Intrinsics.Arm.ArmBase.IsSupported);
+        return true;
     }
 
     public static void TestExceptionHandling()
@@ -1563,6 +1657,43 @@ public class InterpreterTest
         return true;
     }
 
+    public static bool TestConvOvfUn(ushort u2, uint u4, ulong u8, uint hugeUint, ulong hugeUlong)
+    {
+        checked
+        {
+            byte a = (byte)u2,
+                b = (byte)u4,
+                c = (byte)u8;
+
+            if (a != u2)
+                return false;
+            if (b != u4)
+                return false;
+            if (c != u8)
+                return false;
+
+            try
+            {
+                a = (byte)hugeUint;
+                return false;
+            }
+            catch (OverflowException)
+            {
+            }
+
+            try
+            {
+                b = (byte)hugeUlong;
+                return false;
+            }
+            catch (OverflowException)
+            {
+            }
+        }
+
+        return true;
+    }
+
     public static bool TestConvBoundaries(double inRangeShort, double outOfRangeShort, double inRangeInt, double outOfRangeInt)
     {
         // In unchecked mode, the interpreter saturates on float->int conversions if the value is out of range
@@ -1573,8 +1704,11 @@ public class InterpreterTest
             int c = (int)inRangeInt,
                 d = (int)outOfRangeInt;
 
-            if (a != b)
+            // See https://github.com/dotnet/runtime/issues/116823 - they should *not* currently match if target size is smaller than int32
+            // if (a != b)
+            if (a == b)
                 return false;
+
             if (c != d)
                 return false;
         }
@@ -1837,7 +1971,6 @@ public class InterpreterTest
         retType = itest.GenericVirtualMethod<string>(out isBase);
         if (retType != typeof(string) || isBase)
             return false;
-
         bc = new BaseClass();
         itest = bc;
         Console.WriteLine("bc.NonVirtualMethod");
@@ -1885,13 +2018,18 @@ public class InterpreterTest
         return typeof(T);
     }
 
-    class GenericClass<T>
+    class GenericClass<T> : IGeneric<T>
     {
         public Type GetTypeOfTInstance()
         {
             return typeof(T);
         }
         public static Type GetTypeOfTStatic()
+        {
+            return typeof(T);
+        }
+
+        Type IGeneric<T>.Method()
         {
             return typeof(T);
         }
@@ -1920,7 +2058,7 @@ public class InterpreterTest
 
     public static T[,,] TestNewMDArr<T>(int len)
     {
-        return new T[len,len-1,len-2];
+        return new T[len, len - 1, len - 2];
     }
 
     public static object Box<T>(T value)
@@ -1936,10 +2074,33 @@ public class InterpreterTest
     struct GenericStruct<T>
     {
         public T Value;
+
+        public override string ToString()
+        {
+            return "GenericStruct<T>: " + (Value?.ToString() ?? "<null>");
+        }
+    }
+
+    public static int preciseInitCctorsRun = 0;
+
+    class MyPreciseInitClass<T>
+    {
+        static MyPreciseInitClass()
+        {
+            preciseInitCctorsRun++;
+        }
+
+        public static void TriggerCctorClass()
+        {
+        }
+
+        public static void TriggerCctorMethod<U>()
+        { }
     }
 
     class MyClass<T>
     {
+        static Type staticVarType = typeof(MyClass<T>);
         public Type GetTypeOf()
         {
             return typeof(MyClass<T>);
@@ -1948,6 +2109,61 @@ public class InterpreterTest
         {
             return typeof(MyClass<T>);
         }
+
+        public static Type GetTypeThroughStaticVar()
+        {
+            return staticVarType;
+        }
+    }
+
+    public static bool TestPreciseInitCctors()
+    {
+        if (preciseInitCctorsRun != 0)
+        {
+            Console.WriteLine("preciseInitCctorsRun should be 0, but is {0}", preciseInitCctorsRun);
+            return false;
+        }
+        MyPreciseInitClass<int>.TriggerCctorClass();
+        if (preciseInitCctorsRun != 1)
+        {
+            Console.WriteLine("preciseInitCctorsRun should be 1, but is {0}", preciseInitCctorsRun);
+            return false;
+        }
+        MyPreciseInitClass<short>.TriggerCctorMethod<int>();
+        if (preciseInitCctorsRun != 2)
+        {
+            Console.WriteLine("TriggerCctorClass should return 2, but is {0}", preciseInitCctorsRun);
+            return false;
+        }
+
+        object o = new MyPreciseInitClass<double>();
+        if (preciseInitCctorsRun != 3)
+        {
+            Console.WriteLine("TriggerCctorClass should return 3, but is {0}", preciseInitCctorsRun);
+            return false;
+        }
+
+        MyPreciseInitClass<object>.TriggerCctorClass();
+        if (preciseInitCctorsRun != 4)
+        {
+            Console.WriteLine("preciseInitCctorsRun should be 4 but is {0}", preciseInitCctorsRun);
+            return false;
+        }
+        MyPreciseInitClass<string>.TriggerCctorMethod<object>();
+        if (preciseInitCctorsRun != 5)
+        {
+            Console.WriteLine("TriggerCctorClass should return 5, but is {0}", preciseInitCctorsRun);
+            return false;
+        }
+
+        o = new MyPreciseInitClass<Type>();
+        if (preciseInitCctorsRun != 6)
+        {
+            Console.WriteLine("TriggerCctorClass should return 6,  but is {0}", preciseInitCctorsRun);
+            return false;
+        }
+
+        return true;
     }
 
     public static bool TestSharedGenerics()
@@ -2101,12 +2317,16 @@ public class InterpreterTest
             return false;
         }
 
-        MyClass<string > mcString = new MyClass<string>();
+        MyClass<string> mcString = new MyClass<string>();
         if (mcString.GetTypeOf() != typeof(MyClass<string>))
         {
             return false;
         }
         if (MyClass<object>.GetTypeOfStatic() != typeof(MyClass<object>))
+        {
+            return false;
+        }
+        if (MyClass<object>.GetTypeThroughStaticVar() != typeof(MyClass<object>))
         {
             return false;
         }
@@ -2135,6 +2355,11 @@ public class InterpreterTest
         return true;
     }
 
+    interface IGeneric<T>
+    {
+        Type Method();
+    }
+
     public static bool TestGenerics_CallsFrom<T>()
     {
         if (LoadType<T>() != typeof(T))
@@ -2144,6 +2369,9 @@ public class InterpreterTest
             return false;
 
         if (GenericClass<T>.GetTypeOfTStatic() != typeof(T))
+            return false;
+
+        if (((IGeneric<T>)new GenericClass<T>()).Method() != typeof(T))
             return false;
 
         return true;
@@ -2162,6 +2390,62 @@ public class InterpreterTest
     static object BoxedSubtraction(object lhs, object rhs)
     {
         return (int)lhs - (int)rhs;
+    }
+
+    [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl)]
+    public static extern int sumTwoInts(int x, int y);
+    [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl)]
+    public static extern double sumTwoDoubles(double x, double y);
+    [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    public static extern int writeToStdout(string s);
+    [DllImport("missingLibrary", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void missingPInvoke();
+    [DllImport("missingLibrary", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void missingPInvokeWithMarshaling(string s);
+
+    public static bool TestPInvoke()
+    {
+        // WASM-TODO enable once we have generated pinvoke and in-tree native re-link
+        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
+        {
+            if (sumTwoInts(1, 2) != 3)
+                return false;
+
+            double summed = sumTwoDoubles(1, 2);
+            if (summed != 3)
+                return false;
+
+            // Test marshaling wrappers
+            writeToStdout("Hello world from pinvoke.dll!writeToStdout\n");
+        }
+
+        bool caught = false;
+        try {
+            Console.WriteLine("calling missingPInvoke");
+            missingPInvoke();
+            return false;
+        } catch (DllNotFoundException) {
+            Console.WriteLine("caught #1");
+            caught = true;
+        }
+
+        if (!caught)
+            return false;
+
+        bool caught2 = false;
+        try {
+            Console.WriteLine("calling missingPInvokeWithMarshaling");
+            missingPInvokeWithMarshaling("test");
+            return false;
+        } catch (DllNotFoundException) {
+            Console.WriteLine("caught #2");
+            caught2 = true;
+        }
+
+        if (!caught2)
+            return false;
+
+        return true;
     }
 
     public static bool TestArray()
@@ -2208,7 +2492,7 @@ public class InterpreterTest
         if (!ArrayUInt32(32, uint.MinValue)) return false;
         if (!ArrayUInt32(32, uint.MaxValue)) return false;
 
-        // // long
+        // long
         if (!ArrayInt64(0, 0)) return false;
         if (!ArrayInt64(1, 1)) return false;
         if (!ArrayInt64(32, 32)) return false;
@@ -2648,7 +2932,6 @@ public class InterpreterTest
             return false;
         }
 
-
         GetCalliGeneric<object>()();
         if (_typeFromFill != typeof(object))
         {
@@ -2662,6 +2945,7 @@ public class InterpreterTest
             Console.WriteLine("Calli generic test failed: expected string, got " + _typeFromFill);
             return false;
         }
+
         return true;
     }
 
@@ -2700,5 +2984,73 @@ public class InterpreterTest
             return false;
 
         return true;
+    }
+
+    public static bool TestThreading_Interlocked_CompareExchange()
+    {
+        // Value type test
+        int location = 1;
+        int value = 2;
+        int comparand = 1;
+        int result = System.Threading.Interlocked.CompareExchange(ref location, value, comparand);
+        if (!(result == 1 && location == 2))
+            return false;
+
+        // Reference type test
+        object objLocation = "a";
+        object objValue = "b";
+        object objComparand = "a";
+        object objResult = System.Threading.Interlocked.CompareExchange(ref objLocation, objValue, objComparand);
+        if (!(object.ReferenceEquals(objResult, objComparand) && object.ReferenceEquals(objLocation, objValue)))
+            return false;
+
+        // Reference type test (fail)
+        objLocation = "a";
+        objValue = "b";
+        objComparand = "c";
+        objResult = System.Threading.Interlocked.CompareExchange(ref objLocation, objValue, objComparand);
+        if (!(object.ReferenceEquals(objResult, objLocation) && object.ReferenceEquals(objLocation, "a")))
+            return false;
+
+        // Null reference test
+        objLocation = null;
+        objValue = "b";
+        objComparand = null;
+        objResult = System.Threading.Interlocked.CompareExchange(ref objLocation, objValue, objComparand);
+        if (!(objResult is null && object.ReferenceEquals(objLocation, objValue)))
+            return false;
+
+        return true;
+    }
+
+    public static bool TestRuntimeHelpers_IsReferenceOrContainsReferences()
+    {
+        if (!RuntimeHelpers.IsReferenceOrContainsReferences<object>())
+            return false;
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<int>())
+            return false;
+        if (!RuntimeHelpers.IsReferenceOrContainsReferences<int[]>())
+            return false;
+        return true;
+    }
+
+    public static bool TestMemoryMarshal_GetArrayDataReference()
+    {
+        int[] arr = new int[1];
+        ref int dataRef = ref MemoryMarshal.GetArrayDataReference(arr);
+        dataRef = 42;
+        if (arr[0] != 42)
+            return false;
+
+        arr = null;
+        try
+        {
+            MemoryMarshal.GetArrayDataReference(arr);
+            return false;
+        }
+        catch (NullReferenceException)
+        {
+            return true;
+        }
     }
 }

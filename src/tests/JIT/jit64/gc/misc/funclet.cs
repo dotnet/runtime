@@ -8,7 +8,7 @@ using Xunit;
 
 public class test
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsVarArgSupported))]
     public static void TestEntryPoint()
     {
         try

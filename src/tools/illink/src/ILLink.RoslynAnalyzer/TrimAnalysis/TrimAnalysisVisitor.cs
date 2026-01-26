@@ -43,6 +43,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
         private FeatureChecksVisitor _featureChecksVisitor;
 
+        readonly TypeNameResolver _typeNameResolver;
+        readonly DataFlowAnalyzerContext _dataFlowAnalyzerContext;
+
         public TrimAnalysisVisitor(
             Compilation compilation,
             LocalStateAndContextLattice<MultiValue, FeatureContext, ValueSetLattice<SingleValue>, FeatureContextLattice> lattice,
@@ -57,6 +60,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             _multiValueLattice = lattice.LocalStateLattice.Lattice.ValueLattice;
             TrimAnalysisPatterns = trimAnalysisPatterns;
             _featureChecksVisitor = new FeatureChecksVisitor(dataFlowAnalyzerContext);
+            _typeNameResolver = new TypeNameResolver(compilation);
+            _dataFlowAnalyzerContext = dataFlowAnalyzerContext;
         }
 
         public override FeatureChecksValue GetConditionValue(IOperation branchValueOperation, StateValue state)
@@ -149,7 +154,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             // It can also happen that we see this for a static method - for example a delegate creation
             // over a local function does this, even thought the "this" makes no sense inside a static scope.
             if (OwningSymbol is IMethodSymbol method && !method.IsStatic)
-                return new MethodParameterValue(method, (ParameterIndex)0, FlowAnnotations.GetMethodParameterAnnotation(new ParameterProxy(new(method), (ParameterIndex)0)));
+                return new MethodParameterValue(new ParameterProxy(new(method), (ParameterIndex)0));
 
             return TopValue;
         }
@@ -176,7 +181,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
                 return constValue;
 
             var current = state.Current;
-            return GetFieldTargetValue(fieldRef.Field, fieldRef, in current.Context);
+            return GetFieldTargetValue(fieldRef, in current.Context);
         }
 
         public override MultiValue VisitTypeOf(ITypeOfOperation typeOfOperation, StateValue state)
@@ -224,19 +229,48 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         // - method calls
         // - value returned from a method
 
-        public override MultiValue GetFieldTargetValue(IFieldSymbol field, IFieldReferenceOperation fieldReferenceOperation, in FeatureContext featureContext)
+        public override MultiValue GetFieldTargetValue(IFieldReferenceOperation fieldReference, in FeatureContext featureContext)
         {
+            var field = fieldReference.Field;
+
             TrimAnalysisPatterns.Add(
-                new TrimAnalysisFieldAccessPattern(field, fieldReferenceOperation, OwningSymbol, featureContext)
+                new TrimAnalysisFieldAccessPattern(field, fieldReference, OwningSymbol, featureContext)
             );
 
-            ProcessGenericArgumentDataFlow(field, fieldReferenceOperation, featureContext);
+            ProcessGenericArgumentDataFlow(field, fieldReference, featureContext);
 
             return new FieldValue(field);
         }
 
+        public override MultiValue GetBackingFieldTargetValue(IPropertyReferenceOperation propertyReference, in FeatureContext featureContext)
+        {
+            var property = propertyReference.Property;
+
+            TrimAnalysisPatterns.Add(
+                new TrimAnalysisBackingFieldAccessPattern(propertyReference.Property, propertyReference, OwningSymbol, featureContext)
+            );
+
+            ProcessGenericArgumentDataFlow(property, propertyReference, featureContext);
+
+            return new FieldValue(property);
+        }
+
+
         public override MultiValue GetParameterTargetValue(IParameterSymbol parameter)
-            => new MethodParameterValue(parameter);
+        {
+            var parameterMethod = parameter.ContainingSymbol as IMethodSymbol ?? OwningSymbol as IMethodSymbol;
+            if (parameterMethod is null)
+            {
+                // If the parameter is not associated with a method, ignore it as it's not interesting for trim analysis.
+                // This can happen in the parameter initializer of an indexer property, for example.
+                // When visiting the assignment for the parameter initializer, the owning symbol will be the property
+                // symbol, not the get/set method. The get/set methods get analyzed in a separate context where the owning
+                // symbol of the same parameter (this time on the method) is the get/set method.
+                return TopValue;
+            }
+
+            return new MethodParameterValue(new ParameterProxy(parameter, parameterMethod));
+        }
 
         public override void HandleAssignment(MultiValue source, MultiValue target, IOperation operation, in FeatureContext featureContext)
         {
@@ -315,7 +349,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             //   Especially with DAM on type, this can lead to incorrectly analyzed code (as in unknown type which leads
             //   to noise). ILLink has the same problem currently: https://github.com/dotnet/linker/issues/1952
 
-            HandleCall(operation, OwningSymbol, calledMethod, instance, arguments, Location.None, null, _multiValueLattice, out MultiValue methodReturnValue);
+            HandleCall(_dataFlowAnalyzerContext, FeatureContext.None, _typeNameResolver, operation, OwningSymbol, calledMethod, instance, arguments, Location.None, null, _multiValueLattice, out MultiValue methodReturnValue);
 
             // This will copy the values if necessary
             TrimAnalysisPatterns.Add(new TrimAnalysisMethodCallPattern(
@@ -343,6 +377,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         }
 
         internal static void HandleCall(
+            DataFlowAnalyzerContext dataFlowAnalyzerContext,
+            FeatureContext featureContext,
+            TypeNameResolver typeNameResolver,
             IOperation operation,
             ISymbol owningSymbol,
             IMethodSymbol calledMethod,
@@ -353,7 +390,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             ValueSetLattice<SingleValue> multiValueLattice,
             out MultiValue methodReturnValue)
         {
-            var handleCallAction = new HandleCallAction(location, owningSymbol, operation, multiValueLattice, reportDiagnostic);
+            var handleCallAction = new HandleCallAction(dataFlowAnalyzerContext, featureContext, typeNameResolver, location, owningSymbol, operation, multiValueLattice, reportDiagnostic);
             MethodProxy method = new(calledMethod);
             var intrinsicId = Intrinsics.GetIntrinsicIdForMethod(method);
             if (!handleCallAction.Invoke(method, instance, arguments, intrinsicId, out methodReturnValue))
@@ -447,6 +484,21 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             {
                 TrimAnalysisPatterns.Add(new TrimAnalysisGenericInstantiationPattern(
                     field,
+                    operation,
+                    OwningSymbol,
+                    featureContext));
+            }
+        }
+
+        private void ProcessGenericArgumentDataFlow(IPropertySymbol property, IOperation operation, in FeatureContext featureContext)
+        {
+            if (!property.IsStatic)
+                return;
+
+            if (GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(property))
+            {
+                TrimAnalysisPatterns.Add(new TrimAnalysisGenericInstantiationPattern(
+                    property,
                     operation,
                     OwningSymbol,
                     featureContext));

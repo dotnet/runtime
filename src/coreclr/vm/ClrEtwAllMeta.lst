@@ -650,6 +650,8 @@ nomac:CLRStackStress:::CLRStackWalkStress
 #################################
 nostack:DebugIPCEvent:::DebugIPCEventStart
 nostack:DebugIPCEvent:::DebugIPCEventEnd
+nostack:DebugExceptionProcessing:::DebugExceptionProcessingStart
+nostack:DebugExceptionProcessing:::DebugExceptionProcessingEnd
 
 #################################
 # Events from the Mono profiler provider

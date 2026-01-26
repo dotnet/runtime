@@ -15,7 +15,7 @@
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
 
-#include <twowaypipe.h>
+#include "processdescriptor.h"
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  DbgTransportSession was originally designed around cross-machine debugging via sockets and it is supposed to
@@ -320,6 +320,25 @@ enum IPCEventType
    IPCET_Max,
 };
 
+struct DECLSPEC_UUID("0498eef8-7a24-44a7-8141-dc401904ce25") DECLSPEC_NOVTABLE
+IDebugChannel : public IUnknown
+{
+public:
+    virtual HRESULT STDMETHODCALLTYPE WaitForConnection(
+        /* [in] */ DWORD timeoutMilliseconds,
+        /* [out] */ BOOL *isConnected) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE CloseConnection() = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE Read(
+        /* [out] */ BYTE *buffer,
+        /* [in] */ DWORD size) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE Write(
+        /* [in] */ BYTE *data,
+        /* [in] */ DWORD size) = 0;
+};
+
 // The class that encapsulates all the state for a single session on either the right or left side. The left
 // side supports only one instance of this class for a given runtime. The right side can support several (all
 // connected to different LS instances of course).
@@ -341,7 +360,7 @@ public:
 #ifdef RIGHT_SIDE_COMPILE
     HRESULT Init(const ProcessDescriptor& pd, HANDLE hProcessExited);
 #else
-    HRESULT Init(DebuggerIPCControlBlock * pDCB, AppDomainEnumerationIPCBlock * pADB);
+    HRESULT Init(DebuggerIPCControlBlock * pDCB);
 #endif // RIGHT_SIDE_COMPILE
 
     // Drive the session to the SS_Closed state, which will deallocate all remaining transport resources
@@ -426,9 +445,6 @@ public:
     HRESULT GetDCB(DebuggerIPCControlBlock *pDCB);
     HRESULT SetDCB(DebuggerIPCControlBlock *pDCB);
 
-    // Read the AppDomain control block on the LS from the RS.
-    HRESULT GetAppDomainCB(AppDomainEnumerationIPCBlock *pADB);
-
 #endif // RIGHT_SIDE_COMPILE
 
 private:
@@ -469,7 +485,6 @@ private:
         MT_WriteMemory,     // RS <-> LS : RS wants to write LS memory block (or LS is replying to such a request)
         MT_GetDCB,          // RS <-> LS : RS wants to read LS DCB (or LS is replying to such a request)
         MT_SetDCB,          // RS <-> LS : RS wants to write LS DCB (or LS is replying to such a request)
-        MT_GetAppDomainCB,  // RS <-> LS : RS wants to read LS AppDomainCB (or LS is replying to such a request)
     };
 
     // Reasons the LS can give for rejecting a session. These codes should *not* be changed other than by
@@ -573,81 +588,11 @@ private:
         }
     };
 
-#ifdef _DEBUG
-    // Store statistics for various session activities that will be useful for performance analysis and tracking
-    // down bugs.
-    struct DbgStats
-    {
-        // Message type counts for sends.
-        LONG        m_cSentSessionRequest;
-        LONG        m_cSentSessionAccept;
-        LONG        m_cSentSessionReject;
-        LONG        m_cSentSessionResync;
-        LONG        m_cSentSessionClose;
-        LONG        m_cSentEvent;
-        LONG        m_cSentReadMemory;
-        LONG        m_cSentWriteMemory;
-        LONG        m_cSentGetDCB;
-        LONG        m_cSentSetDCB;
-        LONG        m_cSentGetAppDomainCB;
-        LONG        m_cSentDDMessage;
-
-        // Message type counts for receives.
-        LONG        m_cReceivedSessionRequest;
-        LONG        m_cReceivedSessionAccept;
-        LONG        m_cReceivedSessionReject;
-        LONG        m_cReceivedSessionResync;
-        LONG        m_cReceivedSessionClose;
-        LONG        m_cReceivedEvent;
-        LONG        m_cReceivedReadMemory;
-        LONG        m_cReceivedWriteMemory;
-        LONG        m_cReceivedGetDCB;
-        LONG        m_cReceivedSetDCB;
-        LONG        m_cReceivedGetAppDomainCB;
-        LONG        m_cReceivedDDMessage;
-
-        // Low level block counts.
-        LONG        m_cSentBlocks;
-        LONG        m_cReceivedBlocks;
-
-        // Byte count summaries.
-        LONGLONG    m_cbSentBytes;
-        LONGLONG    m_cbReceivedBytes;
-
-        // Errors and recovery
-        LONG        m_cSendErrors;
-        LONG        m_cReceiveErrors;
-        LONG        m_cMiscErrors;
-        LONG        m_cConnections;
-        LONG        m_cResends;
-
-        // Session counts.
-        LONG        m_cSessions;
-    };
-
-    DbgStats        m_sStats;
-
-    // Macros to update the statistics. The increment version is thread safe, but the add version is assumed to be
-    // externally serialized since the 64-bit Interlocked operations are not available on all platforms and these
-    // stats are used for send and receive byte counts which are updated at locations that are serialized anyway.
-#define DBG_TRANSPORT_INC_STAT(_name) InterlockedIncrement(&m_sStats.m_c##_name)
-#define DBG_TRANSPORT_ADD_STAT(_name, _amount) m_sStats.m_cb##_name += (_amount)
-
-#else // _DEBUG
-
-#define DBG_TRANSPORT_INC_STAT(_name)
-#define DBG_TRANSPORT_ADD_STAT(_name, _amount)
-
-#endif // _DEBUG
-
     // Reference count
     LONG m_ref;
 
     // Some flags used to record how far we got in Init() (used for cleanup in Shutdown()).
     bool m_fInitStateLock;
-#ifndef RIGHT_SIDE_COMPILE
-    bool m_fInitWSA;
-#endif // !RIGHT_SIDE_COMPILE
 
     // Protocol version. This consists of two parts. The major version is incremented on incompatible protocol
     // updates. That is, a session between left and right sides that cannot use a protocol with the exact same
@@ -710,7 +655,7 @@ private:
     // back into the Connect()/Accept() phase (along with the resulting session state change).
     HANDLE          m_hTransportThread;
 
-    TwoWayPipe      m_pipe;
+    IDebugChannel* m_channel;
 
 #ifdef RIGHT_SIDE_COMPILE
     // On the RS the transport thread needs to know the IP address and port number to Connect() to.
@@ -747,8 +692,72 @@ private:
     // The LS requires the addresses of a couple of runtime data structures in order to service MT_GetDCB etc.
     // These are provided by the runtime at initialization time.
     DebuggerIPCControlBlock *m_pDCB;
-    AppDomainEnumerationIPCBlock *m_pADB;
 #endif // !RIGHT_SIDE_COMPILE
+
+#ifdef _DEBUG
+    // Store statistics for various session activities that will be useful for performance analysis and tracking
+    // down bugs.
+    struct DbgStats
+    {
+        // Message type counts for sends.
+        LONG        m_cSentSessionRequest;
+        LONG        m_cSentSessionAccept;
+        LONG        m_cSentSessionReject;
+        LONG        m_cSentSessionResync;
+        LONG        m_cSentSessionClose;
+        LONG        m_cSentEvent;
+        LONG        m_cSentReadMemory;
+        LONG        m_cSentWriteMemory;
+        LONG        m_cSentGetDCB;
+        LONG        m_cSentSetDCB;
+        LONG        m_cSentDDMessage;
+
+        // Message type counts for receives.
+        LONG        m_cReceivedSessionRequest;
+        LONG        m_cReceivedSessionAccept;
+        LONG        m_cReceivedSessionReject;
+        LONG        m_cReceivedSessionResync;
+        LONG        m_cReceivedSessionClose;
+        LONG        m_cReceivedEvent;
+        LONG        m_cReceivedReadMemory;
+        LONG        m_cReceivedWriteMemory;
+        LONG        m_cReceivedGetDCB;
+        LONG        m_cReceivedSetDCB;
+        LONG        m_cReceivedDDMessage;
+
+        // Low level block counts.
+        LONG        m_cSentBlocks;
+        LONG        m_cReceivedBlocks;
+
+        // Byte count summaries.
+        LONGLONG    m_cbSentBytes;
+        LONGLONG    m_cbReceivedBytes;
+
+        // Errors and recovery
+        LONG        m_cSendErrors;
+        LONG        m_cReceiveErrors;
+        LONG        m_cMiscErrors;
+        LONG        m_cConnections;
+        LONG        m_cResends;
+
+        // Session counts.
+        LONG        m_cSessions;
+    };
+
+    DbgStats        m_sStats;
+
+    // Macros to update the statistics. The increment version is thread safe, but the add version is assumed to be
+    // externally serialized since the 64-bit Interlocked operations are not available on all platforms and these
+    // stats are used for send and receive byte counts which are updated at locations that are serialized anyway.
+#define DBG_TRANSPORT_INC_STAT(_name) InterlockedIncrement(&m_sStats.m_c##_name)
+#define DBG_TRANSPORT_ADD_STAT(_name, _amount) m_sStats.m_cb##_name += (_amount)
+
+#else // _DEBUG
+
+#define DBG_TRANSPORT_INC_STAT(_name)
+#define DBG_TRANSPORT_ADD_STAT(_name, _amount)
+
+#endif // _DEBUG
 
     HRESULT SendEventWorker(DebuggerIPCEvent * pEvent, IPCEventType type);
 
@@ -838,8 +847,6 @@ private:
 // Debugger::Startup() in debugger.cpp).
 extern DbgTransportSession *g_pDbgTransport;
 #endif // !RIGHT_SIDE_COMPILE
-
-#define DBG_GET_LAST_WSA_ERROR() WSAGetLastError()
 
 #endif // defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
 

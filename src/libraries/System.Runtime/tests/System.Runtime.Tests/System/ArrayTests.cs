@@ -369,7 +369,7 @@ namespace System.Tests
         [InlineData(new char[] { '\0' }, 0, 1, null, null, -1)]
         [InlineData(new float[] { 0 }, 0, 1, null, null, -1)]
         [InlineData(new double[] { 0 }, 0, 1, null, null, -1)]
-        public static void BinarySearch_Array(Array array, int index, int length, object value, IComparer comparer, int expected)
+        public static void BinarySearch_Array(Array array, int index, int length, object? value, IComparer? comparer, int expected)
         {
             bool isDefaultComparer = comparer == null || comparer == Comparer.Default;
             if (index == array.GetLowerBound(0) && length == array.Length)
@@ -1220,6 +1220,10 @@ namespace System.Tests
 
             // Single[] -> primitive[]
             yield return new object[] { new float[] { 1, 2.2f, 3 }, 0, new double[3], 0, 3, new double[] { 1, 2.2f, 3 } };
+
+            // SByteEnum[] -> primitive[]
+            yield return new object[] { new SByteEnum[] { (SByteEnum)1, (SByteEnum)2, (SByteEnum)3 }, 0, new int[3], 0, 3, new int[] { 1, 2, 3 } };
+            yield return new object[] { new SByteEnum[] { (SByteEnum)1, (SByteEnum)2, (SByteEnum)3 }, 0, new Int32Enum[3], 0, 3, new Int32Enum[] { (Int32Enum)1, (Int32Enum)2, (Int32Enum)3 } };
         }
 
         public static IEnumerable<object[]> Copy_SZArray_UnreliableConversion_CanPerform_TestData()
@@ -1582,6 +1586,12 @@ namespace System.Tests
 
             // ValueType[] -> InterfaceNotImplementedByValueType[] never works
             yield return new object[] { new StructWithNonGenericInterface1[1], new NonGenericInterface2[1] };
+
+            // ValueType[] -> ValueType[] never works
+            yield return new object[] { new StructWithNonGenericInterface1[1], new StructWithNonGenericInterface1_2[1] };
+
+            // ValueType[] -> Nullable[] never works
+            yield return new object[] { new int[1], new int?[1] };
         }
 
         [Theory]
@@ -3210,7 +3220,7 @@ namespace System.Tests
         [InlineData(new int[] { 1, 2, 3, 4, 5 }, 7, new int[] { 1, 2, 3, 4, 5, default(int), default(int) })]
         [InlineData(new int[] { 1, 2, 3, 4, 5 }, 3, new int[] { 1, 2, 3 })]
         [InlineData(null, 3, new int[] { default(int), default(int), default(int) })]
-        public static void Resize(int[] array, int newSize, int[] expected)
+        public static void Resize(int[]? array, int newSize, int[] expected)
         {
             int[] testArray = array;
             Array.Resize(ref testArray, newSize);

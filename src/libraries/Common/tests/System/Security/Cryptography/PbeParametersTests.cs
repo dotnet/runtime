@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData("Potato")]
         [InlineData("")]
         [InlineData(null)]
-        public static void HashAlgorithm_NotVerified(string algId)
+        public static void HashAlgorithm_NotVerified(string? algId)
         {
             HashAlgorithmName hashName = new HashAlgorithmName(algId);
 
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData("SHA256")]
         [InlineData("Potato")]
         [InlineData(default)]
-        public static void Pkcs12_NotVerifed_InCtor(string hashAlgName)
+        public static void Pkcs12_NotVerifed_InCtor(string? hashAlgName)
         {
             HashAlgorithmName hashName = new HashAlgorithmName(hashAlgName);
 

@@ -623,8 +623,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
         [Kept]
         private static void TestNullArgsOnAnnotatedType(
-            [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor),
-            KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))] Type type)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor),
+            KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))] Type type)
         {
             Activator.CreateInstance(type, BindingFlags.Public | BindingFlags.Instance, null, null, CultureInfo.InvariantCulture);
         }
@@ -632,8 +632,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
         [Kept]
         [ExpectedWarning("IL2067", nameof(DynamicallyAccessedMemberTypes) + "." + nameof(DynamicallyAccessedMemberTypes.NonPublicConstructors))]
         private static void TestNullArgsNonPublicOnly(
-            [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor),
-            KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))] Type type)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor),
+            KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))] Type type)
         {
             Activator.CreateInstance(type, BindingFlags.NonPublic | BindingFlags.Instance, null, null, CultureInfo.InvariantCulture);
         }
@@ -641,8 +641,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
         [Kept]
         [ExpectedNoWarnings]
         private static void TestNullArgsNonPublicWithNonPublicAnnotation(
-            [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors),
-            KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))] Type type)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors),
+            KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))] Type type)
         {
             Activator.CreateInstance(type, nonPublic: true);
         }

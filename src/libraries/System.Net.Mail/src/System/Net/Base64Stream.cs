@@ -35,7 +35,6 @@ namespace System.Net
         ];
 
         private readonly Base64WriteStateInfo _writeState;
-        private ReadStateInfo? _readState;
         private readonly Base64Encoder _encoder;
 
         //bytes with this value in the decode map are invalid
@@ -56,7 +55,7 @@ namespace System.Net
         public override bool CanRead => BaseStream.CanRead;
         public override bool CanWrite => BaseStream.CanWrite;
 
-        private ReadStateInfo ReadState => _readState ??= new ReadStateInfo();
+        private ReadStateInfo ReadState => field ??= new ReadStateInfo();
 
         internal WriteStateInfoBase WriteState
         {

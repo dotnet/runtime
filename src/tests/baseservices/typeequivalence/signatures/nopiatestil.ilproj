@@ -8,5 +8,6 @@
     <Compile Include="nopiatestil.il" />
     <ProjectReference Include="basetestclassesil.ilproj" />
     <ProjectReference Include="testclassesil.ilproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

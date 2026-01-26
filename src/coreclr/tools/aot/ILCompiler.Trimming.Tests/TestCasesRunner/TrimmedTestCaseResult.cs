@@ -7,32 +7,32 @@ using Mono.Linker.Tests.TestCases;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	partial class TrimmedTestCaseResult
-	{
-		public readonly ILScanResults TrimmingResults;
+    partial class TrimmedTestCaseResult
+    {
+        public readonly ILScanResults TrimmingResults;
 
-		public TrimmedTestCaseResult (
-			TestCase testCase,
-			NPath inputAssemblyPath,
-			NPath outputAssemblyPath,
-			NPath expectationsAssemblyPath,
-			TestCaseSandbox sandbox,
-			TestCaseMetadataProvider metadataProvider,
-			ManagedCompilationResult compilationResult,
-			TrimmingTestLogger logger,
-			TrimmingCustomizations? customizations,
-			ILScanResults trimmingResults)
-		{
-			// Ignore outputAssemblyPath because ILCompiler trimming tests don't write output assemblies.
-			// Ignore TrimmingCustomizatoins which are not used by ILCompiler trimming tests.
-			TestCase = testCase;
-			InputAssemblyPath = inputAssemblyPath;
-			ExpectationsAssemblyPath = expectationsAssemblyPath;
-			Sandbox = sandbox;
-			MetadataProvider = metadataProvider;
-			CompilationResult = compilationResult;			
-			Logger = logger;
-			TrimmingResults = trimmingResults;
-		}
-	}
+        public TrimmedTestCaseResult(
+            TestCase testCase,
+            NPath inputAssemblyPath,
+            NPath outputAssemblyPath,
+            NPath expectationsAssemblyPath,
+            TestCaseSandbox sandbox,
+            TestCaseMetadataProvider metadataProvider,
+            ManagedCompilationResult compilationResult,
+            TrimmingTestLogger logger,
+            TrimmingCustomizations? customizations,
+            ILScanResults trimmingResults)
+        {
+            // Ignore outputAssemblyPath because ILCompiler trimming tests don't write output assemblies.
+            // Ignore TrimmingCustomizatoins which are not used by ILCompiler trimming tests.
+            TestCase = testCase;
+            InputAssemblyPath = inputAssemblyPath;
+            ExpectationsAssemblyPath = expectationsAssemblyPath;
+            Sandbox = sandbox;
+            MetadataProvider = metadataProvider;
+            CompilationResult = compilationResult;
+            Logger = logger;
+            TrimmingResults = trimmingResults;
+        }
+    }
 }

@@ -90,14 +90,46 @@ ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrD
 #define FpStruct__BothFloat           0b10
 ASMCONSTANTS_C_ASSERT(FpStruct__BothFloat == (int)FpStruct::BothFloat)
 
-#define VASigCookie__pNDirectILStub 0x8
-ASMCONSTANTS_C_ASSERT(VASigCookie__pNDirectILStub == offsetof(VASigCookie, pNDirectILStub))
+#define VASigCookie__pPInvokeILStub 0x8
+ASMCONSTANTS_C_ASSERT(VASigCookie__pPInvokeILStub == offsetof(VASigCookie, pPInvokeILStub))
 
 #define SIZEOF__Frame                 0x10
 ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
 
 #define SIZEOF__CONTEXT               0x520
 ASMCONSTANTS_C_ASSERT(SIZEOF__CONTEXT == sizeof(T_CONTEXT));
+
+#define OFFSETOF__CONTEXT__ContextFlags 0x0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__ContextFlags == offsetof(T_CONTEXT, ContextFlags));
+
+#define OFFSETOF__CONTEXT__Ra         0x10
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Ra == offsetof(T_CONTEXT, Ra));
+
+#define OFFSETOF__CONTEXT__Sp         0x20
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Sp == offsetof(T_CONTEXT, Sp));
+
+#define OFFSETOF__CONTEXT__A0         0x28
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__A0 == offsetof(T_CONTEXT, A0));
+
+#define OFFSETOF__CONTEXT__Fp         0xB8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Fp == offsetof(T_CONTEXT, Fp));
+
+#define OFFSETOF__CONTEXT__S0         0xC0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__S0 == offsetof(T_CONTEXT, S0));
+
+#define OFFSETOF__CONTEXT__Pc         0x108
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Pc == offsetof(T_CONTEXT, Pc));
+
+// Floating point registers F[0..127] start after Pc
+// Non-volatile FP registers are F24-F31
+// Each F entry is 8 bytes (ULONGLONG), but stored as 4*32 for LASX support
+#define OFFSETOF__CONTEXT__F          0x110
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__F == offsetof(T_CONTEXT, F));
+
+// CONTEXT_FLOATING_POINT_BIT is bit 2 in ContextFlags
+#define CONTEXT_FLOATING_POINT_BIT    2
+
+#define CONTEXT_INTEGER_BIT           1
 
 //=========================================
 #define               OFFSETOF__MethodTable__m_dwFlags    0x0
@@ -213,6 +245,7 @@ ASMCONSTANTS_C_ASSERT(StubPrecodeData__Target            == offsetof(StubPrecode
 #define StubPrecodeData__SecretParam 0x00
 ASMCONSTANTS_C_ASSERT(StubPrecodeData__SecretParam        == offsetof(StubPrecodeData, SecretParam))
 
+#ifdef FEATURE_TIERED_COMPILATION
 #define CallCountingStubData__RemainingCallCountCell 0x00
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__RemainingCallCountCell == offsetof(CallCountingStubData, RemainingCallCountCell))
 
@@ -221,6 +254,7 @@ ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForMethod == offsetof(CallCoun
 
 #define CallCountingStubData__TargetForThresholdReached 0x10
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offsetof(CallCountingStubData, TargetForThresholdReached))
+#endif // FEATURE_TIERED_COMPILATION
 
 #ifdef PROFILING_SUPPORTED
 #define PROFILE_ENTER    1

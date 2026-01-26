@@ -35,6 +35,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task RequiresExcludeStatics()
+        {
+            return RunTest();
+        }
+
+        [Fact]
         public Task RequiresCapabilityFromCopiedAssembly()
         {
             return RunTest(nameof(RequiresCapabilityFromCopiedAssembly));
@@ -80,6 +86,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         public Task RequiresOnAttributeCtor()
         {
             return RunTest(nameof(RequiresOnAttributeCtor));
+        }
+
+        [Fact]
+        public Task RequiresOnBaseClass()
+        {
+            return RunTest(nameof(RequiresOnBaseClass));
         }
 
         [Fact]

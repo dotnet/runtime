@@ -17,8 +17,8 @@ static void Test()
 [ExpectedWarning("IL2098", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101215")]
 [Kept]
 static void RequireAll(
-    [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-    [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] UnsupportedType f)
+    [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] UnsupportedType f)
 { }
 
 [Kept]

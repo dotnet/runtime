@@ -13,15 +13,13 @@
 #define PTFF_SAVE_R9 0x00000020
 #define PTFF_SAVE_SP 0x00000100
 #define PTFF_SAVE_R0 0x00000200
-#define PTFF_THREAD_ABORT  0x00004000
-#define PTFF_THREAD_HIJACK 0x00008000   // indicates that this is a frame for a hijacked call
+#define PTFF_THREAD_HIJACK 0x00004000   // indicates that this is a frame for a hijacked call
 
 #define DEFAULT_FRAME_SAVE_FLAGS (PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP)
 
 // These must match the TrapThreadsFlags enum
 #define TrapThreadsFlags_None            0
-#define TrapThreadsFlags_AbortInProgress 1
-#define TrapThreadsFlags_TrapThreads     2
+#define TrapThreadsFlags_TrapThreads     1
 
 // GC minimal sized object. We use this to switch between 4 and 8 byte alignment in the GC heap (see AllocFast.asm).
 #define ASM_MIN_OBJECT_SIZE 12

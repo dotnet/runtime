@@ -25,32 +25,10 @@ namespace ILLink.RoslynAnalyzer
         private static readonly DiagnosticDescriptor s_requiresUnreferencedCodeOnStaticCtor = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresUnreferencedCodeOnStaticConstructor);
         private static readonly DiagnosticDescriptor s_requiresUnreferencedCodeOnEntryPoint = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresUnreferencedCodeOnEntryPoint);
 
-        private static readonly DiagnosticDescriptor s_typeDerivesFromRucClassRule = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresUnreferencedCodeOnBaseClass);
-
-        private Action<SymbolAnalysisContext> typeDerivesFromRucBase
-        {
-            get
-            {
-                return symbolAnalysisContext =>
-                {
-                    if (symbolAnalysisContext.Symbol is INamedTypeSymbol typeSymbol && !typeSymbol.HasAttribute(RequiresUnreferencedCodeAttribute)
-                        && typeSymbol.BaseType is INamedTypeSymbol baseType
-                        && baseType.TryGetAttribute(RequiresUnreferencedCodeAttribute, out var requiresUnreferencedCodeAttribute))
-                    {
-                        var diag = Diagnostic.Create(s_typeDerivesFromRucClassRule,
-                            typeSymbol.Locations[0],
-                            typeSymbol,
-                            baseType.GetDisplayName(),
-                            GetMessageFromAttribute(requiresUnreferencedCodeAttribute),
-                            GetUrlFromAttribute(requiresUnreferencedCodeAttribute));
-                        symbolAnalysisContext.ReportDiagnostic(diag);
-                    }
-                };
-            }
-        }
+        private static readonly DiagnosticDescriptor s_referenceNotMarkedIsTrimmableRule = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.ReferenceNotMarkedIsTrimmable);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-            ImmutableArray.Create(s_makeGenericMethodRule, s_makeGenericTypeRule, s_requiresUnreferencedCodeRule, s_requiresUnreferencedCodeAttributeMismatch, s_typeDerivesFromRucClassRule, s_requiresUnreferencedCodeOnStaticCtor, s_requiresUnreferencedCodeOnEntryPoint);
+            ImmutableArray.Create(s_makeGenericMethodRule, s_makeGenericTypeRule, s_requiresUnreferencedCodeRule, s_requiresUnreferencedCodeAttributeMismatch, s_requiresUnreferencedCodeOnStaticCtor, s_requiresUnreferencedCodeOnEntryPoint, s_referenceNotMarkedIsTrimmableRule);
 
         private protected override string RequiresAttributeName => RequiresUnreferencedCodeAttribute;
 
@@ -99,8 +77,16 @@ namespace ILLink.RoslynAnalyzer
 
             return false;
         }
-        private protected override ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)> ExtraSymbolActions =>
-            ImmutableArray.Create<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)>((typeDerivesFromRucBase, new SymbolKind[] { SymbolKind.NamedType }));
+
+        private protected override ImmutableArray<Action<CompilationAnalysisContext>> ExtraCompilationActions =>
+            ImmutableArray.Create<Action<CompilationAnalysisContext>>((context) =>
+            {
+                CheckReferencedAssemblies(
+                    context,
+                    MSBuildPropertyOptionNames.VerifyReferenceTrimCompatibility,
+                    "IsTrimmable",
+                    s_referenceNotMarkedIsTrimmableRule);
+            });
 
         protected override bool VerifyAttributeArguments(AttributeData attribute) =>
             RequiresUnreferencedCodeUtils.VerifyRequiresUnreferencedCodeAttributeArguments(attribute);

@@ -86,6 +86,7 @@ jobs:
       - checkout: self
         clean: true
         fetchDepth: $(checkoutFetchDepth)
+        fetchTags: false
 
       - ${{ if ne(variables['System.TeamProject'], 'public') }}:
         - ${{ if ne(parameters.osGroup, 'windows') }}:

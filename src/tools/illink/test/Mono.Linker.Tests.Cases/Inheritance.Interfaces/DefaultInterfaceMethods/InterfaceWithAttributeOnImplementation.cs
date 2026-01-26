@@ -12,7 +12,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
         static void Main()
         {
 #if IL_ASSEMBLY_AVAILABLE
-			((IMyInterface)new MyClass ()).Frob ();
+            ((IMyInterface)new MyClass()).Frob();
 #endif
         }
     }

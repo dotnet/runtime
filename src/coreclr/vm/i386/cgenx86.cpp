@@ -41,13 +41,6 @@
 #include "perfmap.h"
 #endif
 
-// NOTE on Frame Size C_ASSERT usage in this file
-// if the frame size changes then the stubs have to be revisited for correctness
-// kindly revist the logic and then update the constants so that the C_ASSERT will again fire
-// if someone changes the frame size.  You are expected to keep this hard coded constant
-// up to date so that changes in the frame size trigger errors at compile time if the code is not altered
-
-#ifdef FEATURE_EH_FUNCLETS
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * regs)
 {
     LIMITED_METHOD_CONTRACT;
@@ -71,73 +64,6 @@ void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
     ENUM_ARGUMENT_AND_SCRATCH_REGISTERS();
 #undef ARGUMENT_AND_SCRATCH_REGISTER
 }
-#endif // FEATURE_EH_FUNCLETS
-
-#ifndef FEATURE_EH_FUNCLETS
-//---------------------------------------------------------------------------------------
-//
-// Initialize the EHContext using the resume PC and the REGDISPLAY.  The EHContext is currently used in two
-// scenarios: to store the register state before calling an EH clause, and to retrieve the ambient SP of a
-// particular stack frame.  resumePC means different things in the two scenarios.  In the former case, it
-// is the IP at which we are going to resume execution when we call an EH clause.  In the latter case, it
-// is just the current IP.
-//
-// Arguments:
-//    resumePC - refer to the comment above
-//    regs     - This is the REGDISPLAY obtained from the CrawlFrame used in the stackwalk.  It represents the
-//               stack frame of the method containing the EH clause we are about to call.  For getting the
-//               ambient SP, this is the stack frame we are interested in.
-//
-
-void EHContext::Setup(PCODE resumePC, PREGDISPLAY regs)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    // EAX ECX EDX are scratch
-    this->Esp  = regs->SP;
-    this->Ebx = *regs->pEbx;
-    this->Esi = *regs->pEsi;
-    this->Edi = *regs->pEdi;
-    this->Ebp = *regs->pEbp;
-
-    this->Eip = (ULONG)(size_t)resumePC;
-}
-
-//
-// Update the registers using new context
-//
-// This is necessary to reflect GC pointer changes during the middle of a unwind inside a
-// finally clause, because:
-// 1. GC won't see the part of stack inside try (which has thrown an exception) that is already
-// unwinded and thus GC won't update GC pointers for this portion of the stack, but rather the
-// call stack in finally.
-// 2. upon return of finally, the unwind process continues and unwinds stack based on the part
-// of stack inside try and won't see the updated values in finally.
-// As a result, we need to manually update the context using register values upon return of finally
-//
-// Note that we only update the registers for finally clause because
-// 1. For filter handlers, stack walker is able to see the whole stack (including the try part)
-// with the help of ExceptionFilterFrame as filter handlers are called in first pass
-// 2. For catch handlers, the current unwinding is already finished
-//
-void EHContext::UpdateFrame(PREGDISPLAY regs)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // EAX ECX EDX are scratch.
-    // No need to update ESP as unwinder takes care of that for us
-
-    LOG((LF_EH, LL_INFO1000, "Updating saved EBX: *%p= %p\n", regs->pEbx, this->Ebx));
-    LOG((LF_EH, LL_INFO1000, "Updating saved ESI: *%p= %p\n", regs->pEsi, this->Esi));
-    LOG((LF_EH, LL_INFO1000, "Updating saved EDI: *%p= %p\n", regs->pEdi, this->Edi));
-    LOG((LF_EH, LL_INFO1000, "Updating saved EBP: *%p= %p\n", regs->pEbp, this->Ebp));
-
-    *regs->pEbx = this->Ebx;
-    *regs->pEsi = this->Esi;
-    *regs->pEdi = this->Edi;
-    *regs->pEbp = this->Ebp;
-}
-#endif // FEATURE_EH_FUNCLETS
 
 void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
@@ -179,8 +105,6 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
 
     DWORD CallerSP = (DWORD)(GetReturnAddressPtr() + sizeof(TADDR) + cbStackPop);
 
-#ifdef FEATURE_EH_FUNCLETS
-
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;
 
@@ -190,19 +114,6 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 
     SyncRegDisplayToCurrentContext(pRD);
-
-#else // FEATURE_EH_FUNCLETS
-
-    // reset pContext; it's only valid for active (top-most) frame
-    pRD->pContext = NULL;
-
-#define CALLEE_SAVED_REGISTER(regname) pRD->p##regname = (DWORD*) &regs->regname;
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-    pRD->SP  = CallerSP;
-
-#endif // FEATURE_EH_FUNCLETS
 
     RETURN;
 }
@@ -257,12 +168,11 @@ void StubDispatchFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool update
         // This path is hit when we are throwing null reference exception from
         // code:VSD_ResolveWorker or code:StubDispatchFixupWorker
         pRD->ControlPC = GetAdjustedCallAddress(pRD->ControlPC);
-#ifdef FEATURE_EH_FUNCLETS
+
         // We need to set EIP to match ControlPC to ensure Thread::VirtualUnwindCallFrame
         // doesn't fail assertion on GetControlPC(pRD) == GetIP(pRD->pCurrentContext)
         // precondition.
         pRD->pCurrentContext->Eip = pRD->ControlPC;
-#endif
     }
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    StubDispatchFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
@@ -301,8 +211,6 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 
     SetRegdisplayPCTAddr(pRD, GetReturnAddressPtr());
 
-#ifdef FEATURE_EH_FUNCLETS
-
     memcpy(pRD->pCurrentContext, &m_ctx, sizeof(CONTEXT));
 
     // Clear the CONTEXT_XSTATE, since the REGDISPLAY contains just plain CONTEXT structure
@@ -322,21 +230,6 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid = FALSE;        // Don't add usage of this field.  This is only temporary.
-
-#else // FEATURE_EH_FUNCLETS
-
-    // reset pContext; it's only valid for active (top-most) frame
-    pRD->pContext = NULL;
-
-    CalleeSavedRegisters* regs = GetCalleeSavedRegisters();
-
-#define CALLEE_SAVED_REGISTER(regname) pRD->p##regname = (DWORD*) &regs->regname;
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-    pRD->SP = m_Esp;
-
-#endif // FEATURE_EH_FUNCLETS
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
@@ -373,19 +266,17 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 #if !defined(UNIX_X86_ABI)
     TADDR datum = dac_cast<TADDR>(m_Datum);
 
-#ifdef FEATURE_EH_FUNCLETS
     datum &= ~(TADDR)InlinedCallFrameMarker::Mask;
-#endif
 
     stackArgSize = (DWORD)datum;
 
     if (stackArgSize & ~0xFFFF)
     {
-        NDirectMethodDesc * pMD = PTR_NDirectMethodDesc(datum);
+        PInvokeMethodDesc * pMD = PTR_PInvokeMethodDesc(datum);
 
-        /* if this is not an NDirect frame, something is really wrong */
+        /* if this is not an PInvoke frame, something is really wrong */
 
-        _ASSERTE(pMD->SanityCheck() && pMD->IsNDirect());
+        _ASSERTE(pMD->SanityCheck() && pMD->IsPInvoke());
 
         stackArgSize = pMD->GetStackArgumentSize();
     }
@@ -393,8 +284,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 
     /* The return address is just above the "ESP" */
     SetRegdisplayPCTAddr(pRD, PTR_HOST_MEMBER_TADDR(InlinedCallFrame, this, m_pCallerReturnAddress));
-
-#ifdef FEATURE_EH_FUNCLETS
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
@@ -411,18 +300,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     pRD->pCurrentContextPointers->Ebp = (DWORD*) &m_pCalleeSavedFP;
 
     SyncRegDisplayToCurrentContext(pRD);
-
-#else // FEATURE_EH_FUNCLETS
-
-    // reset pContext; it's only valid for active (top-most) frame
-    pRD->pContext = NULL;
-
-    pRD->pEbp = (DWORD*) &m_pCalleeSavedFP;
-
-    /* Now we need to pop off the outgoing arguments */
-    pRD->SP  = (DWORD) dac_cast<TADDR>(m_pCallSiteSP) + stackArgSize;
-
-#endif // FEATURE_EH_FUNCLETS
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
@@ -452,8 +329,6 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
 
     SetRegdisplayPCTAddr(pRD, dac_cast<TADDR>(m_Regs) + offsetof(CONTEXT, Eip));
 
-#ifdef FEATURE_EH_FUNCLETS
-
     CopyMemory(pRD->pCurrentContext, m_Regs, sizeof(T_CONTEXT));
 
     pRD->SP = m_Regs->Esp;
@@ -468,48 +343,6 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
-
-#else // FEATURE_EH_FUNCLETS
-
-    // reset pContext; it's only valid for active (top-most) frame
-    pRD->pContext = NULL;
-
-    CONTEXT* pUnwoundContext = m_Regs;
-
-#if !defined(DACCESS_COMPILE)
-    // "pContextForUnwind" field is only used on X86 since not only is it initialized just for it,
-    // but its used only under the confines of STACKWALKER_MAY_POP_FRAMES preprocessor define,
-    // which is defined for x86 only (refer to its definition in stackwalk.cpp).
-    if (pRD->pContextForUnwind != NULL)
-    {
-        pUnwoundContext = pRD->pContextForUnwind;
-
-        pUnwoundContext->Eax = m_Regs->Eax;
-        pUnwoundContext->Ecx = m_Regs->Ecx;
-        pUnwoundContext->Edx = m_Regs->Edx;
-
-        pUnwoundContext->Edi = m_Regs->Edi;
-        pUnwoundContext->Esi = m_Regs->Esi;
-        pUnwoundContext->Ebx = m_Regs->Ebx;
-        pUnwoundContext->Ebp = m_Regs->Ebp;
-        pUnwoundContext->Eip = m_Regs->Eip;
-    }
-#endif // !defined(DACCESS_COMPILE)
-
-    pRD->pEax = &pUnwoundContext->Eax;
-    pRD->pEcx = &pUnwoundContext->Ecx;
-    pRD->pEdx = &pUnwoundContext->Edx;
-
-    pRD->pEdi = &pUnwoundContext->Edi;
-    pRD->pEsi = &pUnwoundContext->Esi;
-    pRD->pEbx = &pUnwoundContext->Ebx;
-    pRD->pEbp = &pUnwoundContext->Ebp;
-
-    pRD->ControlPC = pUnwoundContext->Eip;
-
-    pRD->SP  = m_Regs->Esp;
-
-#endif // !FEATURE_EH_FUNCLETS
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
@@ -529,8 +362,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 
     SetRegdisplayPCTAddr(pRD, dac_cast<TADDR>(m_Args) + offsetof(HijackArgs, Eip));
 
-#ifdef FEATURE_EH_FUNCLETS
-
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
@@ -547,25 +378,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 #undef RESTORE_REG
 
     SyncRegDisplayToCurrentContext(pRD);
-
-#else // FEATURE_EH_FUNCLETS
-
-    // This only describes the top-most frame
-    pRD->pContext = NULL;
-
-#define RESTORE_REG(reg) { pRD->p##reg = &m_Args->reg; }
-#define CALLEE_SAVED_REGISTER(reg) RESTORE_REG(reg)
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-#define ARGUMENT_AND_SCRATCH_REGISTER(reg) RESTORE_REG(reg)
-    ENUM_ARGUMENT_AND_SCRATCH_REGISTERS();
-#undef ARGUMENT_AND_SCRATCH_REGISTER
-#undef RESTORE_REG
-
-    pRD->SP  = (DWORD)(GetRegdisplayPCTAddr(pRD) + sizeof(TADDR));
-
-#endif // FEATURE_EH_FUNCLETS
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HijackFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
@@ -605,8 +417,6 @@ void TailCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 
     SetRegdisplayPCTAddr(pRD, GetReturnAddressPtr());
 
-#ifdef FEATURE_EH_FUNCLETS
-
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
@@ -616,19 +426,6 @@ void TailCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 
     SyncRegDisplayToCurrentContext(pRD);
-
-#else
-
-    // reset pContext; it's only valid for active (top-most) frame
-    pRD->pContext = NULL;
-
-#define CALLEE_SAVED_REGISTER(regname) pRD->p##regname = (DWORD*) &m_regs.regname;
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-    pRD->SP  = (DWORD)(GetRegdisplayPCTAddr(pRD) + sizeof(TADDR));
-
-#endif
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TailCallFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
@@ -786,11 +583,11 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCOD
     BEGIN_DYNAMIC_HELPER_EMIT(10);
 
     *p++ = 0xB9; // mov ecx, XXXXXX
-    *(INT32 *)p = (INT32)arg;
+    SET_UNALIGNED_32(p, (INT32)arg);
     p += 4;
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target));
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
@@ -808,11 +605,11 @@ void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocato
     // Move an argument into the second argument register and jump to a target function.
 
     *p++ = 0xBA; // mov edx, XXXXXX
-    *(INT32 *)p = (INT32)arg;
+    SET_UNALIGNED_32(p, (INT32)arg);
     p += 4;
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target));
     p += 4;
 }
 
@@ -830,15 +627,15 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, TADD
     BEGIN_DYNAMIC_HELPER_EMIT(15);
 
     *p++ = 0xB9; // mov ecx, XXXXXX
-    *(INT32 *)p = (INT32)arg;
+    SET_UNALIGNED_32(p, (INT32)arg);
     p += 4;
 
     *p++ = 0xBA; // mov edx, XXXXXX
-    *(INT32 *)p = (INT32)arg2;
+    SET_UNALIGNED_32(p, (INT32)arg2);
     p += 4;
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target));
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
@@ -848,15 +645,15 @@ PCODE DynamicHelpers::CreateHelperArgMove(LoaderAllocator * pAllocator, TADDR ar
 {
     BEGIN_DYNAMIC_HELPER_EMIT(12);
 
-    *(UINT16 *)p = 0xD18B; // mov edx, ecx
+    SET_UNALIGNED_16(p, 0xD18B); // mov edx, ecx
     p += 2;
 
     *p++ = 0xB9; // mov ecx, XXXXXX
-    *(INT32 *)p = (INT32)arg;
+    SET_UNALIGNED_32(p, (INT32)arg);
     p += 4;
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target));
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
@@ -876,7 +673,7 @@ PCODE DynamicHelpers::CreateReturnConst(LoaderAllocator * pAllocator, TADDR arg)
     BEGIN_DYNAMIC_HELPER_EMIT(6);
 
     *p++ = 0xB8; // mov eax, XXXXXX
-    *(INT32 *)p = (INT32)arg;
+    SET_UNALIGNED_32(p, (INT32)arg);
     p += 4;
 
     *p++ = 0xC3; // ret
@@ -889,7 +686,7 @@ PCODE DynamicHelpers::CreateReturnIndirConst(LoaderAllocator * pAllocator, TADDR
     BEGIN_DYNAMIC_HELPER_EMIT((offset != 0) ? 9 : 6);
 
     *p++ = 0xA1; // mov eax, [XXXXXX]
-    *(INT32 *)p = (INT32)arg;
+    SET_UNALIGNED_32(p, (INT32)arg);
     p += 4;
 
     if (offset != 0)
@@ -927,13 +724,13 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 
     // push arg
     *p++ = 0x68;
-    *(INT32 *)p = arg;
+    SET_UNALIGNED_32(p, arg);
     p += 4;
 
 #ifdef UNIX_X86_ABI
     // mov eax, target
     *p++ = 0xB8;
-    *(INT32 *)p = target;
+    SET_UNALIGNED_32(p, target);
     p += 4;
 #else
     // push eax
@@ -942,9 +739,9 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
 #ifdef UNIX_X86_ABI
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), (PCODE)DynamicHelperArgsStub);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), (PCODE)DynamicHelperArgsStub));
 #else
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target));
 #endif
     p += 4;
 
@@ -971,18 +768,18 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 
     // push arg
     *p++ = 0x68;
-    *(INT32 *)p = arg;
+    SET_UNALIGNED_32(p, arg);
     p += 4;
 
     // push arg2
     *p++ = 0x68;
-    *(INT32 *)p = arg2;
+    SET_UNALIGNED_32(p, arg2);
     p += 4;
 
 #ifdef UNIX_X86_ABI
     // mov eax, target
     *p++ = 0xB8;
-    *(INT32 *)p = target;
+    SET_UNALIGNED_32(p, target);
     p += 4;
 #else
     // push eax
@@ -991,9 +788,9 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
 #ifdef UNIX_X86_ABI
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), (PCODE)DynamicHelperArgsStub);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), (PCODE)DynamicHelperArgsStub));
 #else
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target));
 #endif
     p += 4;
 
@@ -1045,9 +842,9 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                 _ASSERTE(pLookup->testForNull && i > 0);
 
                 // cmp dword ptr[eax + sizeOffset],slotOffset
-                *(UINT16*)p = 0xb881; p += 2;
-                *(UINT32*)p = (UINT32)pLookup->sizeOffset; p += 4;
-                *(UINT32*)p = (UINT32)slotOffset; p += 4;
+                SET_UNALIGNED_16(p, 0xb881); p += 2;
+                SET_UNALIGNED_32(p, (UINT32)pLookup->sizeOffset); p += 4;
+                SET_UNALIGNED_32(p, (UINT32)slotOffset); p += 4;
 
                 // jle 'HELPER CALL'
                 *p++ = 0x7e;
@@ -1058,12 +855,12 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             // mov eax,dword ptr [ecx|eax + offset]
             if (pLookup->offsets[i] >= 0x80)
             {
-                *(UINT16*)p = (i == 0 ? 0x818b : 0x808b); p += 2;
-                *(UINT32*)p = (UINT32)pLookup->offsets[i]; p += 4;
+                SET_UNALIGNED_16(p, (i == 0 ? 0x818b : 0x808b)); p += 2;
+                SET_UNALIGNED_32(p, (UINT32)pLookup->offsets[i]); p += 4;
             }
             else
             {
-                *(UINT16*)p = (i == 0 ? 0x418b : 0x408b); p += 2;
+                SET_UNALIGNED_16(p, (i == 0 ? 0x418b : 0x408b)); p += 2;
                 *p++ = (BYTE)pLookup->offsets[i];
             }
         }
@@ -1083,10 +880,10 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             _ASSERTE(pLookup->indirections != 0);
 
             // test eax,eax
-            *(UINT16*)p = 0xc085; p += 2;
+            SET_UNALIGNED_16(p, 0xc085); p += 2;
 
             // je 'HELPER_CALL' (a jump of 1 byte)
-            *(UINT16*)p = 0x0174; p += 2;
+            SET_UNALIGNED_16(p, 0x0174); p += 2;
 
             *p++ = 0xC3;    // ret
 

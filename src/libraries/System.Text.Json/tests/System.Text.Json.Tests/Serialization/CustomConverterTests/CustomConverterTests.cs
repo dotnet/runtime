@@ -251,7 +251,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(JsonStringEnumConverter<MyBoolEnum>), null)]
         [InlineData(typeof(InvalidJsonConverterFactory), null)]
         [InlineData(typeof(TestFactory), null)]
-        public static void JsonConverter_TypeProperty_ReturnsExpectedResult(Type converterType, Type expectedType)
+        public static void JsonConverter_TypeProperty_ReturnsExpectedResult(Type converterType, Type? expectedType)
         {
             var converter = (JsonConverter)Activator.CreateInstance(converterType)!;
             Assert.Equal(expectedType, converter.Type);

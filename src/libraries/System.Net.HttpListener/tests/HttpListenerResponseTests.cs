@@ -113,7 +113,7 @@ namespace System.Net.Tests
         [InlineData(" \r \t \n", 123)]
         [InlineData("http://microsoft.com", 155)]
         [InlineData("  http://microsoft.com  ", 155)]
-        public async Task Redirect_Invoke_SetsRedirectionProperties(string url, int expectedNumberOfBytes)
+        public async Task Redirect_Invoke_SetsRedirectionProperties(string? url, int expectedNumberOfBytes)
         {
             string expectedUrl = url?.Trim() ?? "";
 

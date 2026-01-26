@@ -87,7 +87,7 @@ namespace System.CodeDom.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("Name")]
-        public void Name_Set_Get_ReturnsExpected(string value)
+        public void Name_Set_Get_ReturnsExpected(string? value)
         {
             var declaration = new CodeAttributeDeclaration();
             declaration.Name = value;

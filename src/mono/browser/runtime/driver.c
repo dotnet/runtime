@@ -44,9 +44,6 @@ int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
 char *mono_method_get_full_name (MonoMethod *method);
 char *mono_method_full_name (MonoMethod *method, int32_t signature);
 
-#ifndef INVARIANT_TIMEZONE
-extern void mono_register_timezones_bundle (void);
-#endif /* INVARIANT_TIMEZONE */
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 
 extern void mono_bundled_resources_add_assembly_resource (const char *id, const char *name, const uint8_t *data, uint32_t size, void (*free_func)(void *, void*), void *free_data);
@@ -80,17 +77,17 @@ MONO_API int   mono_gc_register_root (char *start, size_t size, MonoGCDescriptor
 void  mono_gc_deregister_root (char* addr);
 
 EMSCRIPTEN_KEEPALIVE int
-mono_wasm_register_root (char *start, size_t size, const char *name)
+SystemInteropJS_RegisterGCRoot (char *start, size_t size, const char *name)
 {
 	int result;
 	MONO_ENTER_GC_UNSAFE;
-	result = mono_gc_register_root (start, size, (MonoGCDescriptor)NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "mono_wasm_register_root");
+	result = mono_gc_register_root (start, size, (MonoGCDescriptor)NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "SystemInteropJS_RegisterGCRoot");
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_deregister_root (char *addr)
+SystemInteropJS_UnregisterGCRoot (char *addr)
 {
 	MONO_ENTER_GC_UNSAFE;
 	mono_gc_deregister_root (addr);
@@ -192,12 +189,6 @@ mono_wasm_load_runtime (int debug_level, int propertyCount, const char **propert
 #endif
 
 	monovm_initialize (propertyCount, propertyKeys, propertyValues);
-
-#ifndef INVARIANT_TIMEZONE
-	char* invariant_timezone = monoeg_g_getenv ("DOTNET_SYSTEM_TIMEZONE_INVARIANT");
-	if (strcmp(invariant_timezone, "true") != 0 && strcmp(invariant_timezone, "1") != 0)
-		mono_register_timezones_bundle ();
-#endif /* INVARIANT_TIMEZONE */
 
 	root_domain = mono_wasm_load_runtime_common (debug_level, wasm_trace_logger, interp_opts);
 

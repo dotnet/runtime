@@ -12,7 +12,6 @@
     <PackageDescription>Provides the methods defined in the Lightweight Directory Access Protocol (LDAP) version 3 (V3) and Directory Services Markup Language (DSML) version 2.0 (V2) standards.</PackageDescription>
     <!-- CS3016: Arrays as attribute arguments is not CLS-compliant -->
     <NoWarn>$(NoWarn);CS3016</NoWarn>
-    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
 
     <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
     <Nullable>disable</Nullable>

@@ -1110,7 +1110,7 @@ namespace System.Text
             }
 
             // If we didn't throw, we are in convert and have to remember our flushing
-            encoder!.ClearMustFlush();
+            encoder.ClearMustFlush();
         }
 
         [DoesNotReturn]
@@ -1139,7 +1139,7 @@ namespace System.Text
             }
 
             // If we didn't throw, we are in convert and have to remember our flushing
-            decoder!.ClearMustFlush();
+            decoder.ClearMustFlush();
         }
 
         internal sealed class DefaultEncoder : Encoder

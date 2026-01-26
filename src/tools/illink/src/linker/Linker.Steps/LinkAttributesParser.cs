@@ -137,9 +137,9 @@ namespace Mono.Linker.Steps
             //
             // public sealed class RemoveAttributeInstancesAttribute : Attribute
             // {
-            //  public RemoveAttributeInstancesAttribute () {}
-            //  public RemoveAttributeInstancesAttribute (object values) {} // For legacy uses
-            //  public RemoveAttributeInstancesAttribute (params object[] values) {}
+            //  public RemoveAttributeInstancesAttribute() {}
+            //  public RemoveAttributeInstancesAttribute(object values) {} // For legacy uses
+            //  public RemoveAttributeInstancesAttribute(params object[] values) {}
             // }
             //
             const MethodAttributes ctorAttributes = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName | MethodAttributes.Final;

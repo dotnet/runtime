@@ -50,31 +50,6 @@ namespace TestCompareNegative
                 fail = true;
             }
 
-            if (!CmnExtendedB(1, 0xff))
-            {
-                fail = true;
-            }
-            if (!CmnExtendedH(1, 0xffff))
-            {
-                fail = true;
-            }
-            if (!CmnExtendedS(1, 0xffffffff))
-            {
-                fail = true;
-            }
-            if (!CmnExtendedUB(-1, 0x101))
-            {
-                fail = true;
-            }
-            if (!CmnExtendedUH(-1, 0x10001))
-            {
-                fail = true;
-            }
-            if (!CmnExtendedUS(-1, 0x100000001))
-            {
-                fail = true;
-            }
-
             if (fail)
             {
                 return 101;
@@ -158,48 +133,6 @@ namespace TestCompareNegative
                 return true;
             }
             return false;
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        static bool CmnExtendedB(int a, int b)
-        {
-            //ARM64-FULL-LINE: cmn {{w[0-9]+}}, {{w[0-9]+}}, SXTB
-            return (a == -(sbyte)b);
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        static bool CmnExtendedH(int a, int b)
-        {
-            //ARM64-FULL-LINE: cmn {{w[0-9]+}}, {{w[0-9]+}}, SXTH
-            return (a == -(short)b);
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        static bool CmnExtendedS(long a, long b)
-        {
-            //ARM64-FULL-LINE: cmn {{x[0-9]+}}, {{w[0-9]+}}, SXTW
-            return (a == -(long)(int)b);
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        static bool CmnExtendedUB(int a, int b)
-        {
-            //ARM64-FULL-LINE: cmn {{w[0-9]+}}, {{w[0-9]+}}, UXTB
-            return (a == -(byte)b);
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        static bool CmnExtendedUH(int a, int b)
-        {
-            //ARM64-FULL-LINE: cmn {{w[0-9]+}}, {{w[0-9]+}}, UXTH
-            return (a == -(ushort)b);
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        static bool CmnExtendedUS(long a, long b)
-        {
-            //ARM64-FULL-LINE: cmn {{x[0-9]+}}, {{w[0-9]+}}, UXTW
-            return (a == -(uint)b);
         }
     }
 }

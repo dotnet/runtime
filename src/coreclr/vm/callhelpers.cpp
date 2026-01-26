@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 /*
  *    CallHelpers.CPP: helpers to call managed code
- *
-
  */
 
 #include "common.h"
@@ -29,15 +28,12 @@ void AssertMulticoreJitAllowedModule(PCODE pTarget)
 
 #endif
 
-// For X86, INSTALL_COMPLUS_EXCEPTION_HANDLER grants us sufficient protection to call into
-// managed code.
-//
-// But on 64-bit, the personality routine will not pop frames or trackers as exceptions unwind
+// The personality routine will not pop frames or trackers as exceptions unwind
 // out of managed code.  Instead, we rely on explicit cleanup like CLRException::HandlerState::CleanupTry
 // or UMThunkUnwindFrameChainHandler.
 //
-// So all callers should call through CallDescrWorkerWithHandler (or a wrapper like MethodDesc::Call)
-// and get the platform-appropriate exception handling.
+// All callers should call through CallDescrWorkerWithHandler (or a wrapper like MethodDesc::Call)
+// to get proper exception handling.
 
 //*******************************************************************************
 void CallDescrWorkerWithHandler(
@@ -93,7 +89,7 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
 
     curThread = GetThread();
 
-    static_assert_no_msg(sizeof(curThread->dangerousObjRefs) == sizeof(ObjRefTable));
+    static_assert(sizeof(curThread->dangerousObjRefs) == sizeof(ObjRefTable));
     memcpy(ObjRefTable, curThread->dangerousObjRefs, sizeof(ObjRefTable));
 
     // If the current thread owns spinlock it cannot call managed code.
@@ -180,11 +176,11 @@ void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStruc
 #endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
 // Helper for VM->managed calls with simple signatures.
-void * DispatchCallSimple(
-                    SIZE_T *pSrc,
-                    DWORD numStackSlotsToCopy,
-                    PCODE pTargetAddress,
-                    DWORD dwDispatchCallSimpleFlags)
+void* DispatchCallSimple(
+    SIZE_T *pSrc,
+    DWORD numStackSlotsToCopy,
+    PCODE pTargetAddress,
+    DWORD dwDispatchCallSimpleFlags)
 {
     CONTRACTL
     {
@@ -223,6 +219,17 @@ void * DispatchCallSimple(
 #endif
     callDescrData.fpReturnSize = 0;
     callDescrData.pTarget = pTargetAddress;
+
+#ifdef TARGET_WASM
+    static_assert(2*sizeof(ARGHOLDER_TYPE) == INTERP_STACK_SLOT_SIZE);
+    callDescrData.nArgsSize = numStackSlotsToCopy * sizeof(ARGHOLDER_TYPE)*2;
+    LPVOID pOrigSrc = callDescrData.pSrc;
+    callDescrData.pSrc = (LPVOID)_alloca(callDescrData.nArgsSize);
+    for (int i = 0; i < numStackSlotsToCopy; i++)
+    {
+        ((ARGHOLDER_TYPE*)callDescrData.pSrc)[i*2] = ((ARGHOLDER_TYPE*)pOrigSrc)[i];
+    }
+#endif // TARGET_WASM
 
     if ((dwDispatchCallSimpleFlags & DispatchCallSimple_CatchHandlerFoundNotification) != 0)
     {
@@ -531,6 +538,9 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
 #endif
     callDescrData.fpReturnSize = fpReturnSize;
     callDescrData.pTarget = m_pCallTarget;
+#ifdef TARGET_WASM
+    callDescrData.nArgsSize = nStackBytes;
+#endif // TARGET_WASM
 
     CallDescrWorkerWithHandler(&callDescrData);
 

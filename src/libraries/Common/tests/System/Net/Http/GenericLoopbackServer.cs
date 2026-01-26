@@ -88,10 +88,11 @@ namespace System.Net.Test.Common
             _socket?.Dispose();
             _websocket?.Dispose();
         }
-        public void Close()
+
+        public async Task CloseAsync()
         {
             _socket?.Close();
-            CloseWebSocket();
+            await CloseWebSocketAsync();
         }
 
         public EndPoint? LocalEndPoint => _socket?.LocalEndPoint;
@@ -108,13 +109,13 @@ namespace System.Net.Test.Common
             }
         }
 
-        public void Shutdown(SocketShutdown how)
+        public async Task ShutdownAsync(SocketShutdown how)
         {
             _socket?.Shutdown(how);
-            CloseWebSocket();
+            await CloseWebSocketAsync();
         }
 
-        private void CloseWebSocket()
+        private async Task CloseWebSocketAsync()
         {
             if (_websocket == null) return;
 
@@ -123,12 +124,11 @@ namespace System.Net.Test.Common
 
             try
             {
-                var task = _websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing remoteLoop", CancellationToken.None);
-                // Block and wait for the task to complete synchronously
-                Task.WaitAll(task);
+                await _websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing remoteLoop", CancellationToken.None);
             }
             catch (Exception)
             {
+                // Ignore exceptions during WebSocket close in test cleanup.
             }
         }
     }
@@ -148,7 +148,7 @@ namespace System.Net.Test.Common
         /// If isFinal is false, the body is not completed and you can call SendResponseBodyAsync to send more.</summary>
         public abstract Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true);
         /// <summary>Sends response headers.</summary>
-        public abstract Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null);
+        public abstract Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, bool isTrailingHeader = false);
         /// <summary>Sends valid but incomplete headers. Once called, there is no way to continue the response past this point.</summary>
         public abstract Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null);
         /// <summary>Sends Response body after SendResponse was called with isFinal: false.</summary>

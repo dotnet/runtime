@@ -408,14 +408,28 @@ namespace Internal.Runtime
             {
                 Debug.Assert(this.IsArray);
 
-                int boundsSize = (int)this.ParameterizedTypeShape - SZARRAY_BASE_SIZE;
+                int boundsSize = (int)this.BaseSize - SZARRAY_BASE_SIZE;
                 if (boundsSize > 0)
                 {
                     // Multidim array case: Base size includes space for two Int32s
                     // (upper and lower bound) per each dimension of the array.
-                    return boundsSize / (2 * sizeof(int));
+                    return (int)((uint)boundsSize / (uint)(2 * sizeof(int)));
                 }
                 return 1;
+            }
+        }
+
+        // Returns rank of multi-dimensional array rank, 0 for sz arrays
+        internal int MultiDimensionalArrayRank
+        {
+            get
+            {
+                Debug.Assert(this.IsArray);
+
+                int boundsSize = (int)this.BaseSize - SZARRAY_BASE_SIZE;
+                // Multidim array case: Base size includes space for two Int32s
+                // (upper and lower bound) per each dimension of the array.
+                return (int)((uint)boundsSize / (uint)(2 * sizeof(int)));
             }
         }
 

@@ -30,8 +30,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         class StaticCtor
         {
             [ExpectedWarning("IL2026", "--MethodWithRequires--")]
-            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             [ExpectedWarning("IL2116", "StaticCtor..cctor()")]
             [RequiresUnreferencedCode("Message for --TestStaticCtor--")]
             static StaticCtor()
@@ -48,8 +48,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         [RequiresUnreferencedCode("Message for --StaticCtorOnTypeWithRequires--")]
         class StaticCtorOnTypeWithRequires
         {
-            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             static StaticCtorOnTypeWithRequires() => MethodWithRequires();
         }
 
@@ -118,8 +118,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         class StaticCtorTriggeredByMethodCall
         {
             [ExpectedWarning("IL2116", "StaticCtorTriggeredByMethodCall..cctor()")]
-            [ExpectedWarning("IL3004", "StaticCtorTriggeredByMethodCall..cctor()", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3056", "StaticCtorTriggeredByMethodCall..cctor()", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3004", "StaticCtorTriggeredByMethodCall..cctor()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3056", "StaticCtorTriggeredByMethodCall..cctor()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             [RequiresUnreferencedCode("Message for --StaticCtorTriggeredByMethodCall.Cctor--")]
             [RequiresAssemblyFiles("Message for --StaticCtorTriggeredByMethodCall.Cctor--")]
             [RequiresDynamicCode("Message for --StaticCtorTriggeredByMethodCall.Cctor--")]
@@ -137,8 +137,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 
         [ExpectedWarning("IL2026", "--StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--")]
-        [ExpectedWarning("IL3002", "--StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3050", "--StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--", Tool.Analyzer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL3002", "--StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3050", "--StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
         static void TestStaticCtorTriggeredByMethodCall()
         {
             new StaticCtorTriggeredByMethodCall().TriggerStaticCtorMarking();

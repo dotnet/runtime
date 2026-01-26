@@ -538,17 +538,17 @@ BinarySearchEntries(
 
     *found = false;
 
-    static_assert_no_msg(sizeof(T) >= sizeof(uint32_t));
+    static_assert(sizeof(T) >= sizeof(uint32_t));
 
 #ifdef __APPLE__
-    static_assert_no_msg(offsetof(unwind_info_section_header_index_entry, functionOffset) == 0);
-    static_assert_no_msg(sizeof(unwind_info_section_header_index_entry::functionOffset) == sizeof(uint32_t));
+    static_assert(offsetof(unwind_info_section_header_index_entry, functionOffset) == 0);
+    static_assert(sizeof(unwind_info_section_header_index_entry::functionOffset) == sizeof(uint32_t));
 
-    static_assert_no_msg(offsetof(unwind_info_regular_second_level_entry, functionOffset) == 0);
-    static_assert_no_msg(sizeof(unwind_info_regular_second_level_entry::functionOffset) == sizeof(uint32_t));
+    static_assert(offsetof(unwind_info_regular_second_level_entry, functionOffset) == 0);
+    static_assert(sizeof(unwind_info_regular_second_level_entry::functionOffset) == sizeof(uint32_t));
 
-    static_assert_no_msg(offsetof(unwind_info_section_header_lsda_index_entry, functionOffset) == 0);
-    static_assert_no_msg(sizeof(unwind_info_section_header_lsda_index_entry::functionOffset) == sizeof(uint32_t));
+    static_assert(offsetof(unwind_info_section_header_lsda_index_entry, functionOffset) == 0);
+    static_assert(sizeof(unwind_info_section_header_lsda_index_entry::functionOffset) == sizeof(uint32_t));
 #endif // __APPLE__
 
     // Do a binary search on table

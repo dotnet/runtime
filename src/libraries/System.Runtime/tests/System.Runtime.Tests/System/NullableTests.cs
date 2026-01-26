@@ -83,7 +83,7 @@ namespace System.Tests
         [InlineData(typeof(int?), typeof(int))]
         [InlineData(typeof(int), null)]
         [InlineData(typeof(G<int>), null)]
-        public static void GetUnderlyingType(Type nullableType, Type expected)
+        public static void GetUnderlyingType(Type nullableType, Type? expected)
         {
             Assert.Equal(expected, Nullable.GetUnderlyingType(nullableType));
         }

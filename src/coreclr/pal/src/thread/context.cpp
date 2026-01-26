@@ -809,7 +809,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
         }
 #elif defined(HOST_S390X)
         fpregset_t *fp = &native->uc_mcontext.fpregs;
-        static_assert_no_msg(sizeof(fp->fprs) == sizeof(lpContext->Fpr));
+        static_assert(sizeof(fp->fprs) == sizeof(lpContext->Fpr));
         memcpy(fp->fprs, lpContext->Fpr, sizeof(lpContext->Fpr));
 #elif defined(HOST_LOONGARCH64)
         struct sctx_info* info = (struct sctx_info*) native->uc_mcontext.__extcontext;
@@ -1166,7 +1166,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         }
 #elif defined(HOST_S390X)
         const fpregset_t *fp = &native->uc_mcontext.fpregs;
-        static_assert_no_msg(sizeof(fp->fprs) == sizeof(lpContext->Fpr));
+        static_assert(sizeof(fp->fprs) == sizeof(lpContext->Fpr));
         memcpy(lpContext->Fpr, fp->fprs, sizeof(lpContext->Fpr));
 #elif defined(HOST_LOONGARCH64)
         struct sctx_info* info = (struct sctx_info*) native->uc_mcontext.__extcontext;
@@ -1183,6 +1183,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             lpContext->Fcsr = fpr->fcsr;
             lpContext->Fcc  = fpr->fcc;
             memcpy(lpContext->F, fpr->regs, sizeof(fpr->regs));
+            lpContext->ContextFlags |= CONTEXT_LSX;
         }
         else if (LASX_CTX_MAGIC == info->magic)
         {
@@ -1190,6 +1191,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             lpContext->Fcsr = fpr->fcsr;
             lpContext->Fcc  = fpr->fcc;
             memcpy(lpContext->F, fpr->regs, sizeof(fpr->regs));
+            lpContext->ContextFlags |= CONTEXT_LASX;
         }
         else
         {
@@ -1624,12 +1626,12 @@ CONTEXT_GetThreadContextFromPort(
         // if it fails, get the FLOAT state and if that fails, take AVX512 state. Both AVX and AVX512 states
         // are supersets of the FLOAT state.
         // Check a few fields to make sure the assumption is correct.
-        static_assert_no_msg(sizeof(x86_avx_state64_t) > sizeof(x86_float_state64_t));
-        static_assert_no_msg(sizeof(x86_avx512_state64_t) > sizeof(x86_avx_state64_t));
-        static_assert_no_msg(offsetof(x86_avx_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
-        static_assert_no_msg(offsetof(x86_avx_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
-        static_assert_no_msg(offsetof(x86_avx512_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
-        static_assert_no_msg(offsetof(x86_avx512_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
+        static_assert(sizeof(x86_avx_state64_t) > sizeof(x86_float_state64_t));
+        static_assert(sizeof(x86_avx512_state64_t) > sizeof(x86_avx_state64_t));
+        static_assert(offsetof(x86_avx_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
+        static_assert(offsetof(x86_avx_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
+        static_assert(offsetof(x86_avx512_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
+        static_assert(offsetof(x86_avx512_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
 
         x86_avx512_state64_t State;
 
@@ -1929,12 +1931,12 @@ CONTEXT_SetThreadContextOnPort(
         // x86_avx_state64_t is identical to x86_float_state64_t
         // and x86_avx512_state64_t to _x86_avx_state64_t.
         // Check a few fields to make sure the assumption is correct.
-        static_assert_no_msg(sizeof(x86_avx_state64_t) > sizeof(x86_float_state64_t));
-        static_assert_no_msg(sizeof(x86_avx512_state64_t) > sizeof(x86_avx_state64_t));
-        static_assert_no_msg(offsetof(x86_avx_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
-        static_assert_no_msg(offsetof(x86_avx_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
-        static_assert_no_msg(offsetof(x86_avx512_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
-        static_assert_no_msg(offsetof(x86_avx512_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
+        static_assert(sizeof(x86_avx_state64_t) > sizeof(x86_float_state64_t));
+        static_assert(sizeof(x86_avx512_state64_t) > sizeof(x86_avx_state64_t));
+        static_assert(offsetof(x86_avx_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
+        static_assert(offsetof(x86_avx_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
+        static_assert(offsetof(x86_avx512_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
+        static_assert(offsetof(x86_avx512_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
 
         x86_avx512_state64_t State;
         if (lpContext->ContextFlags & CONTEXT_XSTATE & CONTEXT_AREA_MASK)

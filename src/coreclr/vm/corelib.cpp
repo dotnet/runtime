@@ -13,7 +13,7 @@
 // Headers for all ECall entrypoints
 //
 #include "arraynative.h"
-#include "objectnative.h"
+#include "dllimport.h"
 #include "comdelegate.h"
 #include "customattribute.h"
 #include "comdynamic.h"
@@ -23,7 +23,6 @@
 #include "commodule.h"
 #include "marshalnative.h"
 #include "nativelibrarynative.h"
-#include "system.h"
 #include "comutilnative.h"
 #include "comsynchronizable.h"
 #include "floatdouble.h"
@@ -32,7 +31,6 @@
 #include "comdatetime.h"
 #include "debugdebugger.h"
 #include "assemblynative.hpp"
-#include "comwaithandle.h"
 
 #include "proftoeeinterfaceimpl.h"
 
@@ -47,7 +45,7 @@
 #include "mlinfo.h"
 
 #ifdef FEATURE_COMINTEROP
-#include "variant.h"
+#include "olevariant.h"
 #endif // FEATURE_COMINTEROP
 
 #if defined(FEATURE_COMWRAPPERS)
@@ -188,7 +186,7 @@ enum _gsigc {
 // it is zero. An assertion failure results in error C2118: negative subscript.
 #define DEFINE_METASIG(body)            body
 #define DEFINE_METASIG_T(body)
-#define METASIG_BODY(varname, types)    C_ASSERT(types 0 == 0);
+#define METASIG_BODY(varname, types)    static_assert(types 0 == 0);
 #define METASIG_ATOM(x)                 0+
 #define METASIG_RECURSE                 1
 #define C(x)                            1+
@@ -204,7 +202,7 @@ enum _gsigc {
 // it is non zero. An assertion failure results in error C2118: negative subscript.
 #define DEFINE_METASIG(body)
 #define DEFINE_METASIG_T(body)          body
-#define METASIG_BODY(varname, types)    C_ASSERT(types 0 != 0);
+#define METASIG_BODY(varname, types)    static_assert(types 0 != 0);
 #define METASIG_ATOM(x)                 0+
 #define METASIG_RECURSE                 1
 #define C(x)                            1+
