@@ -80,7 +80,20 @@ namespace TestLibrary
         public static bool IsMonoMINIFULLAOT => _variant == "minifullaot";
         public static bool IsMonoFULLAOT => IsMonoLLVMFULLAOT || IsMonoMINIFULLAOT;
         public static bool IsMonoAnyAOT => IsMonoFULLAOT || IsMonoLLVMAOT;
-        public static bool IsMonoInterpreter => _variant == "monointerpreter";
+        public static bool IsMonoInterpreter
+        {
+            get
+            {
+                // If DOTNET_RUNTIME_VARIANT is not set,
+                // use the same logic as the libraries tests to detect the interpreter.
+                // This is useful for XHarness-based targets where we don't pass through our custom environment variables.
+                if (_variant is null)
+                {
+                    return IsMonoRuntime && RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled;
+                }
+                return _variant == "monointerpreter";
+            }
+        }
 
         // These platforms have not had their infrastructure updated to support native test assets.
         public static bool PlatformDoesNotSupportNativeTestAssets =>
