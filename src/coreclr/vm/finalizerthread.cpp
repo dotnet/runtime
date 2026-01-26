@@ -62,7 +62,7 @@ extern "C"
         EX_TRY
         {
             GCX_COOP();
-            FinalizerThread::FinalizerThreadWorkerRound();
+            FinalizerThread::FinalizerThreadWorkerIteration();
         }
         EX_HOOK
         {
