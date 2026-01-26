@@ -7,8 +7,6 @@ This file should be imported by eng/Versions.props
   <PropertyGroup>
     <!-- dotnet/icu dependencies -->
     <MicrosoftNETCoreRuntimeICUTransportPackageVersion>11.0.0-alpha.1.26063.1</MicrosoftNETCoreRuntimeICUTransportPackageVersion>
-    <!-- dotnet/wcf dependencies -->
-    <SystemServiceModelPrimitivesPackageVersion>4.9.0-rc2.21473.1</SystemServiceModelPrimitivesPackageVersion>
     <!-- dotnet/llvm-project dependencies -->
     <runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsPackageVersion>19.1.0-alpha.1.25625.2</runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsPackageVersion>
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMLibclangPackageVersion>19.1.0-alpha.1.25625.2</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMLibclangPackageVersion>
@@ -123,8 +121,6 @@ This file should be imported by eng/Versions.props
   <PropertyGroup>
     <!-- dotnet/icu dependencies -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>$(MicrosoftNETCoreRuntimeICUTransportPackageVersion)</MicrosoftNETCoreRuntimeICUTransportVersion>
-    <!-- dotnet/wcf dependencies -->
-    <SystemServiceModelPrimitivesVersion>$(SystemServiceModelPrimitivesPackageVersion)</SystemServiceModelPrimitivesVersion>
     <!-- dotnet/llvm-project dependencies -->
     <runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>$(runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsPackageVersion)</runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMLibclangVersion>$(runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMLibclangPackageVersion)</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMLibclangVersion>
