@@ -428,7 +428,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
 
     while (!fQuitFinalizer)
     {
-        FinalizerThread::FinalizerThreadWorkerRound();
+        FinalizerThread::FinalizerThreadWorkerIteration();
     }
 
     if (s_InitializedFinalizerThreadForPlatform)
