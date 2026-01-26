@@ -40,46 +40,30 @@ namespace System.IO.Hashing.Tests
                 new TestCase(
                     "One",
                     "01",
-                    "01000000"),
-                new TestCase(
-                    "Zero-Residue",
-                    "00000000",
-                    "01000000"),
-                new TestCase(
-                    "Zero-InverseResidue",
-                    "FFFFFFFF",
-                    "01000000"),
+                    "02000200"),
                 new TestCase(
                     "Self-test 123456789",
                     "123456789"u8.ToArray(),
-                    "01000000"),
-                new TestCase(
-                    "Self-test residue",
-                    "3132333435363738392639F4CB",
-                    "01000000"),
-                new TestCase(
-                    "Self-test inverse residue",
-                    "313233343536373839D9C60B34",
-                    "01000000"),
+                    "DE011E09"),
                 new TestCase(
                     "The quick brown fox jumps over the lazy dog",
                     "The quick brown fox jumps over the lazy dog"u8.ToArray(),
-                    "01000000"),
+                    "DA0FDC5B"),
                 // Test a multiple of 64 bytes for vector optimizations
                 new TestCase(
                     "Lorem ipsum 128",
                     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi quis iaculis nisl. Sed ornare sapien non nulla hendrerit viverra."u8.ToArray(),
-                    "01000000"),
+                    "5C2F66ED"),
                 // Test a multiple of 64 bytes + 16 bytes for vector optimizations
                 new TestCase(
                     "Lorem ipsum 144",
                     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla libero est, semper in pharetra at, cursus id nulla. Class aptent taciti volutpat."u8.ToArray(),
-                    "01000000"),
+                    "CC34B7FC"),
                 // Test data that is > 64 bytes but not a multiple of 16 for vector optimizations
                 new TestCase(
                     "Lorem ipsum 1001",
                     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ac urna vitae nibh sagittis porttitor et vel ante. Ut molestie sit amet velit ac mattis. Sed ullamcorper nunc non neque imperdiet, vehicula bibendum sapien efficitur. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Suspendisse potenti. Duis sem dui, malesuada non pharetra at, feugiat id mi. Nulla facilisi. Fusce a scelerisque magna. Ut leo justo, auctor quis nisi et, sollicitudin pretium odio. Sed eu nibh mollis, pretium lectus nec, posuere nulla. Morbi ac euismod purus. Morbi rhoncus leo est, at volutpat nunc pretium in. Aliquam erat volutpat. Curabitur eu lacus mollis, varius lectus ut, tincidunt eros. Nullam a velit hendrerit, euismod magna id, fringilla sem. Phasellus scelerisque hendrerit est, vel imperdiet enim auctor a. Aenean vel ultricies nunc. Suspendisse ac tincidunt urna. Nulla tempor dolor ut ligula accumsan, tempus auctor massa gravida. Aenean non odio et augue pellena."u8.ToArray(),
-                    "01000000"),
+                    "536E838A"),
             };
 
         protected override NonCryptographicHashAlgorithm CreateInstance() => new Adler32();
