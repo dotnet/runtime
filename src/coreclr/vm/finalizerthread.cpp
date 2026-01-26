@@ -435,7 +435,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         Thread::CleanUpForManagedThreadInNative(GetFinalizerThread());
 }
 
-VOID FinalizerThread::FinalizerThreadWorkerRound()
+VOID FinalizerThread::FinalizerThreadWorkerIteration()
 {
 #ifndef TARGET_WASM
     // Wait for work to do...
