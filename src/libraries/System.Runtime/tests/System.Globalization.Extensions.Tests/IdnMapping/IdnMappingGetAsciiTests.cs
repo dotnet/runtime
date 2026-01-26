@@ -281,32 +281,5 @@ namespace System.Globalization.Tests
             var idnStd3 = new IdnMapping() { UseStd3AsciiRules = true };
             Assert.Throws(exceptionType, () => idnStd3.TryGetAscii(slice, destination, out _));
         }
-
-        [Fact]
-        public void TryGetAscii_OverlappingBuffers()
-        {
-            // Test with overlapping input and destination buffers using non-ASCII inputs
-            // that require actual native API calls for conversion
-            var idn = new IdnMapping();
-
-            // Test case: input and destination start at same location
-            // Using Japanese characters that convert to "xn--r8jz45g" (11 chars)
-            char[] buffer = "\u4F8B\u3048\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0".ToCharArray();
-            ReadOnlySpan<char> input = buffer.AsSpan(0, 2); // "例え" (2 Japanese chars)
-            Span<char> destination = buffer.AsSpan(0, buffer.Length);
-
-            Assert.True(idn.TryGetAscii(input, destination, out int charsWritten));
-            Assert.Equal(11, charsWritten);
-            Assert.Equal("xn--r8jz45g", new string(buffer, 0, charsWritten));
-
-            // Test case: destination offset but overlapping
-            buffer = "\u4F8B\u3048\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0".ToCharArray();
-            input = buffer.AsSpan(0, 2);
-            destination = buffer.AsSpan(1, buffer.Length - 1);
-
-            Assert.True(idn.TryGetAscii(input, destination, out charsWritten));
-            Assert.Equal(11, charsWritten);
-            Assert.Equal("xn--r8jz45g", new string(buffer, 1, charsWritten));
-        }
     }
 }

@@ -217,32 +217,5 @@ namespace System.Globalization.Tests
             var idnStd3 = new IdnMapping() { UseStd3AsciiRules = true };
             Assert.Throws(exceptionType, () => idnStd3.TryGetUnicode(slice, destination, out _));
         }
-
-        [Fact]
-        public void TryGetUnicode_OverlappingBuffers()
-        {
-            // Test with overlapping input and destination buffers using ACE-encoded inputs
-            // that require actual native API calls for conversion
-            var idn = new IdnMapping();
-
-            // Test case: input and destination start at same location
-            // "xn--r8jz45g" converts to "例え" (2 Japanese chars)
-            char[] buffer = "xn--r8jz45g\0\0\0\0\0\0\0\0\0\0".ToCharArray();
-            ReadOnlySpan<char> input = buffer.AsSpan(0, 11); // "xn--r8jz45g"
-            Span<char> destination = buffer.AsSpan(0, buffer.Length);
-
-            Assert.True(idn.TryGetUnicode(input, destination, out int charsWritten));
-            Assert.Equal(2, charsWritten);
-            Assert.Equal("\u4F8B\u3048", new string(buffer, 0, charsWritten)); // "例え"
-
-            // Test case: destination offset but overlapping
-            buffer = "xn--r8jz45g\0\0\0\0\0\0\0\0\0\0".ToCharArray();
-            input = buffer.AsSpan(0, 11);
-            destination = buffer.AsSpan(5, buffer.Length - 5);
-
-            Assert.True(idn.TryGetUnicode(input, destination, out charsWritten));
-            Assert.Equal(2, charsWritten);
-            Assert.Equal("\u4F8B\u3048", new string(buffer, 5, charsWritten)); // "例え"
-        }
     }
 }

@@ -98,7 +98,7 @@ namespace System.Globalization
         /// Encodes a Unicode domain name to its ASCII (Punycode) equivalent.
         /// </summary>
         /// <param name="unicode">The Unicode domain name to convert.</param>
-        /// <param name="destination">The buffer to write the ASCII result to.</param>
+        /// <param name="destination">The buffer to write the ASCII result to. This buffer must not overlap with <paramref name="unicode"/>.</param>
         /// <param name="charsWritten">When this method returns, contains the number of characters that were written to <paramref name="destination"/>.</param>
         /// <returns><see langword="true"/> if the conversion was successful and the result was written to <paramref name="destination"/>; otherwise, <see langword="false"/> if <paramref name="destination"/> is too small to contain the result.</returns>
         /// <exception cref="ArgumentException"><paramref name="unicode"/> is invalid based on the <see cref="AllowUnassigned"/> and <see cref="UseStd3AsciiRules"/> properties, and the IDNA standard.</exception>
@@ -165,7 +165,7 @@ namespace System.Globalization
         /// Decodes one or more encoded domain name labels to a string of Unicode characters.
         /// </summary>
         /// <param name="ascii">The ASCII domain name to convert. The string may contain one or more labels, where each label is prefixed by "xn--".</param>
-        /// <param name="destination">The buffer to write the Unicode result to.</param>
+        /// <param name="destination">The buffer to write the Unicode result to. This buffer must not overlap with <paramref name="ascii"/>.</param>
         /// <param name="charsWritten">When this method returns, contains the number of characters that were written to <paramref name="destination"/>.</param>
         /// <returns><see langword="true"/> if the conversion was successful and the result was written to <paramref name="destination"/>; otherwise, <see langword="false"/> if <paramref name="destination"/> is too small to contain the result.</returns>
         /// <exception cref="ArgumentException"><paramref name="ascii"/> is invalid based on the <see cref="AllowUnassigned"/> and <see cref="UseStd3AsciiRules"/> properties, and the IDNA standard.</exception>
