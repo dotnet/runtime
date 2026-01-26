@@ -221,24 +221,28 @@ namespace System.Globalization.Tests
         [Fact]
         public void TryGetUnicode_OverlappingBuffers()
         {
-            // Test with overlapping input and destination buffers
-            // The native functions should handle this correctly by copying to destination
+            // Test with overlapping input and destination buffers using ACE-encoded inputs
+            // that require actual native API calls for conversion
             var idn = new IdnMapping();
 
             // Test case: input and destination start at same location
-            char[] buffer = "xn--nxasmq5b.com\0\0\0\0\0\0\0\0\0\0".ToCharArray();
-            ReadOnlySpan<char> input = buffer.AsSpan(0, 16); // "xn--nxasmq5b.com"
+            // "xn--r8jz45g" converts to "例え" (2 Japanese chars)
+            char[] buffer = "xn--r8jz45g\0\0\0\0\0\0\0\0\0\0".ToCharArray();
+            ReadOnlySpan<char> input = buffer.AsSpan(0, 11); // "xn--r8jz45g"
             Span<char> destination = buffer.AsSpan(0, buffer.Length);
 
             Assert.True(idn.TryGetUnicode(input, destination, out int charsWritten));
-            // The expected output is the Unicode equivalent
+            Assert.Equal(2, charsWritten);
+            Assert.Equal("\u4F8B\u3048", new string(buffer, 0, charsWritten)); // "例え"
 
             // Test case: destination offset but overlapping
-            buffer = "xn--nxasmq5b.com\0\0\0\0\0\0\0\0\0\0".ToCharArray();
-            input = buffer.AsSpan(0, 16);
+            buffer = "xn--r8jz45g\0\0\0\0\0\0\0\0\0\0".ToCharArray();
+            input = buffer.AsSpan(0, 11);
             destination = buffer.AsSpan(5, buffer.Length - 5);
 
             Assert.True(idn.TryGetUnicode(input, destination, out charsWritten));
+            Assert.Equal(2, charsWritten);
+            Assert.Equal("\u4F8B\u3048", new string(buffer, 5, charsWritten)); // "例え"
         }
     }
 }

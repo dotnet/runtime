@@ -250,10 +250,8 @@ namespace System
                     // Use span-based APIs to avoid intermediate string allocations
                     try
                     {
-                        if (!s_idnMapping.TryGetAscii(label, asciiBuffer, out int asciiWritten))
-                        {
-                            return false;
-                        }
+                        bool asciiSuccess = s_idnMapping.TryGetAscii(label, asciiBuffer, out int asciiWritten);
+                        Debug.Assert(asciiSuccess, "TryGetAscii should always succeed with a 255-char buffer for valid IDN labels");
 
                         // Now convert the ASCII form to Unicode and append directly to dest
                         AppendIdnUnicode(asciiBuffer.Slice(0, asciiWritten), ref dest);
@@ -269,7 +267,7 @@ namespace System
 
                     if (label.StartsWith("xn--", StringComparison.Ordinal))
                     {
-                        // check ace validity - use span-based API to avoid string allocation
+                        // Check ace validity - use span-based API to avoid string allocation
                         try
                         {
                             AppendIdnUnicode(label, ref dest);
