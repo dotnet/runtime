@@ -266,12 +266,6 @@ echo %__MsgPrefix%Using CMake from !CMakePath!
 
 :SkipLocateCMake
 
-REM Set MSBuild parallelism settings for better build performance
-REM See https://devblogs.microsoft.com/cppblog/cpp-build-throughput-investigation-and-tune-up/
-set UseMultiToolTask=true
-set EnforceProcessCountAcrossBuilds=true
-set EnableClServerMode=true
-
 REM =========================================================================================
 REM ===
 REM === Start the build steps

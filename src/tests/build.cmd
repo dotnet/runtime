@@ -268,12 +268,6 @@ echo %__MsgPrefix%Commencing build of native test components for %__BuildArch%/%
 
 REM Set the environment for the native build
 
-REM Set MSBuild parallelism settings for better build performance
-REM See https://devblogs.microsoft.com/cppblog/cpp-build-throughput-investigation-and-tune-up/
-set UseMultiToolTask=true
-set EnforceProcessCountAcrossBuilds=true
-set EnableClServerMode=true
-
 @if defined _echo @echo on
 
 set __ExtraCmakeArgs=
