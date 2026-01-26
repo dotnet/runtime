@@ -20,15 +20,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void BitDecrement<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IFloatingPointIeee754<T>
-        {
-            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, BitDecrementOperator<float>>(x, destination))
-            {
-                return;
-            }
-
+            where T : IFloatingPointIeee754<T> =>
             InvokeSpanIntoSpan<T, BitDecrementOperator<T>>(x, destination);
-        }
 
         /// <summary>T.BitDecrement(x)</summary>
         private readonly struct BitDecrementOperator<T> : IUnaryOperator<T, T>
@@ -53,7 +46,7 @@ namespace System.Numerics.Tensors
                         bits - Vector128<uint>.One);
 
                     // Handle special cases with a single conditional select
-                    Vector128<uint> isPositiveZero = Vector128.IsZero(xFloat.AsUInt32());
+                    Vector128<uint> isPositiveZero = Vector128.IsZero(xFloat).AsUInt32();
                     Vector128<uint> specialValue = Vector128.Create(BitConverter.SingleToUInt32Bits(-float.Epsilon)) & isPositiveZero;
 
                     Vector128<uint> isNaNOrNegInf = (Vector128.IsNaN(xFloat) | Vector128.IsNegativeInfinity(xFloat)).AsUInt32();
@@ -75,7 +68,7 @@ namespace System.Numerics.Tensors
                         bits - Vector128<ulong>.One);
 
                     // Handle special cases with a single conditional select
-                    Vector128<ulong> isPositiveZero = Vector128.IsZero(xDouble.AsUInt64());
+                    Vector128<ulong> isPositiveZero = Vector128.IsZero(xDouble).AsUInt64();
                     Vector128<ulong> specialValue = Vector128.Create(BitConverter.DoubleToUInt64Bits(-double.Epsilon)) & isPositiveZero;
 
                     Vector128<ulong> isNaNOrNegInf = (Vector128.IsNaN(xDouble) | Vector128.IsNegativeInfinity(xDouble)).AsUInt64();
@@ -104,7 +97,7 @@ namespace System.Numerics.Tensors
                         bits - Vector256<uint>.One);
 
                     // Handle special cases with a single conditional select
-                    Vector256<uint> isPositiveZero = Vector256.IsZero(xFloat.AsUInt32());
+                    Vector256<uint> isPositiveZero = Vector256.IsZero(xFloat).AsUInt32();
                     Vector256<uint> specialValue = Vector256.Create(BitConverter.SingleToUInt32Bits(-float.Epsilon)) & isPositiveZero;
 
                     Vector256<uint> isNaNOrNegInf = (Vector256.IsNaN(xFloat) | Vector256.IsNegativeInfinity(xFloat)).AsUInt32();
@@ -126,7 +119,7 @@ namespace System.Numerics.Tensors
                         bits - Vector256<ulong>.One);
 
                     // Handle special cases with a single conditional select
-                    Vector256<ulong> isPositiveZero = Vector256.IsZero(xDouble.AsUInt64());
+                    Vector256<ulong> isPositiveZero = Vector256.IsZero(xDouble).AsUInt64();
                     Vector256<ulong> specialValue = Vector256.Create(BitConverter.DoubleToUInt64Bits(-double.Epsilon)) & isPositiveZero;
 
                     Vector256<ulong> isNaNOrNegInf = (Vector256.IsNaN(xDouble) | Vector256.IsNegativeInfinity(xDouble)).AsUInt64();
@@ -155,7 +148,7 @@ namespace System.Numerics.Tensors
                         bits - Vector512<uint>.One);
 
                     // Handle special cases with a single conditional select
-                    Vector512<uint> isPositiveZero = Vector512.IsZero(xFloat.AsUInt32());
+                    Vector512<uint> isPositiveZero = Vector512.IsZero(xFloat).AsUInt32();
                     Vector512<uint> specialValue = Vector512.Create(BitConverter.SingleToUInt32Bits(-float.Epsilon)) & isPositiveZero;
 
                     Vector512<uint> isNaNOrNegInf = (Vector512.IsNaN(xFloat) | Vector512.IsNegativeInfinity(xFloat)).AsUInt32();
@@ -177,7 +170,7 @@ namespace System.Numerics.Tensors
                         bits - Vector512<ulong>.One);
 
                     // Handle special cases with a single conditional select
-                    Vector512<ulong> isPositiveZero = Vector512.IsZero(xDouble.AsUInt64());
+                    Vector512<ulong> isPositiveZero = Vector512.IsZero(xDouble).AsUInt64();
                     Vector512<ulong> specialValue = Vector512.Create(BitConverter.DoubleToUInt64Bits(-double.Epsilon)) & isPositiveZero;
 
                     Vector512<ulong> isNaNOrNegInf = (Vector512.IsNaN(xDouble) | Vector512.IsNegativeInfinity(xDouble)).AsUInt64();
