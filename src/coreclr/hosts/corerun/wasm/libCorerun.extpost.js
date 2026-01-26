@@ -8,6 +8,15 @@ var fetch = fetch || undefined; var dotnetNativeModuleLoaded = false; var dotnet
 export function selfRun() {
     const Module = {};
     const corePreRun = () => {
+
+        // drop windows drive letter for NODEFS cwd to pretend we are in unix
+        NODERAWFS.cwd = () => {
+            const path = process.cwd();
+            return NODEFS.isWindows
+                ? path.replace(/^[a-zA-Z]:/, "").replace(/\\/g, "/")
+                : path;
+        };
+
         // copy all node/shell env variables to emscripten env
         if (globalThis.process && globalThis.process.env) {
             for (const [key, value] of Object.entries(process.env)) {

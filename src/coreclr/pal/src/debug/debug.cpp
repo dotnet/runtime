@@ -756,7 +756,7 @@ PAL_ProbeMemory(
     BOOL fWriteAccess)
 {
 #if defined(__EMSCRIPTEN__)
-    if (pBuffer + cbBuffer < (PVOID)emscripten_get_heap_size()) 
+    if ((PBYTE)pBuffer + cbBuffer < (PVOID)emscripten_get_heap_size()) 
     {
         return TRUE;
     }
