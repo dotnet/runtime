@@ -190,9 +190,9 @@ namespace System.IO.Hashing
             while (buf.Length > 0)
             {
                 int k = buf.Length < NMax ? buf.Length : NMax;
-                for (int i = 0; i < k; i++)
+                foreach (byte b in buf.Slice(0, k))
                 {
-                    s1 += buf[i];
+                    s1 += b;
                     s2 += s1;
                 }
                 s1 %= Base;
