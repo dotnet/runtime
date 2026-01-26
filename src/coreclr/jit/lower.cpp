@@ -946,7 +946,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
     // Make sure we perform an unsigned comparison, just in case the switch index in 'temp'
     // is now less than zero 0 (that would also hit the default case).
-    gtDefaultCaseCond->gtFlags |= GTF_UNSIGNED;
+    gtDefaultCaseCond->SetUnsigned();
 
     GenTree* gtDefaultCaseJump = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, gtDefaultCaseCond);
     gtDefaultCaseJump->gtFlags = node->gtFlags;
@@ -1974,9 +1974,12 @@ void Lowering::InsertPutArgReg(GenTree** argNode, const ABIPassingSegment& regis
     assert(registerSegment.IsPassedInRegister());
 
     InsertBitCastIfNecessary(argNode, registerSegment);
+
+#ifdef HAS_FIXED_REGISTER_SET
     GenTree* putArg = comp->gtNewPutArgReg(genActualType(*argNode), *argNode, registerSegment.GetRegister());
     BlockRange().InsertAfter(*argNode, putArg);
     *argNode = putArg;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -4652,7 +4655,7 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
             // has to generate a small comparison, it can still correctly generate a TYP_INT comparison.
             //
 
-            cmp->gtFlags |= GTF_UNSIGNED;
+            cmp->SetUnsigned();
         }
     }
 #elif defined(TARGET_RISCV64)
@@ -8060,7 +8063,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             ((type == TYP_LONG) && (divisorValue > (UINT64_MAX / 2))))
         {
             divMod->ChangeOper(GT_GE);
-            divMod->gtFlags |= GTF_UNSIGNED;
+            divMod->SetUnsigned();
             LowerNode(divMod);
             return true;
         }
