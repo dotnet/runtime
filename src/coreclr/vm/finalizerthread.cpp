@@ -425,7 +425,6 @@ static BOOL s_PriorityBoosted = FALSE;
 
 VOID FinalizerThread::FinalizerThreadWorker(void *args)
 {
-    s_PriorityBoosted = FALSE;
 
     while (!fQuitFinalizer)
     {
