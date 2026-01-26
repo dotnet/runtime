@@ -784,13 +784,53 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VA
             case VNF_GE_UN:
             case VNF_LT:
             case VNF_LT_UN:
-            case VNF_LE_UN:
             case VNF_LE:
+            case VNF_LE_UN:
             case VNF_EQ:
             case VNF_NE:
+            {
+                // These always return 0 or 1 (range is [0..1])
                 result.lLimit = Limit(Limit::keConstant, 0);
                 result.uLimit = Limit(Limit::keConstant, 1);
+
+                // But maybe we can do better and determine if they are always true or always false,
+                // hence, return [1..1] or [0..0]
+                if ((comp->vnStore->TypeOfVN(funcApp.m_args[0]) == TYP_INT) &&
+                    (comp->vnStore->TypeOfVN(funcApp.m_args[1]) == TYP_INT))
+                {
+                    Range r1 = GetRangeFromAssertions(comp, funcApp.m_args[0], assertions, --budget);
+                    Range r2 = GetRangeFromAssertions(comp, funcApp.m_args[1], assertions, --budget);
+
+                    bool       isUnsigned = true;
+                    genTreeOps cmpOper;
+
+                    // Normalize the unsigned comparison operators.
+                    if (funcApp.m_func == VNF_GT_UN)
+                        cmpOper = GT_GT;
+                    else if (funcApp.m_func == VNF_GE_UN)
+                        cmpOper = GT_GE;
+                    else if (funcApp.m_func == VNF_LT_UN)
+                        cmpOper = GT_LT;
+                    else if (funcApp.m_func == VNF_LE_UN)
+                        cmpOper = GT_LE;
+                    else
+                    {
+                        isUnsigned = false;
+                        cmpOper    = static_cast<genTreeOps>(funcApp.m_func);
+                    }
+
+                    RangeOps::RelationKind relopResult = RangeOps::EvalRelop(cmpOper, isUnsigned, r1, r2);
+                    if (relopResult == RangeOps::RelationKind::AlwaysTrue)
+                    {
+                        result = Range(Limit(Limit::keConstant, 1));
+                    }
+                    else if (relopResult == RangeOps::RelationKind::AlwaysFalse)
+                    {
+                        result = Range(Limit(Limit::keConstant, 0));
+                    }
+                }
                 break;
+            }
 
             case VNF_LeadingZeroCount:
             case VNF_TrailingZeroCount:
@@ -806,8 +846,7 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VA
     }
 
     Range phiRange = Range(Limit(Limit::keUndef));
-    if (comp->optVisitReachingAssertions(num,
-                                         [comp, &phiRange, &budget](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
+    auto  visitor  = [comp, &phiRange, &budget](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
         // call GetRangeFromAssertions for each reaching VN using reachingAssertions
         Range edgeRange = GetRangeFromAssertions(comp, reachingVN, reachingAssertions, --budget);
 
@@ -817,10 +856,15 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VA
 
         // if any edge produces a non-constant range, we abort further processing
         // We also give up if the range is full, as it won't help tighten the result.
-        return edgeRange.IsConstantRange() && !edgeRange.IsFullRange() ? Compiler::AssertVisit::Continue
-                                                                       : Compiler::AssertVisit::Abort;
-    }) == Compiler::AssertVisit::Continue &&
-        !phiRange.IsUndef())
+        if (edgeRange.IsConstantRange() && !edgeRange.IsFullRange())
+        {
+            return Compiler::AssertVisit::Continue;
+        }
+
+        return Compiler::AssertVisit::Abort;
+    };
+
+    if (comp->optVisitReachingAssertions(num, visitor) == Compiler::AssertVisit::Continue && !phiRange.IsUndef())
     {
         assert(phiRange.IsConstantRange());
         result = phiRange;

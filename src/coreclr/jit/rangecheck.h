@@ -289,6 +289,12 @@ struct Range
         return lLimit.IsConstant() && uLimit.IsConstant() && (lLimit.GetConstant() == INT32_MIN) &&
                (uLimit.GetConstant() == INT32_MAX);
     }
+
+    bool IsSingleValueConstant(int cns)
+    {
+        return lLimit.IsConstant() && uLimit.IsConstant() && (lLimit.GetConstant() == cns) &&
+               (uLimit.GetConstant() == cns);
+    }
 };
 
 // Helpers for operations performed on ranges
@@ -692,10 +698,31 @@ struct RangeOps
 
             case GT_EQ:
             case GT_NE:
+                // If the ranges do not overlap, then EQ is always false, NE is always true.
+                // Example: x = [6..10], y = [0..5] -> EQ is always false, NE is always true.
                 if ((xLower.IsConstant() && yUpper.IsConstant() && (xLower.GetConstant() > yUpper.GetConstant())) ||
                     (xUpper.IsConstant() && yLower.IsConstant() && (xUpper.GetConstant() < yLower.GetConstant())))
                 {
                     return relop == GT_EQ ? RelationKind::AlwaysFalse : RelationKind::AlwaysTrue;
+                }
+
+                // If both ranges are single constant and equal, then EQ is always true, NE is always false.
+                // Example: x = [5..5], y = [5..5] -> EQ is always true, NE is always false.
+                //          x = [5..5], y = [6..6] -> EQ is always false, NE is always true.
+                if (x.IsConstantRange() && y.IsConstantRange())
+                {
+                    bool xIsSingleCns = x.LowerLimit().GetConstant() == x.UpperLimit().GetConstant();
+                    bool yIsSingleCns = y.LowerLimit().GetConstant() == y.UpperLimit().GetConstant();
+                    if (xIsSingleCns && yIsSingleCns)
+                    {
+                        int xCns = x.LowerLimit().GetConstant();
+                        int yCns = y.LowerLimit().GetConstant();
+                        if (xCns == yCns)
+                        {
+                            return relop == GT_EQ ? RelationKind::AlwaysTrue : RelationKind::AlwaysFalse;
+                        }
+                        return relop == GT_EQ ? RelationKind::AlwaysFalse : RelationKind::AlwaysTrue;
+                    }
                 }
                 break;
 

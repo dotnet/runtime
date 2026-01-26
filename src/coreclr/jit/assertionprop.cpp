@@ -4330,19 +4330,14 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         return optAssertionProp_Update(newTree, tree, stmt);
     }
 
-    ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
-    ValueNum op2VN = vnStore->VNConservativeNormalValue(op2->gtVNPair);
-
     if (op1->TypeIs(TYP_INT) && op2->TypeIs(TYP_INT))
     {
-        Range rng1 = RangeCheck::GetRangeFromAssertions(this, op1VN, assertions);
-        Range rng2 = RangeCheck::GetRangeFromAssertions(this, op2VN, assertions);
-
-        RangeOps::RelationKind kind = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), rng1, rng2);
-        if ((kind != RangeOps::RelationKind::Unknown))
+        Range relopRange =
+            RangeCheck::GetRangeFromAssertions(this, vnStore->VNConservativeNormalValue(tree->gtVNPair), assertions);
+        if (relopRange.IsSingleValueConstant(0) || relopRange.IsSingleValueConstant(1))
         {
-            newTree = kind == RangeOps::RelationKind::AlwaysTrue ? gtNewTrue() : gtNewFalse();
-            newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+            newTree = gtWrapWithSideEffects(relopRange.IsSingleValueConstant(1) ? gtNewTrue() : gtNewFalse(), tree,
+                                            GTF_ALL_EFFECT);
             return optAssertionProp_Update(newTree, tree, stmt);
         }
     }
