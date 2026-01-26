@@ -5088,7 +5088,7 @@ ClrDataAccess::FollowStubStep(
             methodDesc = PTR_MethodDesc(CORDB_ADDRESS_TO_TADDR(inBuffer->u.addr));
             if (methodDesc->HasNativeCode())
             {
-                *outAddr = methodDesc->GetNativeCode();
+                *outAddr = methodDesc->GetCodeForInterpreterOrJitted();
                 *outFlags = CLRDATA_FOLLOW_STUB_EXIT;
                 return S_OK;
             }
@@ -5737,7 +5737,7 @@ ClrDataAccess::RawGetMethodName(
     MethodDesc* methodDesc = NULL;
 
     {
-        EECodeInfo codeInfo(TO_TADDR(address));
+        EECodeInfo codeInfo(GetInterpreterCodeFromInterpreterPrecodeIfPresent(TO_TADDR(address)));
         if (codeInfo.IsValid())
         {
             if (displacement)
@@ -5886,7 +5886,7 @@ ClrDataAccess::GetMethodExtents(MethodDesc* methodDesc,
         // for all types of managed code.
         //
 
-        PCODE methodStart = methodDesc->GetNativeCode();
+        PCODE methodStart = methodDesc->GetCodeForInterpreterOrJitted();
         if (!methodStart)
         {
             return E_NOINTERFACE;
@@ -5940,11 +5940,11 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
         {
             return E_INVALIDARG;
         }
-        nativeCodeStartAddr = PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode());
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(requestedNativeCodeVersion.GetNativeCode()));
     }
     else
     {
-        nativeCodeStartAddr = PCODEToPINSTR(methodDesc->GetNativeCode());
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(methodDesc->GetNativeCode()));
     }
 
     DebugInfoRequest request;
@@ -5999,11 +5999,11 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
         {
             return E_INVALIDARG;
         }
-        nativeCodeStartAddr = PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode());
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(requestedNativeCodeVersion.GetNativeCode()));
     }
     else
     {
-        nativeCodeStartAddr = PCODEToPINSTR(methodDesc->GetNativeCode());
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(methodDesc->GetNativeCode()));
     }
 
     DebugInfoRequest request;
