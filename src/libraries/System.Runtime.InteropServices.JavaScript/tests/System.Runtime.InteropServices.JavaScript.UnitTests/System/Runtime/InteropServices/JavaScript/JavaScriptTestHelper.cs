@@ -265,6 +265,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [JSImport("echo1view", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.MemoryView>]
+        internal static partial Span<float> echo1_SpanOfSingle([JSMarshalAs<JSType.MemoryView>] Span<float> value, [JSMarshalAs<JSType.Boolean>] bool edit);
+
+        [JSImport("echo1view", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.MemoryView>]
         internal static partial ArraySegment<byte> echo1_ArraySegmentOfByte([JSMarshalAs<JSType.MemoryView>] ArraySegment<byte> value, [JSMarshalAs<JSType.Boolean>] bool edit);
 
         [JSImport("echo1view", "JavaScriptTestHelper")]

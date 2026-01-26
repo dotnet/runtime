@@ -287,6 +287,11 @@ namespace System.Runtime.InteropServices.JavaScript
                 int[] val = (int[])value;
                 ToJS(val);
             }
+            else if (typeof(float[]) == type)
+            {
+                float[] val = (float[])value;
+                ToJS(val);
+            }
             else if (typeof(double[]) == type)
             {
                 double[] val = (double[])value;
