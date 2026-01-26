@@ -150,17 +150,17 @@ public:
     }
 
 
-    void InitForMulticastDelegateHelper()
+    void InitForMulticastDelegateHelper(PCODE addr)
     {
         this->type = TRACE_MULTICAST_DELEGATE_HELPER;
-        this->address = (PCODE)NULL;
+        this->address = addr;
         this->stubManager = NULL;
     }
 
-    void InitForExternalMethodFixup()
+    void InitForExternalMethodFixup(PCODE addr)
     {
         this->type = TRACE_EXTERNAL_METHOD_FIXUP;
-        this->address = (PCODE)NULL;
+        this->address = addr;
         this->stubManager = NULL;
     }
 

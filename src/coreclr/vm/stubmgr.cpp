@@ -1566,7 +1566,7 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
 #ifdef DACCESS_COMPILE
         DacNotImpl();
 #else
-        trace->InitForExternalMethodFixup();
+        trace->InitForExternalMethodFixup(stubStartAddress);
 #endif
         return TRUE;
 
@@ -1679,7 +1679,7 @@ BOOL ILStubManager::DoTraceStub(PCODE stubStartAddress,
     MethodDesc* pStubMD = ExecutionManager::GetCodeMethodDesc(stubStartAddress);
     if (pStubMD != NULL && pStubMD->AsDynamicMethodDesc()->IsMulticastStub())
     {
-        trace->InitForMulticastDelegateHelper();
+        trace->InitForMulticastDelegateHelper(stubStartAddress);
     }
     else
     {
