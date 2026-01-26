@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, InstantiateWasmSuccessCallback, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource, LoadBootResourceCallback } from "./types";
+import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource, LoadBootResourceCallback, InstantiateWasmSuccessCallback } from "./types";
 
 import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module } from "./cross-module";
-import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_NODE } from "./per-module";
+import { ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_NODE } from "./per-module";
 import { createPromiseCompletionSource, delay } from "./promise-completion-source";
 import { locateFile, makeURLAbsoluteWithApplicationBase } from "./bootstrap";
 import { fetchLike, responseLike } from "./polyfills";
@@ -19,8 +19,8 @@ let loadBootResourceCallback: LoadBootResourceCallback | undefined = undefined;
 export function setLoadBootResourceCallback(callback: LoadBootResourceCallback | undefined): void {
     loadBootResourceCallback = callback;
 }
-let instantiateStreaming = typeof WebAssembly !== "undefined" && typeof WebAssembly.instantiateStreaming === "function";
 export let wasmBinaryPromise: Promise<Response> | undefined = undefined;
+export const mainModulePromiseController = createPromiseCompletionSource<WebAssembly.Instance>();
 export const nativeModulePromiseController = createPromiseCompletionSource<EmscriptenModuleInternal>(() => {
     dotnetUpdateInternals(dotnetInternals);
 });
@@ -62,39 +62,15 @@ export function fetchWasm(asset: WasmAsset): Promise<Response> {
     assetInternal.behavior = "dotnetwasm";
     if (!asset.resolvedUrl) throw new Error("Invalid config, resources is not set");
     wasmBinaryPromise = loadResource(assetInternal);
-    if (assetInternal.buffer) {
-        instantiateStreaming = false;
-    }
     return wasmBinaryPromise;
 }
 
-export async function instantiateWasm(imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback): Promise<void> {
-    if (!instantiateStreaming) {
-        const res = await checkResponseOk();
-        const data = await res.arrayBuffer();
-        const module = await WebAssembly.compile(data);
-        const instance = await WebAssembly.instantiate(module, imports);
-        onDownloadedAsset();
-        successCallback(instance, module);
-    } else {
-        const instantiated = await WebAssembly.instantiateStreaming(wasmBinaryPromise!, imports);
-        await checkResponseOk();
-        onDownloadedAsset();
-        successCallback(instantiated.instance, instantiated.module);
-    }
-
-    async function checkResponseOk(): Promise<Response> {
-        dotnetAssert.check(wasmBinaryPromise, "WASM binary promise was not initialized");
-        const res = await wasmBinaryPromise;
-        if (res.ok === false) {
-            throw new Error(`Failed to load WebAssembly module. HTTP status: ${res.status} ${res.statusText}`);
-        }
-        const contentType = res.headers && res.headers.get ? res.headers.get("Content-Type") : undefined;
-        if (ENVIRONMENT_IS_WEB && contentType !== "application/wasm") {
-            dotnetLogger.warn("WebAssembly resource does not have the expected content type \"application/wasm\", so falling back to slower ArrayBuffer instantiation.");
-        }
-        return res;
-    }
+export async function instantiateMainWasm(imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback): Promise<void> {
+    //asset
+    const { instance, module } = await dotnetBrowserHostExports.instantiateWasm(wasmBinaryPromise!, imports, true, true);
+    onDownloadedAsset();
+    mainModulePromiseController.resolve(instance);
+    successCallback(instance, module);
 }
 
 export async function fetchIcu(asset: IcuAsset): Promise<void> {
