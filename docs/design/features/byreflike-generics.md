@@ -2,8 +2,8 @@
 
 Using ByRefLike types in Generic parameters is possible by building upon support added for `ref` fields. Scenarios that would benefit most from this are those involving `Span<T>`. For example, consider the following:
 
-- `Action<Span<char>>` &ndash; Enables passing `Span<T>` to delegate-based APIs, allowing for more flexible and performant code patterns.
-- `Func<int, Span<byte>>` &ndash; Allows returning `Span<T>` from delegate-based callbacks and functional programming patterns.
+- `Action<Span<char>>`, `Func<int, Span<byte>>` &ndash; Enables passing and returning `Span<T>` in delegate-based APIs, allowing for more flexible and performant code patterns.
+- `string.Create<TState>(int length, TState state, SpanAction<char, TState> action)` &ndash; Provides an efficient way to create strings using stack-allocated buffers with ByRefLike types in generic parameters.
 
 The following are potential future additions (see [Span&lt;Span&lt;T&gt;&gt;](https://github.com/dotnet/csharplang/blob/main/proposals/csharp-13.0/ref-struct-interfaces.md#spanspant) for additional context):
 
