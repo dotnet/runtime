@@ -1429,7 +1429,7 @@ void CodeGen::genLongToIntCast(GenTree* cast)
 
     genConsumeRegs(src);
 
-    var_types srcType  = ((cast->gtFlags & GTF_UNSIGNED) != 0) ? TYP_ULONG : TYP_LONG;
+    var_types srcType  = cast->IsUnsigned() ? TYP_ULONG : TYP_LONG;
     var_types dstType  = cast->CastToType();
     regNumber loSrcReg = src->gtGetOp1()->GetRegNum();
     regNumber hiSrcReg = src->gtGetOp2()->GetRegNum();
@@ -1520,7 +1520,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     assert(!varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
 
     // force the srcType to unsigned if GT_UNSIGNED flag is set
-    if (treeNode->gtFlags & GTF_UNSIGNED)
+    if (treeNode->IsUnsigned())
     {
         srcType = varTypeToUnsigned(srcType);
     }
