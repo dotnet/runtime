@@ -2631,8 +2631,7 @@ void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
     CONTRACTL_END
 
     Thread *pThread = GetThread();
-    OBJECTREF pThrowable = ObjectFromHandle(hThrowable);
-    MethodTable* pMT = pThrowable->GetMethodTable();
+    MethodTable* pMT = ObjectFromHandle(hThrowable)->GetMethodTable();
     _ASSERTE(IsException(pMT));
 
     PTR_ThreadExceptionState pCurTES = pThread->GetExceptionState();
@@ -2650,7 +2649,7 @@ void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
         return;
     }
 
-    AppendElementImpl(pThrowable, currentIP, currentSP, pFunc, pCf, pThread, fRaisingForeignException);
+    AppendElementImpl(ObjectFromHandle(hThrowable), currentIP, currentSP, pFunc, pCf, pThread, fRaisingForeignException);
 }
 
 //

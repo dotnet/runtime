@@ -92,7 +92,7 @@ NESTED_END RhpThrowHwEx, _TEXT
 LEAF_ENTRY RhpThrowExact, _TEXT
 
         mov     r8d, 4                  // r8d = ExKind.RethrowFlag
-        jmp     LOCAL_LABEL(RhpThrowExImpl)
+        jmp     ALTERNATE_ENTRY(RhpThrowExImpl)
 
 LEAF_END RhpThrowExact, _TEXT
 
@@ -109,7 +109,7 @@ NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
 
         mov     r8d, 1                  // r8d = ExKind.Throw
 
-LOCAL_LABEL(RhpThrowExImpl):
+ALTERNATE_ENTRY(RhpThrowExImpl):
 
         STACKSIZEOF_ExInfo      = ((SIZEOF__ExInfo + 15) & (~ 15))
         rsp_offsetof_Context    = STACKSIZEOF_ExInfo

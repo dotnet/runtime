@@ -265,7 +265,7 @@
     LEAF_ENTRY RhpThrowExact, _TEXT
 
         mov         w4, #4                                          // w4 = ExKind.RethrowFlag
-        b           LOCAL_LABEL(RhpThrowExImpl)
+        b           ALTERNATE_ENTRY(RhpThrowExImpl)
 
     LEAF_END RhpThrowExact, _TEXT
 
@@ -281,7 +281,7 @@
 
         mov         w4, #1                                          // w4 = ExKind.Throw
 
-LOCAL_LABEL(RhpThrowExImpl):
+ALTERNATE_ENTRY(RhpThrowExImpl):
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 

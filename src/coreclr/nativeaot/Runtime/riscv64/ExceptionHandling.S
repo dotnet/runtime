@@ -316,7 +316,7 @@
     LEAF_ENTRY RhpThrowExact, _TEXT
 
         li  a4, 4                                       // a4 = ExKind.RethrowFlag
-        j   LOCAL_LABEL(RhpThrowExImpl)
+        j   ALTERNATE_ENTRY(RhpThrowExImpl)
 
     LEAF_END RhpThrowExact, _TEXT
 
@@ -332,7 +332,7 @@
 
         li  a4, 1                                       // a4 = ExKind.Throw
 
-LOCAL_LABEL(RhpThrowExImpl):
+ALTERNATE_ENTRY(RhpThrowExImpl):
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 

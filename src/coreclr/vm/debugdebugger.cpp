@@ -298,16 +298,14 @@ extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
     _ASSERTE(pException != NULL);
     // populate exception with information from the continuation object
     EECodeInfo codeInfo((PCODE)diagnosticIP);
-    if (codeInfo.IsValid())
-    {
-        MethodDesc* methodDesc = codeInfo.GetMethodDesc();
-        StackTraceInfo::AppendElement(
-            pException,
-            (UINT_PTR)diagnosticIP,
-            0,
-            methodDesc,
-            NULL);
-    }
+    _ASSERTE(codeInfo.IsValid());
+    MethodDesc* methodDesc = codeInfo.GetMethodDesc();
+    StackTraceInfo::AppendElement(
+        pException,
+        (UINT_PTR)diagnosticIP,
+        0,
+        methodDesc,
+        NULL);
 
     END_QCALL;
 }

@@ -93,7 +93,7 @@ NESTED_END RhpThrowHwEx
 LEAF_ENTRY RhpThrowExact, _TEXT
 
         mov         r2, #4                                          // r2 = ExKind.RethrowFlag
-        b           LOCAL_LABEL(RhpThrowExImpl)
+        b           ALTERNATE_ENTRY(RhpThrowExImpl)
 
 LEAF_END RhpThrowExact, _TEXT
 
@@ -110,7 +110,7 @@ NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
 
         mov         r2, #1                                          // r2 = ExKind.Throw
 
-LOCAL_LABEL(RhpThrowExImpl):
+ALTERNATE_ENTRY(RhpThrowExImpl):
 
         // Setup a PAL_LIMITED_CONTEXT on the stack {
         PROLOG_VPUSH {d8-d15}
