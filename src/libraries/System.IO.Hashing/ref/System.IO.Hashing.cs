@@ -6,6 +6,23 @@
 
 namespace System.IO.Hashing
 {
+    public sealed partial class Adler32 : System.IO.Hashing.NonCryptographicHashAlgorithm
+    {
+        public Adler32() : base(default(int)) { }
+        public override void Append(System.ReadOnlySpan<byte> source) { }
+        public System.IO.Hashing.Adler32 Clone() { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public uint GetCurrentHashAsUInt32() { throw null; }
+        protected override void GetCurrentHashCore(System.Span<byte> destination) { }
+        protected override void GetHashAndResetCore(System.Span<byte> destination) { }
+        public static byte[] Hash(byte[] source) { throw null; }
+        public static byte[] Hash(System.ReadOnlySpan<byte> source) { throw null; }
+        public static int Hash(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint HashToUInt32(System.ReadOnlySpan<byte> source) { throw null; }
+        public override void Reset() { }
+        public static bool TryHash(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
     public sealed partial class Crc32 : System.IO.Hashing.NonCryptographicHashAlgorithm
     {
         public Crc32() : base (default(int)) { }
@@ -128,22 +145,5 @@ namespace System.IO.Hashing
         public static ulong HashToUInt64(System.ReadOnlySpan<byte> source, long seed = (long)0) { throw null; }
         public override void Reset() { }
         public static bool TryHash(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, long seed = (long)0) { throw null; }
-    }
-    public sealed partial class Adler32 : System.IO.Hashing.NonCryptographicHashAlgorithm
-    {
-        public Adler32() : base (default(int)) { }
-        public override void Append(System.ReadOnlySpan<byte> source) { }
-        public System.IO.Hashing.Adler32 Clone() { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public uint GetCurrentHashAsUInt32() { throw null; }
-        protected override void GetCurrentHashCore(System.Span<byte> destination) { }
-        protected override void GetHashAndResetCore(System.Span<byte> destination) { }
-        public static byte[] Hash(byte[] source) { throw null; }
-        public static byte[] Hash(System.ReadOnlySpan<byte> source) { throw null; }
-        public static int Hash(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static uint HashToUInt32(System.ReadOnlySpan<byte> source) { throw null; }
-        public override void Reset() { }
-        public static bool TryHash(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
 }
