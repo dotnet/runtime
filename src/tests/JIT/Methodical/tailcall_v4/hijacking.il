@@ -273,7 +273,7 @@
         type([TestLibrary]TestLibrary.Utilities)
         string[1] ('IsNativeAot')
     }
-    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [hijacking]Test_hijacking_il.Repro, string[]) = {
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
         string('needs triage')
         type([hijacking]Test_hijacking_il.Repro)
         string[1] ('IsX86HeapVerifyOrGCStress')
