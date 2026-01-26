@@ -95,7 +95,7 @@ namespace System.Globalization
         }
 
         /// <summary>
-        /// Encodes a substring of domain name labels that include Unicode characters outside the ASCII character range (U+0000 to U+007F) to a displayable Unicode string.
+        /// Encodes a Unicode domain name to its ASCII (Punycode) equivalent.
         /// </summary>
         /// <param name="unicode">The Unicode domain name to convert.</param>
         /// <param name="destination">The buffer to write the ASCII result to.</param>
@@ -638,20 +638,21 @@ namespace System.Globalization
                 throw new ArgumentException(SR.Format(SR.Argument_IdnBadStd3, c), nameof(c));
         }
 
-        private string GetUnicodeInvariant(string asciiString, int index, int count)
+        private string GetUnicodeInvariant(string ascii, int index, int count)
         {
             // Convert Punycode to Unicode
-            string strUnicode = PunycodeDecode(asciiString.Substring(index, count));
+            string asciiSlice = ascii.Substring(index, count);
+            string strUnicode = PunycodeDecode(asciiSlice);
 
             // Output name MUST obey IDNA rules & round trip (casing differences are allowed)
-            string ascii = GetAscii(strUnicode);
-            if (!ascii.Equals(asciiString.Substring(index, count), StringComparison.OrdinalIgnoreCase))
-                throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(asciiString));
+            string asciiRoundtrip = GetAscii(strUnicode);
+            if (!asciiRoundtrip.Equals(asciiSlice, StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(ascii));
 
             // If the ASCII round-trip equals the original string, return it as-is (no allocation)
-            if (index == 0 && count == asciiString.Length && strUnicode.Equals(asciiString, StringComparison.OrdinalIgnoreCase))
+            if (index == 0 && count == ascii.Length && strUnicode.Equals(ascii, StringComparison.OrdinalIgnoreCase))
             {
-                return asciiString;
+                return ascii;
             }
 
             return strUnicode;

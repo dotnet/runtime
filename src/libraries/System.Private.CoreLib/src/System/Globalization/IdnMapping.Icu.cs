@@ -57,10 +57,12 @@ namespace System.Globalization
             CheckInvalidIdnCharacters(unicode, flags, nameof(unicode));
 
             int actualLength = Interop.Globalization.ToAscii(flags, unicode, unicode.Length, destination, destination.Length);
+
             if (actualLength == 0)
             {
                 throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(unicode));
             }
+
             if (actualLength <= destination.Length)
             {
                 charsWritten = actualLength;
@@ -126,10 +128,12 @@ namespace System.Globalization
             CheckInvalidIdnCharacters(ascii, flags, nameof(ascii));
 
             int actualLength = Interop.Globalization.ToUnicode(flags, ascii, ascii.Length, destination, destination.Length);
+
             if (actualLength == 0)
             {
                 throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(ascii));
             }
+
             if (actualLength <= destination.Length)
             {
                 charsWritten = actualLength;

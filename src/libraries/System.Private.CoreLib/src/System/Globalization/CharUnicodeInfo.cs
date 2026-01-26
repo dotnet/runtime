@@ -48,7 +48,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            return GetBidiCategory(s.AsSpan(), index);
+            return GetBidiCategory((ReadOnlySpan<char>)s, index);
         }
 
         internal static StrongBidiCategory GetBidiCategory(StringBuilder s, int index)
@@ -142,7 +142,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            return GetDecimalDigitValueInternalNoBoundsCheck((uint)GetCodePointFromString(s, index));
+            return GetDecimalDigitValueInternalNoBoundsCheck((uint)GetCodePoint(s, index));
         }
 
         private static int GetDecimalDigitValueInternalNoBoundsCheck(uint codePoint)
@@ -176,7 +176,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            return GetDigitValueInternalNoBoundsCheck((uint)GetCodePointFromString(s, index));
+            return GetDigitValueInternalNoBoundsCheck((uint)GetCodePoint(s, index));
         }
 
         private static int GetDigitValueInternalNoBoundsCheck(uint codePoint)
@@ -255,7 +255,7 @@ namespace System.Globalization
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static double GetNumericValueInternal(string s, int index) => GetNumericValueNoBoundsCheck((uint)GetCodePointFromString(s, index));
+        internal static double GetNumericValueInternal(string s, int index) => GetNumericValueNoBoundsCheck((uint)GetCodePoint(s, index));
 
         private static double GetNumericValueNoBoundsCheck(uint codePoint)
         {
@@ -392,7 +392,7 @@ namespace System.Globalization
             Debug.Assert(value != null, "value can not be null");
             Debug.Assert(index < value.Length);
 
-            return GetUnicodeCategoryNoBoundsChecks((uint)GetCodePointFromString(value, index));
+            return GetUnicodeCategoryNoBoundsChecks((uint)GetCodePoint(value, index));
         }
 
         /// <summary>
@@ -405,7 +405,7 @@ namespace System.Globalization
             Debug.Assert(str.Length > 0);
             Debug.Assert(index >= 0 && index < str.Length);
 
-            uint codePoint = (uint)GetCodePointFromString(str, index);
+            uint codePoint = (uint)GetCodePoint(str, index);
             UnicodeDebug.AssertIsValidCodePoint(codePoint);
 
             charLength = (codePoint >= UNICODE_PLANE01_START) ? 2 /* surrogate pair */ : 1 /* BMP char */;
@@ -433,14 +433,6 @@ namespace System.Globalization
         /// WARNING: since it doesn't throw an exception it CAN return a value
         /// in the surrogate range D800-DFFF, which is not a legal scalar value.
         /// </summary>
-        private static int GetCodePointFromString(string s, int index)
-        {
-            Debug.Assert(s != null);
-            Debug.Assert((uint)index < (uint)s.Length, "index < s.Length");
-
-            return GetCodePoint(s.AsSpan(), index);
-        }
-
         private static int GetCodePoint(ReadOnlySpan<char> s, int index)
         {
             Debug.Assert((uint)index < (uint)s.Length, "index < s.Length");
