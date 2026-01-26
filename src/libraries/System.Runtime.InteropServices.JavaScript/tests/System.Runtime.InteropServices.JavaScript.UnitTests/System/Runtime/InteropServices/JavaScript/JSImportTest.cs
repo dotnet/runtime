@@ -452,6 +452,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        public unsafe void JsImportSpanOfSingle()
+        {
+            var expectedBytes = stackalloc float[] { 0, 1, -1, float.Pi, 42, float.MaxValue, float.MinValue, float.NaN, float.PositiveInfinity, float.NegativeInfinity };
+            Span<float> expected = new Span<float>(expectedBytes, 10);
+            Assert.True(Unsafe.AsPointer(ref expected.GetPinnableReference()) == expectedBytes);
+            Span<float> actual = JavaScriptTestHelper.echo1_SpanOfSingle(expected, false);
+            Assert.Equal(expected.Length, actual.Length);
+            Assert.NotEqual(expected[0], expected[1]);
+            Assert.Equal(expected.GetPinnableReference(), actual.GetPinnableReference());
+            Assert.True(actual.SequenceCompareTo(expected) == 0);
+            Assert.Equal(expected.ToArray(), actual.ToArray());
+            actual = JavaScriptTestHelper.echo1_SpanOfSingle(expected, true);
+            Assert.Equal(expected[0], expected[1]);
+            Assert.Equal(actual[0], actual[1]);
+        }
+
+        [Fact]
         public unsafe void JsImportArraySegmentOfByte()
         {
             var expectedBytes = new byte[] { 88, 1, 2, 42, 0, 127, 255 };
