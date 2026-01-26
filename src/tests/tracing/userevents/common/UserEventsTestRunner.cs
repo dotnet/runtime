@@ -219,26 +219,10 @@ namespace Tracing.UserEvents.Tests.Common
 
         private static string ResolveRecordTracePath(string userEventsScenarioDir)
         {
-            // In NativeAOT, Assembly.Location returns an empty string, so userEventsScenarioDir can be null or empty.
-            // Fall back to the current process's main module path.
-            if (string.IsNullOrEmpty(userEventsScenarioDir))
-            {
-                string? mainModuleFileName = Process.GetCurrentProcess().MainModule?.FileName;
-                if (string.IsNullOrEmpty(mainModuleFileName))
-                {
-                    throw new InvalidOperationException("Unable to determine the test assembly path: Assembly.Location is empty and MainModule.FileName is unavailable.");
-                }
-                
-                userEventsScenarioDir = Path.GetDirectoryName(mainModuleFileName);
-                if (string.IsNullOrEmpty(userEventsScenarioDir))
-                {
-                    throw new InvalidOperationException($"Unable to determine the directory of the main module: {mainModuleFileName}");
-                }
-            }
-
-            // scenario dir: .../tracing/userevents/<scenario>/<scenario>
+            // userEventsScenarioDir is either from Path.GetDirectoryName(traceeAssemblyPath) for CoreCLR
+            // or AppContext.BaseDirectory for NativeAOT, both pointing to: .../tracing/userevents/<scenario>/<scenario>/
+            // Navigate up two directories to reach userevents root, then into common/userevents_common
             string usereventsRoot = Path.GetFullPath(Path.Combine(userEventsScenarioDir, "..", ".."));
-            // common dir: .../tracing/userevents/common/userevents_common
             string commonDir = Path.Combine(usereventsRoot, "common", "userevents_common");
             string recordTracePath = Path.Combine(commonDir, "record-trace");
             return recordTracePath;
