@@ -538,11 +538,11 @@ void CodeGen::genCodeForBBlist()
             nonVarPtrRegs &= ~RBM_ASYNC_CONTINUATION_RET;
         }
 
-        // For a tailcall arbitrary argument registers may be live into the
+        // For a tailcall arbitrary argument/target registers may be live into the
         // epilog. Skip validating those.
         if (block->HasFlag(BBF_HAS_JMP))
         {
-            nonVarPtrRegs &= ~fullIntArgRegMask(CorInfoCallConvExtension::Managed);
+            nonVarPtrRegs = RBM_NONE;
         }
 
         if (nonVarPtrRegs)
@@ -657,26 +657,6 @@ void CodeGen::genCodeForBBlist()
         compiler->compCurBB = nullptr;
 #endif // DEBUG
     }  //------------------ END-FOR each block of the method -------------------
-
-#if defined(FEATURE_EH_WINDOWS_X86)
-    // If this is a synchronized method on x86, and we generated all the code without
-    // generating the "exit monitor" call, then we must have deleted the single return block
-    // with that call because it was dead code. We still need to report the monitor range
-    // to the VM in the GC info, so create a label at the very end so we have a marker for
-    // the monitor end range.
-    //
-    // Do this before cleaning the GC refs below; we don't want to create an IG that clears
-    // the `this` pointer for lvaKeepAliveAndReportThis.
-
-    if (!compiler->UsesFunclets() && (compiler->info.compFlags & CORINFO_FLG_SYNCH) &&
-        (compiler->syncEndEmitCookie == nullptr))
-    {
-        JITDUMP("Synchronized method with missing exit monitor call; adding final label\n");
-        compiler->syncEndEmitCookie =
-            GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
-        noway_assert(compiler->syncEndEmitCookie != nullptr);
-    }
-#endif
 
     // There could be variables alive at this point. For example see lvaKeepAliveAndReportThis.
     // This call is for cleaning the GC refs
@@ -848,23 +828,13 @@ BasicBlock* CodeGen::genEmitEndBlock(BasicBlock* block)
             break;
 
         case BBJ_EHCATCHRET:
-            assert(compiler->UsesFunclets());
             genEHCatchRet(block);
             FALLTHROUGH;
 
         case BBJ_EHFINALLYRET:
         case BBJ_EHFAULTRET:
         case BBJ_EHFILTERRET:
-            if (compiler->UsesFunclets())
-            {
-                genReserveFuncletEpilog(block);
-            }
-#if defined(FEATURE_EH_WINDOWS_X86)
-            else
-            {
-                genEHFinallyOrFilterRet(block);
-            }
-#endif // FEATURE_EH_WINDOWS_X86
+            genReserveFuncletEpilog(block);
             break;
 
         case BBJ_SWITCH:
@@ -2339,6 +2309,7 @@ void CodeGen::genTransferRegGCState(regNumber dst, regNumber src)
         gcInfo.gcMarkRegSetNpt(dstMask);
     }
 }
+#endif
 
 //------------------------------------------------------------------------
 // genCodeForCast: Generates the code for GT_CAST.
@@ -2367,12 +2338,12 @@ void CodeGen::genCodeForCast(GenTreeOp* tree)
         // Casts int32/uint32/int64/uint64 --> float/double
         genIntToFloatCast(tree);
     }
-#ifndef TARGET_64BIT
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
     else if (varTypeIsLong(tree->gtOp1))
     {
         genLongToIntCast(tree);
     }
-#endif // !TARGET_64BIT
+#endif // !TARGET_64BIT && !TARGET_WASM
     else
     {
         // Casts int <--> int
@@ -2396,8 +2367,13 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
     const bool      castIsLoad   = !src->isUsedFromReg();
 
     assert(castIsLoad == src->isUsedFromMemory());
+#ifndef TARGET_WASM
     assert((srcSize == 4) || (srcSize == genTypeSize(TYP_I_IMPL)));
     assert((dstSize == 4) || (dstSize == genTypeSize(TYP_I_IMPL)));
+#else
+    assert((srcSize == 4) || (srcSize == 8));
+    assert((dstSize == 4) || (dstSize == 8));
+#endif
 
     assert(dstSize == genTypeSize(genActualType(castType)));
 
@@ -2425,7 +2401,7 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
             m_extendSrcSize = castSize;
         }
     }
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
     // castType cannot be (U)LONG on 32 bit targets, such casts should have been decomposed.
     // srcType cannot be a small int type since it's the "actual type" of the cast operand.
     // This means that widening casts do not occur on 32 bit targets.
@@ -2553,6 +2529,7 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
     }
 }
 
+#ifndef TARGET_WASM
 #if !defined(TARGET_64BIT)
 //------------------------------------------------------------------------
 // genStoreLongLclVar: Generate code to store a non-enregistered long lclVar

@@ -846,6 +846,11 @@ namespace System.Text.Json.SourceGeneration
                     collectionType = CollectionType.ISet;
                     valueType = actualTypeToConvert.TypeArguments[0];
                 }
+                else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.IReadOnlySetOfTType)) != null)
+                {
+                    collectionType = CollectionType.IReadOnlySetOfT;
+                    valueType = actualTypeToConvert.TypeArguments[0];
+                }
                 else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.ICollectionOfTType)) != null)
                 {
                     collectionType = CollectionType.ICollectionOfT;
@@ -1572,7 +1577,7 @@ namespace System.Text.Json.SourceGeneration
 
                             var propertyInitializer = new PropertyInitializerGenerationSpec
                             {
-                                Name = property.MemberName,
+                                Name = property.NameSpecifiedInSourceCode,
                                 ParameterType = property.PropertyType,
                                 MatchesConstructorParameter = matchingConstructorParameter is not null,
                                 ParameterIndex = matchingConstructorParameter?.ParameterIndex ?? paramCount++,

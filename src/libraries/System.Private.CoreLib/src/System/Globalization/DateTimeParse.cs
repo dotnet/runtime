@@ -3744,24 +3744,36 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
 
             if (str.GetNext())
             {
-                string searchStr = dtfi.AMDesignator;
-                if (searchStr.Length > 0)
+                string amDesignator = dtfi.AMDesignator;
+                string pmDesignator;
+
+                if (amDesignator.Length > 0)
                 {
-                    if (str.MatchSpecifiedWord(searchStr))
+                    if (str.MatchSpecifiedWord(amDesignator))
                     {
+                        pmDesignator = dtfi.PMDesignator;
+                        if (pmDesignator.StartsWith(amDesignator, StringComparison.Ordinal) && str.MatchSpecifiedWord(pmDesignator))
+                        {
+                            // AM designator is a prefix of PM designator and we have matched PM designator. Use longer match.
+                            str.Index += (pmDesignator.Length - 1);
+                            result = TM.PM;
+                            return true;
+                        }
+
                         // Found an AM timemark with length > 0.
-                        str.Index += (searchStr.Length - 1);
+                        str.Index += (amDesignator.Length - 1);
                         result = TM.AM;
                         return true;
                     }
                 }
-                searchStr = dtfi.PMDesignator;
-                if (searchStr.Length > 0)
+
+                pmDesignator = dtfi.PMDesignator;
+                if (pmDesignator.Length > 0)
                 {
-                    if (str.MatchSpecifiedWord(searchStr))
+                    if (str.MatchSpecifiedWord(pmDesignator))
                     {
                         // Found a PM timemark with length > 0.
-                        str.Index += (searchStr.Length - 1);
+                        str.Index += (pmDesignator.Length - 1);
                         result = TM.PM;
                         return true;
                     }

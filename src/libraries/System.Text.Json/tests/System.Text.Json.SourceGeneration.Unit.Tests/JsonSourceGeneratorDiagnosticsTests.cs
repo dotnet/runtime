@@ -705,7 +705,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
         }
 
-#if NET9_0_OR_GREATER
+#if NET
         [Fact]
         public void CollectionWithRefStructElement_CompilesWithWarning()
         {

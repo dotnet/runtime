@@ -18,9 +18,10 @@
 
 void emitter::emitIns(instruction ins)
 {
-    instrDesc* id = emitNewInstrSmall(EA_8BYTE);
+    instrDesc* id  = emitNewInstrSmall(EA_8BYTE);
+    insFormat  fmt = emitInsFormat(ins);
     id->idIns(ins);
-    id->idInsFmt(IF_OPCODE);
+    id->idInsFmt(fmt);
 
     dispIns(id);
     appendToCurIG(id);
@@ -196,8 +197,8 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
 
 static unsigned GetInsOpcode(instruction ins)
 {
-    static const uint8_t insOpcodes[] = {
-#define INST(id, nm, info, fmt, opcode) static_cast<uint8_t>(opcode),
+    static const uint16_t insOpcodes[] = {
+#define INST(id, nm, info, fmt, opcode) static_cast<uint16_t>(opcode),
 #include "instrs.h"
     };
 
@@ -275,9 +276,11 @@ unsigned emitter::instrDesc::idCodeSize() const
 #error WASM64
 #endif
 
-    // Currently, all our instructions have 1 byte opcode.
-    unsigned size = 1;
-    assert(FitsIn<uint8_t>(GetInsOpcode(idIns())));
+    unsigned int opcode = GetInsOpcode(idIns());
+
+    // Currently, all our instructions have 1 or 2 byte opcodes.
+    assert(FitsIn<uint8_t>(opcode) || FitsIn<uint16_t>(opcode));
+    unsigned size = FitsIn<uint8_t>(opcode) ? 1 : 2;
     switch (idInsFmt())
     {
         case IF_OPCODE:
@@ -377,6 +380,26 @@ size_t emitter::emitRawBytes(uint8_t* destination, const void* source, size_t co
     return count;
 }
 
+size_t emitter::emitOutputOpcode(BYTE* dst, instruction ins)
+{
+    size_t   sz     = 0;
+    unsigned opcode = GetInsOpcode(ins);
+
+    assert(FitsIn<uint16_t>(opcode));
+    if (FitsIn<uint8_t>(opcode))
+    {
+        emitOutputByte(dst, opcode);
+        sz += 1;
+    }
+    else if (FitsIn<uint16_t>(opcode))
+    {
+        dst += emitOutputByte(dst, opcode & 0xFF);
+        emitOutputByte(dst, opcode >> 8);
+        sz += 2;
+    }
+    return sz;
+}
+
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     BYTE*       dst    = *dp;
@@ -388,29 +411,31 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     switch (insFmt)
     {
         case IF_OPCODE:
-            dst += emitOutputByte(dst, opcode);
+        {
+            dst += emitOutputOpcode(dst, ins);
             break;
+        }
         case IF_BLOCK:
-            dst += emitOutputByte(dst, opcode);
+            dst += emitOutputOpcode(dst, ins);
             dst += emitOutputByte(dst, 0x40 /* block type of void */);
             break;
         case IF_ULEB128:
         {
-            dst += emitOutputByte(dst, opcode);
+            dst += emitOutputOpcode(dst, ins);
             cnsval_ssize_t constant = emitGetInsSC(id);
             dst += emitOutputULEB128(dst, (uint64_t)constant);
             break;
         }
         case IF_SLEB128:
         {
-            dst += emitOutputByte(dst, opcode);
+            dst += emitOutputOpcode(dst, ins);
             cnsval_ssize_t constant = emitGetInsSC(id);
             dst += emitOutputSLEB128(dst, (int64_t)constant);
             break;
         }
         case IF_F32:
         {
-            dst += emitOutputByte(dst, opcode);
+            dst += emitOutputOpcode(dst, ins);
             // Reinterpret the bits as a double constant and then truncate it to f32,
             //  then finally copy the raw truncated f32 bits to the output.
             cnsval_ssize_t bits = emitGetInsSC(id);
@@ -423,7 +448,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
         case IF_F64:
         {
-            dst += emitOutputByte(dst, opcode);
+            dst += emitOutputOpcode(dst, ins);
             // The int64 bits are actually a double constant we can copy directly
             //  to the output stream.
             cnsval_ssize_t bits = emitGetInsSC(id);
@@ -438,7 +463,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
         case IF_MEMARG:
         {
-            dst += emitOutputByte(dst, opcode);
+            dst += emitOutputOpcode(dst, ins);
             uint64_t align  = emitGetAlignHintLog2(id);
             uint64_t offset = emitGetInsSC(id);
             assert(align <= UINT32_MAX); // spec says memarg alignment is u32

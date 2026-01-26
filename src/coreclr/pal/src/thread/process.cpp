@@ -60,7 +60,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <stdint.h>
 #include <dlfcn.h>
 #include <limits.h>
-#include <vector>
 
 #ifdef __linux__
 #include <linux/membarrier.h>
@@ -197,7 +196,8 @@ Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
 Volatile<PCREATEDUMP_CALLBACK> g_createdumpCallback = nullptr;
 
 // Crash dump generating program arguments. Initialized in PROCAbortInitialize().
-std::vector<const char*> g_argvCreateDump;
+#define MAX_ARGV_ENTRIES 32
+const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 
 //
 // Key used for associating CPalThread's with the underlying pthread
@@ -2282,7 +2282,7 @@ Return
 --*/
 BOOL
 PROCBuildCreateDumpCommandLine(
-    std::vector<const char*>& argv,
+    const char* argv[],
     char** pprogram,
     char** ppidarg,
     const char* dumpName,
@@ -2323,27 +2323,29 @@ PROCBuildCreateDumpCommandLine(
     {
         return FALSE;
     }
-    argv.push_back(program);
+    
+    int argc = 0;
+    argv[argc++] = program;
 
     if (dumpName != nullptr)
     {
-        argv.push_back("--name");
-        argv.push_back(dumpName);
+        argv[argc++] = "--name";
+        argv[argc++] = dumpName;
     }
 
     switch (dumpType)
     {
         case DumpTypeNormal:
-            argv.push_back("--normal");
+            argv[argc++] = "--normal";
             break;
         case DumpTypeWithHeap:
-            argv.push_back("--withheap");
+            argv[argc++] = "--withheap";
             break;
         case DumpTypeTriage:
-            argv.push_back("--triage");
+            argv[argc++] = "--triage";
             break;
         case DumpTypeFull:
-            argv.push_back("--full");
+            argv[argc++] = "--full";
             break;
         default:
             break;
@@ -2351,37 +2353,39 @@ PROCBuildCreateDumpCommandLine(
 
     if (flags & GenerateDumpFlagsLoggingEnabled)
     {
-        argv.push_back("--diag");
+        argv[argc++] = "--diag";
     }
 
     if (flags & GenerateDumpFlagsVerboseLoggingEnabled)
     {
-        argv.push_back("--verbose");
+        argv[argc++] = "--verbose";
     }
 
     if (flags & GenerateDumpFlagsCrashReportEnabled)
     {
-        argv.push_back("--crashreport");
+        argv[argc++] = "--crashreport";
     }
 
     if (flags & GenerateDumpFlagsCrashReportOnlyEnabled)
     {
-        argv.push_back("--crashreportonly");
+        argv[argc++] = "--crashreportonly";
     }
 
     if (g_running_in_exe)
     {
-        argv.push_back("--singlefile");
+        argv[argc++] = "--singlefile";
     }
 
     if (logFileName != nullptr)
     {
-        argv.push_back("--logtofile");
-        argv.push_back(logFileName);
+        argv[argc++] = "--logtofile";
+        argv[argc++] = logFileName;
     }
 
-    argv.push_back(*ppidarg);
-    argv.push_back(nullptr);
+    argv[argc++] = *ppidarg;
+
+    argv[argc] = nullptr;
+    _ASSERTE(argc < MAX_ARGV_ENTRIES);
 
     return TRUE;
 }
@@ -2399,7 +2403,7 @@ Return:
 --*/
 BOOL
 PROCCreateCrashDump(
-    std::vector<const char*>& argv,
+    const char* argv[],
     LPSTR errorMessageBuffer,
     INT cbErrorMessageBuffer,
     bool serialize)
@@ -2407,7 +2411,7 @@ PROCCreateCrashDump(
 #if defined(TARGET_IOS) || defined(TARGET_TVOS)
     return FALSE;
 #else
-    _ASSERTE(argv.size() > 0);
+    _ASSERTE(argv[0] != nullptr);
     _ASSERTE(errorMessageBuffer == nullptr || cbErrorMessageBuffer > 0);
 
     if (serialize)
@@ -2494,7 +2498,12 @@ PROCCreateCrashDump(
             SEHCleanupSignals(true /* isChildProcess */);
 
             // Call the statically linked createdump code
-            callbackResult = g_createdumpCallback(argv.size(), argv.data());
+            int argc = 0;
+            while (argv[argc] != nullptr && argc < MAX_ARGV_ENTRIES)
+            {
+                argc++;
+            }
+            callbackResult = g_createdumpCallback(argc, argv);
             // Set the shutdown callback to nullptr and exit
             // If we don't exit, the child's execution will continue into the diagnostic server behavior
             // which causes all sorts of problems.
@@ -2504,7 +2513,7 @@ PROCCreateCrashDump(
         else
         {
             // Execute the createdump program
-            if (execve(argv[0], (char**)argv.data(), palEnvironment) == -1)
+            if (execve(argv[0], (char**)argv, palEnvironment) == -1)
             {
                 fprintf(stderr, "Problem launching createdump (may not have execute permissions): execve(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
                 exit(-1);
@@ -2682,7 +2691,7 @@ PAL_GenerateCoreDump(
     LPSTR errorMessageBuffer,
     INT cbErrorMessageBuffer)
 {
-    std::vector<const char*> argvCreateDump;
+    const char* argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 
     if (dumpType <= DumpTypeUnknown || dumpType > DumpTypeMax)
     {
@@ -2748,34 +2757,38 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
     DoNotOptimize(&context);
 
     // If enabled, launch the create minidump utility and wait until it completes
-    if (!g_argvCreateDump.empty())
+    if (g_argvCreateDump[0] != nullptr)
     {
-        std::vector<const char*> argv(g_argvCreateDump);
+        const char* argv[MAX_ARGV_ENTRIES];
         char* signalArg = nullptr;
         char* crashThreadArg = nullptr;
         char* signalCodeArg = nullptr;
         char* signalErrnoArg = nullptr;
         char* signalAddressArg = nullptr;
 
+        // Copy the createdump argv
+        int argc = 0;
+        for (; argc < MAX_ARGV_ENTRIES && g_argvCreateDump[argc] != nullptr; argc++)
+        {
+            argv[argc] = g_argvCreateDump[argc];
+        }
+
         if (signal != 0)
         {
-            // Remove the terminating nullptr
-            argv.pop_back();
-
             // Add the signal number to the command line
             signalArg = PROCFormatInt(signal);
             if (signalArg != nullptr)
             {
-                argv.push_back("--signal");
-                argv.push_back(signalArg);
+                argv[argc++] = "--signal";
+                argv[argc++] = signalArg;
             }
 
             // Add the current thread id to the command line. This function is always called on the crashing thread.
             crashThreadArg = PROCFormatInt(THREADSilentGetCurrentThreadId());
             if (crashThreadArg != nullptr)
             {
-                argv.push_back("--crashthread");
-                argv.push_back(crashThreadArg);
+                argv[argc++] = "--crashthread";
+                argv[argc++] = crashThreadArg;
             }
 
             if (siginfo != nullptr)
@@ -2783,25 +2796,26 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
                 signalCodeArg = PROCFormatInt(siginfo->si_code);
                 if (signalCodeArg != nullptr)
                 {
-                    argv.push_back("--code");
-                    argv.push_back(signalCodeArg);
+                    argv[argc++] = "--code";
+                    argv[argc++] = signalCodeArg;
                 }
                 signalErrnoArg = PROCFormatInt(siginfo->si_errno);
                 if (signalErrnoArg != nullptr)
                 {
-                    argv.push_back("--errno");
-                    argv.push_back(signalErrnoArg);
+                    argv[argc++] = "--errno";
+                    argv[argc++] = signalErrnoArg;
                 }
                 signalAddressArg = PROCFormatInt64((ULONG64)siginfo->si_addr);
                 if (signalAddressArg != nullptr)
                 {
-                    argv.push_back("--address");
-                    argv.push_back(signalAddressArg);
+                    argv[argc++] = "--address";
+                    argv[argc++] = signalAddressArg;
                 }
             }
-
-            argv.push_back(nullptr);
         }
+
+        argv[argc] = nullptr;
+        _ASSERTE(argc < MAX_ARGV_ENTRIES);
 
         PROCCreateCrashDump(argv, nullptr, 0, serialize);
 

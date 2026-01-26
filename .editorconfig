@@ -132,6 +132,12 @@ csharp_style_prefer_index_operator = false:none
 csharp_style_prefer_range_operator = false:none
 csharp_style_pattern_local_over_anonymous_function = false:none
 
+# IDE0071: Simplify interpolation - keep as silent hint since ReadOnlySpan<char>.ToString() is required for netstandard targets
+dotnet_diagnostic.IDE0071.severity = silent
+
+# IDE0031: Use null propagation - keep as silent hint to avoid build errors with TreatWarningsAsErrors
+dotnet_diagnostic.IDE0031.severity = silent
+
 # Space preferences
 csharp_space_after_cast = false
 csharp_space_after_colon_in_inheritance_clause = true

@@ -1167,7 +1167,8 @@ HRESULT ShimProcess::CreateProcess(
 //
 // Arguments:
 //     pCordb - root under which this all lives
-//     dwProcessID - OS process ID to attach to
+//     pRemoteTarget - Not used.
+//     pProcessDescriptor - descriptor of process to attach to
 //     fWin32Attach - are we interop debugging?
 //-----------------------------------------------------------------------------
 HRESULT ShimProcess::DebugActiveProcess(
@@ -1187,7 +1188,7 @@ HRESULT ShimProcess::DebugActiveProcess(
     {
         pShim.Assign(new ShimProcess());
 
-        // Indicate that this process was attached to, asopposed to being started under the debugger.
+        // Indicate that this process was attached to, as opposed to being started under the debugger.
         pShim->m_attached = true;
 
         hr = pShim->CreateAndStartWin32ET(pCordb);
@@ -2187,6 +2188,10 @@ HRESULT CordbProcess::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<ICorDebugProcess11*>(this);
     }
+    else if (id == IID_ICorDebugProcess12)
+    {
+        *pInterface = static_cast<ICorDebugProcess12*>(this);
+    }
     else if (id == IID_IUnknown)
     {
         *pInterface = static_cast<IUnknown*>(static_cast<ICorDebugProcess*>(this));
@@ -2571,6 +2576,48 @@ COM_METHOD CordbProcess::EnumerateLoaderHeapMemoryRegions(ICorDebugMemoryRangeEn
         }
     }
     PUBLIC_API_END(hr);
+    return hr;
+}
+
+//-----------------------------------------------------------
+// ICorDebugProcess12
+//-----------------------------------------------------------
+COM_METHOD CordbProcess::GetAsyncStack(CORDB_ADDRESS continuationAddress, ICorDebugStackWalk **ppStackWalk)
+{
+    VALIDATE_POINTER_TO_OBJECT(ppStackWalk, ICorDebugStackWalk **);
+    FAIL_IF_NEUTERED(this);
+    HRESULT hr = S_OK;
+
+    PUBLIC_API_ENTRY(this);
+    RSLockHolder stopGoLock(GetProcess()->GetStopGoLock());
+    RSLockHolder procLock(GetProcess()->GetProcessLock());
+
+    EX_TRY
+    {
+        if (!m_pDacPrimitives->IsValidObject(continuationAddress))
+        {
+            // throw if not a valid object
+            ThrowHR(E_INVALIDARG);
+        }
+
+        PCODE diagnosticIP;
+        CORDB_ADDRESS nextContinuation;
+        UINT32 state;
+        if (FAILED(m_pDacPrimitives->ParseContinuation(
+            continuationAddress,
+            &diagnosticIP,
+            &nextContinuation,
+            &state)))
+        {
+            // throw if not a valid async continuation object
+            ThrowHR(E_INVALIDARG);
+        }
+
+        RSInitHolder<CordbAsyncStackWalk> pAsyncStackWalk(new CordbAsyncStackWalk(this, continuationAddress));
+        pAsyncStackWalk.TransferOwnershipExternal(ppStackWalk);
+    }
+    EX_CATCH_HRESULT(hr);
+
     return hr;
 }
 
@@ -5640,37 +5687,6 @@ void CordbProcess::RawDispatchEvent(
 
         }
         break;
-
-    case DB_IPCE_MDA_NOTIFICATION:
-        {
-            RSInitHolder<CordbMDA> pMDA(new CordbMDA(this, &pEvent->MDANotification)); // throws
-
-            // Ctor leaves both internal + ext Ref at 0, adding to neuter list bumps int-ref up to 1.
-            // Neutering will dump it back down to zero.
-            this->AddToNeuterOnExitList(pMDA);
-
-            // We bump up and down the external ref so that even if the callback doesn't touch the refs,
-            // our Ext-Release here will still cause a 1->0 ext-ref transition, which will get it
-            // swept on the neuter list.
-            RSExtSmartPtr<ICorDebugMDA> pExternalMDARef;
-            pMDA.TransferOwnershipExternal(&pExternalMDARef);
-            {
-                PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-
-                pCallback2->MDANotification(
-                    this,
-                    pThread, // may be null
-                    pExternalMDARef);
-
-                // pExternalMDARef's dtor will do an external release,
-                // which is very significant because it may be the one that does the 1->0 ext ref transition,
-                // which may mean cause the "NeuterAtWill" bit to get flipped on this CordbMDA object.
-                // Since this is an external release, do it in the PUBLIC_CALLBACK scope.
-                pExternalMDARef.Clear();
-            }
-
-            break;
-        }
 
     case DB_IPCE_CONTROL_C_EVENT:
         {
@@ -9701,14 +9717,6 @@ void CordbProcess::MarshalManagedEvent(DebuggerIPCEvent * pManagedEvent)
     // Do a pre-processing on the event
     switch (pManagedEvent->type & DB_IPCE_TYPE_MASK)
     {
-        case DB_IPCE_MDA_NOTIFICATION:
-        {
-            pManagedEvent->MDANotification.szName.CopyLSDataToRS(this->m_pDACDataTarget);
-            pManagedEvent->MDANotification.szDescription.CopyLSDataToRS(this->m_pDACDataTarget);
-            pManagedEvent->MDANotification.szXml.CopyLSDataToRS(this->m_pDACDataTarget);
-            break;
-        }
-
         case DB_IPCE_FIRST_LOG_MESSAGE:
         {
             pManagedEvent->FirstLogMessage.szContent.CopyLSDataToRS(this->m_pDACDataTarget);
@@ -11043,13 +11051,6 @@ void DeleteIPCEventHelper(DebuggerIPCEvent *pManagedEvent)
     }
     switch (pManagedEvent->type & DB_IPCE_TYPE_MASK)
     {
-        // so far only this event need to cleanup.
-        case DB_IPCE_MDA_NOTIFICATION:
-            pManagedEvent->MDANotification.szName.CleanUp();
-            pManagedEvent->MDANotification.szDescription.CleanUp();
-            pManagedEvent->MDANotification.szXml.CleanUp();
-            break;
-
         case DB_IPCE_FIRST_LOG_MESSAGE:
             pManagedEvent->FirstLogMessage.szContent.CleanUp();
             break;
@@ -15132,10 +15133,8 @@ void CordbWin32EventThread::ExitProcess(bool fDetach)
     // and dispatch it inband w/the other callbacks.
     if (!fDetach)
     {
-#ifdef TARGET_UNIX
-        // Cleanup the transport pipe and semaphore files that might be left by the target (LS) process.
+        // Cleanup resources that might be left by the target (LS) process.
         m_pNativePipeline->CleanupTargetProcess();
-#endif
         ExitProcessWorkItem * pItem = new (nothrow) ExitProcessWorkItem(m_pProcess);
         if (pItem != NULL)
         {

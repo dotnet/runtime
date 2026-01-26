@@ -243,17 +243,6 @@ void EHblkDsc::DispEntry(unsigned XTnum)
 {
     printf(" %2u     %2u  ::", ebdID, XTnum);
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    if (ebdHandlerNestingLevel == 0)
-    {
-        printf("      ");
-    }
-    else
-    {
-        printf("  %2u  ", ebdHandlerNestingLevel);
-    }
-#endif // FEATURE_EH_WINDOWS_X86
-
     if (ebdEnclosingTryIndex == NO_ENCLOSING_INDEX)
     {
         printf("      ");
@@ -671,30 +660,14 @@ bool Compiler::bbIsHandlerBeg(const BasicBlock* block)
 //
 bool Compiler::bbIsFuncletBeg(const BasicBlock* block)
 {
-    if (UsesFunclets())
-    {
-        assert(fgFuncletsCreated);
-        return bbIsHandlerBeg(block);
-    }
-
-    return false;
+    assert(fgFuncletsCreated);
+    return bbIsHandlerBeg(block);
 }
 
 bool Compiler::ehHasCallableHandlers()
 {
-    if (UsesFunclets())
-    {
-        // Any EH in the function?
-        return compHndBBtabCount > 0;
-    }
-    else
-    {
-#if defined(FEATURE_EH_WINDOWS_X86)
-        return ehNeedsShadowSPslots();
-#else
-        return false;
-#endif // FEATURE_EH_WINDOWS_X86
-    }
+    // Any EH in the function?
+    return compHndBBtabCount > 0;
 }
 
 /******************************************************************************************
@@ -1021,15 +994,7 @@ unsigned Compiler::ehGetCallFinallyRegionIndex(unsigned finallyIndex, bool* inTr
     assert(finallyIndex != EHblkDsc::NO_ENCLOSING_INDEX);
     assert(ehGetDsc(finallyIndex)->HasFinallyHandler());
 
-    if (UsesCallFinallyThunks())
-    {
-        return ehGetDsc(finallyIndex)->ebdGetEnclosingRegionIndex(inTryRegion);
-    }
-    else
-    {
-        *inTryRegion = true;
-        return finallyIndex;
-    }
+    return ehGetDsc(finallyIndex)->ebdGetEnclosingRegionIndex(inTryRegion);
 }
 
 void Compiler::ehGetCallFinallyBlockRange(unsigned finallyIndex, BasicBlock** startBlock, BasicBlock** lastBlock)
@@ -1039,37 +1004,28 @@ void Compiler::ehGetCallFinallyBlockRange(unsigned finallyIndex, BasicBlock** st
     assert(startBlock != nullptr);
     assert(lastBlock != nullptr);
 
-    if (UsesCallFinallyThunks())
+    bool     inTryRegion;
+    unsigned callFinallyRegionIndex = ehGetCallFinallyRegionIndex(finallyIndex, &inTryRegion);
+
+    if (callFinallyRegionIndex == EHblkDsc::NO_ENCLOSING_INDEX)
     {
-        bool     inTryRegion;
-        unsigned callFinallyRegionIndex = ehGetCallFinallyRegionIndex(finallyIndex, &inTryRegion);
-
-        if (callFinallyRegionIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-        {
-            *startBlock = fgFirstBB;
-            *lastBlock  = fgLastBBInMainFunction();
-        }
-        else
-        {
-            EHblkDsc* ehDsc = ehGetDsc(callFinallyRegionIndex);
-
-            if (inTryRegion)
-            {
-                *startBlock = ehDsc->ebdTryBeg;
-                *lastBlock  = ehDsc->ebdTryLast;
-            }
-            else
-            {
-                *startBlock = ehDsc->ebdHndBeg;
-                *lastBlock  = ehDsc->ebdHndLast;
-            }
-        }
+        *startBlock = fgFirstBB;
+        *lastBlock  = fgLastBBInMainFunction();
     }
     else
     {
-        EHblkDsc* ehDsc = ehGetDsc(finallyIndex);
-        *startBlock     = ehDsc->ebdTryBeg;
-        *lastBlock      = ehDsc->ebdTryLast;
+        EHblkDsc* ehDsc = ehGetDsc(callFinallyRegionIndex);
+
+        if (inTryRegion)
+        {
+            *startBlock = ehDsc->ebdTryBeg;
+            *lastBlock  = ehDsc->ebdTryLast;
+        }
+        else
+        {
+            *startBlock = ehDsc->ebdHndBeg;
+            *lastBlock  = ehDsc->ebdHndLast;
+        }
     }
 }
 
@@ -1126,14 +1082,7 @@ bool Compiler::ehCallFinallyInCorrectRegion(BasicBlock* blockCallFinally, unsign
 
 bool Compiler::ehAnyFunclets()
 {
-    if (UsesFunclets())
-    {
-        return compHndBBtabCount > 0; // if there is any EH, there will be funclets
-    }
-    else
-    {
-        return false;
-    }
+    return compHndBBtabCount > 0; // if there is any EH, there will be funclets
 }
 
 /*****************************************************************************
@@ -1145,24 +1094,17 @@ bool Compiler::ehAnyFunclets()
 
 unsigned Compiler::ehFuncletCount()
 {
-    if (UsesFunclets())
-    {
-        unsigned funcletCnt = 0;
+    unsigned funcletCnt = 0;
 
-        for (EHblkDsc* const HBtab : EHClauses(this))
+    for (EHblkDsc* const HBtab : EHClauses(this))
+    {
+        if (HBtab->HasFilter())
         {
-            if (HBtab->HasFilter())
-            {
-                ++funcletCnt;
-            }
             ++funcletCnt;
         }
-        return funcletCnt;
+        ++funcletCnt;
     }
-    else
-    {
-        return 0;
-    }
+    return funcletCnt;
 }
 
 /*****************************************************************************
@@ -1404,7 +1346,7 @@ void Compiler::fgFindTryRegionEnds()
     for (EHblkDsc* const HBtab : EHClauses(this))
     {
         // Ignore try regions inside funclet regions.
-        if (!UsesFunclets() || !HBtab->ebdTryLast->hasHndIndex())
+        if (!HBtab->ebdTryLast->hasHndIndex())
         {
             HBtab->ebdTryLast = nullptr;
             unsetTryEnds++;
@@ -1525,26 +1467,19 @@ void Compiler::fgSkipRmvdBlocks(EHblkDsc* handlerTab)
  */
 void Compiler::fgAllocEHTable()
 {
-    if (UsesFunclets())
-    {
-        // We need to allocate space for EH clauses that will be used by funclets
-        // as well as one for each EH clause from the IL. Nested EH clauses pulled
-        // out as funclets create one EH clause for each enclosing region. Thus,
-        // the maximum number of clauses we will need might be very large. We allocate
-        // twice the number of EH clauses in the IL, which should be good in practice.
-        // In extreme cases, we might need to abandon this and reallocate. See
-        // fgTryAddEHTableEntries() for more details.
+    // We need to allocate space for EH clauses that will be used by funclets
+    // as well as one for each EH clause from the IL. Nested EH clauses pulled
+    // out as funclets create one EH clause for each enclosing region. Thus,
+    // the maximum number of clauses we will need might be very large. We allocate
+    // twice the number of EH clauses in the IL, which should be good in practice.
+    // In extreme cases, we might need to abandon this and reallocate. See
+    // fgTryAddEHTableEntries() for more details.
 
 #ifdef DEBUG
-        compHndBBtabAllocCount = info.compXcptnsCount; // force the resizing code to hit more frequently in DEBUG
-#else                                                  // DEBUG
-        compHndBBtabAllocCount = info.compXcptnsCount * 2;
-#endif                                                 // DEBUG
-    }
-    else
-    {
-        compHndBBtabAllocCount = info.compXcptnsCount;
-    }
+    compHndBBtabAllocCount = info.compXcptnsCount; // force the resizing code to hit more frequently in DEBUG
+#else                                              // DEBUG
+    compHndBBtabAllocCount = info.compXcptnsCount * 2;
+#endif                                             // DEBUG
 
     compHndBBtab = new (this, CMK_BasicBlock) EHblkDsc[compHndBBtabAllocCount];
 
@@ -3830,12 +3765,6 @@ void Compiler::fgDispHandlerTab()
     }
 
     printf("\n  id,  index  ");
-#if defined(FEATURE_EH_WINDOWS_X86)
-    if (!UsesFunclets())
-    {
-        printf("nest, ");
-    }
-#endif // FEATURE_EH_WINDOWS_X86
     printf("eTry, eHnd\n");
 
     unsigned  XTnum;
@@ -4333,14 +4262,13 @@ void Compiler::verCheckNestingLevel(EHNodeDsc* root)
 bool Compiler::fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block)
 {
     // Some simple preconditions (as stated above)
-    assert(UsesFunclets());
     assert(!fgFuncletsCreated);
     assert(fgGetPredForBlock(block, predBlock) != nullptr);
     assert(block->hasHndIndex());
 
     EHblkDsc* xtab = ehGetDsc(block->getHndIndex());
 
-    if (UsesCallFinallyThunks() && xtab->HasFinallyHandler())
+    if (xtab->HasFinallyHandler())
     {
         assert((xtab->ebdHndBeg == block) || // The normal case
                (xtab->ebdHndBeg->NextIs(block) &&
@@ -4436,7 +4364,6 @@ bool Compiler::fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block)
 
 bool Compiler::fgAnyIntraHandlerPreds(BasicBlock* block)
 {
-    assert(UsesFunclets());
     assert(block->hasHndIndex());
     assert(fgFirstBlockOfHandler(block) == block); // this block is the first block of a handler
 

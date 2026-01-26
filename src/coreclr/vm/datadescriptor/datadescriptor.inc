@@ -664,10 +664,8 @@ CDAC_TYPE_INDETERMINATE(RealCodeHeader)
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, MethodDesc, offsetof(RealCodeHeader, phdrMDesc))
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, DebugInfo, offsetof(RealCodeHeader, phdrDebugInfo))
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, GCInfo, offsetof(RealCodeHeader, phdrJitGCInfo))
-#ifdef FEATURE_EH_FUNCLETS
 CDAC_TYPE_FIELD(RealCodeHeader, /*uint32*/, NumUnwindInfos, offsetof(RealCodeHeader, nUnwindInfos))
 CDAC_TYPE_FIELD(RealCodeHeader, /* T_RUNTIME_FUNCTION */, UnwindInfos, offsetof(RealCodeHeader, unwindInfos))
-#endif // FEATURE_EH_FUNCLETS
 CDAC_TYPE_END(RealCodeHeader)
 
 CDAC_TYPE_BEGIN(CodeHeapListNode)
@@ -882,9 +880,7 @@ CDAC_TYPE_END(HijackArgs)
 
 CDAC_TYPE_BEGIN(FaultingExceptionFrame)
 CDAC_TYPE_SIZE(sizeof(FaultingExceptionFrame))
-#ifdef FEATURE_EH_FUNCLETS
 CDAC_TYPE_FIELD(FaultingExceptionFrame, /*T_CONTEXT*/, TargetContext, cdac_data<FaultingExceptionFrame>::TargetContext)
-#endif // FEATURE_EH_FUNCLETS
 CDAC_TYPE_END(FaultingExceptionFrame)
 
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)

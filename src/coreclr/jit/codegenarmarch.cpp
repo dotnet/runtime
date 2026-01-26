@@ -3169,14 +3169,21 @@ void CodeGen::genCall(GenTreeCall* call)
             }
             else
 #endif // TARGET_ARM
+#ifdef TARGET_ARM64
+                if (call->IsHelperCall(compiler, CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
+            {
+                returnReg = genFirstRegNumFromMask(RBM_INTERFACELOOKUP_FOR_SLOT_RETURN);
+            }
+            else
+#endif
                 if (varTypeUsesFloatArgReg(returnType))
-                {
-                    returnReg = REG_FLOATRET;
-                }
-                else
-                {
-                    returnReg = REG_INTRET;
-                }
+            {
+                returnReg = REG_FLOATRET;
+            }
+            else
+            {
+                returnReg = REG_INTRET;
+            }
 
             if (call->GetRegNum() != returnReg)
             {
@@ -3845,6 +3852,7 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
         //  -saved off FP
         //  -all callee-preserved registers in case of varargs
         //  -saved bool for synchronized methods
+        //  -async contexts for async methods
 
         int preservedAreaSize = (2 + genCountBits((uint64_t)RBM_ENC_CALLEE_SAVED)) * REGSIZE_BYTES;
 
@@ -3862,6 +3870,21 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
 
             // Verify that MonAcquired bool is at the bottom of the frame header
             assert(compiler->lvaGetCallerSPRelativeOffset(compiler->lvaMonAcquired) == -preservedAreaSize);
+        }
+
+        if (compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
+
+            assert(compiler->lvaGetCallerSPRelativeOffset(compiler->lvaAsyncExecutionContextVar) == -preservedAreaSize);
+        }
+
+        if (compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
+
+            assert(compiler->lvaGetCallerSPRelativeOffset(compiler->lvaAsyncSynchronizationContextVar) ==
+                   -preservedAreaSize);
         }
 
         // Used to signal both that the method is compiled for EnC, and also the size of the block at the top of the
@@ -4317,8 +4340,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     // registers have been saved. So instead of letting genAllocLclFrame use initReg as a temporary register,
     // always use REG_SCRATCH. We don't care if it trashes it, so ignore the initRegZeroed output argument.
     bool ignoreInitRegZeroed = false;
-    genAllocLclFrame(compiler->compLclFrameSize, REG_SCRATCH, &ignoreInitRegZeroed,
-                     intRegState.rsCalleeRegArgMaskLiveIn);
+    genAllocLclFrame(compiler->compLclFrameSize, REG_SCRATCH, &ignoreInitRegZeroed, calleeRegArgMaskLiveIn);
 #endif
 
     regMaskTP rsPushRegs = regSet.rsGetModifiedCalleeSavedRegsMask();

@@ -34,11 +34,15 @@ if (CLR_CMAKE_HOST_UNIX)
     endif()
 endif()
 
-# Force usage of classic linker on Xcode 15
-if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND
-    CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15 AND
-    CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16)
-    add_link_options("-Wl,-ld_classic")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    # enable $<LINK_GROUP:RESCAN> on AppleClang as a no-op
+    set(CMAKE_LINK_GROUP_USING_RESCAN "" "")
+    set(CMAKE_LINK_GROUP_USING_RESCAN_SUPPORTED ON)
+    # Force usage of classic linker on Xcode 15
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15 AND
+        CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16)
+        add_link_options(LINKER:-ld_classic)
+    endif()
 endif()
 
 if (CMAKE_CONFIGURATION_TYPES) # multi-configuration generator?
@@ -124,6 +128,10 @@ if (MSVC)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /sourcelink:${CLR_SOURCELINK_FILE_PATH}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /sourcelink:${CLR_SOURCELINK_FILE_PATH}")
   endif(EXISTS ${CLR_SOURCELINK_FILE_PATH})
+
+  # enable $<LINK_GROUP:RESCAN> on MSVC as a no-op
+  set(CMAKE_LINK_GROUP_USING_RESCAN "" "")
+  set(CMAKE_LINK_GROUP_USING_RESCAN_SUPPORTED ON)
 
   if (CMAKE_GENERATOR MATCHES "^Visual Studio.*$")
     # Debug build specific flags
@@ -705,10 +713,10 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
     endif()
     add_link_options(${DISABLE_OVERRIDING_MIN_VERSION_ERROR})
     if(CLR_CMAKE_HOST_ARCH_ARM64)
-      set(CLR_CMAKE_MACCATALYST_COMPILER_TARGET "arm64-apple-ios15.2-macabi")
+      set(CLR_CMAKE_MACCATALYST_COMPILER_TARGET "arm64-apple-ios17.0-macabi")
       add_link_options(-target ${CLR_CMAKE_MACCATALYST_COMPILER_TARGET})
     elseif(CLR_CMAKE_HOST_ARCH_AMD64)
-      set(CLR_CMAKE_MACCATALYST_COMPILER_TARGET "x86_64-apple-ios15.2-macabi")
+      set(CLR_CMAKE_MACCATALYST_COMPILER_TARGET "x86_64-apple-ios17.0-macabi")
       add_link_options(-target ${CLR_CMAKE_MACCATALYST_COMPILER_TARGET})
     else()
       clr_unknown_arch()
@@ -722,7 +730,7 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
     set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS}-target ${CLR_CMAKE_MACCATALYST_COMPILER_TARGET} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
     set(CMAKE_OBJCXX_FLAGS "${CMAKE_OBJCXX_FLAGS} -target ${CLR_CMAKE_MACCATALYST_COMPILER_TARGET} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
   elseif(CLR_CMAKE_HOST_OSX)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0")
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "14.0")
     if(CLR_CMAKE_HOST_ARCH_ARM64)
       add_compile_options(-arch arm64)
     elseif(CLR_CMAKE_HOST_ARCH_AMD64)
@@ -912,7 +920,9 @@ if (MSVC)
   # Set Warning Level 4:
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w44177>) # Pragma data_seg s/b at global scope.
 
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX,ASM_MASM>:/Zi>) # enable debugging information
+  # enable debugging information.
+  set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT ProgramDatabase)
+
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/ZH:SHA_256>) # use SHA256 for generating hashes of compiler processed source files.
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/source-charset:utf-8>) # Force MSVC to compile source as UTF-8.
 
@@ -1006,30 +1016,20 @@ endif()
 # Ensure other tools are present
 if (CLR_CMAKE_HOST_WIN32)
     if(CLR_CMAKE_HOST_ARCH_ARM64)
-      # Explicitly specify the assembler to be used for Arm64 compile
-      if (CMAKE_SYSTEM_PROCESSOR STREQUAL "ARM64")
-        file(TO_CMAKE_PATH "$ENV{VCToolsInstallDir}\\bin\\Hostarm64\\arm64\\armasm64.exe" CMAKE_ASM_COMPILER)
-      else()
-        file(TO_CMAKE_PATH "$ENV{VCToolsInstallDir}\\bin\\HostX64\\arm64\\armasm64.exe" CMAKE_ASM_COMPILER)
+      enable_language(ASM_MARMASM)
+      if (CMAKE_VERSION VERSION_LESS 3.29)
+        # CMake before 3.29 passes defines down to the Microsoft ARMASM compiler, which is not supported.
+        # We need to remove the defines from the command line.
+        set(CMAKE_ASM_MARMASM_COMPILE_OBJECT "<CMAKE_ASM_MARMASM_COMPILER> <INCLUDES> <FLAGS> -o <OBJECT> <SOURCE>")
       endif()
-
-      set(CMAKE_ASM_MASM_COMPILER ${CMAKE_ASM_COMPILER})
-      message("CMAKE_ASM_MASM_COMPILER explicitly set to: ${CMAKE_ASM_MASM_COMPILER}")
-
-      # Enable generic assembly compilation to avoid CMake generate VS proj files that explicitly
-      # use ml[64].exe as the assembler.
-      enable_language(ASM)
-      set(CMAKE_ASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded         "")
-      set(CMAKE_ASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL      "")
-      set(CMAKE_ASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug    "")
-      set(CMAKE_ASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "")
-      set(CMAKE_ASM_COMPILE_OBJECT "<CMAKE_ASM_COMPILER> -g <INCLUDES> <FLAGS> -o <OBJECT> <SOURCE>")
+      # Add debug info options here as we can't specify separate debug info formats through the CMake abstraction
+      # and -g in MARMASM is technically Embedded mode (which we don't want for our C or C++ code)
+      add_compile_options($<$<COMPILE_LANGUAGE:ASM_MARMASM>:-g>)
     else()
       enable_language(ASM_MASM)
-      set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded         "")
-      set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL      "")
-      set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug    "")
-      set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "")
+      # Add debug info options here as we can't specify separate debug info formats through the CMake abstraction
+      # and /Zi in MASM is technically Embedded mode (which we don't want for our C or C++ code)
+      add_compile_options($<$<COMPILE_LANGUAGE:ASM_MASM>:/Zi>)
     endif()
 
     # Ensure that MC is present

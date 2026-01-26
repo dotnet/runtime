@@ -3,6 +3,8 @@
 
 import type { LoaderConfig, DotnetHostBuilder } from "./types";
 
+import { exceptions, simd } from "wasm-feature-detect";
+
 import { GlobalizationMode } from "./types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL } from "./per-module";
 import { nodeFs } from "./polyfills";
@@ -13,6 +15,11 @@ const queryIndex = scriptUrlQuery.indexOf("?");
 const modulesUniqueQuery = queryIndex > 0 ? scriptUrlQuery.substring(queryIndex) : "";
 const scriptUrl = normalizeFileUrl(scriptUrlQuery);
 const scriptDirectory = normalizeDirectoryUrl(scriptUrl);
+
+export async function validateWasmFeatures(): Promise<void> {
+    dotnetAssert.check(await exceptions, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+    dotnetAssert.check(await simd, "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+}
 
 export function locateFile(path: string, isModule = false): string {
     let res;

@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: JITinterface.H
 //
-
 // ===========================================================================
-
 
 #ifndef JITINTERFACE_H
 #define JITINTERFACE_H
@@ -263,10 +262,6 @@ void ValidateWriteBarrierHelpers();
 
 extern "C"
 {
-#ifndef FEATURE_EH_FUNCLETS
-    void STDCALL JIT_EndCatch();               // JIThelp.asm/JIThelp.s
-#endif // FEATURE_EH_FUNCLETS
-
     void STDCALL JIT_ByRefWriteBarrier();      // JIThelp.asm/JIThelp.s
 
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
@@ -741,14 +736,12 @@ public:
         m_pPatchpointInfoFromJit = NULL;
 #endif
 
-#ifdef FEATURE_EH_FUNCLETS
         m_moduleBase = (TADDR)0;
         m_totalUnwindSize = 0;
         m_usedUnwindSize = 0;
         m_theUnwindBlock = NULL;
         m_totalUnwindInfos = 0;
         m_usedUnwindInfos = 0;
-#endif // FEATURE_EH_FUNCLETS
     }
 
 #if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
@@ -829,14 +822,12 @@ public:
     CEEJitInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_ILMETHOD_DECODER* header,
                EECodeGenManager* jm)
         : CEECodeGenInfo(config, fd, header, jm)
-#ifdef FEATURE_EH_FUNCLETS
         , m_moduleBase(0),
           m_totalUnwindSize(0),
           m_usedUnwindSize(0),
           m_theUnwindBlock(NULL),
           m_totalUnwindInfos(0),
           m_usedUnwindInfos(0)
-#endif
 #if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
         , m_fAllowRel32(FALSE)
 #endif
@@ -922,15 +913,12 @@ protected :
     ComputedPgoData*        m_foundPgoData = nullptr;
 #endif
 
-
-#ifdef FEATURE_EH_FUNCLETS
     TADDR                   m_moduleBase;       // Base for unwind Infos
     ULONG                   m_totalUnwindSize;  // Total reserved unwind space
     uint32_t                m_usedUnwindSize;   // used space in m_theUnwindBlock
     BYTE *                  m_theUnwindBlock;   // start of the unwind memory block
     ULONG                   m_totalUnwindInfos; // Number of RUNTIME_FUNCTION needed
     ULONG                   m_usedUnwindInfos;
-#endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
     BOOL                    m_fAllowRel32;      // Use 32-bit PC relative address modes

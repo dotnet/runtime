@@ -71,6 +71,7 @@ const char *g_szMapElementType[] =
     "CMOD_REQD",
     "CMOD_OPT",
     "INTERNAL",
+    "CMOD_INTERNAL",
 };
 
 const char *g_szMapUndecorateType[] =
@@ -109,6 +110,7 @@ const char *g_szMapUndecorateType[] =
     "CMOD_REQD",
     "CMOD_OPT",
     "INTERNAL",
+    "CMOD_INTERNAL",
 };
 
 // Provide enough entries for IMAGE_CEE_CS_CALLCONV_MASK (defined in CorHdr.h)

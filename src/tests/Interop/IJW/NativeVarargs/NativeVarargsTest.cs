@@ -17,7 +17,7 @@ namespace NativeVarargsTest
         [Fact]
         public static int TestEntryPoint()
         {
-            if(Environment.OSVersion.Platform != PlatformID.Win32NT || TestLibrary.Utilities.IsWindows7 || TestLibrary.Utilities.IsWindowsNanoServer)
+            if(Environment.OSVersion.Platform != PlatformID.Win32NT || TestLibrary.Utilities.IsWindowsNanoServer)
             {
                 return 100;
             }

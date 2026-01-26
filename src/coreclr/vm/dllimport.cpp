@@ -489,7 +489,7 @@ public:
                 pStubMD->SetStatic();
             }
 
-#ifndef TARGET_X86
+#if !defined(TARGET_X86) && defined(FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE)
             // we store the real managed argument stack size in the stub MethodDesc on non-X86
             UINT stackSize = pStubMD->SizeOfNativeArgStack();
 
@@ -3476,6 +3476,7 @@ BOOL PInvoke::MarshalingRequired(
     if (!FitsInU2(dwStackSize))
         return TRUE;
 
+#ifdef TARGET_X86
     // do not set the stack size for varargs - the number is call site specific
     if (pMD != NULL && !pMD->IsVarArg())
     {
@@ -3491,6 +3492,7 @@ BOOL PInvoke::MarshalingRequired(
         }
 #endif // FEATURE_COMINTEROP
     }
+#endif // TARGET_X86
 
     return FALSE;
 }
@@ -3885,11 +3887,13 @@ static void CreatePInvokeStubWorker(StubState*               pss,
         if (!FitsInU2(nativeStackSize))
             COMPlusThrow(kMarshalDirectiveException, IDS_EE_SIGTOOCOMPLEX);
 
+#ifdef FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
         DynamicMethodDesc *pDMD = pMD->AsDynamicMethodDesc();
 
         pDMD->SetNativeStackArgSize(static_cast<WORD>(nativeStackSize));
         if (fStubNeedsCOM)
             pDMD->SetFlags(DynamicMethodDesc::FlagRequiresCOM);
+#endif
     }
 
     // FinishEmit needs to know the native stack arg size so we call it after the number
@@ -3983,11 +3987,13 @@ static void CreateStructStub(ILStubState* pss,
         pss->MarshalField(&mlInfo, managedOffset, externalOffset, pFD);
     }
 
+#if defined(FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE)
     if (pMD->IsDynamicMethod())
     {
         DynamicMethodDesc* pDMD = pMD->AsDynamicMethodDesc();
         pDMD->SetNativeStackArgSize(4 * TARGET_POINTER_SIZE); // The native stack arg size is constant since the signature for struct stubs is constant.
     }
+#endif
 
     // FinishEmit needs to know the native stack arg size so we call it after the number
     // has been set in the stub MD (code:DynamicMethodDesc.SetNativeStackArgSize)

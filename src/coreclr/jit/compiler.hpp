@@ -832,14 +832,7 @@ inline bool BasicBlock::HasPotentialEHSuccs(Compiler* comp)
  */
 inline FuncInfoDsc* Compiler::funCurrentFunc()
 {
-    if (UsesFunclets())
-    {
-        return funGetFunc(compCurrFuncIdx);
-    }
-    else
-    {
-        return &compFuncInfoRoot;
-    }
+    return funGetFunc(compCurrFuncIdx);
 }
 
 /*****************************************************************************
@@ -849,17 +842,10 @@ inline FuncInfoDsc* Compiler::funCurrentFunc()
  */
 inline void Compiler::funSetCurrentFunc(unsigned funcIdx)
 {
-    if (UsesFunclets())
-    {
-        assert(fgFuncletsCreated);
-        assert(FitsIn<unsigned short>(funcIdx));
-        noway_assert(funcIdx < compFuncInfoCount);
-        compCurrFuncIdx = (unsigned short)funcIdx;
-    }
-    else
-    {
-        assert(funcIdx == 0);
-    }
+    assert(fgFuncletsCreated);
+    assert(FitsIn<unsigned short>(funcIdx));
+    noway_assert(funcIdx < compFuncInfoCount);
+    compCurrFuncIdx = (unsigned short)funcIdx;
 }
 
 /*****************************************************************************
@@ -869,17 +855,9 @@ inline void Compiler::funSetCurrentFunc(unsigned funcIdx)
  */
 inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
 {
-    if (UsesFunclets())
-    {
-        assert(fgFuncletsCreated);
-        assert(funcIdx < compFuncInfoCount);
-        return &compFuncInfos[funcIdx];
-    }
-    else
-    {
-        assert(funcIdx == 0);
-        return &compFuncInfoRoot;
-    }
+    assert(fgFuncletsCreated);
+    assert(funcIdx < compFuncInfoCount);
+    return &compFuncInfos[funcIdx];
 }
 
 /*****************************************************************************
@@ -892,30 +870,23 @@ inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
  */
 inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 {
-    if (UsesFunclets())
-    {
-        assert(bbIsFuncletBeg(block));
+    assert(bbIsFuncletBeg(block));
 
-        EHblkDsc*    eh      = ehGetDsc(block->getHndIndex());
-        unsigned int funcIdx = eh->ebdFuncIndex;
-        if (eh->ebdHndBeg != block)
-        {
-            // If this is a filter EH clause, but we want the funclet
-            // for the filter (not the filter handler), it is the previous one
-            noway_assert(eh->HasFilter());
-            noway_assert(eh->ebdFilter == block);
-            assert(funGetFunc(funcIdx)->funKind == FUNC_HANDLER);
-            assert(funGetFunc(funcIdx)->funEHIndex == funGetFunc(funcIdx - 1)->funEHIndex);
-            assert(funGetFunc(funcIdx - 1)->funKind == FUNC_FILTER);
-            funcIdx--;
-        }
-
-        return funcIdx;
-    }
-    else
+    EHblkDsc*    eh      = ehGetDsc(block->getHndIndex());
+    unsigned int funcIdx = eh->ebdFuncIndex;
+    if (eh->ebdHndBeg != block)
     {
-        return 0;
+        // If this is a filter EH clause, but we want the funclet
+        // for the filter (not the filter handler), it is the previous one
+        noway_assert(eh->HasFilter());
+        noway_assert(eh->ebdFilter == block);
+        assert(funGetFunc(funcIdx)->funKind == FUNC_HANDLER);
+        assert(funGetFunc(funcIdx)->funEHIndex == funGetFunc(funcIdx - 1)->funEHIndex);
+        assert(funGetFunc(funcIdx - 1)->funKind == FUNC_FILTER);
+        funcIdx--;
     }
+
+    return funcIdx;
 }
 
 #if HAS_FIXED_REGISTER_SET
@@ -3025,6 +2996,14 @@ inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
 {
     assert(ILargNum < info.compILargsCount);
 
+#if defined(TARGET_WASM)
+    if (ILargNum >= lvaWasmSpArg)
+    {
+        ILargNum++;
+        assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
+    }
+#endif
+
     // Note that this works because if compRetBuffArg/compTypeCtxtArg/lvVarargsHandleArg are not present
     // they will be BAD_VAR_NUM (MAX_UINT), which is larger than any variable number.
     if (ILargNum >= info.compRetBuffArg)
@@ -4517,9 +4496,6 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
         case GT_START_NONGC:
         case GT_START_PREEMPTGC:
         case GT_PROF_HOOK:
-#if defined(FEATURE_EH_WINDOWS_X86)
-        case GT_END_LFIN:
-#endif // FEATURE_EH_WINDOWS_X86
         case GT_PHI_ARG:
         case GT_JMPTABLE:
         case GT_PHYSREG:
@@ -5548,6 +5524,68 @@ bool Compiler::optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned lim
     });
 
     return (result == BasicBlockVisit::Abort);
+}
+
+//--------------------------------------------------------------------------------
+// optVisitReachingAssertions: given a vn, call the specified callback function on all
+//    the assertions that reach it via PHI definitions if any.
+//
+// Arguments:
+//    vn         - The vn to visit all the reaching assertions for
+//    argVisitor - The callback function to call on the vn and its reaching assertions
+//
+// Return Value:
+//    AssertVisit::Aborted  - an argVisitor returned AssertVisit::Abort, we stop the walk and return
+//    AssertVisit::Continue - all argVisitor returned AssertVisit::Continue
+//
+template <typename TAssertVisitor>
+Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertVisitor argVisitor)
+{
+    VNPhiDef phiDef;
+    if (!vnStore->GetPhiDef(vn, &phiDef))
+    {
+        // We assume that the caller already checked assertions for the current block, so we're
+        // interested only in assertions for PHI definitions.
+        return AssertVisit::Abort;
+    }
+
+    LclSsaVarDsc*        ssaDef = lvaGetDesc(phiDef.LclNum)->GetPerSsaData(phiDef.SsaDef);
+    GenTreeLclVarCommon* node   = ssaDef->GetDefNode();
+    assert(node->IsPhiDefn());
+
+    // Keep track of the set of phi-preds
+    //
+    BitVecTraits traits(fgBBNumMax + 1, this);
+    BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
+
+    for (GenTreePhi::Use& use : node->Data()->AsPhi()->Uses())
+    {
+        GenTreePhiArg* phiArg     = use.GetNode()->AsPhiArg();
+        const ValueNum phiArgVN   = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
+        ASSERT_TP      assertions = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
+        if (argVisitor(phiArgVN, assertions) == AssertVisit::Abort)
+        {
+            // The visitor wants to abort the walk.
+            return AssertVisit::Abort;
+        }
+        BitVecOps::AddElemD(&traits, visitedBlocks, phiArg->gtPredBB->bbNum);
+    }
+
+    // Verify the set of phi-preds covers the set of block preds
+    //
+    for (BasicBlock* const pred : ssaDef->GetBlock()->PredBlocks())
+    {
+        if (!BitVecOps::IsMember(&traits, visitedBlocks, pred->bbNum))
+        {
+            JITDUMP("... optVisitReachingAssertions in " FMT_BB ": pred " FMT_BB " not a phi-pred\n",
+                    ssaDef->GetBlock()->bbNum, pred->bbNum);
+
+            // We missed examining a block pred. Fail the phi inference.
+            //
+            return AssertVisit::Abort;
+        }
+    }
+    return AssertVisit::Continue;
 }
 
 /*****************************************************************************/

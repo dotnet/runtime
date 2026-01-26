@@ -520,13 +520,13 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
 #endif
     bool bRetVal = mmap(address, size, PROT_NONE, mmapFlags, -1, 0) != MAP_FAILED;
 
-#ifdef MADV_DONTDUMP
+#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
     if (bRetVal)
     {
         // Do not include freed memory in coredump.
         madvise(address, size, MADV_DONTDUMP);
     }
-#endif
+#endif // defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
 
     return  bRetVal;
 }
@@ -541,6 +541,9 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
 {
+#ifdef TARGET_WASM
+    return true;
+#else // !TARGET_WASM
     int st = EINVAL;
 
 #if defined(MADV_DONTDUMP) || defined(HAVE_MADV_FREE)
@@ -560,16 +563,17 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
 
     st = madvise(address, size, madviseFlags);
 
-#endif //defined(MADV_DONTDUMP) || defined(HAVE_MADV_FREE)
+#endif // defined(MADV_DONTDUMP) || defined(HAVE_MADV_FREE)
 
 #if defined(HAVE_POSIX_MADVISE) && !defined(MADV_DONTDUMP)
     // DONTNEED is the nearest posix equivalent of FREE.
     // Prefer FREE as, since glibc2.6 DONTNEED is a nop.
     st = posix_madvise(address, size, POSIX_MADV_DONTNEED);
 
-#endif //defined(HAVE_POSIX_MADVISE) && !defined(MADV_DONTDUMP)
+#endif // defined(HAVE_POSIX_MADVISE) && !defined(MADV_DONTDUMP)
 
     return (st == 0);
+#endif // !TARGET_WASM
 }
 
 // Check if the OS supports write watching

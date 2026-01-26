@@ -17,7 +17,7 @@ namespace ILAssembler
         private readonly Dictionary<TableIndex, List<EntityBase>> _seenEntities = new();
         private readonly Dictionary<(TypeDefinitionEntity? ContainingType, string Namespace, string Name), TypeDefinitionEntity> _seenTypeDefs = new();
         private readonly Dictionary<(EntityBase ResolutionScope, string Namespace, string Name), TypeReferenceEntity> _seenTypeRefs = new();
-        private readonly Dictionary<AssemblyName, AssemblyReferenceEntity> _seenAssemblyRefs = new();
+        private readonly Dictionary<string, AssemblyReferenceEntity> _seenAssemblyRefs = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, ModuleReferenceEntity> _seenModuleRefs = new();
         private readonly Dictionary<BlobBuilder, TypeSpecificationEntity> _seenTypeSpecs = new(new BlobBuilderContentEqualityComparer());
         private readonly Dictionary<BlobBuilder, StandaloneSignatureEntity> _seenStandaloneSignatures = new(new BlobBuilderContentEqualityComparer());
@@ -92,7 +92,7 @@ namespace ILAssembler
             return Array.Empty<EntityBase>();
         }
 
-        public void WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream)
+        public void WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream, IReadOnlyDictionary<string, int> mappedFieldDataNames)
         {
             // Now that we've seen all of the entities, we can write them out in the correct order.
             // Record the entities in the correct order so they are assigned handles.
@@ -187,7 +187,14 @@ namespace ILAssembler
                     (TypeDefinitionHandle)type.Handle,
                     (PropertyDefinitionHandle)GetHandleForList(type.Properties, GetSeenEntities(TableIndex.TypeDef), type => ((TypeDefinitionEntity)type).Properties, i, TableIndex.Property));
 
-                // TODO: ClassLayout
+                if (type.PackingSize is not null || type.ClassSize is not null)
+                {
+                    builder.AddTypeLayout(
+                        (TypeDefinitionHandle)type.Handle,
+                        (ushort)(type.PackingSize ?? 0),
+                        (uint)(type.ClassSize ?? 0));
+                }
+
                 if (type.ContainingType is not null)
                 {
                     builder.AddNestedType((TypeDefinitionHandle)type.Handle, (TypeDefinitionHandle)type.ContainingType.Handle);
@@ -201,7 +208,16 @@ namespace ILAssembler
                     builder.GetOrAddString(fieldDef.Name),
                     fieldDef.Signature!.Count == 0 ? default : builder.GetOrAddBlob(fieldDef.Signature));
 
-                // TODO: FieldLayout, FieldRVA
+                if (fieldDef.Offset is not null)
+                {
+                    builder.AddFieldLayout((FieldDefinitionHandle)fieldDef.Handle, fieldDef.Offset.Value);
+                }
+
+                if (fieldDef.DataDeclarationName is not null && mappedFieldDataNames.TryGetValue(fieldDef.DataDeclarationName, out int dataOffset))
+                {
+                    builder.AddFieldRelativeVirtualAddress((FieldDefinitionHandle)fieldDef.Handle, dataOffset);
+                }
+
                 if (fieldDef.MarshallingDescriptor is not null)
                 {
                     builder.AddMarshallingDescriptor(fieldDef.Handle, builder.GetOrAddBlob(fieldDef.MarshallingDescriptor));
@@ -310,6 +326,17 @@ namespace ILAssembler
                 builder.AddModuleReference(builder.GetOrAddString(moduleRef.Name));
             }
 
+            foreach (AssemblyReferenceEntity asmRef in GetSeenEntities(TableIndex.AssemblyRef))
+            {
+                builder.AddAssemblyReference(
+                    builder.GetOrAddString(asmRef.Name),
+                    asmRef.Version ?? new Version(),
+                    asmRef.Culture is null ? default : builder.GetOrAddString(asmRef.Culture),
+                    asmRef.PublicKeyOrToken is null ? default : builder.GetOrAddBlob(asmRef.PublicKeyOrToken),
+                    asmRef.Flags,
+                    asmRef.Hash is null ? default : builder.GetOrAddBlob(asmRef.Hash));
+            }
+
             foreach (TypeSpecificationEntity typeSpec in GetSeenEntities(TableIndex.TypeSpec))
             {
                 builder.AddTypeSpecification(builder.GetOrAddBlob(typeSpec.Signature));
@@ -338,8 +365,8 @@ namespace ILAssembler
             {
                 builder.AddExportedType(
                     exportedType.Attributes,
-                    builder.GetOrAddString(exportedType.Name),
                     builder.GetOrAddString(exportedType.Namespace),
+                    builder.GetOrAddString(exportedType.Name),
                     exportedType.Implementation?.Handle ?? default,
                     exportedType.TypeDefinitionId);
             }
@@ -439,8 +466,13 @@ namespace ILAssembler
 
         private TypeReferenceEntity ResolveFromCoreAssembly(string typeName)
         {
-            // TODO: System.Private.CoreLib as the core assembly?
-            var coreAsmRef = GetOrCreateAssemblyReference("mscorlib", new Version(4, 0), culture: null, publicKeyOrToken: null, 0, ProcessorArchitecture.None);
+            // Match native ilasm behavior: check for assembly refs in order of preference,
+            // then fall back to creating mscorlib if none found
+            AssemblyReferenceEntity coreAsmRef = FindAssemblyReference("System.Private.CoreLib")
+                ?? FindAssemblyReference("System.Runtime")
+                ?? FindAssemblyReference("mscorlib")
+                ?? FindAssemblyReference("netstandard")
+                ?? GetOrCreateAssemblyReference("mscorlib", new Version(4, 0), culture: null, publicKeyOrToken: null, 0, ProcessorArchitecture.None);
             return GetOrCreateTypeReference(coreAsmRef, new TypeName(null, typeName));
         }
 
@@ -500,7 +532,7 @@ namespace ILAssembler
 
         public AssemblyReferenceEntity GetOrCreateAssemblyReference(string name, Action<AssemblyReferenceEntity> onCreateAssemblyReference)
         {
-            return GetOrCreateEntity(new(name), TableIndex.AssemblyRef, _seenAssemblyRefs, _ => new(name), onCreateAssemblyReference);
+            return GetOrCreateEntity(name, TableIndex.AssemblyRef, _seenAssemblyRefs, _ => new(name), onCreateAssemblyReference);
         }
 
         public ModuleReferenceEntity GetOrCreateModuleReference(string name, Action<ModuleReferenceEntity> onCreateModuleReference)
@@ -573,8 +605,14 @@ namespace ILAssembler
                     builder.AppendFormat("{0}.{1}", typeRef.Namespace, typeRef.Name);
                     if (resolutionContext is AssemblyReferenceEntity asmRef)
                     {
-                        // TODO: Do full assembly name here
-                        builder.Append(asmRef.Name);
+                        var assemblyNameInfo = new AssemblyNameInfo(
+                            asmRef.Name,
+                            asmRef.Version,
+                            string.IsNullOrEmpty(asmRef.Culture) ? null : asmRef.Culture,
+                            asmRef.PublicKeyOrToken is null ? AssemblyNameFlags.None : AssemblyNameFlags.PublicKey,
+                            asmRef.PublicKeyOrToken?.ToImmutableArray() ?? []);
+                        builder.Append(", ");
+                        builder.Append(assemblyNameInfo.FullName);
                     }
                     typeRef.ReflectionNotation = builder.ToString();
                 });
@@ -757,7 +795,13 @@ namespace ILAssembler
                 unmodifiedType.WriteBlobTo(builder);
                 return builder;
             }
-            public BlobOrHandle GetPinnedType(BlobOrHandle elementType) => throw new NotImplementedException();
+            public BlobOrHandle GetPinnedType(BlobOrHandle elementType)
+            {
+                var builder = new BlobBuilder();
+                builder.WriteByte((byte)SignatureTypeCode.Pinned);
+                elementType.WriteBlobTo(builder);
+                return builder;
+            }
             public BlobOrHandle GetPointerType(BlobOrHandle elementType)
             {
                 var paramEncoder = new ParameterTypeEncoder(new BlobBuilder());
@@ -929,25 +973,16 @@ namespace ILAssembler
 
         public AssemblyReferenceEntity? FindAssemblyReference(string name)
         {
-            if (_seenAssemblyRefs.TryGetValue(new AssemblyName(name), out var file))
+            if (_seenAssemblyRefs.TryGetValue(name, out var asmRef))
             {
-                return file;
+                return asmRef;
             }
             return null;
         }
 
         public AssemblyReferenceEntity GetOrCreateAssemblyReference(string name, Version version, string? culture, BlobBuilder? publicKeyOrToken, AssemblyFlags flags, ProcessorArchitecture architecture)
         {
-            AssemblyName key = new AssemblyName(name)
-            {
-                Version = version,
-                CultureName = culture,
-                Flags = (AssemblyNameFlags)flags,
-#pragma warning disable SYSLIB0037 // ProcessorArchitecture is obsolete
-                ProcessorArchitecture = architecture
-#pragma warning restore SYSLIB0037 // ProcessorArchitecture is obsolete
-            };
-            return GetOrCreateEntity(key, TableIndex.AssemblyRef, _seenAssemblyRefs, (value) => new AssemblyReferenceEntity(name), entity =>
+            return GetOrCreateEntity(name, TableIndex.AssemblyRef, _seenAssemblyRefs, _ => new AssemblyReferenceEntity(name), entity =>
             {
                 entity.Version = version;
                 entity.Culture = culture;
@@ -1096,6 +1131,10 @@ namespace ILAssembler
             public List<InterfaceImplementationEntity> InterfaceImplementations { get; } = new();
 
             public string ReflectionNotation { get; }
+
+            // ClassLayout table fields
+            public int? PackingSize { get; set; }
+            public int? ClassSize { get; set; }
         }
 
         public sealed class TypeReferenceEntity(EntityBase resolutionScope, string @namespace, string name) : TypeEntity, IHasReflectionNotation
@@ -1251,6 +1290,9 @@ namespace ILAssembler
 
             public BlobBuilder? MarshallingDescriptor { get; set; }
             public string? DataDeclarationName { get; set; }
+
+            // FieldLayout table field (explicit field offset)
+            public int? Offset { get; set; }
         }
 
         public sealed class InterfaceImplementationEntity(TypeDefinitionEntity type, TypeEntity interfaceType) : EntityBase

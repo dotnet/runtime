@@ -25,7 +25,7 @@ export function selfRun() {
         runtimeId: 0,
         runtimeBuildInfo: {
             productVersion: "corerun",
-            gitHash: "corerun",
+            gitHash: null,
             buildConfiguration: "corerun",
             wasmEnableThreads: false,
             wasmEnableSIMD: true,

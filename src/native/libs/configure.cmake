@@ -887,6 +887,10 @@ check_include_files(
     HAVE_DLFCN_H)
 
 check_include_files(
+    "sys/statfs.h"
+    HAVE_SYS_STATFS_H)
+
+check_include_files(
     "sys/statvfs.h"
     HAVE_SYS_STATVFS_H)
 
@@ -958,6 +962,10 @@ check_include_files(
 check_include_files(
     "sys/mntent.h"
     HAVE_SYS_MNTENT_H)
+
+check_include_files(
+    "mntent.h"
+    HAVE_MNTENT_H)
 
 check_include_files(
     "stdint.h;net/if_media.h"

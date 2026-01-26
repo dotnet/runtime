@@ -60,6 +60,10 @@ EXTERN_C VOID STDCALL PInvokeImportThunk();
 #define METHOD_TOKEN_RANGE_BIT_COUNT (24 - METHOD_TOKEN_REMAINDER_BIT_COUNT)
 #define METHOD_TOKEN_RANGE_MASK ((1 << METHOD_TOKEN_RANGE_BIT_COUNT) - 1)
 
+#if defined(TARGET_X86) || defined(FEATURE_COMINTEROP)
+#define FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
+#endif
+
 enum class AsyncMethodFlags
 {
     // Method uses CORINFO_CALLCONV_ASYNCCALL call convention.
@@ -68,8 +72,10 @@ enum class AsyncMethodFlags
     ReturnsTaskOrValueTask     = 2,
     // An AsyncCall representation of a ReturnsTaskOrValueTask method.
     IsAsyncVariant             = 4,
+    // Whether the ReturnsTaskOrValueTask counterpart is returning Task or ValueTask
+    IsAsyncVariantForValueTask = 8,
     // Method has synthetic body, which forwards to the other variant.
-    Thunk                      = 8,
+    Thunk                      = 16,
     // The rest of the methods that are not in any of the above groups.
     // Such methods are not interesting to the Runtime Async feature.
     // Note: Generic T-returning methods are classified as "None", even if T could be a Task.
@@ -85,14 +91,9 @@ enum class AsyncMethodFlags
     // the IL body belongs to one of the variants and another variant is a synthetic thunk.
     //
     // The signature of the Async variant is derived from the Task-returning signature by replacing
-    // Task return type with modreq'd element type:
-    //   Example: "Task<int> Foo();"  ===> "modreq(Task`) int Foo();"
-    //   Example: "ValueTask Bar();"  ===> "modreq(ValueTask) void Bar();"
-    //
-    // The reason for this encoding is that:
-    //   - it uses parts of original signature, as-is, thus does not need to look for or construct anything
-    //   - it "unwraps" the element type.
-    //   - it is reversible. Thus nonconflicting signatures will map to nonconflicting ones.
+    // Task return type with "element" type:
+    //   Example: "Task<int> Foo();"  ===> "int Foo();"
+    //   Example: "ValueTask Bar();"  ===> "void Bar();"
     //
     // It is possible to get from one variant to another via GetAsyncOtherVariant.
     //
@@ -858,9 +859,11 @@ public:
     // arguments passed in registers.
     UINT SizeOfArgStack();
 
+#ifdef FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
     // Returns the # of bytes of stack used by arguments in a call from native to this function.
     // Does not include arguments passed in registers.
     UINT SizeOfNativeArgStack();
+#endif // FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
 
     // Returns the # of bytes to pop after a call. Not necessary the
     // same as SizeOfArgStack()!
@@ -1613,6 +1616,13 @@ public:
     // Returns the address of the native code.
     PCODE GetNativeCode();
 
+    // Returns either the jitted code or the interpreter code (will not return the InterpreterStub which GetNativeCode might return)
+    PCODE GetCodeForInterpreterOrJitted()
+    {
+        WRAPPER_NO_CONTRACT;
+        return GetInterpreterCodeFromInterpreterPrecodeIfPresent(GetNativeCode());
+    }
+
     // Returns GetNativeCode() if it exists, but also checks to see if there
     // is a non-default code version that is populated with a code body and returns that.
     // Perf warning: takes the CodeVersionManagerLock on every call
@@ -1965,6 +1975,18 @@ public:
         return hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariant);
     }
 
+    // Is this an Async variant method for a method that
+    // returns ValueTask or ValueTask<T> ?
+    inline bool IsAsyncVariantForValueTaskReturningMethod() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (!HasAsyncMethodData())
+            return false;
+
+        AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
+        return hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariantForValueTask);
+    }
+
     // Is this a small(ish) synthetic Task/async adapter to an async/Task implementation?
     // If yes, the method has another variant, which has the actual user-defined method body.
     inline bool IsAsyncThunkMethod() const
@@ -2162,7 +2184,6 @@ private:
     void EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& thunkMsig, ILStubLinker* pSL);
     void EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig& msig, ILStubLinker* pSL);
     SigPointer GetAsyncThunkResultTypeSig();
-    bool IsValueTaskAsyncThunk();
     int GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
     int GetTokenForGenericTypeMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
 public:
@@ -2887,6 +2908,7 @@ public:
         return asMetadata;
     }
 
+#if defined(TARGET_X86) || defined(FEATURE_COMINTEROP)
     WORD GetNativeStackArgSize()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2903,7 +2925,8 @@ public:
 #endif
         m_dwExtendedFlags = (m_dwExtendedFlags & ~StackArgSizeMask) | ((DWORD)cbArgSize << 16);
     }
-
+#endif // TARGET_X86 || FEATURE_COMINTEROP
+    
     bool IsReversePInvokeStub() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -3333,11 +3356,11 @@ private:
 #endif
 public:
 
+#if defined(TARGET_X86)
     void SetStackArgumentSize(WORD cbDstBuffer, CorInfoCallConvExtension unmgdCallConv)
     {
         LIMITED_METHOD_CONTRACT;
 
-#if defined(TARGET_X86)
         // thiscall passes the this pointer in ECX
         if (unmgdCallConv == CorInfoCallConvExtension::Thiscall)
         {
@@ -3354,10 +3377,8 @@ public:
         {
             _ASSERTE(m_cbStackArgumentSize == cbDstBuffer);
         }
-#endif // defined(TARGET_X86)
     }
 
-#if defined(TARGET_X86)
     void EnsureStackArgumentSize();
 
     WORD GetStackArgumentSize() const
@@ -3475,16 +3496,6 @@ struct CLRToCOMCallInfo
         _ASSERTE(m_cbStackArgumentSize != 0xFFFF);
         return m_cbStackArgumentSize;
     }
-#else // TARGET_X86
-    void InitStackArgumentSize()
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    void SetStackArgumentSize(WORD cbDstBuffer)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
 #endif // TARGET_X86
 };
 
@@ -3553,11 +3564,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_pCLRToCOMCallInfo->m_cbStackPop = (WORD)CbStackPop();
-    }
-#else // TARGET_X86
-    void SetStackArgumentSize(WORD cbDstBuffer)
-    {
-        LIMITED_METHOD_CONTRACT;
     }
 #endif // TARGET_X86
 };

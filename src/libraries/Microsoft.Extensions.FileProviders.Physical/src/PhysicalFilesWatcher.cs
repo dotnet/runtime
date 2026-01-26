@@ -165,11 +165,17 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
             else
             {
-                changeToken = GetOrAddFilePathChangeToken(pattern);
+                // get rid of \. in Windows and ./ in UNIX's at the start of path file
+                var filePath = RemoveRelativePathSegment(pattern);
+                changeToken = GetOrAddFilePathChangeToken(filePath);
             }
 
             return changeToken;
         }
+
+        private static string RemoveRelativePathSegment(string pattern) =>
+            // The pattern has already been normalized to unix directory separators
+            pattern.StartsWith("./", StringComparison.Ordinal) ? pattern.Substring(2) : pattern;
 
         internal IChangeToken GetOrAddFilePathChangeToken(string filePath)
         {

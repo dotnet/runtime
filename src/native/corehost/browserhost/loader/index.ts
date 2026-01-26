@@ -16,7 +16,7 @@ import GitHash from "consts:gitHash";
 import { loaderConfig, getLoaderConfig } from "./config";
 import { exit, isExited, isRuntimeRunning, addOnExitListener, registerExit, quitNow } from "./exit";
 import { invokeLibraryInitializers } from "./lib-initializers";
-import { check, error, info, warn, debug } from "./logging";
+import { check, error, info, warn, debug, fastCheck } from "./logging";
 
 import { dotnetAssert, dotnetLoaderExports, dotnetLogger, dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "./cross-module";
 import { rejectRunMainPromise, resolveRunMainPromise, getRunMainPromise, abortStartup } from "./run";
@@ -77,6 +77,7 @@ export function dotnetInitializeModule(): RuntimeAPI {
     Object.assign(dotnetLogger, logger);
     const assert: AssertType = {
         check,
+        fastCheck,
     };
     Object.assign(dotnetAssert, assert);
 
@@ -99,6 +100,7 @@ export function dotnetInitializeModule(): RuntimeAPI {
             logger.warn,
             logger.error,
             assert.check,
+            assert.fastCheck,
             dotnetLoaderExports.resolveRunMainPromise,
             dotnetLoaderExports.rejectRunMainPromise,
             dotnetLoaderExports.getRunMainPromise,

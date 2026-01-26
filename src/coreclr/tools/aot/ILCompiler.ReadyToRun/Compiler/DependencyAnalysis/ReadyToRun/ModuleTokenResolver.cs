@@ -69,7 +69,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             // If the token was not lazily mapped, search the input compilation set for a type reference token
-            if (_compilationModuleGroup.TryGetModuleTokenForExternalType(type, out token))
+            if (!_compilationModuleGroup.VersionsWithType(type) && _compilationModuleGroup.TryGetModuleTokenForExternalType(type, out token))
             {
                 return token;
             }

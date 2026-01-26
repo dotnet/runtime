@@ -106,7 +106,7 @@ bool CodeGen::genInstrWithConstant(instruction ins,
 
         // first we load the immediate into tmpReg
         assert(!EA_IS_RELOC(size));
-        GetEmitter()->emitLoadImmediate(size, tmpReg, imm);
+        GetEmitter()->emitLoadImmediate<true>(size, tmpReg, imm);
         regSet.verifyRegUsed(tmpReg);
 
         // when we are in an unwind code region
@@ -544,6 +544,14 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     {
         delta_PSP -= TARGET_POINTER_SIZE;
     }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta_PSP -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta_PSP -= TARGET_POINTER_SIZE;
+    }
 
     funcletFrameSize = funcletFrameSize - delta_PSP;
     funcletFrameSize = roundUp((unsigned)funcletFrameSize, STACK_ALIGN);
@@ -722,16 +730,15 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
     regMaskTP availMask = regSet.rsGetModifiedRegsMask() | RBM_INT_CALLEE_TRASH; // Set of available registers
     // see: src/jit/registerriscv64.h
-    availMask &= ~intRegState.rsCalleeRegArgMaskLiveIn; // Remove all of the incoming argument registers as they are
-                                                        // currently live
-    availMask &= ~genRegMask(initReg); // Remove the pre-calculated initReg as we will zero it and maybe use it for
-                                       // a large constant.
+    availMask &= ~calleeRegArgMaskLiveIn; // Remove all of the incoming argument registers as they are currently live
+    availMask &= ~genRegMask(initReg);    // Remove the pre-calculated initReg as we will zero it and maybe use it for
+                                          // a large constant.
 
     rAddr           = initReg;
     *pInitRegZeroed = false;
 
     // rAddr is not a live incoming argument reg
-    assert((genRegMask(rAddr) & intRegState.rsCalleeRegArgMaskLiveIn) == 0);
+    assert((genRegMask(rAddr) & calleeRegArgMaskLiveIn) == 0);
     assert(untrLclLo % 4 == 0);
 
     if (emitter::isValidSimm12(untrLclLo))
@@ -769,7 +776,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         availMask &= ~regMask;
 
         // rEndAddr is not a live incoming argument reg
-        assert((genRegMask(rEndAddr) & intRegState.rsCalleeRegArgMaskLiveIn) == 0);
+        assert((genRegMask(rEndAddr) & calleeRegArgMaskLiveIn) == 0);
 
         ssize_t uLoopBytes = (uRegSlots & ~0x3) * REGSIZE_BYTES;
 
@@ -905,7 +912,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
     }
     else
     {
-        emit->emitLoadImmediate(size, reg, imm);
+        emit->emitLoadImmediate<true>(size, reg, imm);
     }
 
     regSet.verifyRegUsed(reg);
@@ -1046,7 +1053,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     var_types targetType = treeNode->TypeGet();
     emitter*  emit       = GetEmitter();
     emitAttr  attr       = emitActualTypeSize(treeNode);
-    unsigned  isUnsigned = (treeNode->gtFlags & GTF_UNSIGNED);
+    unsigned  isUnsigned = treeNode->IsUnsigned();
 
     GenTree* op1 = treeNode->gtGetOp1();
     GenTree* op2 = treeNode->gtGetOp2();
@@ -1271,9 +1278,20 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             }
             else if (data->IsIntegralConst())
             {
-                ssize_t imm = data->AsIntConCommon()->IconValue();
-                emit->emitLoadImmediate(EA_PTRSIZE, rsGetRsvdReg(), imm);
-                dataReg = rsGetRsvdReg();
+                ssize_t cnsVal = data->AsIntConCommon()->IconValue();
+                dataReg        = (targetReg == REG_NA) ? rsGetRsvdReg() : targetReg; // Use tempReg if spilled
+
+                if (data->IsIconHandle() && data->AsIntCon()->FitsInAddrBase(compiler) &&
+                    data->AsIntCon()->AddrNeedsReloc(compiler))
+                {
+                    // Support emitting PC-relative addresses for handles hoisted by constant CSE
+                    emitAttr attr = EA_SET_FLG(emitActualTypeSize(targetType), EA_DSP_RELOC_FLG);
+                    emit->emitIns_R_AI(INS_addi, attr, dataReg, dataReg, cnsVal);
+                }
+                else
+                {
+                    emit->emitLoadImmediate<true>(EA_PTRSIZE, dataReg, cnsVal);
+                }
             }
             else
             {
@@ -1524,7 +1542,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             {
                 if (tempReg == REG_NA)
                     tempReg = internalRegisters.Extract(tree);
-                emit->emitLoadImmediate(EA_PTRSIZE, tempReg, amount);
+                emit->emitLoadImmediate<true>(EA_PTRSIZE, tempReg, amount);
                 emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tempReg);
             }
 
@@ -1816,7 +1834,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 tempReg    = internalRegisters.GetSingle(tree);
                 divisorReg = tempReg;
             }
-            emit->emitLoadImmediate(EA_PTRSIZE, divisorReg, intConst);
+            emit->emitLoadImmediate<true>(EA_PTRSIZE, divisorReg, intConst);
         }
         else
         {
@@ -2923,7 +2941,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     emitAttr srcSize = EA_ATTR(genTypeSize(srcType));
     noway_assert((srcSize == EA_4BYTE) || (srcSize == EA_8BYTE));
 
-    bool        isUnsigned = treeNode->gtFlags & GTF_UNSIGNED;
+    bool        isUnsigned = treeNode->IsUnsigned();
     instruction ins        = INS_invalid;
 
     if (isUnsigned)
@@ -3346,6 +3364,14 @@ int CodeGenInterface::genSPtoFPdelta() const
     {
         delta -= TARGET_POINTER_SIZE;
     }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta -= TARGET_POINTER_SIZE;
+    }
 
     assert(delta >= 0);
     return delta;
@@ -3760,7 +3786,7 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTm
     }
     else
     {
-        GetEmitter()->emitLoadImmediate(EA_PTRSIZE, regTmp, spDelta);
+        GetEmitter()->emitLoadImmediate<true>(EA_PTRSIZE, regTmp, spDelta);
         GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, regTmp);
     }
 }
@@ -4188,6 +4214,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_RECORD_ASYNC_RESUME:
             genRecordAsyncResume(treeNode->AsVal());
+            break;
+
+        case GT_ASYNC_CONTINUATION:
+            genCodeForAsyncContinuation(treeNode);
+            break;
+
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
             break;
 
         case GT_SH1ADD:
@@ -5001,7 +5035,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         }
         else
         {
-            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, tempReg, scale);
+            GetEmitter()->emitLoadImmediate<true>(EA_PTRSIZE, tempReg, scale);
 
             instruction ins;
             instruction ins2;
@@ -6041,7 +6075,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         regNumber tmpReg = internalRegisters.GetSingle(lea);
 
         // First load tmpReg with the large offset constant
-        emit->emitLoadImmediate(EA_PTRSIZE, tmpReg, offset);
+        emit->emitLoadImmediate<true>(EA_PTRSIZE, tmpReg, offset);
 
         // Then compute target reg from [memBase + tmpReg]
         emit->emitIns_R_R_R(INS_add, size, targetReg, memBaseReg, tmpReg);
@@ -6420,6 +6454,14 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     {
         localFrameSize -= TARGET_POINTER_SIZE;
     }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
 
 #ifdef DEBUG
     if (compiler->opts.disAsm)
@@ -6490,6 +6532,14 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     {
         localFrameSize -= TARGET_POINTER_SIZE;
     }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
 
     JITDUMP("Frame type. #outsz=%d; #framesz=%d; #calleeSaveRegsPushed:%d; "
             "localloc? %s\n",
@@ -6522,7 +6572,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
             else
             {
                 regNumber tempReg = rsGetRsvdReg();
-                emit->emitLoadImmediate(EA_PTRSIZE, tempReg, SPtoFPdelta);
+                emit->emitLoadImmediate<true>(EA_PTRSIZE, tempReg, SPtoFPdelta);
                 emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, tempReg);
             }
         }
@@ -6552,7 +6602,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     else
     {
         regNumber tempReg = rsGetRsvdReg();
-        emit->emitLoadImmediate(EA_PTRSIZE, tempReg, remainingSPSize);
+        emit->emitLoadImmediate<true>(EA_PTRSIZE, tempReg, remainingSPSize);
         emit->emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tempReg);
     }
     compiler->unwindAllocStack(remainingSPSize);
@@ -6570,7 +6620,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         else
         {
             regNumber tempReg = rsGetRsvdReg();
-            emit->emitLoadImmediate(EA_PTRSIZE, tempReg, tier0FrameSize);
+            emit->emitLoadImmediate<true>(EA_PTRSIZE, tempReg, tier0FrameSize);
             emit->emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tempReg);
         }
         compiler->unwindAllocStack(tier0FrameSize);

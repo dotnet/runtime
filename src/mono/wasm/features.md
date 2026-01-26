@@ -358,7 +358,7 @@ You can add following elements in your .csproj
 See also DWARF [WASM debugging](https://developer.chrome.com/blog/wasm-debugging-2020/) in Chrome.
 For more details see also [debugger.md](../browser/debugger/debugger.md) and [wasm-debugging.md](../../../docs/workflow/debugging/mono/wasm-debugging.md)
 
-### Runtime logging and tracing
+### Mono runtime logging and tracing
 
 You can enable detailed runtime logging.
 
@@ -374,6 +374,17 @@ await dotnet
 ```
 
 See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045e7741fffa17710dc48e9032e519258/src/mono/mono/utils/mono-logger.c#L273-L308)
+
+### CoreCLR runtime logging and tracing
+
+```xml
+<ItemGroup>
+  <WasmEnvironmentVariable Include="COMPlus_LogEnable" Value="1" />
+  <WasmEnvironmentVariable Include="COMPlus_LogToConsole" Value="1" />
+  <WasmEnvironmentVariable Include="COMPlus_LogLevel" Value="10" />
+  <WasmEnvironmentVariable Include="COMPlus_LogFacility" Value="410" />
+</ItemGroup>
+```
 
 ### Diagnostics tools
 

@@ -7,6 +7,7 @@
 //   "%DevEnvDir%\TextTransform.exe" .\Helpers.tt
 
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -1822,18 +1823,18 @@ namespace JIT.HardwareIntrinsics.Arm
             short product = (short)((short)op1 * (short)op2);
 
             bool dblOvf;
-            (product, dblOvf) = AddOvf(product, product);
+            dblOvf = TryAddSigned(product, product, out product);
 
             bool addOvf;
             short accum;
 
             if (subOp)
             {
-                (accum, addOvf) = SubtractOvf(op3, product);
+                addOvf = TrySubSigned(op3, product, out accum);
             }
             else
             {
-                (accum, addOvf) = AddOvf(op3, product);
+                addOvf = TryAddSigned(op3, product, out accum);
             }
 
             short roundConst = 0;
@@ -1846,7 +1847,7 @@ namespace JIT.HardwareIntrinsics.Arm
             bool rndOvf;
             short result;
 
-            (result, rndOvf) = AddOvf(accum, roundConst);
+            rndOvf = TryAddSigned(accum, roundConst, out result);
 
             return (result, addOvf ^ rndOvf ^ dblOvf);
         }
@@ -2183,18 +2184,18 @@ namespace JIT.HardwareIntrinsics.Arm
             int product = (int)((int)op1 * (int)op2);
 
             bool dblOvf;
-            (product, dblOvf) = AddOvf(product, product);
+            dblOvf = TryAddSigned(product, product, out product);
 
             bool addOvf;
             int accum;
 
             if (subOp)
             {
-                (accum, addOvf) = SubtractOvf(op3, product);
+                addOvf = TrySubSigned(op3, product, out accum);
             }
             else
             {
-                (accum, addOvf) = AddOvf(op3, product);
+                addOvf = TryAddSigned(op3, product, out accum);
             }
 
             int roundConst = 0;
@@ -2207,7 +2208,7 @@ namespace JIT.HardwareIntrinsics.Arm
             bool rndOvf;
             int result;
 
-            (result, rndOvf) = AddOvf(accum, roundConst);
+            rndOvf = TryAddSigned(accum, roundConst, out result);
 
             return (result, addOvf ^ rndOvf ^ dblOvf);
         }
@@ -2567,18 +2568,18 @@ namespace JIT.HardwareIntrinsics.Arm
             long product = (long)((long)op1 * (long)op2);
 
             bool dblOvf;
-            (product, dblOvf) = AddOvf(product, product);
+            dblOvf = TryAddSigned(product, product, out product);
 
             bool addOvf;
             long accum;
 
             if (subOp)
             {
-                (accum, addOvf) = SubtractOvf(op3, product);
+                addOvf = TrySubSigned(op3, product, out accum);
             }
             else
             {
-                (accum, addOvf) = AddOvf(op3, product);
+                addOvf = TryAddSigned(op3, product, out accum);
             }
 
             long roundConst = 0;
@@ -2591,7 +2592,7 @@ namespace JIT.HardwareIntrinsics.Arm
             bool rndOvf;
             long result;
 
-            (result, rndOvf) = AddOvf(accum, roundConst);
+            rndOvf = TryAddSigned(accum, roundConst, out result);
 
             return (result, addOvf ^ rndOvf ^ dblOvf);
         }
@@ -2962,11 +2963,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            sbyte result;
-
-            bool addOvf;
-
-            (result, addOvf) = AddOvf(op1, rndCns);
+            bool addOvf = TryAddSigned(op1, rndCns, out sbyte result);
 
             if (addOvf)
             {
@@ -3070,7 +3067,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            (byte result, bool addOvf) = AddOvf(op1, rndCns);
+            bool addOvf = TryAddUnsigned(op1, rndCns, out byte result);
 
             bool shiftOvf;
 
@@ -3095,122 +3092,121 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static sbyte UnsignedShift(sbyte op1, sbyte op2, bool rounding = false, bool saturating = false) => (sbyte)UnsignedShift((byte)op1, op2, rounding, saturating);
 
-        private static (sbyte val, bool ovf) AddOvf(sbyte op1, sbyte op2)
+        private static bool TryAddSigned<T>(T left, T right, out T result)
+            where T : IBinaryInteger<T>, ISignedNumber<T>
         {
-            sbyte result = (sbyte)(op1 + op2);
-
-            bool ovf = false;
-
-            if ((op1 > 0) && (op2 > 0))
-            {
-                ovf = (result < 0);
-            }
-            else if ((op1 < 0) && (op2 < 0))
-            {
-                ovf = (result > 0);
-            }
-
-            return (result, ovf);
+            result = unchecked(left + right);
+            return ((result ^ left) & ~(left ^ right)) < T.Zero;
         }
 
-        private static (sbyte val, bool ovf) AddOvf(sbyte op1, byte op2)
+        private static bool TryAddUnsigned<T>(T left, T right, out T result)
+            where T : IBinaryInteger<T>, IUnsignedNumber<T>
         {
-            sbyte result = (sbyte)(op1 + (sbyte)op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
+            result = left + right;
+            return result < left;
         }
 
-        private static (byte val, bool ovf) AddOvf(byte op1, sbyte op2)
+        private static bool TryAddSignedUnsigned<TSigned, TUnsigned>(
+            TSigned left, TUnsigned right, out TSigned result)
+            where TSigned   : IBinaryInteger<TSigned>, ISignedNumber<TSigned>
+            where TUnsigned : IBinaryInteger<TUnsigned>, IUnsignedNumber<TUnsigned>
         {
-            byte result = (byte)(op1 + (byte)op2);
+            Debug.Assert(Unsafe.SizeOf<TUnsigned>() == Unsafe.SizeOf<TSigned>(), "Unsigned/signed types must be same width");
 
-            bool ovf;
+            var signedMaxAsUnsigned = TUnsigned.AllBitsSet >> 1;
+            var leftUnsigned = TUnsigned.CreateTruncating(left);
 
-            if (op2 < 0)
+            // How much remains before hitting MaxValue
+            TUnsigned threshold;
+            if (TSigned.IsNegative(left))
             {
-                ovf = (result > op1);
+                threshold = signedMaxAsUnsigned + TUnsigned.CreateTruncating(unchecked(-left));
             }
             else
             {
-                ovf = (result < op1);
+                threshold = signedMaxAsUnsigned - leftUnsigned;
             }
 
-            return (result, ovf);
-        }
-
-        private static (byte val, bool ovf) AddOvf(byte op1, byte op2)
-        {
-            byte result = (byte)(op1 + op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (sbyte val, bool ovf) SubtractOvf(sbyte op1, sbyte op2)
-        {
-            sbyte result = (sbyte)(op1 - op2);
-
-            bool ovf;
-
-            if (op2 < 0)
+            if (right > threshold)
             {
-                ovf = (result < op1);
+                // Overflow - return a negative value
+                result = TSigned.CreateTruncating(signedMaxAsUnsigned + TUnsigned.One);
+                return true;
+            }
+
+            result = TSigned.CreateTruncating(leftUnsigned + right);
+            return false;
+        }
+
+        private static bool TryAddUnsignedSigned<TUnsigned, TSigned>(
+            TUnsigned left, TSigned right, out TUnsigned result)
+            where TUnsigned : IBinaryInteger<TUnsigned>, IUnsignedNumber<TUnsigned>
+            where TSigned   : IBinaryInteger<TSigned>, ISignedNumber<TSigned>
+        {
+            Debug.Assert(Unsafe.SizeOf<TUnsigned>() == Unsafe.SizeOf<TSigned>(), "Unsigned/signed types must be same width");
+
+            if (TSigned.IsNegative(right))
+            {
+                // Avoid overflow in magnitude by using truncation
+                var magnitude = TUnsigned.CreateTruncating(unchecked(-right));
+                return TrySubUnsigned(left, magnitude, out result);
             }
             else
             {
-                ovf = (result > op1);
+                return TryAddUnsigned(left, TUnsigned.CreateChecked(right), out result);
             }
-
-            return (result, ovf);
         }
 
-        private static (byte val, bool ovf) SubtractOvf(byte op1, byte op2)
+        private static bool TrySubSigned<T>(T left, T right, out T result)
+            where T : IBinaryInteger<T>, ISignedNumber<T>
         {
-            byte result = (byte)(op1 - op2);
+            result = unchecked(left - right);
+            return ((left ^ right) & (left ^ result)) < T.Zero;
+        }
 
-            bool ovf = (op1 < op2);
-
-            return (result, ovf);
+        private static bool TrySubUnsigned<T>(T left, T right, out T result)
+            where T : IBinaryInteger<T>, IUnsignedNumber<T>
+        {
+            result = unchecked(left - right);
+            return left < right;
         }
 
         public static sbyte AbsSaturate(sbyte op1) => op1 < 0 ? NegateSaturate(op1) : op1;
 
         public static sbyte AddSaturate(sbyte op1, sbyte op2)
         {
-            int result = op1 + op2;
-            if (result > sbyte.MaxValue)
+            if (TryAddSigned(op1, op2, out sbyte result))
             {
-                return sbyte.MaxValue;
+                result = (result < 0) ? sbyte.MaxValue : sbyte.MinValue;
             }
-            else if (result < sbyte.MinValue)
-            {
-                return sbyte.MinValue;
-            }
-            else
-            {
-                return (sbyte)result;
-            }
+            return result;
         }
 
         public static sbyte AddSaturate(sbyte op1, byte op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? sbyte.MaxValue : result;
+            if (TryAddSignedUnsigned(op1, op2, out sbyte result))
+            {
+                result = (result < 0) ? sbyte.MaxValue : sbyte.MinValue;
+            }
+            return result;
         }
 
         public static byte AddSaturate(byte op1, sbyte op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result < op1 ? byte.MaxValue : byte.MinValue) : result;
+            if (TryAddUnsignedSigned(op1, op2, out byte result))
+            {
+                result = (op2 < 0) ? (byte)0 : byte.MaxValue;
+            }
+            return result;
         }
 
         public static byte AddSaturate(byte op1, byte op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? byte.MaxValue : result;
+            if (TryAddUnsigned(op1, op2, out byte result))
+            {
+                result = byte.MaxValue;
+            }
+            return result;
         }
 
         public static sbyte[] AddSaturateRotateComplex(sbyte[] op1, sbyte[] op2, byte rot)
@@ -3273,14 +3269,20 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte SubtractSaturate(sbyte op1, sbyte op2)
         {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? (result > 0 ? sbyte.MinValue : sbyte.MaxValue) : result;
+            if (TrySubSigned(op1, op2, out sbyte result))
+            {
+                result = (result < 0) ? sbyte.MaxValue : sbyte.MinValue;
+            }
+            return result;
         }
 
         public static byte SubtractSaturate(byte op1, byte op2)
         {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? byte.MinValue : result;
+            if (TrySubUnsigned(op1, op2, out byte result))
+            {
+                result = byte.MinValue;
+            }
+            return result;
         }
 
         public static short ShiftArithmetic(short op1, short op2) => SignedShift(op1, op2);
@@ -3309,11 +3311,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            short result;
-
-            bool addOvf;
-
-            (result, addOvf) = AddOvf(op1, rndCns);
+            bool addOvf = TryAddSigned(op1, rndCns, out short result);
 
             if (addOvf)
             {
@@ -3405,7 +3403,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            (ushort result, bool addOvf) = AddOvf(op1, rndCns);
+            bool addOvf = TryAddUnsigned(op1, rndCns, out ushort result);
 
             bool shiftOvf;
 
@@ -3430,111 +3428,42 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static short UnsignedShift(short op1, short op2, bool rounding = false, bool saturating = false) => (short)UnsignedShift((ushort)op1, op2, rounding, saturating);
 
-        private static (short val, bool ovf) AddOvf(short op1, short op2)
-        {
-            short result = (short)(op1 + op2);
-
-            bool ovf = false;
-
-            if ((op1 > 0) && (op2 > 0))
-            {
-                ovf = (result < 0);
-            }
-            else if ((op1 < 0) && (op2 < 0))
-            {
-                ovf = (result > 0);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (short val, bool ovf) AddOvf(short op1, ushort op2)
-        {
-            short result = (short)(op1 + (short)op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (ushort val, bool ovf) AddOvf(ushort op1, short op2)
-        {
-            ushort result = (ushort)(op1 + (ushort)op2);
-
-            bool ovf;
-
-            if (op2 < 0)
-            {
-                ovf = (result > op1);
-            }
-            else
-            {
-                ovf = (result < op1);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (ushort val, bool ovf) AddOvf(ushort op1, ushort op2)
-        {
-            ushort result = (ushort)(op1 + op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (short val, bool ovf) SubtractOvf(short op1, short op2)
-        {
-            short result = (short)(op1 - op2);
-
-            bool ovf;
-
-            if (op2 < 0)
-            {
-                ovf = (result < op1);
-            }
-            else
-            {
-                ovf = (result > op1);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (ushort val, bool ovf) SubtractOvf(ushort op1, ushort op2)
-        {
-            ushort result = (ushort)(op1 - op2);
-
-            bool ovf = (op1 < op2);
-
-            return (result, ovf);
-        }
-
         public static short AbsSaturate(short op1) => op1 < 0 ? NegateSaturate(op1) : op1;
 
         public static short AddSaturate(short op1, short op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result > 0 ? short.MinValue : short.MaxValue) : result;
+            if (TryAddSigned(op1, op2, out short result))
+            {
+                result = (result < 0) ? short.MaxValue : short.MinValue;
+            }
+            return result;
         }
 
         public static short AddSaturate(short op1, ushort op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? short.MaxValue : result;
+            if (TryAddSignedUnsigned(op1, op2, out short result))
+            {
+                result = (result < 0) ? short.MaxValue : short.MinValue;
+            }
+            return result;
         }
 
         public static ushort AddSaturate(ushort op1, short op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result < op1 ? ushort.MaxValue : ushort.MinValue) : result;
+            if (TryAddUnsignedSigned(op1, op2, out ushort result))
+            {
+                result = (op2 < 0) ? (ushort)0 : ushort.MaxValue;
+            }
+            return result;
         }
 
         public static ushort AddSaturate(ushort op1, ushort op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? ushort.MaxValue : result;
+            if (TryAddUnsigned(op1, op2, out ushort result))
+            {
+                result = ushort.MaxValue;
+            }
+            return result;
         }
 
         public static short[] AddSaturateRotateComplex(short[] op1, short[] op2, byte rot)
@@ -3563,14 +3492,20 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short SubtractSaturate(short op1, short op2)
         {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? (result > 0 ? short.MinValue : short.MaxValue) : result;
+            if (TrySubSigned(op1, op2, out short result))
+            {
+                result = (result < 0) ? short.MaxValue : short.MinValue;
+            }
+            return result;
         }
 
         public static ushort SubtractSaturate(ushort op1, ushort op2)
         {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? ushort.MinValue : result;
+            if (TrySubUnsigned(op1, op2, out ushort result))
+            {
+                result = ushort.MinValue;
+            }
+            return result;
         }
 
         public static int ShiftArithmetic(int op1, int op2) => SignedShift(op1, op2);
@@ -3599,11 +3534,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            int result;
-
-            bool addOvf;
-
-            (result, addOvf) = AddOvf(op1, rndCns);
+            bool addOvf = TryAddSigned(op1, rndCns, out int result);
 
             if (addOvf)
             {
@@ -3695,7 +3626,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            (uint result, bool addOvf) = AddOvf(op1, rndCns);
+            bool addOvf = TryAddUnsigned(op1, rndCns, out uint result);
 
             bool shiftOvf;
 
@@ -3720,111 +3651,42 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static int UnsignedShift(int op1, int op2, bool rounding = false, bool saturating = false) => (int)UnsignedShift((uint)op1, op2, rounding, saturating);
 
-        private static (int val, bool ovf) AddOvf(int op1, int op2)
-        {
-            int result = (int)(op1 + op2);
-
-            bool ovf = false;
-
-            if ((op1 > 0) && (op2 > 0))
-            {
-                ovf = (result < 0);
-            }
-            else if ((op1 < 0) && (op2 < 0))
-            {
-                ovf = (result > 0);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (int val, bool ovf) AddOvf(int op1, uint op2)
-        {
-            int result = (int)(op1 + (int)op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (uint val, bool ovf) AddOvf(uint op1, int op2)
-        {
-            uint result = (uint)(op1 + (uint)op2);
-
-            bool ovf;
-
-            if (op2 < 0)
-            {
-                ovf = (result > op1);
-            }
-            else
-            {
-                ovf = (result < op1);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (uint val, bool ovf) AddOvf(uint op1, uint op2)
-        {
-            uint result = (uint)(op1 + op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (int val, bool ovf) SubtractOvf(int op1, int op2)
-        {
-            int result = (int)(op1 - op2);
-
-            bool ovf;
-
-            if (op2 < 0)
-            {
-                ovf = (result < op1);
-            }
-            else
-            {
-                ovf = (result > op1);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (uint val, bool ovf) SubtractOvf(uint op1, uint op2)
-        {
-            uint result = (uint)(op1 - op2);
-
-            bool ovf = (op1 < op2);
-
-            return (result, ovf);
-        }
-
         public static int AbsSaturate(int op1) => op1 < 0 ? NegateSaturate(op1) : op1;
 
         public static int AddSaturate(int op1, int op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result > 0 ? int.MinValue : int.MaxValue) : result;
+            if (TryAddSigned(op1, op2, out int result))
+            {
+                result = (result < 0) ? int.MaxValue : int.MinValue;
+            }
+            return result;
         }
 
         public static int AddSaturate(int op1, uint op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? int.MaxValue : result;
+            if (TryAddSignedUnsigned(op1, op2, out int result))
+            {
+                result = (result < 0) ? int.MaxValue : int.MinValue;
+            }
+            return result;
         }
 
         public static uint AddSaturate(uint op1, int op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result < op1 ? uint.MaxValue : uint.MinValue) : result;
+            if (TryAddUnsignedSigned(op1, op2, out uint result))
+            {
+                result = (op2 < 0) ? (uint)0 : uint.MaxValue;
+            }
+            return result;
         }
 
         public static uint AddSaturate(uint op1, uint op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? uint.MaxValue : result;
+            if (TryAddUnsigned(op1, op2, out uint result))
+            {
+                result = uint.MaxValue;
+            }
+            return result;
         }
 
         public static int[] AddSaturateRotateComplex(int[] op1, int[] op2, byte rot)
@@ -3853,14 +3715,20 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int SubtractSaturate(int op1, int op2)
         {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? (result > 0 ? int.MinValue : int.MaxValue) : result;
+            if (TrySubSigned(op1, op2, out int result))
+            {
+                result = (result < 0) ? int.MaxValue : int.MinValue;
+            }
+            return result;
         }
 
         public static uint SubtractSaturate(uint op1, uint op2)
         {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? uint.MinValue : result;
+            if (TrySubUnsigned(op1, op2, out uint result))
+            {
+                result = uint.MinValue;
+            }
+            return result;
         }
 
         public static long ShiftArithmetic(long op1, long op2) => SignedShift(op1, op2);
@@ -3889,11 +3757,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            long result;
-
-            bool addOvf;
-
-            (result, addOvf) = AddOvf(op1, rndCns);
+            bool addOvf = TryAddSigned(op1, rndCns, out long result);
 
             if (addOvf)
             {
@@ -3985,7 +3849,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            (ulong result, bool addOvf) = AddOvf(op1, rndCns);
+            bool addOvf = TryAddUnsigned(op1, rndCns, out ulong result);
 
             bool shiftOvf;
 
@@ -4010,111 +3874,43 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static long UnsignedShift(long op1, long op2, bool rounding = false, bool saturating = false) => (long)UnsignedShift((ulong)op1, op2, rounding, saturating);
 
-        private static (long val, bool ovf) AddOvf(long op1, long op2)
-        {
-            long result = (long)(op1 + op2);
-
-            bool ovf = false;
-
-            if ((op1 > 0) && (op2 > 0))
-            {
-                ovf = (result < 0);
-            }
-            else if ((op1 < 0) && (op2 < 0))
-            {
-                ovf = (result > 0);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (long val, bool ovf) AddOvf(long op1, ulong op2)
-        {
-            long result = (long)(op1 + (long)op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (ulong val, bool ovf) AddOvf(ulong op1, long op2)
-        {
-            ulong result = (ulong)(op1 + (ulong)op2);
-
-            bool ovf;
-
-            if (op2 < 0)
-            {
-                ovf = (result > op1);
-            }
-            else
-            {
-                ovf = (result < op1);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (ulong val, bool ovf) AddOvf(ulong op1, ulong op2)
-        {
-            ulong result = (ulong)(op1 + op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (long val, bool ovf) SubtractOvf(long op1, long op2)
-        {
-            long result = (long)(op1 - op2);
-
-            bool ovf;
-
-            if (op2 < 0)
-            {
-                ovf = (result < op1);
-            }
-            else
-            {
-                ovf = (result > op1);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (ulong val, bool ovf) SubtractOvf(ulong op1, ulong op2)
-        {
-            ulong result = (ulong)(op1 - op2);
-
-            bool ovf = (op1 < op2);
-
-            return (result, ovf);
-        }
-
         public static long AbsSaturate(long op1) => op1 < 0 ? NegateSaturate(op1) : op1;
 
         public static long AddSaturate(long op1, long op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result > 0 ? long.MinValue : long.MaxValue) : result;
+            if (TryAddSigned(op1, op2, out long result))
+            {
+                result = (result < 0) ? long.MaxValue : long.MinValue;
+            }
+            return result;
         }
 
         public static long AddSaturate(long op1, ulong op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? long.MaxValue : result;
+            if (TryAddSignedUnsigned(op1, op2, out long result))
+            {
+                result = (result < 0) ? long.MaxValue : long.MinValue;
+            }
+            return result;
         }
 
         public static ulong AddSaturate(ulong op1, long op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result < op1 ? ulong.MaxValue : ulong.MinValue) : result;
+            if (TryAddUnsignedSigned(op1, op2, out ulong result))
+            {
+                result = (op2 < 0) ? (ulong)0 : ulong.MaxValue;
+            }
+            return result;
         }
+
 
         public static ulong AddSaturate(ulong op1, ulong op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? ulong.MaxValue : result;
+            if (TryAddUnsigned(op1, op2, out ulong result))
+            {
+                result = ulong.MaxValue;
+            }
+            return result;
         }
 
         public static long[] AddSaturateRotateComplex(long[] op1, long[] op2, byte rot)
@@ -4143,16 +3939,21 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long SubtractSaturate(long op1, long op2)
         {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? (result > 0 ? long.MinValue : long.MaxValue) : result;
+            if (TrySubSigned(op1, op2, out long result))
+            {
+                result = (result < 0) ? long.MaxValue : long.MinValue;
+            }
+            return result;
         }
 
         public static ulong SubtractSaturate(ulong op1, ulong op2)
         {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? ulong.MinValue : result;
+            if (TrySubUnsigned(op1, op2, out ulong result))
+            {
+                result = ulong.MinValue;
+            }
+            return result;
         }
-
 
         private static (sbyte val, bool ovf) ShiftOvf(sbyte value, int shift)
         {

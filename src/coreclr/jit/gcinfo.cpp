@@ -442,7 +442,6 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
     unsigned   varNum;
     LclVarDsc* varDsc;
 
-    bool         keepThisAlive  = false; // did we track "this" in a synchronized method?
     unsigned int untrackedCount = 0;
 
     // Count the untracked locals and non-enregistered args.
@@ -458,7 +457,7 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
 
         if (varTypeIsGC(varDsc->TypeGet()))
         {
-            if (!gcIsUntrackedLocalOrNonEnregisteredArg(varNum, &keepThisAlive))
+            if (!gcIsUntrackedLocalOrNonEnregisteredArg(varNum))
             {
                 continue;
             }
@@ -539,11 +538,6 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
 
     unsigned int varPtrTableSize = 0;
 
-    if (keepThisAlive)
-    {
-        varPtrTableSize++;
-    }
-
     if (gcVarPtrList != nullptr)
     {
         // We'll use a delta encoding for the lifetime offsets.
@@ -591,13 +585,11 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
 //
 // Arguments:
 //   varNum - the variable number to check;
-//   pKeepThisAlive - if !UsesFunclets() and the argument != nullptr remember
-//   if `this` should be kept alive and considered tracked.
 //
 // Return value:
 //   true if it an untracked pointer value.
 //
-bool GCInfo::gcIsUntrackedLocalOrNonEnregisteredArg(unsigned varNum, bool* pKeepThisAlive)
+bool GCInfo::gcIsUntrackedLocalOrNonEnregisteredArg(unsigned varNum)
 {
     LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
 
@@ -640,26 +632,6 @@ bool GCInfo::gcIsUntrackedLocalOrNonEnregisteredArg(unsigned varNum, bool* pKeep
         }
     }
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    if (!compiler->UsesFunclets() && compiler->lvaIsOriginalThisArg(varNum) && compiler->lvaKeepAliveAndReportThis())
-    {
-        // "this" is in the untracked variable area, but encoding of untracked variables does not support reporting
-        // "this". So report it as a tracked variable with a liveness extending over the entire method.
-        //
-        // TODO-x86-Cleanup: the semantic here is not clear, it would be useful to check different cases and
-        // add a description where "this" is saved and how it is tracked in each of them:
-        // 1) when UsesFunclets() == true (x86 Linux);
-        // 2) when UsesFunclets() == false, lvaKeepAliveAndReportThis == true, compJmpOpUsed == true;
-        // 3) when there is regPtrDsc for "this", but keepThisAlive == true;
-        // etc.
-
-        if (pKeepThisAlive != nullptr)
-        {
-            *pKeepThisAlive = true;
-        }
-        return false;
-    }
-#endif // FEATURE_EH_WINDOWS_X86
     return true;
 }
 

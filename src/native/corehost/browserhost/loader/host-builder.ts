@@ -4,12 +4,12 @@
 import type { DotnetHostBuilder, LoaderConfig, RuntimeAPI, LoadBootResourceCallback, DotnetModuleConfig } from "./types";
 
 import { Module, dotnetApi } from "./cross-module";
-import { getLoaderConfig, mergeLoaderConfig, validateLoaderConfig } from "./config";
+import { loaderConfig, mergeLoaderConfig, validateLoaderConfig } from "./config";
 import { createRuntime } from "./run";
 import { exit } from "./exit";
+import { setLoadBootResourceCallback } from "./assets";
 
 let applicationArguments: string[] | undefined = [];
-export let loadBootResourceCallback: LoadBootResourceCallback | undefined = undefined;
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 export class HostBuilder implements DotnetHostBuilder {
@@ -68,7 +68,7 @@ export class HostBuilder implements DotnetHostBuilder {
             throw new Error("Missing window to the query parameters from");
         }
 
-        if (typeof globalThis.URLSearchParams == "undefined") {
+        if (typeof globalThis.URLSearchParams === "undefined") {
             throw new Error("URLSearchParams is supported");
         }
 
@@ -89,7 +89,7 @@ export class HostBuilder implements DotnetHostBuilder {
         return this;
     }
     withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder {
-        loadBootResourceCallback = loadBootResource;
+        setLoadBootResourceCallback(loadBootResource);
         return this;
     }
 
@@ -134,8 +134,7 @@ export class HostBuilder implements DotnetHostBuilder {
                 await this.create();
             }
             validateLoaderConfig();
-            const config = getLoaderConfig();
-            return this.dotnetApi!.runMain(config.mainAssemblyName, applicationArguments);
+            return this.dotnetApi!.runMain(loaderConfig.mainAssemblyName, applicationArguments);
         } catch (err) {
             exit(1, err);
             throw err;
@@ -148,8 +147,7 @@ export class HostBuilder implements DotnetHostBuilder {
                 await this.create();
             }
             validateLoaderConfig();
-            const config = getLoaderConfig();
-            return this.dotnetApi!.runMainAndExit(config.mainAssemblyName, applicationArguments);
+            return this.dotnetApi!.runMainAndExit(loaderConfig.mainAssemblyName, applicationArguments);
         } catch (err) {
             exit(1, err);
             throw err;

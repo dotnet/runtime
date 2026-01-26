@@ -2104,7 +2104,8 @@ validate_struct_fields_overlaps (guint8 *layout_check, int layout_size, MonoClas
 }
 
 typedef enum _ExtendedLayoutKind {
-	EXTENDED_LAYOUT_KIND_CSTRUCT = 0
+	EXTENDED_LAYOUT_KIND_CSTRUCT = 0,
+	EXTENDED_LAYOUT_KIND_CUNION = 1
 } ExtendedLayoutKind;
 
 /*
@@ -2306,7 +2307,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		if (klass->parent) {
 			mono_class_setup_fields (klass->parent);
 			if (mono_class_set_type_load_failure_causedby_class (klass, klass->parent, "Cannot initialize parent class"))
-				return;
+				goto cleanup;
 			real_size = klass->parent->instance_size;
 		} else {
 			real_size = MONO_ABI_SIZEOF (MonoObject);
@@ -2481,24 +2482,29 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		if (extended_layout_kind == EXTENDED_LAYOUT_KIND_CSTRUCT) {
 			if (!m_class_is_valuetype(klass)) {
 				if (mono_class_set_type_load_failure (klass, "CStruct type must be value type."))
-					return;
+					goto cleanup;
+			}
+
+			if (m_class_is_byreflike(klass)) {
+				if (mono_class_set_type_load_failure (klass, "CStruct type cannot be ByRefLike."))
+					goto cleanup;
 			}
 
 			mono_class_setup_fields (klass->parent);
 			if (mono_class_set_type_load_failure_causedby_class (klass, klass->parent, "Cannot initialize parent class"))
-				return;
+				goto cleanup;
 
 			real_size = klass->parent->instance_size;
 
 			if (top == 0) {
 				/* Empty structs are not allowed */
 				if (mono_class_set_type_load_failure (klass, "CStruct type cannot be empty."))
-					return;
+					goto cleanup;
 			}
 
 			if (any_field_has_auto_layout) {
 				if (mono_class_set_type_load_failure (klass, "CStruct type cannot have AutoLayout fields."))
-					return;
+					goto cleanup;
 			}
 
 			klass->blittable = TRUE;
@@ -2528,7 +2534,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 
 				if (type_has_references (klass, ftype))
 					if (mono_class_set_type_load_failure (klass, "CStruct type must not have reference fields."))
-						return;
+						goto cleanup;
 
 				min_align = MAX (align, min_align);
 				field_offsets [i] = real_size;
@@ -2554,9 +2560,90 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			}
 			break;
 		}
+		else if (extended_layout_kind == EXTENDED_LAYOUT_KIND_CUNION) {
+			if (!m_class_is_valuetype(klass)) {
+				if (mono_class_set_type_load_failure (klass, "CUnion type must be value type."))
+					goto cleanup;
+			}
+
+			if (m_class_is_byreflike(klass)) {
+				if (mono_class_set_type_load_failure (klass, "CStruct type cannot be ByRefLike."))
+					goto cleanup;
+			}
+
+			mono_class_setup_fields (klass->parent);
+			if (mono_class_set_type_load_failure_causedby_class (klass, klass->parent, "Cannot initialize parent class"))
+				goto cleanup;
+
+			real_size = klass->parent->instance_size;
+
+			if (top == 0) {
+				/* Empty unions are not allowed */
+				if (mono_class_set_type_load_failure (klass, "CUnion type cannot be empty."))
+					goto cleanup;
+			}
+
+			if (any_field_has_auto_layout) {
+				if (mono_class_set_type_load_failure (klass, "CUnion type cannot have AutoLayout fields."))
+					goto cleanup;
+			}
+
+			klass->blittable = TRUE;
+
+			guint32 max_field_size = 0;
+
+			for (i = 0; i < top; i++){
+				gint32 align;
+				guint32 size;
+				MonoType *ftype;
+
+				field = &klass->fields [i];
+
+				if (mono_field_is_deleted (field))
+					continue;
+				if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+					continue;
+
+				ftype = mono_type_get_underlying_type (field->type);
+				ftype = mono_type_get_basic_type_from_generic (ftype);
+
+				if ((top == 1) && (instance_size == MONO_ABI_SIZEOF (MonoObject)) &&
+					(strcmp (mono_field_get_name (field), "$PRIVATE$") == 0)) {
+					/* This field is a hack inserted by MCS to empty structures */
+					continue;
+				}
+
+				size = mono_type_size (field->type, &align);
+
+				if (type_has_references (klass, ftype))
+					if (mono_class_set_type_load_failure (klass, "CUnion type must not have reference fields."))
+						goto cleanup;
+
+				min_align = MAX (align, min_align);
+				/* All fields are placed at offset 0 in a union */
+				field_offsets [i] = real_size;
+
+				/* Track maximum field size */
+				if (size > max_field_size)
+					max_field_size = size;
+			}
+
+			if (max_field_size == 0) {
+				/* No real instance fields were found for the union */
+				if (mono_class_set_type_load_failure (klass, "CUnion type cannot be empty."))
+					goto cleanup;
+			}
+			instance_size = real_size + max_field_size;
+
+			if (instance_size & (min_align - 1)) {
+				instance_size += min_align - 1;
+				instance_size &= ~(min_align - 1);
+			}
+			break;
+		}
 		else {
 			mono_class_set_type_load_failure (klass, "Unknown extended layout kind '%d'.", extended_layout_kind);
-			return;
+			goto cleanup;
 		}
 	}
 	}
@@ -2744,7 +2831,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				field_class = mono_class_from_mono_type_internal (field->type);
 				if (mono_class_is_ginst (field_class) && !mono_verifier_class_is_valid_generic_instantiation (field_class)) {
 					mono_class_set_type_load_failure (klass, "Field '%s' is an invalid generic instantiation of type %s", field->name, mono_type_get_full_name (field_class));
-					return;
+					goto cleanup;
 				}
 			}
 			break;
@@ -2755,20 +2842,21 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			continue;
 		if ((field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
 			mono_class_set_type_load_failure (klass, "Static ByRefLike field '%s' is not allowed", field->name);
-			return;
+			goto cleanup;
 		} else {
 			/* instance field */
 			if (allow_isbyreflike_fields)
 				continue;
 			mono_class_set_type_load_failure (klass, "Instance ByRefLike field '%s' not in a ref struct", field->name);
-			return;
+			goto cleanup;
 		}
 	}
 
 	/* Publish the data */
 	mono_loader_lock ();
 	if (!klass->rank)
-		klass->sizes.class_size = class_size;
+		if (klass_byval_arg->type != MONO_TYPE_VAR && klass_byval_arg->type != MONO_TYPE_MVAR)
+			klass->sizes.class_size = class_size;
 	klass->has_static_refs = has_static_refs;
 	klass->has_weak_fields = has_weak_fields;
 	for (i = 0; i < top; ++i) {
@@ -2780,7 +2868,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	mono_memory_barrier ();
 	klass->fields_inited = 1;
 	mono_loader_unlock ();
-
+cleanup:
 	g_free (field_offsets);
 	g_free (fields_has_references);
 }

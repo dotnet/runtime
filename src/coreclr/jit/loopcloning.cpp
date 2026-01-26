@@ -253,7 +253,7 @@ GenTree* LC_Condition::ToGenTree(Compiler* comp, BasicBlock* bb, bool invert)
 
     if (compareUnsigned)
     {
-        result->gtFlags |= GTF_UNSIGNED;
+        result->SetUnsigned();
     }
 
     return result;

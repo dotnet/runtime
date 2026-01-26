@@ -772,6 +772,8 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_GVMLOOKUP_FOR_SLOT:
                     id = ReadyToRunHelper.GVMLookupForSlot;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
+                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpResolveInterfaceMethodFast"u8));
 
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL:
                     id = ReadyToRunHelper.TypeHandleToRuntimeType;
@@ -1247,15 +1249,19 @@ namespace Internal.JitInterface
                 // shared generic code - it may just resolve it to a candidate suitable for
                 // JIT compilation, and require a runtime lookup for the actual code pointer
                 // to call.
-
-                MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup, ref staticResolution);
-                if (directMethod == null && constrainedType.IsEnum)
+                if (constrainedType.IsEnum)
                 {
-                    // Constrained calls to methods on enum methods resolve to System.Enum's methods. System.Enum is a reference
-                    // type though, so we would fail to resolve and box. We have a special path for those to avoid boxing.
-                    directMethod = _compilation.TypeSystemContext.TryResolveConstrainedEnumMethod(constrainedType, method);
+                    // Optimize constrained calls to enum's GetHashCode method. TryResolveConstraintMethodApprox would return
+                    // null since the virtual method resolves to System.Enum's implementation and that's a reference type.
+                    // We can't do this for any other method since ToString and Equals have different semantics for enums
+                    // and their underlying type.
+                    if (method.OwningType.IsObject && method.Name.SequenceEqual("GetHashCode"u8))
+                    {
+                        constrainedType = constrainedType.UnderlyingType;
+                    }
                 }
 
+                MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup, ref staticResolution);
                 if (directMethod != null)
                 {
                     // Either
@@ -2276,7 +2282,7 @@ namespace Internal.JitInterface
         private int getExactClasses(CORINFO_CLASS_STRUCT_* baseType, int maxExactClasses, CORINFO_CLASS_STRUCT_** exactClsRet)
         {
             MetadataType type = HandleToObject(baseType) as MetadataType;
-            if (type == null)
+            if (type == null || type.HasVariance)
             {
                 return -1;
             }

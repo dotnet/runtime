@@ -4,7 +4,7 @@
     <CompilerVisibleProperty Include="RuntimeFlavor" />
     <CompilerVisibleProperty Include="TargetOS" />
     <CompilerVisibleProperty Include="TargetArchitecture" />
-    <CompilerVisibleProperty Include="Priority" />
+    <CompilerVisibleProperty Include="CLRTestPriorityToBuild" />
     <CompilerVisibleProperty Include="TestBuildMode" />
     <!-- Properties that influence test harness generation -->
     <CompilerVisibleProperty Include="InMergedTestDirectory" />

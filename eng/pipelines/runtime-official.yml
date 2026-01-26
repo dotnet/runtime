@@ -17,6 +17,13 @@ trigger:
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
 
+schedules:
+- cron: "0 9 * * *"
+  displayName: Daily OneLocBuild and SourceIndex
+  branches:
+    include:
+    - main
+
 # This is an official pipeline that should not be triggerable from a PR,
 # there is no public pipeline associated with it.
 pr: none
@@ -34,7 +41,7 @@ extends:
   parameters:
     isOfficialBuild: true
     stages:
-    - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+    - ${{ if and(eq(variables['Build.SourceBranch'], 'refs/heads/main'), or(eq(variables['Build.Reason'], 'Schedule'), eq(variables['Build.Reason'], 'Manual'))) }}:
       - stage: Localization
         dependsOn: []
         jobs:

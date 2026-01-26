@@ -51,10 +51,6 @@ public:
         m_pDebuggerContext = NULL;
         m_pDebuggerInterceptNativeOffset = 0;
 
-  #ifndef FEATURE_EH_FUNCLETS
-        // x86-specific fields
-        m_pDebuggerInterceptFrame = EXCEPTION_CHAIN_END;
-  #endif // !FEATURE_EH_FUNCLETS
         m_dDebuggerInterceptHandlerDepth  = 0;
     }
 
@@ -133,9 +129,6 @@ public:
     //
 
     void GetDebuggerInterceptInfo(
- #ifndef FEATURE_EH_FUNCLETS
-                                  PEXCEPTION_REGISTRATION_RECORD *pEstablisherFrame,
- #endif // !FEATURE_EH_FUNCLETS
                                   MethodDesc **ppFunc,
                                   int *pdHandler,
                                   BYTE **ppStack,
@@ -143,13 +136,6 @@ public:
                                   Frame **ppFrame)
     {
         LIMITED_METHOD_CONTRACT;
-
-#ifndef FEATURE_EH_FUNCLETS
-        if (pEstablisherFrame != NULL)
-        {
-            *pEstablisherFrame = m_pDebuggerInterceptFrame;
-        }
-#endif // !FEATURE_EH_FUNCLETS
 
         if (ppFunc != NULL)
         {
@@ -193,12 +179,6 @@ private:
 
     // the native offset at which to resume execution
     ULONG_PTR       m_pDebuggerInterceptNativeOffset;
-
-    // The remaining fields are only used on x86.
-#ifndef FEATURE_EH_FUNCLETS
-    // the exception registration record covering the stack range containing the interception point
-    PEXCEPTION_REGISTRATION_RECORD m_pDebuggerInterceptFrame;
-#endif // !FEATURE_EH_FUNCLETS
 
     // the nesting level at which we want to resume execution
     int             m_dDebuggerInterceptHandlerDepth;
@@ -281,7 +261,6 @@ public:
         Init();
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
     ExceptionFlags(bool fReadOnly)
     {
         Init();
@@ -292,28 +271,23 @@ public:
         }
 #endif // _DEBUG
     }
-#endif // defined(FEATURE_EH_FUNCLETS)
 
     void AssertIfReadOnly()
     {
         SUPPORTS_DAC;
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(_DEBUG)
+#ifdef _DEBUG
         if (m_flags & Ex_FlagsAreReadOnly)
         {
             _ASSERTE(!"Tried to update read-only flags!");
         }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(_DEBUG)
+#endif // _DEBUG
     }
 
     void Init()
     {
         m_flags = 0;
     }
-
-    BOOL IsRethrown()      { LIMITED_METHOD_CONTRACT; return m_flags & Ex_IsRethrown; }
-    void SetIsRethrown()   { LIMITED_METHOD_CONTRACT; AssertIfReadOnly(); m_flags |= Ex_IsRethrown; }
-    void ResetIsRethrown() { LIMITED_METHOD_CONTRACT; AssertIfReadOnly(); m_flags &= ~Ex_IsRethrown; }
 
     BOOL UnwindHasStarted()      { LIMITED_METHOD_CONTRACT; return m_flags & Ex_UnwindHasStarted; }
     void SetUnwindHasStarted()   { LIMITED_METHOD_CONTRACT; AssertIfReadOnly(); m_flags |= Ex_UnwindHasStarted; }
@@ -370,7 +344,7 @@ public:
 private:
     enum
     {
-        Ex_IsRethrown                   = 0x00000001,
+        // Unused                       = 0x00000001,
         Ex_UnwindingToFindResumeFrame   = 0x00000002,
         Ex_UnwindHasStarted             = 0x00000004,
         Ex_UseExInfoForStackwalk        = 0x00000008,        // Use this ExInfo to unwind a fault (AV, zerodiv) back to managed code?
@@ -393,11 +367,8 @@ private:
 
 #ifdef _DEBUG
         Ex_RPInvokeEscapingException    = 0x40000000,
-#endif // _DEBUG
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(_DEBUG)
         Ex_FlagsAreReadOnly             = 0x80000000
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(_DEBUG)
+#endif // _DEBUG
 
     };
 

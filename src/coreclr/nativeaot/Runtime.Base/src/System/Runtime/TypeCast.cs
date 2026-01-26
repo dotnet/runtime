@@ -930,7 +930,8 @@ namespace System.Runtime
 
         internal static EETypeElementType GetNormalizedIntegralArrayElementType(EETypeElementType elementType)
         {
-            Debug.Assert(elementType >= EETypeElementType.Boolean && elementType <= EETypeElementType.Double);
+            // The shift operator respects the low-order five bits of the right-hand operand only.
+            Debug.Assert((int)elementType < 32);
 
             // Array Primitive types such as E_T_I4 and E_T_U4 are interchangeable
             // Enums with interchangeable underlying types are interchangeable

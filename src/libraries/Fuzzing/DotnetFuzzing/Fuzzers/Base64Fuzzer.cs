@@ -24,8 +24,9 @@ namespace DotnetFuzzing.Fuzzers
         }
 
         private void TestCases(Span<byte> input, PoisonPagePlacement poison)
-        { 
+        {
             TestBase64(input, poison);
+            TestBase64Chars(input, poison);
             TestToStringToCharArray(input, Base64FormattingOptions.None);
             TestToStringToCharArray(input, Base64FormattingOptions.InsertLineBreaks);
         }
@@ -127,6 +128,167 @@ namespace DotnetFuzzing.Fuzzers
                 {
                     Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8(input, decoderDest, out int _, out int bytesDecoded));
                     Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8InPlace(input, out int inPlaceDecoded));
+                }
+            }
+
+            { // Test new simplified UTF-8 APIs
+                // Test EncodeToUtf8 returning byte[]
+                byte[] encodedArray = Base64.EncodeToUtf8(input);
+                Assert.Equal(true, maxEncodedLength >= encodedArray.Length && maxEncodedLength - 2 <= encodedArray.Length);
+
+                // Test EncodeToUtf8 returning int
+                encoderDest.Clear();
+                int charsWritten = Base64.EncodeToUtf8(input, encoderDest);
+                Assert.SequenceEqual(encodedArray.AsSpan(), encoderDest.Slice(0, charsWritten));
+
+                // Test TryEncodeToUtf8
+                encoderDest.Clear();
+                Assert.Equal(true, Base64.TryEncodeToUtf8(input, encoderDest, out int tryCharsWritten));
+                Assert.Equal(charsWritten, tryCharsWritten);
+                Assert.SequenceEqual(encodedArray.AsSpan(), encoderDest.Slice(0, tryCharsWritten));
+
+                // Test DecodeFromUtf8 returning byte[]
+                byte[] decodedArray = Base64.DecodeFromUtf8(encodedArray);
+                Assert.SequenceEqual(input, decodedArray.AsSpan());
+
+                // Test DecodeFromUtf8 returning int
+                decoderDest.Clear();
+                int bytesWritten = Base64.DecodeFromUtf8(encodedArray, decoderDest);
+                Assert.Equal(input.Length, bytesWritten);
+                Assert.SequenceEqual(input, decoderDest.Slice(0, bytesWritten));
+
+                // Test TryDecodeFromUtf8
+                decoderDest.Clear();
+                Assert.Equal(true, Base64.TryDecodeFromUtf8(encodedArray, decoderDest, out int tryBytesWritten));
+                Assert.Equal(input.Length, tryBytesWritten);
+                Assert.SequenceEqual(input, decoderDest.Slice(0, tryBytesWritten));
+
+                // Test TryEncodeToUtf8InPlace
+                using PooledBoundedMemory<byte> inPlaceBuffer = PooledBoundedMemory<byte>.Rent(maxEncodedLength, poison);
+                Span<byte> inPlaceDest = inPlaceBuffer.Span;
+                input.CopyTo(inPlaceDest);
+                Assert.Equal(true, Base64.TryEncodeToUtf8InPlace(inPlaceDest, input.Length, out int inPlaceWritten));
+                Assert.SequenceEqual(encodedArray.AsSpan(), inPlaceDest.Slice(0, inPlaceWritten));
+
+                // Test GetEncodedLength matches GetMaxEncodedToUtf8Length
+                Assert.Equal(Base64.GetMaxEncodedToUtf8Length(input.Length), Base64.GetEncodedLength(input.Length));
+
+                // Test GetMaxDecodedLength matches GetMaxDecodedFromUtf8Length
+                Assert.Equal(Base64.GetMaxDecodedFromUtf8Length(maxEncodedLength), Base64.GetMaxDecodedLength(maxEncodedLength));
+            }
+        }
+
+        private static void TestBase64Chars(Span<byte> input, PoisonPagePlacement poison)
+        {
+            int encodedLength = Base64.GetEncodedLength(input.Length);
+            int maxDecodedLength = Base64.GetMaxDecodedLength(encodedLength);
+
+            using PooledBoundedMemory<char> destPoisoned = PooledBoundedMemory<char>.Rent(encodedLength, poison);
+            using PooledBoundedMemory<byte> decoderDestPoisoned = PooledBoundedMemory<byte>.Rent(maxDecodedLength, poison);
+
+            Span<char> encoderDest = destPoisoned.Span;
+            Span<byte> decoderDest = decoderDestPoisoned.Span;
+
+            { // IsFinalBlock = true
+                OperationStatus status = Base64.EncodeToChars(input, encoderDest, out int bytesConsumed, out int charsEncoded);
+
+                Assert.Equal(OperationStatus.Done, status);
+                Assert.Equal(input.Length, bytesConsumed);
+                Assert.Equal(encodedLength, charsEncoded);
+
+                string encodedString = Base64.EncodeToString(input);
+                Assert.Equal(encodedString, new string(encoderDest.Slice(0, charsEncoded)));
+
+                status = Base64.DecodeFromChars(encoderDest.Slice(0, charsEncoded), decoderDest, out int charsRead, out int bytesDecoded);
+
+                Assert.Equal(OperationStatus.Done, status);
+                Assert.Equal(input.Length, bytesDecoded);
+                Assert.Equal(charsEncoded, charsRead);
+                Assert.SequenceEqual(input, decoderDest.Slice(0, bytesDecoded));
+            }
+
+            { // IsFinalBlock = false
+                encoderDest.Clear();
+                decoderDest.Clear();
+                OperationStatus status = Base64.EncodeToChars(input, encoderDest, out int bytesConsumed, out int charsEncoded, isFinalBlock: false);
+                Span<char> decodeInput = encoderDest.Slice(0, charsEncoded);
+
+                if (input.Length % 3 == 0)
+                {
+                    Assert.Equal(OperationStatus.Done, status);
+                    Assert.Equal(input.Length, bytesConsumed);
+                    Assert.Equal(encodedLength, charsEncoded);
+
+                    status = Base64.DecodeFromChars(decodeInput, decoderDest, out int charsRead, out int bytesDecoded, isFinalBlock: false);
+
+                    Assert.Equal(OperationStatus.Done, status);
+                    Assert.Equal(input.Length, bytesDecoded);
+                    Assert.Equal(charsEncoded, charsRead);
+                    Assert.SequenceEqual(input, decoderDest.Slice(0, bytesDecoded));
+                }
+                else
+                {
+                    Assert.Equal(OperationStatus.NeedMoreData, status);
+                    Assert.Equal(true, input.Length / 3 * 4 == charsEncoded);
+
+                    status = Base64.DecodeFromChars(decodeInput, decoderDest, out int charsRead, out int bytesDecoded, isFinalBlock: false);
+
+                    if (decodeInput.Length % 4 == 0)
+                    {
+                        Assert.Equal(OperationStatus.Done, status);
+                        Assert.Equal(bytesConsumed, bytesDecoded);
+                        Assert.Equal(charsEncoded, charsRead);
+                    }
+                    else
+                    {
+                        Assert.Equal(OperationStatus.NeedMoreData, status);
+                    }
+
+                    Assert.SequenceEqual(input.Slice(0, bytesDecoded), decoderDest.Slice(0, bytesDecoded));
+                }
+            }
+
+            { // Test array-returning and int-returning overloads
+                char[] encodedChars = Base64.EncodeToChars(input);
+                Assert.Equal(encodedLength, encodedChars.Length);
+
+                encoderDest.Clear();
+                int charsWritten = Base64.EncodeToChars(input, encoderDest);
+                Assert.Equal(encodedLength, charsWritten);
+                Assert.SequenceEqual(encodedChars.AsSpan(), encoderDest.Slice(0, charsWritten));
+
+                byte[] decodedBytes = Base64.DecodeFromChars(encodedChars);
+                Assert.SequenceEqual(input, decodedBytes.AsSpan());
+
+                decoderDest.Clear();
+                int bytesWritten = Base64.DecodeFromChars(encodedChars, decoderDest);
+                Assert.Equal(input.Length, bytesWritten);
+                Assert.SequenceEqual(input, decoderDest.Slice(0, bytesWritten));
+            }
+
+            { // Test Try* variants
+                encoderDest.Clear();
+                Assert.Equal(true, Base64.TryEncodeToChars(input, encoderDest, out int charsWritten));
+                Assert.Equal(encodedLength, charsWritten);
+
+                decoderDest.Clear();
+                Assert.Equal(true, Base64.TryDecodeFromChars(encoderDest.Slice(0, charsWritten), decoderDest, out int bytesWritten));
+                Assert.Equal(input.Length, bytesWritten);
+                Assert.SequenceEqual(input, decoderDest.Slice(0, bytesWritten));
+            }
+
+            { // Decode the random chars directly (as chars, from the input bytes interpreted as UTF-16)
+                // Create a char span from the input bytes for testing decode with random data
+                if (input.Length >= 2)
+                {
+                    ReadOnlySpan<char> inputChars = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, char>(input);
+                    decoderDest.Clear();
+
+                    // Try decoding - may succeed or fail depending on if input is valid base64
+                    OperationStatus status = Base64.DecodeFromChars(inputChars, decoderDest, out int charsConsumed, out int bytesDecoded);
+                    // Just verify we don't crash - the result depends on input validity
+                    Assert.Equal(true, status == OperationStatus.Done || status == OperationStatus.InvalidData ||
+                                       status == OperationStatus.NeedMoreData || status == OperationStatus.DestinationTooSmall);
                 }
             }
         }

@@ -8,9 +8,10 @@ import dts from "rollup-plugin-dts";
 import {
     externalDependencies, envConstants, banner, banner_dts,
     isDebug, staticLibDestination,
-    keep_classnames, keep_fnames, reserved
+    keep_classnames, keep_fnames, reserved,
+    inlinefastCheck,
 } from "./rollup.config.defines.js";
-import { terserPlugin, writeOnChangePlugin, consts, onwarn, alwaysLF, iife2fe, sourcemapPathTransform } from "./rollup.config.plugins.js";
+import { terserPlugin, writeOnChangePlugin, consts, onwarn, alwaysLF, iife2fe, emsAmbient, regexReplace, sourcemapPathTransform } from "./rollup.config.plugins.js";
 import { promises as fs } from "fs";
 
 const dotnetDTS = {
@@ -170,7 +171,7 @@ export default defineConfig([
     libBrowserHost,
 ]);
 
-function configure({ input, output, terser }) {
+function configure({ input, output, terser, external }) {
     return {
         treeshake: !isDebug,
         input,
@@ -179,16 +180,17 @@ function configure({ input, output, terser }) {
                 banner,
                 format: "es",
                 plugins: isDebug
-                    ? [iife2fe(), writeOnChangePlugin()]
-                    : [terserPlugin(terser), iife2fe(), writeOnChangePlugin()],
+                    ? [emsAmbient(), iife2fe(), writeOnChangePlugin()]
+                    : [emsAmbient(), terserPlugin(terser), iife2fe(), writeOnChangePlugin()],
                 sourcemap: true, //isDebug ? true : "hidden",
                 sourcemapPathTransform,
                 ...o
             };
         }),
-        external: externalDependencies,
+        external: external ? [...external, ...externalDependencies] : externalDependencies,
         plugins: [
             nodeResolve(),
+            regexReplace([...inlinefastCheck]),
             consts(envConstants),
             typescript({
                 tsconfig: "./tsconfig.json",

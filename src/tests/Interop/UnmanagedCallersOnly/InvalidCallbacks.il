@@ -101,47 +101,6 @@
         ret
     }
 
-    .method public hidebysig static
-    int32 ManagedDoubleCallback (
-        int32 n
-    ) cil managed
-    {
-        .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = (
-            01 00 00 00
-        )
-        .maxstack 1
-
-        nop
-        ldarg.0
-        call int32 InvalidCSharp.CallingUnmanagedCallersOnlyDirectly::DoubleImpl(int32)
-        ret
-    }
-
-    .method private hidebysig static
-        int32 DoubleImpl (
-            int32 n
-        ) cil managed
-    {
-        .maxstack 2
-
-        nop
-        ldc.i4.2
-        ldarg.0
-        mul
-        ret
-    }
-
-    .method public hidebysig static
-    class [System.Runtime]System.Func`2<int32, int32> GetDoubleDelegate () cil managed
-    {
-        .maxstack 8
-
-        ldnull
-        ldftn int32 InvalidCSharp.CallingUnmanagedCallersOnlyDirectly::ManagedDoubleCallback(int32)
-        newobj instance void class [System.Runtime]System.Func`2<int32, int32>::.ctor(object, native int)
-        ret
-    }
-
     .method public hidebysig static pinvokeimpl("UnmanagedCallersOnlyDll" as "DoesntExist" winapi)
     int32 PInvokeMarkedWithUnmanagedCallersOnly (
         int32 n

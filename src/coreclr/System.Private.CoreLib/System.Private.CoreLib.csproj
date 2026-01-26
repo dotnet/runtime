@@ -18,10 +18,6 @@
     <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
     <ILLinkDescriptorsXml>$(IntermediateOutputPath)ILLink.Descriptors.xml</ILLinkDescriptorsXml>
     <ILLinkDirectory>$(MSBuildThisFileDirectory)src\ILLink\</ILLinkDirectory>
-
-    <FeaturePortableThreadPool Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableThreadPool>
-    <FeaturePortableTimer Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableTimer>
-    <FeatureSingleThread Condition="'$(TargetsBrowser)' == 'true'">true</FeatureSingleThread>
   </PropertyGroup>
 
   <ItemGroup>
@@ -303,6 +299,12 @@
   <ItemGroup Condition="'$(FeatureObjCMarshal)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ObjectiveCMarshal.CoreCLR.cs" />
   </ItemGroup>
+
+  <!-- Enable unsupported browser warnings -->
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsAnyOS)' == 'true'">
+    <SupportedPlatform Include="browser"/>
+  </ItemGroup>
+
   <!-- Include additional sources shared files in the compilation -->
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
 

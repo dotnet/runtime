@@ -49,11 +49,24 @@ stack_walk_callback (
 
 	// Get the IP.
 	UINT_PTR control_pc = (UINT_PTR)frame->GetRegisterSet ()->ControlPC;
+	
+	if (!frame->IsFrameless() && frame->GetFrame()->GetFrameIdentifier() == FrameIdentifier::PrestubMethodFrame) {
+		// At the PrestubMethodFrame, the ControlPC is not valid. Since the eventpipe stackwalk is actually only based on the ip, skip this frame.
+		return SWA_CONTINUE;
+	}
 	if (control_pc == 0) {
+#ifdef DEBUG
 		if (ep_stack_contents_get_length (stack_contents) == 0) {
 			// This happens for pinvoke stubs on the top of the stack.
-			return SWA_CONTINUE;
 		}
+		else {
+			EP_ASSERT (!"Unexpected null ControlPC in stack walk callback");
+		}
+#endif
+		// With FUNCTIONSONLY flag, we may hit frames without a meaningful control_pc, but with a valid MethodDesc.
+		// There is no point in reporting those frames as ep_stack_contents_append doesn't actually record the function
+		// in a Frame in release builds, it only records the control_pc.
+		return SWA_CONTINUE;
 	}
 
 	EP_ASSERT (control_pc != 0);

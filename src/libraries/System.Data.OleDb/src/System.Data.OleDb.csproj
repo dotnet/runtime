@@ -46,7 +46,6 @@ System.Data.OleDb.OleDbTransaction</PackageDescription>
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs" Link="Common\Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SetErrorInfo.cs" Link="Common\Interop\Windows\OleAut32\Interop.SetErrorInfo.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysFreeString.cs" Link="Common\Interop\Windows\OleAut32\Interop.SysFreeString.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs" Link="Common\Interop\Windows\OleAut32\Interop.VariantClear.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs" Link="Common\Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.PropVariantClear.cs" Link="Common\Interop\Windows\Ole32\Interop.PropVariantClear.cs" />
     <Compile Include="$(CommonPath)System\Data\Common\MultipartIdentifier.cs" Link="Common\System\Data\Common\MultipartIdentifier.cs" />

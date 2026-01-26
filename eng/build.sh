@@ -608,7 +608,9 @@ if [[ "$bootstrap" == "1" ]]; then
       bootstrapArguments+=("$argument")
     fi
   done
-  "$scriptroot/common/build.sh" ${bootstrapArguments[@]+"${bootstrapArguments[@]}"} /p:Subset=bootstrap -bl:$scriptroot/../artifacts/log/$bootstrapConfig/bootstrap.binlog
+
+  # Set a different path for prebuilt usage tracking for the bootstrap build.
+  "$scriptroot/common/build.sh" ${bootstrapArguments[@]+"${bootstrapArguments[@]}"} /p:Subset=bootstrap /p:TrackPrebuiltUsageReportFile=$scriptroot/../artifacts/log/bootstrap-prebuilt-usage.xml -bl:$scriptroot/../artifacts/log/$bootstrapConfig/bootstrap.binlog
 
   # Remove artifacts from the bootstrap build so the product build is a "clean" build.
   echo "Cleaning up artifacts from bootstrap build..."

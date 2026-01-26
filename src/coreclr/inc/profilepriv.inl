@@ -2108,6 +2108,13 @@ FORCEINLINE BOOL CORProfilerTrackEventPipe()
     return (&g_profControlBlock)->globalEventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_EVENT_PIPE);
 }
 
+FORCEINLINE BOOL CORProfilerSkipAllocatedByClassStatistic()
+{
+    STATIC_CONTRACT_LIMITED_METHOD;
+
+    return (&g_profControlBlock)->globalEventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_GC_SKIP_ALLOCATED_BY_CLASS_STATISTIC);
+}
+
 #if defined(PROFILING_SUPPORTED)
 
 //---------------------------------------------------------------------------------------

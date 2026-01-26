@@ -8178,7 +8178,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             regNumber extraReg = codeGen->internalRegisters.GetSingle(dst);
             assert(extraReg != dst->GetRegNum());
 
-            if ((dst->gtFlags & GTF_UNSIGNED) != 0)
+            if (dst->IsUnsigned())
             {
                 // Compute 8 byte result from 4 byte by 4 byte multiplication.
                 emitIns_R_R_R_R(INS_umull, EA_4BYTE, dst->GetRegNum(), extraReg, src1->GetRegNum(), src2->GetRegNum());
@@ -8214,7 +8214,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         }
         else
         {
-            bool isUnsignedOverflow = ((dst->gtFlags & GTF_UNSIGNED) != 0);
+            bool isUnsignedOverflow = dst->IsUnsigned();
             jumpKind                = isUnsignedOverflow ? EJ_lo : EJ_vs;
             if (jumpKind == EJ_lo)
             {

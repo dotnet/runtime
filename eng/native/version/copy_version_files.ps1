@@ -13,7 +13,7 @@ Get-ChildItem -Path "$VersionFolder" -Filter "_version.*" | ForEach-Object {
         $current_contents = ""
         $is_placeholder_file = $false
         if (Test-Path -Path $version_file_destination) {
-            $current_contents = Get-Content -Path $version_file_destination -Raw
+            $current_contents = Get-Content -Path $version_file_destination
             $is_placeholder_file = $current_contents -match "@\(#\)Version N/A @Commit:"
         } else {
             $is_placeholder_file = $true

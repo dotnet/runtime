@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
             throw new NotImplementedException("Multiple nodes of this type are not supported");
         }
 
-        protected enum ObjectNodePhase
+        protected internal enum ObjectNodePhase
         {
             /// <summary>
             /// Nodes should only be placed in this phase if they have strict output ordering requirements that
@@ -49,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis
             Late,
         }
 
-        protected enum ObjectNodeOrder
+        protected internal enum ObjectNodeOrder
         {
             //
             // The ordering of this sequence of nodes is deliberate and currently required for
@@ -66,7 +66,9 @@ namespace ILCompiler.DependencyAnalysis
             ImportSectionsTableNode,
             ImportSectionNode,
             MethodEntrypointTableNode,
-
+            DebugDirectoryNode,
+            RuntimeFunctionsGCInfoNode,
+            RuntimeFunctionsTableNode,
 
             //
             // NativeAOT Nodes
