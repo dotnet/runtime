@@ -693,5 +693,4 @@ namespace System.IO.Compression
             await base.DisposeAsync().ConfigureAwait(false);
         }
     }
-
 }

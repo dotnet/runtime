@@ -200,6 +200,7 @@ public partial class ZipArchiveEntry
         }
     }
 
+
     public async Task<Stream> OpenAsync(string password, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -625,6 +626,7 @@ public partial class ZipArchiveEntry
 
         return zip64ExtraField != null;
     }
+
     private async Task WriteLocalFileHeaderAndDataIfNeededAsync(bool forceWrite, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();

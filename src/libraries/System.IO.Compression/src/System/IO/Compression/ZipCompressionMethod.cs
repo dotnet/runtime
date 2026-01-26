@@ -24,6 +24,6 @@ namespace System.IO.Compression
         /// <summary>
         /// The entry is compressed using the Deflate64 algorithm.
         /// </summary>
-        Deflate64 = 0x9
+        Deflate64 = 0x9,
     }
 }
