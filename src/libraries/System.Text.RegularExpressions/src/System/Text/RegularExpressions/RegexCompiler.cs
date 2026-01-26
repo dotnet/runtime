@@ -1896,53 +1896,9 @@ namespace System.Text.RegularExpressions
                 }
 
                 // Detect whether every branch begins with one or more unique characters.
-                const int SetCharsSize = 64; // arbitrary limit; we want it to be large enough to handle ignore-case of common sets, like hex, the latin alphabet, etc.
-                Span<char> setChars = stackalloc char[SetCharsSize];
-                var seenChars = new HashSet<char>();
-
-                // Iterate through every branch, seeing if we can easily find a starting One, Multi, or small Set.
-                // If we can, extract its starting char (or multiple in the case of a set), validate that all such
-                // starting characters are unique relative to all the branches.
-                for (int i = 0; i < childCount; i++)
+                if (!node.TryGetAlternationStartingChars(out HashSet<char>? seenChars))
                 {
-                    // Look for the guaranteed starting node that's a one, multi, set,
-                    // or loop of one of those with at least one minimum iteration. We need to exclude notones.
-                    if (node.Child(i).FindStartingLiteralNode(allowZeroWidth: false) is not RegexNode startingLiteralNode ||
-                        startingLiteralNode.IsNotoneFamily)
-                    {
-                        return false;
-                    }
-
-                    // If it's a One or a Multi, get the first character and add it to the set.
-                    // If it was already in the set, we can't apply this optimization.
-                    if (startingLiteralNode.IsOneFamily || startingLiteralNode.Kind is RegexNodeKind.Multi)
-                    {
-                        if (!seenChars.Add(startingLiteralNode.FirstCharOfOneOrMulti()))
-                        {
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        // The branch begins with a set.  Make sure it's a set of only a few characters
-                        // and get them.  If we can't, we can't apply this optimization.
-                        Debug.Assert(startingLiteralNode.IsSetFamily);
-                        int numChars;
-                        if (RegexCharClass.IsNegated(startingLiteralNode.Str!) ||
-                            (numChars = RegexCharClass.GetSetChars(startingLiteralNode.Str!, setChars)) == 0)
-                        {
-                            return false;
-                        }
-
-                        // Check to make sure each of the chars is unique relative to all other branches examined.
-                        foreach (char c in setChars.Slice(0, numChars))
-                        {
-                            if (!seenChars.Add(c))
-                            {
-                                return false;
-                            }
-                        }
-                    }
+                    return false;
                 }
 
                 // Compute min/max to determine density for choosing IL switch vs comparisons
