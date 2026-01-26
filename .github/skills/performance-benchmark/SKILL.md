@@ -136,11 +136,17 @@ Post a comment on the PR to trigger EgorBot with your benchmark. The general for
 
 | Flag | Architecture | Description |
 |------|--------------|-------------|
-| `-arm` | ARM64 | Azure Cobalt100 (Neoverse-N2) |
-| `-intel` | x64 | Azure Cascade Lake |
-| `-amd` or `-x64` | x64 | Azure Genoa (AMD EPYC 9V74) |
+| `-x64` or `-amd` | x64 | Linux Azure Genoa (AMD EPYC) - default x64 target |
+| `-arm` | ARM64 | Linux Azure Cobalt100 (Neoverse-N2) |
+| `-intel` | x64 | Azure Cascade Lake (more flaky due to JCC Erratum and loop alignment sensitivity) |
+| `-windows_x64` | x64 | Windows x64 (when Windows-specific testing is needed) |
 
-You can combine multiple targets: `-arm -intel -amd`
+**Choosing targets:**
+
+- **Default for most changes**: Use `-x64` for quick verification of non-architecture/non-OS specific changes
+- **Default when ARM might differ**: Use `-x64 -arm` if there's any suspicion the change might behave differently on ARM
+- **Windows-specific changes**: Use `-windows_x64` when Windows behavior needs testing
+- **Noisy results suspected**: Use `-arm -intel -amd` to get results from multiple x64 CPUs (note: `-intel` targets are more flaky)
 
 ### Common Options
 
@@ -157,7 +163,7 @@ You can combine multiple targets: `-arm -intel -amd`
 To benchmark the current PR changes against the base branch:
 
 ```
-@EgorBot -intel -arm
+@EgorBot -x64 -arm
 
 ```cs
 using BenchmarkDotNet.Attributes;
@@ -181,7 +187,7 @@ public class Bench
 ### Example: Benchmark with Profiling and Disassembly
 
 ```
-@EgorBot -intel -profiler --envvars DOTNET_JitDisasm:SumArray
+@EgorBot -x64 -profiler --envvars DOTNET_JitDisasm:SumArray
 
 ```cs
 using System.Linq;
