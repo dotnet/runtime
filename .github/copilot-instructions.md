@@ -52,7 +52,6 @@ Based on file paths you will modify:
 | `src/native/managed` | Tools |
 | `src/tasks` | Build Tasks |
 | `src/tests` | Runtime Tests |
-| None of the above | Docs/infra only — skip build steps |
 
 **WASM/WASI Library Detection:** A change under `src/libraries/` is WASM/WASI-relevant if the library's `.csproj` has explicit Browser/WASM or WASI targets (`TargetFrameworks`, `TARGET_BROWSER`, `TARGET_WASI` constants, or `Condition` attributes referencing `browser`/`wasi`), **and** the changed file is not excluded from those targets via `Condition` on `<ItemGroup>` or `<Compile>`.
 
