@@ -3049,5 +3049,133 @@ namespace System.Runtime.Intrinsics
 
             return result;
         }
+
+        public static TVectorDouble AsinDouble<TVectorDouble>(TVectorDouble x)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+        {
+            // This code is based on `vrs4_asinf` and `asinf` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Implementation Notes
+            // --------------------
+            // The input domain should be in the [-1, +1] else a domain error is displayed
+            //
+            // asin(-x) = -asin(x)
+            // asin(x) = pi/2-2*asin(sqrt(1/2*(1-x)))  when x > 1/2
+            //
+            // y = abs(x)
+            // asin(y) = asin(g)  when y <= 0.5,  where g = y*y
+            //         = pi/2-asin(g)  when y > 0.5, where g = 1/2*(1-y), y = -2*sqrt(g)
+            // The term asin(f) is approximated by using a polynomial where the inputs lie in the interval [0 1/2]
+
+            const double HALF = 0.5;
+            const double PI_BY_TWO = 1.5707963267948966;
+
+            // Polynomial coefficients from AMD aocl-libm-ose
+            const double C1 = 0.166666666666664;      // 0x1.55555555552aap-3
+            const double C2 = 0.0750000000006397;     // 0x1.333333337cbaep-4
+            const double C3 = 0.0446428571088065;     // 0x1.6db6db3c0984p-5
+            const double C4 = 0.0303819469180048;     // 0x1.f1c72dd86cbafp-6
+            const double C5 = 0.0223717830326408;     // 0x1.6e89d3ff33aa4p-6
+            const double C6 = 0.0173549783672646;     // 0x1.1c6d83ae664b6p-6
+            const double C7 = 0.0138887093438824;     // 0x1.c6e1568b90518p-7
+            const double C8 = 0.0121483872130308;     // 0x1.8f6a58977fe49p-7
+            const double C9 = 0.00640855516049134;    // 0x1.a6ab10b3321bp-8
+
+            TVectorDouble sign = x & TVectorDouble.Create(-0.0);
+            TVectorDouble ax = TVectorDouble.Abs(x);
+
+            TVectorDouble result;
+            TVectorDouble g;
+            TVectorDouble r;
+            TVectorDouble poly;
+            TVectorDouble n;
+
+            TVectorDouble cmp = TVectorDouble.Create(HALF);
+            TVectorDouble needsTransform = TVectorDouble.GreaterThan(ax, cmp);
+
+            // For |x| > 0.5: g = 0.5*(1.0-|x|), r = -2.0*sqrt(g)
+            TVectorDouble g_hi = TVectorDouble.Create(HALF) * (TVectorDouble.One - ax);
+            TVectorDouble r_hi = TVectorDouble.Create(-2.0) * TVectorDouble.Sqrt(g_hi);
+            TVectorDouble n_hi = TVectorDouble.Create(PI_BY_TWO);
+
+            // For |x| <= 0.5: g = |x|*|x|, r = |x|
+            TVectorDouble g_lo = ax * ax;
+            TVectorDouble r_lo = ax;
+            TVectorDouble n_lo = TVectorDouble.Zero;
+
+            g = TVectorDouble.ConditionalSelect(needsTransform, g_hi, g_lo);
+            r = TVectorDouble.ConditionalSelect(needsTransform, r_hi, r_lo);
+            n = TVectorDouble.ConditionalSelect(needsTransform, n_hi, n_lo);
+
+            // Polynomial evaluation: poly = g * (C1 + g*(C2 + g*(C3 + ... + g*C9)))
+            poly = TVectorDouble.MultiplyAddEstimate(
+                TVectorDouble.MultiplyAddEstimate(
+                    TVectorDouble.MultiplyAddEstimate(
+                        TVectorDouble.MultiplyAddEstimate(
+                            TVectorDouble.MultiplyAddEstimate(
+                                TVectorDouble.MultiplyAddEstimate(
+                                    TVectorDouble.MultiplyAddEstimate(
+                                        TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C9), g, TVectorDouble.Create(C8)),
+                                        g, TVectorDouble.Create(C7)),
+                                    g, TVectorDouble.Create(C6)),
+                                g, TVectorDouble.Create(C5)),
+                            g, TVectorDouble.Create(C4)),
+                        g, TVectorDouble.Create(C3)),
+                    g, TVectorDouble.Create(C2)),
+                g, TVectorDouble.Create(C1)
+            );
+
+            result = TVectorDouble.MultiplyAddEstimate(poly * g, r, r);
+            result += n;
+
+            // Restore sign
+            result |= sign;
+
+            return result;
+        }
+
+        public static TVectorSingle AsinSingle<TVectorSingle, TVectorInt32, TVectorDouble, TVectorInt64>(TVectorSingle x)
+            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
+            where TVectorInt32 : unmanaged, ISimdVector<TVectorInt32, int>
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
+        {
+            // This code is based on `vrs4_asinf` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Implementation Notes
+            // --------------------
+            // The input domain should be in the [-1, +1] else a domain error is displayed
+            //
+            // asin(-x) = -asin(x)
+            // asin(x) = pi/2-2*asin(sqrt(1/2*(1-x)))  when x > 1/2
+            //
+            // y = abs(x)
+            // asin(y) = asin(g)  when y <= 0.5,  where g = y*y
+            //         = pi/2-asin(g)  when y > 0.5, where g = 1/2*(1-y), y = -2*sqrt(g)
+            // The term asin(f) is approximated by using a polynomial
+
+            if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
+            {
+                TVectorDouble dx = Widen<TVectorSingle, TVectorDouble>(x);
+                return Narrow<TVectorDouble, TVectorSingle>(AsinDouble<TVectorDouble>(dx));
+            }
+            else
+            {
+                TVectorDouble dxLo = WidenLower<TVectorSingle, TVectorDouble>(x);
+                TVectorDouble dxHi = WidenUpper<TVectorSingle, TVectorDouble>(x);
+                return Narrow<TVectorDouble, TVectorSingle>(
+                    AsinDouble<TVectorDouble>(dxLo),
+                    AsinDouble<TVectorDouble>(dxHi)
+                );
+            }
+        }
     }
 }

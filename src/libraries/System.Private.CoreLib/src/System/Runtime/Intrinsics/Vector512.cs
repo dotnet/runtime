@@ -723,6 +723,40 @@ namespace System.Runtime.Intrinsics
             Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
         }
 
+        /// <inheritdoc cref="Vector256.Asin(Vector256{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<double> Asin(Vector512<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AsinDouble<Vector512<double>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Asin(vector._lower),
+                    Vector256.Asin(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector256.Asin(Vector256{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<float> Asin(Vector512<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AsinSingle<Vector512<float>, Vector512<int>, Vector512<double>, Vector512<long>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Asin(vector._lower),
+                    Vector256.Asin(vector._upper)
+                );
+            }
+        }
+
         /// <inheritdoc cref="Vector256.Cos(Vector256{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<double> Cos(Vector512<double> vector)

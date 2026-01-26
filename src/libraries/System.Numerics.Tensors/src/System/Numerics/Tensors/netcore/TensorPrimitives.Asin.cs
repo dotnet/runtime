@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.Intrinsics;
 
 namespace System.Numerics.Tensors
@@ -29,11 +30,67 @@ namespace System.Numerics.Tensors
         private readonly struct AsinOperator<T> : IUnaryOperator<T, T>
             where T : ITrigonometricFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            // This code is based on `vrs4_asinf` and `asinf` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Implementation Notes
+            // --------------------
+            // The input domain should be in the [-1, +1] else a domain error is displayed
+            //
+            // asin(-x) = -asin(x)
+            // asin(x) = pi/2-2*asin(sqrt(1/2*(1-x)))  when x > 1/2
+            //
+            // y = abs(x)
+            // asin(y) = asin(g)  when y <= 0.5,  where g = y*y
+            //         = pi/2-asin(g)  when y > 0.5, where g = 1/2*(1-y), y = -2*sqrt(g)
+            // The term asin(f) is approximated by using a polynomial
+
+            public static bool Vectorizable => (typeof(T) == typeof(float))
+                                            || (typeof(T) == typeof(double));
+
             public static T Invoke(T x) => T.Asin(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector128.Asin(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector128.Asin(x.AsSingle()).As<float, T>();
+                }
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector256.Asin(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector256.Asin(x.AsSingle()).As<float, T>();
+                }
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector512.Asin(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector512.Asin(x.AsSingle()).As<float, T>();
+                }
+            }
         }
     }
 }
