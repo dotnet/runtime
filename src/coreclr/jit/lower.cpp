@@ -3592,7 +3592,6 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     return result;
 }
 
-
 //------------------------------------------------------------------------
 // LowerCFGCall: Potentially lower a call to use control-flow guard. This
 // expands indirect calls into either a validate+call sequence or to a dispatch
