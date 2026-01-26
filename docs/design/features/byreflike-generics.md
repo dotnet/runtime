@@ -1,6 +1,6 @@
 # Generics parameters of ByRefLike types
 
-Using ByRefLike types in Generic parameters is possible by building upon support added for `ref` fields. Scenarios that would benefit most from this are those involving `Span<T>`. For example, consider the following potential future additions (see [Span&lt;Span&lt;T&gt;&gt; section](https://github.com/dotnet/csharplang/blob/e8dbda9ab73cbba592206084553a08a6791a272d/proposals/csharp-13.0/ref-struct-interfaces.md#spanspant) for additional context on why these constructs were not enabled by this feature):
+Using ByRefLike types in Generic parameters is possible by building upon support added for `ref` fields. Scenarios that would benefit most from this are those involving `Span<T>`. For example, consider the following potential future additions (see [Span&lt;Span&lt;T&gt;&gt; section](https://github.com/dotnet/csharplang/blob/main/proposals/csharp-13.0/ref-struct-interfaces.md#spanspant) for additional context on why these constructs were not enabled by this feature):
 
 - `Span<TypedReference>` &ndash; Represents the general case where a ByRefLike type is used as a Generic parameter. This specific case would be desirable for a more efficient Reflection API.
 - `Span<Span<char>>` &ndash; Nested `Span<T>` types would be of benefit in the parsing result of strings.
