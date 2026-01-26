@@ -93,7 +93,7 @@ NESTED_END RhpThrowHwEx
 LEAF_ENTRY RhpThrowExact, _TEXT
 
         mov         r2, #4                                          // r2 = ExKind.RethrowFlag
-        b           RhpThrowExImpl
+        b           C_FUNC(RhpThrowExImpl)
 
 LEAF_END RhpThrowExact, _TEXT
 

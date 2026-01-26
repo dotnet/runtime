@@ -103,7 +103,7 @@ FASTCALL_ENDFUNC
 FASTCALL_FUNC  RhpThrowExact, 4
 
         mov         edx, 4                  ;; edx = ExKind.RethrowFlag
-        jmp         RhpThrowExImpl
+        jmp         C_FUNC(RhpThrowExImpl)
 
 FASTCALL_ENDFUNC
 
