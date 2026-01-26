@@ -36,9 +36,13 @@ namespace System.Net.Http
             _decompressionMethods = decompressionMethods;
             _innerHandler = innerHandler;
 
-            List<string?> methods = [GZipEnabled ? Gzip : null, DeflateEnabled ? Deflate : null, BrotliEnabled ? Brotli : null, ZstandardEnabled ? Zstd : null];
-            methods.RemoveAll(item => item is null);
-            _acceptEncodingHeaderValue = string.Join(", ", methods);
+            Span<string?> methods = ["", "", "", ""];
+            int count = 0;
+            if (GZipEnabled) methods[count++] = Gzip;
+            if (DeflateEnabled) methods[count++] = Deflate;
+            if (BrotliEnabled) methods[count++] = Brotli;
+            if (ZstandardEnabled) methods[count++] = Zstd;
+            _acceptEncodingHeaderValue = string.Join(", ", methods.Slice(0, count));
         }
 
         internal bool GZipEnabled => (_decompressionMethods & DecompressionMethods.GZip) != 0;
