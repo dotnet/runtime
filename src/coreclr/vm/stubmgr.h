@@ -743,6 +743,58 @@ public:
 };
 #endif // TARGET_X86 && UNIX_X86_ABI
 
+// -----------------------------------------------------------
+// This is used to recognize async thunks
+typedef VPTR(class AsyncThunkStubManager) PTR_AsyncThunkStubManager;
+class AsyncThunkStubManager : public StubManager
+{
+    VPTR_VTABLE_CLASS(AsyncThunkStubManager, StubManager)
+
+  public:
+    static void Init();
+
+#ifndef DACCESS_COMPILE
+    AsyncThunkStubManager() : StubManager() {WRAPPER_NO_CONTRACT;}
+    ~AsyncThunkStubManager()
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            CAN_TAKE_LOCK;     // StubManager::UnlinkStubManager uses a crst
+        }
+        CONTRACTL_END;
+    }
+#endif
+
+   public:
+
+#ifdef _DEBUG
+    virtual const char * DbgGetName() { LIMITED_METHOD_CONTRACT; return "AsyncThunkStubManager"; }
+#endif
+
+    virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
+
+  private:
+
+    virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
+
+#ifndef DACCESS_COMPILE
+    virtual BOOL TraceManager(Thread *thread,
+                              TraceDestination *trace,
+                              T_CONTEXT *pContext,
+                              BYTE **pRetAddr);
+#endif
+
+#ifdef DACCESS_COMPILE
+    virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+
+  protected:
+    virtual LPCWSTR GetStubManagerName(PCODE addr)
+        { LIMITED_METHOD_CONTRACT; return W("AsyncThunkStub"); }
+#endif
+};
+
 //
 // Helpers for common value locations in stubs to make stub managers more portable
 //
