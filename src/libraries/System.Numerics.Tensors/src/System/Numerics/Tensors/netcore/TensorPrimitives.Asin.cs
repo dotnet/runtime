@@ -56,6 +56,17 @@ namespace System.Numerics.Tensors
 
             public static Vector128<T> Invoke(Vector128<T> x)
             {
+#if NET11_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector128.Asin(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector128.Asin(x.AsSingle()).As<float, T>();
+                }
+#else
                 if (typeof(T) == typeof(double))
                 {
                     return AsinDouble(x.AsDouble()).As<double, T>();
@@ -65,10 +76,22 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(float));
                     return AsinSingle(x.AsSingle()).As<float, T>();
                 }
+#endif
             }
 
             public static Vector256<T> Invoke(Vector256<T> x)
             {
+#if NET11_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector256.Asin(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector256.Asin(x.AsSingle()).As<float, T>();
+                }
+#else
                 if (typeof(T) == typeof(double))
                 {
                     return AsinDouble(x.AsDouble()).As<double, T>();
@@ -78,10 +101,22 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(float));
                     return AsinSingle(x.AsSingle()).As<float, T>();
                 }
+#endif
             }
 
             public static Vector512<T> Invoke(Vector512<T> x)
             {
+#if NET11_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector512.Asin(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector512.Asin(x.AsSingle()).As<float, T>();
+                }
+#else
                 if (typeof(T) == typeof(double))
                 {
                     return AsinDouble(x.AsDouble()).As<double, T>();
@@ -91,6 +126,7 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(float));
                     return AsinSingle(x.AsSingle()).As<float, T>();
                 }
+#endif
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
