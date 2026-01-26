@@ -1032,7 +1032,7 @@ Changes to signatures:
 
 ## <a name="byreflike-generics"></a> ByRefLike types in generics
 
-ByRefLike types, defined in C# with the `ref struct` syntax, represent types that cannot escape to the managed heap and must remain on the stack. It is possible for these types to be used as generic parameters ([dotnet/roslyn#64811](https://github.com/dotnet/roslyn/issues/64811), [sunset restricted types](https://github.com/dotnet/csharplang/blob/main/proposals/expand-ref.md#sunset-restricted-types)), but in order to improve utility certain affordances are required.
+ByRefLike types, defined in C# with the `ref struct` syntax, represent types that cannot escape to the managed heap and must remain on the stack. It is possible for these types to be used as generic parameters ([sunset restricted types](https://github.com/dotnet/csharplang/blob/main/proposals/expand-ref.md#sunset-restricted-types), [dotnet/roslyn#64811](https://github.com/dotnet/roslyn/issues/64811)), but in order to improve utility certain affordances are required.
 
 ### II.10.1.7
 An additional IL keyword, `byreflike`, is introduced to indicate use of ByRefLike types is permitted. This expands the set of permissible types used by this parameters, but limits the potential instructions that can be used on instances of this generic parameter type.
