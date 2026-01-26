@@ -441,7 +441,6 @@ VOID FinalizerThread::FinalizerThreadWorkerRound()
 #ifndef TARGET_WASM
     // Wait for work to do...
 
-    _ASSERTE(GetFinalizerThread()->PreemptiveGCDisabled());
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel())
     {
