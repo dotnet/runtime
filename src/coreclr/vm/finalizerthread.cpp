@@ -49,9 +49,9 @@ extern "C"
     {
         CONTRACTL
         {
-            NOTHROW;
+            THROWS;
             GC_TRIGGERS;
-            ENTRY_POINT;  // This is called by a host.
+            MODE_COOPERATIVE;
         }
         CONTRACTL_END;
 
