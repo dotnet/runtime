@@ -20,15 +20,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void BitDecrement<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IFloatingPointIeee754<T>
-        {
-            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, BitDecrementOperator<float>>(x, destination))
-            {
-                return;
-            }
-
+            where T : IFloatingPointIeee754<T> =>
             InvokeSpanIntoSpan<T, BitDecrementOperator<T>>(x, destination);
-        }
 
         /// <summary>T.BitDecrement(x)</summary>
         private readonly struct BitDecrementOperator<T> : IUnaryOperator<T, T>
