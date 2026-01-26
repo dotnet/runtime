@@ -128,21 +128,14 @@ namespace Tracing.UserEvents.Tests.Common
             Console.WriteLine($"record-trace started with PID: {recordTraceProcess.Id}");
 
             ProcessStartInfo traceeStartInfo = new();
+            traceeStartInfo.FileName = Environment.ProcessPath 
+                ?? throw new InvalidOperationException("Environment.ProcessPath is null");
             
             // NativeAOT tests run the native executable directly.
             // CoreCLR tests run through corerun which loads the managed assembly.
-            if (isNativeAot)
-            {
-                traceeStartInfo.FileName = Environment.ProcessPath 
-                    ?? throw new InvalidOperationException("Environment.ProcessPath is null");
-                traceeStartInfo.Arguments = "tracee";
-            }
-            else
-            {
-                traceeStartInfo.FileName = Process.GetCurrentProcess().MainModule?.FileName 
-                    ?? throw new InvalidOperationException("Unable to determine current process executable path");
-                traceeStartInfo.Arguments = $"{traceeAssemblyPath} tracee";
-            }
+            traceeStartInfo.Arguments = isNativeAot 
+                ? "tracee" 
+                : $"{traceeAssemblyPath} tracee";
             
             traceeStartInfo.WorkingDirectory = userEventsScenarioDir;
             traceeStartInfo.RedirectStandardOutput = true;
