@@ -1792,7 +1792,12 @@ namespace System.Text.Json.SourceGeneration
                         }
                         else
                         {
-                            var nestedType = constructedContainingType.GetTypeMembers(originalDef.Name).FirstOrDefault();
+                            // Use arity 0 to avoid ambiguity with nested types of the same name but different arity
+                            var nestedType = constructedContainingType.GetTypeMembers(originalDef.Name, 0).FirstOrDefault();
+                            if (nestedType == null)
+                            {
+                                return null;
+                            }
                             constructedContainingType = nestedType;
                         }
                     }
