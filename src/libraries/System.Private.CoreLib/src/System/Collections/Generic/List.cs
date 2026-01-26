@@ -529,15 +529,27 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
 
-            List<T> list = new List<T>();
+            InlineArray4<T> stackAllocatedMatches = default;
+            Span<T> span = stackAllocatedMatches;
+            int foundCount = 0;
+            T[]? values = null;
             for (int i = 0; i < _size; i++)
             {
                 if (match(_items[i]))
                 {
-                    list.Add(_items[i]);
+                    if (foundCount >= span.Length)
+                    {
+                        values = new T[Math.Min((uint)span.Length * 2, (uint)_size)];
+                        span.CopyTo(values);
+                        span = values;
+                    }
+
+                    span[foundCount++] = _items[i];
                 }
             }
-            return list;
+
+            T[] matches = values?.Length == foundCount ? values : span[..foundCount].ToArray();
+            return new List<T> { _items = matches, _size = matches.Length };
         }
 
         public int FindIndex(Predicate<T> match)
