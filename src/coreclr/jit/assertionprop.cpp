@@ -4330,16 +4330,13 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         return optAssertionProp_Update(newTree, tree, stmt);
     }
 
-    if (op1->TypeIs(TYP_INT) && op2->TypeIs(TYP_INT))
+    Range relopRange =
+        RangeCheck::GetRangeFromAssertions(this, vnStore->VNConservativeNormalValue(tree->gtVNPair), assertions);
+    if (relopRange.IsSingleValueConstant(0) || relopRange.IsSingleValueConstant(1))
     {
-        Range relopRange =
-            RangeCheck::GetRangeFromAssertions(this, vnStore->VNConservativeNormalValue(tree->gtVNPair), assertions);
-        if (relopRange.IsSingleValueConstant(0) || relopRange.IsSingleValueConstant(1))
-        {
-            newTree = gtWrapWithSideEffects(relopRange.IsSingleValueConstant(1) ? gtNewTrue() : gtNewFalse(), tree,
-                                            GTF_ALL_EFFECT);
-            return optAssertionProp_Update(newTree, tree, stmt);
-        }
+        newTree = gtWrapWithSideEffects(relopRange.IsSingleValueConstant(1) ? gtNewTrue() : gtNewFalse(), tree,
+                                        GTF_ALL_EFFECT);
+        return optAssertionProp_Update(newTree, tree, stmt);
     }
 
     // Else check if we have an equality check involving a local or an indir
