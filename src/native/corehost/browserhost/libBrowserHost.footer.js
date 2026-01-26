@@ -60,10 +60,10 @@
                             ENV[key] = loaderConfig.environmentVariables[key];
                         }
 
-                        const browserAppBase = "/managed"; // keep in sync other places that define browserAppBase
+                        const browserVirtualAppBase = "/managed"; // keep in sync other places that define browserVirtualAppBase
                         // load all DLLs into linear memory and tell CoreCLR that they are in /managed folder via TRUSTED_PLATFORM_ASSEMBLIES
                         Module.preInit = [() => {
-                            FS.mkdir(browserAppBase);
+                            FS.mkdir(browserVirtualAppBase);
                             if (ENVIRONMENT_IS_NODE) {
                                 // on NodeJS we mount the current working directory of the host OS as /managed
                                 // so that any other files can be loaded via file IO of the emscripten FS emulator
@@ -72,9 +72,9 @@
                                 // this doesn't make sense in browser and it doesn't work for V8 shell
                                 // it also means that any files in loaderConfig.resources.coreVfs and loaderConfig.resources.vfs will be ignored on NodeJS
                                 // because NODEFS is mounted on top of /managed and we assume that the host file system has all the files needed
-                                FS.mount(NODEFS, { root: "." }, browserAppBase);
+                                FS.mount(NODEFS, { root: "." }, browserVirtualAppBase);
                             }
-                            FS.chdir(browserAppBase);
+                            FS.chdir(browserVirtualAppBase);
                         }];
                     }
                 },

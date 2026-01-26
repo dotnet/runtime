@@ -3,7 +3,7 @@
 
 import type { CharPtrPtr, VoidPtr } from "./types";
 import { _ems_ } from "../../../libs/Common/JavaScript/ems-ambient";
-import { browserAppBase } from "./per-module";
+import { browserVirtualAppBase } from "./per-module";
 
 const HOST_PROPERTY_RUNTIME_CONTRACT = "HOST_RUNTIME_CONTRACT";
 const HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES = "TRUSTED_PLATFORM_ASSEMBLIES";
@@ -25,7 +25,7 @@ export function initializeCoreCLR(): number {
     const virtualDllPath = (virtualPath: string): string => {
         return virtualPath.startsWith("/")
             ? virtualPath
-            : browserAppBase + "/" + virtualPath;
+            : browserVirtualAppBase + "/" + virtualPath;
     };
 
     const assemblyPaths = loaderConfig.resources!.assembly.map(asset => virtualDllPath(asset.virtualPath));
@@ -35,7 +35,7 @@ export function initializeCoreCLR(): number {
     runtimeConfigProperties.set(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES, loaderConfig.virtualWorkingDirectory!);
     runtimeConfigProperties.set(HOST_PROPERTY_APP_PATHS, loaderConfig.virtualWorkingDirectory!);
     runtimeConfigProperties.set(HOST_PROPERTY_ENTRY_ASSEMBLY_NAME, loaderConfig.mainAssemblyName!);
-    runtimeConfigProperties.set(APP_CONTEXT_BASE_DIRECTORY, browserAppBase);
+    runtimeConfigProperties.set(APP_CONTEXT_BASE_DIRECTORY, browserVirtualAppBase);
     runtimeConfigProperties.set(RUNTIME_IDENTIFIER, "browser-wasm");
     runtimeConfigProperties.set(HOST_PROPERTY_RUNTIME_CONTRACT, `0x${(hostContractPtr as unknown as number).toString(16)}`);
 

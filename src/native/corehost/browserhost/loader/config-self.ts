@@ -3,7 +3,7 @@
 
 import type { LoaderConfig, DotnetHostBuilder } from "./types";
 import { GlobalizationMode } from "./types";
-import { browserAppBase, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, globalThisAny } from "./per-module";
+import { browserVirtualAppBase, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, globalThisAny } from "./per-module";
 import { fetchLike, nodeFs } from "./polyfills";
 import { quitNow, exit } from "./exit";
 import { isValidLoaderConfig } from "./config";
@@ -127,7 +127,7 @@ async function findResources(dotnet: DotnetHostBuilder, files: string[], mainAss
         mainAssemblyName,
         runtimeConfig,
         globalizationMode,
-        virtualWorkingDirectory: browserAppBase,
+        virtualWorkingDirectory: browserVirtualAppBase,
         environmentVariables,
         resources: {
             jsModuleNative: [{ name: "dotnet.native.js" }],

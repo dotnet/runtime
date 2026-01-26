@@ -5,7 +5,7 @@ import type { CharPtr, VfsAsset, VoidPtr, VoidPtrPtr } from "./types";
 import { _ems_ } from "../../../libs/Common/JavaScript/ems-ambient";
 
 import { dotnetAssert, dotnetLogger } from "./cross-module";
-import { browserAppBase, ENVIRONMENT_IS_WEB } from "./per-module";
+import { browserVirtualAppBase, ENVIRONMENT_IS_WEB } from "./per-module";
 
 const hasInstantiateStreaming = typeof WebAssembly !== "undefined" && typeof WebAssembly.instantiateStreaming === "function";
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
@@ -94,7 +94,7 @@ export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
     }
     if (parentDirectory) {
         if (!parentDirectory.startsWith("/"))
-            parentDirectory = browserAppBase + "/" + parentDirectory;
+            parentDirectory = browserVirtualAppBase + "/" + parentDirectory;
 
         _ems_.dotnetLogger.debug(`Creating directory '${parentDirectory}'`);
 
@@ -102,7 +102,7 @@ export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
             "/", parentDirectory, true, true // fixme: should canWrite be false?
         );
     } else {
-        parentDirectory = browserAppBase;
+        parentDirectory = browserVirtualAppBase;
     }
 
     _ems_.dotnetLogger.debug(`Creating file '${fileName}' in directory '${parentDirectory}'`);

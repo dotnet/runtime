@@ -51,12 +51,12 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
 
         const coreAssembliesPromise = Promise.all(loaderConfig.resources.coreAssembly.map(fetchDll));
         const coreVfsPromise = ENVIRONMENT_IS_NODE
-            ? Promise.resolve([]) // NodeJS is mapping current host directory to VFS /managed and so we assume all files are already there. See also browserAppBase and libBrowserHost.footer.js
+            ? Promise.resolve([]) // NodeJS is mapping current host directory to VFS /managed and so we assume all files are already there. See also browserVirtualAppBase and libBrowserHost.footer.js
             : Promise.all((loaderConfig.resources.coreVfs || []).map(fetchVfs));
 
         const assembliesPromise = Promise.all(loaderConfig.resources.assembly.map(fetchDll));
         const vfsPromise = ENVIRONMENT_IS_NODE
-            ? Promise.resolve([]) // NodeJS is mapping current host directory to VFS /managed and so we assume all files are already there. See also browserAppBase and libBrowserHost.footer.js
+            ? Promise.resolve([]) // NodeJS is mapping current host directory to VFS /managed and so we assume all files are already there. See also browserVirtualAppBase and libBrowserHost.footer.js
             : Promise.all((loaderConfig.resources.vfs || []).map(fetchVfs));
 
         const icuResourceName = getIcuResourceName();
