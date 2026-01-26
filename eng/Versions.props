@@ -67,9 +67,13 @@
     <MicrosoftCodeAnalysisVersion_4_8>4.8.0</MicrosoftCodeAnalysisVersion_4_8>
     <!--
       Analyzers and source generators reference the latest Microsoft.CodeAnalysis version (MicrosoftCodeAnalysisVersion),
-      which is auto-updated via dependency flow. This version may move ahead of what's in the global.json SDK.
-      If that happens, the standard process is to update the bootstrap global.json SDK to pull in the new Roslyn,
-      similar to what we would do when onboarding new language features.
+      which is auto-updated via dependency flow. This version may move ahead of what's in the global.json SDK,
+      particularly when analyzers need to consume new Roslyn APIs. When that happens, update the bootstrap global.json
+      SDK to pull in the new Roslyn (similar to onboarding new language features).
+      
+      Note: This version affects the design-time experience in VS, so moving ahead of the latest VS preview or SDK preview
+      can break local development. This is expected to happen occasionally as we move faster than previews to depend on
+      new analyzer features.
     -->
     <!-- Some of the analyzer dependencies used by ILLink project -->
     <MicrosoftCodeAnalysisBannedApiAnalyzersVersion>3.3.5-beta1.23270.2</MicrosoftCodeAnalysisBannedApiAnalyzersVersion>
