@@ -2694,11 +2694,11 @@ void StackTraceInfo::AppendElementImpl(OBJECTREF pThrowable, UINT_PTR currentIP,
         StackTraceArrayProtect stackTrace;
         PTRARRAYREF pKeepAliveArray = NULL; // Object array of Managed Resolvers / Loader Allocators of methods that can be collected
         OBJECTREF keepAliveObject = NULL;
-        OBJECTREF pThrowable = NULL;
+        EXCEPTIONREF pThrowable = NULL;
     } gc;
 
     GCPROTECT_BEGIN_THREAD(pThread, gc);
-    gc.pThrowable = pThrowable;
+    gc.pThrowable = (EXCEPTIONREF)pThrowable;
 
     StackTraceElement stackTraceElem;
 
@@ -2741,7 +2741,7 @@ void StackTraceInfo::AppendElementImpl(OBJECTREF pThrowable, UINT_PTR currentIP,
     {
         // Fetch the stacktrace and the keepAlive array from the exception object. It returns clones of those arrays in case the
         // stack trace was created by a different thread.
-        ((EXCEPTIONREF)gc.pThrowable)->GetStackTrace(gc.stackTrace.m_pStackTraceArray, &gc.pKeepAliveArray, pThread);
+        gc.pThrowable->GetStackTrace(gc.stackTrace.m_pStackTraceArray, &gc.pKeepAliveArray, pThread);
 
         // The stack trace returned by the GetStackTrace has to be created by the current thread or be NULL.
         _ASSERTE((gc.stackTrace.m_pStackTraceArray.Get() == NULL) || (gc.stackTrace.m_pStackTraceArray.GetObjectThread() == pThread));
@@ -2799,16 +2799,16 @@ void StackTraceInfo::AppendElementImpl(OBJECTREF pThrowable, UINT_PTR currentIP,
         {
             _ASSERTE(keepAliveItemsCount > 0);
             gc.pKeepAliveArray->SetAt(0, gc.stackTrace.m_pStackTraceArray.Get());
-            ((EXCEPTIONREF)gc.pThrowable)->SetStackTrace(dac_cast<OBJECTREF>(gc.pKeepAliveArray));
+            gc.pThrowable->SetStackTrace(dac_cast<OBJECTREF>(gc.pKeepAliveArray));
         }
         else
         {
             _ASSERTE(keepAliveItemsCount == 0);
-            ((EXCEPTIONREF)gc.pThrowable)->SetStackTrace(dac_cast<OBJECTREF>(gc.stackTrace.m_pStackTraceArray.Get()));
+            gc.pThrowable->SetStackTrace(dac_cast<OBJECTREF>(gc.stackTrace.m_pStackTraceArray.Get()));
         }
 
         // Clear the _stackTraceString field as it no longer matches the stack trace
-        ((EXCEPTIONREF)gc.pThrowable)->SetStackTraceString(NULL);
+        gc.pThrowable->SetStackTraceString(NULL);
     }
     EX_CATCH
     {
