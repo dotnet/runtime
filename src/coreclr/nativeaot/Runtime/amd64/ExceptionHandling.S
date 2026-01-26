@@ -109,7 +109,7 @@ NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
 
         mov     r8d, 1                  // r8d = ExKind.Throw
 
-ALTERNATE_ENTRY(RhpThrowExImpl):
+ALTERNATE_ENTRY RhpThrowExImpl
 
         STACKSIZEOF_ExInfo      = ((SIZEOF__ExInfo + 15) & (~ 15))
         rsp_offsetof_Context    = STACKSIZEOF_ExInfo

@@ -281,7 +281,7 @@
 
         mov         w4, #1                                          // w4 = ExKind.Throw
 
-ALTERNATE_ENTRY(RhpThrowExImpl):
+ALTERNATE_ENTRY RhpThrowExImpl
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 

@@ -297,7 +297,7 @@
 
         ori  $a4, $zero, 1                               // a4 = ExKind.Throw
 
-ALTERNATE_ENTRY(RhpThrowExImpl):
+ALTERNATE_ENTRY RhpThrowExImpl
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 

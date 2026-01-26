@@ -110,7 +110,7 @@ NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
 
         mov         r2, #1                                          // r2 = ExKind.Throw
 
-ALTERNATE_ENTRY(RhpThrowExImpl):
+ALTERNATE_ENTRY RhpThrowExImpl
 
         // Setup a PAL_LIMITED_CONTEXT on the stack {
         PROLOG_VPUSH {d8-d15}
