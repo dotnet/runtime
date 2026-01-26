@@ -921,9 +921,6 @@ void EEStartupHelper()
         // On windows the finalizer thread is already partially created and is waiting
         // right before doing HasStarted(). We will release it now.
         FinalizerThread::EnableFinalization();
-#elif defined(TARGET_WASM)
-        // On wasm this schedules finalization onto the browser event loop.
-        FinalizerThread::EnableFinalization();
 #else
         // This isn't done as part of InitializeGarbageCollector() above because
         // debugger must be initialized before creating EE thread objects
