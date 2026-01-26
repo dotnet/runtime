@@ -182,7 +182,7 @@ namespace System.IO.Hashing
         {
             if (buf.IsEmpty)
             {
-                return 1u;
+                return adler;
             }
 
             uint s1 = adler & 0xFFFF;
