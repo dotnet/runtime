@@ -72,13 +72,13 @@ namespace System.Diagnostics.CodeAnalysis
             await VerifyRequiresUnsafeAnalyzer(
                 source: test,
                 new[] {
-                    // /0/Test0.cs(8,17): warning IL3059: Using method 'C.M1()' which has 'RequiresUnsafeAttribute' can break functionality in environments that do not support unsafe code.
+                    // /0/Test0.cs(8,17): warning IL3059: Using member 'C.M1()' which has 'RequiresUnsafeAttribute' requires an unsafe context, such as an unsafe block or a method marked with 'RequiresUnsafeAttribute'.
                     VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe).WithSpan(8, 17, 8, 19).WithArguments("C.M1()", "", ""),
-                    // /0/Test0.cs(12,27): warning IL3059: Using method 'C.M1()' which has 'RequiresUnsafeAttribute' can break functionality in environments that do not support unsafe code.
+                    // /0/Test0.cs(12,27): warning IL3059: Using member 'C.M1()' which has 'RequiresUnsafeAttribute' requires an unsafe context, such as an unsafe block or a method marked with 'RequiresUnsafeAttribute'.
                     VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe).WithSpan(12, 27, 12, 31).WithArguments("C.M1()", "", ""),
-                    // /0/Test0.cs(16,31): warning IL3059: Using method 'C.M1()' which has 'RequiresUnsafeAttribute' can break functionality in environments that do not support unsafe code.
+                    // /0/Test0.cs(16,31): warning IL3059: Using member 'C.M1()' which has 'RequiresUnsafeAttribute' requires an unsafe context, such as an unsafe block or a method marked with 'RequiresUnsafeAttribute'.
                     VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe).WithSpan(16, 31, 16, 35).WithArguments("C.M1()", "", ""),
-                    // /0/Test0.cs(23,31): warning IL3059: Using method 'C.M1()' which has 'RequiresUnsafeAttribute' can break functionality in environments that do not support unsafe code.
+                    // /0/Test0.cs(23,31): warning IL3059: Using member 'C.M1()' which has 'RequiresUnsafeAttribute' requires an unsafe context, such as an unsafe block or a method marked with 'RequiresUnsafeAttribute'.
                     VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe).WithSpan(23, 31, 23, 35).WithArguments("C.M1()", "", "")
                 });
         }
@@ -102,7 +102,7 @@ namespace System.Diagnostics.CodeAnalysis
             }
             """;
             var diag = new[] {
-                // /0/Test0.cs(11,22): warning IL3059: Using method 'C.M1()' which has 'RequiresUnsafeAttribute' can break functionality in environments that do not support unsafe code.
+                // /0/Test0.cs(11,22): warning IL3059: Using member 'C.M1()' which has 'RequiresUnsafeAttribute' requires an unsafe context, such as an unsafe block or a method marked with 'RequiresUnsafeAttribute'.
                 VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe).WithSpan(11, 22, 11, 24).WithArguments("C.M1()", "", "")
             };
             return VerifyRequiresUnsafeAnalyzer(src, diag);
@@ -130,7 +130,7 @@ namespace System.Diagnostics.CodeAnalysis
             return VerifyRequiresUnsafeAnalyzer(
                 source: src,
                 new[] {
-                    // /0/Test0.cs(11,27): warning IL3059: Using method 'C.M1()' which has 'RequiresUnsafeAttribute' can break functionality in environments that do not support unsafe code.
+                    // /0/Test0.cs(11,27): warning IL3059: Using member 'C.M1()' which has 'RequiresUnsafeAttribute' requires an unsafe context, such as an unsafe block or a method marked with 'RequiresUnsafeAttribute'.
                     VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe).WithSpan(11, 27, 11, 29).WithArguments("C.M1()", "", "")
                 });
         }
@@ -152,7 +152,7 @@ namespace System.Diagnostics.CodeAnalysis
             return VerifyRequiresUnsafeAnalyzer(
                 source: src,
                 expected: new[] {
-                    // /0/Test0.cs(9,19): warning IL3059: Using method 'C.M1()' which has 'RequiresUnsafeAttribute' can break functionality in environments that do not support unsafe code.
+                    // /0/Test0.cs(9,19): warning IL3059: Using member 'C.M1()' which has 'RequiresUnsafeAttribute' requires an unsafe context, such as an unsafe block or a method marked with 'RequiresUnsafeAttribute'.
                     VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe).WithSpan(8, 19, 8, 21).WithArguments("C.M1()", "", "")
                 });
         }
@@ -176,7 +176,7 @@ namespace System.Diagnostics.CodeAnalysis
             """;
 
             await VerifyRequiresUnsafeAnalyzer(source,
-                // /0/Test0.cs(10,9): warning IL3059: Using method 'C.C()' which has 'RequiresUnsafeAttribute' can break functionality in environments that do not support unsafe code.
+                // /0/Test0.cs(10,9): warning IL3059: Using member 'C.C()' which has 'RequiresUnsafeAttribute' requires an unsafe context, such as an unsafe block or a method marked with 'RequiresUnsafeAttribute'.
                 VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe).WithSpan(10, 9, 10, 16).WithArguments("C.C()", "", "")
             );
         }

@@ -1267,7 +1267,7 @@
     <value>Calling methods annotated with 'RequiresUnsafeAttribute' may break functionality in environments that do not support unsafe code.</value>
   </data>
   <data name="RequiresUnsafeMessage" xml:space="preserve">
-    <value>Using method '{0}' which has 'RequiresUnsafeAttribute' can break functionality in environments that do not support unsafe code.{1}{2}</value>
+    <value>Using member '{0}' which has 'RequiresUnsafeAttribute' requires an unsafe context, such as an unsafe block or a method marked with 'RequiresUnsafeAttribute'.{1}{2}</value>
   </data>
   <data name="RequiresUnsafeAttributeMismatchTitle" xml:space="preserve">
     <value>'RequiresUnsafeAttribute' annotations must match across all interface implementations or overrides.</value>
