@@ -5672,14 +5672,34 @@ void Compiler::generatePatchpointInfo()
 
 #if defined(TARGET_AMD64)
     // Record callee save registers.
-    // Currently only needed for x64.
-    //
     regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedCalleeSavedRegsMask();
     rsPushRegs |= RBM_FPBASE;
     patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
     JITDUMP("--OSR-- Tier0 callee saves: ");
     JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
     JITDUMP("\n");
+#elif defined(TARGET_ARM64)
+    // Record callee save registers and their FP-relative offset for the runtime's OSR transition.
+    regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedCalleeSavedRegsMask();
+    rsPushRegs |= RBM_FP | RBM_LR;
+    patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
+    // Compute FP-relative offset: calleeSaveSpOffset is SP-relative, offsetSpToSavedFp is where FP points
+    int calleeSaveFpOffset = compFrameInfo.calleeSaveSpOffset - compFrameInfo.offsetSpToSavedFp;
+    patchpointInfo->SetCalleeSaveFpOffset(calleeSaveFpOffset);
+    JITDUMP("--OSR-- Tier0 callee saves: ");
+    JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
+    JITDUMP(" at FP offset %d\n", patchpointInfo->CalleeSaveFpOffset());
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    // Record callee save registers and their FP-relative offset for the runtime's OSR transition.
+    regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedCalleeSavedRegsMask();
+    rsPushRegs |= genRegMask(REG_FP) | genRegMask(REG_RA);
+    patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
+    // Compute FP-relative offset: calleeSaveSpOffset is SP-relative, offsetSpToSavedFp is where FP points
+    int calleeSaveFpOffset = compFrameInfo.calleeSaveSpOffset - compFrameInfo.offsetSpToSavedFp;
+    patchpointInfo->SetCalleeSaveFpOffset(calleeSaveFpOffset);
+    JITDUMP("--OSR-- Tier0 callee saves: ");
+    JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
+    JITDUMP(" at FP offset %d\n", patchpointInfo->CalleeSaveFpOffset());
 #endif
 
     // Register this with the runtime.

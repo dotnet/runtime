@@ -1659,8 +1659,13 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
         }
 #endif
 
-        // Use the shared helper to populate the CONTEXT from TransitionBlock
+        // Populate the CONTEXT from TransitionBlock (x64 reads from TransitionBlock,
+        // ARM64/LoongArch64/RISC-V64 read callee-saves from Tier0's stack via PatchpointInfo)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        SoftwareExceptionFrame::UpdateContextForOSRTransition(pTransitionBlock, pFrameContext, &currentSP, &currentFP, codeInfo);
+#else
         SoftwareExceptionFrame::UpdateContextForOSRTransition(pTransitionBlock, pFrameContext, &currentSP, &currentFP);
+#endif
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
         if (Thread::AreShadowStacksEnabled())
