@@ -62,9 +62,17 @@ namespace Tracing.UserEvents.Tests.Common
             // In NativeAOT, Assembly.Location returns empty string.
             // Use AppContext.BaseDirectory which points to the test scenario directory for both CoreCLR and NativeAOT.
             bool isNativeAot = string.IsNullOrEmpty(traceeAssemblyPath);
-            string userEventsScenarioDir = isNativeAot 
-                ? AppContext.BaseDirectory 
-                : Path.GetDirectoryName(traceeAssemblyPath);
+            string userEventsScenarioDir;
+            if (isNativeAot)
+            {
+                userEventsScenarioDir = AppContext.BaseDirectory;
+            }
+            else
+            {
+                userEventsScenarioDir = Path.GetDirectoryName(traceeAssemblyPath) 
+                    ?? throw new InvalidOperationException($"Unable to determine directory from assembly path: {traceeAssemblyPath}");
+            }
+            
             string recordTracePath = ResolveRecordTracePath(userEventsScenarioDir);
             string scriptFilePath = Path.Combine(userEventsScenarioDir, $"{scenarioName}.script");
 
@@ -125,12 +133,14 @@ namespace Tracing.UserEvents.Tests.Common
             // CoreCLR tests run through corerun which loads the managed assembly.
             if (isNativeAot)
             {
-                traceeStartInfo.FileName = Environment.ProcessPath!;
+                traceeStartInfo.FileName = Environment.ProcessPath 
+                    ?? throw new InvalidOperationException("Environment.ProcessPath is null");
                 traceeStartInfo.Arguments = "tracee";
             }
             else
             {
-                traceeStartInfo.FileName = Process.GetCurrentProcess().MainModule!.FileName;
+                traceeStartInfo.FileName = Process.GetCurrentProcess().MainModule?.FileName 
+                    ?? throw new InvalidOperationException("Unable to determine current process executable path");
                 traceeStartInfo.Arguments = $"{traceeAssemblyPath} tracee";
             }
             
