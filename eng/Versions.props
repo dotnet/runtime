@@ -76,7 +76,7 @@
   </PropertyGroup>
 
   <!--
-    These packages affect the design-time experience in VS, so we update them at the same cadance as the latest Microsoft.CodeAnalysis version.
+    These packages affect the design-time experience in VS, so we update them at the same cadence as the latest Microsoft.CodeAnalysis version.
   -->
   <PropertyGroup>
     <MicrosoftCodeAnalysisCSharpCodeStyleVersion>$(MicrosoftCodeAnalysisVersion)</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
