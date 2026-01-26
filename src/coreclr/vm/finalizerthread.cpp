@@ -561,6 +561,8 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration()
     int observedFullGcCount =
         GCHeapUtilities::GetGCHeap()->CollectionCount(GCHeapUtilities::GetGCHeap()->GetMaxGeneration());
     FinalizeAllObjects();
+
+    GetFinalizerThread()->DisablePreemptiveGC();
 #endif // !TARGET_WASM
 }
 
