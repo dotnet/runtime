@@ -22,10 +22,10 @@ extern "C" void Store_Stack_2B();
 extern "C" void Store_Stack_4B();
 #endif // TARGET_APPLE && TARGET_ARM64
 
-#ifndef UNIX_AMD64_ABI
+#if !defined(UNIX_AMD64_ABI) && defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
 extern "C" void Load_Stack_Ref();
 extern "C" void Store_Stack_Ref();
-#endif // !UNIX_AMD64_ABI
+#endif // !UNIX_AMD64_ABI && ENREGISTERED_PARAMTYPE_MAXSIZE
 
 #ifdef TARGET_AMD64
 
@@ -1404,6 +1404,121 @@ static const PCODE FPRegs32LoadRoutines[] =
 
 #endif // TARGET_ARM64
 
+#ifdef TARGET_ARM
+
+extern "C" void Load_R0();
+extern "C" void Load_R0_R1();
+extern "C" void Load_R0_R1_R2();
+extern "C" void Load_R0_R1_R2_R3();
+extern "C" void Load_R1();
+extern "C" void Load_R1_R2();
+extern "C" void Load_R1_R2_R3();
+extern "C" void Load_R2();
+extern "C" void Load_R2_R3();
+extern "C" void Load_R3();
+
+extern "C" void Store_R0();
+extern "C" void Store_R0_R1();
+extern "C" void Store_R0_R1_R2();
+extern "C" void Store_R0_R1_R2_R3();
+extern "C" void Store_R1();
+extern "C" void Store_R1_R2();
+extern "C" void Store_R1_R2_R3();
+extern "C" void Store_R2();
+extern "C" void Store_R2_R3();
+extern "C" void Store_R3();
+
+extern "C" void Load_R0_R1_4B();
+extern "C" void Load_R0_R1_R2_R3_4B();
+extern "C" void Load_R2_R3_4B();
+extern "C" void Load_Stack_4B();
+extern "C" void Store_R0_R1_4B();
+extern "C" void Store_R0_R1_R2_R3_4B();
+extern "C" void Store_R2_R3_4B();
+extern "C" void Store_Stack_4B();
+
+PCODE GPRegsRoutines[] =
+{
+    (PCODE)Load_R0,                         // 00
+    (PCODE)Load_R0_R1,                      // 01
+    (PCODE)Load_R0_R1_R2,                   // 02
+    (PCODE)Load_R0_R1_R2_R3,                // 03
+    (PCODE)0,                               // 04
+    (PCODE)Load_R1,                         // 05
+    (PCODE)Load_R1_R2,                      // 06
+    (PCODE)Load_R1_R2_R3,                   // 07
+    (PCODE)0,                               // 08
+    (PCODE)0,                               // 09
+    (PCODE)Load_R2,                         // 10
+    (PCODE)Load_R2_R3,                      // 11
+    (PCODE)0,                               // 12
+    (PCODE)0,                               // 13
+    (PCODE)0,                               // 14
+    (PCODE)Load_R3,                         // 15
+};
+
+PCODE GPRegsStoreRoutines[] =
+{
+    (PCODE)Store_R0,                         // 00
+    (PCODE)Store_R0_R1,                      // 01
+    (PCODE)Store_R0_R1_R2,                   // 02
+    (PCODE)Store_R0_R1_R2_R3,                // 03
+    (PCODE)0,                                // 04
+    (PCODE)Store_R1,                         // 05
+    (PCODE)Store_R1_R2,                      // 06
+    (PCODE)Store_R1_R2_R3,                   // 07
+    (PCODE)0,                                // 08
+    (PCODE)0,                                // 09
+    (PCODE)Store_R2,                         // 10
+    (PCODE)Store_R2_R3,                      // 11
+    (PCODE)0,                                // 12
+    (PCODE)0,                                // 13
+    (PCODE)0,                                // 14
+    (PCODE)Store_R3,                         // 15
+};
+
+PCODE GPRegLoadRoutines_4B[] =
+{
+    (PCODE)0,                                // 00
+    (PCODE)Load_R0_R1_4B,                    // 01
+    (PCODE)0,                                // 02
+    (PCODE)Load_R0_R1_R2_R3_4B,              // 03
+    (PCODE)0,                                // 04
+    (PCODE)0,                                // 05
+    (PCODE)0,                                // 06
+    (PCODE)0,                                // 07
+    (PCODE)0,                                // 08
+    (PCODE)0,                                // 09
+    (PCODE)0,                                // 10
+    (PCODE)Load_R2_R3_4B,                    // 11
+    (PCODE)0,                                // 12
+    (PCODE)0,                                // 13
+    (PCODE)0,                                // 14
+    (PCODE)0,                                // 15
+};
+
+PCODE GPRegStoreRoutines_4B[] =
+{
+    (PCODE)0,                                // 00
+    (PCODE)Store_R0_R1_4B,                   // 01
+    (PCODE)0,                                // 02
+    (PCODE)Store_R0_R1_R2_R3_4B,             // 03
+    (PCODE)0,                                // 04
+    (PCODE)0,                                // 05
+    (PCODE)0,                                // 06
+    (PCODE)0,                                // 07
+    (PCODE)0,                                // 08
+    (PCODE)0,                                // 09
+    (PCODE)0,                                // 10
+    (PCODE)Store_R2_R3_4B,                   // 11
+    (PCODE)0,                                // 12
+    (PCODE)0,                                // 13
+    (PCODE)0,                                // 14
+    (PCODE)0,                                // 15
+};
+
+#endif // TARGET_ARM
+
 #ifdef TARGET_RISCV64
 
 extern "C" void Load_A0();
@@ -1918,7 +2033,7 @@ PCODE CallStubGenerator::GetGPRegRangeRoutine(int r1, int r2)
     return routine;
 }
 
-#ifndef UNIX_AMD64_ABI
+#if !defined(UNIX_AMD64_ABI) && defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
 PCODE CallStubGenerator::GetGPRegRefRoutine(int r)
 {
 #if LOG_COMPUTE_CALL_STUB
@@ -1935,17 +2050,23 @@ PCODE CallStubGenerator::GetStackRefRoutine()
     return m_interpreterToNative ? (PCODE)Load_Stack_Ref : (PCODE)Store_Stack_Ref;
 }
 
-#endif // UNIX_AMD64_ABI
+#endif // !UNIX_AMD64_ABI && ENREGISTERED_PARAMTYPE_MAXSIZE
 
 PCODE CallStubGenerator::GetFPRegRangeRoutine(int x1, int x2)
 {
 #if LOG_COMPUTE_CALL_STUB
     printf("GetFPRegRangeRoutine %d %d\n", x1, x2);
 #endif
+
+#ifdef TARGET_ARM
+    _ASSERTE(!"Not support FP reg yet");
+    return 0;
+#else
     int index = x1 * NUM_FLOAT_ARGUMENT_REGISTERS + x2;
     PCODE routine = m_interpreterToNative ? FPRegsRoutines[index] : FPRegsStoreRoutines[index];
     _ASSERTE(routine != 0);
     return routine;
+#endif
 }
 
 #ifdef TARGET_ARM64
@@ -1970,12 +2091,44 @@ PCODE CallStubGenerator::GetFPReg32RangeRoutine(int x1, int x2)
 }
 #endif // TARGET_ARM64
 
+#ifdef TARGET_ARM
+PCODE CallStubGenerator::GetRegRoutine_4B(int r1, int r2)
+{
+#if LOG_COMPUTE_CALL_STUB
+    printf("GetRegRoutine_4B\n");
+#endif
+    int index = r1 * NUM_ARGUMENT_REGISTERS + r2;
+    return m_interpreterToNative ? GPRegLoadRoutines_4B[index] : GPRegStoreRoutines_4B[index];
+}
+
+PCODE CallStubGenerator::GetStackRoutine_4B()
+{
+#if LOG_COMPUTE_CALL_STUB
+    printf("GetStackRoutine_4B\n");
+#endif
+    return m_interpreterToNative ? (PCODE)Load_Stack_4B : (PCODE)Store_Stack_4B;
+}
+#endif // TARGET_ARM
+
 extern "C" void CallJittedMethodRetVoid(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRetDouble(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetI1(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetU1(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetI2(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetU2(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRetI8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+#ifdef TARGET_32BIT
+extern "C" void CallJittedMethodRetI4(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+#endif // TARGET_32BIT
 extern "C" void InterpreterStubRetVoid();
 extern "C" void InterpreterStubRetDouble();
 extern "C" void InterpreterStubRetI8();
+#ifdef TARGET_32BIT
+extern "C" void InterpreterStubRetI4();
+extern "C" void InterpreterStubRetFloat();
+#endif // TARGET_32BIT
 
 #ifdef TARGET_AMD64
 #ifdef TARGET_WINDOWS
@@ -1989,7 +2142,16 @@ extern "C" void CallJittedMethodRetBuffRSI(PCODE *routines, int8_t*pArgs, int8_t
 extern "C" void InterpreterStubRetBuffRDI();
 extern "C" void InterpreterStubRetBuffRSI();
 #endif // TARGET_WINDOWS
-#else // TARGET_AMD64
+#elif defined(TARGET_ARM) // TARGET_ARM
+extern "C" void CallJittedMethodRetBuffR0(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetBuffR1(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void InterpreterStubRetBuffR0();
+extern "C" void InterpreterStubRetBuffR1();
+#else // !TARGET_AMD64 && !TARGET_ARM
+#if defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+extern "C" void CallJittedMethodRetBuffX1(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void InterpreterStubRetBuffX1();
+#endif
 extern "C" void CallJittedMethodRetBuff(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void InterpreterStubRetBuff();
 #endif // TARGET_AMD64
@@ -2010,7 +2172,6 @@ extern "C" void CallJittedMethodRet2I8(PCODE *routines, int8_t*pArgs, int8_t*pRe
 extern "C" void CallJittedMethodRet2Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet3Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet4Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
-extern "C" void CallJittedMethodRetFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet2Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet3Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet4Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
@@ -2066,9 +2227,27 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
         case ReturnTypeVoid:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetVoid);
         case ReturnTypeDouble:
+#ifndef ARM_SOFTFP
             INVOKE_FUNCTION_PTR(CallJittedMethodRetDouble);
+#endif // !ARM_SOFTFP
         case ReturnTypeI8:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetI8);
+#ifdef TARGET_32BIT
+        case ReturnTypeFloat:
+#ifndef ARM_SOFTFP
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetFloat);
+#endif // !ARM_SOFTFP
+        case ReturnTypeI4:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetI4);
+#endif // TARGET_32BIT
+        case ReturnTypeI1:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetI1);
+        case ReturnTypeU1:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetU1);
+        case ReturnTypeI2:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetI2);
+        case ReturnTypeU2:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetU2);
 #ifdef TARGET_AMD64
 #ifdef TARGET_WINDOWS
         case ReturnTypeBuffArg1:
@@ -2081,7 +2260,17 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
         case ReturnTypeBuffArg2:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffRSI);
 #endif // TARGET_WINDOWS
-#else // TARGET_AMD64
+#elif defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+        case ReturnTypeBuffArg2:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffX1);
+        case ReturnTypeBuff:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetBuff);
+#elif defined(TARGET_ARM)
+        case ReturnTypeBuffArg1:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffR0);
+        case ReturnTypeBuffArg2:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffR1);
+#else // !TARGET_AMD64 && !TARGET_ARM && !(TARGET_ARM64 && TARGET_WINDOWS)
         case ReturnTypeBuff:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuff);
 #endif // TARGET_AMD64
@@ -2160,9 +2349,23 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
         case ReturnTypeVoid:
             RETURN_TYPE_HANDLER(InterpreterStubRetVoid);
         case ReturnTypeDouble:
+#ifndef ARM_SOFTFP
             RETURN_TYPE_HANDLER(InterpreterStubRetDouble);
+#endif // !ARM_SOFTFP
+        case ReturnTypeI1:
+        case ReturnTypeU1:
         case ReturnTypeI8:
+        case ReturnTypeI2:
+        case ReturnTypeU2:
             RETURN_TYPE_HANDLER(InterpreterStubRetI8);
+#ifdef TARGET_32BIT
+        case ReturnTypeFloat:
+#ifndef ARM_SOFTFP
+            RETURN_TYPE_HANDLER(InterpreterStubRetFloat);
+#endif // !ARM_SOFTFP
+        case ReturnTypeI4:
+            RETURN_TYPE_HANDLER(InterpreterStubRetI4);
+#endif // TARGET_32BIT
 #ifdef TARGET_AMD64
         case ReturnTypeBuffArg1:
 #ifdef TARGET_WINDOWS
@@ -2176,7 +2379,17 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
 #else
             RETURN_TYPE_HANDLER(InterpreterStubRetBuffRSI);
 #endif
-#else // TARGET_AMD64
+#elif defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+        case ReturnTypeBuffArg2:
+            RETURN_TYPE_HANDLER(InterpreterStubRetBuffX1);
+        case ReturnTypeBuff:
+            RETURN_TYPE_HANDLER(InterpreterStubRetBuff);
+#elif defined(TARGET_ARM)
+        case ReturnTypeBuffArg1:
+            RETURN_TYPE_HANDLER(InterpreterStubRetBuffR0);
+        case ReturnTypeBuffArg2:
+            RETURN_TYPE_HANDLER(InterpreterStubRetBuffR1);
+#else // !TARGET_AMD64 && !TARGET_ARM && !(TARGET_ARM64 && TARGET_WINDOWS)
         case ReturnTypeBuff:
             RETURN_TYPE_HANDLER(InterpreterStubRetBuff);
 #endif // TARGET_AMD64
@@ -2445,7 +2658,12 @@ void CallStubGenerator::TerminateCurrentRoutineIfNotOfNewType(RoutineType type, 
     else if ((m_currentRoutineType == RoutineType::Stack) && (type != RoutineType::Stack))
     {
         pRoutines[m_routineIndex++] = GetStackRoutine();
+#ifdef TARGET_32BIT
+        pRoutines[m_routineIndex++] = m_s1;
+        pRoutines[m_routineIndex++] = m_s2 - m_s1 + 1;
+#else // !TARGET_32BIT
         pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
+#endif // TARGET_32BIT
         m_s1 = NoRange;
         m_currentRoutineType = RoutineType::None;
     }
@@ -2543,7 +2761,16 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
 
     if (hasUnmanagedCallConv)
     {
-        ComputeCallStubWorker<PInvokeArgIterator>(hasUnmanagedCallConv, unmanagedCallConv, sig, pRoutines, pMD);
+#if defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+        if (callConvIsInstanceMethodCallConv(unmanagedCallConv))
+        {
+            ComputeCallStubWorker<WindowsArm64PInvokeThisCallArgIterator>(hasUnmanagedCallConv, unmanagedCallConv, sig, pRoutines, pMD);
+        }
+        else
+#endif // defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+        {
+            ComputeCallStubWorker<PInvokeArgIterator>(hasUnmanagedCallConv, unmanagedCallConv, sig, pRoutines, pMD);
+        }
     }
     else
     {
@@ -2559,17 +2786,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 
     if (hasUnmanagedCallConv)
     {
-        switch (unmanagedCallConv)
-        {
-            case CorInfoCallConvExtension::Thiscall:
-            case CorInfoCallConvExtension::CMemberFunction:
-            case CorInfoCallConvExtension::StdcallMemberFunction:
-            case CorInfoCallConvExtension::FastcallMemberFunction:
-                unmanagedThisCallConv = true;
-                break;
-            default:
-                break;
-        }
+        unmanagedThisCallConv = callConvIsInstanceMethodCallConv(unmanagedCallConv);
     }
 
 #if defined(TARGET_WINDOWS)
@@ -2721,7 +2938,8 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 
         // Each entry on the interpreter stack is always aligned to at least 8 bytes, but some arguments are 16 byte aligned
         TypeHandle thArgTypeHandle;
-        if ((argIt.GetArgType(&thArgTypeHandle) == ELEMENT_TYPE_VALUETYPE) && thArgTypeHandle.GetSize() > 8)
+        CorElementType corType = argIt.GetArgType(&thArgTypeHandle);
+        if ((corType == ELEMENT_TYPE_VALUETYPE) && thArgTypeHandle.GetSize() > INTERP_STACK_SLOT_SIZE)
         {
             unsigned align = CEEInfo::getClassAlignmentRequirementStatic(thArgTypeHandle);
             if (align < INTERP_STACK_SLOT_SIZE)
@@ -2801,6 +3019,20 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
             }
         }
         else
+#elif defined(TARGET_ARM) && defined(ARM_SOFTFP)
+        if (argLocDesc.m_cGenReg != 0 && argLocDesc.m_byteStackSize != 0)
+        {
+            ArgLocDesc argLocDescReg = {};
+            argLocDescReg.m_idxGenReg = argLocDesc.m_idxGenReg;
+            argLocDescReg.m_cGenReg = argLocDesc.m_cGenReg;
+            ProcessArgument(&argIt, argLocDescReg, pRoutines);
+
+            ArgLocDesc argLocDescStack = {};
+            argLocDescStack.m_byteStackIndex = argLocDesc.m_byteStackIndex;
+            argLocDescStack.m_byteStackSize = argLocDesc.m_byteStackSize;
+            ProcessArgument(&argIt, argLocDescStack, pRoutines);
+        }
+        else
 #endif // UNIX_AMD64_ABI
         {
             ProcessArgument(&argIt, argLocDesc, pRoutines);
@@ -2832,6 +3064,13 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
     LIMITED_METHOD_CONTRACT;
 
     RoutineType argType = RoutineType::None;
+#ifdef TARGET_ARM
+    if (argLocDesc.m_cGenReg == 2 || argLocDesc.m_byteStackSize >= 8)
+    {
+        /* do nothing */
+    }
+    else
+#endif // TARGET_ARM
     if (argLocDesc.m_cGenReg != 0)
     {
         argType = RoutineType::GPReg;
@@ -2857,7 +3096,7 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
     {
         argType = RoutineType::Stack;
     }
-    
+
     TerminateCurrentRoutineIfNotOfNewType(argType, pRoutines);
 
     if (argLocDesc.m_cGenReg != 0)
@@ -2865,13 +3104,24 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
 #if LOG_COMPUTE_CALL_STUB
         printf("m_cGenReg=%d\n", (int)argLocDesc.m_cGenReg);
 #endif // LOG_COMPUTE_CALL_STUB
+#ifdef TARGET_ARM
+        if (argLocDesc.m_cGenReg == 2)
+        {
+            pRoutines[m_routineIndex++] = GetRegRoutine_4B(argLocDesc.m_idxGenReg, argLocDesc.m_idxGenReg + argLocDesc.m_cGenReg - 1);
+        }
+        else
+#endif // TARGET_ARM
         if (m_r1 == NoRange) // No active range yet
         {
             // Start a new range
             m_r1 = argLocDesc.m_idxGenReg;
             m_r2 = m_r1 + argLocDesc.m_cGenReg - 1;
         }
-        else if (argLocDesc.m_idxGenReg == m_r2 + 1 && (!pArgIt || !pArgIt->IsArgPassedByRef()))
+        else if (argLocDesc.m_idxGenReg == m_r2 + 1
+#ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
+                 && (!pArgIt || !pArgIt->IsArgPassedByRef())
+#endif // ENREGISTERED_PARAMTYPE_MAXSIZE
+                )
         {
             // Extend an existing range, but only if the argument is not passed by reference.
             // Arguments passed by reference are handled separately, because the interpreter stores the value types on its stack by value.
@@ -2928,7 +3178,7 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
         {
             // HFA Arguments using odd number of 32 bit FP registers cannot be merged with further ranges due to the
             // interpreter stack slot size alignment needs. The range copy routines for these registers
-            // ensure that the interpreter stack is properly aligned after the odd number of registers are 
+            // ensure that the interpreter stack is properly aligned after the odd number of registers are
             // loaded / stored.
             pRoutines[m_routineIndex++] = GetFPReg32RangeRoutine(m_x1, m_x2);
             argType = RoutineType::None;
@@ -2942,13 +3192,26 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
 #if LOG_COMPUTE_CALL_STUB
         printf("m_byteStackSize=%d\n", (int)argLocDesc.m_byteStackSize);
 #endif // LOG_COMPUTE_CALL_STUB
+#ifdef TARGET_ARM
+        if (argLocDesc.m_byteStackSize >= 8)
+        {
+            pRoutines[m_routineIndex++] = GetStackRoutine_4B();
+            pRoutines[m_routineIndex++] = argLocDesc.m_byteStackIndex;
+            pRoutines[m_routineIndex++] = argLocDesc.m_byteStackSize;
+        }
+        else
+#endif // TARGET_ARM
         if (m_s1 == NoRange) // No active range yet
         {
             // Start a new range
             m_s1 = argLocDesc.m_byteStackIndex;
             m_s2 = m_s1 + argLocDesc.m_byteStackSize - 1;
         }
-        else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= 8) && (!pArgIt || !pArgIt->IsArgPassedByRef()))
+        else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= TARGET_POINTER_SIZE)
+#ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
+                 && (!pArgIt || !pArgIt->IsArgPassedByRef())
+#endif // ENREGISTERED_PARAMTYPE_MAXSIZE
+                )
         {
             // Extend an existing range, but only if the argument is at least pointer size large.
             // The only case when this is not true is on Apple ARM64 OSes where primitive type smaller
@@ -2960,7 +3223,12 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
         {
             // Discontinuous range - store a routine for the current and start a new one
             pRoutines[m_routineIndex++] = GetStackRoutine();
+#ifdef TARGET_32BIT
+            pRoutines[m_routineIndex++] = m_s1;
+            pRoutines[m_routineIndex++] = m_s2 - m_s1 + 1;
+#else // !TARGET_32BIT
             pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
+#endif // TARGET_32BIT
             m_s1 = argLocDesc.m_byteStackIndex;
             m_s2 = m_s1 + argLocDesc.m_byteStackSize - 1;
         }
@@ -2995,6 +3263,7 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
     // Arguments passed by reference are handled separately, because the interpreter stores the value types on its stack by value.
     // So the argument loading routine needs to load the address of the argument. To avoid explosion of number of the routines,
     // we always process single argument passed by reference using single routine.
+#ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
     if (pArgIt != NULL && pArgIt->IsArgPassedByRef())
     {
         int unalignedArgSize = pArgIt->GetArgSize();
@@ -3005,7 +3274,7 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
         //  automatically do alignment of the stack offset themselves when updating the stack offset,
         //  and if we were to pass them aligned sizes they would potentially read bytes past the end of the VT.
         int alignedArgSize = m_interpreterToNative
-            ? ALIGN_UP(unalignedArgSize, 8)
+            ? ALIGN_UP(unalignedArgSize, TARGET_POINTER_SIZE)
             : unalignedArgSize;
 
         if (argLocDesc.m_cGenReg == 1)
@@ -3024,6 +3293,7 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
             argType = RoutineType::None;
         }
     }
+#endif // ENREGISTERED_PARAMTYPE_MAXSIZE
 #endif // UNIX_AMD64_ABI
 
     m_currentRoutineType = argType;
@@ -3034,7 +3304,7 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
 {
     if (pArgIt->HasRetBuffArg())
     {
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_ARM)
         if (pArgIt->HasThis())
         {
             return ReturnTypeBuffArg2;
@@ -3044,6 +3314,13 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
             return ReturnTypeBuffArg1;
         }
 #else
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+        if (pArgIt->IsRetBuffPassedAsFirstArg())
+        {
+            _ASSERTE(pArgIt->HasThis());
+            return ReturnTypeBuffArg2;
+        }
+#endif
         return ReturnTypeBuff;
 #endif // TARGET_AMD64
     }
@@ -3054,16 +3331,18 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
 
         switch (thReturnType)
         {
-            case ELEMENT_TYPE_BOOLEAN:
-            case ELEMENT_TYPE_CHAR:
             case ELEMENT_TYPE_I1:
+                return ReturnTypeI1;
+            case ELEMENT_TYPE_BOOLEAN:
             case ELEMENT_TYPE_U1:
+                return ReturnTypeU1;
             case ELEMENT_TYPE_I2:
+                return ReturnTypeI2;
+            case ELEMENT_TYPE_CHAR:
             case ELEMENT_TYPE_U2:
+                return ReturnTypeU2;
             case ELEMENT_TYPE_I4:
             case ELEMENT_TYPE_U4:
-            case ELEMENT_TYPE_I8:
-            case ELEMENT_TYPE_U8:
             case ELEMENT_TYPE_I:
             case ELEMENT_TYPE_U:
             case ELEMENT_TYPE_CLASS:
@@ -3075,9 +3354,18 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
             case ELEMENT_TYPE_ARRAY:
             case ELEMENT_TYPE_SZARRAY:
             case ELEMENT_TYPE_FNPTR:
+#ifdef TARGET_32BIT
+                return ReturnTypeI4;
+                break;
+#endif // TARGET_32BIT
+            case ELEMENT_TYPE_I8:
+            case ELEMENT_TYPE_U8:
                 return ReturnTypeI8;
                 break;
             case ELEMENT_TYPE_R4:
+#if defined(TARGET_ARM64) || defined(TARGET_32BIT)
+                return ReturnTypeFloat;
+#endif // TARGET_ARM64 || TARGET_32BIT
             case ELEMENT_TYPE_R8:
                 return ReturnTypeDouble;
                 break;
@@ -3216,6 +3504,20 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
                     {
                         _ASSERTE(!"The return types that are not HFA should be <= 16 bytes in size");
                     }
+                }
+#elif TARGET_ARM
+                switch (thReturnValueType.GetSize())
+                {
+                    case 1:
+                    case 2:
+                    case 4:
+                        return ReturnTypeI4;
+                        break;
+                    case 8:
+                        return ReturnTypeI8;
+                    default:
+                        _ASSERTE(!"The return types should be <= 8 bytes in size");
+                        break;
                 }
 #elif defined(TARGET_RISCV64)
                 {
