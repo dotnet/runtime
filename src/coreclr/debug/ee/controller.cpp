@@ -2641,7 +2641,8 @@ bool DebuggerController::MatchPatch(Thread *thread,
     if (patch->controller->m_thread != NULL && patch->controller->m_thread != thread)
     {
         LOG((LF_CORDB, LL_INFO10000, "DC::MP: patches didn't match b/c threads\n"));
-        return false;
+        // TODO: consider if we want to limit this to only async methods.
+        //return false; We may be stepping a thread other than the one that set the step.
     }
 
     if (patch->fp != LEAF_MOST_FRAME)
@@ -7293,7 +7294,7 @@ TP_RESULT DebuggerStepper::TriggerPatch(DebuggerControllerPatch *patch,
 
             // Enable the JMC backstop for traditional steppers to catch us in case
             // we didn't predict the call target properly.
-            EnableJMCBackStop(NULL);
+                EnableJMCBackStop(NULL);
 
 
             if (!traceOk
