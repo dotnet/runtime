@@ -13,7 +13,10 @@
     <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'android'">true</CLRTestTargetUnsupported>
 
     <!-- This test is very specific to MCJ tooling in CoreCLR. -->
-    <DisableProjectBuild Condition="'$(RuntimeFlavor)' != 'coreclr'">true</DisableProjectBuild>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+
+    <!-- No crossgen folder under Core_Root -->
+     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BasicTestWithMcj.cs" />

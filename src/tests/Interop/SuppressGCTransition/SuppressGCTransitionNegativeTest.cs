@@ -152,6 +152,7 @@ public unsafe class SuppressGCTransitionTest
 
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/165", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void TestEntryPoint()
     {
         CheckGCMode.Initialize(&SuppressGCTransitionNative.SetIsInCooperativeModeFunction);

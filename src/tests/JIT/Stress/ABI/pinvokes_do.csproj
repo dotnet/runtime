@@ -10,6 +10,8 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
     <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- https://github.com/dotnet/runtimelab/issues/155: Reflection.Emit -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>

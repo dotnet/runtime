@@ -23,6 +23,7 @@ public class Program
     public static short[] s_42;
     public static S0[][] s_43 = new S0[][]{new S0[]{new S0()}};
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Assembly.LoadFrom", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static void TestEntryPoint()
     {

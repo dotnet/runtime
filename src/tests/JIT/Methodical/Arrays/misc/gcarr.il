@@ -42,13 +42,13 @@
       IL_0013:  ret
     } // end of method 'Test::CheckValid'
 
-    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('https://github.com/dotnet/runtimelab/issues/155: Arrays with non-zero lower bounds') type([TestLibrary]TestLibrary.PlatformDetection) string[1] ('IsNonZeroLowerBoundArrayNotSupported') }
     .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
       )
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('https://github.com/dotnet/runtimelab/issues/155: Arrays with non-zero lower bounds') type([TestLibrary]TestLibrary.PlatformDetection) string[1] ('IsNonZeroLowerBoundArrayNotSupported') }
       .entrypoint
       .maxstack  3
       .locals (class GCTest_gcarr_il.Test[-10...10] V_0,

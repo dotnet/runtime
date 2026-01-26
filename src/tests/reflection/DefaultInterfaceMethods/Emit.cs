@@ -11,7 +11,7 @@ using TestLibrary;
 public class Program
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/36113", TestRuntimes.Mono)]
-    [Fact]
+    [ConditionalFact(typeof(Utilities), nameof(Utilities.IsReflectionEmitSupported))]
     public static int TestEntryPoint()
     {
         var ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Mine"), AssemblyBuilderAccess.Run);
