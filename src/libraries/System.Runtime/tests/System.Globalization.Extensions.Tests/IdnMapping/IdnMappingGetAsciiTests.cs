@@ -281,5 +281,26 @@ namespace System.Globalization.Tests
             var idnStd3 = new IdnMapping() { UseStd3AsciiRules = true };
             Assert.Throws(exceptionType, () => idnStd3.TryGetAscii(slice, destination, out _));
         }
+
+        [Fact]
+        public void TryGetAscii_OverlappingBuffers_ThrowsArgumentException()
+        {
+            var idn = new IdnMapping();
+            char[] buffer = new char[100];
+
+            // Write unicode input to the buffer
+            string unicode = "\u0101\u0062\u0063"; // "ābc"
+            unicode.AsSpan().CopyTo(buffer);
+
+            // Test overlapping: input and destination start at same location
+            Assert.Throws<ArgumentException>(() => idn.TryGetAscii(buffer.AsSpan(0, unicode.Length), buffer.AsSpan(0, buffer.Length), out _));
+
+            // Test overlapping: destination starts inside input
+            Assert.Throws<ArgumentException>(() => idn.TryGetAscii(buffer.AsSpan(0, unicode.Length), buffer.AsSpan(1, buffer.Length - 1), out _));
+
+            // Test overlapping: input starts inside destination
+            unicode.AsSpan().CopyTo(buffer.AsSpan(10));
+            Assert.Throws<ArgumentException>(() => idn.TryGetAscii(buffer.AsSpan(10, unicode.Length), buffer.AsSpan(0, buffer.Length), out _));
+        }
     }
 }
