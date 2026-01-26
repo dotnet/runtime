@@ -9,7 +9,7 @@ namespace System.IO.Hashing.Tests
 {
     public class Adler32Tests : NonCryptoHashTestDriver
     {
-        private static readonly byte[] s_emptyHashValue = new byte[4];
+        private static readonly byte[] s_emptyHashValue = [01, 00, 00, 00];
 
         public Adler32Tests()
             : base(s_emptyHashValue)
