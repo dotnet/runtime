@@ -69,7 +69,8 @@ namespace System.Numerics.Tensors
 
                     return result.AsSingle().As<float, T>();
                 }
-                else if (typeof(T) == typeof(double))
+
+                if (typeof(T) == typeof(double))
                 {
                     Vector128<double> xDouble = x.AsDouble();
                     Vector128<ulong> bits = xDouble.AsUInt64();
@@ -133,7 +134,8 @@ namespace System.Numerics.Tensors
 
                     return result.AsSingle().As<float, T>();
                 }
-                else if (typeof(T) == typeof(double))
+
+                if (typeof(T) == typeof(double))
                 {
                     Vector256<double> xDouble = x.AsDouble();
                     Vector256<ulong> bits = xDouble.AsUInt64();
@@ -197,7 +199,8 @@ namespace System.Numerics.Tensors
 
                     return result.AsSingle().As<float, T>();
                 }
-                else if (typeof(T) == typeof(double))
+
+                if (typeof(T) == typeof(double))
                 {
                     Vector512<double> xDouble = x.AsDouble();
                     Vector512<ulong> bits = xDouble.AsUInt64();
