@@ -8,6 +8,7 @@ using System.Runtime.InteropServices.Swift;
 using Xunit;
 using TestLibrary;
 
+[PlatformSpecific(TestPlatforms.AnyApple)]
 public class SelfContextTests
 {
     private const string SwiftLib = "libSwiftSelfContext.dylib";
@@ -23,7 +24,6 @@ public class SelfContextTests
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftSelfContext0B7LibraryC14getMagicNumberSiyFTj")]
     public static extern nint getMagicNumberOnStack(int dummy0, int dummy1, int dummy2, int dummy3, int dummy4, int dummy5, int dummy6, int dummy7, int dummy8, int dummy9, SwiftSelf self);
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public unsafe static void TestSwiftSelfContext()
     {
@@ -35,7 +35,6 @@ public class SelfContextTests
         Assert.True(result == 42, "The result from Swift does not match the expected value.");
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public unsafe static void TestSwiftSelfContextOnStack()
     {
@@ -71,7 +70,6 @@ public class SelfContextTests
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftSelfContext27FrozenNonEnregisteredStructV3sums5Int64VyF")]
     public static extern long SumFrozenNonEnregisteredStruct(SwiftSelf<FrozenNonEnregisteredStruct> self);
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public unsafe static void TestSelfIsFrozenEnregisteredStruct()
     {
@@ -79,7 +77,6 @@ public class SelfContextTests
         Assert.Equal(30, sum);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public unsafe static void TestSelfIsFrozenNonEnregisteredStruct()
     {
@@ -95,7 +92,6 @@ public class SelfContextTests
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftSelfContext27FrozenNonEnregisteredStructV16sumWithExtraArgs1f1gS2f_SftF")]
     public static extern float SumFrozenNonEnregisteredStructWithExtraArgs(float f, float g, SwiftSelf<FrozenNonEnregisteredStruct> self);
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public unsafe static void TestSelfIsFrozenEnregisteredStructWithExtraArgs()
     {
@@ -103,7 +99,6 @@ public class SelfContextTests
         Assert.Equal(37f, sum);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public unsafe static void TestSelfIsFrozenNonEnregisteredStructWithExtraArgs()
     {

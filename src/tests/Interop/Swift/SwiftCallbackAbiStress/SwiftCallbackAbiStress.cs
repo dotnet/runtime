@@ -9,6 +9,8 @@ using System.Runtime.InteropServices.Swift;
 using Xunit;
 using TestLibrary;
 
+[PlatformSpecific(TestPlatforms.AnyApple)]
+[ActiveIssue("https://github.com/dotnet/runtime/issues/121983", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMiniJIT), nameof(PlatformDetection.IsX64Process))]
 public unsafe class SwiftCallbackAbiStress
 {
     private const string SwiftLib = "libSwiftCallbackAbiStress.dylib";
@@ -61,7 +63,6 @@ public unsafe class SwiftCallbackAbiStress
         return 1579768470;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc0()
     {
@@ -173,7 +174,6 @@ public unsafe class SwiftCallbackAbiStress
         return 248;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc1()
     {
@@ -265,7 +265,6 @@ public unsafe class SwiftCallbackAbiStress
         return 115;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc2()
     {
@@ -376,7 +375,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F3_Ret(51293, 217, 64666, 5667425);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc3()
     {
@@ -462,7 +460,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F4_Ret(2069454428, new F4_Ret_S0(unchecked((nint)5483154806067048127)), unchecked((nint)2342208892279753870), -21578, unchecked((nint)4641984012938514811), 1691113876);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc4()
     {
@@ -591,7 +588,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F5_Ret(-23277, 1015782032, 83490460, 2747931081050267058, -10369);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc5()
     {
@@ -716,7 +712,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F6_Ret(new F6_Ret_S0(3036123356548380503, 653452587), 4787954187933165977, 5060002, -68);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc6()
     {
@@ -790,7 +785,6 @@ public unsafe class SwiftCallbackAbiStress
         return 31412;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc7()
     {
@@ -872,7 +866,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F8_Ret(4170441467272673523, new F8_Ret_S0(1940721160, unchecked((nuint)6524670832376567295), unchecked((nint)4210781401091965722)), unchecked((nint)3245727696885859461), 855061841);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc8()
     {
@@ -1019,7 +1012,6 @@ public unsafe class SwiftCallbackAbiStress
         return 5567;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc9()
     {
@@ -1069,7 +1061,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F10_Ret(7820305774933543349, 1501926289, 39078, 661487951);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc10()
     {
@@ -1178,7 +1169,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F11_Ret(7934, -24509, 20, 5470383170748296608);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc11()
     {
@@ -1261,7 +1251,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F12_Ret(4675419585914412295, unchecked((nint)1931022181202552704));
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc12()
     {
@@ -1363,7 +1352,6 @@ public unsafe class SwiftCallbackAbiStress
         return 2798050901932855;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc13()
     {
@@ -1419,7 +1407,6 @@ public unsafe class SwiftCallbackAbiStress
         return 5130561516716417305;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc14()
     {
@@ -1502,7 +1489,6 @@ public unsafe class SwiftCallbackAbiStress
         return unchecked((nint)2326283264176371053);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc15()
     {
@@ -1602,7 +1588,6 @@ public unsafe class SwiftCallbackAbiStress
         return 103;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc16()
     {
@@ -1672,7 +1657,6 @@ public unsafe class SwiftCallbackAbiStress
         return 4214404512040467;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc17()
     {
@@ -1758,7 +1742,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F18_Ret(new F18_Ret_S0(-2080));
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc18()
     {
@@ -1872,7 +1855,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F19_Ret(301901837, 5183322153843416979, 16744, new F19_Ret_S0(4587948079871666183), 341974742264104, 750011710367955, 681779256292286);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc19()
     {
@@ -1978,7 +1960,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F20_Ret(53384, 55736, 105589186779121, -24217, 2181722329638192);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc20()
     {
@@ -2053,7 +2034,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F21_Ret(13904, 1020161192, 7669588951617295307);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc21()
     {
@@ -2177,7 +2157,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F22_Ret(39726, 21753, unchecked((nuint)5706055053768469840));
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc22()
     {
@@ -2232,7 +2211,6 @@ public unsafe class SwiftCallbackAbiStress
         return 893532429511039;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc23()
     {
@@ -2336,7 +2314,6 @@ public unsafe class SwiftCallbackAbiStress
         return 3470219;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc24()
     {
@@ -2438,7 +2415,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F25_Ret(8006862079710523876, 7879510716857855733, 114, 3220);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc25()
     {
@@ -2535,7 +2511,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F26_Ret(unchecked((nuint)1050319650554930471), 89);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc26()
     {
@@ -2627,7 +2602,6 @@ public unsafe class SwiftCallbackAbiStress
         return 8117856;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc27()
     {
@@ -2727,7 +2701,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F28_Ret(new F28_Ret_S0(4515425), 25944);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc28()
     {
@@ -2855,7 +2828,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F29_Ret(unchecked((nuint)1866868811776234672), unchecked((nuint)8169323498884891375), unchecked((nuint)2528257272266524428), new F29_Ret_S0(unchecked((nint)4705260670026405131), 8299241689326234556), 4459635217352912270, 188636136);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc29()
     {
@@ -2934,7 +2906,6 @@ public unsafe class SwiftCallbackAbiStress
         return 289587;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc30()
     {
@@ -3010,7 +2981,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F31_Ret(new F31_Ret_S0(1236856932, 1761447, 1260, 25704, 6212541), 44632);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc31()
     {
@@ -3064,7 +3034,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F32_Ret(unchecked((nuint)868833742355713000), 411817582525317, unchecked((nint)3926422244180816571));
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc32()
     {
@@ -3170,7 +3139,6 @@ public unsafe class SwiftCallbackAbiStress
         return unchecked((nuint)8322391372382633712);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc33()
     {
@@ -3220,7 +3188,6 @@ public unsafe class SwiftCallbackAbiStress
         return 20647;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc34()
     {
@@ -3310,7 +3277,6 @@ public unsafe class SwiftCallbackAbiStress
         return 4329482286317894385;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc35()
     {
@@ -3361,7 +3327,6 @@ public unsafe class SwiftCallbackAbiStress
         return unchecked((nint)2889858798271230534);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc36()
     {
@@ -3448,7 +3413,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F37_Ret(433224, 163, -5538, 4525229514824359136);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc37()
     {
@@ -3527,7 +3491,6 @@ public unsafe class SwiftCallbackAbiStress
         return 2529010496939244;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc38()
     {
@@ -3624,7 +3587,6 @@ public unsafe class SwiftCallbackAbiStress
         return unchecked((nint)3023907365579871618);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc39()
     {
@@ -3713,7 +3675,6 @@ public unsafe class SwiftCallbackAbiStress
         return unchecked((nuint)4616766375038360400);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc40()
     {
@@ -3769,7 +3730,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F41_Ret(5150172797708870426, 3489330932479773, 833949606, 2098665090);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc41()
     {
@@ -3828,7 +3788,6 @@ public unsafe class SwiftCallbackAbiStress
         return unchecked((nint)4147856807670154637);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc42()
     {
@@ -3889,7 +3848,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F43_Ret(18672);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc43()
     {
@@ -3994,7 +3952,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F44_Ret(unchecked((nint)7157474620613398513), new F44_Ret_S0(unchecked((nuint)8272092288451488897)), 8724612718809);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc44()
     {
@@ -4079,7 +4036,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F45_Ret(262658215125446, new F45_Ret_S0(3145713), 4924669542959578265, 2052183120467519, 3135406744871464298, 81, 1000720476);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc45()
     {
@@ -4139,7 +4095,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F46_Ret(unchecked((nuint)4268855101008870857), 2061088094528291, 541679466428431692, 30655);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc46()
     {
@@ -4256,7 +4211,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F47_Ret(32110, 21949, 479980404077668674);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc47()
     {
@@ -4332,7 +4286,6 @@ public unsafe class SwiftCallbackAbiStress
         return 1864372483209206459;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc48()
     {
@@ -4401,7 +4354,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F49_Ret(1638493854, -13624, 61, 236, -97, 3942201385605817844);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc49()
     {
@@ -4519,7 +4471,6 @@ public unsafe class SwiftCallbackAbiStress
         return 252;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc50()
     {
@@ -4580,7 +4531,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F51_Ret(28396, 23, unchecked((nint)4042678034578400305), 16166, 8390419605778076733);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc51()
     {
@@ -4654,7 +4604,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F52_Ret(3003005, 4886, 1846269873983567093, 24151, 1408198981123859746, -41);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc52()
     {
@@ -4814,7 +4763,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F53_Ret(unchecked((nint)3955567540648861371));
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc53()
     {
@@ -4934,7 +4882,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F54_Ret(924, unchecked((nint)7680560643733996038));
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc54()
     {
@@ -5033,7 +4980,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F55_Ret(unchecked((nuint)6916953478574785342), unchecked((nint)6448649235859031640), 1920468532326411, new F55_Ret_S0(30394, 40356024), 6146457824330132360);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc55()
     {
@@ -5077,7 +5023,6 @@ public unsafe class SwiftCallbackAbiStress
         return 1601166926;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc56()
     {
@@ -5169,7 +5114,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F57_Ret(new F57_Ret_S0(3441370978522907304, 105, 24446), 200);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc57()
     {
@@ -5244,7 +5188,6 @@ public unsafe class SwiftCallbackAbiStress
         return unchecked((nint)5337995302960578101);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc58()
     {
@@ -5279,7 +5222,6 @@ public unsafe class SwiftCallbackAbiStress
         return 7843473552989551261;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc59()
     {
@@ -5336,7 +5278,6 @@ public unsafe class SwiftCallbackAbiStress
         return 1713850918199577358;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc60()
     {
@@ -5438,7 +5379,6 @@ public unsafe class SwiftCallbackAbiStress
         return 138627237;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc61()
     {
@@ -5494,7 +5434,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F62_Ret(63013, 4076138842444340990, unchecked((nint)6876195265868121021), 223819901796794423);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc62()
     {
@@ -5537,7 +5476,6 @@ public unsafe class SwiftCallbackAbiStress
         return 1458978;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc63()
     {
@@ -5622,7 +5560,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F64_Ret(unchecked((nuint)7966680593035770540), new F64_Ret_S0(20244, unchecked((nuint)7259704667595065333), 1039021449222712763), 594768504899138);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc64()
     {
@@ -5722,7 +5659,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F65_Ret(unchecked((nint)7810903219784151958), unchecked((nint)8310527878848492866), unchecked((nint)1357258266300958550), 5970506);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc65()
     {
@@ -5790,7 +5726,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F66_Ret(1855065799, 2029697750, 149423164, new F66_Ret_S0(4327716, 116), unchecked((nint)5847795120921557969));
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc66()
     {
@@ -5889,7 +5824,6 @@ public unsafe class SwiftCallbackAbiStress
         return 391983354;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc67()
     {
@@ -5999,7 +5933,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F68_Ret(64088, 8144208533922264568);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc68()
     {
@@ -6099,7 +6032,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F69_Ret(52, 5510942427596951043, 1854355776);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc69()
     {
@@ -6216,7 +6148,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F70_Ret(45, 460004173, 7766748067698372018, 27369, 16509);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc70()
     {
@@ -6272,7 +6203,6 @@ public unsafe class SwiftCallbackAbiStress
         return 8460721064583106347;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc71()
     {
@@ -6330,7 +6260,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F72_Ret(1583929847, 2026234, 8092211, 445254465286132488);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc72()
     {
@@ -6431,7 +6360,6 @@ public unsafe class SwiftCallbackAbiStress
         return 76;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc73()
     {
@@ -6490,7 +6418,6 @@ public unsafe class SwiftCallbackAbiStress
         return 7382123574052120438;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc74()
     {
@@ -6584,7 +6511,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F75_Ret(8, 494440474432982, 3322048351205313, 7525253715666045341, 7365589);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc75()
     {
@@ -6692,7 +6618,6 @@ public unsafe class SwiftCallbackAbiStress
         return 2608582352406315143;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc76()
     {
@@ -6784,7 +6709,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F77_Ret(1601613740657843, 14373, -17, unchecked((nuint)274065318894652498));
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc77()
     {
@@ -6881,7 +6805,6 @@ public unsafe class SwiftCallbackAbiStress
         return 1088544646657969;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc78()
     {
@@ -6944,7 +6867,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F79_Ret(895629788, 4824209192377460356, 2599150646028906);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc79()
     {
@@ -7024,7 +6946,6 @@ public unsafe class SwiftCallbackAbiStress
         return 5169959;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc80()
     {
@@ -7086,7 +7007,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F81_Ret(unchecked((nint)1055606720535823947));
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc81()
     {
@@ -7185,7 +7105,6 @@ public unsafe class SwiftCallbackAbiStress
         return 7514083;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc82()
     {
@@ -7237,7 +7156,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F83_Ret(-32475);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc83()
     {
@@ -7342,7 +7260,6 @@ public unsafe class SwiftCallbackAbiStress
         return unchecked((nint)2320162198211027422);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc84()
     {
@@ -7465,7 +7382,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F85_Ret(1768798158, 27348, 1836190158, 2058478254572549, unchecked((nint)7881716796049851507), 5099946246805224241, 1499623158991084417);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc85()
     {
@@ -7570,7 +7486,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F86_Ret(23398, 842205070, 544883763911905, 215);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc86()
     {
@@ -7625,7 +7540,6 @@ public unsafe class SwiftCallbackAbiStress
         return 7817329728997505478;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc87()
     {
@@ -7720,7 +7634,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F88_Ret(46260161, 1256453227, unchecked((nint)1136413683894590872), 5467618237876965483);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc88()
     {
@@ -7790,7 +7703,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F89_Ret(891143792, new F89_Ret_S0(3363709596088133), unchecked((nuint)18782615486598250), 1765451025668395967);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc89()
     {
@@ -7899,7 +7811,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F90_Ret(25416, unchecked((nint)5015525780568020281));
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc90()
     {
@@ -8020,7 +7931,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F91_Ret(8703949006228331232, 4839530995689756024, 14798, 1337111683);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc91()
     {
@@ -8114,7 +8024,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F92_Ret(2031462105);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc92()
     {
@@ -8178,7 +8087,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F93_Ret(unchecked((nint)7713003294977630041), 4769707787914611024);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc93()
     {
@@ -8288,7 +8196,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F94_Ret(4965341488842559693);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc94()
     {
@@ -8378,7 +8285,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F95_Ret(unchecked((nint)6503817931835164175), 1481, 117, 79, new F95_Ret_S0(-2735));
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc95()
     {
@@ -8449,7 +8355,6 @@ public unsafe class SwiftCallbackAbiStress
         return 8803914823303717324;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc96()
     {
@@ -8543,7 +8448,6 @@ public unsafe class SwiftCallbackAbiStress
         return new F97_Ret(3262802544778620, unchecked((nuint)988644880611380240), new F97_Ret_S0(1818371708), 15694, 2068394006);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc97()
     {
@@ -8589,7 +8493,6 @@ public unsafe class SwiftCallbackAbiStress
         return unchecked((nint)6686142382639170849);
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc98()
     {
@@ -8656,7 +8559,6 @@ public unsafe class SwiftCallbackAbiStress
         return 8220698022338840251;
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSwiftCallbackFunc99()
     {
@@ -8671,3 +8573,4 @@ public unsafe class SwiftCallbackAbiStress
     }
 
 }
+

@@ -8,6 +8,7 @@ using System.Runtime.InteropServices.Swift;
 using Xunit;
 using TestLibrary;
 
+[PlatformSpecific(TestPlatforms.AnyApple)]
 public unsafe class SwiftIndirectResultTests
 {
     private struct NonFrozenStruct
@@ -27,7 +28,6 @@ public unsafe class SwiftIndirectResultTests
     [DllImport(SwiftLib, EntryPoint = "$s19SwiftIndirectResult26SumReturnedNonFrozenStruct1fs5Int32VAA0fgH0VyXE_tF")]
     public static extern int SumReturnedNonFrozenStruct(delegate* unmanaged[Swift]<SwiftIndirectResult, SwiftSelf, void> func, void* funcContext);
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestReturnNonFrozenStruct()
     {
@@ -46,7 +46,6 @@ public unsafe class SwiftIndirectResultTests
         *(NonFrozenStruct*)result.Value = new NonFrozenStruct { A = 10, B = 20, C = 30 };
     }
 
-    [ActiveIssue("Not supported", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestSumReturnedNonFrozenStruct()
     {

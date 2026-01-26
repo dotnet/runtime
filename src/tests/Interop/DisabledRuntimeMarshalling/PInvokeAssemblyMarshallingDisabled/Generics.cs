@@ -11,6 +11,8 @@ using static DisabledRuntimeMarshallingNative;
 namespace DisabledRuntimeMarshalling;
 
 [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+[ActiveIssue("https://github.com/dotnet/runtime/issues/81676", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+[ActiveIssue("https://github.com/dotnet/runtime/issues/64127", TestRuntimes.Mono)]
 public unsafe class Generics
 {
     [Fact]

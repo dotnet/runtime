@@ -65,11 +65,11 @@ done2:
     type([TestLibrary]TestLibrary.PlatformDetection)
     string[1] ('IsAppleMobile')
 }
-.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
-    string('https://github.com/dotnet/runtime/issues/114902')
-    type([TestLibrary]TestLibrary.PlatformDetection)
-    string[1] ('IsMonoInterpreter')
-}
+.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+        string('Needs triage')
+        int32(0x2) // Mono
+    }
+    
 .entrypoint
 .maxstack	20
   .try

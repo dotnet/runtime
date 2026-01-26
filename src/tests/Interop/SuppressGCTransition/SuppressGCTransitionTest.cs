@@ -289,6 +289,7 @@ public unsafe class SuppressGCTransitionTest
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/70490", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82859", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMiniJIT), nameof(PlatformDetection.IsArm64Process))]
     [Xunit.SkipOnCoreClrAttribute("Depends on marshalled pinvoke calli", RuntimeTestModes.InterpreterActive)]
     [Fact]
     public static void TestEntryPoint()

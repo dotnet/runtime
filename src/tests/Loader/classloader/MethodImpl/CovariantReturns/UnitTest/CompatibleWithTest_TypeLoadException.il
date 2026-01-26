@@ -791,7 +791,10 @@
             01 00 00 00
         )
         .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('Tests that expect TypeLoadException') type([TestLibrary]TestLibrary.Utilities) string[1] ('IsNativeAot') }
-        .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('Doesn\'t pass after LLVM AOT compilation.') type([TestLibrary]TestLibrary.PlatformDetection) string[1] ('IsMonoAnyAOT') }
+        .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+            string('Doesn\'t pass after LLVM AOT compilation.')
+            int32(0x2) // Mono
+        }
         .entrypoint
         .locals init ( bool result )
 
