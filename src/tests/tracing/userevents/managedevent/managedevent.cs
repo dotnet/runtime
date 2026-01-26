@@ -58,6 +58,7 @@ namespace Tracing.UserEvents.Tests.ManagedEvent
             return UserEventsTestRunner.Run(
                 args,
                 "managedevent",
+                typeof(ManagedEvent).Assembly.Location,
                 ManagedEventTracee,
                 s_traceValidator);
         }

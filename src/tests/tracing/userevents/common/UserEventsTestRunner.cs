@@ -26,6 +26,7 @@ namespace Tracing.UserEvents.Tests.Common
         public static int Run(
             string[] args,
             string scenarioName,
+            string traceeAssemblyPath,
             Action traceeAction,
             Func<EventPipeEventSource, bool> traceValidator,
             int traceeExitTimeout = DefaultTraceeExitTimeoutMs,
@@ -45,6 +46,7 @@ namespace Tracing.UserEvents.Tests.Common
 
             return RunOrchestrator(
                 scenarioName,
+                traceeAssemblyPath,
                 traceValidator,
                 traceeExitTimeout,
                 recordTraceExitTimeout);
@@ -52,14 +54,17 @@ namespace Tracing.UserEvents.Tests.Common
 
         private static int RunOrchestrator(
             string scenarioName,
+            string traceeAssemblyPath,
             Func<EventPipeEventSource, bool> traceValidator,
             int traceeExitTimeout,
             int recordTraceExitTimeout)
         {
-            // Use AppContext.BaseDirectory which works consistently for both CoreCLR and NativeAOT.
-            // For CoreCLR: .../tracing/userevents/<scenario>/<scenario>/
-            // For NativeAOT: .../tracing/userevents/<scenario>/<scenario>/ (even though exe is in native/ subdirectory)
-            string userEventsScenarioDir = AppContext.BaseDirectory;
+            // In NativeAOT, Assembly.Location returns empty string.
+            // Use AppContext.BaseDirectory which points to the test scenario directory for both CoreCLR and NativeAOT.
+            bool isNativeAot = string.IsNullOrEmpty(traceeAssemblyPath);
+            string userEventsScenarioDir = isNativeAot 
+                ? AppContext.BaseDirectory 
+                : Path.GetDirectoryName(traceeAssemblyPath);
             string recordTracePath = ResolveRecordTracePath(userEventsScenarioDir);
             string scriptFilePath = Path.Combine(userEventsScenarioDir, $"{scenarioName}.script");
 
@@ -115,8 +120,20 @@ namespace Tracing.UserEvents.Tests.Common
             Console.WriteLine($"record-trace started with PID: {recordTraceProcess.Id}");
 
             ProcessStartInfo traceeStartInfo = new();
-            traceeStartInfo.FileName = Environment.ProcessPath!;
-            traceeStartInfo.Arguments = "tracee";
+            
+            // NativeAOT tests run the native executable directly.
+            // CoreCLR tests run through corerun which loads the managed assembly.
+            if (isNativeAot)
+            {
+                traceeStartInfo.FileName = Environment.ProcessPath!;
+                traceeStartInfo.Arguments = "tracee";
+            }
+            else
+            {
+                traceeStartInfo.FileName = Process.GetCurrentProcess().MainModule!.FileName;
+                traceeStartInfo.Arguments = $"{traceeAssemblyPath} tracee";
+            }
+            
             traceeStartInfo.WorkingDirectory = userEventsScenarioDir;
             traceeStartInfo.RedirectStandardOutput = true;
             traceeStartInfo.RedirectStandardError = true;
@@ -202,10 +219,26 @@ namespace Tracing.UserEvents.Tests.Common
 
         private static string ResolveRecordTracePath(string userEventsScenarioDir)
         {
-            // userEventsScenarioDir is AppContext.BaseDirectory, which points to:
-            // .../tracing/userevents/<scenario>/<scenario>/
-            // Navigate up two directories to reach userevents root, then into common/userevents_common
+            // In NativeAOT, Assembly.Location returns an empty string, so userEventsScenarioDir can be null or empty.
+            // Fall back to the current process's main module path.
+            if (string.IsNullOrEmpty(userEventsScenarioDir))
+            {
+                string? mainModuleFileName = Process.GetCurrentProcess().MainModule?.FileName;
+                if (string.IsNullOrEmpty(mainModuleFileName))
+                {
+                    throw new InvalidOperationException("Unable to determine the test assembly path: Assembly.Location is empty and MainModule.FileName is unavailable.");
+                }
+                
+                userEventsScenarioDir = Path.GetDirectoryName(mainModuleFileName);
+                if (string.IsNullOrEmpty(userEventsScenarioDir))
+                {
+                    throw new InvalidOperationException($"Unable to determine the directory of the main module: {mainModuleFileName}");
+                }
+            }
+
+            // scenario dir: .../tracing/userevents/<scenario>/<scenario>
             string usereventsRoot = Path.GetFullPath(Path.Combine(userEventsScenarioDir, "..", ".."));
+            // common dir: .../tracing/userevents/common/userevents_common
             string commonDir = Path.Combine(usereventsRoot, "common", "userevents_common");
             string recordTracePath = Path.Combine(commonDir, "record-trace");
             return recordTracePath;

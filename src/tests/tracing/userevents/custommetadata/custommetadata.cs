@@ -70,6 +70,7 @@ namespace Tracing.UserEvents.Tests.CustomMetadata
             return UserEventsTestRunner.Run(
                 args,
                 "custommetadata",
+                typeof(CustomMetadata).Assembly.Location,
                 CustomMetadataTracee,
                 s_traceValidator);
         }
