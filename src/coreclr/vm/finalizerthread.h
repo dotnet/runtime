@@ -63,7 +63,7 @@ public:
 
     static VOID FinalizerThreadWorker(void *args);
 
-    static VOID FinalizerThreadWorkerRound();
+    static VOID FinalizerThreadWorkerIteration();
 
     static DWORD WINAPI FinalizerThreadStart(void *args);
 
