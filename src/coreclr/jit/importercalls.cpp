@@ -5495,7 +5495,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             GenTree* op1 = impPopStack().val;
 
             GenTree* tmp = gtNewOperNode(GT_GT, TYP_INT, op1, op2);
-            tmp->gtFlags |= GTF_UNSIGNED;
+            tmp->SetUnsigned();
             return gtFoldExpr(tmp);
         }
 
@@ -5514,7 +5514,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             GenTree* op1 = impPopStack().val;
 
             GenTree* tmp = gtNewOperNode(GT_GE, TYP_INT, op1, op2);
-            tmp->gtFlags |= GTF_UNSIGNED;
+            tmp->SetUnsigned();
             return gtFoldExpr(tmp);
         }
 
@@ -5531,7 +5531,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             GenTree* op1 = impPopStack().val;
 
             GenTree* tmp = gtNewOperNode(GT_LT, TYP_INT, op1, op2);
-            tmp->gtFlags |= GTF_UNSIGNED;
+            tmp->SetUnsigned();
             return gtFoldExpr(tmp);
         }
 
@@ -5550,7 +5550,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             GenTree* op1 = impPopStack().val;
 
             GenTree* tmp = gtNewOperNode(GT_LE, TYP_INT, op1, op2);
-            tmp->gtFlags |= GTF_UNSIGNED;
+            tmp->SetUnsigned();
             return gtFoldExpr(tmp);
         }
 
