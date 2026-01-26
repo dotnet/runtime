@@ -7,7 +7,10 @@ import { InternalExchangeIndex } from "../types";
 import GitHash from "consts:gitHash";
 
 import { dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "./cross-module";
-import { bindJSImportST, dynamicImport, getDotnetInstance, getGlobalThis, getProperty, getTypeOfProperty, hasProperty, invokeJSFunction, invokeJSImportST, setModuleImports, setProperty } from "./invoke-js";
+import {
+    bindJSImportST, dynamicImport, getDotnetInstance, getGlobalThis, getProperty, getTypeOfProperty, hasProperty,
+    invokeJSFunction, invokeJSImportST, setModuleImports, setProperty
+} from "./invoke-js";
 import { bindCsFunction, getAssemblyExports } from "./invoke-cs";
 import { initializeMarshalersToJs, resolveOrRejectPromise } from "./marshal-to-js";
 import { initializeMarshalersToCs } from "./marshal-to-cs";
@@ -15,6 +18,14 @@ import { forceDisposeProxies, releaseCSOwnedObject } from "./gc-handles";
 import { cancelPromise } from "./cancelable-promise";
 import { loadLazyAssembly, loadSatelliteAssemblies } from "./lazy";
 import { jsInteropState } from "./marshal";
+import { initializeScheduling, abortInteropTimers } from "./scheduling";
+import { wsAbort, wsClose, wsCreate, wsGetState, wsOpen, wsReceive, wsSend } from "./web-socket";
+import {
+    httpSupportsStreamingRequest, httpSupportsStreamingResponse, httpCreateController, httpGetResponseType,
+    httpGetResponseStatus, httpAbort, httpTransformStreamWrite, httpTransformStreamClose, httpFetch,
+    httpFetchStream, httpFetchBytes, httpGetResponseHeaderNames, httpGetResponseHeaderValues, httpGetResponseBytes,
+    httpGetResponseLength, httpGetStreamedResponseBytes,
+} from "./http";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
     if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
@@ -42,6 +53,32 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         loadSatelliteAssemblies,
         loadLazyAssembly,
 
+        // WebSocket
+        wsCreate,
+        wsOpen,
+        wsSend,
+        wsReceive,
+        wsClose,
+        wsAbort,
+        wsGetState,
+
+        // HTTP
+        httpSupportsStreamingRequest,
+        httpSupportsStreamingResponse,
+        httpCreateController,
+        httpGetResponseType,
+        httpGetResponseStatus,
+        httpAbort,
+        httpTransformStreamWrite,
+        httpTransformStreamClose,
+        httpFetch,
+        httpFetchStream,
+        httpFetchBytes,
+        httpGetResponseHeaderNames,
+        httpGetResponseHeaderValues,
+        httpGetResponseBytes,
+        httpGetResponseLength,
+        httpGetStreamedResponseBytes,
     });
 
     internals[InternalExchangeIndex.RuntimeExportsTable] = runtimeExportsToTable({
@@ -52,11 +89,13 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         cancelPromise,
         invokeJSFunction,
         forceDisposeProxies,
+        abortInteropTimers,
     });
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
 
     initializeMarshalersToJs();
     initializeMarshalersToCs();
+    initializeScheduling();
     jsInteropState.isInitialized = true;
     jsInteropState.enablePerfMeasure = globalThis.performance && typeof globalThis.performance.measure === "function";
 
@@ -70,6 +109,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
             map.cancelPromise,
             map.invokeJSFunction,
             map.forceDisposeProxies,
+            map.abortInteropTimers,
         ];
     }
 }

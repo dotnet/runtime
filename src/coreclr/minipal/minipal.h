@@ -111,6 +111,20 @@ public:
     // Return:
     //  true if it succeeded, false if it failed
     static bool FreeThunksFromTemplate(void* thunks, size_t templateSize);
+
+    // Allocate aligned memory block
+    // Parameters:
+    //  alignment - The desired alignment for the memory block.
+    //  size      - The total number of bytes to allocate
+    // Return:
+    //  NULL if allocation fails
+    //  Non-Null, a pointer to the allocated region
+    static void* AlignedAllocate(size_t alignment, size_t size);
+
+    // Free aligned memory block
+    // Parameters:
+    //  memblock - Memory block previously returned by AlignedAllocate
+    static void AlignedFree(void* memblock);
 };
 
 #if defined(HOST_64BIT) && defined(FEATURE_CACHED_INTERFACE_DISPATCH)
