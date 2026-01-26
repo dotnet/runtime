@@ -11292,6 +11292,8 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
 
         case GT_RSH:
         case GT_RSZ:
+            // Optimise right shift of an int -> unsigned cast by a constant amount, and the shift amount is >= the
+            // bit width of the cast to type. This always equals zero so replace shift & cast with setting to 0.
             if (opts.OptimizationEnabled() && op1->OperIs(GT_CAST) && op2->IsCnsIntOrI())
             {
                 GenTreeCast*   cast = op1->AsCast();
