@@ -244,5 +244,43 @@ namespace System.Globalization.Tests
             char[] destination = new char[100];
             Assert.Throws<ArgumentException>(() => idn.TryGetAscii(unicode, destination, out _));
         }
+
+        [Theory]
+        [MemberData(nameof(GetAscii_TestData))]
+        public void TryGetAscii_WithFlags(string unicode, int index, int count, string expected)
+        {
+            // Test with UseStd3AsciiRules = true and AllowUnassigned = true
+            var idnStd3 = new IdnMapping() { UseStd3AsciiRules = true, AllowUnassigned = true };
+            ReadOnlySpan<char> unicodeSpan = unicode.AsSpan(index, count);
+            char[] destination = new char[expected.Length + 10];
+
+            Assert.True(idnStd3.TryGetAscii(unicodeSpan, destination, out int charsWritten));
+            Assert.Equal(expected, new string(destination, 0, charsWritten), StringComparer.OrdinalIgnoreCase);
+
+            // Test with AllowUnassigned = false (default)
+            var idnNoUnassigned = new IdnMapping() { AllowUnassigned = false };
+            Assert.True(idnNoUnassigned.TryGetAscii(unicodeSpan, destination, out charsWritten));
+            Assert.Equal(expected, new string(destination, 0, charsWritten), StringComparer.OrdinalIgnoreCase);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetAscii_Invalid_TestData))]
+        public void TryGetAscii_Invalid(string unicode, int index, int count, Type exceptionType)
+        {
+            if (unicode is null)
+            {
+                return; // TryGetAscii takes ReadOnlySpan<char>, which can't be null
+            }
+
+            static void tryGetAscii_Invalid(IdnMapping idnMapping, string unicode, int index, int count, Type exceptionType)
+            {
+                ReadOnlySpan<char> unicodeSpan = unicode.AsSpan(index, count);
+                char[] destination = new char[100];
+                Assert.Throws(exceptionType, () => idnMapping.TryGetAscii(unicodeSpan, destination, out _));
+            }
+
+            tryGetAscii_Invalid(new IdnMapping() { UseStd3AsciiRules = false }, unicode, index, count, exceptionType);
+            tryGetAscii_Invalid(new IdnMapping() { UseStd3AsciiRules = true }, unicode, index, count, exceptionType);
+        }
     }
 }

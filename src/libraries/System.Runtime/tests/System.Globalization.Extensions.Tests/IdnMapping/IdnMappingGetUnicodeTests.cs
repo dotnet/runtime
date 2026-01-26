@@ -180,5 +180,43 @@ namespace System.Globalization.Tests
             char[] destination = new char[100];
             Assert.Throws<ArgumentException>(() => idn.TryGetUnicode(ascii, destination, out _));
         }
+
+        [Theory]
+        [MemberData(nameof(GetUnicode_TestData))]
+        public void TryGetUnicode_WithFlags(string ascii, int index, int count, string expected)
+        {
+            // Test with UseStd3AsciiRules = true and AllowUnassigned = true
+            var idnStd3 = new IdnMapping() { UseStd3AsciiRules = true, AllowUnassigned = true };
+            ReadOnlySpan<char> asciiSpan = ascii.AsSpan(index, count);
+            char[] destination = new char[expected.Length + 10];
+
+            Assert.True(idnStd3.TryGetUnicode(asciiSpan, destination, out int charsWritten));
+            Assert.Equal(expected, new string(destination, 0, charsWritten), StringComparer.OrdinalIgnoreCase);
+
+            // Test with AllowUnassigned = false (default)
+            var idnNoUnassigned = new IdnMapping() { AllowUnassigned = false };
+            Assert.True(idnNoUnassigned.TryGetUnicode(asciiSpan, destination, out charsWritten));
+            Assert.Equal(expected, new string(destination, 0, charsWritten), StringComparer.OrdinalIgnoreCase);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetUnicode_Invalid_TestData))]
+        public void TryGetUnicode_Invalid(string ascii, int index, int count, Type exceptionType)
+        {
+            if (ascii is null)
+            {
+                return; // TryGetUnicode takes ReadOnlySpan<char>, which can't be null
+            }
+
+            static void tryGetUnicode_Invalid(IdnMapping idnMapping, string ascii, int index, int count, Type exceptionType)
+            {
+                ReadOnlySpan<char> asciiSpan = ascii.AsSpan(index, count);
+                char[] destination = new char[100];
+                Assert.Throws(exceptionType, () => idnMapping.TryGetUnicode(asciiSpan, destination, out _));
+            }
+
+            tryGetUnicode_Invalid(new IdnMapping() { UseStd3AsciiRules = false }, ascii, index, count, exceptionType);
+            tryGetUnicode_Invalid(new IdnMapping() { UseStd3AsciiRules = true }, ascii, index, count, exceptionType);
+        }
     }
 }
