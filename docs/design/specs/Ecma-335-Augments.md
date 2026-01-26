@@ -978,7 +978,7 @@ Note that integer values of less than 4 bytes are extended to int32 (not native 
 evaluation stack.
 
 ## Ref Fields
-To improve the usefulness of ref structs, support for fields which are defined as ByRefs is needed. Currently their functionality can be approximated by Span<T> fields, but not all types can be converted into Span<T> types simply. In order to support these scenarios, support for generalizing ByRef fields, and converting TypedReference, ArgIterator and RuntimeArgumentHandle into following the normal rules of C# ref structs is desired ([sunset restricted types](https://github.com/dotnet/csharplang/blob/main/proposals/expand-ref.md#sunset-restricted-types), [dotnet/roslyn#64811](https://github.com/dotnet/roslyn/issues/64811)). With this set of changes, it becomes possible to have ByRef fields of T, but support for pointers to ByRef fields or ByRefs to ByRefs is not added to the ECMA specification.
+To improve the usefulness of ref structs, support for fields which are defined as ByRefs is needed. In order to support these scenarios, support for generalizing ByRef fields, and converting TypedReference, ArgIterator and RuntimeArgumentHandle into following the normal rules of C# ref structs is desired ([sunset restricted types](https://github.com/dotnet/csharplang/blob/main/proposals/expand-ref.md#sunset-restricted-types), [dotnet/roslyn#64811](https://github.com/dotnet/roslyn/issues/64811)). With this set of changes, it becomes possible to have ByRef fields of T, but support for pointers to ByRef fields or ByRefs to ByRefs is not added to the ECMA specification.
 
 Changes to the spec. These changes are relative to the 6th edition (June 2012) of the ECMA-335 specification published by ECMA available at:
 
