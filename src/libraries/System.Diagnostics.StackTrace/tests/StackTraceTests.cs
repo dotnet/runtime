@@ -32,6 +32,7 @@ namespace System.Diagnostics
         }
     }
 
+#if !(NATIVEAOT && !WINDOWS)
     public static class V1Methods
     {
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
@@ -208,6 +209,7 @@ namespace System.Diagnostics
     }
 }
 #line default
+#endif
 
 namespace System.Diagnostics.Tests
 {
@@ -583,6 +585,7 @@ namespace System.Diagnostics.Tests
             }, regPattern).Dispose();
         }
 
+#if !(NATIVEAOT && !WINDOWS)
         public static Dictionary<string, string[]> MethodExceptionStrings = new()
         {
             { "Foo", new[] {
@@ -652,6 +655,7 @@ namespace System.Diagnostics.Tests
                 startIndex = match.Index + match.Length;
             }
         }
+#endif
 
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private static StackTrace NoParameters() => new StackTrace();
