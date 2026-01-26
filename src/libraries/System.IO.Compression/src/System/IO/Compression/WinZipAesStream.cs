@@ -466,7 +466,12 @@ namespace System.IO.Compression
             int bytesToRead = GetBytesToRead(buffer.Length);
             if (bytesToRead == 0)
             {
-                ValidateAuthCode();
+                // Only validate auth code when we've actually reached end of encrypted data,
+                // not when caller simply requested 0 bytes
+                if (_encryptedDataRemaining <= 0)
+                {
+                    ValidateAuthCode();
+                }
                 return 0;
             }
 
@@ -492,20 +497,26 @@ namespace System.IO.Compression
             return bytesRead;
         }
 
-        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
-            return await ReadAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
+            return ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
         }
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             ThrowIfNotReadable();
 
             int bytesToRead = GetBytesToRead(buffer.Length);
             if (bytesToRead == 0)
             {
-                await ValidateAuthCodeAsync(cancellationToken).ConfigureAwait(false);
+                // Only validate auth code when we've actually reached end of encrypted data,
+                // not when caller simply requested 0 bytes
+                if (_encryptedDataRemaining <= 0)
+                {
+                    await ValidateAuthCodeAsync(cancellationToken).ConfigureAwait(false);
+                }
                 return 0;
             }
 
@@ -605,11 +616,12 @@ namespace System.IO.Compression
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
-            return WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+            return WriteAsyncCore(buffer.AsMemory(offset, count), cancellationToken).AsTask();
         }
 
-        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        private async ValueTask WriteAsyncCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             ThrowIfNotWritable();
             if (!_headerWritten)
             {
@@ -659,6 +671,11 @@ namespace System.IO.Compression
                 buffer.Slice(inputOffset, inputCount).CopyTo(_partialBlock.AsMemory(_partialBlockBytes));
                 _partialBlockBytes += inputCount;
             }
+        }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            return WriteAsyncCore(buffer, cancellationToken);
         }
         private async Task FinalizeEncryptionAsync(bool isAsync, CancellationToken cancellationToken)
         {

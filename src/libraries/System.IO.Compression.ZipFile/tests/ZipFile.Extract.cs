@@ -311,6 +311,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [SkipOnCI("Local development test - requires specific file paths")]
         public async Task ExtractToFileAsync_WithPassword_ShouldCreatePlaintextFile()
         {
             string zipPath = @"C:\Users\spahontu\Downloads\test.zip";
@@ -370,6 +371,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [SkipOnCI("Local development test - requires specific file paths")]
         public void OpenEncryptedArchive_WithMultipleEntries_ShouldDecryptBoth()
         {
             // Arrange

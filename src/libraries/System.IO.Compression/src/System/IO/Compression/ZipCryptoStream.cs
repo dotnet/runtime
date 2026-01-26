@@ -17,6 +17,7 @@ namespace System.IO.Compression
         private readonly Stream _base;
         private readonly bool _leaveOpen;
         private bool _headerWritten;
+        private bool _disposed;
         private readonly ushort _verifierLow2Bytes;       // (DOS time low word when streaming)
         private readonly uint? _crc32ForHeader;           // (CRC-based header when not streaming)
 
@@ -42,19 +43,20 @@ namespace System.IO.Compression
 
         // Private decryption constructor - use Create/CreateAsync factory methods instead.
         // Keys must already be validated before calling this constructor.
-        private ZipCryptoStream(Stream baseStream, uint key0, uint key1, uint key2)
+        private ZipCryptoStream(Stream baseStream, uint key0, uint key1, uint key2, bool leaveOpen = false)
         {
             _base = baseStream;
             _key0 = key0;
             _key1 = key1;
             _key2 = key2;
             _encrypting = false;
+            _leaveOpen = leaveOpen;
         }
 
         /// <summary>
         /// Creates a ZipCryptoStream for decryption. Reads and validates the 12-byte header synchronously.
         /// </summary>
-        internal static ZipCryptoStream Create(Stream baseStream, byte[] keyBytes, byte expectedCheckByte, bool encrypting)
+        internal static ZipCryptoStream Create(Stream baseStream, byte[] keyBytes, byte expectedCheckByte, bool encrypting, bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(baseStream);
             ArgumentNullException.ThrowIfNull(keyBytes);
@@ -62,13 +64,13 @@ namespace System.IO.Compression
             Debug.Assert(!encrypting, "Use the overload with passwordVerifierLow2Bytes for encryption.");
 
             (uint key0, uint key1, uint key2) = ReadAndValidateHeaderCore(isAsync: false, baseStream, keyBytes, expectedCheckByte, CancellationToken.None).GetAwaiter().GetResult();
-            return new ZipCryptoStream(baseStream, key0, key1, key2);
+            return new ZipCryptoStream(baseStream, key0, key1, key2, leaveOpen);
         }
 
         /// <summary>
         /// Creates a ZipCryptoStream for decryption. Reads and validates the 12-byte header asynchronously.
         /// </summary>
-        internal static async Task<ZipCryptoStream> CreateAsync(Stream baseStream, byte[] keyBytes, byte expectedCheckByte, bool encrypting, CancellationToken cancellationToken = default)
+        internal static async Task<ZipCryptoStream> CreateAsync(Stream baseStream, byte[] keyBytes, byte expectedCheckByte, bool encrypting, CancellationToken cancellationToken = default, bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(baseStream);
             ArgumentNullException.ThrowIfNull(keyBytes);
@@ -76,7 +78,7 @@ namespace System.IO.Compression
             Debug.Assert(!encrypting, "Use the overload with passwordVerifierLow2Bytes for encryption.");
 
             (uint key0, uint key1, uint key2) = await ReadAndValidateHeaderCore(isAsync: true, baseStream, keyBytes, expectedCheckByte, cancellationToken).ConfigureAwait(false);
-            return new ZipCryptoStream(baseStream, key0, key1, key2);
+            return new ZipCryptoStream(baseStream, key0, key1, key2, leaveOpen);
         }
 
         /// <summary>
@@ -271,9 +273,9 @@ namespace System.IO.Compression
             return plain;
         }
 
-        public override bool CanRead => !_encrypting;
+        public override bool CanRead => !_disposed && !_encrypting;
         public override bool CanSeek => false;
-        public override bool CanWrite => _encrypting;
+        public override bool CanWrite => !_disposed && _encrypting;
         public override long Length => throw new NotSupportedException();
         public override long Position
         {
@@ -305,6 +307,7 @@ namespace System.IO.Compression
 
         public override void Write(byte[] buffer, int offset, int count)
         {
+            ValidateBufferArguments(buffer, offset, count);
             Write(buffer.AsSpan(offset, count));
         }
 
@@ -330,6 +333,12 @@ namespace System.IO.Compression
 
         protected override void Dispose(bool disposing)
         {
+            if (_disposed)
+            {
+                return;
+            }
+            _disposed = true;
+
             if (disposing)
             {
                 // If encrypted empty entry (no payload written), still must emit 12-byte header:
@@ -344,12 +353,20 @@ namespace System.IO.Compression
 
         public override async ValueTask DisposeAsync()
         {
+            if (_disposed)
+            {
+                return;
+            }
+            _disposed = true;
+
             // If encrypted empty entry (no payload written), still must emit 12-byte header:
             if (_encrypting && !_headerWritten)
                 await EnsureHeaderAsync(CancellationToken.None).ConfigureAwait(false);
             if (!_leaveOpen)
                 await _base.DisposeAsync().ConfigureAwait(false);
-            await base.DisposeAsync().ConfigureAwait(false);
+
+            // Don't call base.DisposeAsync() as it would call Dispose() synchronously,
+            // which could fail on async-only streams. We've already handled all cleanup.
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
