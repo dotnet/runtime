@@ -3541,7 +3541,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     op2 = gtNewSimdMinMaxNode(retType, op2, gtCloneExpr(maxCns), simdBaseType, simdSize,
                                               /* isMax */ false, /* isMagnitude */ false, /* isNumber */ false);
 
-                    retNode = gtNewSimdNarrowNode(retType, op1, op2, narrowSimdBaseType, simdSize);
+                    retNode = gtNewSimdNarrowNode(retType, op1, op2, narrowSimdBaseType, simdSize,
+                                                  /* inputsAlreadyClamped */ true);
                 }
             }
             break;
