@@ -421,10 +421,11 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
 
 static BOOL s_FinalizerThreadOK = FALSE;
 static BOOL s_InitializedFinalizerThreadForPlatform = FALSE;
+static BOOL s_PriorityBoosted = FALSE;
 
 VOID FinalizerThread::FinalizerThreadWorker(void *args)
 {
-    BOOL bPriorityBoosted = FALSE;
+    s_PriorityBoosted = FALSE;
 
     while (!fQuitFinalizer)
     {
@@ -508,10 +509,10 @@ VOID FinalizerThread::FinalizerThreadWorkerRound()
         }
     }
 
-    if (!bPriorityBoosted)
+    if (!s_PriorityBoosted)
     {
         if (GetFinalizerThread()->SetThreadPriority(THREAD_PRIORITY_HIGHEST))
-            bPriorityBoosted = TRUE;
+            s_PriorityBoosted = TRUE;
     }
 
     // The Finalizer thread is started very early in EE startup. We deferred
