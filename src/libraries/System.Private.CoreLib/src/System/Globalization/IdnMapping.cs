@@ -113,7 +113,7 @@ namespace System.Globalization
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidCharSequence, unicode.Length - 1), nameof(unicode));
             }
 
-            if (MemoryMarshal.AsBytes(unicode).Overlaps(MemoryMarshal.AsBytes(destination)))
+            if (unicode.Overlaps(destination))
             {
                 ThrowHelper.ThrowArgumentException(ExceptionResource.InvalidOperation_SpanOverlappedOperation);
             }
@@ -182,7 +182,7 @@ namespace System.Globalization
             if (ascii.Length > 0 && ascii[^1] == (char)0)
                 throw new ArgumentException(SR.Argument_IdnBadPunycode, nameof(ascii));
 
-            if (MemoryMarshal.AsBytes(ascii).Overlaps(MemoryMarshal.AsBytes(destination)))
+            if (ascii.Overlaps(destination))
             {
                 ThrowHelper.ThrowArgumentException(ExceptionResource.InvalidOperation_SpanOverlappedOperation);
             }
