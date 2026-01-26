@@ -56,19 +56,17 @@ Copyright (c) .NET Foundation. All rights reserved.
   <PropertyGroup>
     <!-- Paths to tools, tasks, and extensions are calculated relative to the WebAssemblySdkDirectoryRoot. This can be modified to test a local build. -->
     <_WebAssemblySdkToolsDirectory Condition="'$(_WebAssemblySdkToolsDirectory)'==''">$(MSBuildThisFileDirectory)..\tools\</_WebAssemblySdkToolsDirectory>
-    <_WebAssemblySdkTasksTFM Condition=" '$(MSBuildRuntimeType)' == 'Core'">net11.0</_WebAssemblySdkTasksTFM>
-    <_WebAssemblySdkTasksTFM Condition=" '$(MSBuildRuntimeType)' != 'Core'">net472</_WebAssemblySdkTasksTFM>
-    <_WebAssemblySdkTasksAssembly Condition="'$(_WebAssemblySdkTasksAssembly)' == ''">$(_WebAssemblySdkToolsDirectory)\$(_WebAssemblySdkTasksTFM)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.dll</_WebAssemblySdkTasksAssembly>
+    <_WebAssemblySdkTasksAssembly Condition="'$(_WebAssemblySdkTasksAssembly)' == ''">$(_WebAssemblySdkToolsDirectory)Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.dll</_WebAssemblySdkTasksAssembly>
 
     <!-- Compression -->
     <CompressionIncludePatterns>$(CompressionIncludePatterns);_framework\**</CompressionIncludePatterns>
     <DisableBuildCompression Condition="'$(WasmBuildingForNestedPublish)' == 'true'">true</DisableBuildCompression>
   </PropertyGroup>
 
-  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.GenerateWasmBootJson" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
-  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmBuildAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
-  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmPublishAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
-  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ConvertDllsToWebCil" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.GenerateWasmBootJson" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" Runtime="NET" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmBuildAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" Runtime="NET" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmPublishAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" Runtime="NET" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ConvertDllsToWebCil" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" Runtime="NET" />
 
   <PropertyGroup>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
@@ -299,6 +297,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmBuildAssetCandidates Include="@(WasmNativeAsset)" />
       <_WasmBuildAssetCandidates Include="@(WasmAssembliesFinal)" />
       <_WasmBuildAssetCandidates Remove="@(_WasmProjectAssemblyBuild)" />
+
+      <!-- Add WasmAssembliesFinal back to ReferenceCopyLocalPaths for debugging and postprocessing tools -->
+      <ReferenceCopyLocalPaths Include="@(WasmAssembliesFinal)" />
     </ItemGroup>
 
     <PropertyGroup>

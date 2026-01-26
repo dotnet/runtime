@@ -6634,7 +6634,7 @@ void Thread::InitializeSpecialUserModeApc()
 
 #endif // FEATURE_SPECIAL_USER_MODE_APC
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
 #endif
 
@@ -6647,6 +6647,8 @@ void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP)
         targetSSP = GetSSP(ContextRecord);
     }
     ClrRestoreNonvolatileContextWorker(ContextRecord, targetSSP);
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    ClrRestoreNonvolatileContextWorker(ContextRecord, 0);
 #elif defined(TARGET_X86) && defined(TARGET_WINDOWS)
     // need to pop the SEH records before write over the stack
     LPVOID oldSP = (LPVOID)GetSP(ContextRecord);

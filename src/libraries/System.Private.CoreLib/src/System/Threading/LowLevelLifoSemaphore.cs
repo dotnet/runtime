@@ -37,10 +37,6 @@ namespace System.Threading
         {
             Debug.Assert(timeoutMs >= -1);
 
-#if FEATURE_WASM_MANAGED_THREADS
-            Thread.AssureBlockingPossible();
-#endif
-
             // Try one-shot acquire first
             Counts counts = _separated._counts;
             if (counts.SignalCount != 0)
@@ -54,6 +50,8 @@ namespace System.Threading
                     return true;
                 }
             }
+
+            Thread.ThrowIfSingleThreaded();
 
             return WaitSlow(timeoutMs);
         }
