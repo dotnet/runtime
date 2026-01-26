@@ -157,7 +157,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
             [FeatureSwitchDefinition("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.DefineFeatureGuard.FeatureSwitch")]
             static bool FeatureSwitch => AppContext.TryGetSwitch("Mono.Linker.Tests.Cases.Substitutions.FeatureGuardSubstitutions.DefineFeatureGuard.FeatureSwitch", out bool isEnabled) && isEnabled;
 
-            [ExpectedWarning("IL4000", nameof(RequiresDynamicCodeAttribute), Tool.Analyzer, "Analyzer does not support feature guard substitutions")] // Analyzer doesn't respect FeatureSwitchDefinition or feature settings
+            [ExpectedWarning("IL2026", nameof(RequiresDynamicCodeAttribute), Tool.Analyzer, "Analyzer does not support feature guard substitutions")] // Analyzer doesn't respect FeatureSwitchDefinition or feature settings
             [ExpectedInstructionSequence(new[] {
                 "nop",
                 "ldc.i4.0",
@@ -291,7 +291,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
                 "ret"
             })]
             // ILLink/ILCompiler ignore FeatureGuard on properties that also have FeatureSwitchDefinition
-            [ExpectedWarning("IL4000", nameof(RequiresDynamicCodeAttribute), Tool.Analyzer, "Analyzer does not support feature guard substitutions")]
+            [ExpectedWarning("IL2026", nameof(RequiresDynamicCodeAttribute), Tool.Analyzer, "Analyzer does not support feature guard substitutions")]
             static void TestSwitchWinsOverGuard()
             {
                 if (GuardAndSwitch)
@@ -312,7 +312,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
             [Kept]
             // No IL modifications because feature is not set, and FeatureGuard is ignored due to FeatureSwitchDefinition.
-            [ExpectedWarning("IL4000", nameof(RequiresDynamicCodeAttribute), Tool.Analyzer, "Analyzer does not support feature guard substitutions")]
+            [ExpectedWarning("IL2026", nameof(RequiresDynamicCodeAttribute), Tool.Analyzer, "Analyzer does not support feature guard substitutions")]
             static void TestSwitchNotSetWinsOverGuard()
             {
                 if (GuardAndSwitchNotSet)
@@ -333,7 +333,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
                 "nop",
                 "ret"
             })]
-            [ExpectedWarning("IL4000", nameof(RequiresDynamicCodeAttribute), Tool.Analyzer, "Analyzer does not support feature guard substitutions")]
+            [ExpectedWarning("IL2026", nameof(RequiresDynamicCodeAttribute), Tool.Analyzer, "Analyzer does not support feature guard substitutions")]
             static void TestXmlWinsOverGuard()
             {
                 if (GuardWithXml)
@@ -359,7 +359,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
                 "nop",
                 "ret"
             })]
-            [ExpectedWarning("IL4000", nameof(RequiresDynamicCodeAttribute), Tool.Analyzer, "Analyzer does not support feature guard substitutions")]
+            [ExpectedWarning("IL2026", nameof(RequiresDynamicCodeAttribute), Tool.Analyzer, "Analyzer does not support feature guard substitutions")]
             static void TestXmlWinsOverSwitch()
             {
                 if (SwitchWithXml)
