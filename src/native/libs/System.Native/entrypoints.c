@@ -78,6 +78,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_FcntlSetPipeSz)
     DllImportEntry(SystemNative_FcntlSetIsNonBlocking)
     DllImportEntry(SystemNative_FcntlGetIsNonBlocking)
+    DllImportEntry(SystemNative_FcntlCheckAccess)
     DllImportEntry(SystemNative_MkDir)
     DllImportEntry(SystemNative_ChMod)
     DllImportEntry(SystemNative_FChMod)

@@ -83,12 +83,28 @@ namespace System
 
         public static Stream OpenStandardOutput()
         {
-            return new WasmConsoleStream(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDOUT_FILENO), FileAccess.Write);
+            return new WasmConsoleStream(OpenStandardOutputHandle(), FileAccess.Write);
         }
 
         public static Stream OpenStandardError()
         {
-            return new WasmConsoleStream(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDERR_FILENO), FileAccess.Write);
+            return new WasmConsoleStream(OpenStandardErrorHandle(), FileAccess.Write);
+        }
+
+        public static SafeFileHandle OpenStandardInputHandle() => throw new PlatformNotSupportedException();
+
+        public static SafeFileHandle OpenStandardOutputHandle(bool verifyFd = true) => OpenStandardHandle(1, FileAccess.Write, verifyFd);
+
+        public static SafeFileHandle OpenStandardErrorHandle(bool verifyFd = true) => OpenStandardHandle(2, FileAccess.Write, verifyFd);
+
+        private static SafeFileHandle OpenStandardHandle(IntPtr fd, FileAccess access, bool verifyFd)
+        {
+            if (verifyFd && Interop.Sys.Fcntl.CheckAccess(fd, (int)access) == -1)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_InvalidHandle);
+            }
+
+            return new SafeFileHandle(fd, ownsHandle: false);
         }
 
         public static Encoding InputEncoding => throw new PlatformNotSupportedException();
