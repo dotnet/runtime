@@ -708,21 +708,11 @@ struct RangeOps
 
                 // If both ranges are single constant and equal, then EQ is always true, NE is always false.
                 // Example: x = [5..5], y = [5..5] -> EQ is always true, NE is always false.
-                //          x = [5..5], y = [6..6] -> EQ is always false, NE is always true.
-                if (x.IsConstantRange() && y.IsConstantRange())
+                if (x.LowerLimit().IsConstant() && y.LowerLimit().IsConstant() &&
+                    x.LowerLimit().Equals(x.UpperLimit()) && y.LowerLimit().Equals(y.UpperLimit()) &&
+                    x.LowerLimit().GetConstant() == y.LowerLimit().GetConstant())
                 {
-                    bool xIsSingleCns = x.LowerLimit().GetConstant() == x.UpperLimit().GetConstant();
-                    bool yIsSingleCns = y.LowerLimit().GetConstant() == y.UpperLimit().GetConstant();
-                    if (xIsSingleCns && yIsSingleCns)
-                    {
-                        int xCns = x.LowerLimit().GetConstant();
-                        int yCns = y.LowerLimit().GetConstant();
-                        if (xCns == yCns)
-                        {
-                            return relop == GT_EQ ? RelationKind::AlwaysTrue : RelationKind::AlwaysFalse;
-                        }
-                        return relop == GT_EQ ? RelationKind::AlwaysFalse : RelationKind::AlwaysTrue;
-                    }
+                    return relop == GT_EQ ? RelationKind::AlwaysTrue : RelationKind::AlwaysFalse;
                 }
                 break;
 
