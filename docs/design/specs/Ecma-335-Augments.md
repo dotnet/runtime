@@ -980,7 +980,7 @@ evaluation stack.
 ## Ref Fields
 To improve the usefulness of ref structs, support for fields which are defined as ByRefs is needed. See [ref fields](https://github.com/dotnet/csharplang/blob/main/proposals/csharp-11.0/low-level-struct-improvements.md#provide-ref-fields-and-scoped) for C# language counterpart. With this set of changes, it becomes possible to have ByRef fields of T, but support for pointers to ByRef fields or ByRefs to ByRefs is not added to the ECMA specification.
 
-ByRef fields can enable converting TypedReference, ArgIterator and RuntimeArgumentHandle into following the normal rules of C# ref structs in future. See ([sunset restricted types](https://github.com/dotnet/csharplang/blob/main/proposals/expand-ref.md#sunset-restricted-types) and [dotnet/roslyn#64811](https://github.com/dotnet/roslyn/issues/64811)).
+ByRef fields can enable converting TypedReference, ArgIterator and RuntimeArgumentHandle into following the normal rules of C# ref structs in future. See [sunset restricted types](https://github.com/dotnet/csharplang/blob/main/proposals/expand-ref.md#sunset-restricted-types) and [dotnet/roslyn#64811](https://github.com/dotnet/roslyn/issues/64811).
 
 Changes to the spec. These changes are relative to the 6th edition (June 2012) of the ECMA-335 specification published by ECMA available at:
 
