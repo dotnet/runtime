@@ -13,28 +13,12 @@ internal static partial class Interop
         //
 
         [LibraryImport("Normaliz.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-        internal static unsafe partial int IdnToAscii(
-                                        uint dwFlags,
-                                        char* lpUnicodeCharStr,
-                                        int cchUnicodeChar,
-                                        char* lpASCIICharStr,
-                                        int cchASCIIChar);
-
-        [LibraryImport("Normaliz.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int IdnToAscii(
                                         uint dwFlags,
                                         ReadOnlySpan<char> lpUnicodeCharStr,
                                         int cchUnicodeChar,
                                         Span<char> lpASCIICharStr,
                                         int cchASCIIChar);
-
-        [LibraryImport("Normaliz.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-        internal static unsafe partial int IdnToUnicode(
-                                        uint dwFlags,
-                                        char* lpASCIICharStr,
-                                        int cchASCIIChar,
-                                        char* lpUnicodeCharStr,
-                                        int cchUnicodeChar);
 
         [LibraryImport("Normaliz.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int IdnToUnicode(
