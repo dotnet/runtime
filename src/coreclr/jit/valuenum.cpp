@@ -2559,6 +2559,46 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
     assert(func != VNF_MemOpaque);
     assert(arg0VN == VNNormalValue(arg0VN)); // Arguments don't carry exceptions.
 
+    if ((func == VNF_NOT) || (func == VNF_NEG))
+    {
+        VNFuncApp funcApp;
+        if (GetVNFunc(arg0VN, &funcApp))
+        {
+            // NOT(NOT(x)) ==> x, same for NEG
+            //
+            if (funcApp.m_func == func)
+            {
+                return funcApp.m_args[0];
+            }
+
+            if (func == VNF_NOT)
+            {
+                // NOT(relop(x,y)) ==> Reverse(relop)(x,y)
+                //
+                if (IsVNRelop(arg0VN))
+                {
+                    return GetRelatedRelop(arg0VN, VN_RELATION_KIND::VRK_Reverse);
+                }
+
+                // NOT(AND(x,y)) ==> OR(NOT(x), NOT(y))
+                //
+                if (funcApp.m_func == VNFunc(GT_AND))
+                {
+                    return VNForFunc(typ, VNFunc(GT_OR), VNForFunc(typ, VNFunc(GT_NOT), funcApp.m_args[0]),
+                                     VNForFunc(typ, VNFunc(GT_NOT), funcApp.m_args[1]));
+                }
+
+                // NOT(OR(x,y)) ==> AND(NOT(x), NOT(y))
+                //
+                if (funcApp.m_func == VNFunc(GT_OR))
+                {
+                    return VNForFunc(typ, VNFunc(GT_AND), VNForFunc(typ, VNFunc(GT_NOT), funcApp.m_args[0]),
+                                     VNForFunc(typ, VNFunc(GT_NOT), funcApp.m_args[1]));
+                }
+            }
+        }
+    }
+
     // Have we already assigned a ValueNum for 'func'('arg0VN') ?
     //
     VNDefFuncApp<1> fstruct(func, arg0VN);
