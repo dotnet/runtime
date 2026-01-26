@@ -12,7 +12,7 @@ import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryI
 import { mono_exit } from "./exit";
 import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
 import { appendUniqueQuery } from "./assets";
-import { browserVirtualAppBase } from "../globals";
+import { browserVirtualAppBase } from "./globals";
 
 export function deep_merge_config (target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
     // no need to merge the same object
