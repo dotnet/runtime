@@ -177,8 +177,8 @@ namespace System.IO.Hashing
 
         private static uint Update(uint adler, ReadOnlySpan<byte> buf)
         {
-            uint Base = 65521; // largest prime smaller than 65536
-            int NMax = 5552; // NMax is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1
+            const uint Base = 65521; // largest prime smaller than 65536
+            const int NMax = 5552; // NMax is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1
             if (buf.IsEmpty)
             {
                 return adler;
