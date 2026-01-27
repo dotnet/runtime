@@ -457,7 +457,7 @@ namespace System.Numerics.Tensors.Tests
             // The current trigonometric algorithm depends on hardware FMA support for best precision.
             T? trigTolerance = IsFmaSupported ? null : Helpers.DetermineTolerance<T>(doubleTolerance: 1e-10, floatTolerance: 1e-4f);
 
-            yield return Create(TensorPrimitives.Acosh, T.Acosh);
+            yield return Create(TensorPrimitives.Acosh, T.Acosh, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-12, floatTolerance: 1e-5f));
             yield return Create(TensorPrimitives.AcosPi, T.AcosPi);
             yield return Create(TensorPrimitives.Acos, T.Acos, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-12, floatTolerance: 1e-5f));
             yield return Create(TensorPrimitives.Asinh, T.Asinh, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-12, floatTolerance: 1e-5f));

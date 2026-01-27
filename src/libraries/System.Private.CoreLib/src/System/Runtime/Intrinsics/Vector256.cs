@@ -942,6 +942,53 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Computes the inverse hyperbolic cosine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose inverse hyperbolic cosine is to be computed.</param>
+        /// <returns>A vector whose elements are the inverse hyperbolic cosine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The input should be greater than or equal to 1.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<double> Acosh(Vector256<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AcoshDouble<Vector256<double>, Vector256<long>, Vector256<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Acosh(vector._lower),
+                    Vector128.Acosh(vector._upper)
+                );
+            }
+        }
+
+        /// <summary>Computes the inverse hyperbolic cosine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose inverse hyperbolic cosine is to be computed.</param>
+        /// <returns>A vector whose elements are the inverse hyperbolic cosine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The input should be greater than or equal to 1.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<float> Acosh(Vector256<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector512.IsHardwareAccelerated)
+                {
+                    return VectorMath.AcoshSingle<Vector256<float>, Vector256<int>, Vector256<uint>, Vector512<double>, Vector512<long>, Vector512<ulong>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AcoshSingle<Vector256<float>, Vector256<int>, Vector256<uint>, Vector256<double>, Vector256<long>, Vector256<ulong>>(vector);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector128.Acosh(vector._lower),
+                    Vector128.Acosh(vector._upper)
+                );
+            }
+        }
+
         /// <summary>Computes the arc tangent of each element in a vector.</summary>
         /// <param name="vector">The vector whose arc tangent is to be computed.</param>
         /// <returns>A vector whose elements are the arc tangent of the corresponding elements in <paramref name="vector" />.</returns>

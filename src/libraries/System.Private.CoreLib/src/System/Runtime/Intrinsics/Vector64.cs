@@ -898,6 +898,47 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Computes the inverse hyperbolic cosine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose inverse hyperbolic cosine is to be computed.</param>
+        /// <returns>A vector whose elements are the inverse hyperbolic cosine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The input should be greater than or equal to 1.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<double> Acosh(Vector64<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AcoshDouble<Vector64<double>, Vector64<long>, Vector64<ulong>>(vector);
+            }
+            else
+            {
+                return Acosh<double>(vector);
+            }
+        }
+
+        /// <summary>Computes the inverse hyperbolic cosine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose inverse hyperbolic cosine is to be computed.</param>
+        /// <returns>A vector whose elements are the inverse hyperbolic cosine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The input should be greater than or equal to 1.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<float> Acosh(Vector64<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector128.IsHardwareAccelerated)
+                {
+                    return VectorMath.AcoshSingle<Vector64<float>, Vector64<int>, Vector64<uint>, Vector128<double>, Vector128<long>, Vector128<ulong>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AcoshSingle<Vector64<float>, Vector64<int>, Vector64<uint>, Vector64<double>, Vector64<long>, Vector64<ulong>>(vector);
+                }
+            }
+            else
+            {
+                return Acosh<float>(vector);
+            }
+        }
+
         /// <summary>Computes the arc tangent of each element in a vector.</summary>
         /// <param name="vector">The vector whose arc tangent is to be computed.</param>
         /// <returns>A vector whose elements are the arc tangent of the corresponding elements in <paramref name="vector" />.</returns>
@@ -3895,6 +3936,20 @@ namespace System.Runtime.Intrinsics
             for (int index = 0; index < Vector64<T>.Count; index++)
             {
                 T value = T.Acos(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        internal static Vector64<T> Acosh<T>(Vector64<T> vector)
+            where T : IHyperbolicFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                T value = T.Acosh(vector.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
