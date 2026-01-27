@@ -531,15 +531,12 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration(void *args)
 
     GetFinalizerThread()->DisablePreemptiveGC();
 
-#ifndef TARGET_WASM
     // we might want to do some extra work on the finalizer thread
     // check and do it
     if (HaveExtraWorkForFinalizer())
     {
         DoExtraWorkForFinalizer(GetFinalizerThread());
     }
-#endif // !TARGET_WASM
-
     LOG((LF_GC, LL_INFO100, "***** Calling Finalizers\n"));
 
     int observedFullGcCount =
