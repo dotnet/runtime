@@ -187,8 +187,7 @@ namespace System.Numerics.Tensors
                 Vector128<double> aux1 = Vector128<double>.One / u;
                 Vector128<double> pival1 = PI_BY_2;
 
-                Vector128<double> recip = Vector128<double>.One / u;
-                Vector128<double> aux2 = (recip * SQRT3 - Vector128<double>.One) / (SQRT3 + recip);
+                Vector128<double> aux2 = (aux1 * SQRT3 - Vector128<double>.One) / (SQRT3 + aux1);
                 Vector128<double> pival2 = PI_BY_3;
 
                 Vector128<double> aux3 = (u * SQRT3 - Vector128<double>.One) / (SQRT3 + u);

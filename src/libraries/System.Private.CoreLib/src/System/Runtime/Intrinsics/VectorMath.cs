@@ -3530,8 +3530,7 @@ namespace System.Runtime.Intrinsics
             TVectorDouble aux1 = TVectorDouble.One / u;
             TVectorDouble pival1 = TVectorDouble.Create(PI_BY_2);
 
-            TVectorDouble recip = TVectorDouble.One / u;
-            TVectorDouble aux2 = (recip * TVectorDouble.Create(SQRT3) - TVectorDouble.One) / (TVectorDouble.Create(SQRT3) + recip);
+            TVectorDouble aux2 = (aux1 * TVectorDouble.Create(SQRT3) - TVectorDouble.One) / (TVectorDouble.Create(SQRT3) + aux1);
             TVectorDouble pival2 = TVectorDouble.Create(PI_BY_3);
 
             TVectorDouble aux3 = (u * TVectorDouble.Create(SQRT3) - TVectorDouble.One) / (TVectorDouble.Create(SQRT3) + u);
