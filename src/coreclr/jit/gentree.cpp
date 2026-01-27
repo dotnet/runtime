@@ -4816,18 +4816,20 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         gtWalkOp(&op2, &op1, nullptr, true);
 #endif // defined(TARGET_XARCH)
 
-        bool noCSE = (mul > 1) && (op2 != nullptr) && op2->OperIs(GT_LSH, GT_MUL);
+        bool noCSE = (op2 != nullptr) && op2->OperIs(GT_LSH, GT_MUL);
 #if defined(TARGET_RISCV64)
         noCSE = noCSE && this->compOpportunisticallyDependsOn(InstructionSet_Zba);
+#else
+        noCSE = noCSE && (mul > 1);
 #endif
 
         if (noCSE)
         {
             op2->gtFlags |= GTF_ADDRMODE_NO_CSE;
 #if defined(TARGET_RISCV64)
-            // RISC-V addressing mode is based on: (base + index*scale) + offset.
-            // To emit sh1/2/3add.uw, GT_ADD + GT_LSH(or MUL) + GT_CAST nodes are necessary.
-            // GT_CAST nodes benefit from shXadd.uw variants(Zba) by disabling CSEs.
+            // RISC-V addressing mode follows the form: (base + index*scale) + offset.
+            // To emit sh1/2/3add.uw, GT_ADD + GT_LSH(or MUL) + GT_CAST nodes are required.
+            // Disabling CSE for GT_CAST nodes encourages to emit shXadd.uw instructions(Zba).
             //
             // Example:
             //      ADD
@@ -4839,8 +4841,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
             //      |     |- CNS_INT    (scale)
             //      |- CNS_INT          (offset)
             //
-            // Other nodes than GT_CAST can be emitted as sh1/2/3add variants without GTF_DONT_CSE flags,
-            // because these instructions don't require a GT_CAST node.
+            // Emitting standard sh1/2/3add instructions (without .uw) don't require a GT_CAST node.
 
             GenTree* index = op2->gtGetOp1();
             if ((index != nullptr) && index->OperIs(GT_CAST))
