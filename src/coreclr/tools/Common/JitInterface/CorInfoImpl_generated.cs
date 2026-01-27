@@ -148,6 +148,7 @@ namespace Internal.JitInterface
                 s_callbacks.getSystemVAmd64PassStructInRegisterDescriptor = &_getSystemVAmd64PassStructInRegisterDescriptor;
                 s_callbacks.getSwiftLowering = &_getSwiftLowering;
                 s_callbacks.getFpStructLowering = &_getFpStructLowering;
+                s_callbacks.getWasmLowering = &_getWasmLowering;
                 s_callbacks.getThreadTLSIndex = &_getThreadTLSIndex;
                 s_callbacks.getAddrOfCaptureThreadGlobal = &_getAddrOfCaptureThreadGlobal;
                 s_callbacks.getHelperFtn = &_getHelperFtn;
@@ -327,6 +328,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*, byte> getSystemVAmd64PassStructInRegisterDescriptor;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_SWIFT_LOWERING*, void> getSwiftLowering;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_FPSTRUCT_LOWERING*, void> getFpStructLowering;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoType> getWasmLowering;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, uint> getThreadTLSIndex;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, int*> getAddrOfCaptureThreadGlobal;
             public delegate* unmanaged<IntPtr, IntPtr*, CorInfoHelpFunc, CORINFO_CONST_LOOKUP*, CORINFO_METHOD_STRUCT_**, void> getHelperFtn;
@@ -2268,6 +2270,21 @@ namespace Internal.JitInterface
             catch (Exception ex)
             {
                 *ppException = _this.AllocException(ex);
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static CorInfoType _getWasmLowering(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* structHnd)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getWasmLowering(structHnd);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
             }
         }
 

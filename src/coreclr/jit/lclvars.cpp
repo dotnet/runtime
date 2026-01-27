@@ -930,6 +930,18 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
 
         dsc->lvIsRegArg      = numRegisters > 0;
         dsc->lvIsMultiRegArg = numRegisters > 1;
+
+#ifdef DEBUG
+        // Extra query to facilitate wasm replay
+        if (JitConfig.EnableExtraSuperPmiQueries() && (structLayout != nullptr))
+        {
+            CORINFO_CLASS_HANDLE clsHnd = structLayout->GetClassHandle();
+            if (clsHnd != NO_CLASS_HANDLE)
+            {
+                info.compCompHnd->getWasmLowering(clsHnd);
+            }
+        }
+#endif
     }
 
     lvaParameterStackSize = classifier.StackSize();

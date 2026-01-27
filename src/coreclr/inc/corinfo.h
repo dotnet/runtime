@@ -3173,6 +3173,10 @@ public:
     // Returns lowering info for fields of a RISC-V/LoongArch struct passed in registers according to
     // hardware floating-point calling convention.
     virtual void getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering) = 0;
+
+    // Returns the primitive type for passing/returning a Wasm struct by value,
+    // or CORINFO_TYPE_UNDEF if passing/returning must be by reference.
+    virtual CorInfoType getWasmLowering(CORINFO_CLASS_HANDLE structHnd) = 0;
 };
 
 /*****************************************************************************
