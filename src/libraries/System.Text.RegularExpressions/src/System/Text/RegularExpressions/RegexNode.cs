@@ -1500,6 +1500,76 @@ namespace System.Text.RegularExpressions
             return IsOneFamily ? Ch : Str![0];
         }
 
+        /// <summary>
+        /// Determines whether every branch of this alternation node begins with one or more unique starting characters.
+        /// </summary>
+        /// <param name="seenChars">The set of unique starting characters across all branches.</param>
+        /// <returns>true if all branches have unique starting characters; otherwise, false.</returns>
+        /// <remarks>
+        /// This method is used to determine if an alternation can be optimized using a switch on the first character.
+        /// </remarks>
+        public bool TryGetAlternationStartingChars([NotNullWhen(true)] out HashSet<char>? seenChars)
+        {
+            Debug.Assert(Kind is RegexNodeKind.Alternate);
+            Debug.Assert((Options & RegexOptions.RightToLeft) == 0);
+
+            const int SetCharsSize = 64; // arbitrary limit; we want it to be large enough to handle ignore-case of common sets, like hex, the latin alphabet, etc.
+            Span<char> setChars = stackalloc char[SetCharsSize];
+            seenChars = new HashSet<char>();
+
+            // Iterate through every branch, seeing if we can easily find a starting One, Multi, or small Set.
+            // If we can, extract its starting char (or multiple in the case of a set), validate that all such
+            // starting characters are unique relative to all the branches.
+            int childCount = ChildCount();
+            for (int i = 0; i < childCount; i++)
+            {
+                // Look for the guaranteed starting node that's a one, multi, set,
+                // or loop of one of those with at least one minimum iteration. We need to exclude notones.
+                if (Child(i).FindStartingLiteralNode(allowZeroWidth: false) is not RegexNode startingLiteralNode ||
+                    startingLiteralNode.IsNotoneFamily)
+                {
+                    seenChars = null;
+                    return false;
+                }
+
+                // If it's a One or a Multi, get the first character and add it to the set.
+                // If it was already in the set, we can't apply this optimization.
+                if (startingLiteralNode.IsOneFamily || startingLiteralNode.Kind is RegexNodeKind.Multi)
+                {
+                    if (!seenChars.Add(startingLiteralNode.FirstCharOfOneOrMulti()))
+                    {
+                        seenChars = null;
+                        return false;
+                    }
+                }
+                else
+                {
+                    // The branch begins with a set.  Make sure it's a set of only a few characters
+                    // and get them.  If we can't, we can't apply this optimization.
+                    Debug.Assert(startingLiteralNode.IsSetFamily);
+                    int numChars;
+                    if (RegexCharClass.IsNegated(startingLiteralNode.Str!) ||
+                        (numChars = RegexCharClass.GetSetChars(startingLiteralNode.Str!, setChars)) == 0)
+                    {
+                        seenChars = null;
+                        return false;
+                    }
+
+                    // Check to make sure each of the chars is unique relative to all other branches examined.
+                    foreach (char c in setChars.Slice(0, numChars))
+                    {
+                        if (!seenChars.Add(c))
+                        {
+                            seenChars = null;
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+
         /// <summary>Finds the guaranteed beginning literal(s) of the node, or null if none exists.</summary>
         public RegexNode? FindStartingLiteralNode(bool allowZeroWidth = true)
         {
