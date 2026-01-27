@@ -26,8 +26,7 @@
 #define STACK_RANGE_BOUNDS_ARE_CALLER_SP
 // For ARM/ARM64, EstablisherFrame is Caller-SP (SP just before executing call instruction).
 // This has been confirmed by AaronGi from the kernel team for Windows.
-//
-// For x86/Linux, RtlVirtualUnwind sets EstablisherFrame as Caller-SP.
+// For x86/Linux, the OS unwinder also sets EstablisherFrame as Caller-SP.
 #define ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_X86 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
@@ -1367,7 +1366,9 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
     if (ex->GetExceptionRecord()->ExceptionCode == EXCEPTION_STACK_OVERFLOW)
     {
         GetThread()->SetExecutingOnAltStack();
-        Thread::VirtualUnwindToFirstManagedCallFrame(ex->GetContextRecord());
+        // Pass the exception context directly to HandleFatalStackOverflow.
+        // It will determine whether to use the context as-is (if in managed code)
+        // or handle the native-to-managed transition appropriately.
         EEPolicy::HandleFatalStackOverflow(&ex->ExceptionPointers, FALSE);
         UNREACHABLE();
     }
@@ -1411,13 +1412,16 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
                 SetIP(ex->GetContextRecord(), controlPc);
             }
 
-            if (IsIPInMarkedJitHelper(controlPc))
+            if (IsIPInWriteBarrierHelper(controlPc))
             {
-                // For JIT helpers, we need to set the frame to point to the
-                // managed code that called the helper, otherwise the stack
-                // walker would skip all the managed frames upto the next
-                // explicit frame.
-                PAL_VirtualUnwind(ex->GetContextRecord(), NULL);
+                // Write barriers are leaf functions - unwind deterministically
+                UnwindWriteBarrierToCaller(ex->GetContextRecord());
+                ex->GetExceptionRecord()->ExceptionAddress = (PVOID)GetIP(ex->GetContextRecord());
+            }
+            else if (IsIPInJITStackProbe(controlPc))
+            {
+                // JIT_StackProbe has a known frame layout - unwind deterministically
+                UnwindJITStackProbeToCaller(ex->GetContextRecord());
                 ex->GetExceptionRecord()->ExceptionAddress = (PVOID)GetIP(ex->GetContextRecord());
             }
             else
@@ -1835,7 +1839,6 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
             // This implies that we should have got a personality routine returned from the call to
             // RtlVirtualUnwind above.
             //
-            // However, if the ControlPC happened to be in the prolog or epilog of a managed method,
             // then RtlVirtualUnwind will always return NULL. We cannot return this NULL back to the
             // OS as it is an invalid value which the OS does not expect (and attempting to do so will
             // result in the kernel exception dispatch going haywire).

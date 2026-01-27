@@ -5465,7 +5465,7 @@ static uintptr_t writeBarrierAVLocations[] =
 // Check if the passed in instruction pointer is in one of the
 // write barrier helper functions. These are leaf functions that do not
 // set up a frame, so we can unwind them with a simple LR/RA extraction.
-static bool IsIPInWriteBarrierHelper(PCODE uControlPc)
+bool IsIPInWriteBarrierHelper(PCODE uControlPc)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -5507,7 +5507,7 @@ static bool IsIPInWriteBarrierHelper(PCODE uControlPc)
 
 // Check if the passed in instruction pointer is in JIT_StackProbe.
 // JIT_StackProbe exists on AMD64 and ARM only.
-static bool IsIPInJITStackProbe(PCODE uControlPc)
+bool IsIPInJITStackProbe(PCODE uControlPc)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -5541,7 +5541,7 @@ bool IsIPInMarkedJitHelper(PCODE uControlPc)
 // - AMD64 Windows: leaf function (no frame), return address at [RSP]
 // - AMD64 Unix: RBP frame (push rbp; mov rbp, rsp), return address at [RBP+8]
 // - ARM: R7 frame (push {r7}; mov r7, sp), return address in LR (already saved by caller)
-static void UnwindJITStackProbeToCaller(CONTEXT* pContext)
+void UnwindJITStackProbeToCaller(CONTEXT* pContext)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -5581,7 +5581,7 @@ static void UnwindJITStackProbeToCaller(CONTEXT* pContext)
 // return address from LR/RA (on ARM/RISC-V) or from the stack (on x86/x64).
 //
 // Similar to NativeAOT's UnwindSimpleHelperToCaller in EHHelpers.cpp.
-static void UnwindWriteBarrierToCaller(CONTEXT* pContext)
+void UnwindWriteBarrierToCaller(CONTEXT* pContext)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -5663,9 +5663,15 @@ AdjustContextForJITHelpers(
             return TRUE;
         }
 #elif defined(TARGET_AMD64)
-        if (IsIPInMarkedJitHelper(ip))
+        // Data breakpoint hit in a JIT helper - unwind deterministically
+        if (IsIPInWriteBarrierHelper(ip))
         {
-            Thread::VirtualUnwindToFirstManagedCallFrame(pContext);
+            UnwindWriteBarrierToCaller(pContext);
+            return TRUE;
+        }
+        if (IsIPInJITStackProbe(ip))
+        {
+            UnwindJITStackProbeToCaller(pContext);
             return TRUE;
         }
 #else
