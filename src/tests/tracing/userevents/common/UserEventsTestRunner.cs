@@ -26,7 +26,6 @@ namespace Tracing.UserEvents.Tests.Common
         public static int Run(
             string[] args,
             string scenarioName,
-            string traceeAssemblyPath,
             Action traceeAction,
             Func<EventPipeEventSource, bool> traceValidator,
             int traceeExitTimeout = DefaultTraceeExitTimeoutMs,
@@ -46,7 +45,6 @@ namespace Tracing.UserEvents.Tests.Common
 
             return RunOrchestrator(
                 scenarioName,
-                traceeAssemblyPath,
                 traceValidator,
                 traceeExitTimeout,
                 recordTraceExitTimeout);
@@ -54,27 +52,30 @@ namespace Tracing.UserEvents.Tests.Common
 
         private static int RunOrchestrator(
             string scenarioName,
-            string traceeAssemblyPath,
             Func<EventPipeEventSource, bool> traceValidator,
             int traceeExitTimeout,
             int recordTraceExitTimeout)
         {
-            // In NativeAOT, Assembly.Location returns empty string.
-            // Use AppContext.BaseDirectory which points to the test scenario directory for both CoreCLR and NativeAOT.
-            bool isNativeAot = string.IsNullOrEmpty(traceeAssemblyPath);
-            string userEventsScenarioDir;
-            if (isNativeAot)
+            // Start with AppContext.BaseDirectory and determine if we're running NativeAOT
+            string baseDir = AppContext.BaseDirectory;
+            bool isNativeAot = false;
+            string userEventsScenarioDir = baseDir;
+            
+            if (baseDir.EndsWith("native" + Path.DirectorySeparatorChar) || baseDir.EndsWith("native"))
             {
-                userEventsScenarioDir = AppContext.BaseDirectory;
-            }
-            else
-            {
-                userEventsScenarioDir = Path.GetDirectoryName(traceeAssemblyPath) 
-                    ?? throw new InvalidOperationException($"Unable to determine directory from assembly path: {traceeAssemblyPath}");
+                // NativeAOT places its compiled test executables under a 'native' subdirectory.
+                isNativeAot = true;
+                userEventsScenarioDir = Path.GetFullPath(Path.Combine(baseDir, ".."));
             }
             
-            string recordTracePath = ResolveRecordTracePath(userEventsScenarioDir, isNativeAot);
-            string scriptFilePath = ResolveScriptFilePath(userEventsScenarioDir, scenarioName, isNativeAot);
+            if (!userEventsScenarioDir.EndsWith(scenarioName + Path.DirectorySeparatorChar) && !userEventsScenarioDir.EndsWith(scenarioName))
+            {
+                Console.Error.WriteLine($"Could not resolve the userevents test scenario directory. Expected directory to end with '{scenarioName}', but got: {userEventsScenarioDir}");
+                return -1;
+            }
+            
+            string recordTracePath = ResolveRecordTracePath(userEventsScenarioDir);
+            string scriptFilePath = Path.Combine(userEventsScenarioDir, $"{scenarioName}.script");
 
             if (!UserEventsRequirements.IsSupported())
             {
@@ -133,9 +134,16 @@ namespace Tracing.UserEvents.Tests.Common
             
             // NativeAOT tests run the native executable directly.
             // CoreCLR tests run through corerun which loads the managed assembly.
-            traceeStartInfo.Arguments = isNativeAot 
-                ? "tracee" 
-                : $"{traceeAssemblyPath} tracee";
+            if (isNativeAot)
+            {
+                traceeStartInfo.Arguments = "tracee";
+            }
+            else
+            {
+                // For CoreCLR, construct the path to the assembly
+                string assemblyPath = Path.Combine(userEventsScenarioDir, $"{scenarioName}.dll");
+                traceeStartInfo.Arguments = $"{assemblyPath} tracee";
+            }
             
             traceeStartInfo.WorkingDirectory = userEventsScenarioDir;
             traceeStartInfo.RedirectStandardOutput = true;
@@ -220,40 +228,14 @@ namespace Tracing.UserEvents.Tests.Common
             return 100;
         }
 
-        private static string ResolveRecordTracePath(string userEventsScenarioDir, bool isNativeAot)
+        private static string ResolveRecordTracePath(string userEventsScenarioDir)
         {
-            string usereventsRoot;
-            if (isNativeAot)
-            {
-                // scenario dir: .../tracing/userevents/<scenario>/<scenario>/native/
-                usereventsRoot = Path.GetFullPath(Path.Combine(userEventsScenarioDir, "..", "..", ".."));
-            }
-            else
-            {
-                // scenario dir: .../tracing/userevents/<scenario>/<scenario>
-                usereventsRoot = Path.GetFullPath(Path.Combine(userEventsScenarioDir, "..", ".."));
-            }
-            // common dir: .../tracing/userevents/common/userevents_common
+            // userEventsScenarioDir is .../tracing/userevents/<scenario>/<scenario>/ for both CoreCLR and NativeAOT
+            // Navigate up two directories to reach userevents root, then into common/userevents_common
+            string usereventsRoot = Path.GetFullPath(Path.Combine(userEventsScenarioDir, "..", ".."));
             string commonDir = Path.Combine(usereventsRoot, "common", "userevents_common");
             string recordTracePath = Path.Combine(commonDir, "record-trace");
             return recordTracePath;
-        }
-
-        private static string ResolveScriptFilePath(string userEventsScenarioDir, string scenarioName, bool isNativeAot)
-        {
-            if (isNativeAot)
-            {
-                // For NativeAOT, userEventsScenarioDir is .../tracing/userevents/<scenario>/<scenario>/native/
-                // Script is at .../tracing/userevents/<scenario>/<scenario>/<scenario>.script
-                string scenarioDir = Path.GetFullPath(Path.Combine(userEventsScenarioDir, ".."));
-                return Path.Combine(scenarioDir, $"{scenarioName}.script");
-            }
-            else
-            {
-                // For CoreCLR, userEventsScenarioDir is .../tracing/userevents/<scenario>/<scenario>/
-                // Script is at .../tracing/userevents/<scenario>/<scenario>/<scenario>.script
-                return Path.Combine(userEventsScenarioDir, $"{scenarioName}.script");
-            }
         }
 
         // Similar to IpcTraceTest.EnsureCleanEnvironment, but scoped to the provided diagnosticPortDir.
