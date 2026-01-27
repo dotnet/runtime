@@ -1152,6 +1152,7 @@ typedef enum CorExceptionFlag                       // definitions for the Flags
     COR_ILEXCEPTION_CLAUSE_FAULT = 0x0004,          // Fault clause (finally that is called on exception only)
     COR_ILEXCEPTION_CLAUSE_DUPLICATED = 0x0008,     // Deprecated: Duplicated clause. This clause was duplicated to a funclet which was pulled out of line
     COR_ILEXCEPTION_CLAUSE_SAMETRY    = 0x0010,     // This clause covers same try block as the previous one
+    COR_ILEXCEPTION_CLAUSE_R2R_SYSTEM_EXCEPTION = 0x0020, // R2R only: This clause catches System.Exception
 } CorExceptionFlag;
 
 /***********************************/

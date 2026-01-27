@@ -5,6 +5,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
@@ -25,6 +26,7 @@ namespace System.IO.Enumeration
         private readonly string _originalRootDirectory;
         private readonly string _rootDirectory;
         private readonly EnumerationOptions _options;
+        private readonly string? _expression;
 
         private readonly object _lock = new object();
 
@@ -37,6 +39,20 @@ namespace System.IO.Enumeration
         private string? _currentPath;
         private bool _lastEntryFound;
         private Queue<(IntPtr Handle, string Path, int RemainingDepth)>? _pending;
+        private bool _isFirstGetData = true;
+
+        /// <summary>
+        /// Encapsulates a find operation.
+        /// </summary>
+        /// <param name="directory">The directory to search in.</param>
+        /// <param name="isNormalized">Whether the directory path is already normalized or not.</param>
+        /// <param name="options">Enumeration options to use.</param>
+        /// <param name="expression">The search expression to potentially use for OS-level filtering (Windows only).</param>
+        internal FileSystemEnumerator(string directory, bool isNormalized, EnumerationOptions? options, string? expression) :
+            this(directory, isNormalized, options)
+        {
+            _expression = expression;
+        }
 
         private void Init()
         {
@@ -83,18 +99,39 @@ namespace System.IO.Enumeration
             Debug.Assert(_directoryHandle != (IntPtr)(-1) && _directoryHandle != IntPtr.Zero && !_lastEntryFound);
 
             Interop.NtDll.IO_STATUS_BLOCK statusBlock;
-            int status = Interop.NtDll.NtQueryDirectoryFile(
-                FileHandle: _directoryHandle,
-                Event: IntPtr.Zero,
-                ApcRoutine: IntPtr.Zero,
-                ApcContext: IntPtr.Zero,
-                IoStatusBlock: &statusBlock,
-                FileInformation: _buffer,
-                Length: (uint)_bufferLength,
-                FileInformationClass: Interop.NtDll.FILE_INFORMATION_CLASS.FileFullDirectoryInformation,
-                ReturnSingleEntry: Interop.BOOLEAN.FALSE,
-                FileName: null,
-                RestartScan: Interop.BOOLEAN.FALSE);
+            int status;
+            fixed (char* pBuffer = _expression)
+            {
+                Interop.UNICODE_STRING* fileNamePtr = null;
+                Interop.UNICODE_STRING fileNameStruct = default;
+
+                // On the first call for each directory, check if we can use the expression as an OS-level filter hint.
+                // All results will still be validated in managed code, as the OS filtering may be looser than what .NET expects.
+                // We cannot use OS filtering when recursing, as the filter would exclude subdirectories that don't match the pattern.
+                if (_isFirstGetData)
+                {
+                    _isFirstGetData = false;
+                    if (!_options.RecurseSubdirectories && IsSafePatternForOSFilter(_expression))
+                    {
+                        fileNameStruct.Length = fileNameStruct.MaximumLength = (ushort)(_expression.Length * sizeof(char));
+                        fileNameStruct.Buffer = (IntPtr)pBuffer;
+                        fileNamePtr = &fileNameStruct;
+                    }
+                }
+
+                status = Interop.NtDll.NtQueryDirectoryFile(
+                    FileHandle: _directoryHandle,
+                    Event: IntPtr.Zero,
+                    ApcRoutine: IntPtr.Zero,
+                    ApcContext: IntPtr.Zero,
+                    IoStatusBlock: &statusBlock,
+                    FileInformation: _buffer,
+                    Length: (uint)_bufferLength,
+                    FileInformationClass: Interop.NtDll.FILE_INFORMATION_CLASS.FileFullDirectoryInformation,
+                    ReturnSingleEntry: Interop.BOOLEAN.FALSE,
+                    FileName: fileNamePtr,
+                    RestartScan: Interop.BOOLEAN.FALSE);
+            }
 
             switch ((uint)status)
             {
@@ -287,6 +324,7 @@ namespace System.IO.Enumeration
                 return false;
 
             (_directoryHandle, _currentPath, _remainingRecursionDepth) = _pending.Dequeue();
+            _isFirstGetData = true;
             return true;
         }
 
@@ -319,5 +357,32 @@ namespace System.IO.Enumeration
 
             Dispose(disposing);
         }
+
+        /// <summary>
+        /// Determines if the given expression is safe to pass to NtQueryDirectoryFile as a hint.
+        /// </summary>
+        /// <remarks>
+        /// This is a conservative check: false negatives are ok, but false positives are not.
+        /// Worst case is this returns false when it could have returned true and we miss an optimization opportunity.
+        /// Safe patterns are those where the OS filter will return a superset of what .NET expects,
+        /// allowing the managed MatchesPattern filter to ensure correctness.
+        /// Patterns combining * with literal characters (e.g., *.txt) are safe.
+        /// Patterns with ? are unsafe due to DOS_QM behavioral differences.
+        /// Pattern *.* is unsafe because .NET treats it as *, but OS requires a . in the name.
+        /// Patterns ending with . have special behaviors.
+        /// Patterns with invalid filename characters are unsafe as NtQueryDirectoryFile will reject them.
+        /// </remarks>
+        private static bool IsSafePatternForOSFilter([NotNullWhen(true)] string? expression) =>
+            !string.IsNullOrEmpty(expression) &&
+            expression is not "*" and not "*.*" &&
+            expression.Length <= 255 && // Max filename length
+            !expression.EndsWith('.') &&
+            !expression.ContainsAny(s_unsafeForFilter);
+
+        // Path.GetInvalidFileNameChars() minus '*' which is allowed in search patterns
+        private static readonly SearchValues<char> s_unsafeForFilter = SearchValues.Create(
+            "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008\u0009\u000a\u000b\u000c\u000d\u000e\u000f" +
+            "\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f" +
+            "\"<>|:/\\?");
     }
 }

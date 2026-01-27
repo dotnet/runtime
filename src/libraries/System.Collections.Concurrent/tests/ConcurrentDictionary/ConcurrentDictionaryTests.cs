@@ -532,10 +532,19 @@ namespace System.Collections.Concurrent.Tests
                                             dict.GetOrAdd(j, -j);
                                             break;
                                         case 1:
-                                            dict.GetOrAdd(j, x => -x);
+                                            dict.GetOrAdd(j, x =>
+                                            {
+                                                Assert.Equal(j, x);
+                                                return -x;
+                                            });
                                             break;
                                         case 2:
-                                            dict.GetOrAdd(j, (x,m) => x * m, -1);
+                                            dict.GetOrAdd(j, (x, m) =>
+                                            {
+                                                Assert.Equal(j, x);
+                                                Assert.Equal(-1, m);
+                                                return x * m;
+                                            }, -1);
                                             break;
                                     }
                                 }
@@ -544,13 +553,38 @@ namespace System.Collections.Concurrent.Tests
                                     switch (j % 3)
                                     {
                                         case 0:
-                                            dict.AddOrUpdate(j, -j, (k, v) => -j);
+                                            dict.AddOrUpdate(j, -j, (k, v) =>
+                                            {
+                                                Assert.Equal(j, k);
+                                                Assert.Equal(-j, v);
+                                                return v;
+                                            });
                                             break;
                                         case 1:
-                                            dict.AddOrUpdate(j, (k) => -k, (k, v) => -k);
+                                            dict.AddOrUpdate(j, k =>
+                                            {
+                                                Assert.Equal(j, k);
+                                                return -k;
+                                            }, (k, v) =>
+                                            {
+                                                Assert.Equal(j, k);
+                                                Assert.Equal(-j, v);
+                                                return -k;
+                                            });
                                             break;
                                         case 2:
-                                            dict.AddOrUpdate(j, (k,m) => k*m, (k, v, m) => k * m, -1);
+                                            dict.AddOrUpdate(j, (k, m) =>
+                                            {
+                                                Assert.Equal(j, k);
+                                                Assert.Equal(-1, m);
+                                                return k * m;
+                                            }, (k, v, m) =>
+                                            {
+                                                Assert.Equal(j, k);
+                                                Assert.Equal(-j, v);
+                                                Assert.Equal(-1, m);
+                                                return k * m;
+                                            }, -1);
                                             break;
                                     }
                                 }

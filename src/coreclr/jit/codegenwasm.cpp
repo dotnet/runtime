@@ -115,6 +115,16 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 {
     JITDUMP("*************** In genHomeRegisterParams()\n");
 
+    if (GetStackPointerReg() == REG_NA)
+    {
+        // We didn't see any local or argument references, so there's nothing to spill.
+        // TODO-WASM: debug codegen would likely spill all the user args anyways.
+        //
+        JITDUMP("  No local references -- skipping parameter homing\n");
+        assert(!isFramePointerUsed());
+        return;
+    }
+
     auto spillParam = [this](unsigned lclNum, unsigned offset, unsigned paramLclNum, const ABIPassingSegment& segment) {
         assert(segment.IsPassedInRegister());
 
@@ -570,8 +580,14 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     assert(caseCount > 0);
     assert(desc->HasDefaultCase());
 
-    GetEmitter()->emitIns_I(INS_br_table, EA_4BYTE, caseCount);
+    // br_table list (labelidx*) labelidx
+    // list is prefixed with length, which is caseCount - 1
+    //
+    GetEmitter()->emitIns_I(INS_br_table, EA_4BYTE, caseCount - 1);
 
+    // Emit the list case targets, then default case target
+    // (which is always the last case in the desc).
+    //
     for (unsigned caseNum = 0; caseNum < caseCount; caseNum++)
     {
         BasicBlock* const caseTarget = desc->GetCase(caseNum)->getDestinationBlock();

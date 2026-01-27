@@ -12683,7 +12683,7 @@ void emitter::emitDispIns(
             /* Display a data section reference */
 
             assert((unsigned)offs < emitConsDsc.dsdOffs);
-            addr = emitConsBlock ? emitConsBlock + offs : nullptr;
+            addr = emitDataOffsetToPtr((UNATIVE_OFFSET)offs);
 
 #if 0
             // TODO-XArch-Cleanup: Fix or remove this code.
@@ -15057,7 +15057,7 @@ GOT_DSP:
                 // Special case: jump through a jump table
                 if (ins == INS_i_jmp)
                 {
-                    dsp += (size_t)emitConsBlock;
+                    dsp = (ssize_t)emitDataOffsetToPtr((UNATIVE_OFFSET)dsp);
                 }
 
                 dst += emitOutputLong(dst, dsp);
@@ -16065,7 +16065,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     doff = Compiler::eeGetJitDataOffs(fldh);
     if (doff >= 0)
     {
-        addr = emitConsBlock + doff;
+        addr = emitDataOffsetToPtr((UNATIVE_OFFSET)doff);
 
 #ifdef DEBUG
         int byteSize = EA_SIZE_IN_BYTES(emitGetMemOpSize(id, /*ignoreEmbeddedBroadcast*/ false));

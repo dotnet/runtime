@@ -637,28 +637,29 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 }
 
 //------------------------------------------------------------------------
-// TryGetRangeFromAssertions: Cheaper version of TryGetRange that is based purely on assertions
+// GetRangeFromAssertions: Cheaper version of TryGetRange that is based purely on assertions
 //    and does not require a full range analysis based on SSA.
 //
 // Arguments:
 //    comp             - the compiler instance
 //    num              - the value number to analyze range for
 //    assertions       - the assertions to use
-//    pRange           - the range to tighten with assertions
 //
 // Return Value:
-//    True if the range was successfully computed
+//    The computed range
 //
-bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, Range* pRange)
+Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, int budget)
 {
-    assert(pRange != nullptr);
-    assert(pRange->LowerLimit().IsUnknown());
-    assert(pRange->UpperLimit().IsUnknown());
+    // Start with the widest possible constant range.
+    Range result = Range(Limit(Limit::keConstant, INT32_MIN), Limit(Limit::keConstant, INT32_MAX));
 
-    if (num == ValueNumStore::NoVN)
+    if ((num == ValueNumStore::NoVN) || (budget <= 0))
     {
-        return false;
+        return result;
     }
+
+    // Currently, we only handle int32 and smaller integer types.
+    assert(genTypeSize(comp->vnStore->TypeOfVN(num)) <= 4);
 
     //
     // First, let's see if we can tighten the range based on VN information.
@@ -668,13 +669,8 @@ bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_
     int cns;
     if (comp->vnStore->IsVNIntegralConstant(num, &cns))
     {
-        pRange->lLimit = Limit(Limit::keConstant, cns);
-        pRange->uLimit = Limit(Limit::keConstant, cns);
-        return true;
+        return Range(Limit(Limit::keConstant, cns));
     }
-
-    // Start with the widest possible constant range.
-    Range result = Range(Limit(Limit::keConstant, INT32_MIN), Limit(Limit::keConstant, INT32_MAX));
 
     VNFuncApp funcApp;
     if (comp->vnStore->GetVNFunc(num, &funcApp))
@@ -718,6 +714,16 @@ bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_
                 }
                 break;
 
+            case VNF_NEG:
+            {
+                Range r1            = GetRangeFromAssertions(comp, funcApp.m_args[0], assertions, --budget);
+                Range unaryOpResult = RangeOps::Negate(r1);
+
+                // We can use the result only if it never overflows.
+                result = unaryOpResult.IsConstantRange() ? unaryOpResult : result;
+                break;
+            }
+
             case VNF_LSH:
             case VNF_ADD:
             case VNF_MUL:
@@ -728,49 +734,41 @@ bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_
             case VNF_UMOD:
             {
                 // Get ranges of both operands and perform the same operation on the ranges.
-                Range r1 = Range(Limit(Limit::keUnknown));
-                Range r2 = Range(Limit(Limit::keUnknown));
-                if (TryGetRangeFromAssertions(comp, funcApp.m_args[0], assertions, &r1) &&
-                    TryGetRangeFromAssertions(comp, funcApp.m_args[1], assertions, &r2))
+                Range r1          = GetRangeFromAssertions(comp, funcApp.m_args[0], assertions, --budget);
+                Range r2          = GetRangeFromAssertions(comp, funcApp.m_args[1], assertions, --budget);
+                Range binOpResult = Range(Limit(Limit::keUnknown));
+                switch (funcApp.m_func)
                 {
-                    Range binOpResult = Range(Limit(Limit::keUnknown));
-                    switch (funcApp.m_func)
-                    {
-                        case VNF_ADD:
-                            binOpResult = RangeOps::Add(r1, r2);
-                            break;
-                        case VNF_MUL:
-                            binOpResult = RangeOps::Multiply(r1, r2);
-                            break;
-                        case VNF_AND:
-                            binOpResult = RangeOps::And(r1, r2);
-                            break;
-                        case VNF_OR:
-                            binOpResult = RangeOps::Or(r1, r2);
-                            break;
-                        case VNF_LSH:
-                            binOpResult = RangeOps::ShiftLeft(r1, r2);
-                            break;
-                        case VNF_RSH:
-                            binOpResult = RangeOps::ShiftRight(r1, r2, /*logical*/ false);
-                            break;
-                        case VNF_RSZ:
-                            binOpResult = RangeOps::ShiftRight(r1, r2, /*logical*/ true);
-                            break;
-                        case VNF_UMOD:
-                            binOpResult = RangeOps::UnsignedMod(r1, r2);
-                            break;
-                        default:
-                            unreached();
-                    }
-
-                    if (binOpResult.IsConstantRange())
-                    {
-                        result = binOpResult;
-                    }
-                    // if the result is unknown (or may overflow), we'll just analyze the binop itself based on the
-                    // assertions
+                    case VNF_ADD:
+                        binOpResult = RangeOps::Add(r1, r2);
+                        break;
+                    case VNF_MUL:
+                        binOpResult = RangeOps::Multiply(r1, r2);
+                        break;
+                    case VNF_AND:
+                        binOpResult = RangeOps::And(r1, r2);
+                        break;
+                    case VNF_OR:
+                        binOpResult = RangeOps::Or(r1, r2);
+                        break;
+                    case VNF_LSH:
+                        binOpResult = RangeOps::ShiftLeft(r1, r2);
+                        break;
+                    case VNF_RSH:
+                        binOpResult = RangeOps::ShiftRight(r1, r2, /*logical*/ false);
+                        break;
+                    case VNF_RSZ:
+                        binOpResult = RangeOps::ShiftRight(r1, r2, /*logical*/ true);
+                        break;
+                    case VNF_UMOD:
+                        binOpResult = RangeOps::UnsignedMod(r1, r2);
+                        break;
+                    default:
+                        unreached();
                 }
+
+                // We can use the result only if it never overflows.
+                result = binOpResult.IsConstantRange() ? binOpResult : result;
                 break;
             }
 
@@ -807,10 +805,30 @@ bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_
         }
     }
 
+    Range phiRange = Range(Limit(Limit::keUndef));
+    if (comp->optVisitReachingAssertions(num,
+                                         [comp, &phiRange, &budget](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
+        // call GetRangeFromAssertions for each reaching VN using reachingAssertions
+        Range edgeRange = GetRangeFromAssertions(comp, reachingVN, reachingAssertions, --budget);
+
+        // If phiRange is not yet set, set it to the first edgeRange
+        // else merge it with the new edgeRange. Example: [10..100] U [50..150] = [10..150]
+        phiRange = phiRange.IsUndef() ? edgeRange : RangeOps::Merge(phiRange, edgeRange, false);
+
+        // if any edge produces a non-constant range, we abort further processing
+        // We also give up if the range is full, as it won't help tighten the result.
+        return edgeRange.IsConstantRange() && !edgeRange.IsFullRange() ? Compiler::AssertVisit::Continue
+                                                                       : Compiler::AssertVisit::Abort;
+    }) == Compiler::AssertVisit::Continue &&
+        !phiRange.IsUndef())
+    {
+        assert(phiRange.IsConstantRange());
+        result = phiRange;
+    }
+
     MergeEdgeAssertions(comp, num, ValueNumStore::NoVN, assertions, &result, false);
     assert(result.IsConstantRange());
-    *pRange = result;
-    return true;
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -841,6 +859,8 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
     {
         return;
     }
+
+    assert(canUseCheckedBounds || (preferredBoundVN == ValueNumStore::NoVN));
 
     // Walk through the "assertions" to check if they apply.
     BitVecOps::Iter iter(comp->apTraits, assertions);
@@ -991,9 +1011,31 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             ValueNum lenVN   = curAssertion->op1.bnd.vnLen;
             if (normalLclVN == indexVN)
             {
-                isUnsigned = true;
-                cmpOper    = GT_LT;
-                limit      = Limit(Limit::keBinOpArray, lenVN, 0);
+                if (canUseCheckedBounds)
+                {
+                    isUnsigned = true;
+                    cmpOper    = GT_LT;
+                    limit      = Limit(Limit::keBinOpArray, lenVN, 0);
+                }
+                else
+                {
+                    // We're not interested in keBinOpArray limits if canUseCheckedBounds is false.
+                    // Instead, see if we can deduce anything keConstant out if this BoundsCheckNoThrow
+                    int len = 0;
+                    if (comp->vnStore->IsVNIntegralConstant(lenVN, &len) && (len >= 0))
+                    {
+                        // length is a constant, so we know "index u< lengthCNS"
+                        isUnsigned = true;
+                        cmpOper    = GT_LT;
+                        limit      = Limit(Limit::keConstant, len);
+                    }
+                    else
+                    {
+                        // otherwise, the only thing we can deduce is "index >= 0"
+                        cmpOper = GT_GE;
+                        limit   = Limit(Limit::keConstant, 0);
+                    }
+                }
             }
             else if ((normalLclVN == lenVN) && comp->vnStore->IsVNInt32Constant(indexVN))
             {
@@ -1154,17 +1196,16 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             // 3) Both limits are BinOpArray (which is "arrLen + cns")
             if (l1.IsBinOpArray() && l2.IsBinOpArray())
             {
+                assert((l1.vn != ValueNumStore::NoVN) && (l2.vn != ValueNumStore::NoVN));
+
                 // If one of them is preferredBound and the other is not, use the preferredBound.
-                if (preferredBound != ValueNumStore::NoVN)
+                if ((l1.vn == preferredBound) && (l2.vn != preferredBound))
                 {
-                    if ((l1.vn == preferredBound) && (l2.vn != preferredBound))
-                    {
-                        return l1;
-                    }
-                    if ((l2.vn == preferredBound) && (l1.vn != preferredBound))
-                    {
-                        return l2;
-                    }
+                    return l1;
+                }
+                if ((l2.vn == preferredBound) && (l1.vn != preferredBound))
+                {
+                    return l2;
                 }
 
                 // Otherwise, just use the one with the higher/lower constant.
@@ -1181,7 +1222,8 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                     std::swap(l1, l2);
                 }
 
-                if (((preferredBound == ValueNumStore::NoVN) || (l1.vn != preferredBound)))
+                assert(l1.vn != ValueNumStore::NoVN);
+                if (l1.vn != preferredBound)
                 {
                     // if we don't have a preferred bound,
                     // or it doesn't match l1.vn, use the constant (l2).
