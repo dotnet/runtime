@@ -504,7 +504,7 @@ export function marshal_array_to_cs_impl (arg: JSMarshalerArgument, value: Array
             targetView.set(value);
         } else if (element_type == MarshalerType.Single) {
             mono_check(Array.isArray(value) || value instanceof Float32Array, "Value is not an Array or Float32Array");
-            const bufferOffset = fixupPointer(buffer_ptr, 1);
+            const bufferOffset = fixupPointer(buffer_ptr, 2);
             const targetView = localHeapViewF32().subarray(bufferOffset, bufferOffset + length);
             targetView.set(value);
         } else {
