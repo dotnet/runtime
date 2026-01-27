@@ -291,6 +291,49 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [return: JSMarshalAs<JSType.MemoryView>]
         internal static partial ArraySegment<float> echo1_ArraySegmentOfSingle([JSMarshalAs<JSType.MemoryView>] ArraySegment<float> value, [JSMarshalAs<JSType.Boolean>] bool edit);
 
+        [JSImport("invoke1", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.MemoryView>]
+        internal static partial ArraySegment<float> invoke1_ArraySegmentOfSingle([JSMarshalAs<JSType.MemoryView>] ArraySegment<float> value, [JSMarshalAs<JSType.String>] string name);
+
+        [JSExport]
+        [return: JSMarshalAs<JSType.MemoryView>]
+        internal static ArraySegment<float> EchoArraySegmentOfSingle([JSMarshalAs<JSType.MemoryView>] ArraySegment<float> value)
+        {
+            return value;
+        }
+
+        [JSImport("invoke1", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.MemoryView>]
+        internal static partial ArraySegment<double> invoke1_ArraySegmentOfDouble([JSMarshalAs<JSType.MemoryView>] ArraySegment<double> value, [JSMarshalAs<JSType.String>] string name);
+
+        [JSExport]
+        [return: JSMarshalAs<JSType.MemoryView>]
+        internal static ArraySegment<double> EchoArraySegmentOfDouble([JSMarshalAs<JSType.MemoryView>] ArraySegment<double> value)
+        {
+            return value;
+        }
+
+        [JSImport("invoke1", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.MemoryView>]
+        internal static partial Span<float> invoke1_SpanSingle([JSMarshalAs<JSType.MemoryView>] Span<float> value, [JSMarshalAs<JSType.String>] string name);
+
+        [JSExport]
+        [return: JSMarshalAs<JSType.MemoryView>]
+        internal static Span<float> EchoSpanSingle([JSMarshalAs<JSType.MemoryView>] Span<float> value)
+        {
+            return value;
+        }
+
+        [JSImport("invoke1", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.MemoryView>]
+        internal static partial Span<double> invoke1_SpanDouble([JSMarshalAs<JSType.MemoryView>] Span<double> value, [JSMarshalAs<JSType.String>] string name);
+
+        [JSExport]
+        [return: JSMarshalAs<JSType.MemoryView>]
+        internal static Span<double> EchoSpanDouble([JSMarshalAs<JSType.MemoryView>] Span<double> value)
+        {
+            return value;
+        }
         #endregion
 
         #region  Int32
