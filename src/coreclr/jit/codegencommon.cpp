@@ -2131,7 +2131,7 @@ void CodeGen::genEmitMachineCode()
     codeSize =
         GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(), IsFullPtrRegMapRequired(),
                                      compiler->compHndBBtabCount, &prologSize, &epilogSize, codePtr, &codePtrRW,
-                                     &coldCodePtr, &coldCodePtrRW, &consPtr, &consPtrRW DEBUGARG(&instrCount));
+                                     &coldCodePtr, &coldCodePtrRW DEBUGARG(&instrCount));
 
 #ifdef DEBUG
     assert(compiler->compCodeGenDone == false);

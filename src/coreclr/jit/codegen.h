@@ -195,8 +195,6 @@ protected:
     unsigned  codeSize;
     void*     coldCodePtr;
     void*     coldCodePtrRW;
-    void*     consPtr;
-    void*     consPtrRW;
 
     // Last instr we have displayed for dspInstrs
     unsigned genCurDispOffset;
