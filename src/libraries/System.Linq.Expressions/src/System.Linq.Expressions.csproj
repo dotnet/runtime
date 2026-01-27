@@ -73,7 +73,8 @@
     <Compile Include="System\Linq\Expressions\TypeBinaryExpression.cs" />
     <Compile Include="System\Linq\Expressions\UnaryExpression.cs" />
     <Compile Include="System\Linq\Expressions\Utils.cs" />
-    <Compile Include="System\Linq\Expressions\StackGuard.cs" />
+    <Compile Include="$(CommonPath)System\Threading\StackGuard.cs"
+             Link="Common\System\Threading\StackGuard.cs" />
     <Compile Include="System\Linq\IQueryable.cs" />
     <Compile Include="System\Runtime\CompilerServices\IRuntimeVariables.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeOps.RuntimeVariables.cs" />
