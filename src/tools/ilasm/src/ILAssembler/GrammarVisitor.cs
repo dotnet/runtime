@@ -130,7 +130,7 @@ namespace ILAssembler
             }
 
             BlobBuilder ilStream = new();
-            _entityRegistry.WriteContentTo(_metadataBuilder, ilStream);
+            _entityRegistry.WriteContentTo(_metadataBuilder, ilStream, _mappedFieldDataNames);
             MetadataRootBuilder rootBuilder = new(_metadataBuilder);
             PEHeaderBuilder header = new(
                 fileAlignment: _alignment,
@@ -389,6 +389,11 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitCallKind(CILParser.CallKindContext context) => VisitCallKind(context);
         public GrammarResult.Literal<SignatureCallingConvention> VisitCallKind(CILParser.CallKindContext context)
         {
+            // callKind can be empty (/* EMPTY */) - return Default in that case
+            if (context.ChildCount == 0)
+            {
+                return new(SignatureCallingConvention.Default);
+            }
             int childType = context.GetChild<ITerminalNode>(context.ChildCount - 1).Symbol.Type;
             return new(childType switch
             {
@@ -557,6 +562,24 @@ namespace ILAssembler
             else if (context.fieldDecl() is {} fieldDecl)
             {
                 _ = VisitFieldDecl(fieldDecl);
+            }
+            else if (context.int32() is {} int32)
+            {
+                // .pack or .size
+                string keyword = context.GetChild(0).GetText();
+                int value = VisitInt32(int32).Value;
+                var currentType = _currentTypeDefinition.PeekOrDefault();
+                if (currentType is not null)
+                {
+                    if (keyword == ".pack")
+                    {
+                        currentType.PackingSize = value;
+                    }
+                    else if (keyword == ".size")
+                    {
+                        currentType.ClassSize = value;
+                    }
+                }
             }
 
             return GrammarResult.SentinelValue.Result;
@@ -1609,7 +1632,7 @@ namespace ILAssembler
                 if (declarations[i].mdtoken() is { } mdToken)
                 {
                     var entity = VisitMdtoken(mdToken).Value;
-                    if (entity is null)
+                    if (entity is null or EntityRegistry.FakeTypeEntity)
                     {
                         ReportError(DiagnosticIds.InvalidMetadataToken, DiagnosticMessageTemplates.InvalidMetadataToken, declarations[i]);
                     }
@@ -1617,7 +1640,7 @@ namespace ILAssembler
                     continue;
                 }
                 string kind = declarations[i].GetText();
-                if (kind == ".file")
+                if (kind.StartsWith(".file"))
                 {
                     string fileName = VisitDottedName(declarations[i].dottedName()).Value;
                     implementationEntity = _entityRegistry.FindFile(fileName);
@@ -1626,7 +1649,7 @@ namespace ILAssembler
                         ReportError(DiagnosticIds.FileNotFound, string.Format(DiagnosticMessageTemplates.FileNotFound, fileName), declarations[i]);
                     }
                 }
-                else if (kind == ".assembly")
+                else if (kind.StartsWith(".assembly"))
                 {
                     string assemblyName = VisitDottedName(declarations[i].dottedName()).Value;
                     implementationEntity = _entityRegistry.FindAssemblyReference(assemblyName);
@@ -1635,7 +1658,7 @@ namespace ILAssembler
                         ReportError(DiagnosticIds.AssemblyNotFound, string.Format(DiagnosticMessageTemplates.AssemblyNotFound, assemblyName), declarations[i]);
                     }
                 }
-                else if (kind == ".class")
+                else if (kind.StartsWith(".class"))
                 {
                     if (declarations[i].int32() is CILParser.Int32Context int32)
                     {
@@ -1804,6 +1827,7 @@ namespace ILAssembler
             var marshalBlob = marshalBlobs.Length > 0 ? VisitMarshalBlob(marshalBlobs[marshalBlobs.Length - 1]).Value : null;
             var name = VisitDottedName(context.dottedName()).Value;
             var rvaOffset = VisitAtOpt(context.atOpt()).Value;
+            var fieldOffset = VisitRepeatOpt(context.repeatOpt()).Value;
             _ = VisitInitOpt(context.initOpt());
 
             var signature = new BlobEncoder(new BlobBuilder());
@@ -1816,6 +1840,7 @@ namespace ILAssembler
             {
                 field.MarshallingDescriptor = marshalBlob;
                 field.DataDeclarationName = rvaOffset;
+                field.Offset = fieldOffset;
             }
 
             return GrammarResult.SentinelValue.Result;
@@ -2706,7 +2731,15 @@ namespace ILAssembler
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitMarshalClause(CILParser.MarshalClauseContext context) => VisitMarshalClause(context);
-        public GrammarResult.FormattedBlob VisitMarshalClause(CILParser.MarshalClauseContext context) => VisitMarshalBlob(context.marshalBlob());
+        public GrammarResult.FormattedBlob VisitMarshalClause(CILParser.MarshalClauseContext context)
+        {
+            if (context.ChildCount == 0)
+            {
+                return new(new BlobBuilder(0));
+            }
+
+            return VisitMarshalBlob(context.marshalBlob());
+        }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitMdtoken(ILAssembler.CILParser.MdtokenContext context) => VisitMdtoken(context);
         public GrammarResult.Literal<EntityRegistry.EntityBase> VisitMdtoken(CILParser.MdtokenContext context)
@@ -3990,6 +4023,8 @@ namespace ILAssembler
                 CILParser.INT16 => SignatureTypeCode.Int16,
                 CILParser.INT32_ => SignatureTypeCode.Int32,
                 CILParser.INT64_ => SignatureTypeCode.Int64,
+                CILParser.FLOAT32 => SignatureTypeCode.Single,
+                CILParser.FLOAT64_ => SignatureTypeCode.Double,
                 CILParser.UINT8 => SignatureTypeCode.Byte,
                 CILParser.UINT16 => SignatureTypeCode.UInt16,
                 CILParser.UINT32 => SignatureTypeCode.UInt32,
@@ -4085,9 +4120,18 @@ namespace ILAssembler
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitTyBound(CILParser.TyBoundContext context) => VisitTyBound(context);
-        public GrammarResult.Sequence<EntityRegistry.GenericParameterConstraintEntity> VisitTyBound(CILParser.TyBoundContext context)
+        public GrammarResult.Sequence<EntityRegistry.GenericParameterConstraintEntity> VisitTyBound(CILParser.TyBoundContext? context)
         {
-            return new(VisitTypeList(context.typeList()).Value.Select(EntityRegistry.CreateGenericConstraint).ToImmutableArray());
+            // context or typeList can be null when there are no constraints
+            if (context?.typeList() is not CILParser.TypeListContext typeList)
+            {
+                return new(ImmutableArray<EntityRegistry.GenericParameterConstraintEntity>.Empty);
+            }
+            // Filter out null types (from unresolved type parameters) before creating constraints
+            return new(VisitTypeList(typeList).Value
+                .Where(t => t is not null)
+                .Select(EntityRegistry.CreateGenericConstraint)
+                .ToImmutableArray());
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitTypar(CILParser.TyparContext context) => VisitTypar(context);

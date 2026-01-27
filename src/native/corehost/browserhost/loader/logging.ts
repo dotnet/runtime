@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { loaderConfig } from "./config";
+
 export function check(condition: unknown, message: string): asserts condition {
     if (!condition) {
         throw new Error(`dotnetAssert failed: ${message}`);
@@ -22,6 +24,9 @@ export function fastCheck(condition: unknown, messageFactory: (() => string)): a
 const prefix = "DOTNET: ";
 
 export function debug(msg: string | (() => string), ...data: any) {
+    if (!loaderConfig.diagnosticTracing) {
+        return;
+    }
     if (typeof msg === "function") {
         msg = msg();
     }

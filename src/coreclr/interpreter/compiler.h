@@ -335,6 +335,9 @@ struct InterpBasicBlock
     // Valid only for BBs of call islands. It is set to true if it is a finally call island, false if is is a catch leave island.
     bool isFinallyCallIsland;
 
+    // Is a leave chain island basic block
+    bool isLeaveChainIsland;
+
     // If this basic block is a catch or filter funclet entry, this is the index of the variable
     // that holds the exception object.
     int clauseVarIndex;
@@ -366,6 +369,7 @@ struct InterpBasicBlock
         clauseType = BBClauseNone;
         isFilterOrCatchFuncletEntry = false;
         isFinallyCallIsland = false;
+        isLeaveChainIsland = false;
         clauseVarIndex = -1;
         overlappingEHClauseCount = 0;
         enclosingTryBlockCount = -1;
@@ -936,6 +940,7 @@ private:
     void    EmitShiftOp(int32_t opBase);
     void    EmitCompareOp(int32_t opBase);
     void    EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli);
+    void    EmitRet(CORINFO_METHOD_INFO* methodInfo);
     void    EmitSuspend(const CORINFO_CALL_INFO &callInfo, ContinuationContextHandling ContinuationContextHandling);
     void    EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig);
     bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCall, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);

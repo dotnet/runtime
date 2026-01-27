@@ -122,6 +122,11 @@
     <DefineConstants>$(DefineConstants);DEBUG;TRACE;XUNIT_PERF</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup>
+     <!-- The SDK for VB.NET requires the DefineConstants variable to be , delimited instead of ; -->
+     <DefineConstants Condition="'$(MSBuildProjectExtension)' == '.vbproj'">$(DefineConstants.Replace(';',','))</DefineConstants>
+  </PropertyGroup>
+
   <!-- Setup the default output and intermediate paths -->
   <PropertyGroup>
     <SkipXunitDependencyCopying>true</SkipXunitDependencyCopying>

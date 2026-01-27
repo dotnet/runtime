@@ -90,6 +90,7 @@ PhaseStatus StackLevelSetter::DoPhase()
             }
         }
     }
+
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
