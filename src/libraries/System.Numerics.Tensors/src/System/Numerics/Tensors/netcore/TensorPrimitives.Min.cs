@@ -107,7 +107,7 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
             {
-#if !NET9_0_OR_GREATER
+#if !NET
                 if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
                 {
                     return Vector128.ConditionalSelect(
@@ -124,7 +124,7 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
             {
-#if !NET9_0_OR_GREATER
+#if !NET
                 if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
                 {
                     return Vector256.ConditionalSelect(
@@ -141,7 +141,7 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
             {
-#if !NET9_0_OR_GREATER
+#if !NET
                 if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
                 {
                     return Vector512.ConditionalSelect(

@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Threading.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public static class BarrierCancellationTests
     {
         [Fact]
@@ -30,7 +31,7 @@ namespace System.Threading.Tests
             barrier.Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public static void BarrierCancellationTestsCancelAfterWait_Negative()
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
@@ -50,7 +51,7 @@ namespace System.Threading.Tests
             // currently we don't expose this.. but it was verified manually
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public static void BarrierCancellationTestsCancelAfterWait()
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();

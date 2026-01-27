@@ -1562,41 +1562,30 @@ void CodeGen::siOpenScopesForNonTrackedVars(const BasicBlock* block, unsigned in
         // Check if there are any scopes on the current block's start boundary.
         VarScopeDsc* varScope = nullptr;
 
-        if (compiler->UsesFunclets())
+        // If we find a spot where the code offset isn't what we expect, because
+        // there is a gap, it might be because we've moved the funclets out of
+        // line. Catch up with the enter and exit scopes of the current block.
+        // Ignore the enter/exit scope changes of the missing scopes, which for
+        // funclets must be matched.
+        if (lastBlockILEndOffset != beginOffs)
         {
-            // If we find a spot where the code offset isn't what we expect, because
-            // there is a gap, it might be because we've moved the funclets out of
-            // line. Catch up with the enter and exit scopes of the current block.
-            // Ignore the enter/exit scope changes of the missing scopes, which for
-            // funclets must be matched.
-            if (lastBlockILEndOffset != beginOffs)
+            assert(beginOffs > 0);
+            assert(lastBlockILEndOffset < beginOffs);
+
+            JITDUMP("Scope info: found offset hole. lastOffs=%u, currOffs=%u\n", lastBlockILEndOffset, beginOffs);
+
+            // Skip enter scopes
+            while ((varScope = compiler->compGetNextEnterScope(beginOffs - 1, true)) != nullptr)
             {
-                assert(beginOffs > 0);
-                assert(lastBlockILEndOffset < beginOffs);
-
-                JITDUMP("Scope info: found offset hole. lastOffs=%u, currOffs=%u\n", lastBlockILEndOffset, beginOffs);
-
-                // Skip enter scopes
-                while ((varScope = compiler->compGetNextEnterScope(beginOffs - 1, true)) != nullptr)
-                {
-                    /* do nothing */
-                    JITDUMP("Scope info: skipping enter scope, LVnum=%u\n", varScope->vsdLVnum);
-                }
-
-                // Skip exit scopes
-                while ((varScope = compiler->compGetNextExitScope(beginOffs - 1, true)) != nullptr)
-                {
-                    /* do nothing */
-                    JITDUMP("Scope info: skipping exit scope, LVnum=%u\n", varScope->vsdLVnum);
-                }
+                /* do nothing */
+                JITDUMP("Scope info: skipping enter scope, LVnum=%u\n", varScope->vsdLVnum);
             }
-        }
-        else
-        {
-            if (lastBlockILEndOffset != beginOffs)
+
+            // Skip exit scopes
+            while ((varScope = compiler->compGetNextExitScope(beginOffs - 1, true)) != nullptr)
             {
-                assert(lastBlockILEndOffset < beginOffs);
-                return;
+                /* do nothing */
+                JITDUMP("Scope info: skipping exit scope, LVnum=%u\n", varScope->vsdLVnum);
             }
         }
 

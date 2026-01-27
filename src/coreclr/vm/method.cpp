@@ -104,25 +104,32 @@ const BYTE MethodDesc::s_ClassificationSizeTable[] = {
 #ifndef FEATURE_COMINTEROP
 #undef CLRToCOMCallMethodDesc
 #endif
-
-class ArgIteratorBaseForPInvoke : public ArgIteratorBase
+BOOL ArgIteratorBaseForPInvoke::IsRegPassedStruct(TypeHandle th)
 {
-protected:
-    FORCEINLINE BOOL IsRegPassedStruct(MethodTable* pMT)
+    if (th.IsNativeValueType())
     {
-        return pMT->GetNativeLayoutInfo()->IsNativeStructPassedInRegisters();
+        return th.AsNativeValueType()->GetNativeLayoutInfo()->IsNativeStructPassedInRegisters();
     }
-};
-
-class PInvokeArgIterator : public ArgIteratorTemplate<ArgIteratorBaseForPInvoke>
+    else
+    {
+        return th.GetMethodTable()->IsRegPassedStruct();
+    }
+}
+#if defined(UNIX_AMD64_ABI)
+SystemVEightByteRegistersInfo ArgIteratorBaseForPInvoke::GetEightByteRegistersInfo(TypeHandle th)
 {
-public:
-    PInvokeArgIterator(MetaSig* pSig)
+    if (!th.IsNativeValueType())
     {
-        m_pSig = pSig;
+        return th.AsMethodTable()->GetClass()->GetEightByteRegistersInfo();
     }
-};
 
+    SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
+    bool result = th.AsNativeValueType()->ClassifyEightBytes(&helper, true /* nativeLayout */);
+    // The answer must be true at this point.
+    _ASSERTE(result);
+    return SystemVEightByteRegistersInfo(helper);
+}
+#endif
 
 //*******************************************************************************
 SIZE_T MethodDesc::SizeOf()
@@ -1729,7 +1736,7 @@ UINT MethodDesc::SizeOfArgStack()
     return argit.SizeOfArgStack();
 }
 
-
+#ifdef FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
 UINT MethodDesc::SizeOfNativeArgStack()
 {
 #ifndef UNIX_AMD64_ABI
@@ -1741,6 +1748,7 @@ UINT MethodDesc::SizeOfNativeArgStack()
     return argit.SizeOfArgStack();
 #endif
 }
+#endif // FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
 
 #ifdef TARGET_X86
 //*******************************************************************************

@@ -74,7 +74,7 @@
       Source-build builds the product with the most recent previously source-built release. Thankfully, these two requirements line up nicely
       such that any version that satisfies the VS version requirement will also satisfy the .NET SDK version requirement because of how we ship.
     -->
-    <MicrosoftCodeAnalysisVersion_LatestVS>4.14.0</MicrosoftCodeAnalysisVersion_LatestVS>
+    <MicrosoftCodeAnalysisVersion_LatestVS>5.0.0-2.26070.104</MicrosoftCodeAnalysisVersion_LatestVS>
     <!-- Some of the analyzer dependencies used by ILLink project -->
     <MicrosoftCodeAnalysisBannedApiAnalyzersVersion>3.3.5-beta1.23270.2</MicrosoftCodeAnalysisBannedApiAnalyzersVersion>
   </PropertyGroup>
@@ -129,7 +129,7 @@
     <!-- Not auto-updated. -->
     <MicrosoftDiaSymReaderVersion>2.0.0</MicrosoftDiaSymReaderVersion>
     <MicrosoftDiaSymReaderNativeVersion>17.10.0-beta1.24272.1</MicrosoftDiaSymReaderNativeVersion>
-    <TraceEventVersion>3.1.16</TraceEventVersion>
+    <TraceEventVersion>3.1.28</TraceEventVersion>
     <MicrosoftDiagnosticsNetCoreClientVersion>0.2.621003</MicrosoftDiagnosticsNetCoreClientVersion>
     <NETStandardLibraryRefVersion>2.1.0</NETStandardLibraryRefVersion>
     <NetStandardLibraryVersion>2.0.3</NetStandardLibraryVersion>
@@ -146,6 +146,7 @@
     <!-- Testing -->
     <MicrosoftNETCoreCoreDisToolsVersion>1.6.0</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>17.4.0-preview-20220707-01</MicrosoftNETTestSdkVersion>
+    <MicrosoftOneCollectRecordTraceVersion>0.1.32221</MicrosoftOneCollectRecordTraceVersion>
     <NUnitVersion>3.12.0</NUnitVersion>
     <NUnit3TestAdapterVersion>4.5.0</NUnit3TestAdapterVersion>
     <CoverletCollectorVersion>6.0.4</CoverletCollectorVersion>

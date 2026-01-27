@@ -8,7 +8,7 @@ namespace System.Collections.Generic
     /// <summary>Supports a simple asynchronous iteration over a generic collection.</summary>
     /// <typeparam name="T">The type of objects to enumerate.</typeparam>
     public interface IAsyncEnumerator<out T> : IAsyncDisposable
-#if NET9_0_OR_GREATER
+#if NET
          where T : allows ref struct
 #endif
     {

@@ -29,7 +29,7 @@ inline void EEClassOptionalFields::Init()
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 #endif // FEATURE_COMINTEROP
 #if defined(UNIX_AMD64_ABI)
-    m_numberEightBytes = 0;
+    m_eightByteRegistersInfo.InitEmpty();
 #endif // UNIX_AMD64_ABI
 }
 #endif // !DACCESS_COMPILE

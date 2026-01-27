@@ -54,9 +54,6 @@
 #include "pgo_formatprocessing.h"
 #include "patchpointinfo.h"
 
-#ifndef FEATURE_EH_FUNCLETS
-#include "excep.h"
-#endif
 #include "exinfo.h"
 #include "arraynative.inl"
 
@@ -560,7 +557,7 @@ DictionaryEntry GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPV
     }
 
     DictionaryEntry * pSlot;
-    result = Dictionary::PopulateEntry(pMD, pDeclaringMT, signature, FALSE, &pSlot, dictionaryIndexAndSlot, pModule);
+    result = Dictionary::PopulateEntry(pMD, pDeclaringMT, signature, &pSlot, dictionaryIndexAndSlot, pModule);
 
     if (pMT != NULL && pDeclaringMT != pMT)
     {
@@ -748,9 +745,6 @@ HCIMPL1(EnregisteredTypeHandle, JIT_GetClassFromMethodParam, MethodDesc* pMD)
 HCIMPLEND
 #include <optdefault.h>
 
-
-
-
 //========================================================================
 //
 //      EXCEPTION HELPERS
@@ -768,12 +762,8 @@ HCIMPLEND
 
 /*************************************************************/
 
-#if defined(TARGET_X86)
 EXTERN_C FCDECL1(void, IL_Throw,  Object* obj);
-EXTERN_C HCIMPL2(void, IL_Throw_x86,  Object* obj, TransitionBlock* transitionBlock)
-#else
-HCIMPL1(void, IL_Throw,  Object* obj)
-#endif
+EXTERN_C HCIMPL2(void, IL_Throw_Impl,  Object* obj, TransitionBlock* transitionBlock)
 {
     FCALL_CONTRACT;
 
@@ -785,40 +775,16 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     Thread *pThread = GetThread();
 
     SoftwareExceptionFrame exceptionFrame;
-#ifdef TARGET_X86
     exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
-#else
-    RtlCaptureContext(exceptionFrame.GetContext());
-#endif
     exceptionFrame.InitAndLink(pThread);
 
     FC_CAN_TRIGGER_GC();
 
-#ifdef FEATURE_EH_FUNCLETS
     if (oref == 0)
         DispatchManagedException(kNullReferenceException);
 
     NormalizeThrownObject(&oref);
     DispatchManagedException(oref, exceptionFrame.GetContext());
-#elif defined(TARGET_X86)
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-#if defined(_DEBUG) && defined(TARGET_X86)
-    g_ExceptionEIP = (PVOID)transitionBlock->m_ReturnAddress;
-#endif // defined(_DEBUG) && defined(TARGET_X86)
-
-    if (oref == 0)
-        COMPlusThrow(kNullReferenceException);
-
-    NormalizeThrownObject(&oref);
-    RaiseTheExceptionInternalOnly(oref, FALSE);
-
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-#else // FEATURE_EH_FUNCLETS
-    PORTABILITY_ASSERT("IL_Throw");
-#endif // FEATURE_EH_FUNCLETS
 
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
@@ -827,62 +793,28 @@ HCIMPLEND
 
 /*************************************************************/
 
-#if defined(TARGET_X86)
 EXTERN_C FCDECL0(void, IL_Rethrow);
-EXTERN_C HCIMPL1(void, IL_Rethrow_x86, TransitionBlock* transitionBlock)
-#else
-HCIMPL0(void, IL_Rethrow)
-#endif
+EXTERN_C HCIMPL1(void, IL_Rethrow_Impl, TransitionBlock* transitionBlock)
 {
     FCALL_CONTRACT;
 
     Thread *pThread = GetThread();
 
     SoftwareExceptionFrame exceptionFrame;
-#ifdef TARGET_X86
     exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
-#else
-    RtlCaptureContext(exceptionFrame.GetContext());
-#endif
     exceptionFrame.InitAndLink(pThread);
 
     FC_CAN_TRIGGER_GC();
 
-#ifdef FEATURE_EH_FUNCLETS
     DispatchRethrownManagedException(exceptionFrame.GetContext());
-#elif defined(TARGET_X86)
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-    OBJECTREF throwable = GetThread()->GetThrowable();
-    if (throwable != NULL)
-    {
-        RaiseTheExceptionInternalOnly(throwable, TRUE);
-    }
-    else
-    {
-        // This can only be the result of bad IL (or some internal EE failure).
-        _ASSERTE(!"No throwable on rethrow");
-        RealCOMPlusThrow(kInvalidProgramException, (UINT)IDS_EE_RETHROW_NOT_ALLOWED);
-    }
-
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-#else // FEATURE_EH_FUNCLETS
-    PORTABILITY_ASSERT("IL_Rethrow");
-#endif // FEATURE_EH_FUNCLETS
 
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
 }
 HCIMPLEND
 
-#if defined(TARGET_X86)
 EXTERN_C FCDECL1(void, IL_ThrowExact,  Object* obj);
-EXTERN_C HCIMPL2(void, IL_ThrowExact_x86,  Object* obj, TransitionBlock* transitionBlock)
-#else
-HCIMPL1(void, IL_ThrowExact, Object* obj)
-#endif
+EXTERN_C HCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transitionBlock)
 {
     FCALL_CONTRACT;
 
@@ -895,37 +827,42 @@ HCIMPL1(void, IL_ThrowExact, Object* obj)
     Thread *pThread = GetThread();
 
     SoftwareExceptionFrame exceptionFrame;
-#ifdef TARGET_X86
     exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
-#else
-    RtlCaptureContext(exceptionFrame.GetContext());
-#endif
     exceptionFrame.InitAndLink(pThread);
 
     FC_CAN_TRIGGER_GC();
 
-#ifdef FEATURE_EH_FUNCLETS
     DispatchManagedException(oref, exceptionFrame.GetContext());
-#elif defined(TARGET_X86)
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-#if defined(_DEBUG) && defined(TARGET_X86)
-    g_ExceptionEIP = (PVOID)transitionBlock->m_ReturnAddress;
-#endif // defined(_DEBUG) && defined(TARGET_X86)
-
-    RaiseTheExceptionInternalOnly(oref, FALSE);
-
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-#else // FEATURE_EH_FUNCLETS
-    PORTABILITY_ASSERT("IL_ThrowExact");
-#endif // FEATURE_EH_FUNCLETS
 
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
 }
 HCIMPLEND
+
+#ifdef TARGET_WASM
+// WASM doesn't have assembly stubs, so provide thin wrapper entry points
+// that call the _Impl functions with NULL (which zeros the context)
+HCIMPL1(void, IL_Throw, Object* obj)
+{
+    FCALL_CONTRACT;
+    IL_Throw_Impl(obj, NULL);
+}
+HCIMPLEND
+
+HCIMPL0(void, IL_Rethrow)
+{
+    FCALL_CONTRACT;
+    IL_Rethrow_Impl(NULL);
+}
+HCIMPLEND
+
+HCIMPL1(void, IL_ThrowExact, Object* obj)
+{
+    FCALL_CONTRACT;
+    IL_ThrowExact_Impl(obj, NULL);
+}
+HCIMPLEND
+#endif // TARGET_WASM
 
 #ifndef STATUS_STACK_BUFFER_OVERRUN  // Not defined yet in CESDK includes
 # define STATUS_STACK_BUFFER_OVERRUN      ((NTSTATUS)0xC0000409L)
@@ -1687,95 +1624,61 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
         pThread->UnhijackThread();
 #endif
 
-        // Find context for the original method
         CONTEXT *pFrameContext = NULL;
+        UINT_PTR currentSP;
+        UINT_PTR currentFP;
+
+        // Build CONTEXT directly from TransitionBlock
+        CONTEXT frameContext;
+        memset(&frameContext, 0, sizeof(frameContext));
+        pFrameContext = &frameContext;
+
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-        DWORD contextSize = 0;
-        ULONG64 xStateCompactionMask = 0;
-        DWORD contextFlags = CONTEXT_FULL;
+        // Handle extended context for shadow stacks if enabled
+        CONTEXT* pAllocatedContext = NULL;
         if (Thread::AreShadowStacksEnabled())
         {
-            xStateCompactionMask = XSTATE_MASK_CET_U;
-            contextFlags |= CONTEXT_XSTATE;
+            DWORD contextSize = 0;
+            ULONG64 xStateCompactionMask = XSTATE_MASK_CET_U;
+            DWORD contextFlags = CONTEXT_FULL | CONTEXT_XSTATE;
+
+            // The initialize call should fail but return contextSize
+            BOOL success = g_pfnInitializeContext2 ?
+                g_pfnInitializeContext2(NULL, contextFlags, NULL, &contextSize, xStateCompactionMask) :
+                InitializeContext(NULL, contextFlags, NULL, &contextSize);
+
+            _ASSERTE(!success && (GetLastError() == ERROR_INSUFFICIENT_BUFFER));
+
+            PVOID pBuffer = _alloca(contextSize);
+            success = g_pfnInitializeContext2 ?
+                g_pfnInitializeContext2(pBuffer, contextFlags, &pAllocatedContext, &contextSize, xStateCompactionMask) :
+                InitializeContext(pBuffer, contextFlags, &pAllocatedContext, &contextSize);
+            _ASSERTE(success);
+
+            pFrameContext = pAllocatedContext;
         }
+#endif
 
-        // The initialize call should fail but return contextSize
-        BOOL success = g_pfnInitializeContext2 ?
-            g_pfnInitializeContext2(NULL, contextFlags, NULL, &contextSize, xStateCompactionMask) :
-            InitializeContext(NULL, contextFlags, NULL, &contextSize);
-
-        _ASSERTE(!success && (GetLastError() == ERROR_INSUFFICIENT_BUFFER));
-
-        PVOID pBuffer = _alloca(contextSize);
-        success = g_pfnInitializeContext2 ?
-            g_pfnInitializeContext2(pBuffer, contextFlags, &pFrameContext, &contextSize, xStateCompactionMask) :
-            InitializeContext(pBuffer, contextFlags, &pFrameContext, &contextSize);
-        _ASSERTE(success);
-#else // TARGET_WINDOWS && TARGET_AMD64
-        CONTEXT frameContext;
-        frameContext.ContextFlags = CONTEXT_FULL;
-        pFrameContext = &frameContext;
-#endif // TARGET_WINDOWS && TARGET_AMD64
-
-        // Find context for the original method
-        RtlCaptureContext(pFrameContext);
+        // Use the shared helper to populate the CONTEXT from TransitionBlock
+        SoftwareExceptionFrame::UpdateContextForOSRTransition(pTransitionBlock, pFrameContext, &currentSP, &currentFP);
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
         if (Thread::AreShadowStacksEnabled())
         {
             pFrameContext->ContextFlags |= CONTEXT_XSTATE;
-            SetXStateFeaturesMask(pFrameContext, xStateCompactionMask);
+            SetXStateFeaturesMask(pFrameContext, XSTATE_MASK_CET_U);
             SetSSP(pFrameContext, _rdsspq());
+
+            DWORD64 ssp = GetSSP(pFrameContext);
+            if (ssp != 0)
+            {
+                SetSSP(pFrameContext, ssp - 8);  // Simulate call pushing shadow stack
+            }
         }
-#endif // TARGET_WINDOWS && TARGET_AMD64
-
-        // Walk back to the original method frame
-        pThread->VirtualUnwindToFirstManagedCallFrame(pFrameContext);
-
-        // Remember original method FP and SP because new method will inherit them.
-        UINT_PTR currentSP = GetSP(pFrameContext);
-        UINT_PTR currentFP = GetFP(pFrameContext);
-
-        // We expect to be back at the right IP
-        if ((UINT_PTR)ip != GetIP(pFrameContext))
-        {
-            // Should be fatal
-            STRESS_LOG2(LF_TIEREDCOMPILATION, LL_FATALERROR, "Jit_Patchpoint: patchpoint (0x%p) TRANSITION"
-                " unexpected context IP 0x%p\n", ip, GetIP(pFrameContext));
-            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-        }
-
-        // Now unwind back to the original method caller frame.
-        EECodeInfo callerCodeInfo(GetIP(pFrameContext));
-        ULONG_PTR establisherFrame = 0;
-        PVOID handlerData = NULL;
-        RtlVirtualUnwind(UNW_FLAG_NHANDLER, callerCodeInfo.GetModuleBase(), GetIP(pFrameContext), callerCodeInfo.GetFunctionEntry(),
-            pFrameContext, &handlerData, &establisherFrame, NULL);
-
-        // Now, set FP and SP back to the values they had just before this helper was called,
-        // since the new method must have access to the original method frame.
-        //
-        // TODO: if we access the patchpointInfo here, we can read out the FP-SP delta from there and
-        // use that to adjust the stack, likely saving some stack space.
-
-#if defined(TARGET_AMD64)
-        // If calls push the return address, we need to simulate that here, so the OSR
-        // method sees the "expected" SP misalgnment on entry.
-        _ASSERTE(currentSP % 16 == 0);
-        currentSP -= 8;
-
-#if defined(TARGET_WINDOWS)
-        DWORD64 ssp = GetSSP(pFrameContext);
-        if (ssp != 0)
-        {
-            SetSSP(pFrameContext, ssp - 8);
-        }
-#endif // TARGET_WINDOWS
-
-        pFrameContext->Rbp = currentFP;
-#endif // TARGET_AMD64
+#endif
 
         SetSP(pFrameContext, currentSP);
+        SetFP(pFrameContext, currentFP);
 
         // Note we can get here w/o triggering, if there is an existing OSR method and
         // we hit the patchpoint.
@@ -2265,10 +2168,6 @@ Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame)
 EXTERN_C void JIT_PInvokeBegin(InlinedCallFrame* pFrame);
 EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame);
 
-#ifndef FEATURE_EH_FUNCLETS
-EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
-#endif
-
 #ifdef DEBUGGING_SUPPORTED
 void DebuggerTraceCall(void* returnAddr, void* thunkDataMaybe)
 {
@@ -2378,14 +2277,8 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
     }
 
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-#ifndef FEATURE_EH_FUNCLETS
-    frame->record.m_pEntryFrame = frame->currentThread->GetFrame();
-    frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
-    INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
-#else
     frame->m_ExReg.Handler = (PEXCEPTION_ROUTINE)ProcessCLRException;
     INSTALL_SEH_RECORD(&frame->m_ExReg);
-#endif
 #endif
 }
 HCIMPLEND_RAW
@@ -2416,14 +2309,8 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
     }
 
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-#ifndef FEATURE_EH_FUNCLETS
-    frame->record.m_pEntryFrame = frame->currentThread->GetFrame();
-    frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
-    INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
-#else
     frame->m_ExReg.Handler = (PEXCEPTION_ROUTINE)ProcessCLRException;
     INSTALL_SEH_RECORD(&frame->m_ExReg);
-#endif
 #endif
 }
 HCIMPLEND_RAW
@@ -2439,11 +2326,7 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* f
     frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
 
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-#ifndef FEATURE_EH_FUNCLETS
-    UNINSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
-#else
     UNINSTALL_SEH_RECORD(&frame->m_ExReg);
-#endif
 #endif
 
 #ifdef PROFILING_SUPPORTED
@@ -2466,18 +2349,16 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
     frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
 
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-#ifndef FEATURE_EH_FUNCLETS
-    UNINSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
-#else
     UNINSTALL_SEH_RECORD(&frame->m_ExReg);
-#endif
 #endif
 }
 HCIMPLEND_RAW
 
-// These two do take args but have a custom calling convention.
+// These do take args but have a custom calling convention.
 EXTERN_C void JIT_ValidateIndirectCall();
 EXTERN_C void JIT_DispatchIndirectCall();
+
+EXTERN_C void JIT_InterfaceLookupForSlot();
 
 //========================================================================
 //
