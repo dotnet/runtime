@@ -17,13 +17,14 @@ namespace System.IO.Enumeration
         private readonly FindTransform _transform;
         private readonly EnumerationOptions _options;
         private readonly string _directory;
+        private readonly string? _expression;
 
         public FileSystemEnumerable(string directory, FindTransform transform, EnumerationOptions? options = null)
             : this(directory, transform, options, isNormalized: false)
         {
         }
 
-        internal FileSystemEnumerable(string directory, FindTransform transform, EnumerationOptions? options, bool isNormalized)
+        internal FileSystemEnumerable(string directory, FindTransform transform, EnumerationOptions? options, bool isNormalized, string? expression = null)
         {
             ArgumentNullException.ThrowIfNull(directory);
             ArgumentNullException.ThrowIfNull(transform);
@@ -31,6 +32,7 @@ namespace System.IO.Enumeration
             _directory = directory;
             _transform = transform;
             _options = options ?? EnumerationOptions.Default;
+            _expression = expression;
 
             // We need to create the enumerator up front to ensure that we throw I/O exceptions for
             // the root directory on creation of the enumerable.
@@ -62,7 +64,7 @@ namespace System.IO.Enumeration
             private readonly FileSystemEnumerable<TResult> _enumerable;
 
             public DelegateEnumerator(FileSystemEnumerable<TResult> enumerable, bool isNormalized)
-                : base(enumerable._directory, isNormalized, enumerable._options)
+                : base(enumerable._directory, isNormalized, enumerable._options, enumerable._expression)
             {
                 _enumerable = enumerable;
             }

@@ -11904,7 +11904,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             }
             else if ((typ == TYP_LONG) || (typ == TYP_ULONG))
             {
-                tree->gtVNPair.SetBoth(vnStore->VNForLongCon(INT64(tree->AsIntConCommon()->LngValue())));
+                tree->gtVNPair.SetBoth(vnStore->VNForLongCon(tree->AsIntConCommon()->IntegralValue()));
             }
             else
             {
@@ -12649,9 +12649,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             case GT_GCPOLL:
             case GT_JMP:   // Control flow
             case GT_LABEL: // Control flow
-#if defined(FEATURE_EH_WINDOWS_X86)
-            case GT_END_LFIN: // Control flow
-#endif
                 tree->gtVNPair = vnStore->VNPForVoid();
                 break;
 
@@ -13484,7 +13481,7 @@ void Compiler::fgValueNumberCastTree(GenTree* tree)
     ValueNumPair srcVNPair        = tree->AsOp()->gtOp1->gtVNPair;
     var_types    castToType       = tree->CastToType();
     var_types    castFromType     = tree->CastFromType();
-    bool         srcIsUnsigned    = ((tree->gtFlags & GTF_UNSIGNED) != 0);
+    bool         srcIsUnsigned    = tree->IsUnsigned();
     bool         hasOverflowCheck = tree->gtOverflowEx();
 
     assert(genActualType(castToType) == genActualType(tree->TypeGet())); // Ensure that the resultType is correct

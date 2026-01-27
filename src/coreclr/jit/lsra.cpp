@@ -1412,7 +1412,7 @@ PhaseStatus LinearScan::doRegisterAllocation()
     compiler->fgDebugCheckLinks();
 #endif
 
-    compiler->compLSRADone = true;
+    compiler->compRegAllocDone = true;
 
     // If edge resolution didn't create new blocks,
     // we can reuse the current flowgraph annotations during block layout.
@@ -2587,6 +2587,16 @@ void LinearScan::setFrameType()
         removeMask |= RBM_OPT_RSVD.GetIntRegSet();
     }
 #endif // TARGET_ARMARCH || TARGET_RISCV64
+
+#ifdef TARGET_ARM
+    if (compiler->compLocallocUsed)
+    {
+        // We reserve REG_SAVED_LOCALLOC_SP to store SP on entry for stack unwinding
+        compiler->codeGen->regSet.rsMaskResvd |= RBM_SAVED_LOCALLOC_SP;
+        JITDUMP("  Reserved REG_SAVED_LOCALLOC_SP (%s) due to localloc\n", getRegName(REG_SAVED_LOCALLOC_SP));
+        removeMask |= RBM_SAVED_LOCALLOC_SP.GetIntRegSet();
+    }
+#endif // TARGET_ARM
 
     if ((removeMask != RBM_NONE) && ((availableIntRegs & removeMask) != 0))
     {

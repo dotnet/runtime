@@ -91,6 +91,16 @@ public class GenerateWasmBootJson : Task
 
     public bool BundlerFriendly { get; set; }
 
+    public bool ExitOnUnhandledError { get; set; }
+
+    public bool AppendElementOnExit { get; set; }
+
+    public bool LogExitCode { get; set; }
+
+    public bool AsyncFlushOnExit { get; set; }
+
+    public bool ForwardConsole { get; set; }
+
     public override bool Execute()
     {
         var entryAssemblyName = AssemblyName.GetAssemblyName(AssemblyPath).Name;
@@ -119,6 +129,15 @@ public class GenerateWasmBootJson : Task
         if (IsTargeting100OrLater())
         {
             result.applicationEnvironment = ApplicationEnvironment;
+        }
+
+        if (IsTargeting110OrLater())
+        {
+            if (ExitOnUnhandledError) result.exitOnUnhandledError = true;
+            if (AppendElementOnExit) result.appendElementOnExit = true;
+            if (LogExitCode) result.logExitCode = true;
+            if (AsyncFlushOnExit) result.asyncFlushOnExit = true;
+            if (ForwardConsole) result.forwardConsole = true;
         }
 
         if (IsTargeting80OrLater())
@@ -523,6 +542,7 @@ public class GenerateWasmBootJson : Task
     private static readonly Version version80 = new Version(8, 0);
     private static readonly Version version90 = new Version(9, 0);
     private static readonly Version version100 = new Version(10, 0);
+    private static readonly Version version110 = new Version(11, 0);
 
     private bool IsTargeting80OrLater()
         => IsTargetingVersionOrLater(version80);
@@ -532,6 +552,9 @@ public class GenerateWasmBootJson : Task
 
     private bool IsTargeting100OrLater()
         => IsTargetingVersionOrLater(version100);
+
+    private bool IsTargeting110OrLater()
+        => IsTargetingVersionOrLater(version110);
 
     private bool IsTargetingVersionOrLater(Version version)
     {

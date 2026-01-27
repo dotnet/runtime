@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     pal.h
 
 Abstract:
-
     CoreCLR Platform Adaptation Layer (PAL) header file.  This file
     defines all types and API calls required by the CoreCLR when
     compiled for Unix-like systems.
@@ -27,7 +24,6 @@ Abstract:
 
     If you want to add a PAL_ wrapper function to a native function in
     here, you also need to edit palinternal.h and win32pal.h.
-
 --*/
 
 #ifndef __PAL_H__
@@ -3446,16 +3442,6 @@ PALAPI
 GetSystemInfo(
           OUT LPSYSTEM_INFO lpSystemInfo);
 
-PALIMPORT
-BOOL
-PALAPI
-PAL_SetCurrentThreadAffinity(WORD procNo);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
-
 //
 // The types of events that can be logged.
 //
@@ -3709,6 +3695,11 @@ public:
         ManagedToNativeExceptionCallbackContext = NULL;
     }
 
+    bool HasTargetFrame()
+    {
+        return TargetFrameSp != NoTargetFrameSp;
+    }
+
     CONTEXT* GetContextRecord()
     {
         return ExceptionPointers.ContextRecord;
@@ -3717,16 +3708,6 @@ public:
     EXCEPTION_RECORD* GetExceptionRecord()
     {
         return ExceptionPointers.ExceptionRecord;
-    }
-
-    bool IsFirstPass()
-    {
-        return (TargetFrameSp == NoTargetFrameSp);
-    }
-
-    void SecondPassDone()
-    {
-        TargetFrameSp = NoTargetFrameSp;
     }
 
     bool HasPropagateExceptionCallback()
@@ -3845,8 +3826,7 @@ public:
         if (disposition == EXCEPTION_CONTINUE_SEARCH)                           \
         {                                                                       \
             throw;                                                              \
-        }                                                                       \
-        ex.SecondPassDone();
+        }
 
 // Start of an exception handler. It works the same way as the PAL_EXCEPT except
 // that the disposition is obtained by calling the specified filter.
@@ -3889,11 +3869,7 @@ public:
 #define PAL_CPP_CATCH_DERIVED(type, ident) } catch (type *ident) {
 #define PAL_CPP_CATCH_NON_DERIVED(type, ident) } catch (type ident) {
 #define PAL_CPP_CATCH_NON_DERIVED_NOARG(type) } catch (type) {
-#define PAL_CPP_CATCH_ALL               } catch (...) {                                           \
-                                            try { throw; }                                        \
-                                            catch (PAL_SEHException& ex) { ex.SecondPassDone(); } \
-                                            catch (...) {}
-
+#define PAL_CPP_CATCH_ALL               } catch (...) {
 #define PAL_CPP_ENDTRY                  }
 
 #define PAL_TRY_FOR_DLLMAIN(ParamType, paramDef, paramRef, _reason) PAL_TRY(ParamType, paramDef, paramRef)

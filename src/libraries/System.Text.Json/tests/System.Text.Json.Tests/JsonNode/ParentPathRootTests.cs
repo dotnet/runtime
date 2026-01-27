@@ -87,6 +87,32 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Equal("$['[Child']", node["[Child"].GetPath());
         }
 
+        [Theory]
+        [InlineData("$defs", "$['$defs']")]
+        [InlineData("foo['bar", "$['foo[\\'bar']")]
+        [InlineData("a'b", "$['a\\'b']")]
+        [InlineData("a\\b", "$['a\\\\b']")]
+        [InlineData("a\\'b", "$['a\\\\\\'b']")]
+        [InlineData("prop with space", "$['prop with space']")]
+        [InlineData("dotted.name", "$['dotted.name']")]
+        public static void GetPath_EscapedPropertyNames(string propertyName, string expectedPath)
+        {
+            JsonNode node = new JsonObject
+            {
+                [propertyName] = 1
+            };
+
+            Assert.Equal(expectedPath, node[propertyName]!.GetPath());
+        }
+
+        [Fact]
+        public static void GetPath_NestedEscapedPropertyNames()
+        {
+            // Test case from the issue: {"$defs":{"foo['bar":"baz"}}
+            JsonNode node = JsonNode.Parse("""{"$defs":{"foo['bar":"baz"}}""")!;
+            Assert.Equal("$['$defs']['foo[\\'bar']", node["$defs"]!["foo['bar"]!.GetPath());
+        }
+
         [Fact]
         public static void DetectCycles_Object()
         {

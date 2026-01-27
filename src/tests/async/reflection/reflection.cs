@@ -247,7 +247,6 @@ public class Async2Reflection
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/122517", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void CurrentMethod()
     {
         // Note: async1 leaks implementation details here and returns "Void MoveNext()"
@@ -288,6 +287,8 @@ public class Async2Reflection
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/122547", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static void FromStack(int level)
     {
         // StackFrame.GetMethod() is not supported on NativeAOT
@@ -349,9 +350,11 @@ public class Async2Reflection
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/122547", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/122547", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static void FromStackDMI(int level)
     {
         if (level == 0)

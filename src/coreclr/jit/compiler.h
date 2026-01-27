@@ -2733,24 +2733,6 @@ public:
 // Exception handling functions
 //
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-
-    bool ehNeedsShadowSPslots()
-    {
-        return ((compHndBBtabCount > 0) || opts.compDbgEnC);
-    }
-
-    // 0 for methods with no EH
-    // 1 for methods with non-nested EH, or where only the try blocks are nested
-    // 2 for a method with a catch within a catch
-    // etc.
-    unsigned ehMaxHndNestingCount = 0;
-
-    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, EHblkDsc*> EHIDtoEHblkDscMap;
-    EHIDtoEHblkDscMap* m_EHIDtoEHblkDsc = nullptr;
-
-#endif // FEATURE_EH_WINDOWS_X86
-
     EHblkDsc* ehFindEHblkDscById(unsigned short ehID);
     bool ehTableFinalized = false;
     void FinalizeEH();
@@ -3978,6 +3960,10 @@ public:
                                       // arguments
 #endif                                // TARGET_X86
 
+#if defined(TARGET_WASM)
+    unsigned lvaWasmSpArg = BAD_VAR_NUM; // lcl var index of Wasm stack pointer arg
+#endif // defined(TARGET_WASM)
+
     unsigned lvaInlinedPInvokeFrameVar = BAD_VAR_NUM; // variable representing the InlinedCallFrame
     unsigned lvaReversePInvokeFrameVar = BAD_VAR_NUM; // variable representing the reverse PInvoke frame
     unsigned lvaMonAcquired = BAD_VAR_NUM; // boolean variable introduced into in synchronized methods
@@ -4048,11 +4034,6 @@ public:
 //-------------------------------------------------------------------------
 // All these frame offsets are inter-related and must be kept in sync
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    // This is used for the callable handlers
-    unsigned lvaShadowSPslotsVar = BAD_VAR_NUM; // Block-layout TYP_STRUCT variable for all the shadow SP slots
-#endif                            // FEATURE_EH_WINDOWS_X86
-
     int lvaCachedGenericContextArgOffs;
     int lvaCachedGenericContextArgOffset(); // For CORINFO_CALLCONV_PARAMTYPE and if generic context is passed as
                                             // THIS pointer
@@ -4089,6 +4070,7 @@ public:
     void lvaAssignVirtualFrameOffsetsToLocals();
     bool lvaParamHasLocalStackSpace(unsigned lclNum);
     int lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, int stkOffs);
+    int lvaAllocAsyncContexts(int stkOffs);
 #ifdef TARGET_AMD64
     // Returns true if compCalleeRegsPushed (including RBP if used as frame pointer) is even.
     bool lvaIsCalleeSavedIntRegCountEven();
@@ -4139,6 +4121,11 @@ public:
     void lvaInitGenericsCtxt(unsigned* curVarNum);
     void lvaInitVarArgsHandle(unsigned* curVarNum);
     void lvaInitAsyncContinuation(unsigned* curVarNum);
+
+#if defined(TARGET_WASM)
+    void lvaInitWasmStackPtr(unsigned* curVarNum);
+    void lvaInitWasmPortableEntryPtr(unsigned* curVarNum);
+#endif // defined(TARGET_WASM)
 
     void lvaInitVarDsc(LclVarDsc*              varDsc,
                        unsigned                varNum,
@@ -4219,7 +4206,7 @@ public:
 
     PhaseStatus lvaMarkLocalVars(); // Local variable ref-counting
     void lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers);
-    void lvaMarkLocalVars(BasicBlock* block, bool isRecompute);
+    void lvaMarkLocalVars(BasicBlock* block);
 
     void lvaAllocOutgoingArgSpaceVar(); // Set up lvaOutgoingArgSpaceVar
 
@@ -4414,7 +4401,7 @@ public:
 protected:
     //---------------- Local variable ref-counting ----------------------------
 
-    void lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt, bool isRecompute);
+    void lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt);
     bool IsDominatedByExceptionalEntry(BasicBlock* block);
     void SetHasExceptionalUsesHint(LclVarDsc* varDsc);
 
@@ -4600,6 +4587,7 @@ protected:
                            const BYTE*             codeEndp,
                            BoxPatterns             opts);
     void impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken);
+    bool impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     void impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
@@ -4666,9 +4654,6 @@ protected:
     GenTree* impImplicitR4orR8Cast(GenTree* tree, var_types dstTyp);
 
     void impImportLeave(BasicBlock* block);
-#if defined(FEATURE_EH_WINDOWS_X86)
-    void impImportLeaveEHRegions(BasicBlock* block);
-#endif
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
     GenTree* impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom);
     GenTree* impGetGenericTypeDefinition(GenTree* type);
@@ -4855,7 +4840,7 @@ public:
     bool impIsLegalRetBuf(GenTree* retBuf, GenTreeCall* call);
     GenTree* impStoreStructPtr(GenTree* destAddr, GenTree* value, unsigned curLevel, GenTreeFlags indirFlags = GTF_EMPTY);
 
-    GenTree* impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags* pDerefFlags);
+    GenTree* impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags allowedMustPreserveIndirFlags, GenTreeFlags* pIndirFlags);
 
     var_types impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* simdBaseType = nullptr);
 
@@ -5417,8 +5402,6 @@ public:
 
     void fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum);
 
-    void fgCleanupContinuation(BasicBlock* continuation);
-
     PhaseStatus fgTailMergeThrows();
 
     bool fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
@@ -5572,8 +5555,8 @@ public:
     Statement* fgNewStmtFromTree(GenTree* tree, const DebugInfo& di);
 
     GenTreeQmark* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
-    bool fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
-    void fgExpandQmarkNodes();
+    bool fgExpandQmarkStmt(BasicBlock* block, Statement* stmt, bool onlyEarlyQmarks);
+    PhaseStatus fgExpandQmarkNodes(bool early);
 
     bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
     bool fgSimpleLowerBswap16(LIR::Range& range, GenTree* op);
@@ -7440,6 +7423,7 @@ public:
 #define OMF_HAS_EXPANDABLE_CAST                0x00080000 // Method contains casts eligible for late expansion
 #define OMF_HAS_STACK_ARRAY                    0x00100000 // Method contains stack allocated arrays
 #define OMF_HAS_BOUNDS_CHECKS                  0x00200000 // Method contains bounds checks
+#define OMF_HAS_EARLY_QMARKS                   0x00400000 // Method contains early expandable QMARKs
 
     // clang-format on
 
@@ -8145,6 +8129,7 @@ public:
         Continue,
         Abort,
     };
+
     template <typename TAssertVisitor>
     AssertVisit optVisitReachingAssertions(ValueNum vn, TAssertVisitor argVisitor);
 
@@ -8502,30 +8487,6 @@ public:
         return false;
     }
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    bool eeIsNativeAotAbi = false;
-    bool UsesFunclets() const
-    {
-        return eeIsNativeAotAbi;
-    }
-
-    bool UsesCallFinallyThunks() const
-    {
-        // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
-        return UsesFunclets();
-    }
-#else
-    bool UsesFunclets() const
-    {
-        return true;
-    }
-
-    bool UsesCallFinallyThunks() const
-    {
-        return true;
-    }
-#endif
-
     bool generateCFIUnwindCodes()
     {
 #if defined(FEATURE_CFI_SUPPORT)
@@ -8581,7 +8542,11 @@ public:
 
     // ICorJitInfo wrappers
 
-    void eeAllocMem(AllocMemArgs* args, const UNATIVE_OFFSET roDataSectionAlignment);
+    void eeAllocMem(AllocMemChunk& codeChunk,
+                    AllocMemChunk* coldCodeChunk,
+                    AllocMemChunk* dataChunks,
+                    unsigned       numDataChunks,
+                    unsigned       numExceptions);
 
     void eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize);
 
@@ -8752,24 +8717,16 @@ public:
     FuncInfoDsc*   compFuncInfos;
     unsigned short compCurrFuncIdx;
     unsigned short compFuncInfoCount;
-    FuncInfoDsc    compFuncInfoRoot;
 
     unsigned short compFuncCount()
     {
-        if (UsesFunclets())
-        {
-            assert(fgFuncletsCreated);
-            return compFuncInfoCount;
-        }
-        else
-        {
-            return 1;
-        }
+        assert(fgFuncletsCreated);
+        return compFuncInfoCount;
     }
 
     unsigned short funCurrentFuncIdx()
     {
-        return UsesFunclets() ? compCurrFuncIdx : 0;
+        return compCurrFuncIdx;
     }
 
     FuncInfoDsc* funCurrentFunc();
@@ -9922,7 +9879,7 @@ public:
     bool fgIsDoingEarlyLiveness         = false;
     bool fgDidEarlyLiveness             = false;
     bool compPostImportationCleanupDone = false;
-    bool compLSRADone                   = false;
+    bool compRegAllocDone               = false;
     bool compRationalIRForm             = false;
 
     bool compGeneratingProlog       = false;
@@ -10552,7 +10509,8 @@ public:
         // Do not stress tailcalls in IL stubs as the runtime creates several IL
         // stubs to implement the tailcall mechanism, which would then
         // recursively create more IL stubs.
-        return !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) &&
+        // Tailcalls are also not allowed out of async methods, so do not stress in those either.
+        return !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && !compIsAsync() &&
                (JitConfig.TailcallStress() != 0 || compStressCompile(STRESS_TAILCALL, 5));
 #else
         return false;
@@ -10644,9 +10602,10 @@ public:
         unsigned  compILargsCount;   // Number of arguments (incl. implicit but not hidden)
         unsigned  compArgsCount;     // Number of arguments (incl. implicit and     hidden)
 
-        unsigned compRetBuffArg;    // position of hidden return param var (0, 1) (BAD_VAR_NUM means not present);
-        unsigned compTypeCtxtArg;   // position of hidden param for type context for generic code
-                                    // (CORINFO_CALLCONV_PARAMTYPE)
+        unsigned compRetBuffArg;  // position of hidden return param var (0, 1) (BAD_VAR_NUM means not present);
+        unsigned compTypeCtxtArg; // position of hidden param for type context for generic code
+                                  // (CORINFO_CALLCONV_PARAMTYPE)
+
         unsigned       compThisArg; // position of implicit this pointer param (not to be confused with lvaArg0Var)
         unsigned       compILlocalsCount; // Number of vars : args + locals (incl. implicit but not hidden)
         unsigned       compLocalsCount;   // Number of vars : args + locals (incl. implicit and     hidden)
@@ -10889,15 +10848,6 @@ public:
     unsigned       compHndBBtabCount      = 0;       // element count of used elements in EH data array
     unsigned       compHndBBtabAllocCount = 0;       // element count of allocated elements in EH data array
     unsigned short compEHID               = 0;       // unique ID for EH data array entries
-
-#if defined(FEATURE_EH_WINDOWS_X86)
-
-    //-------------------------------------------------------------------------
-    //  Tracking of region covered by the monitor in synchronized methods
-    void* syncStartEmitCookie; // the emitter cookie for first instruction after the call to MON_ENTER
-    void* syncEndEmitCookie;   // the emitter cookie for first instruction after the call to MON_EXIT
-
-#endif // FEATURE_EH_WINDOWS_X86
 
     Phases      mostRecentlyActivePhase = PHASE_PRE_IMPORT;        // the most recently active phase
     PhaseChecks activePhaseChecks       = PhaseChecks::CHECK_NONE; // the currently active phase checks
@@ -11314,18 +11264,23 @@ public:
 #endif
     };
 
-    GSCookie*           gsGlobalSecurityCookieAddr; // Address of global cookie for unsafe buffer checks
-    GSCookie            gsGlobalSecurityCookieVal;  // Value of global cookie if addr is NULL
-    ShadowParamVarInfo* gsShadowVarInfo = nullptr;  // Table used by shadow param analysis code
+    GSCookie*           gsGlobalSecurityCookieAddr;     // Address of global cookie for unsafe buffer checks
+    GSCookie            gsGlobalSecurityCookieVal;      // Value of global cookie if addr is NULL
+    ShadowParamVarInfo* gsShadowVarInfo      = nullptr; // Table used by shadow param analysis code
+    unsigned            gsShadowVarInfoCount = 0;
 
     PhaseStatus gsPhase();
     void        gsGSChecksInitCookie();   // Grabs cookie variable
-    void        gsCopyShadowParams();     // Identify vulnerable params and create dhadow copies
+    void        gsCopyShadowParams();     // Identify vulnerable params and create shadow copies
     bool        gsFindVulnerableParams(); // Shadow param analysis code
-    void        gsParamsToShadows();      // Insert copy code and replave param uses by shadow
-
-    static fgWalkPreFn gsMarkPtrsAndAssignGroups; // Shadow param analysis tree-walk
-    static fgWalkPreFn gsReplaceShadowParams;     // Shadow param replacement tree-walk
+    template <typename TVisit>
+    void gsVisitDependentLocals(GenTree* tree, TVisit visit);
+    void gsMarkPointers(GenTree* tree);
+    void gsUnionAssignGroups(unsigned lclNum1, unsigned lclNum2, GenTree* reason);
+    void gsParamsToShadows(); // Insert copy code and replace param uses by shadow
+    void gsCopyIntoShadow(unsigned lclNum, unsigned shadowLclNum);
+    bool gsCreateShadowingLocals();
+    void gsRewriteTreeForShadowParam(GenTree* tree);
 
 #define DEFAULT_MAX_INLINE_SIZE                                                                                        \
     100 // Methods with >  DEFAULT_MAX_INLINE_SIZE IL bytes will never be inlined.
@@ -11780,9 +11735,6 @@ public:
             case GT_START_NONGC:
             case GT_START_PREEMPTGC:
             case GT_PROF_HOOK:
-#if defined(FEATURE_EH_WINDOWS_X86)
-            case GT_END_LFIN:
-#endif // !FEATURE_EH_WINDOWS_X86
             case GT_PHI_ARG:
             case GT_JMPTABLE:
             case GT_PHYSREG:

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
 
 //
 /***
@@ -9,7 +8,6 @@
 *Purpose:
 *       This file contains a subset of the Secure CRT. It is meant to
 *       be used in the Windows source tree.
-*
 ****/
 
 /* #pragma once */
@@ -355,7 +353,6 @@ void __cdecl _invalid_parameter(const WCHAR *_Message, const WCHAR *_FunctionNam
 #define _tmakepath_s    _wmakepath_s
 #define _stprintf_s     swprintf_s
 #define _tscanf_s       wscanf_s
-#define _tsscanf_s      swscanf_s
 
 #else
 
@@ -1265,14 +1262,6 @@ int __cdecl wscanf_s(const WCHAR *_Format, ...);
 /* no C++ overload for wscanf_s */
 
 /* no inline version of wscanf_s */
-
-/* swscanf_s */
-_SAFECRT__EXTERN_C
-int __cdecl swscanf_s(const WCHAR *_String, const WCHAR *_Format, ...);
-
-/* no C++ overload for swscanf_s */
-
-/* no inline version of swscanf_s */
 
 /* _swnscanf_s */
 _SAFECRT__EXTERN_C

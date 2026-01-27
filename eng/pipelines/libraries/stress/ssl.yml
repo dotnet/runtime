@@ -72,7 +72,7 @@ extends:
         timeoutInMinutes: 120
         pool:
           name: $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals 1es-windows-2022-open
+          demands: ImageOverride -equals windows.vs2026preview.scout.amd64.open
         variables:
           DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
           DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"

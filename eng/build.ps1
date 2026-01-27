@@ -395,8 +395,16 @@ if ($bootstrap -eq $True) {
   $config = $((Get-Culture).TextInfo.ToTitleCase($configuration[0]))
   $bootstrapArguments += " -configuration $config"
 
+  # Set a different path for prebuilt usage tracking for the bootstrap build.
+  $bootstrapArguments += " /p:TrackPrebuiltUsageReportFile=$PSScriptRoot/../artifacts/log/bootstrap-prebuilt-usage.xml"
+
   $bootstrapArguments += " /p:Subset=bootstrap /bl:$PSScriptRoot/../artifacts/log/$config/bootstrap.binlog"
   Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $bootstrapArguments"
+
+  if ($lastExitCode -ne 0) {
+    Write-Error "Bootstrap build failed. Stopping build."
+    exit 1
+  }
 
   # Remove artifacts from the bootstrap build so the product build is a "clean" build.
   Write-Host "Cleaning up artifacts from bootstrap build..."
