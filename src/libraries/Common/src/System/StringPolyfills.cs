@@ -11,5 +11,8 @@ namespace System
 
         public static bool EndsWith(this string s, char value) =>
             s.Length > 0 && s[s.Length - 1] == value;
+
+        public static bool Contains(this string s, char value) =>
+            s.IndexOf(value) >= 0;
     }
 }
