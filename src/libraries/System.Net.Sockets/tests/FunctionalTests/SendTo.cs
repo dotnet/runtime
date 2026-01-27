@@ -82,7 +82,7 @@ namespace System.Net.Sockets.Tests
             await AssertThrowsSynchronously<ArgumentNullException>(() => socket.SendToAsync(new byte[1], SocketFlags.None, socketAddress).AsTask());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
         public async Task Datagram_UDP_ShouldImplicitlyBindLocalEndpoint()
         {
             using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
