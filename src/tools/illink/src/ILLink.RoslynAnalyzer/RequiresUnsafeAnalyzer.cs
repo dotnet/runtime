@@ -8,6 +8,7 @@ using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace ILLink.RoslynAnalyzer
@@ -59,7 +60,7 @@ namespace ILLink.RoslynAnalyzer
             if (!context.Location.IsInSource)
                 return false;
 
-            // Check to see if we're in an unsafe block
+            // Check to see if we're in an unsafe block or unsafe member
             var syntaxTree = context.Location.SourceTree!;
             var root = syntaxTree.GetRoot();
             var node = root.FindNode(context.Location.SourceSpan);
@@ -68,12 +69,30 @@ namespace ILLink.RoslynAnalyzer
                 if (node.IsKind(SyntaxKind.UnsafeStatement))
                     return true;
 
-                if (node.IsKind(SyntaxKind.MethodDeclaration)
-                    || node.IsKind(SyntaxKind.LocalFunctionStatement)
-                    || node.IsKind(SyntaxKind.AnonymousMethodExpression)
+                // Check for unsafe modifier on the containing member or type
+                if (node is MethodDeclarationSyntax method && method.Modifiers.Any(SyntaxKind.UnsafeKeyword))
+                    return true;
+                if (node is LocalFunctionStatementSyntax localFunc && localFunc.Modifiers.Any(SyntaxKind.UnsafeKeyword))
+                    return true;
+                if (node is PropertyDeclarationSyntax prop && prop.Modifiers.Any(SyntaxKind.UnsafeKeyword))
+                    return true;
+                if (node is IndexerDeclarationSyntax indexer && indexer.Modifiers.Any(SyntaxKind.UnsafeKeyword))
+                    return true;
+                if (node is OperatorDeclarationSyntax op && op.Modifiers.Any(SyntaxKind.UnsafeKeyword))
+                    return true;
+                if (node is ConversionOperatorDeclarationSyntax conv && conv.Modifiers.Any(SyntaxKind.UnsafeKeyword))
+                    return true;
+                if (node is ConstructorDeclarationSyntax ctor && ctor.Modifiers.Any(SyntaxKind.UnsafeKeyword))
+                    return true;
+                if (node is TypeDeclarationSyntax type && type.Modifiers.Any(SyntaxKind.UnsafeKeyword))
+                    return true;
+
+                // Break out of lambdas/anonymous methods - they create a new scope
+                if (node.IsKind(SyntaxKind.AnonymousMethodExpression)
                     || node.IsKind(SyntaxKind.SimpleLambdaExpression)
                     || node.IsKind(SyntaxKind.ParenthesizedLambdaExpression))
                     break;
+
                 node = node.Parent;
             }
 

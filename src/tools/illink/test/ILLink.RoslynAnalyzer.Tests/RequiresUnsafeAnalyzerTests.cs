@@ -293,6 +293,109 @@ namespace System.Diagnostics.CodeAnalysis
 
             await VerifyRequiresUnsafeAnalyzer(source: src);
         }
+
+        [Fact]
+        public async Task RequiresUnsafeInsideUnsafeMethod()
+        {
+            var src = """
+            using System.Diagnostics.CodeAnalysis;
+
+            public class C
+            {
+                [RequiresUnsafe]
+                public int M1() => 0;
+
+                public unsafe int M2()
+                {
+                    return M1();
+                }
+            }
+            """;
+
+            await VerifyRequiresUnsafeAnalyzer(source: src);
+        }
+
+        [Fact]
+        public async Task RequiresUnsafeInsideUnsafeClass()
+        {
+            var src = """
+            using System.Diagnostics.CodeAnalysis;
+
+            public unsafe class C
+            {
+                [RequiresUnsafe]
+                public int M1() => 0;
+
+                public int M2()
+                {
+                    return M1();
+                }
+            }
+            """;
+
+            await VerifyRequiresUnsafeAnalyzer(source: src);
+        }
+
+        [Fact]
+        public async Task RequiresUnsafeInsideUnsafeProperty()
+        {
+            var src = """
+            using System.Diagnostics.CodeAnalysis;
+
+            public class C
+            {
+                [RequiresUnsafe]
+                public int M1() => 0;
+
+                public unsafe int P => M1();
+            }
+            """;
+
+            await VerifyRequiresUnsafeAnalyzer(source: src);
+        }
+
+        [Fact]
+        public async Task RequiresUnsafeInsideUnsafeLocalFunction()
+        {
+            var src = """
+            using System.Diagnostics.CodeAnalysis;
+
+            public class C
+            {
+                [RequiresUnsafe]
+                public int M1() => 0;
+
+                public int M2()
+                {
+                    unsafe int Local() => M1();
+                    return Local();
+                }
+            }
+            """;
+
+            await VerifyRequiresUnsafeAnalyzer(source: src);
+        }
+
+        [Fact]
+        public async Task RequiresUnsafeInsideUnsafeConstructor()
+        {
+            var src = """
+            using System.Diagnostics.CodeAnalysis;
+
+            public class C
+            {
+                [RequiresUnsafe]
+                public static int M1() => 0;
+
+                public unsafe C()
+                {
+                    _ = M1();
+                }
+            }
+            """;
+
+            await VerifyRequiresUnsafeAnalyzer(source: src);
+        }
     }
 }
 #endif
