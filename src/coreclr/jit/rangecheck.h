@@ -131,6 +131,7 @@ struct Limit
     }
     int GetConstant() const
     {
+        assert(IsConstantOrBinOp());
         return cns;
     }
     bool IsBinOpArray() const
@@ -288,6 +289,17 @@ struct Range
         }
         return false;
     }
+
+    bool IsUndef() const
+    {
+        return lLimit.IsUndef() && uLimit.IsUndef();
+    }
+
+    bool IsFullRange() const
+    {
+        return lLimit.IsConstant() && uLimit.IsConstant() && (lLimit.GetConstant() == INT32_MIN) &&
+               (uLimit.GetConstant() == INT32_MAX);
+    }
 };
 
 // Helpers for operations performed on ranges
@@ -295,12 +307,12 @@ struct RangeOps
 {
     // Given two ranges "r1" and "r2", perform a generic 'op' operation on the ranges.
     template <typename Operation>
-    static Range ApplyRangeOp(Range& r1, Range& r2, Operation op)
+    static Range ApplyRangeOp(const Range& r1, const Range& r2, Operation op)
     {
-        Limit& r1lo = r1.LowerLimit();
-        Limit& r1hi = r1.UpperLimit();
-        Limit& r2lo = r2.LowerLimit();
-        Limit& r2hi = r2.UpperLimit();
+        const Limit& r1lo = r1.LowerLimit();
+        const Limit& r1hi = r1.UpperLimit();
+        const Limit& r2lo = r2.LowerLimit();
+        const Limit& r2hi = r2.UpperLimit();
 
         Range result = Limit(Limit::keUnknown);
         // If either limit is dependent, the result is dependent.
@@ -310,7 +322,7 @@ struct RangeOps
         return result;
     }
 
-    static Range Add(Range& r1, Range& r2)
+    static Range Add(const Range& r1, const Range& r2)
     {
         return ApplyRangeOp(r1, r2, [](const Limit& a, const Limit& b) {
             // For Add we support:
@@ -340,7 +352,7 @@ struct RangeOps
         });
     }
 
-    static Range Multiply(Range& r1, Range& r2)
+    static Range Multiply(const Range& r1, const Range& r2)
     {
         return ApplyRangeOp(r1, r2, [](const Limit& a, const Limit& b) {
             // For Mul we require both operands to be constant to produce a constant result.
@@ -353,7 +365,7 @@ struct RangeOps
         });
     }
 
-    static Range ShiftRight(Range& r1, Range& r2, bool logical)
+    static Range ShiftRight(const Range& r1, const Range& r2, bool logical)
     {
         return ApplyRangeOp(r1, r2, [](const Limit& a, const Limit& b) {
             // For now, we only support r1 >> positive_cns (to simplify)
@@ -366,14 +378,14 @@ struct RangeOps
         });
     }
 
-    static Range ShiftLeft(Range& r1, Range& r2)
+    static Range ShiftLeft(const Range& r1, const Range& r2)
     {
         // help the next step a bit, convert the LSH rhs to a multiply
         Range convertedOp2Range = ConvertShiftToMultiply(r2);
         return Multiply(r1, convertedOp2Range);
     }
 
-    static Range Or(Range& r1, Range& r2)
+    static Range Or(const Range& r1, const Range& r2)
     {
         // For OR we require both operands to be constant to produce a constant result.
         // No useful information can be derived if only one operand is constant.
@@ -555,10 +567,10 @@ struct RangeOps
 
     // Given a Range C from an op (x << C), convert it to be used as
     // (x * C'), where C' is a power of 2.
-    static Range ConvertShiftToMultiply(Range& r1)
+    static Range ConvertShiftToMultiply(const Range& r1)
     {
-        Limit& r1lo = r1.LowerLimit();
-        Limit& r1hi = r1.UpperLimit();
+        const Limit& r1lo = r1.LowerLimit();
+        const Limit& r1hi = r1.UpperLimit();
 
         if (!r1lo.IsConstant() || !r1hi.IsConstant())
         {
@@ -579,10 +591,10 @@ struct RangeOps
         return result;
     }
 
-    static Range Negate(Range& range)
+    static Range Negate(const Range& range)
     {
         // Only constant ranges can be negated.
-        if (!range.LowerLimit().IsConstant() || !range.UpperLimit().IsConstant())
+        if (!range.IsConstantRange())
         {
             return Limit(Limit::keUnknown);
         }
@@ -703,7 +715,7 @@ public:
     bool TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange);
 
     // Cheaper version of TryGetRange that is based only on incoming assertions.
-    static bool TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, Range* pRange);
+    static Range GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, int budget = 10);
 
 private:
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, bool>        OverflowMap;
