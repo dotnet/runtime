@@ -175,11 +175,10 @@ namespace System.IO.Hashing
         public static uint HashToUInt32(ReadOnlySpan<byte> source)
             => Update(InitialState, source);
 
-        private const uint Base = 65521; // largest prime smaller than 65536
-        private const int NMax = 5552;   // NMax is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1
-
         private static uint Update(uint adler, ReadOnlySpan<byte> buf)
         {
+            uint Base = 65521; // largest prime smaller than 65536
+            int NMax = 5552; // NMax is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1
             if (buf.IsEmpty)
             {
                 return adler;
