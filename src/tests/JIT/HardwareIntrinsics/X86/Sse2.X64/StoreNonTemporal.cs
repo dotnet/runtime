@@ -17,7 +17,7 @@ namespace IntelHardwareIntrinsicTest.SSE2.X64
         const int Pass = 100;
         const int Fail = 0;
 
-        [ActiveIssue("", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMFULLAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMFULLAOT))]
         [Fact]
         public static unsafe void StoreNonTemporal()
         {

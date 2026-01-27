@@ -593,8 +593,11 @@
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
       )
-      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('https://github.com/dotnet/runtime/issues/82859') type([TestLibrary]TestLibrary.PlatformDetection) string[2] ('IsMonoMiniJIT' 'IsArm64Process') }
-      .entrypoint
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+        string('https://github.com/dotnet/runtime/issues/34196')
+        int32(0x2) // Mono
+      }
+    .entrypoint
       .maxstack  5
       .locals (string[] V_0,
                int32[] V_1,

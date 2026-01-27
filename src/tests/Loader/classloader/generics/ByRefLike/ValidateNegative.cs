@@ -12,7 +12,7 @@ using TestLibrary;
 
 public class ValidateNegative
 {
-    [ActiveIssue("", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMFULLAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     [SkipOnMono("https://github.com/dotnet/runtime/issues/99820")]
@@ -24,7 +24,7 @@ public class ValidateNegative
         Assert.Throws<TypeLoadException>(() => { Exec.OverrideMethodNotByRefLike(); });
     }
 
-    [ActiveIssue("", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMFULLAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static void AllowByRefLike_Substituted_For_NonByRefLike_Invalid_Class()
