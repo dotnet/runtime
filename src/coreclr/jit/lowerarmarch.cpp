@@ -3528,7 +3528,8 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
         // if (myvar==0) myvar = 1;
         // If we're comparing a local to a constant int, and branch has a use of the value+1
 
-        if (!cond->OperIs(GT_CMP))
+        if (!cond->OperIs(GT_CMP) ||
+            !select->OperIs(GT_SELECTCC))
         {
             return;
         }
@@ -3539,9 +3540,9 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
         }
 
         // One of the CMP operands is a constant int
-        auto     code     = select->AsOpCC()->gtCondition.GetCode();
-        int64_t  constVal = 0;
-        unsigned lclNum   = 0;
+        GenCondition::Code code     = select->AsOpCC()->gtCondition.GetCode();
+        int64_t            constVal = 0;
+        unsigned           lclNum   = 0;
 
         if (cond->gtGetOp1()->IsIntegralConst())
         {
