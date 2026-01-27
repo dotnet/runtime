@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using System.Xml;
 
@@ -15,6 +15,10 @@ namespace System.ServiceModel.Syndication
     public abstract class SyndicationFeedFormatter
     {
         private SyndicationFeed _feed;
+
+        // Trimmer warning messages
+        internal const string RequiresUnreferencedCodeWarning = "Members from serialized and deserialized types may be trimmed if not referenced directly";
+        internal const string RequiresDynamicCodeWarning = "Serialization and deserialization requires dynamic code generation";
 
         protected SyndicationFeedFormatter()
         {
@@ -395,7 +399,7 @@ namespace System.ServiceModel.Syndication
             extWriter.WriteNode(reader, false);
         }
 
-        internal static SyndicationFeed CreateFeedInstance(Type feedType)
+        internal static SyndicationFeed CreateFeedInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type feedType)
         {
             if (feedType.Equals(typeof(SyndicationFeed)))
             {
