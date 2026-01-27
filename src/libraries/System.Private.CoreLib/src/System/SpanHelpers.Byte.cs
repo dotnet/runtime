@@ -759,6 +759,11 @@ namespace System
         [Intrinsic] // Unrolled for constant length
         public static unsafe bool SequenceEqual(ref byte first, ref byte second, nuint length)
         {
+            if (Unsafe.AreSame(ref first, ref second))
+            {
+                return true;
+            }
+
             bool result;
             // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
             if (length >= (nuint)sizeof(nuint))
@@ -799,25 +804,6 @@ namespace System
             }
 #endif
         Longer:
-            // Only check that the ref is the same if buffers are large,
-            // and hence its worth avoiding doing unnecessary comparisons
-            if (!Unsafe.AreSame(ref first, ref second))
-            {
-                // C# compiler inverts this test, making the outer goto the conditional jmp.
-                goto Vector;
-            }
-
-            // This becomes a conditional jmp forward to not favor it.
-            goto Equal;
-
-        Result:
-            return result;
-        // When the sequence is equal; which is the longest execution, we want it to determine that
-        // as fast as possible so we do not want the early outs to be "predicted not taken" branches.
-        Equal:
-            return true;
-
-        Vector:
             if (Vector128.IsHardwareAccelerated)
             {
                 if (Vector512.IsHardwareAccelerated && length >= (nuint)Vector512<byte>.Count)
@@ -951,6 +937,12 @@ namespace System
                 }
             }
 
+        Result:
+            return result;
+        Equal:
+            // When the sequence is equal; which is the longest execution, we want it to determine that
+            // as fast as possible so we do not want the early outs to be "predicted not taken" branches.
+            return true;
             // As there are so many true/false exit points the Jit will coalesce them to one location.
             // We want them at the end so the conditional early exit jmps are all jmp forwards so the
             // branch predictor in a uninitialized state will not take them e.g.
