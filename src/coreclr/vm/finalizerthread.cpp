@@ -70,7 +70,7 @@ extern "C"
     }
 }
 
-#endif // !TARGET_WASM
+#endif // TARGET_WASM
 
 void FinalizerThread::EnableFinalization()
 {
