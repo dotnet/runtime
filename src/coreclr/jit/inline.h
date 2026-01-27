@@ -634,6 +634,7 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
 //
 struct LateDevirtualizationInfo
 {
+    CORINFO_METHOD_HANDLE  methodHnd;
     CORINFO_CONTEXT_HANDLE exactContextHnd;
     InlineContext*         inlinersContext;
 };
