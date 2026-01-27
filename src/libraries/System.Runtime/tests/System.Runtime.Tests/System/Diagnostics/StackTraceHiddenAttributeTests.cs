@@ -138,5 +138,19 @@ namespace System.Tests
             [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
             internal string GetStackTraceMethodC() => Environment.StackTrace;
         }
+
+
+        [Fact]
+        public void InterfaceHidden_CanApplyAttribute()
+        {
+            var attr = typeof(IHiddenInterface).GetCustomAttributes(typeof(StackTraceHiddenAttribute), false);
+            Assert.Single(attr);
+        }
+
+        [StackTraceHidden]
+        internal interface IHiddenInterface
+        {
+            string GetStackTrace();
+        }
     }
 }
