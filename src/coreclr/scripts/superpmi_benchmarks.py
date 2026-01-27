@@ -142,6 +142,26 @@ def make_executable(file_name):
              (stat.S_IROTH | stat.S_IXOTH))
     run_command(["ls", "-l", file_name])
 
+def install_dotnet_sdk(python_path, performance_directory, arch):
+    """Install dotnet sdk in performance repo
+    Args:
+        performance_directory (string): Path to performance directory
+        arch (string): Architecture
+    """
+    dotnet_script = os.path.join(performance_directory, "scripts", "dotnet.py")
+    # Install the sdk
+    # use run_command to run the command in powershell on windows to avoid ssl/tls issues
+    # TODO: this is currently broken on windows because of the default tls version on runners,
+    # PR to fix it is here (needs to be in the performance repo dotnet install script): 
+    run_command([python_path, 
+                dotnet_script,
+                "install",
+                "--architecture",
+                    arch,
+                "--channels",
+                "main",
+                "--verbose"])
+
 def build_and_run(coreclr_args, output_mch_name):
     """Build the microbenchmarks/real-world and run them under "superpmi collect"
 
@@ -179,7 +199,8 @@ def build_and_run(coreclr_args, output_mch_name):
         corerun_exe = "corerun"
         script_name = "run_benchmarks.sh"
 
-    make_executable(dotnet_exe)
+    # Install the dotnet sdk using the script within the performance repo
+    install_dotnet_sdk(python_path, performance_directory, arch)
 
     # Start with a "dotnet --info" to see what we've got.
     run_command([dotnet_exe, "--info"])
