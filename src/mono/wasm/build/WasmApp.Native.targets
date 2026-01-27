@@ -183,7 +183,7 @@
       <_EmccDefaultFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-default.rsp'))</_EmccDefaultFlagsRsp>
       <_EmccDefaultLinkFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-link.rsp'))</_EmccDefaultLinkFlagsRsp>
 
-      <_EmcssLlvmsizeRsp>$(_WasmIntermediateOutputPath)emcc-llvmsize.rsp</_EmcssLlvmsizeRsp>
+      <_WasmLlvmSizeRsp>$(_WasmIntermediateOutputPath)emcc-llvmsize.rsp</_WasmLlvmSizeRsp>
 
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
 
@@ -420,12 +420,15 @@
     <!-- for AOT builds we use llvm-size tool to collect size of the DATA segment in each object file -->
     <WriteLinesToFile 
         Condition="'$(_WasmShouldAOT)' == 'true'"
-        Lines="@(_AOTObjectFile->'&quot;%(Identity)&quot;', ' ')" 
-        File="$(_EmcssLlvmsizeRsp)" 
+        Lines="@(_AOTObjectFile->'&quot;%(Identity)&quot;')" 
+        File="$(_WasmLlvmSizeRsp)" 
         Overwrite="true" 
         WriteOnlyWhenDifferent="true" 
         />
-    <Exec Command='llvm-size$(_ExeExt) -d --format=sysv  "@$(_EmcssLlvmsizeRsp)"'
+    <ItemGroup Condition="'$(_WasmShouldAOT)' == 'true'">
+      <FileWrites Include="$(_WasmLlvmSizeRsp)" />
+    </ItemGroup>
+    <Exec Command='llvm-size$(_ExeExt) -d --format=sysv  "@$(_WasmLlvmSizeRsp)"'
           Condition="'$(_WasmShouldAOT)' == 'true'"
           IgnoreStandardErrorWarningFormat="true"
           ConsoleToMsBuild="true"
