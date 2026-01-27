@@ -281,7 +281,7 @@
     LEAF_ENTRY RhpThrowExact, _TEXT
 
         ori  $a4, $zero, 4                               // a4 = ExKind.RethrowFlag
-        b  C_FUNC(RhpThrowExImpl)
+        b  RhpThrowExImpl
 
     LEAF_END RhpThrowExact, _TEXT
 

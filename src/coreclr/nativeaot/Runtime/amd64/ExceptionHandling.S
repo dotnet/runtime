@@ -92,7 +92,7 @@ NESTED_END RhpThrowHwEx, _TEXT
 LEAF_ENTRY RhpThrowExact, _TEXT
 
         mov     r8d, 4                  // r8d = ExKind.RethrowFlag
-        jmp     C_FUNC(RhpThrowExImpl)
+        jmp     RhpThrowExImpl
 
 LEAF_END RhpThrowExact, _TEXT
 

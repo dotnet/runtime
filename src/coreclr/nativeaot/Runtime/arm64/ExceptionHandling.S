@@ -265,7 +265,7 @@
     LEAF_ENTRY RhpThrowExact, _TEXT
 
         mov         w4, #4                                          // w4 = ExKind.RethrowFlag
-        b           C_FUNC(RhpThrowExImpl)
+        b           RhpThrowExImpl
 
     LEAF_END RhpThrowExact, _TEXT
 
