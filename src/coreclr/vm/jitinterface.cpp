@@ -10317,20 +10317,31 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     EE_TO_JIT_TRANSITION();
 }
 
-MethodTable* getContinuationType(MethodDesc* asyncMethod, size_t dataSize, bool* objRefs, size_t objRefsSize)
+MethodTable* getContinuationType(
+    size_t dataSize,
+    bool* objRefs,
+    size_t objRefsSize,
+    Module* loaderModule)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_CLASS_HANDLE result = NULL;
 
     _ASSERTE(objRefsSize == (dataSize + (TARGET_POINTER_SIZE - 1)) / TARGET_POINTER_SIZE);
-    LoaderAllocator* allocator = asyncMethod->GetLoaderAllocator();
+    LoaderAllocator* allocator = loaderModule->GetLoaderAllocator();
     AsyncContinuationsManager* asyncConts = allocator->GetAsyncContinuationsManager();
-    MethodTable* result = asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, asyncMethod);
+    MethodTable* mt = asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, loaderModule);
 
 #ifdef DEBUG
-    MethodTable* result2 = asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, asyncMethod);
-    _ASSERTE(result2 == result);
+    MethodTable* mt2 = asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, loaderModule);
+    _ASSERTE(mt2 == mt);
 #endif
-    return result;
+
+    return mt;
 }
 
 CORINFO_CLASS_HANDLE CEEInfo::getContinuationType(
@@ -10348,7 +10359,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getContinuationType(
 
     JIT_TO_EE_TRANSITION();
 
-    result = (CORINFO_CLASS_HANDLE)::getContinuationType(m_pMethodBeingCompiled, dataSize, objRefs, objRefsSize);
+    result = (CORINFO_CLASS_HANDLE)::getContinuationType(dataSize, objRefs, objRefsSize, m_pMethodBeingCompiled->GetModule());
 
     EE_TO_JIT_TRANSITION();
 
@@ -13731,7 +13742,7 @@ void ComputeGCRefMap(MethodTable * pMT, BYTE * pGCRefMap, size_t cbGCRefMap)
 }
 
 
-MethodTable* GetContinuationTypeFromLayout(PCCOR_SIGNATURE pBlob)
+MethodTable* GetContinuationTypeFromLayout(PCCOR_SIGNATURE pBlob, Module* currentModule)
 {
     STANDARD_VM_CONTRACT;
 
@@ -13750,11 +13761,20 @@ MethodTable* GetContinuationTypeFromLayout(PCCOR_SIGNATURE pBlob)
         return nullptr;
     }
 
-    // Use the global loader allocator (System module's allocator) for R2R fixups
-    LoaderAllocator* allocator = SystemDomain::GetGlobalLoaderAllocator();
+    if ((dwExpectedSize % TARGET_POINTER_SIZE) != 0)
+    {
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
+    LoaderAllocator* allocator = currentModule->GetLoaderAllocator();
     AsyncContinuationsManager* asyncConts = allocator->GetAsyncContinuationsManager();
 
-    if (!(dwFlags & READYTORUN_LAYOUT_GCLayout_Empty))
+    if (dwFlags & READYTORUN_LAYOUT_GCLayout_Empty)
+    {
+        // No GC references, don't read a bitmap
+        return ::getContinuationType(dwExpectedSize, nullptr, 0, currentModule);
+    }
+    else
     {
         uint8_t* pGCRefMapBlob = (uint8_t*)p.GetPtr();
         size_t objRefsSize = (dwExpectedSize / TARGET_POINTER_SIZE);
@@ -13769,17 +13789,7 @@ MethodTable* GetContinuationTypeFromLayout(PCCOR_SIGNATURE pBlob)
                 objRefs[byteIndex * 8 + bit] = (b & (1 << bit)) != 0;
             }
         }
-        return asyncConts->LookupOrCreateContinuationMethodTableFromLayout(
-            (unsigned)dwExpectedSize,
-            objRefs
-        );
-    }
-    else
-    {
-        return asyncConts->LookupOrCreateContinuationMethodTableFromLayout(
-            (unsigned)dwExpectedSize,
-            nullptr
-        );
+        return ::getContinuationType(dwExpectedSize, objRefs, objRefsSize, currentModule);
     }
 }
 
@@ -14257,9 +14267,16 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     case READYTORUN_FIXUP_Continuation_Layout:
         {
-            MethodTable* continuationTypeMethodTable = GetContinuationTypeFromLayout(pBlob);
-            TypeHandle th = TypeHandle(continuationTypeMethodTable);
-            result = (size_t)th.AsPtr();
+            MethodTable* continuationTypeMethodTable = GetContinuationTypeFromLayout(pBlob, currentModule);
+            if (continuationTypeMethodTable != NULL)
+            {
+                TypeHandle th = TypeHandle(continuationTypeMethodTable);
+                result = (size_t)th.AsPtr();
+            }
+            else
+            {
+                result = 0;
+            }
         }
         break;
 

@@ -188,37 +188,7 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(
     return pMT;
 }
 
-MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(
-    unsigned dataSize,
-    const bool* objRefs,
-    MethodDesc* asyncMethod,
-    AllocMemTracker* pamTracker)
-{
-    MethodTable* pMT = CreateNewContinuationMethodTable(
-        dataSize,
-        objRefs,
-        GetOrCreateSingletonSubContinuationEEClass(),
-        m_allocator,
-        asyncMethod->GetLoaderModule(),
-        pamTracker);
-
-#ifdef DEBUG
-    StackSString debugName;
-    PrintContinuationName(
-        pMT,
-        [&](LPCSTR str, LPCWSTR wstr) { debugName.AppendUTF8(str); },
-        [&](unsigned num) { debugName.AppendPrintf("%u", num); });
-    const char* debugNameUTF8 = debugName.GetUTF8();
-    size_t len = strlen(debugNameUTF8) + 1;
-    char* name = (char*)pamTracker->Track(m_allocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(len)));
-    strcpy_s(name, len, debugNameUTF8);
-    pMT->SetDebugClassName(name);
-#endif
-
-    return pMT;
-}
-
-MethodTable* AsyncContinuationsManager::LookupOrCreateContinuationMethodTable(unsigned dataSize, const bool* objRefs, MethodDesc* asyncMethod)
+MethodTable* AsyncContinuationsManager::LookupOrCreateContinuationMethodTable(unsigned dataSize, const bool* objRefs, Module* loaderModule)
 {
     STANDARD_VM_CONTRACT;
 
@@ -237,65 +207,12 @@ MethodTable* AsyncContinuationsManager::LookupOrCreateContinuationMethodTable(un
 #endif
 
     AllocMemTracker amTracker;
-    MethodTable* pNewMT = CreateNewContinuationMethodTable(dataSize, objRefs, asyncMethod, &amTracker);
-    MethodTable* pReturnedMT = pNewMT;
-    {
-        CrstHolder lock(&m_layoutsLock);
-        MethodTable* lookupResult;
-        if (m_layouts.GetValue(ContinuationLayoutKey(&keyData), (HashDatum*)&lookupResult))
-        {
-            pReturnedMT = lookupResult;
-        }
-        else
-        {
-            m_layouts.InsertValue(ContinuationLayoutKey(pNewMT), pNewMT);
-        }
-    }
-
-    if (pReturnedMT == pNewMT)
-    {
-        amTracker.SuppressRelease();
-
-        ClassLoader::NotifyLoad(TypeHandle(pNewMT));
-    }
-
-#ifdef FEATURE_EVENT_TRACE
-    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TypeLoadStop))
-    {
-        ETW::TypeSystemLog::TypeLoadEnd(typeLoad, TypeHandle(pReturnedMT), CLASS_LOADED);
-    }
-#endif
-
-    return pReturnedMT;
-}
-
-MethodTable* AsyncContinuationsManager::LookupOrCreateContinuationMethodTableFromLayout(unsigned dataSize, const bool* objRefs)
-{
-    STANDARD_VM_CONTRACT;
-
-    ContinuationLayoutKeyData keyData(dataSize, objRefs);
-    {
-        CrstHolder lock(&m_layoutsLock);
-        MethodTable* lookupResult;
-        if (m_layouts.GetValue(ContinuationLayoutKey(&keyData), (HashDatum*)&lookupResult))
-        {
-            return lookupResult;
-        }
-    }
-
-#ifdef FEATURE_EVENT_TRACE
-    UINT32 typeLoad = ETW::TypeSystemLog::TypeLoadBegin();
-#endif
-
-    AllocMemTracker amTracker;
-    // Use System module as the loader module for R2R fixup continuations
-    Module* systemModule = SystemDomain::SystemModule();
     MethodTable* pNewMT = CreateNewContinuationMethodTable(
         dataSize,
         objRefs,
         GetOrCreateSingletonSubContinuationEEClass(),
         m_allocator,
-        systemModule,
+        loaderModule,
         &amTracker);
 
 #ifdef DEBUG
