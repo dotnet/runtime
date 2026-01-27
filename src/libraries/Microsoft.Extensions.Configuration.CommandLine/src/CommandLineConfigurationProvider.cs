@@ -141,7 +141,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
             foreach (KeyValuePair<string, string> mapping in switchMappings)
             {
                 // Only keys start with "--" or "-" are acceptable
-                if (!mapping.Key.StartsWith('-') && !mapping.Key.StartsWith("--"))
+                if (!mapping.Key.StartsWith('-'))
                 {
                     throw new ArgumentException(
                         SR.Format(SR.Error_InvalidSwitchMapping, mapping.Key),
