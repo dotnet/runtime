@@ -2076,7 +2076,7 @@ SveMaskPattern EvaluateSimdMaskToPattern(var_types baseType, simdmask_t arg0)
 //
 // Arguments:
 //    result -  Returns the narrowed and duplicated simd value
-//    vecCon -  The simd value to narrow and duplicate
+//    arg0   -  The simd value to narrow and duplicate
 //
 template <typename TSimd, typename TBase>
 void NarrowAndDuplicateSimdLong(TSimd* result, const TSimd& arg0)
