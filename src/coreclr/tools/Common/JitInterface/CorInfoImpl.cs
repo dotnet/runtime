@@ -3845,9 +3845,16 @@ namespace Internal.JitInterface
             Span<AllocMemChunk> chunks = new Span<AllocMemChunk>(args.chunks, checked((int)args.chunksCount));
 
             uint roDataSize = 0;
+            uint rwDataSize = 0;
 
             _codeAlignment = -1;
             _roDataAlignment = -1;
+            _rwDataAlignment = -1;
+
+            // ELF/MachO do not support relocations from read-only sections to code sections, so we must put these
+            // into read-write sections.
+            bool ChunkNeedsReadWriteSection(in AllocMemChunk chunk)
+                => (chunk.flags & CorJitAllocMemFlag.CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE) != 0 && !_compilation.TypeSystemContext.Target.IsWindows;
 
             foreach (ref AllocMemChunk chunk in chunks)
             {
@@ -3865,6 +3872,13 @@ namespace Internal.JitInterface
 #if READYTORUN
                     _methodColdCodeNode = new MethodColdCodeNode(MethodBeingCompiled);
 #endif
+                }
+                else if (ChunkNeedsReadWriteSection(chunk))
+                {
+                    // For ELF/MachO we need to put data containing relocations into .text into a RW section
+                    rwDataSize = (uint)((int)rwDataSize).AlignUp((int)chunk.alignment);
+                    rwDataSize += chunk.size;
+                    _rwDataAlignment = Math.Max(_rwDataAlignment, (int)chunk.alignment);
                 }
                 else
                 {
@@ -3895,6 +3909,31 @@ namespace Internal.JitInterface
                 }
 
                 Debug.Assert(offset <= roDataSize);
+            }
+
+            if (rwDataSize != 0)
+            {
+                _rwData = new byte[rwDataSize];
+                _rwDataBlob = new MethodReadWriteDataNode(MethodBeingCompiled);
+                byte* rwDataBlock = (byte*)GetPin(_rwData);
+                int offset = 0;
+
+                foreach (ref AllocMemChunk chunk in chunks)
+                {
+                    if ((chunk.flags & (CorJitAllocMemFlag.CORJIT_ALLOCMEM_HOT_CODE | CorJitAllocMemFlag.CORJIT_ALLOCMEM_COLD_CODE)) != 0)
+                    {
+                        continue;
+                    }
+                    if (ChunkNeedsReadWriteSection(chunk))
+                    {
+                        offset = offset.AlignUp((int)chunk.alignment);
+                        chunk.block = rwDataBlock + offset;
+                        chunk.blockRW = chunk.block;
+                        offset += (int)chunk.size;
+                    }
+                }
+
+                Debug.Assert(offset <= rwDataSize);
             }
 
             if (_numFrameInfos > 0)
