@@ -61,14 +61,16 @@ namespace Tracing.UserEvents.Tests.Common
             bool isNativeAot = false;
             string userEventsScenarioDir = baseDir;
             
-            if (baseDir.EndsWith("native" + Path.DirectorySeparatorChar) || baseDir.EndsWith("native"))
+            string nativeSubdirName = "native" + Path.DirectorySeparatorChar;
+            if (baseDir.EndsWith(nativeSubdirName, StringComparison.Ordinal) || baseDir.EndsWith("native", StringComparison.Ordinal))
             {
                 // NativeAOT places its compiled test executables under a 'native' subdirectory.
                 isNativeAot = true;
                 userEventsScenarioDir = Path.GetFullPath(Path.Combine(baseDir, ".."));
             }
             
-            if (!userEventsScenarioDir.EndsWith(scenarioName + Path.DirectorySeparatorChar) && !userEventsScenarioDir.EndsWith(scenarioName))
+            string scenarioDirName = scenarioName + Path.DirectorySeparatorChar;
+            if (!userEventsScenarioDir.EndsWith(scenarioDirName, StringComparison.Ordinal) && !userEventsScenarioDir.EndsWith(scenarioName, StringComparison.Ordinal))
             {
                 Console.Error.WriteLine($"Could not resolve the userevents test scenario directory. Expected directory to end with '{scenarioName}', but got: {userEventsScenarioDir}");
                 return -1;
