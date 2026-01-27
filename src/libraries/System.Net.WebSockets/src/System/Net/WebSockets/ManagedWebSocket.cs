@@ -1679,7 +1679,7 @@ namespace System.Net.WebSockets
             }
 
             // Process any remaining bytes one at a time.
-            Span<byte> maskBytes = MemoryMarshal.AsBytes(new Span<int>(ref mask));
+            Span<byte> maskBytes = MemoryMarshal.CreateSpan(ref Unsafe.As<int, byte>(ref mask), sizeof(int));
             foreach (ref byte b in toMask)
             {
                 b ^= maskBytes[maskIndex];
