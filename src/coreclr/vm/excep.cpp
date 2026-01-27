@@ -11227,12 +11227,21 @@ void SoftwareExceptionFrame::InitAndLink(Thread *pThread)
 // Returns the adjusted SP and FP values that the OSR method should use.
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
-#if defined(TARGET_AMD64)
-// x64: Reads callee-saves from TransitionBlock (JIT epilog handles Tier0 restoration)
+// Reads callee-saves from Tier0's stack via PatchpointInfo
 void SoftwareExceptionFrame::UpdateContextForOSRTransition(TransitionBlock* pTransitionBlock, CONTEXT* pContext, 
-                                                           UINT_PTR* pCurrentSP, UINT_PTR* pCurrentFP)
+                                                           UINT_PTR* pCurrentSP, UINT_PTR* pCurrentFP,
+                                                           const EECodeInfo& codeInfo)
 {
     LIMITED_METHOD_CONTRACT;
+
+    // Get PatchpointInfo for Tier0 method to locate callee-saves in Tier0's stack frame
+    EEJitManager* jitMgr = ExecutionManager::GetEEJitManager();
+    CodeHeader* codeHdr = jitMgr->GetCodeHeaderFromStartAddress(codeInfo.GetStartAddress());
+    PTR_BYTE debugInfo = codeHdr->GetDebugInfo();
+    PatchpointInfo* pPatchpointInfo = CompressDebugInfo::RestorePatchpointInfo(debugInfo);
+    _ASSERTE(pPatchpointInfo != nullptr);
+
+#if defined(TARGET_AMD64)
 
 #if defined(TARGET_WINDOWS)
     pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
@@ -11262,46 +11271,61 @@ void SoftwareExceptionFrame::UpdateContextForOSRTransition(TransitionBlock* pTra
     pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
 #endif
 
-    // Copy integer callee-saved registers from TransitionBlock
-    pContext->Rbx = pTransitionBlock->m_calleeSavedRegisters.Rbx;
-    pContext->Rbp = pTransitionBlock->m_calleeSavedRegisters.Rbp;
-    pContext->R12 = pTransitionBlock->m_calleeSavedRegisters.R12;
-    pContext->R13 = pTransitionBlock->m_calleeSavedRegisters.R13;
-    pContext->R14 = pTransitionBlock->m_calleeSavedRegisters.R14;
-    pContext->R15 = pTransitionBlock->m_calleeSavedRegisters.R15;
+    // FP from TransitionBlock points to where Tier0 saved RBP
+    UINT_PTR managedFrameFP = pTransitionBlock->m_calleeSavedRegisters.Rbp;
+
+    // Read integer callee-saved registers from Tier0's stack frame.
+    // On x64, callee-saves are pushed after RBP in reverse register order (high to low).
+    // If Tier0 saved the register (bit set in mask), read from Tier0's stack.
+    // If Tier0 didn't save it (bit not set), use TransitionBlock value (original caller value).
+    {
+        int calleeSaveFpOffset = pPatchpointInfo->CalleeSaveFpOffset();  // Always -8 on x64
+        UINT64 calleeSaveMask = pPatchpointInfo->CalleeSaveRegisters();
+        TADDR calleeSaveBase = managedFrameFP + calleeSaveFpOffset;
+
+        // x64 pushes in reverse order: R15, R14, R13, R12, Rbx, (Rsi, Rdi on Windows)
+        // Each pushed register decrements SP by 8, so:
+        //   First push (highest reg number) is at RBP-8
+        //   Second push is at RBP-16, etc.
+        int offset = 0;
+
+        // Registers are pushed from highest to lowest register number (after RBP)
+        // RBP is not in this loop - it's handled separately
+        // Register encoding: RAX=0, RCX=1, RDX=2, RBX=3, RSP=4, RBP=5, RSI=6, RDI=7, R8-R15=8-15
+        if (calleeSaveMask & (1ULL << 15)) { pContext->R15 = *((UINT64*)(calleeSaveBase - offset)); offset += 8; }
+        else { pContext->R15 = pTransitionBlock->m_calleeSavedRegisters.R15; }
+        if (calleeSaveMask & (1ULL << 14)) { pContext->R14 = *((UINT64*)(calleeSaveBase - offset)); offset += 8; }
+        else { pContext->R14 = pTransitionBlock->m_calleeSavedRegisters.R14; }
+        if (calleeSaveMask & (1ULL << 13)) { pContext->R13 = *((UINT64*)(calleeSaveBase - offset)); offset += 8; }
+        else { pContext->R13 = pTransitionBlock->m_calleeSavedRegisters.R13; }
+        if (calleeSaveMask & (1ULL << 12)) { pContext->R12 = *((UINT64*)(calleeSaveBase - offset)); offset += 8; }
+        else { pContext->R12 = pTransitionBlock->m_calleeSavedRegisters.R12; }
+        if (calleeSaveMask & (1ULL << 3)) { pContext->Rbx = *((UINT64*)(calleeSaveBase - offset)); offset += 8; }
+        else { pContext->Rbx = pTransitionBlock->m_calleeSavedRegisters.Rbx; }
 #if defined(TARGET_WINDOWS)
-    pContext->Rdi = pTransitionBlock->m_calleeSavedRegisters.Rdi;
-    pContext->Rsi = pTransitionBlock->m_calleeSavedRegisters.Rsi;
+        // Windows has Rsi and Rdi as callee-saved (pushed after Rbx)
+        if (calleeSaveMask & (1ULL << 6)) { pContext->Rsi = *((UINT64*)(calleeSaveBase - offset)); offset += 8; }
+        else { pContext->Rsi = pTransitionBlock->m_calleeSavedRegisters.Rsi; }
+        if (calleeSaveMask & (1ULL << 7)) { pContext->Rdi = *((UINT64*)(calleeSaveBase - offset)); offset += 8; }
+        else { pContext->Rdi = pTransitionBlock->m_calleeSavedRegisters.Rdi; }
 #endif
+    }
+
+    // Read caller's RBP from Tier0's stack frame (saved at [RBP])
+    TADDR callerRBP = *((TADDR*)managedFrameFP);
+    pContext->Rbp = callerRBP;
 
     // SP points just past the TransitionBlock (after return address)
     // Adjust for call simulation: OSR method expects SP as if a call just happened
     *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
     _ASSERTE(*pCurrentSP % 16 == 0);
     *pCurrentSP -= 8;  // Simulate the call pushing return address
-    *pCurrentFP = pTransitionBlock->m_calleeSavedRegisters.Rbp;
-}
+    *pCurrentFP = callerRBP;
 
-#else // !TARGET_AMD64
-
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-// ARM64/LoongArch64/RISC-V64: Reads callee-saves from Tier0's stack via PatchpointInfo
-void SoftwareExceptionFrame::UpdateContextForOSRTransition(TransitionBlock* pTransitionBlock, CONTEXT* pContext, 
-                                                           UINT_PTR* pCurrentSP, UINT_PTR* pCurrentFP,
-                                                           const EECodeInfo& codeInfo)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Get PatchpointInfo for Tier0 method to locate callee-saves in Tier0's stack frame
-    EEJitManager* jitMgr = ExecutionManager::GetEEJitManager();
-    CodeHeader* codeHdr = jitMgr->GetCodeHeaderFromStartAddress(codeInfo.GetStartAddress());
-    PTR_BYTE debugInfo = codeHdr->GetDebugInfo();
-    PatchpointInfo* pPatchpointInfo = CompressDebugInfo::RestorePatchpointInfo(debugInfo);
-    _ASSERTE(pPatchpointInfo != nullptr);
+#elif defined(TARGET_ARM64)
 
     pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
 
-#if defined(TARGET_ARM64)
     // FP from TransitionBlock points to where Tier0 saved [FP, LR]
     UINT_PTR managedFrameFP = pTransitionBlock->m_calleeSavedRegisters.x29;
 
@@ -11348,6 +11372,9 @@ void SoftwareExceptionFrame::UpdateContextForOSRTransition(TransitionBlock* pTra
     *pCurrentFP = callerFP;
 
 #elif defined(TARGET_LOONGARCH64)
+
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+
     UINT_PTR managedFrameFP = pTransitionBlock->m_calleeSavedRegisters.fp;
 
     // Read callee-saved registers from Tier0's stack save area using FP-relative offset.
@@ -11389,6 +11416,9 @@ void SoftwareExceptionFrame::UpdateContextForOSRTransition(TransitionBlock* pTra
     *pCurrentFP = callerFP;
 
 #elif defined(TARGET_RISCV64)
+
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+
     UINT_PTR managedFrameFP = pTransitionBlock->m_calleeSavedRegisters.fp;
 
     // Read callee-saved registers from Tier0's stack save area using FP-relative offset.
@@ -11436,11 +11466,9 @@ void SoftwareExceptionFrame::UpdateContextForOSRTransition(TransitionBlock* pTra
 
     *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
     *pCurrentFP = callerFP;
-#endif // TARGET_ARM64 / TARGET_LOONGARCH64 / TARGET_RISCV64
-}
 
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
-#endif // TARGET_AMD64
+#endif // TARGET_AMD64 / TARGET_ARM64 / TARGET_LOONGARCH64 / TARGET_RISCV64
+}
 
 #endif // FEATURE_ON_STACK_REPLACEMENT
 

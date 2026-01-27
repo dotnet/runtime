@@ -1035,17 +1035,10 @@ public:
     void UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock);
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-#if defined(TARGET_AMD64)
-    // Static helper to populate a CONTEXT from a TransitionBlock for OSR transitions.
-    // Returns the adjusted SP and FP values that the OSR method should use.
-    static void UpdateContextForOSRTransition(TransitionBlock* pTransitionBlock, CONTEXT* pContext, 
-                                              UINT_PTR* pCurrentSP, UINT_PTR* pCurrentFP);
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // Static helper that resolves PatchpointInfo to read callee-saves from Tier0's stack.
     static void UpdateContextForOSRTransition(TransitionBlock* pTransitionBlock, CONTEXT* pContext, 
                                               UINT_PTR* pCurrentSP, UINT_PTR* pCurrentFP,
                                               const EECodeInfo& codeInfo);
-#endif
 #endif // FEATURE_ON_STACK_REPLACEMENT
 #endif
 
