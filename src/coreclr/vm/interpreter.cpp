@@ -6522,6 +6522,10 @@ void Interpreter::LocAlloc()
     } CONTRACTL_END;
 
     _ASSERTE(m_curStackHt >= 1);
+    if (m_curStackHt != 1)  // ← Stack must have ONLY the size!
+    {
+    	COMPlusThrow(kInvalidProgramException);
+    }
     unsigned idx = m_curStackHt - 1;
     CorInfoType cit = OpStackTypeGet(idx).ToCorInfoType();
     NativeUInt sz = 0;
