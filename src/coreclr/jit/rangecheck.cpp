@@ -819,15 +819,7 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VA
                         cmpOper    = static_cast<genTreeOps>(funcApp.m_func);
                     }
 
-                    RangeOps::RelationKind relopResult = RangeOps::EvalRelop(cmpOper, isUnsigned, r1, r2);
-                    if (relopResult == RangeOps::RelationKind::AlwaysTrue)
-                    {
-                        result = Range(Limit(Limit::keConstant, 1));
-                    }
-                    else if (relopResult == RangeOps::RelationKind::AlwaysFalse)
-                    {
-                        result = Range(Limit(Limit::keConstant, 0));
-                    }
+                    result = RangeOps::EvalRelop(cmpOper, isUnsigned, r1, r2);
                 }
                 break;
             }
@@ -843,6 +835,13 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VA
             default:
                 break;
         }
+    }
+
+    // If it was evaluated to a single constant value by now, return it.
+    // We can't do better anyway.
+    if (result.IsSingleValueConstant())
+    {
+        return result;
     }
 
     Range phiRange = Range(Limit(Limit::keUndef));

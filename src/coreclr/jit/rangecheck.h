@@ -290,10 +290,17 @@ struct Range
                (uLimit.GetConstant() == INT32_MAX);
     }
 
-    bool IsSingleValueConstant(int cns)
+    bool IsSingleValueConstant(int* cns = nullptr) const
     {
-        return lLimit.IsConstant() && uLimit.IsConstant() && (lLimit.GetConstant() == cns) &&
-               (uLimit.GetConstant() == cns);
+        if (lLimit.IsConstant() && uLimit.IsConstant() && (lLimit.GetConstant() == uLimit.GetConstant()))
+        {
+            if (cns != nullptr)
+            {
+                *cns = lLimit.GetConstant();
+            }
+            return true;
+        }
+        return false;
     }
 };
 
@@ -626,13 +633,6 @@ struct RangeOps
         return result;
     }
 
-    enum class RelationKind
-    {
-        AlwaysTrue,
-        AlwaysFalse,
-        Unknown
-    };
-
     //------------------------------------------------------------------------
     // EvalRelop: Evaluate the relation between two ranges for the given relop
     //    Example: "x >= y" is AlwaysTrue when "x.LowerLimit() >= y.UpperLimit()"
@@ -644,11 +644,9 @@ struct RangeOps
     //    y          - The right range
     //
     // Returns:
-    //    AlwaysTrue when the given relop always evaluates to true for the given ranges
-    //    AlwaysFalse when the given relop always evaluates to false for the given ranges
-    //    Otherwise Unknown
+    //    Either [0..0] (AlwaysFalse), [1..1] (AlwaysTrue), or [0..1] (all relops are guaranteed to return 0 or 1)
     //
-    static RelationKind EvalRelop(const genTreeOps relop, bool isUnsigned, const Range& x, const Range& y)
+    static Range EvalRelop(const genTreeOps relop, bool isUnsigned, const Range& x, const Range& y)
     {
         assert(x.IsValid());
         assert(y.IsValid());
@@ -664,7 +662,8 @@ struct RangeOps
             if (!xLower.IsConstant() || !yUpper.IsConstant() || (xLower.GetConstant() < 0) ||
                 (yLower.GetConstant() < 0))
             {
-                return RelationKind::Unknown;
+                // Relops always return either 0 or 1.
+                return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, 1));
             }
         }
 
@@ -674,12 +673,12 @@ struct RangeOps
             case GT_LT:
                 if (xLower.IsConstant() && yUpper.IsConstant() && (xLower.GetConstant() >= yUpper.GetConstant()))
                 {
-                    return relop == GT_GE ? RelationKind::AlwaysTrue : RelationKind::AlwaysFalse;
+                    return Range(Limit(Limit::keConstant, relop == GT_GE ? 1 : 0));
                 }
 
                 if (xUpper.IsConstant() && yLower.IsConstant() && (xUpper.GetConstant() < yLower.GetConstant()))
                 {
-                    return relop == GT_GE ? RelationKind::AlwaysFalse : RelationKind::AlwaysTrue;
+                    return Range(Limit(Limit::keConstant, relop == GT_GE ? 0 : 1));
                 }
                 break;
 
@@ -687,12 +686,12 @@ struct RangeOps
             case GT_LE:
                 if (xLower.IsConstant() && yUpper.IsConstant() && (xLower.GetConstant() > yUpper.GetConstant()))
                 {
-                    return relop == GT_GT ? RelationKind::AlwaysTrue : RelationKind::AlwaysFalse;
+                    return Range(Limit(Limit::keConstant, relop == GT_GT ? 1 : 0));
                 }
 
                 if (xUpper.IsConstant() && yLower.IsConstant() && (xUpper.GetConstant() <= yLower.GetConstant()))
                 {
-                    return relop == GT_GT ? RelationKind::AlwaysFalse : RelationKind::AlwaysTrue;
+                    return Range(Limit(Limit::keConstant, relop == GT_GT ? 0 : 1));
                 }
                 break;
 
@@ -703,7 +702,7 @@ struct RangeOps
                 if ((xLower.IsConstant() && yUpper.IsConstant() && (xLower.GetConstant() > yUpper.GetConstant())) ||
                     (xUpper.IsConstant() && yLower.IsConstant() && (xUpper.GetConstant() < yLower.GetConstant())))
                 {
-                    return relop == GT_EQ ? RelationKind::AlwaysFalse : RelationKind::AlwaysTrue;
+                    return Range(Limit(Limit::keConstant, relop == GT_EQ ? 0 : 1));
                 }
 
                 // If both ranges are single constant and equal, then EQ is always true, NE is always false.
@@ -712,7 +711,7 @@ struct RangeOps
                     x.LowerLimit().Equals(x.UpperLimit()) && y.LowerLimit().Equals(y.UpperLimit()) &&
                     x.LowerLimit().GetConstant() == y.LowerLimit().GetConstant())
                 {
-                    return relop == GT_EQ ? RelationKind::AlwaysTrue : RelationKind::AlwaysFalse;
+                    return Range(Limit(Limit::keConstant, relop == GT_EQ ? 1 : 0));
                 }
                 break;
 
@@ -720,7 +719,8 @@ struct RangeOps
                 assert(!"unknown comparison operator");
                 break;
         }
-        return RelationKind::Unknown;
+        // Relops always return either 0 or 1.
+        return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, 1));
     }
 };
 

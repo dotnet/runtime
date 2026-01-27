@@ -4330,13 +4330,20 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         return optAssertionProp_Update(newTree, tree, stmt);
     }
 
-    Range relopRange =
-        RangeCheck::GetRangeFromAssertions(this, vnStore->VNConservativeNormalValue(tree->gtVNPair), assertions);
-    if (relopRange.IsSingleValueConstant(0) || relopRange.IsSingleValueConstant(1))
+    // See if we can fold the relop based on range information.
+    // We don't need the op1->TypeIs(TYP_INT) check, but it seems to improve the TP quite a bit.
+    if (op1->TypeIs(TYP_INT))
     {
-        newTree = gtWrapWithSideEffects(relopRange.IsSingleValueConstant(1) ? gtNewTrue() : gtNewFalse(), tree,
-                                        GTF_ALL_EFFECT);
-        return optAssertionProp_Update(newTree, tree, stmt);
+        ValueNum relopVN    = vnStore->VNConservativeNormalValue(tree->gtVNPair);
+        Range    relopRange = RangeCheck::GetRangeFromAssertions(this, relopVN, assertions);
+
+        int relopResult;
+        if (relopRange.IsSingleValueConstant(&relopResult))
+        {
+            assert((relopResult == 0) || (relopResult == 1));
+            newTree = gtWrapWithSideEffects(relopResult == 1 ? gtNewTrue() : gtNewFalse(), tree, GTF_ALL_EFFECT);
+            return optAssertionProp_Update(newTree, tree, stmt);
+        }
     }
 
     // Else check if we have an equality check involving a local or an indir
