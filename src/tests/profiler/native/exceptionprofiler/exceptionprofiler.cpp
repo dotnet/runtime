@@ -55,8 +55,8 @@ HRESULT ExceptionProfiler::ExceptionThrown(ObjectID thrownObjectId)
 {
     SHUTDOWNGUARD();
 
-    actualSequence += String(L"ExceptionThrown");
-    actualSequence += L"\n";
+    actualSequence += String(WCHAR("ExceptionThrown"));
+    actualSequence += WCHAR("\n");
 
     return S_OK;
 }
@@ -64,9 +64,9 @@ HRESULT ExceptionProfiler::ExceptionSearchFunctionEnter(FunctionID functionId)
 {
     SHUTDOWNGUARD();
 
-    actualSequence += String(L"ExceptionSearchFunctionEnter: ");
+    actualSequence += String(WCHAR("ExceptionSearchFunctionEnter: "));
     actualSequence += GetFunctionIDName(functionId);
-    actualSequence += L"\n";
+    actualSequence += WCHAR("\n");
 
     return S_OK;
 }
@@ -74,8 +74,8 @@ HRESULT ExceptionProfiler::ExceptionSearchFunctionLeave()
 {
     SHUTDOWNGUARD();
 
-    actualSequence += String(L"ExceptionSearchFunctionLeave");
-    actualSequence += L"\n";
+    actualSequence += String(WCHAR("ExceptionSearchFunctionLeave"));
+    actualSequence += WCHAR("\n");
 
     return S_OK;
 }
@@ -83,9 +83,9 @@ HRESULT ExceptionProfiler::ExceptionSearchFilterEnter(FunctionID functionId)
 {
     SHUTDOWNGUARD();
 
-    actualSequence += String(L"ExceptionSearchFilterEnter: ");
+    actualSequence += String(WCHAR("ExceptionSearchFilterEnter: "));
     actualSequence += GetFunctionIDName(functionId);
-    actualSequence += L"\n";
+    actualSequence += WCHAR("\n");
 
     return S_OK;
 }
@@ -93,8 +93,8 @@ HRESULT ExceptionProfiler::ExceptionSearchFilterLeave()
 {
     SHUTDOWNGUARD();
 
-    actualSequence += String(L"ExceptionSearchFilterLeave");
-    actualSequence += L"\n";
+    actualSequence += String(WCHAR("ExceptionSearchFilterLeave"));
+    actualSequence += WCHAR("\n");
 
     return S_OK;
 }
@@ -102,9 +102,9 @@ HRESULT ExceptionProfiler::ExceptionSearchCatcherFound(FunctionID functionId)
 {
     SHUTDOWNGUARD();
 
-    actualSequence += String(L"ExceptionSearchCatcherFound: ");
+    actualSequence += String(WCHAR("ExceptionSearchCatcherFound: "));
     actualSequence += GetFunctionIDName(functionId);
-    actualSequence += L"\n";
+    actualSequence += WCHAR("\n");
 
     return S_OK;
 }
@@ -112,9 +112,9 @@ HRESULT ExceptionProfiler::ExceptionUnwindFunctionEnter(FunctionID functionId)
 {
     SHUTDOWNGUARD();
 
-    actualSequence += String(L"ExceptionUnwindFunctionEnter: ");
+    actualSequence += String(WCHAR("ExceptionUnwindFunctionEnter: "));
     actualSequence += GetFunctionIDName(functionId);
-    actualSequence += L"\n";
+    actualSequence += WCHAR("\n");
 
     return S_OK;
 }
@@ -122,8 +122,8 @@ HRESULT ExceptionProfiler::ExceptionUnwindFunctionLeave()
 {
     SHUTDOWNGUARD();
 
-    actualSequence += String(L"ExceptionUnwindFunctionLeave");
-    actualSequence += L"\n";
+    actualSequence += String(WCHAR("ExceptionUnwindFunctionLeave"));
+    actualSequence += WCHAR("\n");
 
     return S_OK;
 }
@@ -131,9 +131,9 @@ HRESULT ExceptionProfiler::ExceptionUnwindFinallyEnter(FunctionID functionId)
 {
     SHUTDOWNGUARD();
 
-    actualSequence += String(L"ExceptionUnwindFinallyEnter: ");
+    actualSequence += String(WCHAR("ExceptionUnwindFinallyEnter: "));
     actualSequence += GetFunctionIDName(functionId);
-    actualSequence += L"\n";
+    actualSequence += WCHAR("\n");
 
     return S_OK;
 }
@@ -141,8 +141,8 @@ HRESULT ExceptionProfiler::ExceptionUnwindFinallyLeave()
 {
     SHUTDOWNGUARD();
 
-    actualSequence += String(L"ExceptionUnwindFinallyLeave");
-    actualSequence += L"\n";
+    actualSequence += String(WCHAR("ExceptionUnwindFinallyLeave"));
+    actualSequence += WCHAR("\n");
 
     return S_OK;
 }
@@ -150,9 +150,9 @@ HRESULT ExceptionProfiler::ExceptionCatcherEnter(FunctionID functionId, ObjectID
 {
     SHUTDOWNGUARD();
 
-    actualSequence += String(L"ExceptionCatcherEnter: ");
+    actualSequence += String(WCHAR("ExceptionCatcherEnter: "));
     actualSequence += GetFunctionIDName(functionId);
-    actualSequence += L"\n";
+    actualSequence += WCHAR("\n");
 
     return S_OK;
 }
@@ -160,8 +160,8 @@ HRESULT ExceptionProfiler::ExceptionCatcherLeave()
 {
     SHUTDOWNGUARD();
 
-    actualSequence += String(L"ExceptionCatcherLeave");
-    actualSequence += L"\n";
+    actualSequence += String(WCHAR("ExceptionCatcherLeave"));
+    actualSequence += WCHAR("\n");
 
     return S_OK;
 }

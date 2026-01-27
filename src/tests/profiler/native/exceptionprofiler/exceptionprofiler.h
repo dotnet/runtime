@@ -12,8 +12,8 @@ public:
     {}
 
     static GUID GetClsid();
-    virtual HRESULT STDMETHODCALLTYPE Initialize(IUnknown* pICorProfilerInfoUnk);
-    virtual HRESULT STDMETHODCALLTYPE Shutdown();
+    virtual HRESULT STDMETHODCALLTYPE Initialize(IUnknown* pICorProfilerInfoUnk) override;
+    virtual HRESULT STDMETHODCALLTYPE Shutdown() override;
     virtual HRESULT STDMETHODCALLTYPE ExceptionThrown(ObjectID thrownObjectId) override;
     virtual HRESULT STDMETHODCALLTYPE ExceptionSearchFunctionEnter(FunctionID functionId) override;
     virtual HRESULT STDMETHODCALLTYPE ExceptionSearchFunctionLeave() override;
