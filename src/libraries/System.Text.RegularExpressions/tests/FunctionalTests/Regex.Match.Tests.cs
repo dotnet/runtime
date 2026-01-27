@@ -815,6 +815,21 @@ namespace System.Text.RegularExpressions.Tests
             }
             yield return ("[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest");
             yield return (@"(\w+|\d+)a+[ab]+", "123123aa", RegexOptions.None, 0, 8, true, "123123aa");
+
+            // Alternations with many branches starting with unique characters (switch optimization)
+            if (!RegexHelpers.IsNonBacktracking(engine))
+            {
+                yield return (@"(?>abc|bcd|cde|def|efg|fgh|ghi|hij)", "hij", RegexOptions.None, 0, 3, true, "hij");
+                yield return (@"(?>abc|bcd|cde|def|efg|fgh|ghi|hij)", "efg", RegexOptions.None, 0, 3, true, "efg");
+                yield return (@"(?>abc|bcd|cde|def|efg|fgh|ghi|hij)", "xyz", RegexOptions.None, 0, 3, false, "");
+                yield return (@"(?>abc|bcd|cde|def|efg|fgh|ghi|hij)", "ab", RegexOptions.None, 0, 2, false, "");
+                yield return (@"(?>abc|bcd|cde|def|efg|fgh|ghi|hij)", "abcdef", RegexOptions.None, 0, 6, true, "abc");
+                yield return (@"(?>a1|b2|c3|d4|e5|f6|g7|h8)", "e5", RegexOptions.None, 0, 2, true, "e5");
+                yield return (@"(?>a1|b2|c3|d4|e5|f6|g7|h8)", "h8", RegexOptions.None, 0, 2, true, "h8");
+                yield return (@"(?>a1|b2|c3|d4|e5|f6|g7|h8)", "a1", RegexOptions.None, 0, 2, true, "a1");
+                yield return (@"(?>a1|b2|c3|d4|e5|f6|g7|h8)", "z9", RegexOptions.None, 0, 2, false, "");
+            }
+
             foreach (string aOptional in new[] { "(a|)", "(|a)", "(a?)", "(a??)" })
             {
                 yield return (@$"^{aOptional}{{0,2}}?b", "aab", RegexOptions.None, 0, 3, true, "aab");
