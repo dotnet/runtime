@@ -2963,7 +2963,7 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
     const regNumber reg1 = id->idReg1();
     assert(reg1 != REG_ZERO);
     assert(id->idCodeSize() == 2 * sizeof(code_t));
-    const ssize_t immediate = (emitConsBlock - dst) + offset;
+    const ssize_t immediate = emitDataOffsetToPtr(offset) - dst;
     assert((immediate > 0) && ((immediate & 0x01) == 0));
     assert(isValidSimm32(immediate));
 
