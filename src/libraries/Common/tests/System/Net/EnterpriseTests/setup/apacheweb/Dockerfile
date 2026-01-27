@@ -1,23 +1,26 @@
-FROM mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04
+FROM mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Install Kerberos client, apache Negotiate auth plugin, ProFTPD with SSL, and diagnostics
+# Install Kerberos client, ProFTPD with SSL, and diagnostics
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends apache2 libapache2-mod-auth-kerb procps krb5-user iputils-ping dnsutils nano \
-                                               libapache2-mod-auth-ntlm-winbind samba samba-dsdb-modules samba-vfs-modules \
-                                               proftpd-basic openssl
+    apt-get install -y --no-install-recommends apache2 procps krb5-user iputils-ping dnsutils nano \
+                                               samba samba-dsdb-modules samba-vfs-modules \
+                                               proftpd-basic proftpd-mod-crypto openssl \
+                                               apache2-dev libapache2-mod-auth-gssapi
 WORKDIR /setup
 
 COPY ./common/krb5.conf /etc/
 COPY ./apacheweb/apache2.conf /setup/apache2.conf
 COPY ./apacheweb/*.sh ./
+COPY ./apacheweb/mod_auth_ntlm_winbind/mod_auth_ntlm_winbind.c /tmp
 RUN chmod +x *.sh ; \
     mkdir -p /setup/htdocs/auth/ntlm /setup/altdocs/auth/ntlm /setup/htdocs/auth/kerberos /setup/altdocs/auth/kerberos /setup/htdocs/auth/digest ;\
     touch /setup/htdocs/index.html /setup/htdocs/auth/kerberos/index.html /setup/htdocs/auth/ntlm/index.html /setup/htdocs/auth/digest/index.html ;\
     touch /setup/altdocs/auth/kerberos/index.html /setup/altdocs/auth/ntlm/index.html ;\
     cp /etc/apache2/apache2.conf /etc/apache2/apache2.conf.ORIG ;\
-    mv -f apache2.conf /etc/apache2/apache2.conf
+    mv -f apache2.conf /etc/apache2/apache2.conf ;\
+    cd /tmp && apxs -DAPACHE2 -c -i mod_auth_ntlm_winbind.c
 
 # Setup FTP user and directories
 RUN useradd -m -s /bin/bash ftpuser && \
