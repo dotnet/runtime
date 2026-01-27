@@ -42,8 +42,8 @@
     <AndroidApiLevelMin>21</AndroidApiLevelMin>
     <iOSVersionMin>13.0</iOSVersionMin>
     <tvOSVersionMin>13.0</tvOSVersionMin>
-    <macOSVersionMin>12.0</macOSVersionMin>
-    <MacCatalystVersionMin>15.2</MacCatalystVersionMin>
+    <macOSVersionMin>14.0</macOSVersionMin>
+    <MacCatalystVersionMin>17.0</MacCatalystVersionMin>
   </PropertyGroup>
 
   <PropertyGroup>

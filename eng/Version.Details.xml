@@ -5,10 +5,6 @@
       <Uri>https://github.com/dotnet/icu</Uri>
       <Sha>b12b32d4177efa391c10895fc2ef3b7a21fb1d4d</Sha>
     </Dependency>
-    <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0-rc2.21473.1">
-      <Uri>https://github.com/dotnet/wcf</Uri>
-      <Sha>7f504aabb1988e9a093c1e74d8040bd52feb2f01</Sha>
-    </Dependency>
     <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.JIT.Tools" Version="19.1.0-alpha.1.25625.2">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
       <Sha>90a3b767fd10543cbaed7308406e0059dec0ffb7</Sha>
