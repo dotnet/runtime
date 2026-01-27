@@ -184,6 +184,20 @@ namespace System.Net.WebSockets.Tests
                client.SendAsync(Memory<byte>.Empty, WebSocketMessageType.Binary, WebSocketMessageFlags.EndOfMessage, default));
         }
 
+        [Fact]
+        public async Task ReceiveAsync_ServerUnmaskedFrame_ThrowsWebSocketException()
+        {
+            byte[] frame = { 0x81, 0x05, 0x48, 0x65, 0x6C, 0x6C, 0x6F };
+            using var stream = new MemoryStream();
+            stream.Write(frame, 0, frame.Length);
+            stream.Position = 0;
+            using WebSocket websocket = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions { IsServer = true });
+            WebSocketException exception = await Assert.ThrowsAsync<WebSocketException>(() =>
+                websocket.ReceiveAsync(new byte[5], CancellationToken.None));
+            Assert.Equal(SR.net_Websockets_ServerReceivedUnmaskedFrame, exception.Message);
+            Assert.Equal(WebSocketState.Aborted, websocket.State);
+        }
+
         public abstract class ExposeProtectedWebSocket : WebSocket
         {
             public static new bool IsStateTerminal(WebSocketState state) =>
