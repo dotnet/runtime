@@ -51,22 +51,18 @@ extern "C"
         {
             NOTHROW;
             GC_TRIGGERS;
-            MODE_COOPERATIVE;
+            MODE_PREEMPTIVE;
         }
         CONTRACTL_END;
 
         HRESULT hr=S_OK;
 
-        BEGIN_EXTERNAL_ENTRYPOINT(&hr);
-        
         INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
         {
             GCX_COOP();
             ManagedThreadBase::KickOff(FinalizerThread::FinalizerThreadWorkerIteration, NULL);
         }
         UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
-        
-        END_EXTERNAL_ENTRYPOINT;
     }
 }
 
@@ -563,6 +559,14 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration(void *args)
 
 DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 {
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
     ClrFlsSetThreadType (ThreadType_Finalizer);
 
     ASSERT(args == 0);
