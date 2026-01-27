@@ -12,9 +12,9 @@
 #include "corjit.h"
 
 #ifndef TARGET_UNIX
-#define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((32*1024)-1)   // when generating JIT code
+#define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT 0
 #else // !TARGET_UNIX
-#define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((GetOsPageSize() / 2) - 1)
+#define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT 0
 #endif // !TARGET_UNIX
 #include "pgo.h"
 
