@@ -678,41 +678,32 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VA
         switch (funcApp.m_func)
         {
             case VNF_Cast:
-                // The logic matches IntegralRange::ForCastOutput for small types.
+            {
+                var_types castToType;
+                bool      srcIsUnsigned;
+                comp->vnStore->GetCastOperFromVN(funcApp.m_args[1], &castToType, &srcIsUnsigned);
+
+                // GetRangeFromType returns a non-constant range if it can't be represented with Range
+                Range castToTypeRange = GetRangeFromType(castToType);
+                if (castToTypeRange.IsConstantRange())
                 {
-                    var_types castToType;
-                    bool      srcIsUnsigned;
-                    comp->vnStore->GetCastOperFromVN(funcApp.m_args[1], &castToType, &srcIsUnsigned);
-                    switch (castToType)
+                    result = castToTypeRange;
+
+                    // Now see if we can do better by looking at the cast source.
+                    // if its range is within the castTo range, we can use that (and the cast is basically a no-op).
+                    if (comp->vnStore->TypeOfVN(funcApp.m_args[0]) == TYP_INT)
                     {
-                        case TYP_UBYTE:
-                            result.lLimit = Limit(Limit::keConstant, UINT8_MIN);
-                            result.uLimit = Limit(Limit::keConstant, UINT8_MAX);
-                            break;
-
-                        case TYP_BYTE:
-                            result.lLimit = Limit(Limit::keConstant, INT8_MIN);
-                            result.uLimit = Limit(Limit::keConstant, INT8_MAX);
-                            break;
-
-                        case TYP_USHORT:
-                            result.lLimit = Limit(Limit::keConstant, UINT16_MIN);
-                            result.uLimit = Limit(Limit::keConstant, UINT16_MAX);
-                            break;
-
-                        case TYP_SHORT:
-                            result.lLimit = Limit(Limit::keConstant, INT16_MIN);
-                            result.uLimit = Limit(Limit::keConstant, INT16_MAX);
-                            break;
-
-                        default:
-                            break;
+                        Range castOpRange = GetRangeFromAssertions(comp, funcApp.m_args[0], assertions, --budget);
+                        if (castOpRange.IsConstantRange() &&
+                            (castOpRange.LowerLimit().GetConstant() >= castToTypeRange.LowerLimit().GetConstant()) &&
+                            (castOpRange.UpperLimit().GetConstant() <= castToTypeRange.UpperLimit().GetConstant()))
+                        {
+                            result = castOpRange;
+                        }
                     }
-
-                    // If we wanted to be more precise, we could also try to get the range of the source
-                    // and if it's smaller than the cast range, use that.
                 }
-                break;
+            }
+            break;
 
             case VNF_NEG:
             {

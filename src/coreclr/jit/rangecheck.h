@@ -761,7 +761,7 @@ private:
     Range GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
 
     // Compute the range from the given type
-    Range GetRangeFromType(var_types type);
+    static Range GetRangeFromType(var_types type);
 
     // Given the local variable, first find the definition of the local and find the range of the rhs.
     // Helper for GetRangeWorker.
