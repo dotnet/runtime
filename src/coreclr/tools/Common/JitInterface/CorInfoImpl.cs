@@ -3844,78 +3844,13 @@ namespace Internal.JitInterface
         {
             Span<AllocMemChunk> chunks = new Span<AllocMemChunk>(args.chunks, checked((int)args.chunksCount));
 
-<<<<<<< HEAD
             uint roDataSize = 0;
-            uint rwDataSize = 0;
-||||||| 571b044582c
-            if (args.coldCodeSize != 0)
-            {
-
-#if READYTORUN
-                this._methodColdCodeNode = new MethodColdCodeNode(MethodBeingCompiled);
-#endif
-                args.coldCodeBlock = (void*)GetPin(_coldCode = new byte[args.coldCodeSize]);
-                args.coldCodeBlockRW = args.coldCodeBlock;
-            }
-=======
-            uint roDataSize = 0;
->>>>>>> 94023c1896d4a921f4579046a46eb08d19a50637
 
             _codeAlignment = -1;
-<<<<<<< HEAD
-            _roDataAlignment = -1;
-            _rwDataAlignment = -1;
-
-            // ELF/MachO do not support relocations from read-only sections to code sections, so we must put these
-            // into read-write sections.
-            bool ChunkNeedsReadWriteSection(in AllocMemChunk chunk)
-                => (chunk.flags & CorJitAllocMemFlag.CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE) != 0 && !_compilation.TypeSystemContext.Target.IsWindows;
-
-            foreach (ref AllocMemChunk chunk in chunks)
-||||||| 571b044582c
-            if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
-=======
             _roDataAlignment = -1;
 
             foreach (ref AllocMemChunk chunk in chunks)
->>>>>>> 94023c1896d4a921f4579046a46eb08d19a50637
             {
-<<<<<<< HEAD
-                if ((chunk.flags & CorJitAllocMemFlag.CORJIT_ALLOCMEM_HOT_CODE) != 0)
-                {
-                    chunk.block = (byte*)GetPin(_code = new byte[chunk.size]);
-                    chunk.blockRW = chunk.block;
-                    _codeAlignment = (int)chunk.alignment;
-                }
-                else if ((chunk.flags & CorJitAllocMemFlag.CORJIT_ALLOCMEM_COLD_CODE) != 0)
-                {
-                    chunk.block = (byte*)GetPin(_coldCode = new byte[chunk.size]);
-                    chunk.blockRW = chunk.block;
-                    Debug.Assert(chunk.alignment == 1);
-#if READYTORUN
-                    _methodColdCodeNode = new MethodColdCodeNode(MethodBeingCompiled);
-#endif
-                }
-                else if (ChunkNeedsReadWriteSection(chunk))
-                {
-                    // For ELF/MachO we need to put data containing relocations into .text into a RW section
-                    rwDataSize = (uint)((int)rwDataSize).AlignUp((int)chunk.alignment);
-                    rwDataSize += chunk.size;
-                    _rwDataAlignment = Math.Max(_rwDataAlignment, (int)chunk.alignment);
-                }
-                else
-                {
-                    roDataSize = (uint)((int)roDataSize).AlignUp((int)chunk.alignment);
-                    roDataSize += chunk.size;
-                    _roDataAlignment = Math.Max(_roDataAlignment, (int)chunk.alignment);
-                }
-||||||| 571b044582c
-                _codeAlignment = 32;
-            }
-            else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
-            {
-                _codeAlignment = 16;
-=======
                 if ((chunk.flags & CorJitAllocMemFlag.CORJIT_ALLOCMEM_HOT_CODE) != 0)
                 {
                     chunk.block = (byte*)GetPin(_code = new byte[chunk.size]);
@@ -3937,7 +3872,6 @@ namespace Internal.JitInterface
                     roDataSize += chunk.size;
                     _roDataAlignment = Math.Max(_roDataAlignment, (int)chunk.alignment);
                 }
->>>>>>> 94023c1896d4a921f4579046a46eb08d19a50637
             }
 
             if (roDataSize != 0)
@@ -3947,7 +3881,6 @@ namespace Internal.JitInterface
                 byte* roDataBlock = (byte*)GetPin(_roData);
                 int offset = 0;
 
-<<<<<<< HEAD
                 foreach (ref AllocMemChunk chunk in chunks)
                 {
                     if ((chunk.flags & (CorJitAllocMemFlag.CORJIT_ALLOCMEM_HOT_CODE | CorJitAllocMemFlag.CORJIT_ALLOCMEM_COLD_CODE)) != 0)
@@ -3962,50 +3895,6 @@ namespace Internal.JitInterface
                 }
 
                 Debug.Assert(offset <= roDataSize);
-            }
-
-            if (rwDataSize != 0)
-            {
-                _rwData = new byte[rwDataSize];
-                _rwDataBlob = new MethodReadWriteDataNode(MethodBeingCompiled);
-                byte* rwDataBlock = (byte*)GetPin(_rwData);
-                int offset = 0;
-
-                foreach (ref AllocMemChunk chunk in chunks)
-                {
-                    if ((chunk.flags & (CorJitAllocMemFlag.CORJIT_ALLOCMEM_HOT_CODE | CorJitAllocMemFlag.CORJIT_ALLOCMEM_COLD_CODE)) != 0)
-                    {
-                        continue;
-                    }
-                    if (ChunkNeedsReadWriteSection(chunk))
-                    {
-                        offset = offset.AlignUp((int)chunk.alignment);
-                        chunk.block = rwDataBlock + offset;
-                        chunk.blockRW = chunk.block;
-                        offset += (int)chunk.size;
-                    }
-                }
-
-                Debug.Assert(offset <= rwDataSize);
-||||||| 571b044582c
-                args.roDataBlock = (void*)GetPin(_roData);
-                args.roDataBlockRW = args.roDataBlock;
-=======
-                foreach (ref AllocMemChunk chunk in chunks)
-                {
-                    if ((chunk.flags & (CorJitAllocMemFlag.CORJIT_ALLOCMEM_HOT_CODE | CorJitAllocMemFlag.CORJIT_ALLOCMEM_COLD_CODE)) != 0)
-                    {
-                        continue;
-                    }
-
-                    offset = offset.AlignUp((int)chunk.alignment);
-                    chunk.block = roDataBlock + offset;
-                    chunk.blockRW = chunk.block;
-                    offset += (int)chunk.size;
-                }
-
-                Debug.Assert(offset <= roDataSize);
->>>>>>> 94023c1896d4a921f4579046a46eb08d19a50637
             }
 
             if (_numFrameInfos > 0)
