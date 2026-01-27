@@ -108,6 +108,7 @@ namespace System.Globalization
             {
                 throw new ArgumentException(SR.Argument_IdnBadLabelSize, nameof(unicode));
             }
+
             if (unicode[^1] == 0)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidCharSequence, unicode.Length - 1), nameof(unicode));
@@ -180,7 +181,9 @@ namespace System.Globalization
             // The .NET APIs should (and did in v4.0 and earlier) throw an ArgumentException on input that includes a terminating null.
             // The Win32 APIs fail on an embedded null, but not on a terminating null.
             if (ascii.Length > 0 && ascii[^1] == (char)0)
+            {
                 throw new ArgumentException(SR.Argument_IdnBadPunycode, nameof(ascii));
+            }
 
             if (ascii.Overlaps(destination))
             {
@@ -250,6 +253,7 @@ namespace System.Globalization
                 {
                     return unicodeString;
                 }
+
                 return unicode.ToString();
             }
 
@@ -282,6 +286,7 @@ namespace System.Globalization
                     charsWritten = unicode.Length;
                     return true;
                 }
+
                 charsWritten = 0;
                 return false;
             }
@@ -657,7 +662,9 @@ namespace System.Globalization
             // Output name MUST obey IDNA rules & round trip (casing differences are allowed)
             string asciiRoundtrip = GetAscii(strUnicode);
             if (!asciiRoundtrip.Equals(asciiSlice, StringComparison.OrdinalIgnoreCase))
+            {
                 throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(ascii));
+            }
 
             // If the ASCII round-trip equals the original string, return it as-is (no allocation)
             if (index == 0 && count == ascii.Length && strUnicode.Equals(ascii, StringComparison.OrdinalIgnoreCase))
@@ -678,7 +685,9 @@ namespace System.Globalization
 
             // Output name MUST obey IDNA rules & round trip (casing differences are allowed)
             if (!asciiString.Equals(GetAscii(strUnicode), StringComparison.OrdinalIgnoreCase))
+            {
                 throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(ascii));
+            }
 
             if (strUnicode.Length <= destination.Length)
             {
