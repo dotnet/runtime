@@ -105,7 +105,7 @@ namespace System.IO.Compression.Tests
             s_createDecryptionMethod = s_zipCryptoStreamType.GetMethod("Create",
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                 null,
-                new[] { typeof(Stream), typeof(byte[]), typeof(byte), typeof(bool) },
+                new[] { typeof(Stream), typeof(byte[]), typeof(byte), typeof(bool), typeof(bool) },
                 null)!;
         }
 
@@ -136,7 +136,7 @@ namespace System.IO.Compression.Tests
             var ms = new MemoryStream(encryptedMs.ToArray());
             var decryptStream = (Stream)s_createDecryptionMethod.Invoke(null, new object[]
             {
-                ms, keyBytes, ExpectedCheckByte, false
+                ms, keyBytes, ExpectedCheckByte, false, false
             })!;
 
             return Task.FromResult<Stream?>(decryptStream);
