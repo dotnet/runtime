@@ -25,11 +25,11 @@
 #endif // !TARGET_WASM
 
 // Call invoker helpers provided by platform.
-void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet);
+void InvokeManagedMethod(ManagedMethodParam *pParam);
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget);
-void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet, Object** pContinuationRet);
+void InvokeCalliStub(CalliStubParam* pParam);
 void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet);
-void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet);
+void InvokeDelegateInvokeMethod(DelegateInvokeMethodParam* pParam);
 extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock);
 
 // Filter to ignore SEH exceptions representing C++ exceptions.
@@ -72,30 +72,22 @@ std::invoke_result_t<Function> CallWithSEHWrapper(Function function)
 
 // Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
 NOINLINE
-void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
+void InvokeUnmanagedMethodWithTransition(UnmanagedMethodWithTransitionParam *pParam)
 {
     InlinedCallFrame inlinedCallFrame;
-    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pFrame->ip;
-    inlinedCallFrame.m_pCallSiteSP = pFrame;
-    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
+    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pParam->pFrame->ip;
+    inlinedCallFrame.m_pCallSiteSP = pParam->pFrame;
+    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)pParam->stack;
     inlinedCallFrame.m_pThread = GetThread();
     inlinedCallFrame.m_Datum = NULL;
     inlinedCallFrame.Push();
 
-    struct Param
-    {
-        MethodDesc *targetMethod;
-        int8_t *pArgs;
-        int8_t *pRet;
-        PCODE callTarget;
-    }
-    param = { targetMethod, pArgs, pRet, callTarget };
-
-    PAL_TRY(Param *, pParam, &param)
+    PAL_TRY(UnmanagedMethodWithTransitionParam*, pParam, pParam)
     {
         GCX_PREEMP_NO_DTOR();
         // WASM-TODO: Handle unmanaged calling conventions
-        InvokeManagedMethod(pParam->targetMethod, pParam->pArgs, pParam->pRet, pParam->callTarget, NULL);
+        ManagedMethodParam param = { pParam->targetMethod, pParam->pArgs, pParam->pRet, pParam->callTarget, NULL };
+        InvokeManagedMethod(&param);
         GCX_PREEMP_NO_DTOR_END();
     }
     PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
@@ -219,19 +211,25 @@ MethodDesc* GetTargetPInvokeMethodDesc(PCODE target)
     return NULL;
 }
 
-void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet)
+void InvokeManagedMethod(ManagedMethodParam* pParam)
 {
     CONTRACTL
     {
         THROWS;
         MODE_ANY;
-        PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(CheckPointer(pArgs));
-        PRECONDITION(CheckPointer(pRet));
+        PRECONDITION(CheckPointer(pParam->pMD));
+        PRECONDITION(CheckPointer(pParam->pArgs));
+        PRECONDITION(CheckPointer(pParam->pRet));
     }
     CONTRACTL_END
 
-    CallStubHeader *pHeader = pMD->GetCallStub();
+    MethodDesc *pMD = pParam->pMD;
+    int8_t *pArgs = pParam->pArgs;
+    int8_t *pRet = pParam->pRet;
+    PCODE target = pParam->target;
+    Object** pContinuationRet = pParam->pContinuationRet;
+
+    CallStubHeader *pHeader = pParam->pMD->GetCallStub();
     if (pHeader == NULL)
     {
         pHeader = UpdateCallStubForMethod(pMD, target == (PCODE)NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target);
@@ -268,20 +266,27 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
 
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
 {
-    InvokeManagedMethod(targetMethod, pArgs, pRet, callTarget, NULL);
+    ManagedMethodParam param = { targetMethod, pArgs, pRet, callTarget, NULL };
+    InvokeManagedMethod(&param);
 }
 
-void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet)
+void InvokeDelegateInvokeMethod(DelegateInvokeMethodParam* pParam)
 {
     CONTRACTL
     {
         THROWS;
         MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pMDDelegateInvoke));
-        PRECONDITION(CheckPointer(pArgs));
-        PRECONDITION(CheckPointer(pRet));
+        PRECONDITION(CheckPointer(pParam->pMDDelegateInvoke));
+        PRECONDITION(CheckPointer(pParam->pArgs));
+        PRECONDITION(CheckPointer(pParam->pRet));
     }
     CONTRACTL_END
+
+    MethodDesc *pMDDelegateInvoke = pParam->pMDDelegateInvoke;
+    int8_t *pArgs = pParam->pArgs;
+    int8_t *pRet  = pParam->pRet;
+    PCODE target  = pParam->target;
+    Object** pContinuationRet = pParam->pContinuationRet;
 
     CallStubHeader *stubHeaderTemplate = pMDDelegateInvoke->GetCallStub();
     if (stubHeaderTemplate == NULL)
@@ -330,16 +335,22 @@ void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, &continuationUnused);
 }
 
-void InvokeCalliStub(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet, Object** pContinuationRet)
+void InvokeCalliStub(CalliStubParam* pParam)
 {
     CONTRACTL
     {
         THROWS;
         MODE_ANY;
-        PRECONDITION(CheckPointer((void*)ftn));
-        PRECONDITION(CheckPointer(cookie));
+        PRECONDITION(CheckPointer((void*)pParam->ftn));
+        PRECONDITION(CheckPointer(pParam->cookie));
     }
     CONTRACTL_END
+
+    PCODE ftn = pParam->ftn;
+    void *cookie = pParam->cookie;
+    int8_t *pArgs = pParam->pArgs;
+    int8_t *pRet = pParam->pRet;
+    Object** pContinuationRet = pParam->pContinuationRet;
 
     // CallStubHeaders encode their destination addresses in the Routines array, so they need to be
     // copied to a local buffer before we can actually set their target address.
@@ -444,14 +455,13 @@ typedef void (*HELPER_FTN_V_PP)(void*, void*);
 
 InterpThreadContext::InterpThreadContext()
 {
-    // FIXME VirtualAlloc/mmap with INTERP_STACK_ALIGNMENT alignment
-    pStackStart = pStackPointer = (int8_t*)new byte[INTERP_STACK_SIZE];
+    pStackStart = pStackPointer = (int8_t*)VMToOSInterface::AlignedAllocate(INTERP_STACK_SIZE, INTERP_STACK_SIZE);
     pStackEnd = pStackStart + INTERP_STACK_SIZE;
 }
 
 InterpThreadContext::~InterpThreadContext()
 {
-    delete [] pStackStart;
+    VMToOSInterface::AlignedFree(pStackStart);
 }
 
 DictionaryEntry GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule);
@@ -494,7 +504,7 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
         ctx.ContextFlags = CONTEXT_FULL;
         SetSP(&ctx, (DWORD64)pFrame);
         SetFP(&ctx, (DWORD64)stack);
-        SetIP(&ctx, (DWORD64)ip); 
+        SetIP(&ctx, (DWORD64)ip);
         SetFirstArgReg(&ctx, dac_cast<TADDR>(pInterpreterFrame)); // Enable debugger to iterate over interpreter frames
 
         // We need to add a FaultingExceptionFrame because debugger checks for it
@@ -857,7 +867,7 @@ void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont,
         else
             returnValueSize = sizeof(OBJECTREF);
     }
-    
+
     void* returnValueLocation = alloca(returnValueSize < (int32_t)sizeof(StackVal) ? (int32_t)sizeof(StackVal) : returnValueSize);
     memset(returnValueLocation, 0, returnValueSize);
 
@@ -2730,7 +2740,8 @@ MAIN_LOOP:
                             goto CALL_INTERP_METHOD;
                         }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
-                        InvokeCalliStub(calliFunctionPointer, cookie, callArgsAddress, returnValueAddress, pInterpreterFrame->GetContinuationPtr());
+                        CalliStubParam param = { calliFunctionPointer, cookie, callArgsAddress, returnValueAddress, pInterpreterFrame->GetContinuationPtr() };
+                        InvokeCalliStub(&param);
                     }
 
                     break;
@@ -2765,7 +2776,8 @@ MAIN_LOOP:
                     }
                     else
                     {
-                        InvokeUnmanagedMethodWithTransition(targetMethod, stack, pFrame, callArgsAddress, returnValueAddress, callTarget);
+                        UnmanagedMethodWithTransitionParam param = { targetMethod, stack, pFrame, callArgsAddress, returnValueAddress, callTarget };
+                        InvokeUnmanagedMethodWithTransition(&param);
                     }
 
                     break;
@@ -2909,7 +2921,8 @@ MAIN_LOOP:
                     // Save current execution state for when we return from called method
                     pFrame->ip = ip;
 
-                    InvokeDelegateInvokeMethod(targetMethod, callArgsAddress, returnValueAddress, targetAddress, pInterpreterFrame->GetContinuationPtr());
+                    DelegateInvokeMethodParam param = { targetMethod, callArgsAddress, returnValueAddress, targetAddress, pInterpreterFrame->GetContinuationPtr() };
+                    InvokeDelegateInvokeMethod(&param);
                     break;
                 }
 
@@ -2969,7 +2982,8 @@ CALL_INTERP_METHOD:
                         {
                             // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
                             // Interpreter-FIXME: Implement tailcall via helpers, see https://github.com/dotnet/runtime/blob/main/docs/design/features/tailcalls-with-helpers.md
-                            InvokeManagedMethod(targetMethod, callArgsAddress, returnValueAddress, (PCODE)NULL, pInterpreterFrame->GetContinuationPtr());
+                            ManagedMethodParam param = { targetMethod, callArgsAddress, returnValueAddress, (PCODE)NULL, pInterpreterFrame->GetContinuationPtr() };
+                            InvokeManagedMethod(&param);
                             break;
                         }
                     }
@@ -4062,7 +4076,7 @@ do                                                                      \
                         break;
                     }
                     ip += 3;
-                    
+
                     // copy locals that need to move to the continuation object
                     size_t continuationOffset = OFFSETOF__CORINFO_Continuation__data;
                     uint8_t *pContinuationDataStart = continuation->GetResultStorage();
@@ -4081,7 +4095,7 @@ do                                                                      \
                         }
                         InlinedSetCardsAfterBulkCopyHelper((Object**)pContinuationDataStart, bytesTotal);
                     }
-                    
+
                     int32_t returnValueSize = pAsyncSuspendData->asyncMethodReturnTypePrimitiveSize;
                     if (pAsyncSuspendData->asyncMethodReturnType != NULL)
                     {
@@ -4156,7 +4170,7 @@ do                                                                      \
                         // A continuation is present, begin the restoration process
                         int32_t state = continuation->GetState();
                         ip = (int32_t*)((uint8_t*)pFrame->startIp + state);
-                        
+
                         // Now we have an IP to where we should resume execution. This should be an INTOP_HANDLE_CONTINUATION_RESUME opcode
                         // And before it should be an INTOP_HANDLE_CONTINUATION_SUSPEND opcode
                         _ASSERTE(*ip == INTOP_HANDLE_CONTINUATION_RESUME);
@@ -4220,8 +4234,8 @@ do                                                                      \
 
         pInterpreterFrame->SetIsFaulting(false);
 
-        Thread *pThread = GetThread();
-        if (pThread->IsAbortRequested())
+        void* abortAddress = COMPlusCheckForAbort(resumeIP);
+        if (abortAddress != NULL)
         {
             // Record the resume IP in the pFrame so that the exception handling unwinds from there
             pFrame->ip = ip;

@@ -4557,10 +4557,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     };
     DoPhase(this, PHASE_POST_MORPH, postMorphPhase);
 
-    // GS security checks for unsafe buffers
-    //
-    DoPhase(this, PHASE_GS_COOKIE, &Compiler::gsPhase);
-
     if (opts.OptimizationEnabled())
     {
         // Compute the block weights
@@ -4951,6 +4947,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     {
         DoPhase(this, PHASE_ASYNC, &Compiler::TransformAsync);
     }
+
+    // GS security checks for unsafe buffers
+    //
+    DoPhase(this, PHASE_GS_COOKIE, &Compiler::gsPhase);
 
 #ifdef TARGET_WASM
     // Transform any strongly connected components into reducible flow.
@@ -9996,7 +9996,7 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
         {
             chars += printf("[DONT_CSE]");
         }
-        if (tree->gtFlags & GTF_UNSIGNED)
+        if (tree->IsUnsigned())
         {
             chars += printf("[SMALL_UNSIGNED]");
         }
