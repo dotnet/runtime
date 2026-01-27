@@ -10359,7 +10359,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getContinuationType(
 
     JIT_TO_EE_TRANSITION();
 
-    result = (CORINFO_CLASS_HANDLE)::getContinuationType(dataSize, objRefs, objRefsSize, m_pMethodBeingCompiled->GetModule());
+    result = (CORINFO_CLASS_HANDLE)::getContinuationType(dataSize, objRefs, objRefsSize, m_pMethodBeingCompiled->GetLoaderModule());
 
     EE_TO_JIT_TRANSITION();
 
