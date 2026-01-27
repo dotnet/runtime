@@ -166,8 +166,7 @@ namespace System
                             {
                                 throw new InvalidOperationException(SR.IO_TermInfoInvalid);
                             }
-                            printfEnd += pos;
-                            string printfFormat = format.Substring(pos - 1, printfEnd - pos + 2); // extract the format string
+                            string printfFormat = format.Substring(pos - 1, printfEnd + 2); // extract the format string
                             if (printfFormat.Length > 1 && printfFormat[1] == ':')
                             {
                                 printfFormat = printfFormat.Remove(1, 1);
