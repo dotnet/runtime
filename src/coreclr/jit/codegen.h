@@ -1354,8 +1354,6 @@ public:
     void instGen(instruction ins);
 #if defined(TARGET_XARCH)
     void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock, bool isRemovableJmpCandidate = false);
-#elif defined(TARGET_WASM)
-    void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock, bool isTempLabel = false);
 #else
     void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock);
 #endif

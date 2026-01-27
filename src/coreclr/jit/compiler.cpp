@@ -439,6 +439,7 @@ Compiler::Compiler(ArenaAllocator*       arena,
     compMaxUncheckedOffsetForNullObject = eeInfo->maxUncheckedOffsetForNullObject;
 
 #if defined(DEBUG) && defined(TARGET_WASM)
+    // TODO-WASM: remove once we no longer need to use x86/arm collections for wasm replay
     // if we are cross-replaying wasm, override compMaxUncheckedOffsetForNullObject
     if (!info.compMatchedVM)
     {

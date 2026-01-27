@@ -501,6 +501,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_NULLCHECK:
             genCodeForNullCheck(treeNode->AsIndir());
+            break;
 
         case GT_IND:
             genCodeForIndir(treeNode->AsIndir());
@@ -1203,11 +1204,8 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
         BasicBlock* const tgtBlk = genCreateTempLabel();
         GetEmitter()->emitIns(INS_block);
         GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, compiler->compMaxUncheckedOffsetForNullObject);
-        GetEmitter()->emitIns(INS_I_gt_u);
-        // tgtBlock is not on the model wasm control stack we set up earlier.
-        // Since we have just emitted a `begin` that will end at this block, it will be at depth 0.
-        // Indicate this via isTempLabel.
-        inst_JMP(EJ_jmpif, tgtBlk, /* isTempLabel */ true);
+        GetEmitter()->emitIns(INS_I_le_u);
+        GetEmitter()->emitIns(INS_if);
         // TODO-WASM: codegen for the call
         // genEmitHelperCall(compiler->acdHelper(SCK_NULL_CHECK), 0, EA_UNKNOWN);
         // The helper won't return, and we may have things pended on the stack, so emit unreachable
@@ -1604,12 +1602,11 @@ void CodeGen::genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum)
 // Arguments:
 //   jmp      - kind of jump to emit
 //   tgtBlock - target of the jump
-//   isTempLabel - true if target is a temp label (implicitly at top of control flow stack)
 //
-void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock, bool isTempLabel)
+void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 {
     instruction    instr = emitter::emitJumpKindToIns(jmp);
-    unsigned const depth = isTempLabel ? 0 : findTargetDepth(tgtBlock);
+    unsigned const depth = findTargetDepth(tgtBlock);
     GetEmitter()->emitIns_J(instr, EA_4BYTE, depth, tgtBlock);
 }
 
