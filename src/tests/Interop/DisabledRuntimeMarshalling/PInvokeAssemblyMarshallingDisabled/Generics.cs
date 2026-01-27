@@ -5,6 +5,7 @@ using System;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using TestLibrary;
 using Xunit;
 using static DisabledRuntimeMarshallingNative;
 

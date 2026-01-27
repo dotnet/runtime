@@ -36,7 +36,7 @@
           string[1] ('IsCoreClrInterpreter')
       }
       .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestPlatforms, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TargetFrameworkMonikers, valuetype [Microsoft.DotNet.XUnitExtensions]TestRuntimes) = {
-          string('Mono doesn't support SEH exceptions in Mono Windows runtime exception handler (AddVectoredExceptionHandler)')
+          string('Mono doesn\'t support SEH exceptions in Mono Windows runtime exception handler (AddVectoredExceptionHandler)')
           int32 (1) // TestPlatforms.Windows
           int32 (-1) // TargetFrameworkMonikers.Any
           int32(2) // Mono
