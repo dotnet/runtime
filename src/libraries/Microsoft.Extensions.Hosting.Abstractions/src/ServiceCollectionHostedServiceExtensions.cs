@@ -17,18 +17,15 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Add an <see cref="IHostedService"/> registration for the given type.
         /// </summary>
         /// <remarks>
-        /// <para>
         /// Note that this creates registration for <see cref="IHostedService"/> specifically. Not for the actual <c>THostedService</c> type.
-        /// </para>
-        /// <para>
         /// If you want to register the actual type, you must do so separately.
-        /// For example:
-        /// <code>
-        /// services.AddSingleton&lt;SomeService&gt;();
-        /// services.AddHostedService(sp => sp.GetService&lt;SomeService&gt;());
-        /// </code>
-        /// </para>
         /// </remarks>
+        /// <example>
+        /// <code language="csharp">
+        /// services.AddSingleton&lt;SomeService&gt;();
+        /// services.AddHostedService(sp => sp.GetRequiredService&lt;SomeService&gt;());
+        /// </code>
+        /// </example>
         /// <typeparam name="THostedService">An <see cref="IHostedService"/> to register.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to register with.</param>
         /// <returns>The original <see cref="IServiceCollection"/>.</returns>
@@ -44,18 +41,15 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Add an <see cref="IHostedService"/> registration for the given type.
         /// </summary>
         /// <remarks>
-        /// <para>
         /// Note that this creates registration for <see cref="IHostedService"/> specifically. Not for the actual <c>THostedService</c> type.
-        /// </para>
-        /// <para>
         /// If you want to register the actual type, you must do so separately.
-        /// For example:
-        /// <code>
-        /// services.AddSingleton&lt;SomeService&gt;(implementationFactory);
-        /// services.AddHostedService(sp => sp.GetService&lt;SomeService&gt;());
-        /// </code>
-        /// </para>
         /// </remarks>
+        /// <example>
+        /// <code language="csharp">
+        /// services.AddSingleton&lt;SomeService&gt;(implementationFactory);
+        /// services.AddHostedService(sp => sp.GetRequiredService&lt;SomeService&gt;());
+        /// </code>
+        /// </example>
         /// <typeparam name="THostedService">An <see cref="IHostedService"/> to register.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to register with.</param>
         /// <param name="implementationFactory">A factory to create new instances of the service implementation.</param>
