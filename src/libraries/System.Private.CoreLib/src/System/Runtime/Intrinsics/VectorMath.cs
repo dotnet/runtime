@@ -3178,6 +3178,89 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        public static TVectorDouble AsinhDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(TVectorDouble x)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
+            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
+        {
+            // This code is based on `asinhf` from amd/aocl-libm-ose
+            // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Implementation Notes
+            // --------------------
+            // asinh(x) = sign(x) * log(|x| + sqrt(x^2 + 1))
+            //
+            // For very small |x|: asinh(x) ≈ x
+            // For large |x|: asinh(x) ≈ sign(x) * (log(2) + log(|x|))
+
+            const double LN2 = 0.693147180559945309417;
+            const double TINY_THRESHOLD = 2.98023223876953125e-08; // 2^-25
+            const double LARGE_THRESHOLD = 268435456.0; // 2^28
+
+            TVectorDouble sign = x & TVectorDouble.Create(-0.0);
+            TVectorDouble ax = TVectorDouble.Abs(x);
+
+            // For very small values, return x
+            TVectorDouble tinyMask = TVectorDouble.LessThanOrEqual(ax, TVectorDouble.Create(TINY_THRESHOLD));
+
+            // For large values (|x| > 2^28), use log(2) + log(|x|)
+            TVectorDouble largeMask = TVectorDouble.GreaterThan(ax, TVectorDouble.Create(LARGE_THRESHOLD));
+
+            // Normal case: log(|x| + sqrt(x^2 + 1))
+            TVectorDouble x2 = ax * ax;
+            TVectorDouble sqrtArg = x2 + TVectorDouble.One;
+            TVectorDouble normal = LogDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(ax + TVectorDouble.Sqrt(sqrtArg));
+
+            // Large value case: log(2) + log(|x|)
+            TVectorDouble large = TVectorDouble.Create(LN2) + LogDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(ax);
+
+            // Select appropriate result based on magnitude
+            TVectorDouble result = TVectorDouble.ConditionalSelect(largeMask, large, normal);
+            result = TVectorDouble.ConditionalSelect(tinyMask, ax, result);
+
+            // Restore sign
+            result |= sign;
+
+            return result;
+        }
+
+        public static TVectorSingle AsinhSingle<TVectorSingle, TVectorInt32, TVectorUInt32, TVectorDouble, TVectorInt64, TVectorUInt64>(TVectorSingle x)
+            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
+            where TVectorInt32 : unmanaged, ISimdVector<TVectorInt32, int>
+            where TVectorUInt32 : unmanaged, ISimdVector<TVectorUInt32, uint>
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
+            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
+        {
+            // This code is based on `asinhf` from amd/aocl-libm-ose
+            // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Implementation Notes
+            // --------------------
+            // asinh(x) = sign(x) * log(|x| + sqrt(x^2 + 1))
+
+            if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
+            {
+                TVectorDouble dx = Widen<TVectorSingle, TVectorDouble>(x);
+                return Narrow<TVectorDouble, TVectorSingle>(AsinhDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(dx));
+            }
+            else
+            {
+                TVectorDouble dxLo = WidenLower<TVectorSingle, TVectorDouble>(x);
+                TVectorDouble dxHi = WidenUpper<TVectorSingle, TVectorDouble>(x);
+                return Narrow<TVectorDouble, TVectorSingle>(
+                    AsinhDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(dxLo),
+                    AsinhDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(dxHi)
+                );
+            }
+        }
+
         public static TVectorDouble AcosDouble<TVectorDouble>(TVectorDouble x)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
         {

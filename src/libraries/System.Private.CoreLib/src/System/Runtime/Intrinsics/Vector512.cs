@@ -757,6 +757,40 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <inheritdoc cref="Vector256.Asinh(Vector256{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<double> Asinh(Vector512<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AsinhDouble<Vector512<double>, Vector512<long>, Vector512<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Asinh(vector._lower),
+                    Vector256.Asinh(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector256.Asinh(Vector256{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<float> Asinh(Vector512<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AsinhSingle<Vector512<float>, Vector512<int>, Vector512<uint>, Vector512<double>, Vector512<long>, Vector512<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Asinh(vector._lower),
+                    Vector256.Asinh(vector._upper)
+                );
+            }
+        }
+
         /// <summary>Computes the arc cosine of each element in a vector.</summary>
         /// <param name="vector">The vector whose arc cosine is to be computed.</param>
         /// <returns>A vector whose elements are the arc cosine of the corresponding elements in <paramref name="vector" />.</returns>

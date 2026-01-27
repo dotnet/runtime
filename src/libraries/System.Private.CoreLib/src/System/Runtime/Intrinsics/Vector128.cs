@@ -853,6 +853,51 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Computes the inverse hyperbolic sine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose inverse hyperbolic sine is to be computed.</param>
+        /// <returns>A vector whose elements are the inverse hyperbolic sine of the corresponding elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Asinh(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AsinhDouble<Vector128<double>, Vector128<long>, Vector128<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Asinh(vector._lower),
+                    Vector64.Asinh(vector._upper)
+                );
+            }
+        }
+
+        /// <summary>Computes the inverse hyperbolic sine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose inverse hyperbolic sine is to be computed.</param>
+        /// <returns>A vector whose elements are the inverse hyperbolic sine of the corresponding elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Asinh(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.AsinhSingle<Vector128<float>, Vector128<int>, Vector128<uint>, Vector256<double>, Vector256<long>, Vector256<ulong>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AsinhSingle<Vector128<float>, Vector128<int>, Vector128<uint>, Vector128<double>, Vector128<long>, Vector128<ulong>>(vector);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector64.Asinh(vector._lower),
+                    Vector64.Asinh(vector._upper)
+                );
+            }
+        }
+
         /// <summary>Computes the arc cosine of each element in a vector.</summary>
         /// <param name="vector">The vector whose arc cosine is to be computed.</param>
         /// <returns>A vector whose elements are the arc cosine of the corresponding elements in <paramref name="vector" />.</returns>

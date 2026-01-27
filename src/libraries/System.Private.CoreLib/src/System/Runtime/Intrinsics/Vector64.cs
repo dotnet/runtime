@@ -818,6 +818,45 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Computes the inverse hyperbolic sine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose inverse hyperbolic sine is to be computed.</param>
+        /// <returns>A vector whose elements are the inverse hyperbolic sine of the corresponding elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<double> Asinh(Vector64<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AsinhDouble<Vector64<double>, Vector64<long>, Vector64<ulong>>(vector);
+            }
+            else
+            {
+                return Asinh<double>(vector);
+            }
+        }
+
+        /// <summary>Computes the inverse hyperbolic sine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose inverse hyperbolic sine is to be computed.</param>
+        /// <returns>A vector whose elements are the inverse hyperbolic sine of the corresponding elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<float> Asinh(Vector64<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector128.IsHardwareAccelerated)
+                {
+                    return VectorMath.AsinhSingle<Vector64<float>, Vector64<int>, Vector64<uint>, Vector128<double>, Vector128<long>, Vector128<ulong>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AsinhSingle<Vector64<float>, Vector64<int>, Vector64<uint>, Vector64<double>, Vector64<long>, Vector64<ulong>>(vector);
+                }
+            }
+            else
+            {
+                return Asinh<float>(vector);
+            }
+        }
+
         /// <summary>Computes the arc cosine of each element in a vector.</summary>
         /// <param name="vector">The vector whose arc cosine is to be computed.</param>
         /// <returns>A vector whose elements are the arc cosine of the corresponding elements in <paramref name="vector" />.</returns>
@@ -3828,6 +3867,20 @@ namespace System.Runtime.Intrinsics
             for (int index = 0; index < Vector64<T>.Count; index++)
             {
                 T value = T.Asin(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        internal static Vector64<T> Asinh<T>(Vector64<T> vector)
+            where T : IHyperbolicFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                T value = T.Asinh(vector.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
