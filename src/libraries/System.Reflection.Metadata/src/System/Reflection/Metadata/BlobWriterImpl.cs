@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 
 namespace System.Reflection.Metadata
@@ -144,72 +145,102 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal static void WriteConstant(ref BlobWriter writer, object? value)
+        /// <summary>
+        /// Writes a scalar (non-string) constant to a span.
+        /// </summary>
+        /// <param name="bytes">The span where the content will be encoded.</param>
+        /// <param name="value">The constant value.</param>
+        /// <returns>The number of bytes that was written.</returns>
+        internal static int WriteScalarConstant(Span<byte> bytes, object? value)
         {
             if (value == null)
             {
                 // The encoding of Type for the nullref value for FieldInit is ELEMENT_TYPE_CLASS with a Value of a 32-bit.
-                writer.WriteUInt32(0);
-                return;
+                BinaryPrimitives.WriteUInt32LittleEndian(bytes, 0);
+                return sizeof(uint);
             }
 
             var type = value.GetType();
-            if (type.GetTypeInfo().IsEnum)
+            if (type.IsEnum)
             {
                 type = Enum.GetUnderlyingType(type);
             }
 
             if (type == typeof(bool))
             {
-                writer.WriteBoolean((bool)value);
+                bytes[0] = (byte)((bool)value ? 1 : 0);
+                return sizeof(bool);
             }
             else if (type == typeof(int))
             {
-                writer.WriteInt32((int)value);
-            }
-            else if (type == typeof(string))
-            {
-                writer.WriteUTF16((string)value);
+                BinaryPrimitives.WriteInt32LittleEndian(bytes, (int)value);
+                return sizeof(int);
             }
             else if (type == typeof(byte))
             {
-                writer.WriteByte((byte)value);
+                bytes[0] = (byte)value;
+                return sizeof(byte);
             }
             else if (type == typeof(char))
             {
-                writer.WriteUInt16((char)value);
+                BinaryPrimitives.WriteUInt16LittleEndian(bytes, (char)value);
+                return sizeof(char);
             }
             else if (type == typeof(double))
             {
-                writer.WriteDouble((double)value);
+#if NET
+                BinaryPrimitives.WriteDoubleLittleEndian(bytes, (double)value);
+#else
+                double v = (double)value;
+                unsafe
+                {
+                    BinaryPrimitives.WriteUInt64LittleEndian(bytes, *(ulong*)(&v));
+                }
+#endif
+                return sizeof(double);
             }
             else if (type == typeof(short))
             {
-                writer.WriteInt16((short)value);
+                BinaryPrimitives.WriteInt16LittleEndian(bytes, (short)value);
+                return sizeof(short);
             }
             else if (type == typeof(long))
             {
-                writer.WriteInt64((long)value);
+                BinaryPrimitives.WriteInt64LittleEndian(bytes, (long)value);
+                return sizeof(long);
             }
             else if (type == typeof(sbyte))
             {
-                writer.WriteSByte((sbyte)value);
+                bytes[0] = (byte)(sbyte)value;
+                return sizeof(sbyte);
             }
             else if (type == typeof(float))
             {
-                writer.WriteSingle((float)value);
+#if NET
+                BinaryPrimitives.WriteSingleLittleEndian(bytes, (float)value);
+#else
+                float v = (float)value;
+                unsafe
+                {
+                    BinaryPrimitives.WriteUInt32LittleEndian(bytes, *(uint*)(&v));
+                }
+#endif
+                return sizeof(float);
             }
             else if (type == typeof(ushort))
             {
-                writer.WriteUInt16((ushort)value);
+                BinaryPrimitives.WriteUInt16LittleEndian(bytes, (ushort)value);
+                return sizeof(ushort);
             }
             else if (type == typeof(uint))
             {
-                writer.WriteUInt32((uint)value);
+                BinaryPrimitives.WriteUInt32LittleEndian(bytes, (uint)value);
+                return sizeof(uint);
             }
             else if (type == typeof(ulong))
             {
-                writer.WriteUInt64((ulong)value);
+                BinaryPrimitives.WriteUInt64LittleEndian(bytes, (ulong)value);
+                return sizeof(ulong);
             }
             else
             {
@@ -217,77 +248,30 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal static void WriteConstant(BlobBuilder writer, object? value)
+        internal static void WriteConstant(ref BlobWriter writer, object? value)
         {
-            if (value == null)
+            if (value is string s)
             {
-                // The encoding of Type for the nullref value for FieldInit is ELEMENT_TYPE_CLASS with a Value of a 32-bit.
-                writer.WriteUInt32(0);
+                writer.WriteUTF16(s);
                 return;
             }
 
-            var type = value.GetType();
-            if (type.GetTypeInfo().IsEnum)
+            Span<byte> bytes = stackalloc byte[sizeof(ulong)];
+            int written = WriteScalarConstant(bytes, value);
+            writer.WriteBytes(bytes.Slice(0, written));
+        }
+
+        internal static void WriteConstant(BlobBuilder writer, object? value)
+        {
+            if (value is string s)
             {
-                type = Enum.GetUnderlyingType(type);
+                writer.WriteUTF16(s);
+                return;
             }
 
-            if (type == typeof(bool))
-            {
-                writer.WriteBoolean((bool)value);
-            }
-            else if (type == typeof(int))
-            {
-                writer.WriteInt32((int)value);
-            }
-            else if (type == typeof(string))
-            {
-                writer.WriteUTF16((string)value);
-            }
-            else if (type == typeof(byte))
-            {
-                writer.WriteByte((byte)value);
-            }
-            else if (type == typeof(char))
-            {
-                writer.WriteUInt16((char)value);
-            }
-            else if (type == typeof(double))
-            {
-                writer.WriteDouble((double)value);
-            }
-            else if (type == typeof(short))
-            {
-                writer.WriteInt16((short)value);
-            }
-            else if (type == typeof(long))
-            {
-                writer.WriteInt64((long)value);
-            }
-            else if (type == typeof(sbyte))
-            {
-                writer.WriteSByte((sbyte)value);
-            }
-            else if (type == typeof(float))
-            {
-                writer.WriteSingle((float)value);
-            }
-            else if (type == typeof(ushort))
-            {
-                writer.WriteUInt16((ushort)value);
-            }
-            else if (type == typeof(uint))
-            {
-                writer.WriteUInt32((uint)value);
-            }
-            else if (type == typeof(ulong))
-            {
-                writer.WriteUInt64((ulong)value);
-            }
-            else
-            {
-                throw new ArgumentException(SR.Format(SR.InvalidConstantValueOfType, type));
-            }
+            Span<byte> bytes = stackalloc byte[sizeof(ulong)];
+            int written = WriteScalarConstant(bytes, value);
+            writer.WriteBytes(bytes.Slice(0, written));
         }
     }
 }
