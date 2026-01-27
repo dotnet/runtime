@@ -465,7 +465,7 @@ namespace System.Numerics.Tensors.Tests
             yield return Create(TensorPrimitives.Asin, T.Asin, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-12, floatTolerance: 1e-5f));
             yield return Create(TensorPrimitives.Atanh, T.Atanh);
             yield return Create(TensorPrimitives.AtanPi, T.AtanPi);
-            yield return Create(TensorPrimitives.Atan, T.Atan);
+            yield return Create(TensorPrimitives.Atan, T.Atan, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-12, floatTolerance: 1e-5f));
             yield return Create(TensorPrimitives.BitDecrement, T.BitDecrement);
             yield return Create(TensorPrimitives.BitIncrement, T.BitIncrement);
             yield return Create(TensorPrimitives.Cbrt, T.Cbrt, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13));

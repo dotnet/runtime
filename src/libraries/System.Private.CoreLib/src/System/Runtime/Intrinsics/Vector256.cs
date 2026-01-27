@@ -901,6 +901,53 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Computes the arc tangent of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc tangent is to be computed.</param>
+        /// <returns>A vector whose elements are the arc tangent of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<double> Atan(Vector256<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AtanDouble<Vector256<double>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Atan(vector._lower),
+                    Vector128.Atan(vector._upper)
+                );
+            }
+        }
+
+        /// <summary>Computes the arc tangent of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc tangent is to be computed.</param>
+        /// <returns>A vector whose elements are the arc tangent of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<float> Atan(Vector256<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector512.IsHardwareAccelerated)
+                {
+                    return VectorMath.AtanSingle<Vector256<float>, Vector256<int>, Vector512<double>, Vector512<long>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AtanSingle<Vector256<float>, Vector256<int>, Vector256<double>, Vector256<long>>(vector);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector128.Atan(vector._lower),
+                    Vector128.Atan(vector._upper)
+                );
+            }
+        }
+
         /// <inheritdoc cref="Vector128.Cos(Vector128{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<double> Cos(Vector256<double> vector)

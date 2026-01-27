@@ -797,6 +797,46 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Computes the arc tangent of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc tangent is to be computed.</param>
+        /// <returns>A vector whose elements are the arc tangent of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<double> Atan(Vector512<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AtanDouble<Vector512<double>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Atan(vector._lower),
+                    Vector256.Atan(vector._upper)
+                );
+            }
+        }
+
+        /// <summary>Computes the arc tangent of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc tangent is to be computed.</param>
+        /// <returns>A vector whose elements are the arc tangent of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<float> Atan(Vector512<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AtanSingle<Vector512<float>, Vector512<int>, Vector512<double>, Vector512<long>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Atan(vector._lower),
+                    Vector256.Atan(vector._upper)
+                );
+            }
+        }
+
         /// <inheritdoc cref="Vector256.Cos(Vector256{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<double> Cos(Vector512<double> vector)

@@ -39,6 +39,30 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Vector128.Acos(System.Runtime.Intrinsics.Vector128{System.Double})</Target>
+    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Vector128.Acos(System.Runtime.Intrinsics.Vector128{System.Single})</Target>
+    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Vector128.Atan(System.Runtime.Intrinsics.Vector128{System.Double})</Target>
+    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Vector128.Atan(System.Runtime.Intrinsics.Vector128{System.Single})</Target>
+    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Runtime.Intrinsics.Vector256.Asin(System.Runtime.Intrinsics.Vector256{System.Double})</Target>
     <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
     <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
@@ -46,6 +70,30 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Runtime.Intrinsics.Vector256.Asin(System.Runtime.Intrinsics.Vector256{System.Single})</Target>
+    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Vector256.Acos(System.Runtime.Intrinsics.Vector256{System.Double})</Target>
+    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Vector256.Acos(System.Runtime.Intrinsics.Vector256{System.Single})</Target>
+    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Vector256.Atan(System.Runtime.Intrinsics.Vector256{System.Double})</Target>
+    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Vector256.Atan(System.Runtime.Intrinsics.Vector256{System.Single})</Target>
     <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
     <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
   </Suppression>
@@ -63,6 +111,30 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Vector512.Acos(System.Runtime.Intrinsics.Vector512{System.Double})</Target>
+    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Vector512.Acos(System.Runtime.Intrinsics.Vector512{System.Single})</Target>
+    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Vector512.Atan(System.Runtime.Intrinsics.Vector512{System.Double})</Target>
+    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Vector512.Atan(System.Runtime.Intrinsics.Vector512{System.Single})</Target>
+    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Runtime.Intrinsics.Vector64.Asin(System.Runtime.Intrinsics.Vector64{System.Double})</Target>
     <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
     <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
@@ -70,6 +142,30 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Runtime.Intrinsics.Vector64.Asin(System.Runtime.Intrinsics.Vector64{System.Single})</Target>
+    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Vector64.Acos(System.Runtime.Intrinsics.Vector64{System.Double})</Target>
+    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Vector64.Acos(System.Runtime.Intrinsics.Vector64{System.Single})</Target>
+    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Vector64.Atan(System.Runtime.Intrinsics.Vector64{System.Double})</Target>
+    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Vector64.Atan(System.Runtime.Intrinsics.Vector64{System.Single})</Target>
     <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
     <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
   </Suppression>

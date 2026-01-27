@@ -3307,5 +3307,161 @@ namespace System.Runtime.Intrinsics
                 );
             }
         }
+
+        public static TVectorDouble AtanDouble<TVectorDouble>(TVectorDouble x)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+        {
+            // This code is based on `vrd2_atan` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2023 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Implementation Notes
+            // --------------------
+            // sign = sign(x)
+            // x = abs(x)
+            //
+            // Argument Reduction for every x into the interval [-(2-sqrt(3)),+(2-sqrt(3))]
+            // Use the following identities
+            // atan(x) = pi/2 - atan(1/x)                when x > 1
+            //         = pi/6 + atan(f)                  when f > (2-sqrt(3))
+            // where f = (sqrt(3)*x-1)/(x+sqrt(3))
+            //
+            // All elements are approximated by using polynomial of degree 19
+
+            const double SQRT3 = 1.7320508075688772;      // 0x1.bb67ae8584caap0
+            const double RANGE = 0.2679491924311227;      // 0x1.126145e9ecd56p-2 (2-sqrt(3))
+            const double PI_BY_6 = 0.5235987755982989;    // 0x1.0c152382d7366p-1
+            const double PI_BY_2 = 1.5707963267948966;    // 0x1.921fb54442d18p0
+            const double PI_BY_3 = 1.0471975511965979;    // 0x1.0c152382d7366p0
+
+            // Polynomial coefficients
+            const double C0 = -0.33333333333333265;       // -0x1.5555555555549p-2
+            const double C1 = 0.19999999999969587;        // 0x1.9999999996eccp-3
+            const double C2 = -0.1428571428026078;        // -0x1.24924922b2972p-3
+            const double C3 = 0.11111110613838616;        // 0x1.c71c707163579p-4
+            const double C4 = -0.09090882990193784;       // -0x1.745cd1358b0f1p-4
+            const double C5 = 0.07691470703415716;        // 0x1.3b0aea74b0a51p-4
+            const double C6 = -0.06649949387937557;       // -0x1.1061c5f6997a6p-4
+            const double C7 = 0.05677994137264123;        // 0x1.d1242ae875135p-5
+            const double C8 = -0.038358962102069113;      // -0x1.3a3c92f7949aep-5
+
+            TVectorDouble sign = x & TVectorDouble.Create(-0.0);
+            TVectorDouble ax = TVectorDouble.Abs(x);
+
+            const double F = 1.0 / RANGE;
+
+            // Argument reduction
+            TVectorDouble cmp1 = TVectorDouble.GreaterThanOrEqual(ax, TVectorDouble.Create(F));
+            TVectorDouble cmp2 = TVectorDouble.GreaterThan(ax, TVectorDouble.One);
+            TVectorDouble cmp3 = TVectorDouble.GreaterThan(ax, TVectorDouble.Create(RANGE));
+
+            // If ax >= F: aux = 1/ax, pival = pi/2, polysign = negative
+            TVectorDouble aux1 = TVectorDouble.One / ax;
+            TVectorDouble pival1 = TVectorDouble.Create(PI_BY_2);
+
+            // If ax > 1 (but < F): aux = (1/ax * sqrt(3) - 1) / (sqrt(3) + 1/ax), pival = pi/3, polysign = negative
+            TVectorDouble recip = TVectorDouble.One / ax;
+            TVectorDouble aux2 = (recip * TVectorDouble.Create(SQRT3) - TVectorDouble.One) / (TVectorDouble.Create(SQRT3) + recip);
+            TVectorDouble pival2 = TVectorDouble.Create(PI_BY_3);
+
+            // If ax > range (but <= 1): aux = (ax * sqrt(3) - 1) / (sqrt(3) + ax), pival = pi/6, polysign = positive
+            TVectorDouble aux3 = (ax * TVectorDouble.Create(SQRT3) - TVectorDouble.One) / (TVectorDouble.Create(SQRT3) + ax);
+            TVectorDouble pival3 = TVectorDouble.Create(PI_BY_6);
+
+            // Default: aux = ax, pival = 0, polysign = positive
+            TVectorDouble aux4 = ax;
+            TVectorDouble pival4 = TVectorDouble.Zero;
+
+            // Select based on conditions
+            TVectorDouble aux = TVectorDouble.ConditionalSelect(cmp1, aux1,
+                                TVectorDouble.ConditionalSelect(cmp2, aux2,
+                                TVectorDouble.ConditionalSelect(cmp3, aux3, aux4)));
+
+            TVectorDouble pival = TVectorDouble.ConditionalSelect(cmp1, pival1,
+                                  TVectorDouble.ConditionalSelect(cmp2, pival2,
+                                  TVectorDouble.ConditionalSelect(cmp3, pival3, pival4)));
+
+            // polysign is negative when cmp1 or cmp2 is true
+            TVectorDouble polysignMask = TVectorDouble.ConditionalSelect(cmp1 | cmp2, TVectorDouble.Create(-0.0), TVectorDouble.Zero);
+
+            // Polynomial evaluation: poly = aux + C0*aux^3 + C1*aux^5 + C2*aux^7 + ...
+            TVectorDouble aux2_poly = aux * aux;
+            TVectorDouble poly = TVectorDouble.MultiplyAddEstimate(
+                TVectorDouble.MultiplyAddEstimate(
+                    TVectorDouble.MultiplyAddEstimate(
+                        TVectorDouble.MultiplyAddEstimate(
+                            TVectorDouble.MultiplyAddEstimate(
+                                TVectorDouble.MultiplyAddEstimate(
+                                    TVectorDouble.MultiplyAddEstimate(
+                                        TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C8), aux2_poly, TVectorDouble.Create(C7)),
+                                        aux2_poly, TVectorDouble.Create(C6)),
+                                    aux2_poly, TVectorDouble.Create(C5)),
+                                aux2_poly, TVectorDouble.Create(C4)),
+                            aux2_poly, TVectorDouble.Create(C3)),
+                        aux2_poly, TVectorDouble.Create(C2)),
+                    aux2_poly, TVectorDouble.Create(C1)),
+                aux2_poly, TVectorDouble.Create(C0)
+            );
+
+            poly = TVectorDouble.MultiplyAddEstimate(poly * aux2_poly, aux, aux);
+
+            // Apply polysign
+            poly ^= polysignMask;
+
+            // result = pival + poly
+            TVectorDouble result = pival + poly;
+
+            // Restore original sign
+            result |= sign;
+
+            return result;
+        }
+
+        public static TVectorSingle AtanSingle<TVectorSingle, TVectorInt32, TVectorDouble, TVectorInt64>(TVectorSingle x)
+            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
+            where TVectorInt32 : unmanaged, ISimdVector<TVectorInt32, int>
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
+        {
+            // This code is based on `vrs4_atanf` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Implementation Notes
+            // --------------------
+            // sign = sign(x)
+            // x = abs(x)
+            //
+            // Argument reduction: Use the following identities
+            //
+            // 1. If xi > 1,
+            //      atan(xi) = pi/2 - atan(1/xi)
+            //
+            // 2. If f > (2-sqrt(3)),
+            //      atan(x) = pi/6 + atan(f)
+            //      where f = (sqrt(3)*xi-1)/(xi+sqrt(3))
+            //
+            //      atan(xi) is calculated using the polynomial,
+            //      xi + C0*xi^3 + C1*xi^5 + C2*xi^7
+
+            if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
+            {
+                TVectorDouble dx = Widen<TVectorSingle, TVectorDouble>(x);
+                return Narrow<TVectorDouble, TVectorSingle>(AtanDouble<TVectorDouble>(dx));
+            }
+            else
+            {
+                TVectorDouble dxLo = WidenLower<TVectorSingle, TVectorDouble>(x);
+                TVectorDouble dxHi = WidenUpper<TVectorSingle, TVectorDouble>(x);
+                return Narrow<TVectorDouble, TVectorSingle>(
+                    AtanDouble<TVectorDouble>(dxLo),
+                    AtanDouble<TVectorDouble>(dxHi)
+                );
+            }
+        }
     }
 }

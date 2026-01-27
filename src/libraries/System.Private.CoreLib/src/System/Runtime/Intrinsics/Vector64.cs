@@ -859,6 +859,47 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Computes the arc tangent of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc tangent is to be computed.</param>
+        /// <returns>A vector whose elements are the arc tangent of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<double> Atan(Vector64<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AtanDouble<Vector64<double>>(vector);
+            }
+            else
+            {
+                return Atan<double>(vector);
+            }
+        }
+
+        /// <summary>Computes the arc tangent of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc tangent is to be computed.</param>
+        /// <returns>A vector whose elements are the arc tangent of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<float> Atan(Vector64<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector128.IsHardwareAccelerated)
+                {
+                    return VectorMath.AtanSingle<Vector64<float>, Vector64<int>, Vector128<double>, Vector128<long>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AtanSingle<Vector64<float>, Vector64<int>, Vector64<double>, Vector64<long>>(vector);
+                }
+            }
+            else
+            {
+                return Atan<float>(vector);
+            }
+        }
+
         /// <summary>Computes the cos of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its Cos computed.</param>
         /// <returns>A vector whose elements are the cos of the elements in <paramref name="vector" />.</returns>
@@ -3744,6 +3785,34 @@ namespace System.Runtime.Intrinsics
             for (int index = 0; index < Vector64<T>.Count; index++)
             {
                 T value = T.Asin(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        internal static Vector64<T> Acos<T>(Vector64<T> vector)
+            where T : ITrigonometricFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                T value = T.Acos(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        internal static Vector64<T> Atan<T>(Vector64<T> vector)
+            where T : ITrigonometricFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                T value = T.Atan(vector.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
