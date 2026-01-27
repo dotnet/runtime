@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.WebSockets.Compression;
 using System.Numerics;
+using System.Numerics.Tensors;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
@@ -1657,48 +1658,32 @@ namespace System.Net.WebSockets
         /// <param name="mask">The four-byte mask, stored as an Int32.</param>
         /// <param name="maskIndex">The index into the mask.</param>
         /// <returns>The next index into the mask to be used for future applications of the mask.</returns>
-        private static unsafe int ApplyMask(Span<byte> toMask, int mask, int maskIndex)
+        private static int ApplyMask(Span<byte> toMask, int mask, int maskIndex)
         {
             Debug.Assert(maskIndex < sizeof(int));
 
-            fixed (byte* toMaskBeg = &MemoryMarshal.GetReference(toMask))
+            int toMaskLength = toMask.Length;
+
+            if (toMaskLength >= sizeof(int))
             {
-                byte* toMaskPtr = toMaskBeg;
-                byte* toMaskEnd = toMaskBeg + toMask.Length;
+                int rolledMask = BitConverter.IsLittleEndian ?
+                    (int)BitOperations.RotateRight((uint)mask, maskIndex * 8) :
+                    (int)BitOperations.RotateLeft((uint)mask, maskIndex * 8);
 
-                if (toMaskEnd - toMaskPtr >= sizeof(int))
-                {
-                    int rolledMask = BitConverter.IsLittleEndian ?
-                        (int)BitOperations.RotateRight((uint)mask, maskIndex * 8) :
-                        (int)BitOperations.RotateLeft((uint)mask, maskIndex * 8);
+                // Process as many 4-byte chunks as possible using TensorPrimitives.Xor.
+                Span<int> toMaskInts = MemoryMarshal.Cast<byte, int>(toMask);
+                TensorPrimitives.Xor(toMaskInts, rolledMask, toMaskInts);
 
-                    // Process Vector<byte>.Count bytes at a time.
-                    if (Vector.IsHardwareAccelerated && (toMaskEnd - toMaskPtr) >= Vector<byte>.Count)
-                    {
-                        Vector<byte> maskVector = Vector.AsVectorByte(new Vector<int>(rolledMask));
-                        do
-                        {
-                            *(Vector<byte>*)toMaskPtr ^= maskVector;
-                            toMaskPtr += Vector<byte>.Count;
-                        }
-                        while (toMaskEnd - toMaskPtr >= Vector<byte>.Count);
-                    }
+                // Slice off the processed portion.
+                toMask = toMask.Slice(toMaskInts.Length * sizeof(int));
+            }
 
-                    // Process 4 bytes at a time.
-                    while (toMaskEnd - toMaskPtr >= sizeof(int))
-                    {
-                        *(int*)toMaskPtr ^= rolledMask;
-                        toMaskPtr += sizeof(int);
-                    }
-                }
-
-                // Process 1 byte at a time.
-                byte* maskPtr = (byte*)&mask;
-                while (toMaskPtr != toMaskEnd)
-                {
-                    *toMaskPtr++ ^= maskPtr[maskIndex];
-                    maskIndex = (maskIndex + 1) & 3;
-                }
+            // Process any remaining bytes one at a time.
+            Span<byte> maskBytes = MemoryMarshal.AsBytes(new Span<int>(ref mask));
+            foreach (ref byte b in toMask)
+            {
+                b ^= maskBytes[maskIndex];
+                maskIndex = (maskIndex + 1) & 3;
             }
 
             return maskIndex;
