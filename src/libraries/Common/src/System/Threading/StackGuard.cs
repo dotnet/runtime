@@ -39,37 +39,6 @@ namespace System.Threading
             throw new InsufficientExecutionStackException();
         }
 
-#if NETFRAMEWORK || NETSTANDARD2_0
-        public void RunOnEmptyStack<T1, T2>(Action<T1, T2> action, T1 arg1, T2 arg2) =>
-            RunOnEmptyStackCore(static s =>
-            {
-                var t = (Tuple<Action<T1, T2>, T1, T2>)s;
-                t.Item1(t.Item2, t.Item3);
-                return default(object);
-            }, Tuple.Create(action, arg1, arg2));
-
-        public void RunOnEmptyStack<T1, T2, T3>(Action<T1, T2, T3> action, T1 arg1, T2 arg2, T3 arg3) =>
-            RunOnEmptyStackCore(static s =>
-            {
-                var t = (Tuple<Action<T1, T2, T3>, T1, T2, T3>)s;
-                t.Item1(t.Item2, t.Item3, t.Item4);
-                return default(object);
-            }, Tuple.Create(action, arg1, arg2, arg3));
-
-        public R RunOnEmptyStack<T1, T2, R>(Func<T1, T2, R> action, T1 arg1, T2 arg2) =>
-            RunOnEmptyStackCore(static s =>
-            {
-                var t = (Tuple<Func<T1, T2, R>, T1, T2>)s;
-                return t.Item1(t.Item2, t.Item3);
-            }, Tuple.Create(action, arg1, arg2));
-
-        public R RunOnEmptyStack<T1, T2, T3, R>(Func<T1, T2, T3, R> action, T1 arg1, T2 arg2, T3 arg3) =>
-            RunOnEmptyStackCore(static s =>
-            {
-                var t = (Tuple<Func<T1, T2, T3, R>, T1, T2, T3>)s;
-                return t.Item1(t.Item2, t.Item3, t.Item4);
-            }, Tuple.Create(action, arg1, arg2, arg3));
-#else
         public void RunOnEmptyStack<T1, T2>(Action<T1, T2> action, T1 arg1, T2 arg2) =>
             RunOnEmptyStackCore(static s =>
             {
@@ -99,7 +68,6 @@ namespace System.Threading
                 var t = ((Func<T1, T2, T3, R>, T1, T2, T3))s;
                 return t.Item1(t.Item2, t.Item3, t.Item4);
             }, (action, arg1, arg2, arg3));
-#endif
 
         private R RunOnEmptyStackCore<R>(Func<object, R> action, object state)
         {
