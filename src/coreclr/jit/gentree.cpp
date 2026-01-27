@@ -4816,18 +4816,17 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         gtWalkOp(&op2, &op1, nullptr, true);
 #endif // defined(TARGET_XARCH)
 
-        bool noCSE = (mul > 1);
+        bool noCSE = (mul > 1) && (op2 != nullptr) && op2->OperIs(GT_LSH, GT_MUL);
 #if defined(TARGET_RISCV64)
-        noCSE = this->compOpportunisticallyDependsOn(InstructionSet_Zba);
+        noCSE = noCSE && this->compOpportunisticallyDependsOn(InstructionSet_Zba);
 #endif
 
-        if (noCSE && (op2 != nullptr) && op2->OperIs(GT_LSH, GT_MUL))
+        if (noCSE)
         {
             op2->gtFlags |= GTF_ADDRMODE_NO_CSE;
-
 #if defined(TARGET_RISCV64)
             // RISC-V addressing mode is based on: (base + index*scale) + offset.
-            // To emit shXadd.uw, GT_ADD + GT_LSH(or MUL) + GT_CAST nodes are required.
+            // To emit sh1/2/3add.uw, GT_ADD + GT_LSH(or MUL) + GT_CAST nodes are necessary.
             // GT_CAST nodes benefit from shXadd.uw variants(Zba) by disabling CSEs.
             //
             // Example:
@@ -4835,13 +4834,13 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
             //      |- ADD
             //      |  |- LCL_VAR       (base)
             //      |  |- LSH (or MUL)  (index * scale)
-            //      |     |- GT_CAST    (index, CSE shouldn't be applied on this node to emit shXadd.uw)
+            //      |     |- GT_CAST    (index, CSE shouldn't be applied on this node to emit sh1/2/3add.uw)
             //      |        |- OP1     (CSE/ConstCSE possible on this node and its children)
             //      |     |- CNS_INT    (scale)
             //      |- CNS_INT          (offset)
             //
-            // Other nodes than GT_CAST can benefit from shXadd variants without GTF_DONT_CSE flags,
-            // because shXadd doesn't require a GT_CAST node.
+            // Other nodes than GT_CAST can be emitted as sh1/2/3add variants without GTF_DONT_CSE flags,
+            // because these instructions don't require a GT_CAST node.
 
             GenTree* index = op2->gtGetOp1();
             if ((index != nullptr) && index->OperIs(GT_CAST))
@@ -4849,7 +4848,6 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
                 assert(index->TypeIs(TYP_I_IMPL));
                 index->gtFlags |= GTF_DONT_CSE;
             }
-
 #endif
         }
 
