@@ -947,6 +947,55 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Computes the arc tangent for the quotient of two vectors.</summary>
+        /// <param name="y">The vector that will be divided by <paramref name="x" />.</param>
+        /// <param name="x">The vector that will divide <paramref name="y" />.</param>
+        /// <returns>A vector whose elements are the arc tangent of the quotient of the corresponding elements in <paramref name="y" /> and <paramref name="x" />.</returns>
+        /// <remarks>The angles are returned in radians.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Atan2(Vector128<double> y, Vector128<double> x)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Atan2Double<Vector128<double>>(y, x);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Atan2(y._lower, x._lower),
+                    Vector64.Atan2(y._upper, x._upper)
+                );
+            }
+        }
+
+        /// <summary>Computes the arc tangent for the quotient of two vectors.</summary>
+        /// <param name="y">The vector that will be divided by <paramref name="x" />.</param>
+        /// <param name="x">The vector that will divide <paramref name="y" />.</param>
+        /// <returns>A vector whose elements are the arc tangent of the quotient of the corresponding elements in <paramref name="y" /> and <paramref name="x" />.</returns>
+        /// <remarks>The angles are returned in radians.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Atan2(Vector128<float> y, Vector128<float> x)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.Atan2Single<Vector128<float>, Vector256<double>>(y, x);
+                }
+                else
+                {
+                    return VectorMath.Atan2Single<Vector128<float>, Vector128<double>>(y, x);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector64.Atan2(y._lower, x._lower),
+                    Vector64.Atan2(y._upper, x._upper)
+                );
+            }
+        }
+
         /// <inheritdoc cref="Vector64.Cos(Vector64{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<double> Cos(Vector128<double> vector)

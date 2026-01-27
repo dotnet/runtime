@@ -900,6 +900,49 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Computes the arc tangent for the quotient of two vectors.</summary>
+        /// <param name="y">The vector that will be divided by <paramref name="x" />.</param>
+        /// <param name="x">The vector that will divide <paramref name="y" />.</param>
+        /// <returns>A vector whose elements are the arc tangent of the quotient of the corresponding elements in <paramref name="y" /> and <paramref name="x" />.</returns>
+        /// <remarks>The angles are returned in radians.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<double> Atan2(Vector64<double> y, Vector64<double> x)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Atan2Double<Vector64<double>>(y, x);
+            }
+            else
+            {
+                return Atan2<double>(y, x);
+            }
+        }
+
+        /// <summary>Computes the arc tangent for the quotient of two vectors.</summary>
+        /// <param name="y">The vector that will be divided by <paramref name="x" />.</param>
+        /// <param name="x">The vector that will divide <paramref name="y" />.</param>
+        /// <returns>A vector whose elements are the arc tangent of the quotient of the corresponding elements in <paramref name="y" /> and <paramref name="x" />.</returns>
+        /// <remarks>The angles are returned in radians.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<float> Atan2(Vector64<float> y, Vector64<float> x)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector128.IsHardwareAccelerated)
+                {
+                    return VectorMath.Atan2Single<Vector64<float>, Vector128<double>>(y, x);
+                }
+                else
+                {
+                    return VectorMath.Atan2Single<Vector64<float>, Vector64<double>>(y, x);
+                }
+            }
+            else
+            {
+                return Atan2<float>(y, x);
+            }
+        }
+
         /// <summary>Computes the cos of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its Cos computed.</param>
         /// <returns>A vector whose elements are the cos of the elements in <paramref name="vector" />.</returns>
@@ -3813,6 +3856,20 @@ namespace System.Runtime.Intrinsics
             for (int index = 0; index < Vector64<T>.Count; index++)
             {
                 T value = T.Atan(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        internal static Vector64<T> Atan2<T>(Vector64<T> y, Vector64<T> x)
+            where T : IFloatingPointIeee754<T>
+        {
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                T value = T.Atan2(y.GetElementUnsafe(index), x.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
