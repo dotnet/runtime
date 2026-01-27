@@ -44,7 +44,7 @@ namespace System.Text.Json
         {
             JsonWriterHelper.ValidateValue(value);
 
-            if (value.IndexOf(s_singleLineCommentDelimiter) >= 0)
+            if (value.Contains(s_singleLineCommentDelimiter, StringComparison.Ordinal))
             {
                 ThrowHelper.ThrowArgumentException_InvalidCommentValue();
             }
