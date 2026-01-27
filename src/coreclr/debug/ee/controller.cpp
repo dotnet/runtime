@@ -5836,7 +5836,7 @@ static bool IsTailCall(const BYTE * ip, ControllerStackInfo* info, TailCallFunct
     {
         pTargetMD = trace.GetMethodDesc();
     }
-    else if (trace.GetAddress() != NULL)
+    else if (trace.GetAddress() != (PCODE)NULL)
     {
         pTargetMD = g_pEEInterface->GetNativeCodeMethodDesc(trace.GetAddress());
     }
