@@ -8391,7 +8391,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                     simd16_t arg1 = GetConstantSimd16(arg1VN);
 
                     simd16_t result = {};
-                    NarrowSimdLong<simd16_t>(baseType, &result, arg1);
+                    NarrowAndDuplicateSimdLong<simd16_t>(baseType, &result, arg1);
                     arg1VN = VNForSimd16Con(result);
                 }
 #endif // TARGET_XARCH
