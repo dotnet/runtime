@@ -21,6 +21,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// If you want to register the actual type, you must do so separately.
         /// </remarks>
         /// <example>
+        /// <para>
+        /// The following code shows how to register a hosted service while also registering the actual <c>THostedService</c> type.
+        /// </para>
         /// <code language="csharp">
         /// services.AddSingleton&lt;SomeService&gt;();
         /// services.AddHostedService(sp => sp.GetRequiredService&lt;SomeService&gt;());
@@ -45,6 +48,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// If you want to register the actual type, you must do so separately.
         /// </remarks>
         /// <example>
+        /// <para>
+        /// The following code shows how to register a hosted service while also registering the actual <c>THostedService</c> type.
+        /// </para>
         /// <code language="csharp">
         /// services.AddSingleton&lt;SomeService&gt;(implementationFactory);
         /// services.AddHostedService(sp => sp.GetRequiredService&lt;SomeService&gt;());
