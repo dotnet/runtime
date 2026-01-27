@@ -18,6 +18,9 @@ namespace System.IO.Hashing
     ///     Adler-32 is not as robust as other checksum algorithms like CRC32, but it is faster to compute.
     ///     It also originally comes from zlib.
     ///   </para>
+    ///   <para>
+    ///     The Adler-32 checksum is stored as s2*65536 + s1 in most-significant-byte first(network) order.
+    ///   </para>
     /// </remarks>
     public sealed partial class Adler32 : NonCryptographicHashAlgorithm
     {
@@ -69,7 +72,7 @@ namespace System.IO.Hashing
         /// </summary>
         /// <param name="destination">The buffer that receives the computed hash value.</param>
         protected override void GetCurrentHashCore(Span<byte> destination)
-            => BinaryPrimitives.WriteUInt32LittleEndian(destination, _adler);
+            => BinaryPrimitives.WriteUInt32BigEndian(destination, _adler);
 
         /// <summary>
         /// Writes the computed hash value to <paramref name="destination"/>
@@ -77,7 +80,7 @@ namespace System.IO.Hashing
         /// </summary>
         protected override void GetHashAndResetCore(Span<byte> destination)
         {
-            BinaryPrimitives.WriteUInt32LittleEndian(destination, _adler);
+            BinaryPrimitives.WriteUInt32BigEndian(destination, _adler);
             _adler = InitialState;
         }
 
@@ -114,7 +117,7 @@ namespace System.IO.Hashing
         {
             byte[] ret = new byte[Size];
             uint hash = HashToUInt32(source);
-            BinaryPrimitives.WriteUInt32LittleEndian(ret, hash);
+            BinaryPrimitives.WriteUInt32BigEndian(ret, hash);
             return ret;
         }
 
@@ -139,7 +142,7 @@ namespace System.IO.Hashing
             }
 
             uint hash = HashToUInt32(source);
-            BinaryPrimitives.WriteUInt32LittleEndian(destination, hash);
+            BinaryPrimitives.WriteUInt32BigEndian(destination, hash);
             bytesWritten = Size;
             return true;
         }
@@ -160,7 +163,7 @@ namespace System.IO.Hashing
             }
 
             uint hash = HashToUInt32(source);
-            BinaryPrimitives.WriteUInt32LittleEndian(destination, hash);
+            BinaryPrimitives.WriteUInt32BigEndian(destination, hash);
             return Size;
         }
 
