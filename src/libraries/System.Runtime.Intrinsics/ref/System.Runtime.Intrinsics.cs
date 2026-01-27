@@ -82,6 +82,8 @@ namespace System.Runtime.Intrinsics
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector128<T> vector, T[] destination, int startIndex) { }
         public static System.Runtime.Intrinsics.Vector128<double> Asin(System.Runtime.Intrinsics.Vector128<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> Asin(System.Runtime.Intrinsics.Vector128<float> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> Acos(System.Runtime.Intrinsics.Vector128<double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> Acos(System.Runtime.Intrinsics.Vector128<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> Cos(System.Runtime.Intrinsics.Vector128<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> Cos(System.Runtime.Intrinsics.Vector128<float> vector) { throw null; }
         public static int Count<T>(System.Runtime.Intrinsics.Vector128<T> vector, T value) { throw null; }
@@ -527,6 +529,8 @@ namespace System.Runtime.Intrinsics
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector256<T> vector, T[] destination, int startIndex) { }
         public static System.Runtime.Intrinsics.Vector256<double> Asin(System.Runtime.Intrinsics.Vector256<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<float> Asin(System.Runtime.Intrinsics.Vector256<float> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<double> Acos(System.Runtime.Intrinsics.Vector256<double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<float> Acos(System.Runtime.Intrinsics.Vector256<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<double> Cos(System.Runtime.Intrinsics.Vector256<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<float> Cos(System.Runtime.Intrinsics.Vector256<float> vector) { throw null; }
         public static int Count<T>(System.Runtime.Intrinsics.Vector256<T> vector, T value) { throw null; }
@@ -973,6 +977,8 @@ namespace System.Runtime.Intrinsics
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector512<T> vector, T[] destination, int startIndex) { }
         public static System.Runtime.Intrinsics.Vector512<double> Asin(System.Runtime.Intrinsics.Vector512<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<float> Asin(System.Runtime.Intrinsics.Vector512<float> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> Acos(System.Runtime.Intrinsics.Vector512<double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<float> Acos(System.Runtime.Intrinsics.Vector512<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> Cos(System.Runtime.Intrinsics.Vector512<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<float> Cos(System.Runtime.Intrinsics.Vector512<float> vector) { throw null; }
         public static int Count<T>(System.Runtime.Intrinsics.Vector512<T> vector, T value) { throw null; }
@@ -1416,6 +1422,8 @@ namespace System.Runtime.Intrinsics
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector64<T> vector, T[] destination, int startIndex) { }
         public static System.Runtime.Intrinsics.Vector64<double> Asin(System.Runtime.Intrinsics.Vector64<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<float> Asin(System.Runtime.Intrinsics.Vector64<float> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<double> Acos(System.Runtime.Intrinsics.Vector64<double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> Acos(System.Runtime.Intrinsics.Vector64<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<double> Cos(System.Runtime.Intrinsics.Vector64<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<float> Cos(System.Runtime.Intrinsics.Vector64<float> vector) { throw null; }
         public static int Count<T>(System.Runtime.Intrinsics.Vector64<T> vector, T value) { throw null; }

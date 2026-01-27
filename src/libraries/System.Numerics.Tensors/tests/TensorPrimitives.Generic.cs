@@ -459,7 +459,7 @@ namespace System.Numerics.Tensors.Tests
 
             yield return Create(TensorPrimitives.Acosh, T.Acosh);
             yield return Create(TensorPrimitives.AcosPi, T.AcosPi);
-            yield return Create(TensorPrimitives.Acos, T.Acos);
+            yield return Create(TensorPrimitives.Acos, T.Acos, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-12, floatTolerance: 1e-5f));
             yield return Create(TensorPrimitives.Asinh, T.Asinh);
             yield return Create(TensorPrimitives.AsinPi, T.AsinPi);
             yield return Create(TensorPrimitives.Asin, T.Asin, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-12, floatTolerance: 1e-5f));

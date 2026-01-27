@@ -854,6 +854,53 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Computes the arc cosine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc cosine is to be computed.</param>
+        /// <returns>A vector whose elements are the arc cosine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians, and the input should be in the range [-1, 1].</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<double> Acos(Vector256<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AcosDouble<Vector256<double>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Acos(vector._lower),
+                    Vector128.Acos(vector._upper)
+                );
+            }
+        }
+
+        /// <summary>Computes the arc cosine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc cosine is to be computed.</param>
+        /// <returns>A vector whose elements are the arc cosine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians, and the input should be in the range [-1, 1].</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<float> Acos(Vector256<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector512.IsHardwareAccelerated)
+                {
+                    return VectorMath.AcosSingle<Vector256<float>, Vector256<int>, Vector512<double>, Vector512<long>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AcosSingle<Vector256<float>, Vector256<int>, Vector256<double>, Vector256<long>>(vector);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector128.Acos(vector._lower),
+                    Vector128.Acos(vector._upper)
+                );
+            }
+        }
+
         /// <inheritdoc cref="Vector128.Cos(Vector128{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<double> Cos(Vector256<double> vector)
