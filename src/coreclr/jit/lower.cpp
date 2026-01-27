@@ -8718,6 +8718,11 @@ void Lowering::LowerShift(GenTreeOp* shift)
                         JITDUMP("Optimizing consecutive shifts: (x %s %d) %s %d -> x %s %d\n",
                                 GenTree::OpName(op1->OperGet()), (int)c1, GenTree::OpName(shift->OperGet()), (int)c2,
                                 GenTree::OpName(shift->OperGet()), (int)combined);
+                        // If we had RSH(RSZ), result is RSZ.
+                        if (mixedOp)
+                        {
+                            shift->SetOper(GT_RSZ);
+                        }
 
                         shift->gtGetOp2()->AsIntCon()->SetIconValue(combined);
                         shift->gtOp1 = op1->gtGetOp1();
@@ -8731,7 +8736,7 @@ void Lowering::LowerShift(GenTreeOp* shift)
                         JITDUMP("Optimizing overshift: (x %s %d) %s %d\n", GenTree::OpName(op1->OperGet()), (int)c1,
                                 GenTree::OpName(shift->OperGet()), (int)c2);
 
-                        if (shift->OperIs(GT_RSH))
+                        if (shift->OperIs(GT_RSH) && !mixedOp)
                         {
                             // RSH saturates to sign bit (shift by bitWidth - 1)
                             // (x >> 30) >> 30 -> x >> 31 (for 32-bit)
