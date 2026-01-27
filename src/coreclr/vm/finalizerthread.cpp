@@ -49,7 +49,7 @@ extern "C"
     {
         CONTRACTL
         {
-            THROWS;
+            NOTHROW;
             GC_TRIGGERS;
             MODE_COOPERATIVE;
         }
@@ -59,20 +59,12 @@ extern "C"
 
         BEGIN_EXTERNAL_ENTRYPOINT(&hr);
         
-        EX_TRY
+        INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
         {
             GCX_COOP();
-            FinalizerThread::FinalizerThreadWorkerIteration();
+            ManagedThreadBase::KickOff(FinalizerThread::FinalizerThreadWorkerIteration, NULL);
         }
-        EX_HOOK
-        {
-            Exception *ex = GET_EXCEPTION();
-            SString err;
-            ex->GetMessage(err);
-            LogErrorToHost("Error message: %s", err.GetUTF8());
-            abort();
-        }
-        EX_END_HOOK;
+        UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
         
         END_EXTERNAL_ENTRYPOINT;
     }
@@ -425,20 +417,32 @@ static bool s_PriorityBoosted = false;
 
 VOID FinalizerThread::FinalizerThreadWorker(void *args)
 {
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
     while (!fQuitFinalizer)
     {
-        FinalizerThread::FinalizerThreadWorkerIteration();
+        FinalizerThread::FinalizerThreadWorkerIteration(nullptr);
     }
 
     if (s_InitializedFinalizerThreadForPlatform)
         Thread::CleanUpForManagedThreadInNative(GetFinalizerThread());
 }
 
-VOID FinalizerThread::FinalizerThreadWorkerIteration()
+VOID FinalizerThread::FinalizerThreadWorkerIteration(void *args)
 {
-    GetFinalizerThread()->EnablePreemptiveGC();
-#ifndef TARGET_WASM
-    // Wait for work to do...
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel())
@@ -446,12 +450,15 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration()
         GetFinalizerThread()->m_GCOnTransitionsOK = FALSE;
     }
 #endif
+    GetFinalizerThread()->EnablePreemptiveGC();
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel())
     {
         GetFinalizerThread()->m_GCOnTransitionsOK = TRUE;
     }
 #endif
+
+#ifndef TARGET_WASM
 #if 0
     // Setting the event here, instead of at the bottom of the loop, could
     // cause us to skip draining the Q, if the request is made as soon as
@@ -459,7 +466,10 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration()
     SignalFinalizationDone();
 #endif //0
 
+    // Wait for work to do...
     WaitForFinalizerEvent (hEventFinalizer);
+
+#endif // !TARGET_WASM
 
     // Process pending finalizer work items from the GC first.
     FinalizerWorkItem* pWork = GCHeapUtilities::GetGCHeap()->GetExtraWorkForFinalization();
@@ -470,6 +480,7 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration()
         pWork = pNext;
     }
 
+#ifndef TARGET_WASM
 #if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
     if (g_TriggerHeapDump && (minipal_lowres_ticks() > (LastHeapDumpTime + LINUX_HEAP_DUMP_TIME_OUT)))
     {
@@ -520,49 +531,33 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration()
         s_InitializedFinalizerThreadForPlatform = true;
         Thread::InitializationForManagedThreadInNative(GetFinalizerThread());
     }
+#endif // !TARGET_WASM
 
     JitHost::Reclaim();
 
     GetFinalizerThread()->DisablePreemptiveGC();
 
+#ifndef TARGET_WASM
     // we might want to do some extra work on the finalizer thread
     // check and do it
     if (HaveExtraWorkForFinalizer())
     {
         DoExtraWorkForFinalizer(GetFinalizerThread());
     }
+#endif // !TARGET_WASM
+
     LOG((LF_GC, LL_INFO100, "***** Calling Finalizers\n"));
 
     int observedFullGcCount =
         GCHeapUtilities::GetGCHeap()->CollectionCount(GCHeapUtilities::GetGCHeap()->GetMaxGeneration());
     FinalizeAllObjects();
 
+#ifndef TARGET_WASM
     // Anyone waiting to drain the Q can now wake up.  Note that there is a
     // race in that another thread starting a drain, as we leave a drain, may
     // consider itself satisfied by the drain that just completed.
     // Thus we include the Full GC count that we have certaily observed.
     SignalFinalizationDone(observedFullGcCount);
-
-#else // !TARGET_WASM
-
-    // Process pending finalizer work items from the GC first.
-    FinalizerWorkItem* pWork = GCHeapUtilities::GetGCHeap()->GetExtraWorkForFinalization();
-    while (pWork != NULL)
-    {
-        FinalizerWorkItem* pNext = pWork->next;
-        pWork->callback(pWork);
-        pWork = pNext;
-    }
-
-    JitHost::Reclaim();
-
-    LOG((LF_GC, LL_INFO100, "***** Calling Finalizers\n"));
-
-    int observedFullGcCount =
-        GCHeapUtilities::GetGCHeap()->CollectionCount(GCHeapUtilities::GetGCHeap()->GetMaxGeneration());
-    FinalizeAllObjects();
-
-    GetFinalizerThread()->DisablePreemptiveGC();
 #endif // !TARGET_WASM
 }
 
