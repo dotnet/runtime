@@ -65,9 +65,20 @@ namespace Tracing.Tests.RundownValidation
             rundownParser.MethodILToNativeMapDCStop += (eventData) => hasMethodILToNativeMap = true;
             rundownParser.LoaderAppDomainDCStop += (eventData) => hasAppDomainDCStop = true;
             return () =>
-                hasRuntimeStart && hasMethodDCStopInit && hasMethodDCStopComplete &&
+            {
+                Logger.logger.Log("hasRuntimeStart: " + hasRuntimeStart);
+                Logger.logger.Log("hasMethodDCStopInit: " + hasMethodDCStopInit);
+                Logger.logger.Log("hasMethodDCStopComplete: " + hasMethodDCStopComplete);
+                Logger.logger.Log("hasLoaderModuleDCStop: " + hasLoaderModuleDCStop);
+                Logger.logger.Log("hasLoaderDomainModuleDCStop: " + hasLoaderDomainModuleDCStop);
+                Logger.logger.Log("hasAssemblyModuleDCStop: " + hasAssemblyModuleDCStop);
+                Logger.logger.Log("hasMethodDCStopVerbose: " + hasMethodDCStopVerbose);
+                Logger.logger.Log("hasMethodILToNativeMap: " + hasMethodILToNativeMap);
+                Logger.logger.Log("hasAppDomainDCStop: " + hasAppDomainDCStop);
+                return hasRuntimeStart && hasMethodDCStopInit && hasMethodDCStopComplete &&
                 hasLoaderModuleDCStop && hasLoaderDomainModuleDCStop && hasAssemblyModuleDCStop &&
                 hasMethodDCStopVerbose && hasMethodILToNativeMap && hasAppDomainDCStop ? 100 : -1;
+            };
         };
     }
 }

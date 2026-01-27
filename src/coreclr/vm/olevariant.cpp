@@ -4301,5 +4301,21 @@ BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
     CALL_MANAGED_METHOD(bstr, BSTR, args);
     RETURN bstr;
 }
+
+extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT * pOle)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    GCX_COOP();
+
+    OBJECTREF objRef = obj.Get();
+    GCPROTECT_BEGIN(objRef);
+    V_VT(pOle) = VT_RECORD;
+    OleVariant::ConvertValueClassToVariant(&objRef, pOle);
+    GCPROTECT_END();
+
+    END_QCALL;
+}
 #endif // FEATURE_COMINTEROP
 

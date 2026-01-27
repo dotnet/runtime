@@ -7,6 +7,7 @@ using Xunit;
 
 public class Test_Collect0 {
 	[Fact]
+	[ActiveIssue("https://github.com/dotnet/runtime/issues/118965", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
 	public static int TestEntryPoint() {
 
 		int[] array = new int[25];

@@ -135,9 +135,9 @@ ICALL_EXPORT void ves_icall_System_GC_RemovePressure (guint64);
 ICALL_EXPORT void ves_icall_System_GC_WaitForPendingFinalizers (void);
 ICALL_EXPORT void ves_icall_System_GC_GetGCMemoryInfo (gint64*, gint64*, gint64*, gint64*, gint64*, gint64*);
 
-ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_Memmove (guint8*, guint8*, size_t);
+ICALL_EXPORT void ves_icall_System_SpanHelpers_memmove (void*, void*, size_t);
 ICALL_EXPORT void ves_icall_System_Buffer_BulkMoveWithWriteBarrier (guint8 *, guint8 *, size_t, MonoType *);
-ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_ZeroMemory (guint8*, size_t);
+ICALL_EXPORT void ves_icall_System_SpanHelpers_memset (void*, gint32, size_t);
 
 ICALL_EXPORT void ves_icall_System_Array_InternalCreate (MonoArray *volatile* result, MonoType* type, gint32 rank, gint32* pLengths, gint32* pLowerBounds);
 ICALL_EXPORT MonoBoolean ves_icall_System_Array_CanChangePrimitive (MonoObjectHandleOnStack ref_src_type_handle, MonoObjectHandleOnStack ref_dst_type_handle, MonoBoolean reliable);
@@ -182,7 +182,7 @@ ICALL_EXPORT char* ves_icall_Mono_SafeStringMarshal_StringToUtf8 (MonoString *vo
 ICALL_EXPORT MonoType* ves_icall_Mono_RuntimeClassHandle_GetTypeFromClass (MonoClass *klass);
 
 #ifdef TARGET_AMD64
-ICALL_EXPORT void ves_icall_System_Runtime_Intrinsics_X86_X86Base___cpuidex (int abcd[4], int function_id, int subfunction_id);
+ICALL_EXPORT void ves_icall_System_Runtime_Intrinsics_X86_X86Base_CpuId (int abcd[4], int function_id, int subfunction_id);
 #endif
 
 ICALL_EXPORT void ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dil_bytes, int32_t dil_len, gconstpointer dpdb_bytes, int32_t dpdb_len);

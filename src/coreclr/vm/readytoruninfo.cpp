@@ -366,7 +366,7 @@ PTR_MethodDesc ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage(PCODE ent
     }
     CONTRACTL_END;
 
-#if defined(TARGET_AMD64) || (defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS))
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
     // A normal method entry point is always 8 byte aligned, but a funclet can start at an odd address.
     // Since PtrHashMap can't handle odd pointers, check for this case and return NULL.
     if ((entryPoint & 0x1) != 0)

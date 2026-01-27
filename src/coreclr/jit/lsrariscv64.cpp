@@ -241,7 +241,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 // Need a register different from target reg to check for overflow.
                 buildInternalIntRegisterDefForNode(tree);
-                if ((tree->gtFlags & GTF_UNSIGNED) == 0)
+                if (!tree->IsUnsigned())
                     buildInternalIntRegisterDefForNode(tree);
                 setInternalRegsDelayFree = true;
             }
@@ -264,6 +264,9 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_SH3ADD_UW:
         case GT_ADD_UW:
         case GT_SLLI_UW:
+        case GT_BIT_SET:
+        case GT_BIT_CLEAR:
+        case GT_BIT_INVERT:
             if (tree->OperIs(GT_ROR, GT_ROL) && !compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb))
                 buildInternalIntRegisterDefForNode(tree);
             srcCount = BuildBinaryUses(tree->AsOp());
@@ -287,7 +290,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 // Need a register different from target reg to check for overflow.
                 buildInternalIntRegisterDefForNode(tree);
-                if ((tree->gtFlags & GTF_UNSIGNED) == 0)
+                if (!tree->IsUnsigned())
                     buildInternalIntRegisterDefForNode(tree);
                 setInternalRegsDelayFree = true;
             }
@@ -337,7 +340,7 @@ int LinearScan::BuildNode(GenTree* tree)
             emitAttr attr = emitActualTypeSize(tree->AsOp());
             if (EA_SIZE(attr) != EA_8BYTE)
             {
-                if ((tree->AsOp()->gtFlags & GTF_UNSIGNED) != 0)
+                if (tree->AsOp()->IsUnsigned())
                     buildInternalIntRegisterDefForNode(tree);
             }
 

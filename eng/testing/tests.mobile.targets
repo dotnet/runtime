@@ -17,7 +17,7 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">
     <RunAOTCompilation Condition="'$(RuntimeFlavor)' == 'Mono' ">true</RunAOTCompilation>
-    <UseNativeAOTRuntime Condition="'$(RuntimeFlavor)' == 'CoreCLR'">true</UseNativeAOTRuntime>
+    <UseNativeAOTRuntime Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(UseNativeAOTRuntime)' == ''">true</UseNativeAOTRuntime>
   </PropertyGroup>
 
   <PropertyGroup>

@@ -11,6 +11,7 @@
     <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
 
+    <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">false</TestUsingWorkloads>
     <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == ''">true</TestUsingWorkloads>
     <!-- these are imported in this project instead -->
     <SkipWorkloadsTestingTargetsImport>false</SkipWorkloadsTestingTargetsImport>
@@ -74,6 +75,11 @@
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(RuntimeFlavor)' != ''">
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export RUNTIME_FLAVOR=$(RuntimeFlavor)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set RUNTIME_FLAVOR=$(RuntimeFlavor)" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
       <!-- TEST_USING_WORKLOADS - this is set per helix job, in sendtohelixhelp.proj -->
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BASE_DIR=%24{HELIX_CORRELATION_PAYLOAD}" />
@@ -97,6 +103,7 @@
       <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
       <_XUnitTraitArg Condition="'$(WasmFingerprintAssets)' == 'false'">-trait category=no-fingerprinting</_XUnitTraitArg>
       <_XUnitTraitArg Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">-trait category=bundler-friendly</_XUnitTraitArg>
+      <_XUnitTraitArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'">-trait category=$(RuntimeFlavor)</_XUnitTraitArg>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">

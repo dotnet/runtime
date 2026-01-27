@@ -17,7 +17,6 @@ namespace LibraryImportGenerator.IntegrationTests
     public class NativeMarshallingAttributeTests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/122447")]
         public void GetSameComInterfaceTwiceReturnsUniqueInstances()
         {
             // When using NativeMarshalling with UniqueComInterfaceMarshaller,

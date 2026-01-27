@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -14,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis
         private MethodDesc _method;
 
         public RuntimeImportMethodNode(MethodDesc method, NameMangler nameMangler)
-            : base(nameMangler.NodeMangler.ExternMethod(((EcmaMethod)method).GetRuntimeImportName(), method))
+            : base(nameMangler.NodeMangler.ExternMethod(new Utf8String(((EcmaMethod)method).GetRuntimeImportName()), method))
         {
             _method = method;
         }
