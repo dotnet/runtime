@@ -338,17 +338,15 @@ export function getSignatureMarshaler(signature: JSFunctionSignature, index: num
     return <any>dotnetApi.getHeapU32(<any>sig + JSBindingHeaderOffsets.ImportHandle);
 }
 
-const elementSizeMap = new Map<MarshalerType, number>([
-    [MarshalerType.Byte, 1],
-    [MarshalerType.Int32, 4],
-    [MarshalerType.Int52, 8],
-    [MarshalerType.Single, 4],
-    [MarshalerType.Double, 8],
-    [MarshalerType.String, JavaScriptMarshalerArgSize],
-    [MarshalerType.Object, JavaScriptMarshalerArgSize],
-    [MarshalerType.JSObject, JavaScriptMarshalerArgSize],
-]);
 export function arrayElementSize(elementType: MarshalerType): number {
-    return elementSizeMap.get(elementType) || -1;
+    if (elementType == MarshalerType.Byte) return 1;
+    if (elementType == MarshalerType.Int32) return 4;
+    if (elementType == MarshalerType.Int52) return 8;
+    if (elementType == MarshalerType.Single) return 4;
+    if (elementType == MarshalerType.Double) return 8;
+    if (elementType == MarshalerType.String) return JavaScriptMarshalerArgSize;
+    if (elementType == MarshalerType.Object) return JavaScriptMarshalerArgSize;
+    if (elementType == MarshalerType.JSObject) return JavaScriptMarshalerArgSize;
+    return -1;
 }
 
