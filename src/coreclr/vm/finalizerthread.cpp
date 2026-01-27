@@ -681,8 +681,6 @@ void FinalizerThread::FinalizerThreadCreate()
 #else // !TARGET_WASM
     // capture the current (single) thread as the finalizer thread
     g_pFinalizerThread = PTR_Thread(GetThread());
-    // On wasm this schedules first finalization onto the browser event loop.
-    FinalizerThread::EnableFinalization();
 #endif // !TARGET_WASM
 }
 
