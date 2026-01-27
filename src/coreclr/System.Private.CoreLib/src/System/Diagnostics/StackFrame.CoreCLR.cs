@@ -20,14 +20,12 @@ namespace System.Diagnostics
             _ilOffset = stackFrameHelper.GetILOffset(skipFrames);
             _isLastFrameFromForeignExceptionStackTrace = stackFrameHelper.IsLastFrameFromForeignExceptionStackTrace(skipFrames);
 
-#if !TARGET_BROWSER
             if (needFileInfo)
             {
                 _fileName = stackFrameHelper.GetFilename(skipFrames);
                 _lineNumber = stackFrameHelper.GetLineNumber(skipFrames);
                 _columnNumber = stackFrameHelper.GetColumnNumber(skipFrames);
             }
-#endif
         }
 
         private void BuildStackFrame(int skipFrames, bool needFileInfo)
@@ -45,14 +43,12 @@ namespace System.Diagnostics
                 _method = StackF.GetMethodBase(skipFrames);
                 _nativeOffset = StackF.GetOffset(skipFrames);
                 _ilOffset = StackF.GetILOffset(skipFrames);
-#if !TARGET_BROWSER
                 if (needFileInfo)
                 {
                     _fileName = StackF.GetFilename(skipFrames);
                     _lineNumber = StackF.GetLineNumber(skipFrames);
                     _columnNumber = StackF.GetColumnNumber(skipFrames);
                 }
-#endif
             }
         }
 
